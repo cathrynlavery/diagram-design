@@ -57,6 +57,18 @@ ln -s ~/code/diagram-design ~/.claude/skills/diagram-design
 
 Restart Claude Code. The skill registers as `diagram-design` and activates whenever you ask Claude to make a diagram.
 
+### Alternative: install as a plugin
+
+Quicker to install — but the skill lives in the plugin cache, so edits to `references/style-guide.md` don't survive plugin updates. Pick this if you just want to try it out; use the clone route above if you plan to customize the style guide by hand.
+
+**Claude Code:**
+```
+/plugin marketplace add cathrynlavery/diagram-design
+/plugin install diagram-design@diagram-design
+```
+
+**Claude Cowork:** Customize → Directory → Plugins → **+** → paste `cathrynlavery/diagram-design` → Sync, then install from the Personal list.
+
 ---
 
 ## Onboarding — make it look like *your* brand
