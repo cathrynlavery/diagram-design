@@ -72,6 +72,7 @@ Before drawing, ask: *Would the reader learn more from this than from a well-wri
 | If you're showing… | Use | Reference |
 |---|---|---|
 | Components + connections in a system | **Architecture** | [type-architecture.md](references/type-architecture.md) |
+| Legacy IT landscape grouped by phase/department; documents the *before* state in modernization proposals | **IT current-state** | [type-it-state.md](references/type-it-state.md) |
 | Decision logic with branches | **Flowchart** | [type-flowchart.md](references/type-flowchart.md) |
 | Time-ordered messages between actors | **Sequence** | [type-sequence.md](references/type-sequence.md) |
 | States + transitions + guards | **State machine** | [type-state.md](references/type-state.md) |
@@ -91,9 +92,10 @@ Before drawing, ask: *Would the reader learn more from this than from a well-wri
 | Distribution and correlation between two variables | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
 | End-to-end data stack on a container cluster | **High-Level** | [type-high-level.md](references/type-high-level.md) |
 | Multi-actor sequential process with data handoffs | **Process** | [type-process.md](references/type-process.md) |
-| Multi-tier data storage with quality levels and access policies | **Data org** | [type-data-org.md](references/type-data-org.md) |
+| Multi-tier data storage with quality levels and access policies | **Medallion** | [type-medallion.md](references/type-medallion.md) |
 | Role-scoped data flow: who does what at each pipeline step | **Data flow** | [type-data-flow.md](references/type-data-flow.md) |
 | Integration topology of a data platform — sources → core → consumers | **DP integration** | [type-dp-integration.md](references/type-dp-integration.md) |
+| Per-role / per-component access permissions matrix | **DP security matrix** | [type-dp-security-matrix.md](references/type-dp-security-matrix.md) |
 
 Rules of thumb:
 - If a 3-column table communicates the same thing, pick the table.
@@ -123,6 +125,8 @@ These mark "AI slop" schematics of any type:
 | Diagonal / slanted connectors between off-axis nodes | Rounded right-angle (orthogonal) elbows are mandatory — see §6 Mandatory connector rules |
 | Arrow label sitting on or touching its connector | Label must have a 6–10px gap above the line so the connector stays visible |
 | Two connectors overlapping or running on the same path | Each connection must be independently traceable — bridge crossings, offset parallels |
+| Two connectors sharing a single attach point on a box | Fan attach points along the edge (≥12px apart) so every arrow is clearly distinct — see §6 rule 4 |
+| Connector routed behind a non-endpoint box without need | Reroute around intervening boxes; the dashed-transit exception (§6 rule 5) only applies when an unavoidable intervening box sits on the direct path |
 
 Type-specific anti-patterns live in each `references/type-*.md`.
 
@@ -230,13 +234,27 @@ Don't use the dot pattern when the diagram sits inside a product page, slide, or
 
 ### Mandatory connector rules
 
-These three rules are **non-negotiable**. Run the pre-output checklist (§9) to verify before producing any diagram.
+These five rules are **non-negotiable**. Run the pre-output checklist (§9) to verify before producing any diagram.
 
 1. **Rounded right-angle (orthogonal) connectors are mandatory.** Never use diagonal `<line>` or straight slanted paths between nodes that don't share an x or y axis. Every bend must be a quarter-arc with `r=8` (or `r=6` minimum for tight layouts). See `references/type-architecture.md` for the elbow-path formula. Reserve plain straight `<line>` only for connections whose endpoints share the same x or y coordinate. Diagonal connectors are an automatic fail.
 
 2. **Label-to-connector margin: 6–10px gap, always.** A label must never sit *on* its arrow — the connector must remain visible. Place the label centered above (or beside, for vertical segments) the line with a **minimum 6px gap** between the bottom of the label's mask rect and the connector stroke. The opaque mask rect prevents the arrow from bleeding through, but the *visible* gap between mask edge and line preserves the reader's ability to trace the connection. If the label is large enough that 6px feels cramped, push it to 8–10px. Never let the mask rect touch or overlap the stroke.
 
 3. **No overlapping connectors.** Two connectors must never share the same stroke path, run parallel on top of each other, or be drawn on top of each other for any segment. When two orthogonal arrows must cross at a single point, apply the **bridge / hop** primitive (see `references/type-architecture.md` § Crossing arrows). When two arrows naturally want to overlap, offset their routing by ≥12px so each line is independently traceable. If you find yourself stacking connectors, redesign the layout — it means two nodes are too close, or the diagram is over budget (split into overview + detail).
+
+4. **Shared edge → fan the attach points.** When two or more connectors enter or exit the *same edge* of a box, each must have its own distinct attach point along that edge — **no two connectors may share a single point on a box**. Spread the attach points evenly along the edge with **≥12px** between adjacent points (8px minimum for very small boxes). Routing rules:
+   - For N connectors on an edge of length L, attach point `k` (1..N) sits at offset `L * k / (N + 1)` from the edge's leading corner.
+   - When the connectors fan out to destinations on different sides, route each one orthogonally from its own attach point — no merging strokes near the box.
+   - When two parallel connectors run in the same direction, keep them ≥12px apart along their entire length, not just at the attach point. Each arrow must remain independently traceable end-to-end.
+
+   No connector may hide another. If you can't tell two arrows apart at a glance, the layout has failed.
+
+5. **A connector must not pass behind a box that isn't its source or destination — except when the box is geometrically unavoidable on a direct orthogonal path.** Reroute around intervening boxes by default. The only legitimate exception is when a cross-cutting node (e.g., a footer service, a horizontal layer bar) physically sits between the connector's source and destination on the only straight path between them — for example, a `METRICS` arrow exiting an `Observability` footer bar and rising into a zone above must cross the `Active Directory` footer bar that sits between them. In that exception:
+   - The stroke must be **dashed** (e.g., `stroke-dasharray="4,3"`) to signal "transit, not interaction" — it tells the reader the intervening box is not an endpoint.
+   - The label sits at the **visible end** of the connector (typically near the source) so it doesn't fall behind the intervening box.
+   - No marker (arrowhead) may land on the intervening box's edge — the marker resolves at the true destination only.
+
+   When in doubt, reroute. The exception exists for the narrow case where rerouting is geometrically impossible, not as a shortcut to avoid layout work.
 
 ### Node box — full pattern
 
@@ -394,6 +412,8 @@ Run before producing any diagram.
 - [ ] **Every connector between off-axis nodes uses a rounded right-angle elbow (`r=8`)? No diagonal `<line>` slants?**
 - [ ] **Every arrow label has a visible 6–10px gap above its connector? (Mask rect not touching the stroke.)**
 - [ ] **No two connectors overlap, share a stroke path, or run on top of each other? Crossings use the bridge/hop primitive?**
+- [ ] **When several connectors enter or exit the same edge of a box, each has its own attach point (≥12px apart)? No connector hides another?**
+- [ ] **No connector passes behind a non-endpoint box, except the unavoidable-intervening-box case (§6 rule 5) — and in that case, the stroke is dashed and the label sits at the visible end?**
 - [ ] Every arrow label has an opaque `fill="#f5f5f5"` rect behind it?
 - [ ] Legend is a horizontal bottom strip, not floating?
 - [ ] No vertical `writing-mode` text?

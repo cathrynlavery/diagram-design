@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!--
+  Dark variant of the DP security matrix.
+  Source YAML lives in example-dp-security-matrix.html (light variant) —
+  same geometry, dark-mode tokens. See type-dp-security-matrix.md §6.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Platform Access Matrix · Dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0B1F38; font-family: 'Montserrat', sans-serif; padding: 32px; color: #F4F6FA; }
+    .frame { max-width: 920px; margin: 0 auto; }
+    .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #8A99AE; text-transform: uppercase; margin-bottom: 8px; }
+    h1 { font-family: 'Montserrat', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { font-family: 'Roboto', sans-serif; font-size: 14px; color: #8A99AE; margin-bottom: 20px; }
+    svg { display: block; width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+  <p class="eyebrow">DP Security Matrix · Diagram Design · Parametric</p>
+  <h1>Platform Access Matrix</h1>
+  <p class="subtitle">Four canonical groups × platform components</p>
+
+  <svg viewBox="0 0 920 520" xmlns="http://www.w3.org/2000/svg">
+    <rect width="920" height="520" fill="#0B1F38"/>
+
+    <!-- Header row -->
+    <rect x="12" y="72" width="208" height="52" rx="6" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="116" y="96" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">Component</text>
+    <text x="116" y="112" text-anchor="middle" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="9">vs. AD group</text>
+
+    <rect x="232" y="72" width="148" height="52" rx="6" fill="#c9a23a"/>
+    <text x="306" y="92" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Data Administrators</text>
+    <text x="306" y="108" text-anchor="middle" fill="#0B1F38" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataAdmins</text>
+
+    <rect x="396" y="72" width="148" height="52" rx="6" fill="#0F3D6E"/>
+    <text x="470" y="92" text-anchor="middle" fill="#FFFFFF" font-family="Montserrat" font-size="11" font-weight="600">Data Engineers</text>
+    <text x="470" y="108" text-anchor="middle" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataEngineers</text>
+
+    <rect x="560" y="72" width="148" height="52" rx="6" fill="#0F3D6E"/>
+    <text x="634" y="92" text-anchor="middle" fill="#FFFFFF" font-family="Montserrat" font-size="11" font-weight="600">Data Scientists</text>
+    <text x="634" y="108" text-anchor="middle" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataScientists</text>
+
+    <rect x="724" y="72" width="148" height="52" rx="6" fill="#0F3D6E"/>
+    <text x="798" y="92" text-anchor="middle" fill="#FFFFFF" font-family="Montserrat" font-size="11" font-weight="600">Data Consumers</text>
+    <text x="798" y="108" text-anchor="middle" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataConsumers</text>
+
+    <!-- ROW 0 — Keycloak — component color override #d97a78 (lightened from #b85450) -->
+    <rect x="12" y="140" width="208" height="36" rx="4" fill="rgba(217,122,120,0.10)" stroke="rgba(217,122,120,0.55)" stroke-width="0.8"/>
+    <text x="24" y="162" fill="#d97a78" font-family="Montserrat" font-size="11" font-weight="600">Keycloak</text>
+    <text x="208" y="162" text-anchor="end" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="9">SSO</text>
+    <rect x="232" y="140" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="162" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Admin</text>
+    <rect x="396" y="140" width="148" height="36" rx="4" fill="rgba(138,153,174,0.12)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="162" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">Login</text>
+    <rect x="560" y="140" width="148" height="36" rx="4" fill="rgba(138,153,174,0.12)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="634" y="162" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">Login</text>
+    <rect x="724" y="140" width="148" height="36" rx="4" fill="rgba(138,153,174,0.12)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="162" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">Login</text>
+
+    <!-- ROW 1 — MinIO · raw bucket -->
+    <rect x="12" y="180" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="202" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">MinIO · raw bucket</text>
+    <rect x="232" y="180" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="202" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+    <rect x="396" y="180" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="202" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <rect x="560" y="180" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="634" y="202" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+    <rect x="724" y="180" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="202" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+
+    <!-- ROW 2 — MinIO · anon · staging · agg -->
+    <rect x="12" y="220" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="242" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">MinIO · anon · staging · agg</text>
+    <rect x="232" y="220" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="242" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+    <rect x="396" y="220" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="242" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <rect x="560" y="220" width="148" height="36" rx="4" fill="rgba(138,153,174,0.12)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="634" y="242" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">Read</text>
+    <rect x="724" y="220" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="242" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+
+    <!-- ROW 3 — Trino · raw catalog -->
+    <rect x="12" y="260" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="282" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">Trino · raw catalog</text>
+    <rect x="232" y="260" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="282" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+    <rect x="396" y="260" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="282" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <rect x="560" y="260" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="634" y="282" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+    <rect x="724" y="260" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="282" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+
+    <!-- ROW 4 — Trino · anon-staging -->
+    <rect x="12" y="300" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="322" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">Trino · anon-staging</text>
+    <rect x="232" y="300" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="322" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+    <rect x="396" y="300" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="322" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <!-- SELECT cell override: green #9aac67 (lightened from #7a8c47) -->
+    <rect x="560" y="300" width="148" height="36" rx="4" fill="rgba(154,172,103,0.12)" stroke="rgba(154,172,103,0.55)" stroke-width="1"/>
+    <text x="634" y="322" text-anchor="middle" fill="#9aac67" font-family="Montserrat" font-size="10" font-weight="600">SELECT</text>
+    <rect x="724" y="300" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="322" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+
+    <!-- ROW 5 — Trino · aggregated  (FOCAL at col 3) -->
+    <rect x="12" y="340" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="362" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">Trino · aggregated</text>
+    <rect x="232" y="340" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="362" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+    <rect x="396" y="340" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="362" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <!-- SELECT cell override: green #9aac67 -->
+    <rect x="560" y="340" width="148" height="36" rx="4" fill="rgba(154,172,103,0.12)" stroke="rgba(154,172,103,0.55)" stroke-width="1"/>
+    <text x="634" y="362" text-anchor="middle" fill="#9aac67" font-family="Montserrat" font-size="10" font-weight="600">SELECT</text>
+    <rect x="724" y="340" width="148" height="36" rx="4" fill="rgba(238,85,112,0.12)" stroke="#EE5570" stroke-width="1.4"/>
+    <text x="798" y="358" text-anchor="middle" fill="#EE5570" font-family="Montserrat" font-size="10" font-weight="600">SELECT only</text>
+    <text x="798" y="370" text-anchor="middle" fill="#EE5570" font-family="'JetBrains Mono', monospace" font-size="8" opacity="0.85">sole consumer access</text>
+
+    <!-- ROW 6 — JupyterHub -->
+    <rect x="12" y="380" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="402" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">JupyterHub</text>
+    <rect x="232" y="380" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="402" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Admin</text>
+    <rect x="396" y="380" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="402" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <rect x="560" y="380" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="634" y="402" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <rect x="724" y="380" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="402" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+
+    <!-- ROW 7 — NiFi -->
+    <rect x="12" y="420" width="208" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="24" y="442" fill="#F4F6FA" font-family="Montserrat" font-size="11" font-weight="600">NiFi</text>
+    <rect x="232" y="420" width="148" height="36" rx="4" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="306" y="442" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10" font-weight="600">Admin</text>
+    <rect x="396" y="420" width="148" height="36" rx="4" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="470" y="442" text-anchor="middle" fill="#F4F6FA" font-family="Montserrat" font-size="10">R/W</text>
+    <rect x="560" y="420" width="148" height="36" rx="4" fill="rgba(138,153,174,0.12)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="634" y="442" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">Read</text>
+    <rect x="724" y="420" width="148" height="36" rx="4" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="798" y="442" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">No access</text>
+
+    <!-- LEGEND -->
+    <line x1="12" y1="476" x2="908" y2="476" stroke="rgba(244,246,250,0.18)" stroke-width="0.8"/>
+    <text x="12" y="496" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.14em">LEGEND</text>
+    <rect x="80" y="486" width="14" height="12" rx="2" fill="rgba(244,246,250,0.10)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="102" y="496" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="9">Full / Admin</text>
+    <rect x="200" y="486" width="14" height="12" rx="2" fill="rgba(244,246,250,0.06)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="222" y="496" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="9">R/W</text>
+    <rect x="276" y="486" width="14" height="12" rx="2" fill="rgba(138,153,174,0.12)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="298" y="496" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="9">Read / SELECT</text>
+    <rect x="408" y="486" width="14" height="12" rx="2" fill="rgba(244,246,250,0.02)" stroke="rgba(244,246,250,0.18)" stroke-width="0.6"/>
+    <text x="430" y="496" fill="#8A99AE" font-family="'JetBrains Mono', monospace" font-size="9">No access</text>
+    <rect x="528" y="486" width="14" height="12" rx="2" fill="rgba(238,85,112,0.12)" stroke="#EE5570" stroke-width="1.4"/>
+    <text x="550" y="496" fill="#EE5570" font-family="'JetBrains Mono', monospace" font-size="9">Sole consumer access</text>
+  </svg>
+  </div>
+</body>
+</html>

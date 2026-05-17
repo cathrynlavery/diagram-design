@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<!--
+  Dark variant of the extended process diagram.
+  Parametric source YAML lives in example-process-extended.html (light variant) —
+  this file uses identical geometry with dark-mode tokens (paper #2d3142, accent #f08a59)
+  and lightened custom colors (#d97a78, #8aabc4, #9aac67). See references/type-process.md §6.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Labour Force Survey · Extended (dark)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #2d3142;
+      --color-ink:    #f5f5f5;
+      --color-muted:  #bfc0c0;
+      --color-soft:   #8e98ac;
+      --color-accent: #f08a59;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1400px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 1300px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Process · Extended · Color-tinted concerns</p>
+    <h1>Labour Force Survey — with governance, quality, and publication flags</h1>
+
+    <svg viewBox="0 0 1400 616" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#bfc0c0"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#f08a59"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <rect x="140" y="36"  width="1260" height="80" fill="rgba(245,245,245,0.025)"/>
+      <rect x="140" y="196" width="1260" height="80" fill="rgba(245,245,245,0.025)"/>
+      <rect x="140" y="356" width="1260" height="80" fill="rgba(245,245,245,0.025)"/>
+
+      <line x1="0" y1="36"  x2="1400" y2="36"  stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="116" x2="1400" y2="116" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="196" x2="1400" y2="196" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="276" x2="1400" y2="276" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="356" x2="1400" y2="356" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="436" x2="1400" y2="436" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="0" y1="516" x2="1400" y2="516" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+      <line x1="140" y1="36" x2="140" y2="516" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+
+      <text x="70" y="80"  fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">RD&amp;E</text>
+      <text x="70" y="160" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">IT</text>
+      <text x="70" y="240" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">FIELD</text>
+      <text x="70" y="248" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">SERVICES</text>
+      <text x="70" y="320" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">SURVEY</text>
+      <text x="70" y="328" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">SERVICES</text>
+      <text x="70" y="400" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">HOUSEHOLD</text>
+      <text x="70" y="408" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">UNIT</text>
+      <text x="70" y="476" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">COMMS &amp;</text>
+      <text x="70" y="484" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle" font-weight="500">MARKETING</text>
+
+      <rect x="190" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="198" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+      <text x="198" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">DESIGN</text>
+
+      <rect x="302" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="310" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">2</text>
+      <text x="310" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">ASSIGN</text>
+
+      <rect x="414" y="8" width="16" height="16" rx="8" fill="rgba(240,138,89,0.22)"/>
+      <text x="422" y="19" fill="#f08a59" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">3</text>
+      <text x="422" y="32" fill="#f08a59" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">COLLECT</text>
+
+      <rect x="526" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="534" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">4</text>
+      <text x="534" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">REVIEW</text>
+
+      <rect x="638" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="646" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">5</text>
+      <text x="646" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">VALIDATE</text>
+
+      <rect x="750" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="758" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">6</text>
+      <text x="758" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">WEIGHT</text>
+
+      <rect x="862" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="870" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">7</text>
+      <text x="870" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">CLEAN</text>
+
+      <rect x="974" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="982" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">8</text>
+      <text x="982" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">TABULATE</text>
+
+      <rect x="1086" y="8" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="1094" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">9</text>
+      <text x="1094" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">APPROVE</text>
+
+      <rect x="1198" y="8" width="20" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="1208" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">10</text>
+      <text x="1208" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">PUBLISH</text>
+
+      <rect x="1310" y="8" width="20" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="1320" y="19" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">11</text>
+      <text x="1320" y="32" fill="#bfc0c0" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="500" letter-spacing="0.12em">UPLOAD</text>
+
+      <!-- Arrows -->
+      <path d="M 248,76 H 304 Q 312,76 312,84 V 124" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 360,156 H 416 Q 424,156 424,164 V 204" fill="none" stroke="#f08a59" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <path d="M 472,236 H 528 Q 536,236 536,244 V 284" fill="none" stroke="#f08a59" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <path d="M 584,316 H 640 Q 648,316 648,308 V 188" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 696,156 H 752 Q 760,156 760,148 V 108" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 808,76 H 864 Q 872,76 872,84 V 364" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="920" y1="396" x2="932" y2="396" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 1032,396 H 1088 Q 1096,396 1096,404 V 444" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="1144" y1="476" x2="1156" y2="476" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 1256,476 H 1312 Q 1320,476 1320,468 V 188" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <!-- Nodes -->
+      <!-- Step 1 -->
+      <rect x="148" y="44" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="154" y="48" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="161" y="56" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">RDE</text>
+      <text x="198" y="68" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sample Design</text>
+      <text x="198" y="80" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Census data → Sample</text>
+      <text x="198" y="93" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">SAS · Survey Solutions</text>
+
+      <!-- Step 2 -->
+      <rect x="260" y="124" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="266" y="128" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="273" y="136" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">IT</text>
+      <text x="310" y="148" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Field Assignment</text>
+      <text x="310" y="160" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Sample → Field tasks</text>
+      <text x="310" y="173" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Survey Solutions</text>
+
+      <!-- Step 3 FOCAL -->
+      <rect x="372" y="204" width="100" height="64" rx="6" fill="rgba(240,138,89,0.12)" stroke="#f08a59" stroke-width="1.2"/>
+      <rect x="378" y="208" width="14" height="10" rx="2" fill="rgba(240,138,89,0.28)"/>
+      <text x="385" y="216" fill="#f08a59" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">FLD</text>
+      <text x="422" y="228" fill="#f08a59" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Data Collection</text>
+      <text x="422" y="240" fill="#f08a59" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.85">→ 10,464 dwellings</text>
+      <text x="422" y="253" fill="#f08a59" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.70">Survey Solutions</text>
+
+      <!-- Step 4 — RED #d97a78 -->
+      <rect x="484" y="284" width="100" height="64" rx="6" fill="rgba(217,122,120,0.10)" stroke="rgba(217,122,120,0.45)" stroke-width="1"/>
+      <rect x="490" y="288" width="14" height="10" rx="2" fill="rgba(217,122,120,0.22)"/>
+      <text x="497" y="296" fill="#d97a78" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">SVY</text>
+      <text x="534" y="308" fill="#d97a78" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">HQ Review</text>
+      <text x="534" y="320" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Submissions → Approved</text>
+      <text x="534" y="333" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Survey Sol. HQ</text>
+
+      <!-- Step 5 — SLATE #8aabc4 -->
+      <rect x="596" y="124" width="100" height="64" rx="6" fill="rgba(138,171,196,0.10)" stroke="rgba(138,171,196,0.45)" stroke-width="1"/>
+      <rect x="602" y="128" width="14" height="10" rx="2" fill="rgba(138,171,196,0.22)"/>
+      <text x="609" y="136" fill="#8aabc4" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">IT</text>
+      <text x="646" y="148" fill="#8aabc4" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Error Checks</text>
+      <text x="646" y="160" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Approved → Cleaned</text>
+      <text x="646" y="173" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">SAS · Scripts</text>
+
+      <!-- Step 6 -->
+      <rect x="708" y="44" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="714" y="48" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="721" y="56" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">RDE</text>
+      <text x="758" y="66" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Weight</text>
+      <text x="758" y="78" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Calculation</text>
+      <text x="758" y="90" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Cleaned → Weighted</text>
+      <text x="758" y="103" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">SAS</text>
+
+      <!-- Step 7 -->
+      <rect x="820" y="364" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="826" y="368" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="833" y="376" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">HHU</text>
+      <text x="870" y="388" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2° Cleaning</text>
+      <text x="870" y="400" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Weighted → Analysis</text>
+      <text x="870" y="413" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">SAS · R · SPSS</text>
+
+      <!-- Step 8 -->
+      <rect x="932" y="364" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="938" y="368" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="945" y="376" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">HHU</text>
+      <text x="982" y="388" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Tables + Brief</text>
+      <text x="982" y="400" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Analysis → Tables</text>
+      <text x="982" y="413" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Excel · SAS</text>
+
+      <!-- Step 9 -->
+      <rect x="1044" y="444" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="1050" y="448" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="1057" y="456" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">CMM</text>
+      <text x="1094" y="468" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Stats Review</text>
+      <text x="1094" y="480" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Tables → Approved</text>
+      <text x="1094" y="493" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Internal review</text>
+
+      <!-- Step 10 — GREEN #9aac67 -->
+      <rect x="1156" y="444" width="100" height="64" rx="6" fill="rgba(154,172,103,0.10)" stroke="rgba(154,172,103,0.45)" stroke-width="1"/>
+      <rect x="1162" y="448" width="14" height="10" rx="2" fill="rgba(154,172,103,0.22)"/>
+      <text x="1169" y="456" fill="#9aac67" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">CMM</text>
+      <text x="1206" y="468" fill="#9aac67" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Public Release</text>
+      <text x="1206" y="480" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Approved → Public</text>
+      <text x="1206" y="493" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Press conference</text>
+
+      <!-- Step 11 -->
+      <rect x="1268" y="124" width="100" height="64" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="1274" y="128" width="14" height="10" rx="2" fill="rgba(245,245,245,0.12)"/>
+      <text x="1281" y="136" fill="#f5f5f5" font-size="6" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">IT</text>
+      <text x="1318" y="148" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Upload</text>
+      <text x="1318" y="160" fill="#f5f5f5" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">STATIN / SDMX</text>
+      <text x="1318" y="172" fill="#bfc0c0" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Results → Published</text>
+      <text x="1318" y="183" fill="#8e98ac" font-size="6.5" font-family="'Geist Mono', monospace" text-anchor="middle">Web · SDMX API</text>
+
+      <!-- Data type chips (dark variants) -->
+      <rect x="228" y="98" width="16" height="8" rx="2" fill="#9caf8f"/><text x="236" y="104" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">LS</text>
+      <rect x="264" y="178" width="16" height="8" rx="2" fill="#9caf8f"/><text x="272" y="184" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">LS</text>
+      <rect x="340" y="178" width="16" height="8" rx="2" fill="#9caf8f"/><text x="348" y="184" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">LS</text>
+      <rect x="376" y="258" width="16" height="8" rx="2" fill="#9caf8f"/><text x="384" y="264" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">LS</text>
+      <rect x="452" y="258" width="16" height="8" rx="2" fill="#82a0c0"/><text x="460" y="264" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <rect x="488" y="338" width="16" height="8" rx="2" fill="#82a0c0"/><text x="496" y="344" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <rect x="564" y="338" width="16" height="8" rx="2" fill="#82a0c0"/><text x="572" y="344" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <rect x="600" y="178" width="16" height="8" rx="2" fill="#82a0c0"/><text x="608" y="184" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <rect x="676" y="178" width="16" height="8" rx="2" fill="#82a0c0"/><text x="684" y="184" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <rect x="824" y="418" width="16" height="8" rx="2" fill="#82a0c0"/><text x="832" y="424" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <rect x="900" y="418" width="16" height="8" rx="2" fill="#d3ad7a"/><text x="908" y="424" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">TB</text>
+      <rect x="936" y="418" width="16" height="8" rx="2" fill="#d3ad7a"/><text x="944" y="424" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">TB</text>
+      <rect x="1012" y="418" width="16" height="8" rx="2" fill="#b88670"/><text x="1020" y="424" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">FL</text>
+      <rect x="1048" y="498" width="16" height="8" rx="2" fill="#b88670"/><text x="1056" y="504" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">FL</text>
+      <rect x="1124" y="498" width="16" height="8" rx="2" fill="#b88670"/><text x="1132" y="504" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">FL</text>
+      <rect x="1160" y="498" width="16" height="8" rx="2" fill="#b88670"/><text x="1168" y="504" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">FL</text>
+      <rect x="1236" y="498" width="16" height="8" rx="2" fill="#8d8298"/><text x="1244" y="504" fill="#f5f5f5" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">WB</text>
+
+      <!-- Legend (4 rows) -->
+      <line x1="40" y1="524" x2="1360" y2="524" stroke="rgba(245,245,245,0.18)" stroke-width="0.8"/>
+      <text x="40" y="540" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="548" width="20" height="12" rx="3" fill="rgba(240,138,89,0.12)" stroke="#f08a59" stroke-width="1.2"/>
+      <text x="68" y="558" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Focal step / node</text>
+      <rect x="200" y="548" width="20" height="12" rx="3" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.40)" stroke-width="1"/>
+      <text x="228" y="558" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Process step</text>
+      <line x1="356" y1="554" x2="376" y2="554" stroke="#f08a59" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <text x="384" y="558" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Critical handoff</text>
+      <line x1="520" y1="554" x2="540" y2="554" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <text x="548" y="558" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Sequential step</text>
+      <rect x="688" y="548" width="16" height="16" rx="8" fill="rgba(245,245,245,0.12)"/>
+      <text x="696" y="559" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle">N</text>
+      <text x="712" y="558" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Step number</text>
+
+      <text x="40" y="578" fill="#8e98ac" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.12em">DATA TYPE</text>
+      <rect x="120" y="572" width="16" height="8" rx="2" fill="#9caf8f"/><text x="128" y="578" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">LS</text>
+      <text x="142" y="579" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">List</text>
+      <rect x="184" y="572" width="16" height="8" rx="2" fill="#82a0c0"/><text x="192" y="578" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">DB</text>
+      <text x="206" y="579" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">Dataset</text>
+      <rect x="264" y="572" width="16" height="8" rx="2" fill="#d3ad7a"/><text x="272" y="578" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">TB</text>
+      <text x="286" y="579" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">Table</text>
+      <rect x="328" y="572" width="16" height="8" rx="2" fill="#b88670"/><text x="336" y="578" fill="#2d3142" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">FL</text>
+      <text x="350" y="579" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">File</text>
+      <rect x="388" y="572" width="16" height="8" rx="2" fill="#8d8298"/><text x="396" y="578" fill="#f5f5f5" font-size="5" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="700">WB</text>
+      <text x="410" y="579" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">Web</text>
+      <text x="460" y="579" fill="#8e98ac" font-size="7.5" font-family="'Geist Mono', monospace">left chip = INPUT  ·  right chip = OUTPUT</text>
+
+      <text x="40" y="598" fill="#8e98ac" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.12em">CONCERN</text>
+      <rect x="120" y="592" width="16" height="8" rx="2" fill="rgba(217,122,120,0.10)" stroke="rgba(217,122,120,0.45)" stroke-width="1"/>
+      <text x="142" y="599" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">Governance · Identity</text>
+      <rect x="280" y="592" width="16" height="8" rx="2" fill="rgba(138,171,196,0.10)" stroke="rgba(138,171,196,0.45)" stroke-width="1"/>
+      <text x="302" y="599" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">Data Quality</text>
+      <rect x="404" y="592" width="16" height="8" rx="2" fill="rgba(154,172,103,0.10)" stroke="rgba(154,172,103,0.45)" stroke-width="1"/>
+      <text x="426" y="599" fill="#bfc0c0" font-size="8" font-family="'Geist', sans-serif">Data Products · Publication</text>
+      <rect x="572" y="592" width="16" height="8" rx="2" fill="rgba(240,138,89,0.12)" stroke="#f08a59" stroke-width="1"/>
+      <text x="594" y="599" fill="#f08a59" font-size="8" font-family="'Geist', sans-serif">Focal step / node</text>
+    </svg>
+  </div>
+</body>
+</html>

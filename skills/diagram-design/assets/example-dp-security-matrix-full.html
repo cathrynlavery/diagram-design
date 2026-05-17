@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<!--
+  Editorial-frame variant of the DP security matrix.
+  Source YAML lives in example-dp-security-matrix.html (light variant) —
+  same SVG geometry wrapped in container + summary cards + footer.
+  See type-dp-security-matrix.md §10.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Platform Access Matrix · Editorial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper:     #F4F6FA;
+      --paper-2:   #EAECF2;
+      --ink:       #0B1F38;
+      --muted:     #5A6B82;
+      --soft:      #8A99AE;
+      --rule:      rgba(11,31,56,0.10);
+      --accent:    #E63558;
+      --navy:      #0F3D6E;
+    }
+    body { background: var(--paper); font-family: 'Montserrat', sans-serif; min-height: 100vh; padding: 2.5rem 1.5rem; color: var(--ink); }
+    .container { max-width: 980px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    h1 { font-family: 'Montserrat', sans-serif; font-size: clamp(1.75rem, 3vw + 1rem, 2.25rem); font-weight: 700; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-family: 'Roboto', sans-serif; font-size: 1rem; line-height: 1.55; color: var(--muted); max-width: 80ch; }
+    .diagram-container { overflow-x: auto; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 880px; max-width: 920px; display: block; }
+    .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--rule); padding: 1.25rem; }
+    .card-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); margin-bottom: 0.4rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(11,31,56,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .card-dot.navy  { background: var(--navy); }
+    .card-dot.muted { background: var(--muted); }
+    .card-dot.coral { background: var(--accent); }
+    .card h3 { font-family: 'Montserrat', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+    .card ul { list-style: none; color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 0.85rem; line-height: 1.55; }
+    .card li { margin-bottom: 0.3rem; padding-left: 0.875rem; position: relative; }
+    .card li::before { content: '—'; position: absolute; left: 0; color: rgba(11,31,56,0.25); font-size: 0.75rem; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(11,31,56,0.10); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="eyebrow">DP Security Matrix · Diagram Design · Parametric</p>
+      <h1>Platform Access Matrix</h1>
+      <p class="subtitle">Four canonical groups × eight platform components. Each cell holds a permission value (Admin / Full / R/W / Read / SELECT / Login / No access). One focal cell flags the diagram's central security claim — Data Consumers can <em>only</em> SELECT from the aggregated catalog, never raw or staging tiers.</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 920 520" xmlns="http://www.w3.org/2000/svg">
+        <rect width="920" height="520" fill="#F4F6FA"/>
+
+        <!-- Header row -->
+        <rect x="12" y="72" width="208" height="52" rx="6" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="116" y="96" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Component</text>
+        <text x="116" y="112" text-anchor="middle" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">vs. AD group</text>
+
+        <rect x="232" y="72" width="148" height="52" rx="6" fill="#c9a23a"/>
+        <text x="306" y="92" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Data Administrators</text>
+        <text x="306" y="108" text-anchor="middle" fill="#0B1F38" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataAdmins</text>
+
+        <rect x="396" y="72" width="148" height="52" rx="6" fill="#0F3D6E"/>
+        <text x="470" y="92" text-anchor="middle" fill="#FFFFFF" font-family="Montserrat" font-size="11" font-weight="600">Data Engineers</text>
+        <text x="470" y="108" text-anchor="middle" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataEngineers</text>
+
+        <rect x="560" y="72" width="148" height="52" rx="6" fill="#0F3D6E"/>
+        <text x="634" y="92" text-anchor="middle" fill="#FFFFFF" font-family="Montserrat" font-size="11" font-weight="600">Data Scientists</text>
+        <text x="634" y="108" text-anchor="middle" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataScientists</text>
+
+        <rect x="724" y="72" width="148" height="52" rx="6" fill="#0F3D6E"/>
+        <text x="798" y="92" text-anchor="middle" fill="#FFFFFF" font-family="Montserrat" font-size="11" font-weight="600">Data Consumers</text>
+        <text x="798" y="108" text-anchor="middle" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="9" opacity="0.85">DL-DataConsumers</text>
+
+        <!-- ROW 0 — Keycloak — component color override #b85450 rust-red -->
+        <rect x="12" y="140" width="208" height="36" rx="4" fill="rgba(184,84,80,0.06)" stroke="rgba(184,84,80,0.45)" stroke-width="0.8"/>
+        <text x="24" y="162" fill="#b85450" font-family="Montserrat" font-size="11" font-weight="600">Keycloak</text>
+        <text x="208" y="162" text-anchor="end" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">SSO</text>
+        <rect x="232" y="140" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="162" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Admin</text>
+        <rect x="396" y="140" width="148" height="36" rx="4" fill="rgba(90,107,130,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="162" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">Login</text>
+        <rect x="560" y="140" width="148" height="36" rx="4" fill="rgba(90,107,130,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="634" y="162" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">Login</text>
+        <rect x="724" y="140" width="148" height="36" rx="4" fill="rgba(90,107,130,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="162" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">Login</text>
+
+        <!-- ROW 1 — MinIO · raw bucket -->
+        <rect x="12" y="180" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="202" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">MinIO · raw bucket</text>
+        <rect x="232" y="180" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="202" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+        <rect x="396" y="180" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="202" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <rect x="560" y="180" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="634" y="202" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+        <rect x="724" y="180" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="202" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+
+        <!-- ROW 2 — MinIO · anon · staging · agg -->
+        <rect x="12" y="220" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="242" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">MinIO · anon · staging · agg</text>
+        <rect x="232" y="220" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="242" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+        <rect x="396" y="220" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="242" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <rect x="560" y="220" width="148" height="36" rx="4" fill="rgba(90,107,130,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="634" y="242" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">Read</text>
+        <rect x="724" y="220" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="242" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+
+        <!-- ROW 3 — Trino · raw catalog -->
+        <rect x="12" y="260" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="282" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Trino · raw catalog</text>
+        <rect x="232" y="260" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="282" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+        <rect x="396" y="260" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="282" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <rect x="560" y="260" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="634" y="282" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+        <rect x="724" y="260" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="282" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+
+        <!-- ROW 4 — Trino · anon-staging -->
+        <rect x="12" y="300" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="322" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Trino · anon-staging</text>
+        <rect x="232" y="300" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="322" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+        <rect x="396" y="300" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="322" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <!-- SELECT cell override: green #7a8c47 -->
+        <rect x="560" y="300" width="148" height="36" rx="4" fill="rgba(122,140,71,0.08)" stroke="rgba(122,140,71,0.45)" stroke-width="1"/>
+        <text x="634" y="322" text-anchor="middle" fill="#7a8c47" font-family="Montserrat" font-size="10" font-weight="600">SELECT</text>
+        <rect x="724" y="300" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="322" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+
+        <!-- ROW 5 — Trino · aggregated  (FOCAL at col 3) -->
+        <rect x="12" y="340" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="362" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Trino · aggregated</text>
+        <rect x="232" y="340" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="362" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Full</text>
+        <rect x="396" y="340" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="362" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <!-- SELECT cell override: green #7a8c47 -->
+        <rect x="560" y="340" width="148" height="36" rx="4" fill="rgba(122,140,71,0.08)" stroke="rgba(122,140,71,0.45)" stroke-width="1"/>
+        <text x="634" y="362" text-anchor="middle" fill="#7a8c47" font-family="Montserrat" font-size="10" font-weight="600">SELECT</text>
+        <rect x="724" y="340" width="148" height="36" rx="4" fill="rgba(230,53,88,0.07)" stroke="#E63558" stroke-width="1.4"/>
+        <text x="798" y="358" text-anchor="middle" fill="#E63558" font-family="Montserrat" font-size="10" font-weight="600">SELECT only</text>
+        <text x="798" y="370" text-anchor="middle" fill="#E63558" font-family="'JetBrains Mono', monospace" font-size="8" opacity="0.85">sole consumer access</text>
+
+        <!-- ROW 6 — JupyterHub -->
+        <rect x="12" y="380" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="402" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">JupyterHub</text>
+        <rect x="232" y="380" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="402" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Admin</text>
+        <rect x="396" y="380" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="402" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <rect x="560" y="380" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="634" y="402" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <rect x="724" y="380" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="402" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+
+        <!-- ROW 7 — NiFi -->
+        <rect x="12" y="420" width="208" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="24" y="442" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">NiFi</text>
+        <rect x="232" y="420" width="148" height="36" rx="4" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="306" y="442" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10" font-weight="600">Admin</text>
+        <rect x="396" y="420" width="148" height="36" rx="4" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="470" y="442" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="10">R/W</text>
+        <rect x="560" y="420" width="148" height="36" rx="4" fill="rgba(90,107,130,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="634" y="442" text-anchor="middle" fill="#5A6B82" font-family="Montserrat" font-size="10">Read</text>
+        <rect x="724" y="420" width="148" height="36" rx="4" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="798" y="442" text-anchor="middle" fill="#8A99AE" font-family="Montserrat" font-size="10">No access</text>
+
+        <!-- LEGEND -->
+        <line x1="12" y1="476" x2="908" y2="476" stroke="rgba(11,31,56,0.12)" stroke-width="0.8"/>
+        <text x="12" y="496" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.14em">LEGEND</text>
+        <rect x="80" y="486" width="14" height="12" rx="2" fill="rgba(11,31,56,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="102" y="496" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">Full / Admin</text>
+        <rect x="200" y="486" width="14" height="12" rx="2" fill="#FFFFFF" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="222" y="496" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">R/W</text>
+        <rect x="276" y="486" width="14" height="12" rx="2" fill="rgba(90,107,130,0.08)" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="298" y="496" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">Read / SELECT</text>
+        <rect x="408" y="486" width="14" height="12" rx="2" fill="#F4F6FA" stroke="rgba(11,31,56,0.12)" stroke-width="0.6"/>
+        <text x="430" y="496" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">No access</text>
+        <rect x="528" y="486" width="14" height="12" rx="2" fill="rgba(230,53,88,0.07)" stroke="#E63558" stroke-width="1.4"/>
+        <text x="550" y="496" fill="#E63558" font-family="'JetBrains Mono', monospace" font-size="9">Sole consumer access</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <p class="card-eyebrow">Role grouping</p>
+        <div class="card-header">
+          <div class="card-dot navy"></div>
+          <h3>4 canonical AD groups</h3>
+        </div>
+        <ul>
+          <li>Data Administrators — full platform control across every component</li>
+          <li>Data Engineers — R/W on storage + catalogs, drives the pipelines</li>
+          <li>Data Scientists — read-mostly on staging/aggregated, R/W in JupyterHub</li>
+          <li>Data Consumers — read-only on aggregated, no other reach</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="card-eyebrow">Cell vocabulary</p>
+        <div class="card-header">
+          <div class="card-dot muted"></div>
+          <h3>5 visual levels</h3>
+        </div>
+        <ul>
+          <li>Full / Admin — administrative reach (ink bold, soft fill)</li>
+          <li>R/W — read + write (white fill, ink)</li>
+          <li>Read / SELECT — read-only or limited query (muted fill, muted text)</li>
+          <li>No access — paper-fill, soft text — explicit denial</li>
+          <li>Focal — accent border highlights the one critical access rule</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="card-eyebrow">Focal rule · One claim</p>
+        <div class="card-header">
+          <div class="card-dot coral"></div>
+          <h3>Consumers × aggregated</h3>
+        </div>
+        <ul>
+          <li>Exactly <em>one</em> focal cell per diagram — the central security claim</li>
+          <li>Data Consumers can only <code>SELECT</code> from the aggregated catalog</li>
+          <li>2-line cell content: primary value + sub explanation</li>
+          <li>Accent border (1.4) signals "audit me" without competing with the rest of the matrix</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>DP Security Matrix · Parametric · 4 roles × 8 components · 1 focal cell</span>
+      <span>Data Consumers × Trino aggregated — sole consumer access</span>
+    </div>
+  </div>
+</body>
+</html>

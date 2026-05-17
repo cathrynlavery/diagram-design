@@ -1,259 +1,221 @@
 <!DOCTYPE html>
+<!--
+  Editorial-frame variant of the parametric medallion diagram.
+  Source YAML lives in example-medallion.html (light variant) — same SVG geometry
+  wrapped in container + summary cards + footer. Promotion arcs over the top.
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medallion architecture · Data quality layers</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Five-Tier Medallion Architecture · Editorial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #f5f5f5;
-      --color-paper-2: #ececec;
-      --color-ink:     #2d3142;
-      --color-muted:   #4f5d75;
-      --color-soft:    #7a8399;
-      --color-rule:    rgba(45,49,66,0.12);
-      --color-accent:  #eb6c36;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --paper:     #F4F6FA;
+      --paper-2:   #EAECF2;
+      --ink:       #0B1F38;
+      --muted:     #5A6B82;
+      --soft:      #8A99AE;
+      --rule:      rgba(11,31,56,0.10);
+      --accent:    #E63558;
+      --red:       #b85450;
+      --slate:     #5a7d9a;
+      --green:     #7a8c47;
     }
-    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
-    .container { max-width: 1200px; margin: 0 auto; }
-    .header { margin-bottom: 2.5rem; }
-    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
-    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 64ch; }
-    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
-    svg { width: 100%; min-width: 960px; display: block; }
+    body { background: var(--paper); font-family: 'Montserrat', sans-serif; min-height: 100vh; padding: 2.5rem 1.5rem; color: var(--ink); }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    h1 { font-family: 'Montserrat', sans-serif; font-size: clamp(1.75rem, 3vw + 1rem, 2.25rem); font-weight: 700; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-family: 'Roboto', sans-serif; font-size: 1rem; line-height: 1.55; color: var(--muted); max-width: 80ch; }
+    .diagram-container { overflow-x: auto; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 1000px; max-width: 1040px; display: block; }
     .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
     @media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
-    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
-    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
-    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
-    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
-    .card-dot.bronze { background: #8b5a2b; }
-    .card-dot.silver { background: #6c7580; }
-    .card-dot.gold   { background: var(--color-accent); }
-    .card h3 { font-size: 0.875rem; font-weight: 600; }
-    .card p, .card ul { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; list-style: none; }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--rule); padding: 1.25rem; }
+    .card-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); margin-bottom: 0.4rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(11,31,56,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .card-dot.muted { background: var(--muted); }
+    .card-dot.coral { background: var(--accent); }
+    .card-dot.slate { background: var(--slate); }
+    .card h3 { font-family: 'Montserrat', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+    .card ul { list-style: none; color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 0.85rem; line-height: 1.55; }
     .card li { margin-bottom: 0.3rem; padding-left: 0.875rem; position: relative; }
-    .card li::before { content: '—'; position: absolute; left: 0; color: rgba(45,49,66,0.25); font-size: 0.75rem; }
-    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    .card li::before { content: '—'; position: absolute; left: 0; color: rgba(11,31,56,0.25); font-size: 0.75rem; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(11,31,56,0.10); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <p class="header-eyebrow">Architecture · Diagram Design</p>
-      <h1>Medallion architecture · Bronze → Silver → Gold</h1>
-      <p class="subtitle">Three storage tiers that progressively refine raw data into trusted business assets. Each layer raises the quality bar — raw landing, cleansed tables, and curated aggregates ready for BI, ML, and APIs.</p>
+      <p class="eyebrow">Medallion · Diagram Design · Parametric</p>
+      <h1>Five-Tier Medallion Architecture</h1>
+      <p class="subtitle">LFS quarterly survey through Raw → Anonymized → Staging → Aggregated → Archive. Each tier is a labelled bucket with its own tool, format, writer role, and concrete example payload. Promotion arcs over the top connect adjacent tiers and carry the transformation name (PII REMOVE, CLEAN+WEIGHT, AGGREGATE, LIFECYCLE) — arrow and label both clearly visible above the cards.</p>
     </div>
 
     <div class="diagram-container">
-      <svg viewBox="0 0 1000 488" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 1040 548" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
-          </pattern>
-          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
-          </marker>
-          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
-          </marker>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5A6B82"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#E63558"/></marker>
+          <marker id="arrow-yellow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#c9a23a"/></marker>
         </defs>
 
-        <rect width="100%" height="100%" fill="#f5f5f5"/>
-        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+        <rect width="1040" height="548" fill="#F4F6FA"/>
 
-        <!-- Zone rects -->
-        <rect x="4"   y="32" width="136" height="216" rx="8" fill="rgba(45,49,66,0.02)"    stroke="rgba(45,49,66,0.10)"    stroke-width="0.8"/>
-        <rect x="148" y="32" width="184" height="216" rx="8" fill="rgba(139,90,43,0.06)"   stroke="rgba(139,90,43,0.22)"   stroke-width="0.8"/>
-        <rect x="340" y="32" width="196" height="216" rx="8" fill="rgba(108,117,125,0.06)" stroke="rgba(108,117,125,0.22)" stroke-width="0.8"/>
-        <rect x="544" y="32" width="196" height="216" rx="8" fill="rgba(235,108,54,0.06)"  stroke="rgba(235,108,54,0.30)"  stroke-width="0.8"/>
-        <rect x="748" y="32" width="248" height="272" rx="8" fill="rgba(45,49,66,0.02)"    stroke="rgba(45,49,66,0.10)"    stroke-width="0.8"/>
+        <!-- Promotion arcs (top-center to top-center of adjacent tiers) -->
+        <path d="M 102,80 C 102,0 290,0 290,80" fill="none" stroke="#5A6B82" stroke-width="1.4" marker-end="url(#arrow)"/>
+        <text x="196" y="50" text-anchor="middle" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.08em" font-weight="500">PII REMOVE</text>
+        <path d="M 290,80 C 290,0 478,0 478,80" fill="none" stroke="#c9a23a" stroke-width="1.4" marker-end="url(#arrow-yellow)"/>
+        <text x="384" y="50" text-anchor="middle" fill="#c9a23a" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.08em" font-weight="500">CLEAN+WEIGHT</text>
+        <path d="M 478,80 C 478,0 666,0 666,80" fill="none" stroke="#E63558" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+        <text x="572" y="50" text-anchor="middle" fill="#E63558" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.08em" font-weight="600">AGGREGATE</text>
+        <path d="M 666,80 C 666,0 854,0 854,80" fill="none" stroke="#5A6B82" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+        <text x="760" y="50" text-anchor="middle" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.08em" font-weight="500">LIFECYCLE</text>
 
-        <!-- Zone labels -->
-        <text x="72"  y="44" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">SOURCES</text>
-        <text x="240" y="44" fill="#7a6650" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">BRONZE · RAW</text>
-        <text x="438" y="44" fill="#6c7580" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">SILVER · CLEAN</text>
-        <text x="642" y="44" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">GOLD · SERVE</text>
-        <text x="872" y="44" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">CONSUME</text>
+        <!-- TIER 0 — Raw -->
+        <rect x="16" y="80" width="172" height="380" rx="6" fill="#FFFFFF" stroke="#5A6B82" stroke-width="1"/>
+        <rect x="16" y="80" width="172" height="40" rx="6" fill="rgba(90,107,130,0.10)"/>
+        <rect x="16" y="110" width="172" height="10" fill="rgba(90,107,130,0.10)"/>
+        <text x="102" y="106" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="13" font-weight="700">Raw</text>
+        <text x="102" y="144" text-anchor="middle" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">raw-bucket</text>
+        <text x="32" y="180" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Tool</text>
+        <foreignObject x="32" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">NiFi · raw write</div></foreignObject>
+        <text x="32" y="220" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Format</text>
+        <foreignObject x="32" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">CSV · Parquet · JSON</div></foreignObject>
+        <text x="32" y="260" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Writer</text>
+        <foreignObject x="32" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Data Engineer</div></foreignObject>
+        <text x="32" y="360" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">LFS example</text>
+        <text x="32" y="374" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">Q1 dump · w/ PII</text>
+        <text x="32" y="388" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">verbatim CAPI export</text>
 
-        <!-- Arrows -->
-        <path d="M 128,86 H 140 Q 148,86 148,94 V 116 Q 148,124 160,124" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 128,178 H 140 Q 148,178 148,170 V 132 Q 148,124 160,124" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 320,124 H 332 Q 340,124 340,116 V 98 Q 340,90 352,90" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 320,124 H 332 Q 340,124 340,132 V 174 Q 340,182 352,182" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <line x1="438" y1="116" x2="438" y2="156" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 524,90 H 536 Q 544,90 544,98 V 116 Q 544,124 556,124" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-        <rect x="526" y="100" width="36" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="544" y="109" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">REFINE</text>
-        <path d="M 524,182 H 536 Q 544,182 544,174 V 132 Q 544,124 556,124" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 728,124 H 740 Q 748,124 748,116 V 94 Q 748,86 760,86" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 728,124 H 740 Q 748,124 748,132 V 166 Q 748,174 760,174" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 728,124 H 740 Q 748,124 748,132 V 258 Q 748,266 760,266" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- TIER 1 — Anonymized -->
+        <rect x="204" y="80" width="172" height="380" rx="6" fill="#FFFFFF" stroke="#0B1F38" stroke-width="1"/>
+        <rect x="204" y="80" width="172" height="40" rx="6" fill="rgba(11,31,56,0.06)"/>
+        <rect x="204" y="110" width="172" height="10" fill="rgba(11,31,56,0.06)"/>
+        <text x="290" y="106" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="13" font-weight="700">Anonymized</text>
+        <text x="290" y="144" text-anchor="middle" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">anon-bucket</text>
+        <text x="220" y="180" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Tool</text>
+        <foreignObject x="220" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Trino INSERT</div></foreignObject>
+        <text x="220" y="220" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Format</text>
+        <foreignObject x="220" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Iceberg · partitioned</div></foreignObject>
+        <text x="220" y="260" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Writer</text>
+        <foreignObject x="220" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Data Engineer</div></foreignObject>
+        <text x="220" y="360" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">LFS example</text>
+        <text x="220" y="374" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">no name · address</text>
+        <text x="220" y="388" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">stable household ID</text>
 
-        <!-- Nodes -->
-        <rect x="16" y="60" width="112" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="16" y="60" width="112" height="52" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
-        <rect x="24" y="66" width="22" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-        <text x="35" y="75" fill="rgba(45,49,66,0.55)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
-        <svg x="60" y="66" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d3142" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3"/>
-          <path d="M3 15a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -2"/>
-          <path d="M7 8l0 .01"/><path d="M7 16l0 .01"/>
-        </svg>
-        <text x="72" y="98" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">APIs / files</text>
-        <text x="72" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Events · streams</text>
+        <!-- TIER 2 — Staging  (color override: #c9a23a warm yellow / gold) -->
+        <rect x="392" y="80" width="172" height="380" rx="6" fill="rgba(201,162,58,0.07)" stroke="#c9a23a" stroke-width="1.4"/>
+        <rect x="392" y="80" width="172" height="40" rx="6" fill="rgba(201,162,58,0.14)"/>
+        <rect x="392" y="110" width="172" height="10" fill="rgba(201,162,58,0.14)"/>
+        <text x="478" y="106" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="13" font-weight="700">Staging</text>
+        <text x="478" y="144" text-anchor="middle" fill="#c9a23a" font-family="'JetBrains Mono', monospace" font-size="9">staging-bucket</text>
+        <text x="408" y="180" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Tool</text>
+        <foreignObject x="408" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Trino · JupyterHub</div></foreignObject>
+        <text x="408" y="220" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Format</text>
+        <foreignObject x="408" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Iceberg · cleaned</div></foreignObject>
+        <text x="408" y="260" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Writer</text>
+        <foreignObject x="408" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Data Scientist</div></foreignObject>
+        <text x="408" y="360" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">LFS example</text>
+        <text x="408" y="374" fill="#c9a23a" font-family="'JetBrains Mono', monospace" font-size="9">weighted records</text>
+        <text x="408" y="388" fill="#c9a23a" font-family="'JetBrains Mono', monospace" font-size="9">harmonised codings</text>
 
-        <rect x="16" y="152" width="112" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="16" y="152" width="112" height="52" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
-        <rect x="24" y="158" width="22" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-        <text x="35" y="167" fill="rgba(45,49,66,0.55)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
-        <svg x="60" y="158" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d3142" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/>
-          <path d="M4 6v6a8 3 0 0 0 16 0v-6"/>
-          <path d="M4 12v6a8 3 0 0 0 16 0v-6"/>
-        </svg>
-        <text x="72" y="190" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Databases</text>
-        <text x="72" y="202" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CDC · exports</text>
+        <!-- TIER 3 — Aggregated FOCAL -->
+        <rect x="580" y="80" width="172" height="380" rx="6" fill="rgba(230,53,88,0.07)" stroke="#E63558" stroke-width="1.6"/>
+        <rect x="580" y="80" width="172" height="40" rx="6" fill="rgba(230,53,88,0.14)"/>
+        <rect x="580" y="110" width="172" height="10" fill="rgba(230,53,88,0.14)"/>
+        <text x="666" y="106" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="13" font-weight="700">Aggregated</text>
+        <text x="666" y="144" text-anchor="middle" fill="#E63558" font-family="'JetBrains Mono', monospace" font-size="9">aggregated-bucket</text>
+        <text x="596" y="180" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Tool</text>
+        <foreignObject x="596" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Trino INSERT · SAS JDBC</div></foreignObject>
+        <text x="596" y="220" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Format</text>
+        <foreignObject x="596" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Iceberg · indicators</div></foreignObject>
+        <text x="596" y="260" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Writer</text>
+        <foreignObject x="596" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Data Scientist</div></foreignObject>
+        <text x="596" y="360" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">LFS example</text>
+        <text x="596" y="374" fill="#E63558" font-family="'JetBrains Mono', monospace" font-size="9">unemployment rate</text>
+        <text x="596" y="388" fill="#E63558" font-family="'JetBrains Mono', monospace" font-size="9">labour participation</text>
 
-        <rect x="160" y="80" width="160" height="88" rx="6" fill="#f5f5f5"/>
-        <rect x="160" y="80" width="160" height="88" rx="6" fill="rgba(139,90,43,0.07)" stroke="rgba(139,90,43,0.28)" stroke-width="1"/>
-        <rect x="168" y="86" width="22" height="12" rx="2" fill="transparent" stroke="rgba(139,90,43,0.40)" stroke-width="0.8"/>
-        <text x="179" y="95" fill="rgba(139,90,43,0.75)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RAW</text>
-        <svg x="228" y="86" width="24" height="24" viewBox="0 0 24 24" fill="#8b5a2b">
-          <path d="M13.2072.006c-.6216-.0478-1.2.1943-1.6211.582a2.15 2.15 0 0 0-.0938 3.0352l3.4082 3.5507a3.042 3.042 0 0 1-.664 4.6875l-.463.2383V7.2853a15.4198 15.4198 0 0 0-8.0174 10.4862v.0176l6.5487-3.3281v7.621L13.7794 24V13.6817l.8965-.4629a4.4432 4.4432 0 0 0 1.2207-7.0292l-3.371-3.5254a.7489.7489 0 0 1 .037-1.0547.7522.7522 0 0 1 1.0567.0371l.4668.4863-.006.0059 4.0704 4.2441a.0566.0566 0 0 0 .082 0 .06.06 0 0 0 0-.0703l-3.1406-5.1425-.1484.1425.1484-.1445C14.4945.3926 13.8287.0538 13.2072.006Zm-.9024 9.8652v2.9941l-4.1523 2.1484a13.9787 13.9787 0 0 1 2.7676-3.9277 14.1784 14.1784 0 0 1 1.3847-1.2148z"/>
-        </svg>
-        <text x="240" y="130" fill="#6b4423" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Object store</text>
-        <text x="240" y="148" fill="#6b4423" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.80">raw/ · as-is · immutable</text>
+        <!-- TIER 4 — Archive -->
+        <rect x="768" y="80" width="172" height="380" rx="6" fill="#E4E9F0" stroke="#5A6B82" stroke-width="1" stroke-dasharray="5,3"/>
+        <rect x="768" y="80" width="172" height="40" rx="6" fill="rgba(90,107,130,0.18)"/>
+        <rect x="768" y="110" width="172" height="10" fill="rgba(90,107,130,0.18)"/>
+        <text x="854" y="106" text-anchor="middle" fill="#0B1F38" font-family="Montserrat" font-size="13" font-weight="700">Archive</text>
+        <text x="854" y="144" text-anchor="middle" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">archive-bucket</text>
+        <text x="784" y="180" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Tool</text>
+        <foreignObject x="784" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">MinIO lifecycle</div></foreignObject>
+        <text x="784" y="220" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Format</text>
+        <foreignObject x="784" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">cold tier · immutable</div></foreignObject>
+        <text x="784" y="260" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Writer</text>
+        <foreignObject x="784" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="font:9px 'JetBrains Mono',monospace; color:#5A6B82; line-height:1.25;">Data Administrator</div></foreignObject>
+        <text x="784" y="360" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">LFS example</text>
+        <text x="784" y="374" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">historical Q1–Q4 sets</text>
+        <text x="784" y="388" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">5+ years retained</text>
 
-        <rect x="352" y="64" width="172" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="352" y="64" width="172" height="52" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
-        <rect x="360" y="70" width="30" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-        <text x="375" y="79" fill="rgba(45,49,66,0.55)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TRNF</text>
-        <svg x="426" y="70" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d3142" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11"/>
-        </svg>
-        <text x="438" y="102" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">dbt / Spark</text>
-        <text x="438" y="114" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Cleanse · dedupe · join</text>
+        <!-- Path row -->
+        <rect x="16" y="476" width="460" height="56" rx="6" fill="#FFFFFF" stroke="rgba(11,31,56,0.20)" stroke-width="1"/>
+        <rect x="24" y="482" width="64" height="12" rx="2" fill="transparent" stroke="rgba(11,31,56,0.30)" stroke-width="0.8"/>
+        <text x="56" y="491" text-anchor="middle" fill="#0B1F38" font-family="'JetBrains Mono', monospace" font-size="7" letter-spacing="0.08em">SQL PATH</text>
+        <text x="96" y="506" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">Trino INSERT INTO … SELECT</text>
+        <text x="96" y="522" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">filter · reshape · join · aggregate — set-based transforms</text>
 
-        <rect x="352" y="156" width="172" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="352" y="156" width="172" height="52" rx="6" fill="rgba(108,117,125,0.07)" stroke="rgba(108,117,125,0.28)" stroke-width="1"/>
-        <rect x="360" y="162" width="22" height="12" rx="2" fill="transparent" stroke="rgba(108,117,125,0.40)" stroke-width="0.8"/>
-        <text x="371" y="171" fill="rgba(108,117,125,0.75)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CLN</text>
-        <svg x="426" y="162" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6c7580" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z"/>
-          <path d="M3 10h18"/>
-          <path d="M10 3v18"/>
-        </svg>
-        <text x="438" y="194" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Clean tables</text>
-        <text x="438" y="206" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">silver/ · validated</text>
-
-        <rect x="556" y="80" width="172" height="88" rx="8" fill="#f5f5f5"/>
-        <rect x="556" y="80" width="172" height="88" rx="8" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
-        <rect x="564" y="86" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
-        <text x="578" y="95" fill="rgba(235,108,54,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GOLD</text>
-        <svg x="630" y="86" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#eb6c36" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"/>
-        </svg>
-        <text x="642" y="130" fill="#eb6c36" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Gold tables</text>
-        <text x="642" y="148" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.75">gold/ · business-ready</text>
-
-        <rect x="760" y="60" width="136" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="760" y="60" width="136" height="52" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
-        <rect x="768" y="66" width="14" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-        <text x="775" y="75" fill="rgba(45,49,66,0.55)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BI</text>
-        <svg x="816" y="66" width="24" height="24" viewBox="0 0 24 24" fill="#2d3142">
-          <path d="M6.168 6.045C2.603 6.045 0 8.579 0 12.014c0 3.434 2.603 5.941 6.168 5.941 2.184 0 3.888-1.026 5.775-3.078 1.53 2.033 4.037 3.136 5.89 3.078 3.566 0 6.167-2.503 6.167-5.941 0-3.438-2.601-5.97-6.168-5.97-2.864 0-5.138 2.425-5.771 3.173-.76-.9-1.674-1.665-2.682-2.274-1.019-.588-2.084-.898-3.211-.898z"/>
-        </svg>
-        <text x="828" y="98" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Superset</text>
-        <text x="828" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Dashboards</text>
-
-        <rect x="760" y="148" width="136" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="760" y="148" width="136" height="52" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
-        <rect x="768" y="154" width="18" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-        <text x="777" y="163" fill="rgba(45,49,66,0.55)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">NB</text>
-        <svg x="816" y="154" width="24" height="24" viewBox="0 0 24 24" fill="#2d3142">
-          <path d="M7.157 22.201A1.784 1.799 0 0 1 5.374 24a1.784 1.799 0 0 1-1.784-1.799 1.784 1.799 0 0 1 1.784-1.799 1.784 1.799 0 0 1 1.783 1.799zM20.582 1.427a1.415 1.427 0 0 1-1.415 1.428 1.415 1.427 0 0 1-1.416-1.428A1.415 1.427 0 0 1 19.167 0a1.415 1.427 0 0 1 1.415 1.427zM4.992 3.336A1.047 1.056 0 0 1 3.946 4.39a1.047 1.056 0 0 1-1.047-1.055A1.047 1.056 0 0 1 3.946 2.28a1.047 1.056 0 0 1 1.046 1.056zm7.336 1.517c3.769 0 7.06 1.38 8.768 3.424a9.363 9.363 0 0 0-3.393-4.547 9.238 9.238 0 0 0-5.377-1.728A9.238 9.238 0 0 0 6.95 3.73a9.363 9.363 0 0 0-3.394 4.547c1.713-2.04 5.004-3.424 8.772-3.424zm.001 13.295c-3.768 0-7.06-1.381-8.768-3.425a9.363 9.363 0 0 0 3.394 4.547A9.238 9.238 0 0 0 12.33 21a9.238 9.238 0 0 0 5.377-1.729 9.363 9.363 0 0 0 3.393-4.547c-1.712 2.044-5.003 3.425-8.772 3.425z"/>
-        </svg>
-        <text x="828" y="186" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">JupyterLab</text>
-        <text x="828" y="198" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Data science · ML</text>
-
-        <rect x="760" y="240" width="136" height="52" rx="6" fill="#f5f5f5"/>
-        <rect x="760" y="240" width="136" height="52" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
-        <rect x="768" y="246" width="22" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-        <text x="779" y="255" fill="rgba(45,49,66,0.55)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
-        <svg x="816" y="246" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d3142" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 8l-4 4l4 4"/>
-          <path d="M17 8l4 4l-4 4"/>
-          <path d="M14 4l-4 16"/>
-        </svg>
-        <text x="828" y="278" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">REST API</text>
-        <text x="828" y="290" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Apps · serving layer</text>
-
-        <!-- Legend -->
-        <line x1="40" y1="432" x2="960" y2="432" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-        <text x="40" y="448" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-        <rect x="40"  y="460" width="20" height="12" rx="3" fill="rgba(139,90,43,0.10)"   stroke="rgba(139,90,43,0.30)"   stroke-width="1"/>
-        <text x="68"  y="471" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Bronze · raw / landed zone</text>
-        <rect x="248" y="460" width="20" height="12" rx="3" fill="rgba(108,117,125,0.10)" stroke="rgba(108,117,125,0.30)" stroke-width="1"/>
-        <text x="276" y="471" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Silver · cleansed &amp; validated</text>
-        <rect x="480" y="460" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)"  stroke="#eb6c36" stroke-width="1.2"/>
-        <text x="508" y="471" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Gold · business-ready (focal)</text>
-        <line x1="724" y1="462" x2="744" y2="462" stroke="#eb6c36" stroke-width="1.2"/>
-        <text x="752" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Primary refinement path</text>
+        <rect x="492" y="476" width="460" height="56" rx="6" fill="#FFFFFF" stroke="rgba(11,31,56,0.20)" stroke-width="1"/>
+        <rect x="500" y="482" width="92" height="12" rx="2" fill="transparent" stroke="rgba(11,31,56,0.30)" stroke-width="0.8"/>
+        <text x="546" y="491" text-anchor="middle" fill="#0B1F38" font-family="'JetBrains Mono', monospace" font-size="7" letter-spacing="0.08em">NOTEBOOK PATH</text>
+        <text x="600" y="506" fill="#0B1F38" font-family="Montserrat" font-size="11" font-weight="600">DuckDB + Python/R in JupyterHub</text>
+        <text x="600" y="522" fill="#5A6B82" font-family="'JetBrains Mono', monospace" font-size="9">stats · ML · interactive analysis — row-iterative work</text>
       </svg>
     </div>
 
     <div class="cards">
       <div class="card">
-        <p class="eyebrow">Bronze · Raw</p>
+        <p class="card-eyebrow">Tier organisation</p>
         <div class="card-header">
-          <div class="card-dot bronze"></div>
-          <h3>Raw zone</h3>
+          <div class="card-dot muted"></div>
+          <h3>Five quality / access levels</h3>
         </div>
         <ul>
-          <li>Unmodified source data, landed as-is from every upstream system</li>
-          <li>Immutable — full replay history is always available</li>
-          <li>All schemas and formats accepted; no quality gates enforced</li>
-          <li>Cheap, high-volume storage (object store, Parquet or raw files)</li>
+          <li>Raw — landing zone, PII intact, written by NiFi as it arrives</li>
+          <li>Anonymized — PII stripped, stable household IDs, partitioned Iceberg</li>
+          <li>Staging — weighted, cleaned, harmonised; data-science working zone</li>
+          <li>Aggregated — final indicators surface; the focal tier</li>
+          <li>Archive — cold tier, immutable, lifecycle-managed for retention</li>
         </ul>
       </div>
       <div class="card">
-        <p class="eyebrow">Silver · Clean</p>
+        <p class="card-eyebrow">Promotion · Focal handoff</p>
         <div class="card-header">
-          <div class="card-dot silver"></div>
-          <h3>Cleansed zone</h3>
+          <div class="card-dot coral"></div>
+          <h3>AGGREGATE arcs into the focal tier</h3>
         </div>
         <ul>
-          <li>Validated, deduplicated, and joined across sources</li>
-          <li>Schema enforced, null rates and freshness tracked</li>
-          <li>Query-able but not yet aggregated to business grain</li>
-          <li>Rebuilt from Bronze on schema change or quality failure</li>
+          <li>Arcs route over the top of the tier strip — arrow + label both fully visible</li>
+          <li>Anchors at right/left shoulders (12 px inset), control points at y=0</li>
+          <li>Cubic peak around y=20; labels sit inside the arc at y=50, no mask needed</li>
+          <li>The AGGREGATE arc auto-promotes to accent because it lands in the focal tier</li>
         </ul>
       </div>
       <div class="card">
-        <p class="eyebrow">Gold · Serve</p>
+        <p class="card-eyebrow">Write methods · Paths</p>
         <div class="card-header">
-          <div class="card-dot gold"></div>
-          <h3>Curated zone</h3>
+          <div class="card-dot slate"></div>
+          <h3>SQL vs Notebook</h3>
         </div>
         <ul>
-          <li>Business-level aggregates — KPIs, dimensions, fact tables</li>
-          <li>SLA-governed, tested, and documented for data consumers</li>
-          <li>Directly trusted by BI dashboards, ML feature pipelines, and APIs</li>
-          <li>Optimised layout (partitioned, Z-ordered) for fast analytical reads</li>
+          <li>SQL Path — Trino <code>INSERT INTO … SELECT</code>: set-based filter/join/aggregate</li>
+          <li>Notebook Path — DuckDB + Python/R in JupyterHub: row-iterative stats &amp; ML</li>
+          <li>Both write paths apply between any pair of tiers; the choice is the engineer's</li>
+          <li>Path cards live below the tier strip — they describe <em>how</em>, not <em>what</em></li>
         </ul>
       </div>
     </div>
 
     <div class="footer">
-      <span>Medallion architecture · three-tier data quality pattern</span>
-      <span>Sources → Bronze → Silver → Gold → Consumers</span>
+      <span>Medallion · Parametric · 5 tiers × 4 arcs · 2 write-method cards</span>
+      <span>Raw → Anonymized → Staging → Aggregated [focal] → Archive</span>
     </div>
   </div>
 </body>

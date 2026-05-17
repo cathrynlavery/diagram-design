@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  PARAMETRIC SOURCE  ·  see references/type-it-state.md §1–§2, §6 Dark mode
+
+  Dark variant of example-it-state.html — same geometry, token swap:
+    paper  #F4F6FA → #0B1F38
+    ink    #0B1F38 → #F4F6FA
+    muted  #5A6B82 → #9FB0C9
+    accent #E63558 → #EE5570
+    link   #167C7C → #3DA8A8
+    custom olive #7a8c47 → #9aac67  (lightened ~15%)
+═══════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Current IT Landscape · Diagram Design (dark)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Roboto:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0B1F38; font-family: 'Montserrat', sans-serif; padding: 32px; color: #F4F6FA; }
+    .frame { max-width: 960px; margin: 0 auto; }
+    .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: #9FB0C9; text-transform: uppercase; margin-bottom: 8px; }
+    h1 { font-family: 'Montserrat', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { font-family: 'Roboto', sans-serif; font-size: 14px; color: #9FB0C9; margin-bottom: 20px; }
+    svg { display: block; width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+  <p class="eyebrow">STATIN · Jamaica · Before D4N</p>
+  <h1>Current IT Landscape</h1>
+  <p class="subtitle">Data pipeline before the platform</p>
+
+  <svg viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow"        markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9FB0C9"/></marker>
+      <marker id="arrow-link"   markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#3DA8A8"/></marker>
+      <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#EE5570"/></marker>
+
+      <symbol id="icon-postgres" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5594 14.7228a.5269.5269 0 0 0-.0563-.1191c-.139-.2632-.4768-.3418-1.0074-.2321-1.6533.3411-2.2935.1312-2.5256-.0191 1.342-2.0482 2.445-4.522 3.0411-6.8297.2714-1.0507.7982-3.5237.1222-4.7316a1.5641 1.5641 0 0 0-.1509-.235C21.6931.9086 19.8007.0248 17.5099.0005c-1.4947-.0158-2.7705.3461-3.1161.4794a9.449 9.449 0 0 0-.5159-.0816 8.044 8.044 0 0 0-1.3114-.1278c-1.1822-.0184-2.2038.2642-3.0498.8406-.8573-.3211-4.7888-1.645-7.2219.0788C.9359 2.1526.3086 3.8733.4302 6.3043c.0409.818.5069 3.334 1.2423 5.7436.4598 1.5065.9387 2.7019 1.4334 3.582.553.9942 1.1259 1.5933 1.7143 1.7895.4474.1491 1.1327.1441 1.8581-.7279.8012-.9635 1.5903-1.8258 1.9446-2.2069.4351.2355.9064.3625 1.39.3772a.0569.0569 0 0 0 .0004.0041 11.0312 11.0312 0 0 0-.2472.3054c-.3389.4302-.4094.5197-1.5002.7443-.3102.064-1.1344.2339-1.1464.8115-.0025.1224.0329.2309.0919.3268.2269.4231.9216.6097 1.015.6331 1.3345.3335 2.5044.092 3.3714-.6787-.017 2.231.0775 4.4174.3454 5.0874.2212.5529.7618 1.9045 2.4692 1.9043.2505 0 .5263-.0291.8296-.0941 1.7819-.3821 2.5557-1.1696 2.855-2.9059.1503-.8707.4016-2.8753.5388-4.1012.0169-.0703.0357-.1207.057-.1362.0007-.0005.0697-.0471.4272.0307a.3673.3673 0 0 0 .0443.0068l.2539.0223.0149.001c.8468.0384 1.9114-.1426 2.5312-.4308.6438-.2988 1.8057-1.0323 1.5951-1.6698zM2.371 11.8765c-.7435-2.4358-1.1779-4.8851-1.2123-5.5719-.1086-2.1714.4171-3.6829 1.5623-4.4927 1.8367-1.2986 4.8398-.5408 6.108-.13-.0032.0032-.0066.0061-.0098.0094-2.0238 2.044-1.9758 5.536-1.9708 5.7495-.0002.0823.0066.1989.0162.3593.0348.5873.0996 1.6804-.0735 2.9184-.1609 1.1504.1937 2.2764.9728 3.0892.0806.0841.1648.1631.2518.2374-.3468.3714-1.1004 1.1926-1.9025 2.1576-.5677.6825-.9597.5517-1.0886.5087-.3919-.1307-.813-.5871-1.2381-1.3223-.4796-.839-.9635-2.0317-1.4155-3.5126zm6.0072 5.0871c-.1711-.0428-.3271-.1132-.4322-.1772.0889-.0394.2374-.0902.4833-.1409 1.2833-.2641 1.4815-.4506 1.9143-1.0002.0992-.126.2116-.2687.3673-.4426a.3549.3549 0 0 0 .0737-.1298c.1708-.1513.2724-.1099.4369-.0417.156.0646.3078.26.3695.4752.0291.1016.0619.2945-.0452.4444-.9043 1.2658-2.2216 1.2494-3.1676 1.0128zm2.094-3.988-.0525.141c-.133.3566-.2567.6881-.3334 1.003-.6674-.0021-1.3168-.2872-1.8105-.8024-.6279-.6551-.9131-1.5664-.7825-2.5004.1828-1.3079.1153-2.4468.079-3.0586-.005-.0857-.0095-.1607-.0122-.2199.2957-.2621 1.6659-.9962 2.6429-.7724.4459.1022.7176.4057.8305.928.5846 2.7038.0774 3.8307-.3302 4.7363-.084.1866-.1633.3629-.2311.5454zm7.3637 4.5725c-.0169.1768-.0358.376-.0618.5959l-.146.4383a.3547.3547 0 0 0-.0182.1077c-.0059.4747-.054.6489-.115.8693-.0634.2292-.1353.4891-.1794 1.0575-.11 1.4143-.8782 2.2267-2.4172 2.5565-1.5155.3251-1.7843-.4968-2.0212-1.2217a6.5824 6.5824 0 0 0-.0769-.2266c-.2154-.5858-.1911-1.4119-.1574-2.5551.0165-.5612-.0249-1.9013-.3302-2.6462.0044-.2932.0106-.5909.019-.8918a.3529.3529 0 0 0-.0153-.1126 1.4927 1.4927 0 0 0-.0439-.208c-.1226-.4283-.4213-.7866-.7797-.9351-.1424-.059-.4038-.1672-.7178-.0869.067-.276.1831-.5875.309-.9249l.0529-.142c.0595-.16.134-.3257.213-.5012.4265-.9476 1.0106-2.2453.3766-5.1772-.2374-1.0981-1.0304-1.6343-2.2324-1.5098-.7207.0746-1.3799.3654-1.7088.5321a5.6716 5.6716 0 0 0-.1958.1041c.0918-1.1064.4386-3.1741 1.7357-4.4823a4.0306 4.0306 0 0 1 .3033-.276.3532.3532 0 0 0 .1447-.0644c.7524-.5706 1.6945-.8506 2.802-.8325.4091.0067.8017.0339 1.1742.081 1.939.3544 3.2439 1.4468 4.0359 2.3827.8143.9623 1.2552 1.9315 1.4312 2.4543-1.3232-.1346-2.2234.1268-2.6797.779-.9926 1.4189.543 4.1729 1.2811 5.4964.1353.2426.2522.4522.2889.5413.2403.5825.5515.9713.7787 1.2552.0696.087.1372.1714.1885.245-.4008.1155-1.1208.3825-1.0552 1.717-.0123.1563-.0423.4469-.0834.8148-.0461.2077-.0702.4603-.0994.7662zm.8905-1.6211c-.0405-.8316.2691-.9185.5967-1.0105a2.8566 2.8566 0 0 0 .135-.0406 1.202 1.202 0 0 0 .1342.103c.5703.3765 1.5823.4213 3.0068.1344-.2016.1769-.5189.3994-.9533.6011-.4098.1903-1.0957.333-1.7473.3636-.7197.0336-1.0859-.0807-1.1721-.151zm.5695-9.2712c-.0059.3508-.0542.6692-.1054 1.0017-.055.3576-.112.7274-.1264 1.1762-.0142.4368.0404.8909.0932 1.3301.1066.887.216 1.8003-.2075 2.7014a3.5272 3.5272 0 0 1-.1876-.3856c-.0527-.1276-.1669-.3326-.3251-.6162-.6156-1.1041-2.0574-3.6896-1.3193-4.7446.3795-.5427 1.3408-.5661 2.1781-.463zm.2284 7.0137a12.3762 12.3762 0 0 0-.0853-.1074l-.0355-.0444c.7262-1.1995.5842-2.3862.4578-3.4385-.0519-.4318-.1009-.8396-.0885-1.2226.0129-.4061.0666-.7543.1185-1.0911.0639-.415.1288-.8443.1109-1.3505.0134-.0531.0188-.1158.0118-.1902-.0457-.4855-.5999-1.938-1.7294-3.253-.6076-.7073-1.4896-1.4972-2.6889-2.0395.5251-.1066 1.2328-.2035 2.0244-.1859 2.0515.0456 3.6746.8135 4.8242 2.2824a.908.908 0 0 1 .0667.1002c.7231 1.3556-.2762 6.2751-2.9867 10.5405zm-8.8166-6.1162c-.025.1794-.3089.4225-.6211.4225a.5821.5821 0 0 1-.0809-.0056c-.1873-.026-.3765-.144-.5059-.3156-.0458-.0605-.1203-.178-.1055-.2844.0055-.0401.0261-.0985.0925-.1488.1182-.0894.3518-.1226.6096-.0867.3163.0441.6426.1938.6113.4186zm7.9305-.4114c.0111.0792-.049.201-.1531.3102-.0683.0717-.212.1961-.4079.2232a.5456.5456 0 0 1-.075.0052c-.2935 0-.5414-.2344-.5607-.3717-.024-.1765.2641-.3106.5611-.352.297-.0414.6111.0088.6356.1851z"/></symbol>
+      <symbol id="icon-server"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3"/><path d="M3 15a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -2"/><path d="M7 8l0 .01"/><path d="M7 16l0 .01"/></symbol>
+      <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></symbol>
+      <symbol id="icon-file"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/></symbol>
+      <symbol id="icon-desktop"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10"/><path d="M7 20h10"/><path d="M9 16v4"/><path d="M15 16v4"/></symbol>
+      <symbol id="icon-sqlserver" viewBox="0 0 24 24" fill="currentColor"><path d="M4.724 2.505s-.08.127-.004.315c.046.116.186.256.34.404 0 0 1.615 1.576 1.813 1.804.895 1.033 1.284 2.05 1.32 3.453.022.9-.151 1.692-.573 2.613-.756 1.649-2.35 3.468-4.81 5.49l.36-.12c.233-.173.548-.359 1.292-.766 1.713-.936 3.636-1.798 5.999-2.686 3.399-1.277 8.99-2.776 12.172-3.263l.331-.051-.05-.08c-.292-.452-.49-.731-.73-1.027-.697-.863-1.542-1.567-2.577-2.146-1.422-.797-3.267-1.416-5.6-1.88a67.93 67.93 0 00-2.191-.375 209.29 209.29 0 01-3.924-.64c-.425-.075-1.06-.181-1.481-.272a9.404 9.404 0 01-.961-.258c-.268-.105-.645-.207-.726-.515zm.936.909c.003-.002.063.017.137.042.136.046.316.1.526.159.146.04.307.084.479.127.218.056.399.104.401.107.024.027.391 1.198.516 1.647.048.172.084.315.081.318a.789.789 0 01-.09-.14c-.424-.746-1.097-1.505-1.874-2.116a3.104 3.104 0 01-.176-.144zm1.79.494c.018-.001.099.012.195.034.619.136 1.725.35 2.435.47.119.02.216.04.216.047a.348.348 0 01-.098.062c-.119.06-.602.349-.763.457-.403.27-.766.559-1.03.821a5.4 5.4 0 01-.197.192c-.003 0-.022-.062-.041-.137a12.09 12.09 0 00-.65-1.779 1.801 1.801 0 01-.071-.165c0-.001 0-.002.004-.002zm3.147.598c.02.007.06.13.129.404a6.05 6.05 0 01.153 1.977l-.012.038-.187-.06c-.388-.124-1.02-.31-1.562-.46a6.625 6.625 0 01-.56-.17c0-.022.449-.471.642-.642.369-.326 1.362-1.098 1.397-1.087zm.25.036c.011-.01 1.504.248 2.182.378.506.097 1.237.25 1.281.269.022.008-.054.05-.297.16-.96.432-1.672.82-2.38 1.293-.186.124-.341.226-.344.226-.004 0-.006-.104-.006-.23 0-.69-.139-1.387-.391-1.976a.688.688 0 01-.045-.12zm3.86.764c.011.011-.038.306-.08.48-.132.54-.482 1.344-.914 2.099a2.26 2.26 0 01-.152.246 1.499 1.499 0 01-.219-.115c-.422-.247-.9-.48-1.425-.697a4.588 4.588 0 01-.278-.12c-.024-.022 1.143-.795 1.762-1.166.495-.297 1.292-.741 1.306-.727zm.276.043c.033 0 .695.18 1.037.283.853.255 1.837.614 2.475.904l.265.12-.187.043c-1.561.36-2.9.773-4.188 1.296-.107.044-.2.08-.207.08a.911.911 0 01.075-.185c.388-.823.638-1.687.703-2.42.006-.067.018-.121.027-.121zm-6.58 1.512c.01-.01.514.108.789.185.413.116 1.292.41 1.292.433 0 .004-.097.089-.215.188-.475.397-.934.813-1.483 1.343a5.27 5.27 0 01-.308.285c-.007 0-.01-.023-.006-.05.083-.611.065-1.395-.05-2.193a1.29 1.29 0 01-.02-.19zm10.61.01c.007.008-.234.385-.384.6-.22.314-.537.726-1.261 1.637l-.954 1.202a9.418 9.418 0 01-.269.333c-.003 0-.05-.066-.103-.146a7.584 7.584 0 00-1.47-1.625 9.59 9.59 0 00-.27-.218.427.427 0 01-.074-.063c0-.01.617-.274 1.088-.466a37.02 37.02 0 012.778-.99c.442-.135.912-.27.919-.264zm.278.073a.93.93 0 01.207.1 12.274 12.274 0 012.428 1.824c.194.19.667.683.66.687l-.363.029c-1.53.115-3.486.44-5.37.893-.128.03-.238.056-.246.056-.007 0 .133-.14.311-.312 1.107-1.063 1.611-1.734 2.205-2.934.088-.178.163-.333.166-.342h.002zm-8.088.83c.051.01.523.23.879.408.325.163.818.426.843.449.003.003-.17.093-.386.201-.683.342-1.268.664-1.878 1.037-.175.107-.32.194-.325.194-.015 0-.01-.013.088-.191a7.702 7.702 0 00.738-2.002c.014-.062.03-.1.041-.097zm-.475.084c.01.01-.112.46-.19.7a9.092 9.092 0 01-.835 1.808l-.09.147-.203-.197a2.671 2.671 0 00-.676-.5 1.009 1.009 0 01-.176-.102c0-.03.62-.593 1.098-.998.343-.29 1.064-.867 1.072-.858zm2.888 1.188l.177.115c.407.264.888.619 1.255.924.206.172.605.53.687.616l.044.047-.294.082a53.8 53.8 0 00-4.45 1.424c-.167.061-.31.112-.32.112-.021 0-.042.019.333-.326.96-.883 1.807-1.856 2.44-2.802zm-.759.19c.009.009-.492.71-.789 1.106-.356.473-.99 1.265-1.426 1.78a8.769 8.769 0 01-.346.397c-.01.003-.015-.05-.016-.133 0-.44-.112-.91-.308-1.308-.083-.168-.097-.208-.08-.224.068-.062 1.127-.666 1.794-1.023.459-.246 1.163-.604 1.171-.595zm-4.59 1.125a3.988 3.988 0 01.812.518c.008.005-.087.083-.21.172-.345.249-.87.644-1.173.886-.32.255-.331.263-.295.207.24-.367.36-.574.486-.84.113-.236.224-.516.304-.76a.675.675 0 01.077-.183zm1.223.96c.017-.003.04.028.139.175.207.31.366.722.407 1.058l.008.073-.497.192c-.89.346-1.711.687-2.266.94-.155.072-.428.202-.607.292-.179.09-.325.16-.325.156 0-.004.112-.089.25-.188 1.087-.79 2.025-1.654 2.732-2.519.075-.092.144-.172.153-.178a.016.016 0 01.006-.002zm-.564.14c.015.014-.401.484-.681.77-.7.715-1.396 1.275-2.256 1.821-.108.069-.206.13-.22.138-.023.014.008-.022.386-.434.238-.259.42-.474.628-.743.136-.177.162-.202.362-.346.537-.388 1.767-1.221 1.781-1.207zM9.925 0c-.08-.01-1.371.455-2.2.791-1.123.457-1.996.894-2.534 1.272-.2.14-.452.393-.488.49a.356.356 0 00-.021.123l.488.46 1.158.37L9.087 4l3.153.542.032-.27-.028-.005-.415-.066-.085-.148a27.702 27.702 0 01-1.177-2.325 12.264 12.264 0 01-.53-1.465C9.969.02 9.962.005 9.925 0z"/></symbol>
+      <symbol id="icon-cloud"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/></symbol>
+      <symbol id="icon-internet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M11.5 3a17 17 0 0 0 0 18"/><path d="M12.5 3a17 17 0 0 1 0 18"/></symbol>
+      <symbol id="icon-users"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></symbol>
+      <symbol id="icon-csv"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"/><path d="M7 16.5a1.5 1.5 0 0 0 -3 0v3a1.5 1.5 0 0 0 3 0"/><path d="M10 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75"/><path d="M16 15l2 6l2 -6"/></symbol>
+      <symbol id="icon-excel"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"/><path d="M4 15l4 6"/><path d="M4 21l4 -6"/><path d="M17 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75"/><path d="M11 15v6h3"/></symbol>
+    </defs>
+
+    <rect width="960" height="500" fill="#0B1F38"/>
+
+    <!-- ZONES -->
+    <rect x="16"  y="52" width="256" height="360" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.14)" stroke-width="0.8" rx="8"/>
+    <rect x="36"  y="44" width="92"  height="16" fill="#0B1F38"/>
+    <text x="40"  y="56" fill="rgba(244,246,250,0.55)" font-family="'JetBrains Mono',monospace" font-size="7" letter-spacing="0.14em">COLLECTION</text>
+
+    <rect x="292" y="52" width="360" height="360" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.14)" stroke-width="0.8" rx="8"/>
+    <rect x="312" y="44" width="92"  height="16" fill="#0B1F38"/>
+    <text x="316" y="56" fill="rgba(244,246,250,0.55)" font-family="'JetBrains Mono',monospace" font-size="7" letter-spacing="0.14em">PROCESSING</text>
+
+    <rect x="672" y="52" width="272" height="360" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.14)" stroke-width="0.8" rx="8"/>
+    <rect x="692" y="44" width="116" height="16" fill="#0B1F38"/>
+    <text x="696" y="56" fill="rgba(244,246,250,0.55)" font-family="'JetBrains Mono',monospace" font-size="7" letter-spacing="0.14em">DISSEMINATION</text>
+
+    <!-- CONNECTORS — §6 rules 4 & 5: top-edge attach points fanned (C1 x=428, C2 x=516);
+                                       C3 reroutes around AM via zone-2 background; C6 reroutes around STATIN via zone gap + OVER DataZoa -->
+    <path d="M 252,108  H 340" fill="none" stroke="#3DA8A8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+    <path d="M 252,196  H 308  Q 316,196  316,188  V 132  Q 316,124  324,124  H 340" fill="none" stroke="#3DA8A8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+    <path d="M 252,284  H 324  Q 332,284  332,276  V 148  Q 332,140  340,140" fill="none" stroke="#3DA8A8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow-link)"/>
+    <line x1="472" y1="148" x2="472" y2="232" stroke="#EE5570" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow-accent)"/>
+    <line x1="472" y1="304" x2="472" y2="344" stroke="#9FB0C9" stroke-width="1.0" marker-end="url(#arrow)"/>
+    <path d="M 604,268  H 654  Q 662,268  662,260  V 72  Q 662,64  670,64  H 800  Q 808,64  808,72  V 80" fill="none" stroke="#EE5570" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+    <line x1="808" y1="140" x2="808" y2="216" stroke="#9FB0C9" stroke-width="1.0" marker-end="url(#arrow)"/>
+    <line x1="808" y1="272" x2="808" y2="344" stroke="#3DA8A8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow-link)"/>
+
+    <!-- COMPONENTS -->
+    <!-- Survey Solutions -->
+    <rect x="36" y="80" width="216" height="56" fill="#0B1F38"/>
+    <rect x="36" y="80" width="216" height="56" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.32)" stroke-width="1" rx="6"/>
+    <use href="#icon-postgres" x="48" y="96" width="24" height="24" color="#F4F6FA"/>
+    <text x="80" y="106" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">Survey Solutions</text>
+    <text x="80" y="122" fill="#9FB0C9" font-family="Roboto" font-size="10">CAPI · PostgreSQL</text>
+
+    <!-- ASP.NET Apps -->
+    <rect x="36" y="168" width="216" height="56" fill="#0B1F38"/>
+    <rect x="36" y="168" width="216" height="56" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.32)" stroke-width="1" rx="6"/>
+    <use href="#icon-server" x="48" y="184" width="24" height="24" color="#F4F6FA"/>
+    <text x="80" y="194" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">ASP.NET Apps</text>
+    <text x="80" y="210" fill="#9FB0C9" font-family="Roboto" font-size="10">migration · admin portals</text>
+
+    <!-- Civil Registry (external dashed) -->
+    <rect x="36" y="256" width="216" height="56" fill="#0B1F38"/>
+    <rect x="36" y="256" width="216" height="56" fill="rgba(244,246,250,0.04)" stroke="#9FB0C9" stroke-width="1" stroke-dasharray="4 3" rx="6"/>
+    <use href="#icon-database" x="48" y="272" width="24" height="24" color="#9FB0C9"/>
+    <text x="80" y="282" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">Civil Registry</text>
+    <text x="80" y="298" fill="#9FB0C9" font-family="Roboto" font-size="10">external · CRVS data</text>
+
+    <!-- Shared Drive (focal) -->
+    <rect x="340" y="80" width="264" height="68" fill="#0B1F38"/>
+    <rect x="340" y="80" width="264" height="68" fill="rgba(238,85,112,0.12)" stroke="#EE5570" stroke-width="1.4" rx="6"/>
+    <use href="#icon-file" x="352" y="98" width="24" height="24" color="#EE5570"/>
+    <text x="384" y="108" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">Shared Drive</text>
+    <text x="384" y="124" fill="#EE5570" font-family="Roboto" font-size="10" font-style="italic">No version control</text>
+    <text x="384" y="138" fill="#9FB0C9" font-family="Roboto" font-size="10">Windows file share</text>
+
+    <!-- Analyst Machines -->
+    <rect x="340" y="232" width="264" height="72" fill="#0B1F38"/>
+    <rect x="340" y="232" width="264" height="72" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.32)" stroke-width="1" rx="6"/>
+    <use href="#icon-desktop" x="352" y="252" width="24" height="24" color="#F4F6FA"/>
+    <text x="384" y="262" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">Analyst Machines</text>
+    <text x="384" y="278" fill="#9FB0C9" font-family="Roboto" font-size="10">SPSS · SAS · Stata · Excel</text>
+    <text x="384" y="292" fill="#9FB0C9" font-family="Roboto" font-size="10" font-style="italic">siloed scripts</text>
+
+    <!-- SQL Server (custom olive lightened) -->
+    <rect x="340" y="344" width="264" height="56" fill="#0B1F38"/>
+    <rect x="340" y="344" width="264" height="56" fill="rgba(154,172,103,0.10)" stroke="rgba(154,172,103,0.55)" stroke-width="1" rx="6"/>
+    <use href="#icon-sqlserver" x="352" y="360" width="24" height="24" color="#9aac67"/>
+    <text x="384" y="370" fill="#9aac67" font-family="Montserrat" font-size="12" font-weight="600">SQL Server</text>
+    <text x="384" y="386" fill="#9FB0C9" font-family="Roboto" font-size="10">on-premises · core RDBMS</text>
+
+    <!-- DataZoa (focal) -->
+    <rect x="704" y="80" width="208" height="60" fill="#0B1F38"/>
+    <rect x="704" y="80" width="208" height="60" fill="rgba(238,85,112,0.12)" stroke="#EE5570" stroke-width="1.4" rx="6"/>
+    <use href="#icon-cloud" x="716" y="98" width="24" height="24" color="#EE5570"/>
+    <text x="748" y="108" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">DataZoa</text>
+    <text x="748" y="124" fill="#EE5570" font-family="Roboto" font-size="10" font-style="italic">manual bottleneck</text>
+
+    <!-- STATIN Website -->
+    <rect x="704" y="216" width="208" height="56" fill="#0B1F38"/>
+    <rect x="704" y="216" width="208" height="56" fill="rgba(244,246,250,0.04)" stroke="rgba(244,246,250,0.32)" stroke-width="1" rx="6"/>
+    <use href="#icon-internet" x="716" y="232" width="24" height="24" color="#F4F6FA"/>
+    <text x="748" y="242" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">STATIN Website</text>
+    <text x="748" y="258" fill="#9FB0C9" font-family="Roboto" font-size="10">public · static pages</text>
+
+    <!-- Ministry Partners (external dashed) -->
+    <rect x="704" y="344" width="208" height="56" fill="#0B1F38"/>
+    <rect x="704" y="344" width="208" height="56" fill="rgba(244,246,250,0.04)" stroke="#9FB0C9" stroke-width="1" stroke-dasharray="4 3" rx="6"/>
+    <use href="#icon-users" x="716" y="360" width="24" height="24" color="#9FB0C9"/>
+    <text x="748" y="370" fill="#F4F6FA" font-family="Montserrat" font-size="12" font-weight="600">Ministry Partners</text>
+    <text x="748" y="386" fill="#9FB0C9" font-family="Roboto" font-size="10">~6 ministries</text>
+
+    <!-- CONNECTOR LABELS -->
+    <g transform="translate(281, 94)">
+      <rect x="-23" y="-9" width="46" height="18" rx="3" fill="#0B1F38"/>
+      <use href="#icon-csv" x="-19" y="-6" width="12" height="12" color="#3DA8A8"/>
+      <text x="-3" y="3" fill="#3DA8A8" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">CSV</text>
+    </g>
+    <g transform="translate(289, 182)">
+      <rect x="-31" y="-9" width="62" height="18" rx="3" fill="#0B1F38"/>
+      <use href="#icon-file" x="-27" y="-6" width="12" height="12" color="#3DA8A8"/>
+      <text x="-11" y="3" fill="#3DA8A8" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">EMAIL</text>
+    </g>
+    <g transform="translate(289, 270)">
+      <rect x="-31" y="-9" width="62" height="18" rx="3" fill="#0B1F38"/>
+      <use href="#icon-excel" x="-27" y="-6" width="12" height="12" color="#3DA8A8"/>
+      <text x="-11" y="3" fill="#3DA8A8" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">EXCEL</text>
+    </g>
+    <g transform="translate(498, 162)">
+      <rect x="-20" y="-9" width="40" height="18" rx="3" fill="#0B1F38"/>
+      <text x="0" y="3" text-anchor="middle" fill="#EE5570" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">COPY</text>
+    </g>
+    <g transform="translate(498, 318)">
+      <rect x="-20" y="-9" width="40" height="18" rx="3" fill="#0B1F38"/>
+      <text x="0" y="3" text-anchor="middle" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">LOAD</text>
+    </g>
+    <g transform="translate(641, 254)">
+      <rect x="-31" y="-9" width="62" height="18" rx="3" fill="#0B1F38"/>
+      <use href="#icon-excel" x="-27" y="-6" width="12" height="12" color="#EE5570"/>
+      <text x="-11" y="3" fill="#EE5570" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">EXCEL</text>
+    </g>
+    <g transform="translate(831, 154)">
+      <rect x="-17" y="-9" width="34" height="18" rx="3" fill="#0B1F38"/>
+      <text x="0" y="3" text-anchor="middle" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">WEB</text>
+    </g>
+    <g transform="translate(848, 286)">
+      <rect x="-34" y="-9" width="68" height="18" rx="3" fill="#0B1F38"/>
+      <use href="#icon-csv" x="-30" y="-6" width="12" height="12" color="#3DA8A8"/>
+      <text x="-14" y="3" fill="#3DA8A8" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="600" letter-spacing="0.08em">CSV DL</text>
+    </g>
+
+    <!-- LEGEND -->
+    <line x1="16" y1="440" x2="944" y2="440" stroke="rgba(244,246,250,0.14)" stroke-width="0.8"/>
+    <text x="16" y="460" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="8" letter-spacing="0.14em">LEGEND</text>
+
+    <line x1="80" y1="456" x2="104" y2="456" stroke="#3DA8A8" stroke-width="1.2"/>
+    <text x="112" y="460" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="9">data flow</text>
+
+    <line x1="208" y1="456" x2="232" y2="456" stroke="#EE5570" stroke-width="1.4" stroke-dasharray="4 3"/>
+    <text x="240" y="460" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="9">pain-point</text>
+
+    <rect x="340" y="450" width="14" height="12" fill="rgba(244,246,250,0.04)" stroke="#9FB0C9" stroke-width="0.8" stroke-dasharray="3 2" rx="2"/>
+    <text x="360" y="460" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="9">external</text>
+
+    <rect x="440" y="450" width="14" height="12" fill="rgba(238,85,112,0.12)" stroke="#EE5570" stroke-width="1" rx="2"/>
+    <text x="460" y="460" fill="#9FB0C9" font-family="'JetBrains Mono',monospace" font-size="9">bottleneck</text>
+  </svg>
+  </div>
+</body>
+</html>
