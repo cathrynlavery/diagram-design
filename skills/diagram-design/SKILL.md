@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create technical and product diagrams — architecture, flowchart, sequence, state machine, ER / data model, timeline, swimlane, quadrant, nested, tree, layer stack, venn, pyramid, radar / spider, bar chart, line chart, Gantt, scatter plot — as standalone HTML files with inline SVG. Ships with a neutral editorial skin and a first-run gate that prompts users to customize the style guide (colors, fonts) from their own website before generating. Includes annotation-callout primitive and optional sketchy variant.
+description: Create technical and product diagrams — architecture, IT current-state, flowchart, sequence, state machine, ER / data model, timeline, swimlane, quadrant, radar / spider, nested, tree, org chart, layer stack, venn, pyramid / funnel, bar chart, line chart, Gantt, scatter plot, high-level, process, medallion, data flow, DP integration, DP security matrix — as standalone HTML files with inline SVG. Ships with a neutral editorial skin and a first-run gate that prompts users to customize the style guide (colors, fonts) from their own website before generating. Includes annotation-callout primitive and optional sketchy variant.
 license: MIT
 metadata:
   version: "1.4"
@@ -10,7 +10,7 @@ metadata:
 
 Create visual diagrams as self-contained HTML files with inline SVG and CSS, following an opinionated editorial design system.
 
-Eighteen diagram types. One shared design system, complexity budget, and taste gate. Type-specific conventions live in `references/` and are loaded only when you pick a type.
+Twenty-six diagram types. One shared design system, complexity budget, and taste gate. Type-specific conventions live in `references/` and are loaded only when you pick a type.
 
 ---
 
@@ -23,6 +23,7 @@ Open [`references/style-guide.md`](references/style-guide.md) and check the defa
 > *"This is your first Schematic in this project. The style guide is still at the default (neutral stone + rust). Do you want to customize it to match your brand first? Options: (a) pull from your website URL, (b) extract from an installed skill, (c) extract from a local folder / design-system directory, (d) paste tokens manually, (e) proceed with the default for now."*
 
 Then branch:
+
 - **(a)** → follow [`references/onboarding.md § URL`](references/onboarding.md) to fetch the site, extract palette + fonts, propose a diff, and write `style-guide.md`.
 - **(b)** → follow [`references/onboarding.md § Skill`](references/onboarding.md) — ask which skill, read its SKILL.md / CSS / token files, map to semantic roles, propose diff.
 - **(c)** → follow [`references/onboarding.md § Folder`](references/onboarding.md) — ask for the path, glob for CSS/JSON/MD token files, map to semantic roles, propose diff.
@@ -42,6 +43,7 @@ Don't silently ship default-skinned diagrams into a branded project — that's t
 From `.impeccable.md`: *"Confident restraint. Earn every element. One color accent, two families, a small spacing vocabulary. If removing it wouldn't hurt the page, remove it."*
 
 Applied to schematics:
+
 - Every node represents a distinct idea. Two nodes that always travel together are one node.
 - Every connection carries information. If the relationship is obvious from layout, remove the line.
 - Coral is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal.
@@ -53,9 +55,10 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 18 diagram types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 26 diagram types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
+
 - Quick unicode diagrams → use **wiretext**.
 - Lists of things → table or bullets.
 - Simple before/after → table.
@@ -83,6 +86,7 @@ Before drawing, ask: *Would the reader learn more from this than from a well-wri
 | Multiple entities scored across 3–5 quantitative criteria | **Radar / Spider** | [type-radar.md](references/type-radar.md) |
 | Hierarchy through containment / scope | **Nested** | [type-nested.md](references/type-nested.md) |
 | Parent → children relationships | **Tree** | [type-tree.md](references/type-tree.md) |
+| Human/agent/team ownership, reporting, routing, escalation | **Org chart** | [type-org-chart.md](references/type-org-chart.md) |
 | Stacked abstraction levels | **Layer stack** | [type-layers.md](references/type-layers.md) |
 | Overlap between sets | **Venn** | [type-venn.md](references/type-venn.md) |
 | Ranked hierarchy or conversion drop-off | **Pyramid / funnel** | [type-pyramid.md](references/type-pyramid.md) |
@@ -98,6 +102,7 @@ Before drawing, ask: *Would the reader learn more from this than from a well-wri
 | Per-role / per-component access permissions matrix | **DP security matrix** | [type-dp-security-matrix.md](references/type-dp-security-matrix.md) |
 
 Rules of thumb:
+
 - If a 3-column table communicates the same thing, pick the table.
 - If you're combining two types, pick the dominant axis — don't hybridize grammars.
 - If you're past the complexity budget (§7), split into an overview + detail.
@@ -183,6 +188,7 @@ Type-specific anti-patterns live in each `references/type-*.md`.
 ## 6. Core SVG Primitives
 
 Universal building blocks. Type-specialized primitives (lifeline, activation bar, region) live in the relevant `references/type-*.md`. Optional primitives:
+
 - Editorial callouts → [primitive-annotation.md](references/primitive-annotation.md)
 - Hand-drawn variant → [primitive-sketchy.md](references/primitive-sketchy.md)
 - Icon set (laptop, server, DB, K8s, Docker, AWS, …) → [primitive-icons.md](references/primitive-icons.md). Browse the gallery at [`assets/icons.html`](../assets/icons.html).
@@ -287,6 +293,7 @@ Every arrow label needs an opaque rect behind it. Without one it bleeds through 
 ```
 
 Rules:
+
 - ≤14 characters, all-caps, centered on segment midpoint.
 - **Mandatory 6–10px gap** between the bottom of the mask rect and the arrow stroke. The connector must remain visible — a label that hides its own arrow is a hard fail.
 - Never `writing-mode` vertical.
@@ -340,6 +347,8 @@ Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
 | Max entities (ER) | 8 |
 | Max nesting levels (nested) | 6 |
 | Max tree depth | 4 |
+| Max org chart depth | 4 |
+| Max org chart nodes | 12 |
 | Max layers (layer stack) | 6 |
 | Max circles (venn) | 3 |
 | Max layers (pyramid) | 6 |
@@ -379,6 +388,7 @@ Don't use 3 identical generic cards. Vary the treatment:
 ```
 
 Rules:
+
 - `background: #ffffff` (not paper — slight lift without shadow)
 - `border: 1px solid rgba(45,49,66,0.12)`
 - `border-radius: 6px`, `padding: 1.25rem`
@@ -392,22 +402,26 @@ Rules:
 Run before producing any diagram.
 
 **Type fit:**
+
 - [ ] Right type for what I'm showing? (§3 selection guide)
 - [ ] Would a table / paragraph do the same job? (If yes — don't draw.)
 - [ ] Loaded the matching `references/type-*.md`?
 
 **Remove test:**
+
 - [ ] Can I remove any node? (Would a reader still understand?)
 - [ ] Can I merge any two nodes? (Do they always travel together?)
 - [ ] Can I remove any arrow? (Is the relationship obvious from layout?)
 - [ ] Can I remove any label? (Does color or shape already signal it?)
 
 **Signal:**
+
 - [ ] Coral used on ≤2 elements? If more, which actually deserve focal status?
 - [ ] Legend covers every type used — and nothing extra?
 - [ ] Within the type's complexity budget (§7)?
 
 **Technical:**
+
 - [ ] Arrows drawn before boxes?
 - [ ] **Every connector between off-axis nodes uses a rounded right-angle elbow (`r=8`)? No diagonal `<line>` slants?**
 - [ ] **Every arrow label has a visible 6–10px gap above its connector? (Mask rect not touching the stroke.)**
@@ -421,6 +435,7 @@ Run before producing any diagram.
 - [ ] Every font size, coord, width, height, gap divisible by 4?
 
 **Typography:**
+
 - [ ] Human-readable names in Geist sans, not Geist Mono?
 - [ ] Technical sublabels (ports, commands, URLs) in Geist Mono?
 - [ ] Page title in Instrument Serif?
@@ -454,6 +469,7 @@ Every diagram ships in three variants (see `assets/`):
 ## 11. Output
 
 Always produce a single self-contained `.html` file:
+
 - Embedded CSS (no external except Google Fonts)
 - Inline SVG (no external images)
 - No JavaScript required

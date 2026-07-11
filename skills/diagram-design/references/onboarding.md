@@ -5,6 +5,7 @@
 Takes about 60 seconds.
 
 Three source methods are supported. Jump to the relevant section:
+
 - [§ URL](#url) — fetch a live website
 - [§ Skill](#skill) — read an installed Claude Code skill that carries design tokens
 - [§ Folder](#folder) — read a local design-system directory (CSS, JSON, Markdown)
@@ -69,6 +70,7 @@ Prefer CSS custom properties when the site exposes them (`:root { --accent: …;
 ### Fonts
 
 Read the rendered `font-family` stack of:
+
 - `<h1>` → `title` family
 - `<body>` → `node-name` family  
 - `<code>`, `<pre>`, or any mono-styled element → `sublabel` family
@@ -125,7 +127,8 @@ Also regenerate the dark variant via the inversion rule (`rgba(11,13,11, X)` →
 Write the new tokens to `style-guide.md`. Suggest running the `/regenerate-examples` flow (if it exists) or rebuilding one example to verify the new skin reads cleanly.
 
 After onboarding, the user should:
-1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 13 types.
+
+1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 26 types.
 2. If any type looks off, they usually need to tune `muted` (often too dark or too light against the new `paper`).
 
 ---
@@ -152,6 +155,7 @@ Or the gate offers this as option (b) and the user names the skill.
 ### Step 1 — locate the skill
 
 Search for the skill in order:
+
 1. `~/.claude/skills/<skill-name>/` (user install)
 2. `.claude/skills/<skill-name>/` (project install)
 3. Any path the user provides explicitly
@@ -240,9 +244,11 @@ Read every discovered file. Apply the same extraction logic as the Skill method 
 **SCSS variables:** treat `$variable-name: value;` the same as a CSS custom property — apply name heuristics to `$variable-name`.
 
 **Figma token JSON** (Figma Tokens Plugin format):
+
 ```json
 { "colors": { "brand": { "primary": { "value": "#eb6c36", "type": "color" } } } }
 ```
+
 Walk the tree; the leaf `value` fields are the colors, the path segments supply the role heuristic.
 
 ### Step 3 — map, validate, propose diff
