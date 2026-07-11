@@ -32,7 +32,7 @@ All 26 diagrams ship in three variants: minimal light, minimal dark, and full-ed
 </tr>
 <tr>
   <td align="center"><img src="docs/screenshots/state.png" alt="State machine"><br><b>State machine</b><br><sub>States + transitions</sub></td>
-  <td align="center"><img src="docs/screenshots/er.png" alt="ER / data model"><br><b>ER / data model</b><br><sub>Entities + fields</sub></td>
+  <td align="center"><img src="docs/screenshots/er.png" alt="ER"><br><b>ER / data model</b><br><sub>Entities + fields</sub></td>
   <td align="center"><img src="docs/screenshots/timeline.png" alt="Timeline"><br><b>Timeline</b><br><sub>Events on an axis</sub></td>
 </tr>
 <tr>
@@ -48,11 +48,12 @@ All 26 diagrams ship in three variants: minimal light, minimal dark, and full-ed
 <tr>
   <td align="center"><img src="docs/screenshots/layers.png" alt="Layers"><br><b>Layer stack</b><br><sub>Stacked abstractions</sub></td>
   <td align="center"><img src="docs/screenshots/pyramid.png" alt="Pyramid"><br><b>Pyramid / funnel</b><br><sub>Ranked hierarchy or drop-off</sub></td>
-  <td align="center">&nbsp;</td>
+  <td align="center"><img src="docs/screenshots/quadrant-consultant.png" alt="Consultant 2×2"><br><b>Consultant 2×2</b><br><sub>Scenario matrix · named cells</sub></td>
 </tr>
 <tr>
-  <td align="center"><img src="docs/screenshots/quadrant-consultant.png" alt="Consultant 2×2"><br><b>Consultant 2×2</b><br><sub>Scenario matrix · named cells</sub></td>
-  <td align="center"><img src="docs/screenshots/radar.png" alt="Radar / Spider"><br><b>Radar / Spider</b><br><sub>Multi-axis capability comparison</sub></td>
+  <td align="center"><img src="docs/screenshots/radar.png" alt="Radar"><br><b>Radar / Spider</b><br><sub>Multi-axis comparison</sub></td>
+  <td align="center"><img src="docs/screenshots/it-state.png" alt="IT current-state"><br><b>IT current-state</b><br><sub>Legacy landscape · modernization</sub></td>
+  <td align="center"><img src="docs/screenshots/high-level.png" alt="High-Level"><br><b>High-Level</b><br><sub>End-to-end stack on a cluster</sub></td>
 </tr>
 <tr>
   <td align="center"><img src="docs/screenshots/bar.png" alt="Bar chart"><br><b>Bar chart</b><br><sub>Categorical comparison</sub></td>
@@ -61,8 +62,13 @@ All 26 diagrams ship in three variants: minimal light, minimal dark, and full-ed
 </tr>
 <tr>
   <td align="center"><img src="docs/screenshots/scatter.png" alt="Scatter plot"><br><b>Scatter plot</b><br><sub>Distribution and correlation</sub></td>
-  <td align="center"></td>
-  <td align="center"></td>
+  <td align="center"><img src="docs/screenshots/process.png" alt="Process"><br><b>Process</b><br><sub>Multi-actor sequential workflow</sub></td>
+  <td align="center"><img src="docs/screenshots/medallion.png" alt="Medallion"><br><b>Medallion</b><br><sub>Multi-tier data storage</sub></td>
+</tr>
+<tr>
+  <td align="center"><img src="docs/screenshots/data-flow.png" alt="Data flow"><br><b>Data flow</b><br><sub>Role-scoped pipeline steps</sub></td>
+  <td align="center"><img src="docs/screenshots/dp-integration.png" alt="DP integration"><br><b>DP integration</b><br><sub>Sources → core → consumers</sub></td>
+  <td align="center"><img src="docs/screenshots/dp-security-matrix.png" alt="DP security matrix"><br><b>DP security matrix</b><br><sub>Per-role access permissions</sub></td>
 </tr>
 </table>
 
