@@ -1,207 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diagram Design · Gallery</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --paper: #f5f4ed;
-      --paper-2: #efeee5;
-      --ink: #0b0d0b;
-      --muted: #52534e;
-      --soft: #65655c;
-      --rule: rgba(11,13,11,0.12);
-      --rule-strong: rgba(11,13,11,0.25);
-      --accent: #f7591f;
-      --sans: 'Geist', system-ui, sans-serif;
-      --serif: 'Instrument Serif', serif;
-      --mono: 'Geist Mono', ui-monospace, monospace;
-    }
-    html, body { height: 100%; }
-    body {
-      font-family: var(--sans);
-      background: var(--paper);
-      color: var(--ink);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagram Design · Gallery</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --paper: #f5f4ed;
+        --paper-2: #efeee5;
+        --ink: #0b0d0b;
+        --muted: #52534e;
+        --soft: #65655c;
+        --rule: rgba(11, 13, 11, 0.12);
+        --rule-strong: rgba(11, 13, 11, 0.25);
+        --accent: #f7591f;
+        --sans: "Geist", system-ui, sans-serif;
+        --serif: "Instrument Serif", serif;
+        --mono: "Geist Mono", ui-monospace, monospace;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family: var(--sans);
+        background: var(--paper);
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
 
-    .topbar {
-      padding: 1rem 1.25rem 0.625rem;
-      border-bottom: 1px solid var(--rule);
-      flex: 0 0 auto;
-    }
-    .title-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
-      gap: 1rem;
-    }
-    .title-row h1 {
-      font-family: var(--serif);
-      font-size: 1.5rem;
-      font-weight: 400;
-      letter-spacing: -0.01em;
-      line-height: 1;
-    }
-    .title-row .meta {
-      font-family: var(--mono);
-      font-size: 0.66rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .title-row .open-raw {
-      font-family: var(--mono);
-      font-size: 0.66rem;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      text-decoration: none;
-      padding: 0.3rem 0.625rem;
-      border: 1px solid var(--rule);
-      border-radius: 4px;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .open-raw:hover { color: var(--accent); border-color: var(--accent); }
+      .topbar {
+        padding: 1rem 1.25rem 0.625rem;
+        border-bottom: 1px solid var(--rule);
+        flex: 0 0 auto;
+      }
+      .title-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        gap: 1rem;
+      }
+      .title-row h1 {
+        font-family: var(--serif);
+        font-size: 1.5rem;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 1;
+      }
+      .title-row .meta {
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .title-row .open-raw {
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 0.3rem 0.625rem;
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .open-raw:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
 
-    .tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.375rem;
-      margin-bottom: 0.5rem;
-    }
-    .tabs.variants {
-      margin-bottom: 0;
-      padding-top: 0.5rem;
-      border-top: 1px solid var(--rule);
-    }
-    .tab {
-      font-family: var(--sans);
-      font-size: 0.8125rem;
-      font-weight: 500;
-      padding: 0.375rem 0.75rem;
-      background: transparent;
-      color: var(--muted);
-      border: 1px solid var(--rule);
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.12s;
-      letter-spacing: -0.005em;
-    }
-    .tab:hover {
-      color: var(--ink);
-      border-color: var(--rule-strong);
-    }
-    .tab.active {
-      background: var(--ink);
-      color: var(--paper);
-      border-color: var(--ink);
-    }
-    .tab .eyebrow {
-      display: inline-block;
-      margin-right: 0.25rem;
-      font-family: var(--mono);
-      font-size: 0.56rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: inherit;
-      opacity: 0.5;
-    }
-    .tab.new::after {
-      content: 'NEW';
-      display: inline-block;
-      margin-left: 0.35rem;
-      font-family: var(--mono);
-      font-size: 0.54rem;
-      letter-spacing: 0.12em;
-      color: var(--accent);
-      vertical-align: 1px;
-    }
-    .tab.active.new::after { color: var(--paper); }
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+        margin-bottom: 0.5rem;
+      }
+      .tabs.variants {
+        margin-bottom: 0;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--rule);
+      }
+      .tab {
+        font-family: var(--sans);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        padding: 0.375rem 0.75rem;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.12s;
+        letter-spacing: -0.005em;
+      }
+      .tab:hover {
+        color: var(--ink);
+        border-color: var(--rule-strong);
+      }
+      .tab.active {
+        background: var(--ink);
+        color: var(--paper);
+        border-color: var(--ink);
+      }
+      .tab .eyebrow {
+        display: inline-block;
+        margin-right: 0.25rem;
+        font-family: var(--mono);
+        font-size: 0.56rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: inherit;
+        opacity: 0.5;
+      }
+      .tab.new::after {
+        content: "NEW";
+        display: inline-block;
+        margin-left: 0.35rem;
+        font-family: var(--mono);
+        font-size: 0.54rem;
+        letter-spacing: 0.12em;
+        color: var(--accent);
+        vertical-align: 1px;
+      }
+      .tab.active.new::after {
+        color: var(--paper);
+      }
 
-    main {
-      flex: 1 1 auto;
-      position: relative;
-      background: var(--paper-2);
-      overflow: hidden;
-    }
-    iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: var(--paper);
-      display: block;
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="title-row">
-      <h1>Diagram Design <span class="meta" style="font-family: var(--mono); font-size: 0.66rem; margin-left: 0.5rem;">· gallery</span></h1>
-      <a class="open-raw" id="open-raw" href="#" target="_blank" rel="noopener">open in new tab ↗</a>
-    </div>
+      main {
+        flex: 1 1 auto;
+        position: relative;
+        background: var(--paper-2);
+        overflow: hidden;
+      }
+      iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: var(--paper);
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="title-row">
+        <h1>
+          Diagram Design
+          <span
+            class="meta"
+            style="
+              font-family: var(--mono);
+              font-size: 0.66rem;
+              margin-left: 0.5rem;
+            "
+            >· gallery</span
+          >
+        </h1>
+        <div style="display: flex; gap: 0.5rem">
+          <a class="open-raw" href="icons.html" target="_blank" rel="noopener"
+            >icon library ↗</a
+          >
+          <a
+            class="open-raw"
+            id="open-raw"
+            href="#"
+            target="_blank"
+            rel="noopener"
+            >open in new tab ↗</a
+          >
+        </div>
+      </div>
 
-    <div class="tabs" id="type-tabs" role="tablist" aria-label="Diagram type">
-      <button class="tab active" data-type="architecture"><span class="eyebrow">01</span>Architecture</button>
-      <button class="tab" data-type="flowchart"><span class="eyebrow">02</span>Flowchart</button>
-      <button class="tab" data-type="sequence"><span class="eyebrow">03</span>Sequence</button>
-      <button class="tab" data-type="state"><span class="eyebrow">04</span>State</button>
-      <button class="tab" data-type="er"><span class="eyebrow">05</span>ER</button>
-      <button class="tab" data-type="timeline"><span class="eyebrow">06</span>Timeline</button>
-      <button class="tab" data-type="swimlane"><span class="eyebrow">07</span>Swimlane</button>
-      <button class="tab" data-type="quadrant"><span class="eyebrow">08</span>Quadrant</button>
-      <button class="tab new" data-type="nested"><span class="eyebrow">09</span>Nested</button>
-      <button class="tab new" data-type="tree"><span class="eyebrow">10</span>Tree</button>
-      <button class="tab new" data-type="org-chart"><span class="eyebrow">11</span>Org chart</button>
-      <button class="tab new" data-type="layers"><span class="eyebrow">12</span>Layers</button>
-      <button class="tab new" data-type="venn"><span class="eyebrow">13</span>Venn</button>
-      <button class="tab new" data-type="pyramid"><span class="eyebrow">14</span>Pyramid</button>
-    </div>
+      <div class="tabs" id="type-tabs" role="tablist" aria-label="Diagram type">
+        <button class="tab active" data-type="architecture">
+          <span class="eyebrow">01</span>Architecture
+        </button>
+        <button class="tab" data-type="flowchart">
+          <span class="eyebrow">02</span>Flowchart
+        </button>
+        <button class="tab" data-type="sequence">
+          <span class="eyebrow">03</span>Sequence
+        </button>
+        <button class="tab" data-type="state">
+          <span class="eyebrow">04</span>State
+        </button>
+        <button class="tab" data-type="er">
+          <span class="eyebrow">05</span>ER
+        </button>
+        <button class="tab" data-type="timeline">
+          <span class="eyebrow">06</span>Timeline
+        </button>
+        <button class="tab" data-type="swimlane">
+          <span class="eyebrow">07</span>Swimlane
+        </button>
+        <button class="tab" data-type="quadrant">
+          <span class="eyebrow">08</span>Quadrant
+        </button>
+        <button class="tab new" data-type="nested">
+          <span class="eyebrow">09</span>Nested
+        </button>
+        <button class="tab new" data-type="tree">
+          <span class="eyebrow">10</span>Tree
+        </button>
+        <button class="tab new" data-type="org-chart">
+          <span class="eyebrow">11</span>Org chart
+        </button>
+        <button class="tab new" data-type="layers">
+          <span class="eyebrow">12</span>Layers
+        </button>
+        <button class="tab new" data-type="venn">
+          <span class="eyebrow">13</span>Venn
+        </button>
+        <button class="tab new" data-type="pyramid">
+          <span class="eyebrow">14</span>Pyramid
+        </button>
+        <button class="tab new" data-type="radar">
+          <span class="eyebrow">15</span>Radar
+        </button>
+        <button class="tab new" data-type="datalake">
+          <span class="eyebrow">16</span>Data lake
+        </button>
+        <button class="tab new" data-type="bar">
+          <span class="eyebrow">17</span>Bar
+        </button>
+        <button class="tab new" data-type="line">
+          <span class="eyebrow">18</span>Line
+        </button>
+        <button class="tab new" data-type="gantt">
+          <span class="eyebrow">19</span>Gantt
+        </button>
+        <button class="tab new" data-type="scatter">
+          <span class="eyebrow">20</span>Scatter
+        </button>
+        <button class="tab new" data-type="medallion">
+          <span class="eyebrow">21</span>Medallion
+        </button>
+        <button class="tab new" data-type="high-level">
+          <span class="eyebrow">22</span>High-Level
+        </button>
+        <button class="tab new" data-type="process">
+          <span class="eyebrow">23</span>Process
+        </button>
+        <button class="tab new" data-type="data-flow">
+          <span class="eyebrow">25</span>Data flow
+        </button>
+        <button class="tab new" data-type="dp-integration">
+          <span class="eyebrow">26</span>DP integration
+        </button>
+        <button class="tab new" data-type="high-level-vertical">
+          <span class="eyebrow">27</span>High-Level / Parametric
+        </button>
+        <button class="tab new" data-type="dp-security-matrix">
+          <span class="eyebrow">31</span>DP security matrix
+        </button>
+        <button class="tab new" data-type="it-state">
+          <span class="eyebrow">32</span>IT current-state
+        </button>
+      </div>
 
-    <div class="tabs variants" id="variant-tabs" role="tablist" aria-label="Variant">
-      <button class="tab active" data-variant="">Minimal light</button>
-      <button class="tab" data-variant="-dark">Minimal dark</button>
-      <button class="tab" data-variant="-full">Full editorial</button>
-    </div>
-  </header>
+      <div
+        class="tabs variants"
+        id="variant-tabs"
+        role="tablist"
+        aria-label="Variant"
+      >
+        <button class="tab active" data-variant="">Minimal light</button>
+        <button class="tab" data-variant="-dark">Minimal dark</button>
+        <button class="tab" data-variant="-full">Full editorial</button>
+      </div>
+    </header>
 
-  <main>
-    <iframe id="preview" src="example-architecture.html" title="Preview"></iframe>
-  </main>
+    <main>
+      <iframe
+        id="preview"
+        src="example-architecture.html"
+        title="Preview"
+      ></iframe>
+    </main>
 
-  <script>
-    const state = { type: 'architecture', variant: '' };
-    const iframe = document.getElementById('preview');
-    const openRaw = document.getElementById('open-raw');
+    <script>
+      const state = { type: "architecture", variant: "" };
+      const iframe = document.getElementById("preview");
+      const openRaw = document.getElementById("open-raw");
 
-    function update() {
-      const src = `example-${state.type}${state.variant}.html`;
-      iframe.src = src;
-      openRaw.href = src;
-    }
+      function update() {
+        const src = `example-${state.type}${state.variant}.html`;
+        iframe.src = src;
+        openRaw.href = src;
+      }
 
-    function bindTabs(containerId, key) {
-      const container = document.getElementById(containerId);
-      container.addEventListener('click', (e) => {
-        const btn = e.target.closest('.tab');
-        if (!btn) return;
-        container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        btn.classList.add('active');
-        state[key] = btn.dataset[key];
-        update();
-      });
-    }
+      function bindTabs(containerId, key) {
+        const container = document.getElementById(containerId);
+        container.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab");
+          if (!btn) return;
+          container
+            .querySelectorAll(".tab")
+            .forEach((t) => t.classList.remove("active"));
+          btn.classList.add("active");
+          state[key] = btn.dataset[key];
+          update();
+        });
+      }
 
-    bindTabs('type-tabs', 'type');
-    bindTabs('variant-tabs', 'variant');
-    update();
-  </script>
-</body>
+      bindTabs("type-tabs", "type");
+      bindTabs("variant-tabs", "variant");
+      update();
+    </script>
+  </body>
 </html>

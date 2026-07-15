@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint velocity · Bar chart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral { background: var(--color-accent); } .card-dot.ink { background: var(--color-ink); } .card-dot.muted { background: var(--color-muted); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Bar · Diagram Design</p>
+      <h1>Sprint velocity · 8-sprint view</h1>
+      <p class="subtitle">Story points delivered per two-week sprint over one product cycle. Sprint 5 is the standout — a focused scope and no mid-sprint scope additions.</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/></pattern></defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+        <text transform="rotate(-90 24 230)" x="24" y="230" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">STORY POINTS</text>
+        <line x1="80" y1="357" x2="960" y2="357" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="293" x2="960" y2="293" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="230" x2="960" y2="230" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="167" x2="960" y2="167" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="103" x2="960" y2="103" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="40"  x2="960" y2="40"  stroke="rgba(45,49,66,0.06)" stroke-width="0.8"/>
+        <line x1="80" y1="40" x2="80" y2="420" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <line x1="80" y1="420" x2="960" y2="420" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text x="72" y="361" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">20</text>
+        <text x="72" y="297" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">40</text>
+        <text x="72" y="234" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">60</text>
+        <text x="72" y="171" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">80</text>
+        <text x="72" y="107" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">100</text>
+        <text x="72" y="44"  fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">120</text>
+        <rect x="99"  y="192" width="72" height="228" fill="#f5f5f5"/><rect x="99"  y="192" width="72" height="228" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="135" y="184" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">72</text>
+        <rect x="209" y="140" width="72" height="280" fill="#f5f5f5"/><rect x="209" y="140" width="72" height="280" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="245" y="132" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">88</text>
+        <rect x="319" y="120" width="72" height="300" fill="#f5f5f5"/><rect x="319" y="120" width="72" height="300" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="355" y="112" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">95</text>
+        <rect x="429" y="172" width="72" height="248" fill="#f5f5f5"/><rect x="429" y="172" width="72" height="248" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="465" y="164" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">78</text>
+        <rect x="539" y="72" width="72" height="348" fill="#f5f5f5"/><rect x="539" y="72" width="72" height="348" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/><text x="575" y="64" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">110</text>
+        <rect x="649" y="96"  width="72" height="324" fill="#f5f5f5"/><rect x="649" y="96"  width="72" height="324" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="685" y="88"  fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">102</text>
+        <rect x="759" y="152" width="72" height="268" fill="#f5f5f5"/><rect x="759" y="152" width="72" height="268" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="795" y="144" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">85</text>
+        <rect x="869" y="124" width="72" height="296" fill="#f5f5f5"/><rect x="869" y="124" width="72" height="296" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/><text x="905" y="116" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">93</text>
+        <text x="135" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S1</text>
+        <text x="245" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S2</text>
+        <text x="355" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S3</text>
+        <text x="465" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S4</text>
+        <text x="575" y="440" fill="#eb6c36" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S5</text>
+        <text x="685" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S6</text>
+        <text x="795" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S7</text>
+        <text x="905" y="440" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S8</text>
+        <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="64" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Sprint 5 · record high</text>
+        <rect x="220" y="488" width="16" height="10" rx="2" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="244" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Other sprints</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">RECORD SPRINT</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>Sprint 5 · 110 points</h3></div>
+        <p>No mid-sprint additions, zero carry-over from S4, and the team's highest-complexity stories were completed two days early. The bar is not the goal — the conditions are.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink"></span><h3>Trend: rising with one dip</h3></div>
+        <p>Average across 8 sprints: 89 points. S4 dipped to 78 — a dependency on an external API that shipped late. Excluding S4, the underlying trajectory is +4 pts/sprint.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot muted"></span><h3>What the chart doesn't show</h3></div>
+        <p>Story points measure scope delivered, not value shipped. S3 at 95 points included three stories that were deprioritised before the sprint ended — they don't appear in the count.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <span>sprint velocity · 8-sprint view</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

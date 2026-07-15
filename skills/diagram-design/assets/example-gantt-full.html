@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q2 product launch · Gantt</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral { background: var(--color-accent); } .card-dot.ink { background: var(--color-ink); } .card-dot.muted { background: var(--color-muted); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Gantt · Diagram Design</p>
+      <h1>Q2 product launch · 12-week plan</h1>
+      <p class="subtitle">Three phases from research through launch. Design review in week 8 is the critical gate — development doesn't continue until sign-off.</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/></pattern></defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+        <rect x="12" y="72" width="976" height="84" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="12" y="172" width="976" height="120" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="12" y="312" width="976" height="88" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="326" y="52" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">April</text>
+        <text x="578" y="52" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">May</text>
+        <text x="830" y="52" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">June</text>
+        <line x1="452" y1="36" x2="452" y2="416" stroke="rgba(45,49,66,0.08)" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="704" y1="36" x2="704" y2="416" stroke="rgba(45,49,66,0.08)" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <line x1="263" y1="60" x2="263" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="326" y1="60" x2="326" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="389" y1="60" x2="389" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="515" y1="60" x2="515" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="578" y1="60" x2="578" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="641" y1="60" x2="641" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="767" y1="60" x2="767" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="830" y1="60" x2="830" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="893" y1="60" x2="893" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+        <line x1="200" y1="60" x2="956" y2="60" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+        <line x1="200" y1="36" x2="200" y2="416" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+        <text x="20" y="85" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DISCOVERY</text>
+        <text x="20" y="185" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DESIGN</text>
+        <text x="20" y="325" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LAUNCH</text>
+        <rect x="20" y="92" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="108" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Market research</text>
+        <rect x="200" y="92" width="126" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="200" y="92" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="20" y="132" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="148" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">User interviews</text>
+        <rect x="263" y="132" width="126" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="263" y="132" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="20" y="192" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="208" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Wireframes</text>
+        <rect x="389" y="192" width="126" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="389" y="192" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="20" y="232" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="248" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Prototype</text>
+        <rect x="452" y="232" width="189" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="452" y="232" width="189" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="20" y="272" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="288" fill="#eb6c36" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Design review</text>
+        <rect x="641" y="272" width="63" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="641" y="272" width="63" height="24" rx="4" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="672" y="289" fill="#eb6c36" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">GATE</text>
+        <rect x="20" y="332" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="348" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Development</text>
+        <rect x="578" y="332" width="252" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="578" y="332" width="252" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <rect x="20" y="372" width="176" height="24" fill="#f5f5f5"/>
+        <text x="20" y="388" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Beta testing</text>
+        <rect x="767" y="372" width="126" height="24" rx="4" fill="#f5f5f5"/>
+        <rect x="767" y="372" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <line x1="40" y1="430" x2="960" y2="430" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="446" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <rect x="40" y="456" width="20" height="12" rx="3" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="68" y="466" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Design review · critical gate</text>
+        <rect x="280" y="456" width="20" height="12" rx="3" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="308" y="466" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Task</text>
+        <rect x="368" y="456" width="20" height="12" rx="3" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="396" y="466" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Phase</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">CRITICAL GATE</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>Design review — week 8</h3></div>
+        <p>Development begins in week 7 but the full build is contingent on design sign-off. Starting before the gate means dev can fix implementation issues early, not rebuild from scratch post-review.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink"></span><h3>Discovery ↔ Design overlap</h3></div>
+        <p>User interviews (W2–W4) overlap with wireframes (W4–W6) by one week. This is intentional — the first round of interview findings feeds directly into iteration without a formal handoff ceremony.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot muted"></span><h3>Float in the schedule</h3></div>
+        <p>Beta testing (W10–W12) has two weeks of overlap with dev end (W11). If dev slips by one week, beta absorbs it. If dev slips two weeks, the launch date moves — there is no buffer beyond that.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <span>Q2 product launch · 12-week plan</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

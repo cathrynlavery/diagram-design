@@ -1,0 +1,821 @@
+# Icons (primitive)
+
+A monochrome 24×24 icon library for IT/cloud diagrams. Each icon uses `currentColor` so it inherits ink from its parent SVG and adapts to the editorial skin or any user-onboarded brand palette.
+
+## Usage
+
+Find the icon by name (the `### name` headings below). Copy the fenced `<svg>` snippet into your diagram. Default size is 24×24; wrap in `<g transform="translate(x,y) scale(s)">` to position and resize. Set `color`, `fill`, or `stroke` on the parent group/SVG to control color.
+
+Generic icons are stroked (1.5px, hairline, like the rest of the skill); brand silhouettes are filled. Don't mix the two styles in the same diagram unnecessarily.
+
+## Compute
+
+### laptop
+User laptop or workstation.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l18 0" /> <path d="M5 7a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1l0 -8" /></svg>
+```
+
+Source: Tabler Icons / `device-laptop` (MIT)
+
+### phone
+Mobile phone or tablet client.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-14" /> <path d="M11 4h2" /> <path d="M12 17v.01" /></svg>
+```
+
+Source: Tabler Icons / `device-mobile` (MIT)
+
+### desktop
+Desktop computer.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10" /> <path d="M7 20h10" /> <path d="M9 16v4" /> <path d="M15 16v4" /></svg>
+```
+
+Source: Tabler Icons / `device-desktop` (MIT)
+
+### server
+Physical server or VM host.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3" /> <path d="M3 15a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -2" /> <path d="M7 8l0 .01" /> <path d="M7 16l0 .01" /></svg>
+```
+
+Source: Tabler Icons / `server` (MIT)
+
+### container
+Container image or running instance.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" /> <path d="M12 12l8 -4.5" /> <path d="M12 12l0 9" /> <path d="M12 12l-8 -4.5" /> <path d="M16 5.25l-8 4.5" /></svg>
+```
+
+Source: Tabler Icons / `package` (MIT)
+
+### vm
+Virtual machine.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16.008v-8.018a1.98 1.98 0 0 0 -1 -1.717l-7 -4.008a2.016 2.016 0 0 0 -2 0l-7 4.008c-.619 .355 -1 1.01 -1 1.718v8.018c0 .709 .381 1.363 1 1.717l7 4.008a2.016 2.016 0 0 0 2 0l7 -4.008c.619 -.355 1 -1.01 1 -1.718" /> <path d="M12 22v-10" /> <path d="M12 12l8.73 -5.04" /> <path d="M3.27 6.96l8.73 5.04" /></svg>
+```
+
+Source: Tabler Icons / `cube` (MIT)
+
+## People
+
+### user
+End user or single actor.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+```
+
+Source: Tabler Icons / `user` (MIT)
+
+### users
+Group / cohort / team.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /> <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" /> <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+```
+
+Source: Tabler Icons / `users` (MIT)
+
+### admin
+Privileged user / admin.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21v-2a4 4 0 0 1 4 -4h2" /> <path d="M22 16c0 4 -2.5 6 -3.5 6s-3.5 -2 -3.5 -6c1 0 2.5 -.5 3.5 -1.5c1 1 2.5 1.5 3.5 1.5" /> <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /></svg>
+```
+
+Source: Tabler Icons / `user-shield` (MIT)
+
+### robot
+Bot, agent, or automated process.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4" /> <path d="M12 2v2" /> <path d="M9 12v9" /> <path d="M15 12v9" /> <path d="M5 16l4 -2" /> <path d="M15 14l4 2" /> <path d="M9 18h6" /> <path d="M10 8v.01" /> <path d="M14 8v.01" /></svg>
+```
+
+Source: Tabler Icons / `robot` (MIT)
+
+## Network
+
+### cloud
+Cloud provider or boundary.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878" /></svg>
+```
+
+Source: Tabler Icons / `cloud` (MIT)
+
+### internet
+Public internet.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M3.6 9h16.8" /> <path d="M3.6 15h16.8" /> <path d="M11.5 3a17 17 0 0 0 0 18" /> <path d="M12.5 3a17 17 0 0 1 0 18" /></svg>
+```
+
+Source: Tabler Icons / `world` (MIT)
+
+### cdn
+CDN or edge cache.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 7a9 9 0 0 0 -7.5 -4a8.991 8.991 0 0 0 -7.484 4" /> <path d="M11.5 3a16.989 16.989 0 0 0 -1.826 4" /> <path d="M12.5 3a16.989 16.989 0 0 1 1.828 4" /> <path d="M19.5 17a9 9 0 0 1 -7.5 4a8.991 8.991 0 0 1 -7.484 -4" /> <path d="M11.5 21a16.989 16.989 0 0 1 -1.826 -4" /> <path d="M12.5 21a16.989 16.989 0 0 0 1.828 -4" /> <path d="M2 10l1 4l1.5 -4l1.5 4l1 -4" /> <path d="M17 10l1 4l1.5 -4l1.5 4l1 -4" /> <path d="M9.5 10l1 4l1.5 -4l1.5 4l1 -4" /></svg>
+```
+
+Source: Tabler Icons / `world-www` (MIT)
+
+### firewall
+Firewall or perimeter control.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" /> <path d="M4 8h16" /> <path d="M20 12h-16" /> <path d="M4 16h16" /> <path d="M9 4v4" /> <path d="M14 8v4" /> <path d="M8 12v4" /> <path d="M16 12v4" /> <path d="M11 16v4" /></svg>
+```
+
+Source: Tabler Icons / `wall` (MIT)
+
+### vpn
+VPN or encrypted tunnel.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /> <path d="M11 11a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M12 12l0 2.5" /></svg>
+```
+
+Source: Tabler Icons / `shield-lock` (MIT)
+
+### load-balancer
+Load balancer / traffic split.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 17h-8l-3.5 -5h-6.5" /> <path d="M21 7h-8l-3.495 5" /> <path d="M18 10l3 -3l-3 -3" /> <path d="M18 20l3 -3l-3 -3" /></svg>
+```
+
+Source: Tabler Icons / `arrows-split` (MIT)
+
+### gateway
+API gateway or ingress door.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 12v.01" /> <path d="M3 21h18" /> <path d="M5 21v-16a2 2 0 0 1 2 -2h6m4 10.5v7.5" /> <path d="M21 7h-7m3 -3l-3 3l3 3" /></svg>
+```
+
+Source: Tabler Icons / `door-enter` (MIT)
+
+### dns
+DNS / name resolution.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M3 6v5.172a2 2 0 0 0 .586 1.414l7.71 7.71a2.41 2.41 0 0 0 3.408 0l5.592 -5.592a2.41 2.41 0 0 0 0 -3.408l-7.71 -7.71a2 2 0 0 0 -1.414 -.586h-5.172a3 3 0 0 0 -3 3" /></svg>
+```
+
+Source: Tabler Icons / `tag` (MIT)
+
+## Data
+
+### database
+Relational or document database.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0" /> <path d="M4 6v6a8 3 0 0 0 16 0v-6" /> <path d="M4 12v6a8 3 0 0 0 16 0v-6" /></svg>
+```
+
+Source: Tabler Icons / `database` (MIT)
+
+### file
+Generic file.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /></svg>
+```
+
+Source: Tabler Icons / `file` (MIT)
+
+### log
+Log file / event stream.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /></svg>
+```
+
+Source: Tabler Icons / `file-text` (MIT)
+
+### queue
+Message queue / FIFO.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l-8 4l8 4l8 -4l-8 -4" /> <path d="M4 12l8 4l8 -4" /> <path d="M4 16l8 4l8 -4" /></svg>
+```
+
+Source: Tabler Icons / `stack-2` (MIT)
+
+### cache
+Cache layer.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
+```
+
+Source: Tabler Icons / `bolt` (MIT)
+
+### bucket
+Object storage / S3 bucket.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a8 4 0 1 0 16 0a8 4 0 1 0 -16 0" /> <path d="M4 7c0 .664 .088 1.324 .263 1.965l2.737 10.035c.5 1.5 2.239 2 5 2s4.5 -.5 5 -2c.333 -1 1.246 -4.345 2.737 -10.035a7.45 7.45 0 0 0 .263 -1.965" /></svg>
+```
+
+Source: Tabler Icons / `bucket` (MIT)
+
+### backup
+Backup or snapshot.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" /> <path d="M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M14 4l0 4l-6 0l0 -4" /></svg>
+```
+
+Source: Tabler Icons / `device-floppy` (MIT)
+
+### search
+Search index / query.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /> <path d="M21 21l-6 -6" /></svg>
+```
+
+Source: Tabler Icons / `search` (MIT)
+
+## Kubernetes
+
+### pod
+Pod (smallest deployable unit).
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.875 6.27a2.225 2.225 0 0 1 1.125 1.948v7.284c0 .809 -.443 1.555 -1.158 1.948l-6.75 4.27a2.269 2.269 0 0 1 -2.184 0l-6.75 -4.27a2.225 2.225 0 0 1 -1.158 -1.948v-7.285c0 -.809 .443 -1.554 1.158 -1.947l6.75 -3.98a2.33 2.33 0 0 1 2.25 0l6.75 3.98h-.033" /></svg>
+```
+
+Source: Tabler Icons / `hexagon` (MIT)
+
+### node
+Cluster node.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" /> <path d="M20 6a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" /> <path d="M8 6a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" /> <path d="M20 18a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" /> <path d="M14 12a2 2 0 1 0 -4 0a2 2 0 0 0 4 0" /> <path d="M7.5 7.5l3 3" /> <path d="M7.5 16.5l3 -3" /> <path d="M13.5 13.5l3 3" /> <path d="M16.5 7.5l-3 3" /></svg>
+```
+
+Source: Tabler Icons / `topology-star` (MIT)
+
+### service
+K8s service / virtual endpoint.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 0 -8.979 9" /> <path d="M3.6 9h16.8" /> <path d="M3.6 15h8.9" /> <path d="M11.5 3a17 17 0 0 0 0 18" /> <path d="M12.5 3a16.992 16.992 0 0 1 2.522 10.376" /> <path d="M17.001 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M19.001 15.5v1.5" /> <path d="M19.001 21v1.5" /> <path d="M22.032 17.25l-1.299 .75" /> <path d="M17.27 20l-1.3 .75" /> <path d="M15.97 17.25l1.3 .75" /> <path d="M20.733 20l1.3 .75" /></svg>
+```
+
+Source: Tabler Icons / `world-cog` (MIT)
+
+### deployment
+Deployment rollout.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13a8 8 0 0 1 7 7a6 6 0 0 0 3 -5a9 9 0 0 0 6 -8a3 3 0 0 0 -3 -3a9 9 0 0 0 -8 6a6 6 0 0 0 -5 3" /> <path d="M7 14a6 6 0 0 0 -3 6a6 6 0 0 0 6 -3" /> <path d="M14 9a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>
+```
+
+Source: Tabler Icons / `rocket` (MIT)
+
+### ingress
+Ingress controller / route in.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h13" /> <path d="M18 9l3 3l-3 3" /> <path d="M5.5 9.5l-2.5 2.5l2.5 2.5l2.5 -2.5l-2.5 -2.5" /></svg>
+```
+
+Source: Tabler Icons / `arrow-right-rhombus` (MIT)
+
+### volume
+Persistent volume.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10a2 2 0 0 0 2 -2v-14a2 2 0 0 0 -2 -2h-6.172a2 2 0 0 0 -1.414 .586l-3.828 3.828a2 2 0 0 0 -.586 1.414v10.172a2 2 0 0 0 2 2" /> <path d="M13 6v2" /> <path d="M16 6v2" /> <path d="M10 7v1" /></svg>
+```
+
+Source: Tabler Icons / `device-sd-card` (MIT)
+
+## Action
+
+### api
+API surface / endpoint.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4a2 2 0 0 0 -2 2v3a2 3 0 0 1 -2 3a2 3 0 0 1 2 3v3a2 2 0 0 0 2 2" /> <path d="M17 4a2 2 0 0 1 2 2v3a2 3 0 0 0 2 3a2 3 0 0 0 -2 3v3a2 2 0 0 1 -2 2" /></svg>
+```
+
+Source: Tabler Icons / `braces` (MIT)
+
+### request
+Outbound request.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0" /> <path d="M13 18l6 -6" /> <path d="M13 6l6 6" /></svg>
+```
+
+Source: Tabler Icons / `arrow-right` (MIT)
+
+### response
+Inbound response.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0" /> <path d="M5 12l6 6" /> <path d="M5 12l6 -6" /></svg>
+```
+
+Source: Tabler Icons / `arrow-left` (MIT)
+
+### sync
+Sync / reconcile loop.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /> <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+```
+
+Source: Tabler Icons / `refresh` (MIT)
+
+### lock
+Locked / authenticated.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6" /> <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /> <path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg>
+```
+
+Source: Tabler Icons / `lock` (MIT)
+
+### key
+Key / secret.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0" /> <path d="M15 9h.01" /></svg>
+```
+
+Source: Tabler Icons / `key` (MIT)
+
+### alert
+Warning / paged alert.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4" /> <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0" /> <path d="M12 16h.01" /></svg>
+```
+
+Source: Tabler Icons / `alert-triangle` (MIT)
+
+## DevOps
+
+### git-branch
+Branch / fork point.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M5 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M15 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M7 8l0 8" /> <path d="M9 18h6a2 2 0 0 0 2 -2v-5" /> <path d="M14 14l3 -3l3 3" /></svg>
+```
+
+Source: Tabler Icons / `git-branch` (MIT)
+
+### terminal
+Shell / CLI.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7l5 5l-5 5" /> <path d="M12 19l7 0" /></svg>
+```
+
+Source: Tabler Icons / `terminal` (MIT)
+
+### pipeline
+CI/CD pipeline.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M5 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M15 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M7 8l0 8" /> <path d="M7 8a4 4 0 0 0 4 4h4" /></svg>
+```
+
+Source: Tabler Icons / `git-merge` (MIT)
+
+### bug
+Bug / defect.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9v-1a3 3 0 0 1 6 0v1" /> <path d="M8 9h8a6 6 0 0 1 1 3v3a5 5 0 0 1 -10 0v-3a6 6 0 0 1 1 -3" /> <path d="M3 13l4 0" /> <path d="M17 13l4 0" /> <path d="M12 20l0 -6" /> <path d="M4 19l3.35 -2" /> <path d="M20 19l-3.35 -2" /> <path d="M4 7l3.75 2.4" /> <path d="M20 7l-3.75 2.4" /></svg>
+```
+
+Source: Tabler Icons / `bug` (MIT)
+
+### monitoring
+Metrics / observability.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l16 0" /> <path d="M4 15l4 -6l4 2l4 -5l4 4" /></svg>
+```
+
+Source: Tabler Icons / `chart-line` (MIT)
+
+### test
+Test / experiment.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8.04l-12.122 12.124a2.857 2.857 0 1 1 -4.041 -4.04l12.122 -12.124" /> <path d="M7 13h8" /> <path d="M19 15l1.5 1.6a2 2 0 1 1 -3 0l1.5 -1.6" /> <path d="M15 3l6 6" /></svg>
+```
+
+Source: Tabler Icons / `test-pipe` (MIT)
+
+## Brand
+
+### docker
+Docker engine / image.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12.54c-1.804 -.345 -2.701 -1.08 -3.523 -2.94c-.487 .696 -1.102 1.568 -.92 2.4c.028 .238 -.32 1 -.557 1h-14c0 5.208 3.164 7 6.196 7c4.124 .022 7.828 -1.376 9.854 -5c1.146 -.101 2.296 -1.505 2.95 -2.46" /> <path d="M5 10h3v3h-3l0 -3" /> <path d="M8 10h3v3h-3l0 -3" /> <path d="M11 10h3v3h-3l0 -3" /> <path d="M8 7h3v3h-3l0 -3" /> <path d="M11 7h3v3h-3l0 -3" /> <path d="M11 4h3v3h-3l0 -3" /> <path d="M4.571 18c1.5 0 2.047 -.074 2.958 -.78" /> <path d="M10 16l0 .01" /></svg>
+```
+
+Source: Tabler Icons / `brand-docker` (MIT)
+
+### terraform
+Terraform IaC.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 15.5l-11.476 -6.216a1 1 0 0 1 -.524 -.88v-4.054a1.35 1.35 0 0 1 2.03 -1.166l9.97 5.816v10.65a1.35 1.35 0 0 1 -2.03 1.166l-3.474 -2.027a1 1 0 0 1 -.496 -.863v-11.926" /> <path d="M15 15.5l5.504 -3.21a1 1 0 0 0 .496 -.864v-3.576a1.35 1.35 0 0 0 -2.03 -1.166l-3.97 2.316" /></svg>
+```
+
+Source: Tabler Icons / `brand-terraform` (MIT)
+
+### aws
+Amazon Web Services.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18.5a15.198 15.198 0 0 1 -7.37 1.44a14.62 14.62 0 0 1 -6.63 -2.94" /> <path d="M19.5 21c.907 -1.411 1.451 -3.323 1.5 -5c-1.197 -.773 -2.577 -.935 -4 -1" /> <path d="M3 11v-4.5a1.5 1.5 0 0 1 3 0v4.5" /> <path d="M3 9h3" /> <path d="M9 5l1.2 6l1.8 -4l1.8 4l1.2 -6" /> <path d="M18 10.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" /></svg>
+```
+
+Source: Tabler Icons / `brand-aws` (MIT)
+
+### azure
+Microsoft Azure.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5l-4 9.5h4l6 -15l-6 5.5" /> <path d="M22 20l-7 -15l-3 7l4 5l-8 3l14 0" /></svg>
+```
+
+Source: Tabler Icons / `brand-azure` (MIT)
+
+### github
+GitHub.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" /></svg>
+```
+
+Source: Tabler Icons / `brand-github` (MIT)
+
+### kubernetes
+Kubernetes.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Kubernetes</title><path d="M10.204 14.35l.007.01-.999 2.413a5.171 5.171 0 0 1-2.075-2.597l2.578-.437.004.005a.44.44 0 0 1 .484.606zm-.833-2.129a.44.44 0 0 0 .173-.756l.002-.011L7.585 9.7a5.143 5.143 0 0 0-.73 3.255l2.514-.725.002-.009zm1.145-1.98a.44.44 0 0 0 .699-.337l.01-.005.15-2.62a5.144 5.144 0 0 0-3.01 1.442l2.147 1.523.004-.002zm.76 2.75l.723.349.722-.347.18-.78-.5-.623h-.804l-.5.623.179.779zm1.5-3.095a.44.44 0 0 0 .7.336l.008.003 2.134-1.513a5.188 5.188 0 0 0-2.992-1.442l.148 2.615.002.001zm10.876 5.97l-5.773 7.181a1.6 1.6 0 0 1-1.248.594l-9.261.003a1.6 1.6 0 0 1-1.247-.596l-5.776-7.18a1.583 1.583 0 0 1-.307-1.34L2.1 5.573c.108-.47.425-.864.863-1.073L11.305.513a1.606 1.606 0 0 1 1.385 0l8.345 3.985c.438.209.755.604.863 1.073l2.062 8.955c.108.47-.005.963-.308 1.34zm-3.289-2.057c-.042-.01-.103-.026-.145-.034-.174-.033-.315-.025-.479-.038-.35-.037-.638-.067-.895-.148-.105-.04-.18-.165-.216-.216l-.201-.059a6.45 6.45 0 0 0-.105-2.332 6.465 6.465 0 0 0-.936-2.163c.052-.047.15-.133.177-.159.008-.09.001-.183.094-.282.197-.185.444-.338.743-.522.142-.084.273-.137.415-.242.032-.024.076-.062.11-.089.24-.191.295-.52.123-.736-.172-.216-.506-.236-.745-.045-.034.027-.08.062-.111.088-.134.116-.217.23-.33.35-.246.25-.45.458-.673.609-.097.056-.239.037-.303.033l-.19.135a6.545 6.545 0 0 0-4.146-2.003l-.012-.223c-.065-.062-.143-.115-.163-.25-.022-.268.015-.557.057-.905.023-.163.061-.298.068-.475.001-.04-.001-.099-.001-.142 0-.306-.224-.555-.5-.555-.275 0-.499.249-.499.555l.001.014c0 .041-.002.092 0 .128.006.177.044.312.067.475.042.348.078.637.056.906a.545.545 0 0 1-.162.258l-.012.211a6.424 6.424 0 0 0-4.166 2.003 8.373 8.373 0 0 1-.18-.128c-.09.012-.18.04-.297-.029-.223-.15-.427-.358-.673-.608-.113-.12-.195-.234-.329-.349-.03-.026-.077-.062-.111-.088a.594.594 0 0 0-.348-.132.481.481 0 0 0-.398.176c-.172.216-.117.546.123.737l.007.005.104.083c.142.105.272.159.414.242.299.185.546.338.743.522.076.082.09.226.1.288l.16.143a6.462 6.462 0 0 0-1.02 4.506l-.208.06c-.055.072-.133.184-.215.217-.257.081-.546.11-.895.147-.164.014-.305.006-.48.039-.037.007-.09.02-.133.03l-.004.002-.007.002c-.295.071-.484.342-.423.608.061.267.349.429.645.365l.007-.001.01-.003.129-.029c.17-.046.294-.113.448-.172.33-.118.604-.217.87-.256.112-.009.23.069.288.101l.217-.037a6.5 6.5 0 0 0 2.88 3.596l-.09.218c.033.084.069.199.044.282-.097.252-.263.517-.452.813-.091.136-.185.242-.268.399-.02.037-.045.095-.064.134-.128.275-.034.591.213.71.248.12.556-.007.69-.282v-.002c.02-.039.046-.09.062-.127.07-.162.094-.301.144-.458.132-.332.205-.68.387-.897.05-.06.13-.082.215-.105l.113-.205a6.453 6.453 0 0 0 4.609.012l.106.192c.086.028.18.042.256.155.136.232.229.507.342.84.05.156.074.295.145.457.016.037.043.09.062.129.133.276.442.402.69.282.247-.118.341-.435.213-.71-.02-.039-.045-.096-.065-.134-.083-.156-.177-.261-.268-.398-.19-.296-.346-.541-.443-.793-.04-.13.007-.21.038-.294-.018-.022-.059-.144-.083-.202a6.499 6.499 0 0 0 2.88-3.622c.064.01.176.03.213.038.075-.05.144-.114.28-.104.266.039.54.138.87.256.154.06.277.128.448.173.036.01.088.019.13.028l.009.003.007.001c.297.064.584-.098.645-.365.06-.266-.128-.537-.423-.608zM16.4 9.701l-1.95 1.746v.005a.44.44 0 0 0 .173.757l.003.01 2.526.728a5.199 5.199 0 0 0-.108-1.674A5.208 5.208 0 0 0 16.4 9.7zm-4.013 5.325a.437.437 0 0 0-.404-.232.44.44 0 0 0-.372.233h-.002l-1.268 2.292a5.164 5.164 0 0 0 3.326.003l-1.27-2.296h-.01zm1.888-1.293a.44.44 0 0 0-.27.036.44.44 0 0 0-.214.572l-.003.004 1.01 2.438a5.15 5.15 0 0 0 2.081-2.615l-2.6-.44-.004.005z"/></svg>
+```
+
+Source: Simple Icons / `kubernetes` (CC0)
+
+### gcp
+Google Cloud.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Google Cloud</title><path d="M12.19 2.38a9.344 9.344 0 0 0-9.234 6.893c.053-.02-.055.013 0 0-3.875 2.551-3.922 8.11-.247 10.941l.006-.007-.007.03a6.717 6.717 0 0 0 4.077 1.356h5.173l.03.03h5.192c6.687.053 9.376-8.605 3.835-12.35a9.365 9.365 0 0 0-2.821-4.552l-.043.043.006-.05A9.344 9.344 0 0 0 12.19 2.38zm-.358 4.146c1.244-.04 2.518.368 3.486 1.15a5.186 5.186 0 0 1 1.862 4.078v.518c3.53-.07 3.53 5.262 0 5.193h-5.193l-.008.009v-.04H6.785a2.59 2.59 0 0 1-1.067-.23h.001a2.597 2.597 0 1 1 3.437-3.437l3.013-3.012A6.747 6.747 0 0 0 8.11 8.24c.018-.01.04-.026.054-.023a5.186 5.186 0 0 1 3.67-1.69z"/></svg>
+```
+
+Source: Simple Icons / `googlecloud` (CC0)
+
+### postgres
+PostgreSQL.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>PostgreSQL</title><path d="M23.5594 14.7228a.5269.5269 0 0 0-.0563-.1191c-.139-.2632-.4768-.3418-1.0074-.2321-1.6533.3411-2.2935.1312-2.5256-.0191 1.342-2.0482 2.445-4.522 3.0411-6.8297.2714-1.0507.7982-3.5237.1222-4.7316a1.5641 1.5641 0 0 0-.1509-.235C21.6931.9086 19.8007.0248 17.5099.0005c-1.4947-.0158-2.7705.3461-3.1161.4794a9.449 9.449 0 0 0-.5159-.0816 8.044 8.044 0 0 0-1.3114-.1278c-1.1822-.0184-2.2038.2642-3.0498.8406-.8573-.3211-4.7888-1.645-7.2219.0788C.9359 2.1526.3086 3.8733.4302 6.3043c.0409.818.5069 3.334 1.2423 5.7436.4598 1.5065.9387 2.7019 1.4334 3.582.553.9942 1.1259 1.5933 1.7143 1.7895.4474.1491 1.1327.1441 1.8581-.7279.8012-.9635 1.5903-1.8258 1.9446-2.2069.4351.2355.9064.3625 1.39.3772a.0569.0569 0 0 0 .0004.0041 11.0312 11.0312 0 0 0-.2472.3054c-.3389.4302-.4094.5197-1.5002.7443-.3102.064-1.1344.2339-1.1464.8115-.0025.1224.0329.2309.0919.3268.2269.4231.9216.6097 1.015.6331 1.3345.3335 2.5044.092 3.3714-.6787-.017 2.231.0775 4.4174.3454 5.0874.2212.5529.7618 1.9045 2.4692 1.9043.2505 0 .5263-.0291.8296-.0941 1.7819-.3821 2.5557-1.1696 2.855-2.9059.1503-.8707.4016-2.8753.5388-4.1012.0169-.0703.0357-.1207.057-.1362.0007-.0005.0697-.0471.4272.0307a.3673.3673 0 0 0 .0443.0068l.2539.0223.0149.001c.8468.0384 1.9114-.1426 2.5312-.4308.6438-.2988 1.8057-1.0323 1.5951-1.6698zM2.371 11.8765c-.7435-2.4358-1.1779-4.8851-1.2123-5.5719-.1086-2.1714.4171-3.6829 1.5623-4.4927 1.8367-1.2986 4.8398-.5408 6.108-.13-.0032.0032-.0066.0061-.0098.0094-2.0238 2.044-1.9758 5.536-1.9708 5.7495-.0002.0823.0066.1989.0162.3593.0348.5873.0996 1.6804-.0735 2.9184-.1609 1.1504.1937 2.2764.9728 3.0892.0806.0841.1648.1631.2518.2374-.3468.3714-1.1004 1.1926-1.9025 2.1576-.5677.6825-.9597.5517-1.0886.5087-.3919-.1307-.813-.5871-1.2381-1.3223-.4796-.839-.9635-2.0317-1.4155-3.5126zm6.0072 5.0871c-.1711-.0428-.3271-.1132-.4322-.1772.0889-.0394.2374-.0902.4833-.1409 1.2833-.2641 1.4815-.4506 1.9143-1.0002.0992-.126.2116-.2687.3673-.4426a.3549.3549 0 0 0 .0737-.1298c.1708-.1513.2724-.1099.4369-.0417.156.0646.3078.26.3695.4752.0291.1016.0619.2945-.0452.4444-.9043 1.2658-2.2216 1.2494-3.1676 1.0128zm2.094-3.988-.0525.141c-.133.3566-.2567.6881-.3334 1.003-.6674-.0021-1.3168-.2872-1.8105-.8024-.6279-.6551-.9131-1.5664-.7825-2.5004.1828-1.3079.1153-2.4468.079-3.0586-.005-.0857-.0095-.1607-.0122-.2199.2957-.2621 1.6659-.9962 2.6429-.7724.4459.1022.7176.4057.8305.928.5846 2.7038.0774 3.8307-.3302 4.7363-.084.1866-.1633.3629-.2311.5454zm7.3637 4.5725c-.0169.1768-.0358.376-.0618.5959l-.146.4383a.3547.3547 0 0 0-.0182.1077c-.0059.4747-.054.6489-.115.8693-.0634.2292-.1353.4891-.1794 1.0575-.11 1.4143-.8782 2.2267-2.4172 2.5565-1.5155.3251-1.7843-.4968-2.0212-1.2217a6.5824 6.5824 0 0 0-.0769-.2266c-.2154-.5858-.1911-1.4119-.1574-2.5551.0165-.5612-.0249-1.9013-.3302-2.6462.0044-.2932.0106-.5909.019-.8918a.3529.3529 0 0 0-.0153-.1126 1.4927 1.4927 0 0 0-.0439-.208c-.1226-.4283-.4213-.7866-.7797-.9351-.1424-.059-.4038-.1672-.7178-.0869.067-.276.1831-.5875.309-.9249l.0529-.142c.0595-.16.134-.3257.213-.5012.4265-.9476 1.0106-2.2453.3766-5.1772-.2374-1.0981-1.0304-1.6343-2.2324-1.5098-.7207.0746-1.3799.3654-1.7088.5321a5.6716 5.6716 0 0 0-.1958.1041c.0918-1.1064.4386-3.1741 1.7357-4.4823a4.0306 4.0306 0 0 1 .3033-.276.3532.3532 0 0 0 .1447-.0644c.7524-.5706 1.6945-.8506 2.802-.8325.4091.0067.8017.0339 1.1742.081 1.939.3544 3.2439 1.4468 4.0359 2.3827.8143.9623 1.2552 1.9315 1.4312 2.4543-1.3232-.1346-2.2234.1268-2.6797.779-.9926 1.4189.543 4.1729 1.2811 5.4964.1353.2426.2522.4522.2889.5413.2403.5825.5515.9713.7787 1.2552.0696.087.1372.1714.1885.245-.4008.1155-1.1208.3825-1.0552 1.717-.0123.1563-.0423.4469-.0834.8148-.0461.2077-.0702.4603-.0994.7662zm.8905-1.6211c-.0405-.8316.2691-.9185.5967-1.0105a2.8566 2.8566 0 0 0 .135-.0406 1.202 1.202 0 0 0 .1342.103c.5703.3765 1.5823.4213 3.0068.1344-.2016.1769-.5189.3994-.9533.6011-.4098.1903-1.0957.333-1.7473.3636-.7197.0336-1.0859-.0807-1.1721-.151zm.5695-9.2712c-.0059.3508-.0542.6692-.1054 1.0017-.055.3576-.112.7274-.1264 1.1762-.0142.4368.0404.8909.0932 1.3301.1066.887.216 1.8003-.2075 2.7014a3.5272 3.5272 0 0 1-.1876-.3856c-.0527-.1276-.1669-.3326-.3251-.6162-.6156-1.1041-2.0574-3.6896-1.3193-4.7446.3795-.5427 1.3408-.5661 2.1781-.463zm.2284 7.0137a12.3762 12.3762 0 0 0-.0853-.1074l-.0355-.0444c.7262-1.1995.5842-2.3862.4578-3.4385-.0519-.4318-.1009-.8396-.0885-1.2226.0129-.4061.0666-.7543.1185-1.0911.0639-.415.1288-.8443.1109-1.3505.0134-.0531.0188-.1158.0118-.1902-.0457-.4855-.5999-1.938-1.7294-3.253-.6076-.7073-1.4896-1.4972-2.6889-2.0395.5251-.1066 1.2328-.2035 2.0244-.1859 2.0515.0456 3.6746.8135 4.8242 2.2824a.908.908 0 0 1 .0667.1002c.7231 1.3556-.2762 6.2751-2.9867 10.5405zm-8.8166-6.1162c-.025.1794-.3089.4225-.6211.4225a.5821.5821 0 0 1-.0809-.0056c-.1873-.026-.3765-.144-.5059-.3156-.0458-.0605-.1203-.178-.1055-.2844.0055-.0401.0261-.0985.0925-.1488.1182-.0894.3518-.1226.6096-.0867.3163.0441.6426.1938.6113.4186zm7.9305-.4114c.0111.0792-.049.201-.1531.3102-.0683.0717-.212.1961-.4079.2232a.5456.5456 0 0 1-.075.0052c-.2935 0-.5414-.2344-.5607-.3717-.024-.1765.2641-.3106.5611-.352.297-.0414.6111.0088.6356.1851z"/></svg>
+```
+
+Source: Simple Icons / `postgresql` (CC0)
+
+### redis
+Redis.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 100 100" fill="currentColor"><g id="redis"> <path fill="currentColor" d="M91.5,70.8c-4.8,2.5-29.7,12.7-35,15.5C51.2,89,48.3,89,44.1,87c-4.2-2-30.7-12.7-35.4-15 C6.3,70.9,5,69.9,5,69v-9.1c0,0,34.5-7.5,40-9.5c5.6-2,7.5-2.1,12.2-0.3c4.7,1.7,33.1,6.8,37.7,8.6l0,9 C95,68.5,93.9,69.5,91.5,70.8"/> <path fill="currentColor" d="M91.5,61.7c-4.8,2.5-29.7,12.7-35,15.5C51.2,80,48.3,80,44.1,78c-4.2-2-30.7-12.7-35.4-15 c-4.8-2.3-4.9-3.8-0.2-5.7c4.7-1.8,31-12.2,36.6-14.2c5.6-2,7.5-2.1,12.2-0.3c4.7,1.7,29.5,11.6,34.1,13.3 C96.1,57.8,96.3,59.2,91.5,61.7"/> <path fill="currentColor" d="M91.5,56c-4.8,2.5-29.7,12.7-35,15.5c-5.3,2.8-8.2,2.7-12.4,0.7c-4.2-2-30.7-12.7-35.4-15 c-2.4-1.1-3.6-2.1-3.6-3v-9.1c0,0,34.5-7.5,40-9.5c5.6-2,7.5-2.1,12.2-0.3c4.7,1.7,33.1,6.8,37.7,8.6l0,9 C95,53.8,93.9,54.8,91.5,56"/> <path fill="currentColor" d="M91.5,47c-4.8,2.5-29.7,12.7-35,15.5c-5.3,2.8-8.2,2.7-12.4,0.7c-4.2-2-30.7-12.7-35.4-15 c-4.8-2.3-4.9-3.8-0.2-5.7c4.7-1.8,31-12.2,36.6-14.2c5.6-2,7.5-2.1,12.2-0.3c4.7,1.7,29.5,11.6,34.1,13.3 C96.1,43.1,96.3,44.5,91.5,47"/> <path fill="currentColor" d="M91.5,40.8c-4.8,2.5-29.7,12.7-35,15.5C51.2,59,48.3,59,44.1,57c-4.2-2-30.7-12.7-35.4-15 C6.3,40.9,5,39.9,5,39v-9.1c0,0,34.5-7.5,40-9.5c5.6-2,7.5-2.1,12.2-0.3c4.7,1.7,33.1,6.8,37.7,8.6l0,9 C95,38.5,93.9,39.5,91.5,40.8"/> <path fill="currentColor" d="M91.5,31.7c-4.8,2.5-29.7,12.7-35,15.5C51.2,50,48.3,50,44.1,48c-4.2-2-30.7-12.7-35.4-15 c-4.8-2.3-4.9-3.8-0.2-5.7c4.7-1.8,31-12.2,36.6-14.2c5.6-2,7.5-2.1,12.2-0.3c4.7,1.7,29.5,11.6,34.1,13.3 C96.1,27.8,96.3,29.2,91.5,31.7"/> <path fill="currentColor" d="M61,22.9l-7.7,0.8l-1.7,4.2l-2.8-4.7l-8.9-0.8l6.7-2.4l-2-3.7l6.2,2.4l5.9-1.9L55,20.6L61,22.9 M51.1,43.1 l-14.4-6l20.7-3.2L51.1,43.1 M31,25.2c6.1,0,11.1,1.9,11.1,4.3c0,2.4-5,4.3-11.1,4.3S20,31.9,20,29.5C20,27.1,24.9,25.2,31,25.2"/> <path fill="currentColor" d="M70.1,24l12.2,4.8l-12.2,4.8L70.1,24"/> <path fill="currentColor" d="M56.6,29.4L70.1,24l0,9.7l-1.3,0.5L56.6,29.4"/> </g></svg>
+```
+
+Source: log-z/logos / `redis` (MIT)
+
+### nginx
+Nginx.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>NGINX</title><path d="M12 0L1.605 6v12L12 24l10.395-6V6L12 0zm6 16.59c0 .705-.646 1.29-1.529 1.29-.631 0-1.351-.255-1.801-.81l-6-7.141v6.66c0 .721-.57 1.29-1.274 1.29H7.32c-.721 0-1.29-.6-1.29-1.29V7.41c0-.705.63-1.29 1.5-1.29.646 0 1.38.255 1.83.81l5.97 7.141V7.41c0-.721.6-1.29 1.29-1.29h.075c.72 0 1.29.6 1.29 1.29v9.18H18z"/></svg>
+```
+
+Source: Simple Icons / `nginx` (CC0)
+
+### gitea
+Gitea self-hosted git.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Gitea</title><path d="M4.209 4.603c-.247 0-.525.02-.84.088-.333.07-1.28.283-2.054 1.027C-.403 7.25.035 9.685.089 10.052c.065.446.263 1.687 1.21 2.768 1.749 2.141 5.513 2.092 5.513 2.092s.462 1.103 1.168 2.119c.955 1.263 1.936 2.248 2.89 2.367 2.406 0 7.212-.004 7.212-.004s.458.004 1.08-.394c.535-.324 1.013-.893 1.013-.893s.492-.527 1.18-1.73c.21-.37.385-.729.538-1.068 0 0 2.107-4.471 2.107-8.823-.042-1.318-.367-1.55-.443-1.627-.156-.156-.366-.153-.366-.153s-4.475.252-6.792.306c-.508.011-1.012.023-1.512.027v4.474l-.634-.301c0-1.39-.004-4.17-.004-4.17-1.107.016-3.405-.084-3.405-.084s-5.399-.27-5.987-.324c-.187-.011-.401-.032-.648-.032zm.354 1.832h.111s.271 2.269.6 3.597C5.549 11.147 6.22 13 6.22 13s-.996-.119-1.641-.348c-.99-.324-1.409-.714-1.409-.714s-.73-.511-1.096-1.52C1.444 8.73 2.021 7.7 2.021 7.7s.32-.859 1.47-1.145c.395-.106.863-.12 1.072-.12zm8.33 2.554c.26.003.509.127.509.127l.868.422-.529 1.075a.686.686 0 0 0-.614.359.685.685 0 0 0 .072.756l-.939 1.924a.69.69 0 0 0-.66.527.687.687 0 0 0 .347.763.686.686 0 0 0 .867-.206.688.688 0 0 0-.069-.882l.916-1.874a.667.667 0 0 0 .237-.02.657.657 0 0 0 .271-.137 8.826 8.826 0 0 1 1.016.512.761.761 0 0 1 .286.282c.073.21-.073.569-.073.569-.087.29-.702 1.55-.702 1.55a.692.692 0 0 0-.676.477.681.681 0 1 0 1.157-.252c.073-.141.141-.282.214-.431.19-.397.515-1.16.515-1.16.035-.066.218-.394.103-.814-.095-.435-.48-.638-.48-.638-.467-.301-1.116-.58-1.116-.58s0-.156-.042-.27a.688.688 0 0 0-.148-.241l.516-1.062 2.89 1.401s.48.218.583.619c.073.282-.019.534-.069.657-.24.587-2.1 4.317-2.1 4.317s-.232.554-.748.588a1.065 1.065 0 0 1-.393-.045l-.202-.08-4.31-2.1s-.417-.218-.49-.596c-.083-.31.104-.691.104-.691l2.073-4.272s.183-.37.466-.497a.855.855 0 0 1 .35-.077z"/></svg>
+```
+
+Source: Simple Icons / `gitea` (CC0)
+
+### keycloak
+Keycloak identity / SSO.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Keycloak</title><path d="m18.742 1.182-12.493.002C4.155 4.784 2.079 8.393 0 12.002c2.071 3.612 4.162 7.214 6.252 10.816l12.49-.004 3.089-5.404h2.158v-.002H24L23.996 6.59h-2.168zM8.327 4.792h2.081l1.04 1.8-3.12 5.413 3.117 5.403-1.035 1.81H8.327a2047.566 2047.566 0 0 0-4.168-7.204C5.547 9.606 6.937 7.2 8.327 4.792Zm6.241 0 2.086.003c1.393 2.405 2.78 4.813 4.166 7.222l-4.167 7.2h-2.08c-.382-.562-1.038-1.808-1.038-1.808l3.123-5.405-3.124-5.413z"/></svg>
+```
+
+Source: Simple Icons / `keycloak` (CC0)
+
+### active-directory
+Active Directory / LDAP identity directory.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6v12a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2" /> <path d="M10 16h6" /> <path d="M11 11a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /> <path d="M4 8h3" /> <path d="M4 12h3" /> <path d="M4 16h3" /></svg>
+```
+
+Source: Tabler Icons / `address-book` (MIT)
+
+### minio
+MinIO S3-compatible object storage.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>MinIO</title><path d="M13.2072.006c-.6216-.0478-1.2.1943-1.6211.582a2.15 2.15 0 0 0-.0938 3.0352l3.4082 3.5507a3.042 3.042 0 0 1-.664 4.6875l-.463.2383V7.2853a15.4198 15.4198 0 0 0-8.0174 10.4862v.0176l6.5487-3.3281v7.621L13.7794 24V13.6817l.8965-.4629a4.4432 4.4432 0 0 0 1.2207-7.0292l-3.371-3.5254a.7489.7489 0 0 1 .037-1.0547.7522.7522 0 0 1 1.0567.0371l.4668.4863-.006.0059 4.0704 4.2441a.0566.0566 0 0 0 .082 0 .06.06 0 0 0 0-.0703l-3.1406-5.1425-.1484.1425.1484-.1445C14.4945.3926 13.8287.0538 13.2072.006Zm-.9024 9.8652v2.9941l-4.1523 2.1484a13.9787 13.9787 0 0 1 2.7676-3.9277 14.1784 14.1784 0 0 1 1.3847-1.2148z"/></svg>
+```
+
+Source: Simple Icons / `minio` (CC0)
+
+### mysql
+MySQL.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 100 100" fill="currentColor"><g id="mysql"> <path fill="currentColor" d="M87.9,74.2c-4.9-0.1-8.7,0.4-11.9,1.7c-0.9,0.4-2.4,0.4-2.5,1.5c0.5,0.5,0.6,1.3,1,2c0.7,1.2,2,2.9,3.2,3.7 c1.3,1,2.6,2,3.9,2.8c2.4,1.5,5.1,2.3,7.4,3.8c1.4,0.9,2.7,2,4,2.9c0.7,0.5,1.1,1.3,2,1.6v-0.2c-0.4-0.6-0.6-1.3-1-2 c-0.6-0.6-1.2-1.2-1.8-1.8c-1.8-2.4-4-4.5-6.4-6.2c-2-1.4-6.2-3.2-7-5.5c0,0-0.1-0.1-0.1-0.1c1.3-0.1,2.9-0.6,4.2-1 c2.1-0.6,4-0.4,6.1-1c1-0.2,2-0.6,2.9-0.9v-0.6c-1.1-1.1-1.9-2.6-3.1-3.6c-3.1-2.7-6.6-5.3-10.1-7.5c-1.9-1.2-4.3-2-6.4-3.1 c-0.7-0.4-2-0.6-2.4-1.2c-1.1-1.3-1.7-3.1-2.5-4.7c-1.8-3.4-3.5-7.1-5-10.7c-1.1-2.4-1.8-4.8-3.1-7c-6.3-10.4-13.2-16.8-23.7-23 c-2.3-1.3-5-1.8-7.8-2.5c-1.5-0.1-3.1-0.2-4.6-0.2c-1-0.4-2-1.6-2.8-2.2C17,7.3,8,2.5,5.4,8.9c-1.7,4,2.4,7.9,3.9,9.9 c1,1.4,2.4,3,3.1,4.6c0.4,1,0.6,2.2,1,3.3c1,2.7,1.9,5.7,3.2,8.2c0.7,1.3,1.4,2.6,2.3,3.8c0.5,0.7,1.3,1,1.5,2.1 c-0.9,1.2-0.9,3.1-1.4,4.6c-2.2,6.9-1.3,15.5,1.8,20.6c1,1.5,3.3,4.9,6.4,3.6c2.8-1.1,2.1-4.6,2.9-7.7c0.2-0.7,0.1-1.2,0.4-1.7v0.1 c0.9,1.7,1.7,3.4,2.5,5.1c1.9,3,5.2,6.1,8,8.2c1.5,1.1,2.6,3,4.5,3.7v-0.2h-0.1c-0.4-0.6-0.9-0.8-1.4-1.2c-1.1-1.1-2.3-2.5-3.2-3.7 c-2.6-3.4-4.8-7.2-6.9-11.2c-1-1.9-1.8-4-2.6-5.9c-0.4-0.7-0.4-1.8-1-2.2c-0.9,1.3-2.3,2.5-2.9,4.2c-1.2,2.6-1.3,5.9-1.7,9.3 c-0.2,0.1-0.1,0-0.2,0.1c-2-0.5-2.6-2.5-3.4-4.2C20.1,58,19.8,51,21.4,45.9c0.4-1.3,2.3-5.3,1.5-6.6c-0.4-1.2-1.6-1.8-2.3-2.8 c-0.8-1.2-1.7-2.6-2.2-3.9c-1.5-3.4-2.2-7.2-3.8-10.7c-0.7-1.6-2-3.3-3.1-4.7c-1.2-1.7-2.4-2.8-3.4-4.8C8,11.8,7.5,10.7,8,10 c0.1-0.5,0.4-0.7,0.9-0.8c0.8-0.7,3.1,0.2,3.9,0.6c2.3,0.9,4.2,1.8,6.1,3.1c0.9,0.6,1.8,1.8,2.9,2.1H23c2,0.4,4.2,0.1,6,0.7 c3.2,1,6.2,2.6,8.8,4.2c8,5.1,14.6,12.3,19.1,21c0.7,1.4,1,2.7,1.7,4.2c1.3,3,2.9,6.1,4.2,9c1.3,2.9,2.5,5.8,4.3,8.2 c0.9,1.3,4.6,2,6.2,2.6c1.2,0.6,3.1,1,4.2,1.7c2.1,1.3,4.2,2.8,6.1,4.2C84.7,71.5,87.7,73,87.9,74.2"/> <path fill="currentColor" d="M25.5,20.9c-1,0-1.8,0.1-2.5,0.3v0.1h0.1c0.5,1,1.4,1.7,2,2.5c0.5,1,0.9,2,1.4,2.9c0.1-0.1,0.1-0.1,0.1-0.1 c0.9-0.6,1.3-1.6,1.3-3.1c-0.4-0.4-0.4-0.9-0.7-1.3C26.7,21.7,26,21.4,25.5,20.9"/> </g></svg>
+```
+
+Source: log-z/logos / `mysql` (MIT)
+
+### oracle
+Oracle Database.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Oracle</title><path d="M16.412 4.412h-8.82a7.588 7.588 0 0 0-.008 15.176h8.828a7.588 7.588 0 0 0 0-15.176zm-.193 12.502H7.786a4.915 4.915 0 0 1 0-9.828h8.433a4.914 4.914 0 1 1 0 9.828z"/></svg>
+```
+
+Source: Simple Icons / `oracle` (CC0)
+
+### sqlserver
+Microsoft SQL Server.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Microsoft SQL Server</title><path d="M4.724 2.505s-.08.127-.004.315c.046.116.186.256.34.404 0 0 1.615 1.576 1.813 1.804.895 1.033 1.284 2.05 1.32 3.453.022.9-.151 1.692-.573 2.613-.756 1.649-2.35 3.468-4.81 5.49l.36-.12c.233-.173.548-.359 1.292-.766 1.713-.936 3.636-1.798 5.999-2.686 3.399-1.277 8.99-2.776 12.172-3.263l.331-.051-.05-.08c-.292-.452-.49-.731-.73-1.027-.697-.863-1.542-1.567-2.577-2.146-1.422-.797-3.267-1.416-5.6-1.88a67.93 67.93 0 00-2.191-.375 209.29 209.29 0 01-3.924-.64c-.425-.075-1.06-.181-1.481-.272a9.404 9.404 0 01-.961-.258c-.268-.105-.645-.207-.726-.515zm.936.909c.003-.002.063.017.137.042.136.046.316.1.526.159.146.04.307.084.479.127.218.056.399.104.401.107.024.027.391 1.198.516 1.647.048.172.084.315.081.318a.789.789 0 01-.09-.14c-.424-.746-1.097-1.505-1.874-2.116a3.104 3.104 0 01-.176-.144zm1.79.494c.018-.001.099.012.195.034.619.136 1.725.35 2.435.47.119.02.216.04.216.047a.348.348 0 01-.098.062c-.119.06-.602.349-.763.457-.403.27-.766.559-1.03.821a5.4 5.4 0 01-.197.192c-.003 0-.022-.062-.041-.137a12.09 12.09 0 00-.65-1.779 1.801 1.801 0 01-.071-.165c0-.001 0-.002.004-.002zm3.147.598c.02.007.06.13.129.404a6.05 6.05 0 01.153 1.977l-.012.038-.187-.06c-.388-.124-1.02-.31-1.562-.46a6.625 6.625 0 01-.56-.17c0-.022.449-.471.642-.642.369-.326 1.362-1.098 1.397-1.087zm.25.036c.011-.01 1.504.248 2.182.378.506.097 1.237.25 1.281.269.022.008-.054.05-.297.16-.96.432-1.672.82-2.38 1.293-.186.124-.341.226-.344.226-.004 0-.006-.104-.006-.23 0-.69-.139-1.387-.391-1.976a.688.688 0 01-.045-.12zm3.86.764c.011.011-.038.306-.08.48-.132.54-.482 1.344-.914 2.099a2.26 2.26 0 01-.152.246 1.499 1.499 0 01-.219-.115c-.422-.247-.9-.48-1.425-.697a4.588 4.588 0 01-.278-.12c-.024-.022 1.143-.795 1.762-1.166.495-.297 1.292-.741 1.306-.727zm.276.043c.033 0 .695.18 1.037.283.853.255 1.837.614 2.475.904l.265.12-.187.043c-1.561.36-2.9.773-4.188 1.296-.107.044-.2.08-.207.08a.911.911 0 01.075-.185c.388-.823.638-1.687.703-2.42.006-.067.018-.121.027-.121zm-6.58 1.512c.01-.01.514.108.789.185.413.116 1.292.41 1.292.433 0 .004-.097.089-.215.188-.475.397-.934.813-1.483 1.343a5.27 5.27 0 01-.308.285c-.007 0-.01-.023-.006-.05.083-.611.065-1.395-.05-2.193a1.29 1.29 0 01-.02-.19zm10.61.01c.007.008-.234.385-.384.6-.22.314-.537.726-1.261 1.637l-.954 1.202a9.418 9.418 0 01-.269.333c-.003 0-.05-.066-.103-.146a7.584 7.584 0 00-1.47-1.625 9.59 9.59 0 00-.27-.218.427.427 0 01-.074-.063c0-.01.617-.274 1.088-.466a37.02 37.02 0 012.778-.99c.442-.135.912-.27.919-.264zm.278.073a.93.93 0 01.207.1 12.274 12.274 0 012.428 1.824c.194.19.667.683.66.687l-.363.029c-1.53.115-3.486.44-5.37.893-.128.03-.238.056-.246.056-.007 0 .133-.14.311-.312 1.107-1.063 1.611-1.734 2.205-2.934.088-.178.163-.333.166-.342h.002zm-8.088.83c.051.01.523.23.879.408.325.163.818.426.843.449.003.003-.17.093-.386.201-.683.342-1.268.664-1.878 1.037-.175.107-.32.194-.325.194-.015 0-.01-.013.088-.191a7.702 7.702 0 00.738-2.002c.014-.062.03-.1.041-.097zm-.475.084c.01.01-.112.46-.19.7a9.092 9.092 0 01-.835 1.808l-.09.147-.203-.197a2.671 2.671 0 00-.676-.5 1.009 1.009 0 01-.176-.102c0-.03.62-.593 1.098-.998.343-.29 1.064-.867 1.072-.858zm2.888 1.188l.177.115c.407.264.888.619 1.255.924.206.172.605.53.687.616l.044.047-.294.082a53.8 53.8 0 00-4.45 1.424c-.167.061-.31.112-.32.112-.021 0-.042.019.333-.326.96-.883 1.807-1.856 2.44-2.802zm-.759.19c.009.009-.492.71-.789 1.106-.356.473-.99 1.265-1.426 1.78a8.769 8.769 0 01-.346.397c-.01.003-.015-.05-.016-.133 0-.44-.112-.91-.308-1.308-.083-.168-.097-.208-.08-.224.068-.062 1.127-.666 1.794-1.023.459-.246 1.163-.604 1.171-.595zm-4.59 1.125a3.988 3.988 0 01.812.518c.008.005-.087.083-.21.172-.345.249-.87.644-1.173.886-.32.255-.331.263-.295.207.24-.367.36-.574.486-.84.113-.236.224-.516.304-.76a.675.675 0 01.077-.183zm1.223.96c.017-.003.04.028.139.175.207.31.366.722.407 1.058l.008.073-.497.192c-.89.346-1.711.687-2.266.94-.155.072-.428.202-.607.292-.179.09-.325.16-.325.156 0-.004.112-.089.25-.188 1.087-.79 2.025-1.654 2.732-2.519.075-.092.144-.172.153-.178a.016.016 0 01.006-.002zm-.564.14c.015.014-.401.484-.681.77-.7.715-1.396 1.275-2.256 1.821-.108.069-.206.13-.22.138-.023.014.008-.022.386-.434.238-.259.42-.474.628-.743.136-.177.162-.202.362-.346.537-.388 1.767-1.221 1.781-1.207zM9.925 0c-.08-.01-1.371.455-2.2.791-1.123.457-1.996.894-2.534 1.272-.2.14-.452.393-.488.49a.356.356 0 00-.021.123l.488.46 1.158.37L9.087 4l3.153.542.032-.27-.028-.005-.415-.066-.085-.148a27.702 27.702 0 01-1.177-2.325 12.264 12.264 0 01-.53-1.465C9.969.02 9.962.005 9.925 0zm-.061.186h.005c.003.003.017.105.032.225.062.508.176 1 .354 1.53.134.4.136.377-.024.332-.37-.103-2.032-.388-3.234-.555a8.796 8.796 0 01-.357-.053c-.015-.015.867-.477 1.258-.66.501-.232 1.867-.8 1.966-.819zM6.362 1.814l.141.048c.772.262 2.706.632 3.775.72.12.01.222.021.225.024.003.003-.1.058-.228.122-.515.258-1.083.573-1.476.819-.115.072-.22.13-.235.129a4.868 4.868 0 01-.17-.027l-.144-.023-.365-.355c-.641-.62-1.141-1.1-1.335-1.28zm-.143.114l.511.638c.282.35.564.699.626.774.063.075.111.138.108.14-.014.011-.74-.13-1.125-.219a8.532 8.532 0 01-.803-.212l-.2-.064.001-.049c.003-.245.312-.607.836-.976zm4.352.869c.015.001.032.032.077.131.124.272.51 1.008.603 1.15.03.047.08.05-.433-.033-1.23-.198-1.629-.265-1.629-.273a.36.36 0 01.083-.054 7.13 7.13 0 001.107-.767l.175-.147c.006-.005.012-.008.017-.007zm4.309 8.408l-4.808 1.568-4.18 1.846-1.17.31c-.298.282-.613.568-.948.86-.37.321-.716.612-.98.822a7.46 7.46 0 00-.953.945c-.332.414-.592.854-.704 1.193-.2.61-.103 1.228.285 1.798.495.728 1.48 1.468 2.625 1.972.585.256 1.57.588 2.31.774 1.233.312 3.614.65 4.926.7.266.01.62.01.637-.002.028-.019.233-.405.47-.89.806-1.646 1.389-3.19 1.703-4.508.19-.799.338-1.863.434-3.125.027-.354.037-1.533.016-1.934a13.564 13.564 0 00-.183-1.706.435.435 0 01-.012-.15c.014-.01.059-.025.65-.197zm-1.1.645c.045 0 .16 1.114.191 1.82.006.151.005.247-.004.247-.028 0-.615-.345-1.032-.606a28.716 28.716 0 01-1.162-.772c-.035-.028-.031-.029.266-.131.505-.174 1.704-.558 1.742-.558zm-2.448.803c.03 0 .115.047.315.172.75.47 1.766 1.035 2.2 1.225.136.06.151.036-.16.247-.662.45-1.486.892-2.497 1.342a7.59 7.59 0 01-.331.142.989.989 0 01.043-.2c.245-.905.383-1.82.387-2.554.002-.362.002-.364.037-.373h.006zm-.504.193c.021.022.006.834-.02 1.056a9.206 9.206 0 01-.418 1.837c-.014.017-.511-.468-.676-.66a4.918 4.918 0 01-.669-.973c-.082-.162-.214-.484-.202-.493.056-.04 1.971-.78 1.985-.767zm-2.375.936c.004 0 .008.001.01.004a.881.881 0 01.056.131c.116.315.376.782.602 1.08a6.247 6.247 0 001.017 1.06c.023.02.03.016-.562.24a48.53 48.53 0 01-2.294.8c-.327.106-.604.195-.615.2-.033.011-.023-.009.073-.158.427-.666 1.073-1.97 1.435-2.892.062-.16.122-.32.133-.356.015-.052.031-.07.08-.092a.149.149 0 01.065-.017zm-.728.3c.01.009-.174.398-.356.751-.351.686-.739 1.361-1.253 2.185l-.182.288c-.018.027-.026.018-.082-.094a3.307 3.307 0 01-.28-.842 3.39 3.39 0 01.02-1.083c.047-.227.045-.222.152-.276.462-.237 1.966-.942 1.981-.929zm6.268.255v.154a20.106 20.106 0 01-.255 2.992 9.362 9.362 0 01-1.898-.782c-.354-.194-.865-.507-.85-.522.003-.004.154-.083.334-.177.714-.37 1.395-.77 1.988-1.166.222-.148.555-.389.629-.454zM4.981 15.41c.015 0 .011.028-.012.161a4.137 4.137 0 00-.041.39c-.03.532.057.924.32 1.46.074.15.132.274.129.276-.027.023-2.43.726-3.186.933l-.435.12c-.027.008-.029.002-.02-.06.083-.533.49-1.232 1.058-1.82.378-.39.68-.622 1.195-.915a30.782 30.782 0 01.992-.545zm5.669 1.015c.002-.002.091.045.197.107.777.449 1.86.87 2.783 1.081l.084.02-.115.063c-.482.268-2.071.929-3.694 1.537a68.82 68.82 0 00-.513.194.314.314 0 01-.082.027c0-.004.067-.132.149-.286.456-.852.91-1.887 1.144-2.605.023-.073.044-.135.047-.138zm-.578.19a1.39 1.39 0 01-.063.169 23.534 23.534 0 01-1.261 2.54 9.009 9.009 0 01-.252.433c-.005 0-.114-.066-.244-.145-.77-.472-1.452-1.052-1.9-1.617l-.064-.08.332-.091a23.616 23.616 0 003.19-1.103c.142-.06.26-.109.262-.106zm3.59 1.253c.001 0 .002.001.002.003 0 .08-.183.828-.336 1.37-.128.453-.236.808-.435 1.437a8.533 8.533 0 01-.168.504 15.004 15.004 0 01-3-.841 7.964 7.964 0 01-.639-.283c-.006-.007.213-.11.486-.23 1.655-.721 3.369-1.543 3.955-1.896a.432.432 0 01.135-.064zm-8.287.283c.009.009-.454.671-1.1 1.576l-.587.823c-.097.139-.245.358-.329.488l-.153.236-.162-.137c-.191-.16-.525-.501-.677-.69-.312-.389-.523-.798-.607-1.174-.038-.174-.04-.262-.003-.273a176.26 176.26 0 011.934-.455l1.3-.305c.209-.05.382-.09.384-.089zm.465.178l.117.131a6.763 6.763 0 001.706 1.394c.115.066.202.124.195.128a281.967 281.967 0 01-4.33 1.53.858.858 0 01-.072-.048l-.067-.048.105-.152c.34-.493.768-1.035 1.705-2.162zm2.9 2.073c.003-.003.165.054.362.128.473.177.844.292 1.347.418.617.155 1.51.31 2.038.354.08.006.122.016.11.024-.025.016-.56.194-.953.318a258.526 258.526 0 01-4.636 1.363c-.035.007-.157-.025-.157-.04 0-.009.087-.119.193-.246a22.027 22.027 0 001.476-1.984 56.9 56.9 0 01.22-.335zm-.642.018c.005.005-.253.418-.706 1.132-.192.301-.409.645-.483.762-.075.118-.184.298-.242.4l-.107.185-.054-.014c-.13-.035-1.049-.36-1.291-.456-.301-.12-.615-.264-.846-.389-.289-.156-.655-.388-.627-.397l1.105-.302c1.592-.434 2.473-.683 3.05-.864.109-.033.199-.059.2-.057zm4.523 1.061h.006c.015.038-.575 1.67-.79 2.188-.049.116-.066.145-.092.143a55.54 55.54 0 01-1.433-.2c-.906-.138-2.423-.403-2.806-.49l-.089-.02.543-.122c1.164-.262 1.723-.403 2.29-.577a16.544 16.544 0 002.138-.824c.113-.052.21-.093.233-.098Z"/></svg>
+```
+
+Source: Simple Icons / `microsoftsqlserver` (CC0)
+
+### sqlite
+SQLite embedded database.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>SQLite</title><path d="M21.678.521c-1.032-.92-2.28-.55-3.513.544a8.71 8.71 0 0 0-.547.535c-2.109 2.237-4.066 6.38-4.674 9.544.237.48.422 1.093.544 1.561a13.044 13.044 0 0 1 .164.703s-.019-.071-.096-.296l-.05-.146a1.689 1.689 0 0 0-.033-.08c-.138-.32-.518-.995-.686-1.289-.143.423-.27.818-.376 1.176.484.884.778 2.4.778 2.4s-.025-.099-.147-.442c-.107-.303-.644-1.244-.772-1.464-.217.804-.304 1.346-.226 1.478.152.256.296.698.422 1.186.286 1.1.485 2.44.485 2.44l.017.224a22.41 22.41 0 0 0 .056 2.748c.095 1.146.273 2.13.5 2.657l.155-.084c-.334-1.038-.47-2.399-.41-3.967.09-2.398.642-5.29 1.661-8.304 1.723-4.55 4.113-8.201 6.3-9.945-1.993 1.8-4.692 7.63-5.5 9.788-.904 2.416-1.545 4.684-1.931 6.857.666-2.037 2.821-2.912 2.821-2.912s1.057-1.304 2.292-3.166c-.74.169-1.955.458-2.362.629-.6.251-.762.337-.762.337s1.945-1.184 3.613-1.72C21.695 7.9 24.195 2.767 21.678.521m-18.573.543A1.842 1.842 0 0 0 1.27 2.9v16.608a1.84 1.84 0 0 0 1.835 1.834h9.418a22.953 22.953 0 0 1-.052-2.707c-.006-.062-.011-.141-.016-.2a27.01 27.01 0 0 0-.473-2.378c-.121-.47-.275-.898-.369-1.057-.116-.197-.098-.31-.097-.432 0-.12.015-.245.037-.386a9.98 9.98 0 0 1 .234-1.045l.217-.028c-.017-.035-.014-.065-.031-.097l-.041-.381a32.8 32.8 0 0 1 .382-1.194l.2-.019c-.008-.016-.01-.038-.018-.053l-.043-.316c.63-3.28 2.587-7.443 4.8-9.791.066-.069.133-.128.198-.194Z"/></svg>
+```
+
+Source: Simple Icons / `sqlite` (CC0)
+
+### hive
+Apache Hive data warehouse.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Apache Hive</title><path d="M5.902.258c-.331.216-.65.525-.994.877-.569.589-.947 1.164-1.526 1.59-.116.1-.441.26-.85.284-.192.01-.318.042-.672-.003-.312-.169-.608-.059-.897.287-.317.456-.72 1.322-.886 1.868-.345 1.39.533 2.536 1.375 3.42.749.73 1.18 1.188 1.488 1.859.233.435.405 1.032.592 1.45.067.133.053.132.235.172.39.084.934.084 1.417.126.209.003.496-.005.768-.033.375-.071.815-.14 1.185-.268.36-.09.682-.212.971-.325-.037.126-.313.249-.416.41-.962 1.376-1.24 2.605-1.09 4.51l-.008-.007.011.05.006.077c.097.874.298 1.6.6 2.43a6.8 6.8 0 0 0 .717 1.38c.072.101.152.205.238.31h-.002l.005.004c.93 1.13 2.706 2.45 5.098 2.986.457.062.975.029 1.463-.1 1.292-.392 3.925-1.319 3.925-1.319s-2.337.194-3.408.088c-.248-.039-.52-.052-.693-.221-.03-.037-.135-.25-.067-.251.093-.003.36-.113.77-.15-.877-.094-.865-.093-.929-.253a9.968 9.968 0 0 0-.409-.884c.386.033 1.24.08 1.529-.218 0 0-.505.058-.951.006a2.76 2.76 0 0 1-.484-.137c-.2-.079-.365-.103-.404-.154-.07-.177-.116-.236-.2-.473-.114-.315-.123-.665-.145-.986.292.36.664.663 1.157.818.006-.013.638.275 1.098.127l.088-.029c-.045.009-.307.02-.409-.03-.934-.398-1.075-.745-1.226-.918l-.403-.604c.123-.245.192-.254.355-.256.491.054.705.096 1.004.024.203.416.257.835.718 1.137 1.533.456 1.866-.135 2.237-.656 1.104.81 2.9 1.059 4.147.014 1.586-1.835 2.088-4.728 1.947-4.893-.198-.336-.457-.683-.68-.635-.796.217-1.09.62-1.877.529.094-.006.252-.008.253-.017.06-.667-.005-.99-.034-1.046-.24-.527-.554-1.082-.772-1.498-.057-.086-.223-.742-.5-1-.12-.102-.41-.37-.41-.37l-.026.285s.114.017.158.193c.079.322.313.854.542 1.33h-.37l.424.11c.228.465.437.852.467.888.193.312.148.673.155.98l-.11.055c-.017-.361-.405-.335-.732-.338l-.268-.066c.082.076.334.07.232.233-.086.046-.125.242-.174.407l-.145.007c.256.1.494.188.776.306l.142.021-.142.357-.193-.078-.007-.135c-.34-.136-.995-.193-1.019-.165-.242.237-.418.524-.609.8.262-.204.46-.512.813-.597.028-.003.378.065.568.098-.122.025-.32.034-.35.077-.269.332-.466.736-.697 1.105.319-.329.416-.666.957-.985.045-.03.375-.023.536.058-.051.183-.167.401-.26.607-.133.313-.386.601-.58.902.608-.74.435-.469.841-.946.17-.404.34-.84.497-1.271l.03-.016c.054.033.47-.008.795.012.559-.12.535-.367 1.018-.404.325-.025.358.586.353.634a7.248 7.248 0 0 1-.58 2.174c-.652 1.258-1.383 2.388-2.42 2.545-1.265.221-1.922-.332-2.608-.684l-.262.224c-.891.887-1.949.808-2.382-.351l-.003-.006a2.839 2.839 0 0 0-.092-.175c-.127-.246-.25-.495-.402-.724-1.338-1.058-.72-2.022-.364-2.632-.744-.188-1.73-.588-1.866-1.113-.219-1.7-.108-2.24.11-3.113-.996.21-2.006.419-3.077.776l-.001-.008c-.286.064-1.246.416-1.518.563-.617.179-1.13.366-1.917.563a2.934 2.934 0 0 1-.753-.002c-.566-.077-1.531-.008-1.593-.065-.383-.535-.488-1.493-.838-2.006l-.004-.005-.005-.004c-.203-.275-.441-.498-.675-.73C1.49 8.213.773 7.407.572 6.554c-.05-.252-.18-.513-.112-1.258l.002-.004.001-.003c.202-.697.53-1.265 1.087-1.834.58.01 1.153.022 1.6.108.205.034.631.09 1.071.254 1.115.415 2.587 1.097 2.587 1.097-1.105-.607-2.34-1.395-3.121-1.554-.117-.017-.188-.07-.222-.162 1.173-.69 1.388-1.502 2.16-2.23.353-.154.49-.232.79-.265 2.774.439 4.52 1.543 5.9 2.282.56.304 1.07.535 1.557.812.426.14 1.713 1.113 2.09 1.637.383.807.662 1.68.917 2.522.183.857.343 1.204.343 1.204s-.155-.716-.13-.845c.162.06.542.18.7.16 0 0-.705-.364-.797-.686-.296-1.033-.594-2.641-.674-2.725-.226-.284-1.168-1.005-1.746-1.339-.218-.126-.336-.204-.345-.26.184-.186.412-.433.617-.59.195-.15.374-.32.647-.42 1.2-.541 1.886.207 2.05.056 0 0-.259-.296-.144-.247.117.063.5.138.542.177.437.342 1.581 1.593 2.27 2.913.166.323.233.536.156.925-.077.39-.136.604-.22.864-.076.174-.505 1.365-.503 1.525-.087.653.28 1.471.28 1.471.003-.222-.014-.34.006-.499l.025-.284s-.016-.075-.013-.105c.019-.196.067-.361.081-.474.138-.853.377-1.467.65-2.216.08-.189.185-.294.18-.438.005-.255-.224-.598-.389-.933a10.141 10.141 0 0 0-.627-1.112c-.596-.857-1.103-1.527-2.033-1.947-.26-.114-1.284-.226-1.638-.16-.429.09-.797.178-1.092.367-.462.296-.826.755-1.252 1.025-.944-.472-1.4-.825-1.484-.874-.561-.3-1.234-.649-1.958-.98-.348-.321-2.504-1.096-4.479-1.25zm9.705 19.318c.004 0 .007-.001.007-.002zm1.957-16.262c.05.26.091.517.287.844.42.463.571.79.63.935.205.526.369 1.052.519 1.578-.05-.548-.237-1.136-.313-1.66-.043-.24-.954-1.68-1.123-1.697zm-7.078 2.51c1.051.267 2.609.274 3.368.743.011.041-.02.068-.066.09-.187-.026-.372-.077-.57-.03-.29.093-.548.269-.822.406.754-.154.965.027 1.538.075.62.236.985 1.375 1.394 1.696-.378-.827-.617-2.06-1.355-2.714-.917-.294-2.267-.226-3.487-.267zm6.987 4.916a3.036 3.036 0 0 0-.668.066c-.16.215-.17.433-.24.635.476-.525.665-.557 1.427-.666a4.429 4.429 0 0 0-.52-.035zm-7.787.365c.496 1.86 1.516 3.733 2.53 5.44.39.496.497.718 1.087 1.018-.049.103-.103.23-.162.376-1.132-.559-2.067-1.232-3.008-1.91-1.512-1.104-1.89-2.418-2.155-4.136a.363.363 0 0 1 .12-.108 4.556 4.556 0 0 1 1.588-.68zm8.185 1.135c-.466-.002-.851.16-1.351.482 0 0 .554-.08.544-.03-.037.175.048.575.073.602l.006-.005c0 .006-.003.008-.006.005l-.306.25c.654-.329 1.341-.263 2.039-.313 0 0-.588-.162-.552-.167.131-.019-.035-.613-.08-.626a4.2 4.2 0 0 1 .334-.094 2.81 2.81 0 0 0-.701-.104zm-1.351.482zm.904.081c.094.001.189.028.22.09a.484.484 0 0 1 .018.265.538.538 0 0 0-.395.12c-.071.07-.123-.347-.068-.412.034-.04.13-.064.225-.063zm3.017.298c.084-.001.256.009.287.12.02.062-.042.27-.072.292-.046.023-.356.003-.369-.061-.026-.076.037-.306.108-.348l.046-.003zm2.897.384l-.553.27c-.9.284-.954.03-1.29-.066.222.253.487.442.958.33.645-.196.667-.36.885-.534zm-16.499.699c.5 1.36 2.887 3.894 6.09 4.278l-.008.018c-.11.266-.202.724-.196 1.104l-.006.01c-4.155-.885-4.67-1.994-5.951-2.987-.093-.768-.105-1.602.071-2.423zm9.442 1.904c-.021 0-.033 0-.033.003-.296.21-.34.412-.334.586.491-.483.473-.485 1.19-.48a7.261 7.261 0 0 0-.823-.109zm.296.363c-.105.567-.487.97-.783 1.368-.059.093-.101.22.189.624.078.108.36.126.55.116-.193-.146-.488-.301-.536-.436.341.233.657.3.943.262.065-.007.146-.077.209-.183.127-.274.227-.34.328-.413l.232.29.262-.223c-.581-.455-1.07-.923-1.394-1.405zm-9.281 2.42c1.46.878 3.814 1.839 5.812 1.791.2.347.439.711.633 1.001-2.544.387-4.308-.391-5.387-.92l-.117-.118c-.345-.391-.676-1.134-.941-1.755zm6.884 3.456c.1.207.262.379.273.402.856 1.116-1.079.859-1.478.791-.71-.113-1.405-.391-2.065-.767 1.074-.021 2.208.06 3.27-.426Z"/></svg>
+```
+
+Source: Simple Icons / `apachehive` (CC0)
+
+### starrocks
+StarRocks MPP analytical DB.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 100 100" fill="currentColor"><g id="starrocks"> <g> <path fill="currentColor" d="M11.8,26.4c-0.1,2.2,0.9,3.4,2.3,4.5c9,7.4,18,14.8,27,22.2c2.5,2.1,2.7,3.5,1,6.2 c-4.4,6.7-8.8,13.4-13.2,20.1c-1.7,2.5-3.2,2.9-5.9,1.4c-2.8-1.6-5.6-3.2-8.4-4.8c-3.2-1.8-4.8-4.6-4.8-8.3c0-11.8,0-23.6,0-35.5 C9.8,30.2,10.3,28.4,11.8,26.4z"/> <path fill="currentColor" d="M87.9,73.8c0.6-2.3-0.5-3.5-1.9-4.6c-9-7.4-17.9-14.7-26.8-22.1c-2.9-2.4-3.1-3.6-1.1-6.7 c4.3-6.6,8.7-13.2,13-19.8c1.7-2.6,3.3-2.9,6-1.4c2.8,1.6,5.6,3.2,8.3,4.8c3.2,1.8,4.7,4.5,4.7,8.2c0,11.9,0,23.7,0,35.6 C90.2,69.9,89.6,71.9,87.9,73.8z"/> <path fill="currentColor" d="M67.1,56.8c0.6,0.4,17.3,14.1,17.5,14.3c2.4,2.2,2.2,4.1-0.6,5.8C76.8,81,57.3,92.1,54.8,93.6 c-3.2,1.9-6.4,1.9-9.6,0c-4.6-2.7-9.2-5.3-13.8-8c-2.2-1.3-2.2-2.7,0-3.9C42.3,75.5,53.1,69.2,64,63 C66.5,61.6,68.2,60.1,67.1,56.8z"/> <path fill="currentColor" d="M32.9,43.2c-0.6-0.4-17.3-14.1-17.5-14.3c-2.4-2.2-2.2-4.1,0.6-5.8C23.2,19,42.7,7.9,45.2,6.4 c3.2-1.9,6.4-1.9,9.6,0c4.6,2.7,9.2,5.3,13.8,8c2.2,1.3,2.2,2.7,0,3.9C57.7,24.5,46.9,30.8,36,37C33.5,38.4,31.8,39.9,32.9,43.2z" /> </g> </g></svg>
+```
+
+Source: log-z/logos / `starrocks` (MIT)
+
+## Data stack
+
+### nifi
+Apache NiFi data flow.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Apache NiFi</title><path d="M11.648 0a.093.093 0 0 0-.084.053A30.71 30.71 0 0 1 8.592 4.73c-2.09 2.728-5.145 6.466-5.145 10.364a8.201 8.201 0 0 0 8.201 8.2v-5.003c0-.106.087-.193.194-.193h2.81v-2.813c0-.106.087-.191.194-.191h5.004c0-3.9-3.056-7.636-5.145-10.364A30.712 30.712 0 0 1 11.732.053.094.094 0 0 0 11.648 0zm-1.632 3.867c.05 0 .08.034.037.112-.11.197-.218.397-.328.593-.396.702-.819 1.389-1.23 2.08-.196-.032-.39-.06-.585-.088.495-.651 1-1.296 1.48-1.959.153-.209.302-.423.454-.634a.24.24 0 0 1 .172-.104zM7.44 7.186c.221.035.444.076.666.119-.073.129-.15.256-.223.383a29.073 29.073 0 0 0-1.625 3.261c-.874 2.123-1.383 4.444-.77 6.707a8.222 8.222 0 0 0 2.217 3.74c.083.083-.02.216-.119.155a7.568 7.568 0 0 1-.93-.686A7.674 7.674 0 0 1 4.1 16.248c-.329-2.156.387-4.246 1.418-6.115a27.44 27.44 0 0 1 1.92-2.947zm7.931 8.435a.193.193 0 0 0-.191.191V18.3h2.677V15.62zm3.299 0V18.3h1.348a7.975 7.975 0 0 0 .515-2.678zm-6.303 3.004a.193.193 0 0 0-.191.193v2.485h2.678v-2.678Zm3.295.484v2.68h2.115a.562.562 0 0 0 .399-.162v-.004a.562.562 0 0 0 .16-.397V19.11zm3.674.182v1.98a7.999 7.999 0 0 0 1.217-1.98zm-6.969 2.824a.193.193 0 0 0-.191.192v1.672a7.997 7.997 0 0 0 2.678-.516v-1.348zm3.48.668V24a8.008 8.008 0 0 0 1.98-1.217z"/></svg>
+```
+
+Source: Simple Icons / `apachenifi` (CC0)
+
+### airflow
+Apache Airflow scheduler / DAG runner.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Apache Airflow</title><path d="M17.195 16.822l4.002-4.102C23.55 10.308 23.934 5.154 24 .43a.396.396 0 0 0-.246-.373.392.392 0 0 0-.437.09l-6.495 6.658-4.102-4.003C10.309.45 5.154.066.43 0H.423a.397.397 0 0 0-.277.683l6.658 6.494-4.003 4.103C.45 13.692.065 18.846 0 23.57a.398.398 0 0 0 .683.282l6.494-6.657 3.934 3.837.17.165c2.41 2.353 7.565 2.737 12.288 2.803h.006a.397.397 0 0 0 .277-.683l-6.657-6.495zm-.409-9.476c.04.115.05.24.031.344-.17.96-1.593 2.538-4.304 3.87a.597.597 0 0 0-.08-.079c1.432-3.155 1.828-5.61 1.175-7.322l3.058 2.984.12.203zm-.131 9.44a.73.73 0 0 1-.347.031c-.96-.171-2.537-1.594-3.87-4.307a.656.656 0 0 0 .08-.078l-.001.001c3.155 1.432 5.61 1.83 7.324 1.174l-2.969 3.043M23.568.392a.05.05 0 0 1 .052-.011c.018.006.03.024.029.043-.065 4.655-.437 9.726-2.703 12.05-1.53 1.565-4.326 1.419-8.283-.377.006-.037.021-.07.02-.108 0-.044-.017-.082-.026-.123 2.83-1.39 4.315-3.037 4.506-4.115.057-.322-.009-.542-.102-.688l6.507-6.67V.392zM.393.43A.045.045 0 0 1 .382.38C.39.36.403.343.425.35c4.655.065 9.727.438 12.05 2.703l.002.002c1.56 1.527 1.415 4.323-.379 8.28-.033-.005-.062-.02-.097-.02h-.008c-.045.001-.084.019-.126.027-1.39-2.83-3.037-4.314-4.115-4.506-.323-.057-.542.01-.688.103L.393.43zm11.94 11.563a.331.331 0 0 1-.327.335H12a.332.332 0 0 1-.004-.661c.172.016.333.144.335.326h.002zm-5.12 4.661a.722.722 0 0 1-.03-.345c.17-.96 1.595-2.54 4.309-3.873.013.016.019.035.033.05.013.012.03.017.044.028-1.434 3.158-1.83 5.613-1.177 7.326l-3.041-2.967m-.006-9.659a.735.735 0 0 1 .345-.031c.961.17 2.54 1.594 3.871 4.306a.597.597 0 0 0-.079.08c-2.167-.983-4.007-1.484-5.498-1.484-.68 0-1.289.103-1.825.308L7.128 7.35M.43 23.607c-.018.018-.038.015-.052.01-.019-.007-.028-.021-.028-.043.065-4.654.437-9.725 2.703-12.049 1.527-1.565 4.325-1.419 8.286.378-.006.035-.02.067-.02.104 0 .043.018.083.026.124-2.831 1.391-4.317 3.04-4.51 4.117-.057.322.01.542.103.688L.43 23.607zm23.144.042c-4.655-.065-9.726-.437-12.05-2.703l-.005-.006c-1.56-1.526-1.412-4.322.383-8.279.033.005.064.02.098.02h.009c.043 0 .08-.018.122-.027 1.39 2.832 3.036 4.317 4.115 4.51.083.014.16.021.23.021a.776.776 0 0 0 .45-.133l6.68 6.516c.02.02.016.04.01.052a.042.042 0 0 1-.042.029z"/></svg>
+```
+
+Source: Simple Icons / `apacheairflow` (CC0)
+
+### hop
+Apache Hop data orchestration / ETL.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 440.00003 506.47376" fill="currentColor"><metadata id="metadata9"><rdf:RDF><cc:Work rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs id="defs7" /><sodipodi:namedview pagecolor="#ffffff" bordercolor="#666666" borderopacity="1" objecttolerance="10" gridtolerance="10" guidetolerance="10" inkscape:pageopacity="0" inkscape:pageshadow="2" inkscape:window-width="1821" inkscape:window-height="1708" id="namedview5" showgrid="false" inkscape:zoom="1.6664426" inkscape:cx="209.765" inkscape:cy="297.64001" inkscape:window-x="8259" inkscape:window-y="49" inkscape:window-maximized="0" inkscape:current-layer="Livello_1" fit-margin-top="0" fit-margin-left="0" fit-margin-right="0" fit-margin-bottom="0" /> <path fill="currentColor" d="m 183.36503,200.61519 c -11.86432,12.89396 -19.46245,31.04416 -22.7926,54.44518 l -16.1611,113.54358 c -3.33015,23.40462 -0.89644,41.54942 7.29751,54.44338 3.13574,4.77921 8.20476,9.43602 15.20347,13.97042 6.99331,4.53799 16.81814,6.80429 29.47809,6.80429 12.89397,0 23.42443,-2.2663 31.59319,-6.80429 8.16696,-4.5344 14.49963,-9.19121 19.00163,-13.97042 11.86612,-12.89396 19.46245,-31.03876 22.7908,-54.44338 l 16.16111,-113.54358 c 3.33015,-23.40102 0.90004,-41.55122 -7.29572,-54.44518 -3.14294,-4.77381 -8.14896,-9.43061 -15.02526,-13.96861 -6.8763,-4.5344 -16.76234,-6.8061 -29.6563,-6.8061 -6.44788,0 -12.27294,0.66063 -17.47516,1.97109 -5.20044,1.31406 -9.91664,2.98813 -14.14503,5.01501 -4.22838,2.0305 -7.88974,4.24279 -10.97148,6.62609 -3.08893,2.38871 -5.75665,4.77742 -8.00315,7.16252 z m 17.30957,30.62474 c 2.82612,-5.60904 5.97265,-9.67182 9.43601,-12.17934 3.45614,-2.5075 6.83669,-3.99617 10.12904,-4.47679 3.29054,-0.47522 6.24627,-0.71643 8.87799,-0.71643 2.3833,0 5.21302,0.24121 8.49457,0.71643 3.27074,0.48062 6.28228,1.96929 9.03279,4.47679 2.74513,2.50752 4.73602,6.5703 5.96907,12.17934 1.22765,5.61265 1.11425,13.55459 -0.34562,23.81864 l -16.1611,113.54358 c -1.49407,10.51066 -3.65957,18.56961 -6.48569,24.17685 -2.82973,5.61265 -5.97627,9.67183 -9.43422,12.17935 -3.46334,2.5075 -6.8997,4.00157 -10.30724,4.47678 -3.41475,0.48243 -6.31648,0.71644 -8.69979,0.71644 -2.62991,0 -5.51724,-0.23401 -8.67097,-0.71644 -3.15735,-0.47521 -6.11307,-1.96928 -8.85639,-4.47678 -2.74873,-2.50752 -4.73961,-6.56489 -5.96727,-12.17935 -1.23485,-5.60724 -1.09985,-13.66619 0.39602,-24.17685 l 16.16111,-113.54358 c 1.45807,-10.26405 3.60196,-18.20599 6.43169,-23.81864 z m 237.94702,-31.47978 c -3.43276,24.12106 -11.4089,42.39006 -23.91945,54.8016 -13.36559,13.37639 -31.39158,20.06008 -54.07617,20.06008 l 4.84401,-34.02689 c 9.31181,0 15.7903,-1.07464 19.44266,-3.22394 3.64875,-2.1511 6.03386,-3.81797 7.16071,-5.01682 6.03206,-5.49024 10.20824,-16.35012 12.51955,-32.59403 1.22405,-8.59898 1.49226,-15.51848 0.80463,-20.77471 -0.68223,-5.25083 -2.1997,-9.31361 -4.5344,-12.17933 -2.3401,-2.86393 -5.52984,-4.77381 -9.56922,-5.72965 -4.04657,-0.95404 -8.81318,-1.43466 -14.30342,-1.43466 h -21.13113 l -11.5187,80.95134 -4.84401,34.02689 -16.36452,114.97644 h -0.009 c -7.86454,64.45723 -66.80452,116.87732 -131.44356,116.87732 -32.036,0 -60.79946,-12.54655 -80.99274,-35.33015 C 91.271226,449.23668 82.153826,420.55063 84.724339,389.95648 H 84.53533 l 0.621027,-4.48039 c 0.0018,-0.0108 0.0018,-0.0216 0.0036,-0.0342 h 0.0018 l 8.022946,-57.86894 H 42.323455 l -8.64938,62.38354 H 0 L 37.569446,125.97132 H 71.239921 L 47.160266,293.54606 H 98.021494 L 131.42376,61.420491 103.83935,59.3306 153.32712,0 193.31047,66.109697 165.09783,63.971202 118.5604,389.95829 h -0.0666 c -2.59211,22.41638 3.55696,43.31349 17.35817,58.88597 13.72019,15.48249 33.54806,24.00765 55.82764,24.00765 48.24571,0 92.24324,-39.21111 98.07729,-87.40823 l 0.28982,0.036 36.98442,-259.86299 h 54.8016 c 22.44339,0 38.58289,6.57029 48.41492,19.70007 8.94279,12.65815 11.73832,30.80295 8.37397,54.44338 z" id="path2" style="stroke-width:1.80008" /></svg>
+```
+
+Source: Direct fetch / `hop.apache.org` — verify license before use
+
+### pentaho
+Pentaho PDI (Kettle) ETL & data integration.
+
+```svg
+<svg width="24" height="24" viewBox="47.71126037 35.82 381.14207297 108.26" fill="currentColor"><path d="m362.54 80.24c9.08-8.82 23.7-3.89 23.94 9.45q.18 10.08-.06 20.18-.01.63-.65.63l-6.89-.01q-.63 0-.63-.62 0-8.99-.04-17.84c-.02-4.55-1.75-8.88-6.69-9.39-7.55-.79-9.34 4.31-9.27 10.89q.08 8.26-.04 16.46-.01.51-.52.51h-7.16a.53.53 0 0 1 -.53-.53v-70.35q0-.62.62-.62h6.86q.54 0 .54.54l-.03 40.46q0 .76.55.24z" fill="currentColor"/><path d="m82.81 89.31c-8.12 9.67-7.68 22.05.49 31.36 11.28 12.85 31.48 12.01 43.28 1.03 9.85-9.17 14.14-23.27 10.96-36.51-2.85-11.87-10.41-20.79-21.05-27.2q-3.14-1.89-6.24-2.82-28.14-8.39-49.64 10.78c-2.49 2.22-4.69 5.42-7.38 7.99q-.4.38-.59.89-.84 2.27-2.77 3.64a1.29 1.29 0 0 1 -1.96-1.5c3.26-8.79 9.65-15.86 17.09-21.29 27.21-19.86 71.01-8.21 80.26 25.87 4.81 17.71.14 39.11-15.41 50.33-15.86 11.44-37.32 12.2-52.23-.91-10-8.8-15.16-23.54-11.46-36.39 4.67-16.25 18.93-26.19 36.33-22.89 13.03 2.48 22 16.48 18.51 29.25-3.06 11.2-12.72 16.87-23.96 12.5-8.45-3.28-9.56-19.64 1.44-17.91 2.78.44 2.65 2.94 3.16 5.03q.12.5.63.59 2.11.4 3.3-.85c10.69-11.2-12.48-23.22-22.76-10.99z" fill="currentColor"/><path d="m298.38 84.19q.07 6.86.28 13.74c.13 4.14.94 7.32 5.94 6.18q.52-.12.59.41l.64 4.91q.08.59-.44.86c-5.9 3.11-13.97.92-14.66-6.62q-.81-8.83-.39-18.77a1.16 1.16 0 0 0 -1.19-1.21l-3.13.08q-.77.02-.77-.75v-5.51q0-.69.68-.65l3.79.17q.53.03.53-.5v-10.66q0-.62.63-.62h6.77a.89.89 0 0 1 .89.9l-.16 10.23q-.01.58.56.58l5.92-.04q.64-.01.64.63v5.48q0 .78-.78.76l-5.78-.14q-.56-.01-.56.54zm-60.36 18.09 3.14 3.12q.61.61-.1 1.1c-8.05 5.7-16.99 8.02-25.47 2.91-8.19-4.95-9.95-15.44-6.54-23.91 4.76-11.82 23.75-13.18 30.28-1.98q2.86 4.9 2.68 11.5-.03 1-1.02 1l-24.54-.06q-.48 0-.5.49c-.18 5.01 2.62 6.76 6.74 8.63 4.4 1.99 10.1.04 13.45-2.87a1.38 1.38 0 0 1 1.88.07zm-3.89-11.88c.1-10.91-18.06-11.56-18.27-.03q-.01.63.62.63h17.03q.61 0 .62-.6zm21.87-10.4a.37.37 0 0 0 .64.25q4.09-4.44 10.1-4.23 12.88.45 13.32 13.42.36 10.28.14 20.57-.01.49-.5.49h-6.91q-.54 0-.54-.54.02-9.38-.09-18.69c-.07-5.47-2.32-8.72-8.07-8.64-7.26.09-8.07 6.05-8.07 12.25q0 7.55-.03 15.1-.01.52-.53.52h-7.01q-.49 0-.5-.49l-.27-32.22a.83.83 0 0 1 .84-.84l6.99.07q.49.01.49.49zm82.07 26.35c-5.93 6.9-13.84 7.69-21.04 2.15-6.27-4.82-8.02-14.47-5.36-21.57 4.11-10.97 18.54-15.8 26.28-5.5q.55.73.55-.18v-3.71q0-.7.7-.71l7.13-.1q.67-.01.67.67l-.01 32.39q0 .71-.71.71h-7.15q-.63 0-.63-.62v-3.37q0-.65-.43-.16zm-9.644-1.62a10.93 9.91 90.7 0 0 10.044-10.81 10.93 9.91 90.7 0 0 -9.776-11.05 10.93 9.91 90.7 0 0 -10.042 10.808 10.93 9.91 90.7 0 0 9.775 11.05zm70.394 3.81c-10.36-6.35-9.85-26.33 2.39-30.98 7.95-3.02 18.86-2.2 23.58 5.76q6.05 10.21.09 20.53c-5.27 9.14-17.95 9.67-26.06 4.69zm1.22-18.42c-1.02 4.43-.39 10.32 3.58 13.33 4.57 3.46 7.08 3.18 11.6.2 4.45-2.94 4.89-9.91 3.64-14.46-2.83-10.4-16.45-9.34-18.82.93zm-225.82 16.33.04 21.42q.01.63-.63.63h-7.1a.53.53 0 0 1 -.53-.53v-50.5q0-.59.59-.6l6.99-.04q.76-.01.72.75l-.22 4.29q0 .14.12.22l.24.14q.2.12.31-.08c3.56-6.2 11.43-7.54 17.44-5.04 11.32 4.7 13.6 20.79 5.45 29.67-6.8 7.4-16.19 7.05-22.91-.52q-.51-.58-.51.19zm10.253-1.651a10.94 9.95 89.2 0 0 9.796-11.078 10.94 9.95 89.2 0 0 -10.102-10.8 10.94 9.95 89.2 0 0 -9.796 11.079 10.94 9.95 89.2 0 0 10.102 10.8z" fill="currentColor"/></svg>
+```
+
+Source: Direct fetch / `cdn.worldvectorlogo.com` — verify license before use
+
+### dagster
+Dagster data orchestration platform.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 483 483" fill="currentColor"><path d="M176.565 418.302C176.571 420.457 177.021 422.588 177.889 424.56C178.755 426.534 180.019 428.307 181.602 429.77C183.184 431.232 185.051 432.353 187.087 433.062C189.122 433.77 191.282 434.052 193.43 433.889C275.111 428.044 352.254 370.262 376.883 280.012C378.177 274.822 382.073 272.219 387.265 272.219C389.925 272.326 392.436 273.477 394.254 275.423C396.072 277.369 397.05 279.953 396.975 282.615C396.975 302.738 371.099 355.329 334.095 385.849C332.208 387.435 330.705 389.427 329.696 391.675C328.686 393.923 328.197 396.37 328.265 398.833C328.302 400.836 328.735 402.812 329.537 404.647C330.34 406.483 331.497 408.142 332.943 409.529C334.388 410.917 336.093 412.005 337.96 412.732C339.827 413.459 341.819 413.81 343.821 413.766C347.063 413.766 352.254 411.817 358.739 405.972C384.615 382.592 433.934 317.016 433.934 244.941C433.934 139.271 352.209 48.2148 238.152 48.2148C136.379 48.2148 48.2148 131.325 48.2148 227.421C48.2148 291.047 98.7816 339.088 165.544 339.088C216.765 339.088 264.09 302.738 277.059 252.734C278.352 247.544 282.234 244.941 287.424 244.941C290.087 245.049 292.599 246.199 294.42 248.144C296.24 250.091 297.221 252.674 297.152 255.337C297.152 278.064 254.363 357.324 167.492 357.324C146.745 357.324 120.823 351.479 102.662 341.082C100.231 339.904 97.5832 339.24 94.8843 339.133C92.8172 339.054 90.7566 339.403 88.8317 340.159C86.9056 340.914 85.1582 342.06 83.6963 343.524C82.2355 344.989 81.0933 346.739 80.3414 348.665C79.5895 350.593 79.2444 352.654 79.3282 354.721C79.412 357.368 80.1705 359.95 81.531 362.222C82.8926 364.495 84.8109 366.382 87.1063 367.705C111.095 381.404 139.621 388.482 168.786 388.482C241.394 388.482 307.517 339.133 326.971 266.419C328.265 261.228 332.161 258.626 337.337 258.626C339.999 258.733 342.512 259.883 344.333 261.829C346.153 263.775 347.134 266.359 347.063 269.022C347.063 298.887 293.909 394.982 191.482 402.776C187.519 403.07 183.805 404.817 181.051 407.683C178.298 410.549 176.7 414.33 176.565 418.302Z" fill="currentColor"/> <path d="M277.855 170.47C291.647 170.362 305.185 174.351 316.898 181.974C318.081 175.194 318.735 168.324 318.85 161.433C318.85 129.607 295.665 101.097 267.433 101.097C245.48 101.097 231.754 120.129 231.754 143.641C231.649 156.343 235.913 168.661 243.768 178.344C254.408 173.034 266.067 170.34 277.855 170.47Z" fill="#fff"/> <path d="M344.562 281.497C348.292 267.407 349.936 257.629 349.936 251.279C349.822 248.537 348.759 245.948 346.966 244.048C345.172 242.148 342.786 241.084 340.303 241.074C337.988 241.122 335.755 242.024 333.957 243.635C332.16 245.246 330.901 247.475 330.383 249.967C329.367 254.596 327.195 267.138 325.051 275.1C325.937 272.12 326.747 269.092 327.481 266.017C328.696 260.615 332.355 257.93 337.214 257.93C339.714 258.036 342.073 259.228 343.783 261.244C345.492 263.26 346.414 265.94 346.349 268.703C346.234 273.045 345.604 277.352 344.476 281.513L344.562 281.497Z" fill="currentColor"/> <path d="M399.727 266.284C399.61 263.692 398.549 261.246 396.765 259.45C394.979 257.654 392.604 256.643 390.129 256.627C387.823 256.676 385.598 257.53 383.808 259.055C382.017 260.579 380.764 262.687 380.247 265.043C379.22 269.528 377.01 281.576 374.842 289.095H374.942C375.998 285.747 376.981 282.354 377.794 278.9C379.006 273.788 382.657 271.246 387.519 271.246C390.012 271.348 392.365 272.476 394.068 274.384C395.771 276.293 396.687 278.829 396.618 281.441C396.549 284.615 396.133 287.771 395.377 290.844C398.401 279.723 399.727 271.68 399.727 266.284Z" fill="currentColor"/> <path d="M277.329 169.866C284.379 169.853 291.398 170.761 298.195 172.566C301.763 167.865 303.546 162.121 303.244 156.298C302.942 150.476 300.573 144.931 296.536 140.598C292.499 136.265 287.04 133.408 281.077 132.507C275.115 131.607 269.013 132.717 263.799 135.654L274.611 152.842L254.363 144.382C251.62 148.657 250.244 153.62 250.41 158.648C250.574 163.674 252.272 168.543 255.289 172.641C262.474 170.771 269.888 169.838 277.329 169.866Z" fill="currentColor"/> <path d="M124.435 281.513C132.166 281.513 138.433 275.245 138.433 267.515C138.433 259.784 132.166 253.517 124.435 253.517C116.705 253.517 110.438 259.784 110.438 267.515C110.438 275.245 116.705 281.513 124.435 281.513Z" fill="currentColor"/> <path d="M124.435 222.409C132.166 222.409 138.433 215.446 138.433 206.856C138.433 198.267 132.166 191.303 124.435 191.303C116.705 191.303 110.438 198.267 110.438 206.856C110.438 215.446 116.705 222.409 124.435 222.409Z" fill="currentColor"/> <path d="M94.8682 253.518C103.458 253.518 110.421 246.554 110.421 237.965C110.421 229.375 103.458 222.411 94.8682 222.411C86.2774 222.411 79.3145 229.375 79.3145 237.965C79.3145 246.554 86.2774 253.518 94.8682 253.518Z" fill="currentColor"/> <path d="M162.411 337.504H165.453C216.62 337.504 263.896 301.731 276.851 252.519C278.143 247.411 282.021 244.849 287.206 244.849C289.866 244.954 292.376 246.088 294.194 248.002C296.012 249.917 296.993 252.46 296.923 255.081C296.691 260.31 295.49 265.453 293.38 270.257C293.747 269.698 294.068 269.113 294.338 268.504C298.185 259.84 300.173 250.486 300.177 241.029C300.177 226.333 289.806 216.746 274.92 216.746C248.963 216.746 243.763 239.067 232.815 262.931C221.456 287.709 200.593 314.51 147.981 314.51C93.3159 314.51 37.1449 276.804 50.846 200.132C51.0123 199.173 51.1499 198.32 51.2557 197.526C49.249 207.43 48.2303 217.506 48.2148 227.606C48.3668 289.327 97.3149 336.067 162.411 337.504Z" fill="currentColor"/></svg>
+```
+
+Source: Direct fetch / `cdn.prod.website-files.com` — verify license before use
+
+### trino
+Trino distributed SQL query engine.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Trino</title><path d="M14.124 16.8529a.1615.1615 0 1 1 .1576.1614.1577.1577 0 0 1-.1576-.1614zm-5.607-.1576a.1614.1614 0 1 0 0 .3228.1614.1614 0 0 0 0-.3228zm10.1341-.6648v1.9869c-.031.5788-.524 1.0237-1.1029.9954h-.3843a5.0596 5.0596 0 0 1-1.1298 1.7178.3192.3192 0 0 0 0 .465l.2382.2191a.3036.3036 0 0 1 .0385.4304c-1.126 1.3835-2.9669 2.1521-5.0498 2.1521a6.575 6.575 0 0 1-4.8192-1.8985c-.0029-.0032-.0059-.0063-.0087-.0096a.6302.6302 0 0 1 .0548-.8896c.137-.1265.1371-.3462 0-.4727a4.944 4.944 0 0 1-1.126-1.714h-.3497c-.5797.0284-1.0737-.416-1.1068-.9954v-1.9869c.0351-.5779.5286-1.02 1.1068-.9915h.2728a5.7648 5.7648 0 0 1 2.0791-3.0936c-.4227-1.0991-1.1529-3.2551-1.226-5.0075C6.0229 4.4705 6.2189.078 7.8253.001c1.6064-.0768 1.3719 4.0275 1.0991 6.6946a32.732 32.732 0 0 0-.123 4.4503 6.994 6.994 0 0 1 2.4826-.4304 7.2414 7.2414 0 0 1 1.7371.2075c.2614-1.2682.8762-3.574 2.0292-5.1958 1.6717-2.352 3.4357-4.7808 4.6116-4.1006 1.176.6802-.3074 3.1398-1.3297 4.4272-1.0222 1.2874-2.7862 3.2089-3.3742 4.2274-.2114.3843-.4304.8032-.5956 1.1529a5.7375 5.7375 0 0 1 2.9169 3.6125h.073v-2.3058a.3075.3075 0 0 0-.1806-.2844.9148.9148 0 0 1-.5573-.8148 1.0184 1.0184 0 0 1 .9045-.9044c.5593-.0598 1.061.3452 1.1208.9044a.9187.9187 0 0 1-.5534.8148.3074.3074 0 0 0-.1691.2844v2.1522a.3113.3113 0 0 0 .1691.2805.9724.9724 0 0 1 .5648.857zm-1.0222-3.9737a.4345.4345 0 0 0 .4612-.4151.4151.4151 0 1 0-.4612.4151zm-.4227 3.4779c.0978.4794.148.9672.1498 1.4565v.3651h.4113a.3228.3228 0 0 0 .3228-.319v-1.0069c-.0111-.2967-.2733-.5256-.5688-.4957h-.3151zm-3.7278-4.481.611.2383a36.6046 36.6046 0 0 1 2.3828-3.8661c1.2874-1.7255 2.3365-3.5817 1.8715-3.8699-.465-.2883-1.6179 1.2297-2.7708 3.109a34.8978 34.8978 0 0 0-2.0945 4.3887zm-4.0544.6726.0154 1.3335c-.0039.2007.1881.3587.3843.3152a6.4317 6.4317 0 0 1 1.4565-.1653 5.995 5.995 0 0 1 1.4527.1729c.1956.0398.3853-.1153.3843-.3151v-1.3412a.319.319 0 0 0-.2421-.3113 6.664 6.664 0 0 0-1.6026-.1845 6.7093 6.7093 0 0 0-1.6025.1845.3188.3188 0 0 0-.246.3113zm1.7063 6.8637v.3843a.6878.6878 0 0 1-.4996.269c-.3074 0-.538-.4189-.538-.4189a.073.073 0 0 0-.1-.0307l-.0024.0013a.0693.0693 0 0 0-.0245.0947c.0115.0231.2806.4957.6649.4957a.7144.7144 0 0 0 .3843-.1268.3267.3267 0 0 1 .3612 0 .8332.8332 0 0 0 .4727.1345.957.957 0 0 0 .6572-.4803.0692.0692 0 0 0-.0269-.0961.0692.0692 0 0 0-.0999.0269c0 .0231-.2191.3843-.5419.4074a.8036.8036 0 0 1-.5765-.269v-.3843a.3154.3154 0 0 1 .1268-.2537c.196-.1499.415-.3958.415-.4919a.538.538 0 0 0-.5764-.4189c-.3766 0-.6533.2498-.6533.4573 0 .1345.2536.3382.4227.4612a.3226.3226 0 0 1 .1346.2383zM7.783 11.6455l.5765-.3074c-.0192-1.126-.0346-3.1436 0-4.5425.0538-2.0368.1537-4.5732-.5226-4.5463S6.6877 4.2285 6.949 7.007a33.0562 33.0562 0 0 0 .834 4.6385zm-3.305 5.3919a.319.319 0 0 0 .319.319h.3997a3.046 3.046 0 0 1 0-.3651 7.546 7.546 0 0 1 .1461-1.4565c-.0493.0002-.34.0005-.3866-.0021a.4881.4881 0 0 0-.4781.4979v1.0068zm.9184 1.4718a5.3254 5.3254 0 0 1-.123-.5573.3228.3228 0 0 0-.319-.2728h-.4957c.0007.0163-.0015.34.0009.355a.5188.5188 0 0 0 .5526.4827l.3842-.0076zm10.1265 2.917-.0884-.0807a.3229.3229 0 0 0-.3843-.0269 6.9823 6.9823 0 0 1-3.8046 1.0068 6.995 6.995 0 0 1-3.7932-1.0068.3228.3228 0 0 0-.3843.0269l-.0884.0807a.3154.3154 0 0 0 0 .4573 6.0305 6.0305 0 0 0 4.2927 1.5988 6.0453 6.0453 0 0 0 4.2889-1.5988.315.315 0 0 0-.0384-.4573zm1.4488-4.4158c0-2.4557-1.1529-4.3273-3.0245-5.2266-.2081-.1022-.4673.0594-.465.2921v1.3297a.3269.3269 0 0 0 .2037.296c1.7332.7109 2.9284 2.1866 2.9284 3.8776 0 2.2712-2.1559 3.8085-5.3419 3.8085-3.1859 0-5.3419-1.5411-5.3419-3.8085 0-1.691 1.1952-3.1667 2.9284-3.8776a.319.319 0 0 0 .2037-.296v-1.322c.0048-.2315-.2536-.3963-.4612-.2921-1.887.8839-3.0399 2.767-3.0399 5.2073 0 2.9899 2.2866 4.996 5.7108 4.996 3.4282.0001 5.6994-2.0098 5.6994-4.9844zm-8.6084-.538h-.0038a.5842.5842 0 1 0 .0038 0zm5.1614.5919c.0063.3226.2615.5789.584.5725a.5842.5842 0 1 0-.584-.5725zm4.5692.6225h-.4996a.3227.3227 0 0 0-.3151.2728c-.0346.173-.0768.3766-.1268.5573.0163.0007.3861-.0014.4012.0009a.5188.5188 0 0 0 .5366-.5004l.0037-.3306z"/></svg>
+```
+
+Source: Simple Icons / `trino` (CC0)
+
+### superset
+Apache Superset BI / dashboards.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Apache Superset</title><path d="M6.168 6.045C2.603 6.045 0 8.579 0 12.014c0 3.434 2.603 5.941 6.168 5.941 2.184 0 3.888-1.026 5.775-3.078 1.53 2.033 4.037 3.136 5.89 3.078 3.566 0 6.167-2.503 6.167-5.941 0-3.438-2.601-5.97-6.168-5.97-2.864 0-5.138 2.425-5.771 3.173-.76-.9-1.674-1.665-2.682-2.274-1.019-.588-2.084-.898-3.211-.898Zm2.875 1.303c1.156.595 1.952 1.42 2.639 2.304-.534.63-1.245 1.483-1.739 2.07-.56-.658-1.58-1.907-2.609-2.308ZM6.186 9.703c1.018.027 1.81.458 3.435 2.408-1.158 1.378-2.202 2.244-3.435 2.244-1.51 0-2.41-.99-2.41-2.31s.906-2.382 2.41-2.342zm11.535 0c1.51 0 2.408 1.026 2.408 2.342 0 1.315-.862 2.301-2.402 2.31-.571-.037-1.529-.026-3.442-2.314l.074-.09.002.002c1.122-1.328 2.097-2.25 3.36-2.25zm-3.762 2.738c.61.68 1.795 1.988 2.713 2.24l-1.684 2.016h-.002c-.753-.371-2.031-1.134-2.716-2.215l1.689-2.04z"/></svg>
+```
+
+Source: Simple Icons / `apachesuperset` (CC0)
+
+### redash
+Redash open-source BI & dashboards.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Redash</title><path d="M12 0C6.775 0 2.546 4.238 2.546 9.455c0 4.971 3.842 9.05 8.727 9.423V24c3.405-3.49 5.837-6.072 7.307-7.756a9.5 9.5 0 0 0 1.532-1.93l.005-.006q.003-.007.007-.014a9.4 9.4 0 0 0 1.33-4.84C21.455 4.238 17.226 0 12 0m3.821 5.818h1.385c.337.001.611.25.612.558v6.157c-.001.308-.275.557-.612.558H15.82c-.337-.001-.611-.25-.612-.558V6.376c0-.307.275-.557.612-.558M9.297 7.921h1.386c.338 0 .611.25.613.558v4.054c-.002.308-.275.557-.613.558H9.297c-.337-.001-.61-.25-.61-.558V8.479c0-.308.273-.558.61-.558m3.222 1.534h1.396c.337 0 .61.25.61.558v2.52c0 .308-.273.557-.61.558h-1.396c-.338-.001-.612-.25-.613-.558v-2.52c.001-.308.275-.558.613-.558M6.067 10.71h1.396c.337.001.61.25.61.559v1.264c0 .308-.273.557-.61.558H6.067c-.338-.001-.611-.25-.612-.558v-1.264c0-.308.274-.558.612-.559"/></svg>
+```
+
+Source: Simple Icons / `redash` (CC0)
+
+### tableau
+Tableau data visualization.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Tableau</title><path d="M11.654.174V2.377H9.682v.58h1.972V5.16h.696V2.957h1.97v-.58h-1.97V.174h-.348zm6.03 2.262l-.002 1.623v1.623h-2.957v.927h2.957v3.188H18.725l.011-1.582.02-1.576 1.465-.02 1.46-.01v-.927H18.728V2.436h-.522zm-12.407.06V5.686H2.291v.925H5.277V9.801h.985V6.61h3.013v-.925H6.262V2.496H5.77zm6.086 5.27v3.593H8.06v1.188h3.304v3.596h1.28v-3.596H15.953v-1.188H12.643V7.766h-.637zm9.721 1.55v2.221h-2.012v.811h2.012v2.261h.887v-2.261H24v-.811h-2.029V9.317h-.422zm-19.111.131V11.621H0v.621H1.973v2.194H2.64v-2.194h2v-.62H2.609V9.446h-.318zm15.709 4.516v3.254h-3.016v.927h3.016v3.217h1.072v-3.216H21.74v-.928H18.754v-3.254h-.533zm-12.463.008v3.246H2.262v.928h2.957v3.189H6.32v-3.189h2.955v-.928H6.32V13.97h-.55zm6.316 4.578l.002 1.103v1.1H9.566v.812h1.971v2.262h.928l.012-1.119.017-1.143H14.463v-.812h-2V18.549h-.465z"/></svg>
+```
+
+Source: Simple Icons / `tableau` (CC0)
+
+### powerbi
+Microsoft Power BI.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Power BI</title><path d="M10 12a1 1 0 0 1 1 1v11H4a1 1 0 0 1-1-1V13a1 1 0 0 1 1-1h6Zm-2-.5V7a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v17h-4.5V13a1.5 1.5 0 0 0-1.5-1.5H8Zm5-6V1a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v22a1 1 0 0 1-1 1h-3.5V7A1.5 1.5 0 0 0 15 5.5h-2Z"/></svg>
+```
+
+Source: Simple Icons / `powerbi` (CC0)
+
+### jupyter
+Jupyter / JupyterLab notebooks.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Jupyter</title><path d="M7.157 22.201A1.784 1.799 0 0 1 5.374 24a1.784 1.799 0 0 1-1.784-1.799 1.784 1.799 0 0 1 1.784-1.799 1.784 1.799 0 0 1 1.783 1.799zM20.582 1.427a1.415 1.427 0 0 1-1.415 1.428 1.415 1.427 0 0 1-1.416-1.428A1.415 1.427 0 0 1 19.167 0a1.415 1.427 0 0 1 1.415 1.427zM4.992 3.336A1.047 1.056 0 0 1 3.946 4.39a1.047 1.056 0 0 1-1.047-1.055A1.047 1.056 0 0 1 3.946 2.28a1.047 1.056 0 0 1 1.046 1.056zm7.336 1.517c3.769 0 7.06 1.38 8.768 3.424a9.363 9.363 0 0 0-3.393-4.547 9.238 9.238 0 0 0-5.377-1.728A9.238 9.238 0 0 0 6.95 3.73a9.363 9.363 0 0 0-3.394 4.547c1.713-2.04 5.004-3.424 8.772-3.424zm.001 13.295c-3.768 0-7.06-1.381-8.768-3.425a9.363 9.363 0 0 0 3.394 4.547A9.238 9.238 0 0 0 12.33 21a9.238 9.238 0 0 0 5.377-1.729 9.363 9.363 0 0 0 3.393-4.547c-1.712 2.044-5.003 3.425-8.772 3.425Z"/></svg>
+```
+
+Source: Simple Icons / `jupyter` (CC0)
+
+## Language
+
+### python
+Python.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>Python</title><path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/></svg>
+```
+
+Source: Simple Icons / `python` (CC0)
+
+### r
+R statistical language.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>R</title><path d="M12 2.746c-6.627 0-12 3.599-12 8.037 0 3.897 4.144 7.144 9.64 7.88V16.26c-2.924-.915-4.925-2.755-4.925-4.877 0-3.035 4.084-5.494 9.12-5.494 5.038 0 8.757 1.683 8.757 5.494 0 1.976-.999 3.379-2.662 4.272.09.066.174.128.258.216.169.149.25.363.372.544 2.128-1.45 3.44-3.437 3.44-5.631 0-4.44-5.373-8.038-12-8.038zm-2.111 4.99v13.516l4.093-.002-.002-5.291h1.1c.225 0 .321.066.549.25.272.22.715.982.715.982l2.164 4.063 4.627-.002-2.864-4.826s-.086-.193-.265-.383a2.22 2.22 0 00-.582-.416c-.422-.214-1.149-.434-1.149-.434s3.578-.264 3.578-3.826c0-3.562-3.744-3.63-3.744-3.63zm4.127 2.93l2.478.002s1.149-.062 1.149 1.127c0 1.165-1.149 1.17-1.149 1.17h-2.478zm1.754 6.119c-.494.049-1.012.079-1.54.088v1.807a16.622 16.622 0 002.37-.473l-.471-.891s-.108-.183-.248-.394c-.039-.054-.08-.098-.111-.137z"/></svg>
+```
+
+Source: Simple Icons / `r` (CC0)
+
+### sql
+SQL / generic relational query.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8a2 2 0 0 1 2 2v4a2 2 0 1 1 -4 0v-4a2 2 0 0 1 2 -2" /> <path d="M17 8v8h4" /> <path d="M13 15l1 1" /> <path d="M3 15a1 1 0 0 0 1 1h2a1 1 0 0 0 1 -1v-2a1 1 0 0 0 -1 -1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1" /></svg>
+```
+
+Source: Tabler Icons / `sql` (MIT)
+
+## Statistical tools
+
+### spss
+IBM SPSS Statistics.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 128 128" fill="currentColor"><path fill="currentColor" d="M125 80.5c-1.7 0-3.1 1.3-3.1 3s1.3 3 3.1 3c1.7 0 3-1.3 3-3s-1.3-3-3-3zm-.1.5c1.4 0 2.4 1.1 2.4 2.5s-1 2.5-2.3 2.5c-1.4 0-2.4-1.1-2.4-2.5s.9-2.4 2.3-2.5zm-1 .8v3.4h.6v-1.5h.6l.9 1.5h.6l-.9-1.6c.6 0 .8-.4.8-.9 0-.6-.4-.9-1.2-.9h-1.4zm.5 1.5v-1.1h.7c.5 0 .7.2.7.6s-.3.6-.6.6l-.8-.1zM31.3 93.7c-1.6-1.2-3.5-2.2-6.1-3-3.3-1.1-8.1-2.2-10-2.9-1.2-.5-1.7-1.2-1.7-2.2 0-1.4 1.7-2.2 3.7-2.3 3.3.1 4.3 2 4.5 3.3h9.6v7.1zm12 8.9h7.1c6.2-.1 11.2-3.2 13.7-7.7.2-.4.4-.7.6-1.1.4.5.7.7 1.1 1.1 1.7 1.5 3.9 2.6 6.2 3.3 3.7 1.3 6.6 2.2 7.6 2.6 1.9.8 3.1 1.4 3.1 3.1 0 2-2.2 2.8-4.5 2.9-3.1-.1-6.2-1.6-6.1-4.7H60c.6 8.1 8.6 14.4 18 14.5 5.7-.1 11-1.7 14.4-5.8 3.4 3.5 7.4 5.7 13 5.8 8.9-.1 18.1-4.5 18.2-13.9 0-3-.8-5.6-2.7-7.8-1.7-2-4.1-3.3-7.4-4.2-3.3-1.1-8.1-2.2-10-2.9-1.2-.5-1.7-1.2-1.7-2.2 0-1.4 1.7-2.2 3.7-2.3 3.3.1 4.3 2 4.5 3.3h11.6c.1-8-6.6-13.3-16.1-13.3-7.1 0-11.9 2.7-14.3 6.6-2.6-4.1-7.8-6.6-14.3-6.6-6.8 0-11.5 2.6-14 6.3-2.8-3.6-7.4-5.9-13-5.9H31.3v6.1c-2.6-4.1-7.8-6.5-14.2-6.5-9.9 0-15.3 5.5-15.8 11.8 0 3.9 1.9 7.4 4.8 9.9 1.7 1.5 3.7 2.6 6 3.3 3.7 1.3 6.6 2.2 7.6 2.6 1.9.8 3.1 1.4 3.1 3.1 0 2-2.3 2.8-4.5 2.9-3.1-.1-6.2-1.6-6.1-4.7H-.1c.6 8.1 8.6 14.4 18 14.5 5.2-.1 10-1.5 13.2-4.5v3.8h12l.2-13.4zm0-18.9h6.5c2.4 0 4.5 2 4.5 4.5s-2 4.5-4.5 4.5h-6.5v-9zM92.5 95c-1.7-2-4.1-3.3-7.4-4.2-3.3-1.1-8.1-2.2-9.9-2.9-1.3-.5-1.9-1.2-1.9-2.2 0-1.4 1.7-2.2 3.7-2.3 3.4.1 4.3 2 4.5 3.3h8.2c.5 3.2 2.1 6.1 4.7 8.3 1.7 1.5 3.8 2.6 6.1 3.3 3.7 1.3 6.6 2.2 7.5 2.6 2 .8 3.1 1.4 3.1 3.1 0 2-2.3 2.8-4.5 2.9-3.1-.1-6.2-1.6-6.1-4.7H95c0-2.9-.9-5.3-2.5-7.2zM.1 11.2v3.5H25v-3.5H.1zm28.3 0v3.5H64s-3.6-3.5-8.4-3.5H28.4zm42.6 0v3.5h21.5l-1.3-3.5H71zm36.9 0l-1.3 3.5h21.3v-3.5h-20zM.1 18v3.5H25V18H.1zm28.3 0v3.5H68s-.5-2.7-1.3-3.5H28.4zM71 18v3.5h23.8L93.6 18H71zm34.3 0l-1.2 3.5h23.7V18h-22.5zm-98 6.8v3.5H18v-3.5H7.3zm28.3 0v3.5h10.8v-3.5H35.6zm21.4 0v3.5h10.8s.7-1.9.7-3.5H57zm21.2 0v3.5h19.1L96 24.8H78.2zm24.8 0l-1.3 3.5h19.2v-3.5H103zM7.3 31.7v3.5H18v-3.5H7.3zm28.3 0v3.5h27.6s2.3-1.8 3-3.5H35.6zm42.6 0v3.5H89v-1.9l.7 1.9h19.8l.7-1.9v1.9H121v-3.5h-20.3l-1.1 3-1.1-3H78.2zM7.3 38.5V42H18v-3.5H7.3zm28.3 0V42h30.6c-.7-1.7-3-3.5-3-3.5H35.6zm42.6 0V42H89v-3.5H78.2zm12.7 0l1.3 3.5H107l1.2-3.5H90.9zm19.3 0V42H121v-3.5h-10.8zM7.3 45.3v3.5H18v-3.5H7.3zm28.3 0v3.5h10.8v-3.5H35.6zm21.4 0v3.5h11.5c0-1.7-.7-3.5-.7-3.5H57zm21.2 0v3.5H89v-3.5H78.2zm15.2 0l1.3 3.5h9.9l1.3-3.5H93.4zm16.8 0v3.5H121v-3.5h-10.8zM.3 52.1v3.5h24.9v-3.5H.3zm28.1 0v3.5h38.4c.8-.8 1.3-3.5 1.3-3.5H28.4zm42.8 0v3.5H89v-3.5H71.2zm24.6 0l1.3 3.5h5.1l1.2-3.5h-7.6zm14.4 0v3.5h17.9v-3.5h-17.9zM.3 58.9v3.5h24.9v-3.5H.3zm28.1 0v3.5h27.1c4.8 0 8.4-3.5 8.4-3.5H28.4zm42.8 0v3.5H89v-3.5H71.2zm27.1 0l1.3 3.5h.2l1.3-3.5h-2.8zm11.9 0v3.5h17.9v-3.5h-17.9z"/></svg>
+```
+
+Source: Devicon / `spss-plain` (MIT)
+
+### sas
+_NOT FOUND — please pick a fallback_
+
+### stata
+Stata statistical software.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 128 128" fill="currentColor"><path d="m124.9 47.192c-1.7102 0-3.0994 1.3892-3.0994 3.0994s1.3892 3.0997 3.0994 3.0997c1.7103 0 3.0997-1.3894 3.0997-3.0997s-1.3894-3.0994-3.0997-3.0994zm0 0.2663c1.5663 0 2.8334 1.2668 2.8334 2.8332 0 1.5663-1.267 2.8334-2.8334 2.8334-1.5663 0-2.8332-1.2671-2.8332-2.8334 0-1.5663 1.2668-2.8332 2.8332-2.8332zm-1.6879 1.0714v0.18857h0.27426c0.05 0 0.10361 0.0224 0.1252 0.0557 0.11325 0.15835 0.11391 0.33506 0.11391 0.33506v2.327s-6.6e-4 0.17671-0.11391 0.33506c-0.0216 0.0333-0.0752 0.0557-0.1252 0.0557h-0.27426v0.18855h1.5758v-0.18857h-0.27425c-0.05 0-0.10362-0.0224-0.1252-0.0557-0.11326-0.15835-0.11391-0.33506-0.11391-0.33506v-1.0847h0.35738c0.1188 0 0.3451 0.11827 0.39971 0.16343 0.21263 0.15698 0.32705 0.45654 0.35584 1.0752 6e-3 0.12808 0.0681 0.26617 0.18241 0.34918 0.25405 0.17339 0.70716 0.19688 0.99518-0.0377 0.14313-0.13033 0.19235-0.35261 0.1937-0.56031l-0.18471-0.0344s-0.0289 0.48335-0.28683 0.48335c-0.0803 0-0.19419-0.10295-0.20089-0.26451-0.0123-0.29702-0.17138-0.99918-0.97414-1.2143 0.25052 0 0.66509-0.107 0.79917-0.20473 0.20004-0.14762 0.39504-0.3796 0.41254-0.63395l2e-3 -1e-3v-0.14237l-1e-3 -7.7e-4c-0.0296-0.43143-0.57155-0.79866-0.77865-0.79866h-1.8208zm1.0624 0.26989h0.84304c0.17056 0 0.56011 0.19938 0.58546 0.53133 0 0.0115 2e-3 0.0229 2e-3 0.0341v0.0706c0 0.0112-2e-3 0.0227-2e-3 0.0341-0.0253 0.3314-0.41369 0.53067-0.58469 0.53132h-0.84381zm-95.427 3.5584-2.3513 6.3356h7.8816v22.114h6.3472v-22.114h6.3333l2.3513-6.3356zm48.619 0-2.3513 6.3356h7.8819v22.114h6.3469v-22.114h6.3333l2.3516-6.3356zm-49.565 0.0174-17.355 2.5e-4v1e-3c-0.7843 2e-3 -2.3705 6e-3 -2.5363 6e-3 -2.1745 0-4.0423 1.1602-5.5508 2.6802-1.5084 1.52-2.4609 3.2021-2.4609 5.3933v1.2096c4.99e-4 2.1904 0.95288 3.8719 2.4609 5.3915 1.5085 1.52 3.3763 2.6802 5.5508 2.6802 0.1564 0 1.5491 4e-3 2.3919 6e-3v2e-3h8.9407c1.3141 0 2.3771 1.0426 2.4237 2.3549-0.047 1.3123-1.1096 2.3547-2.4237 2.3547h-16.895l-2.3493 6.33h17.319v-1e-3c0.7401-2e-3 2.4434-6e-3 2.6143-6e-3 2.1745 0 4.0423-1.1602 5.5508-2.6802 1.508-1.5197 2.4606-3.2011 2.4611-5.3915v-1.2099c0-2.1912-0.95274-3.873-2.4611-5.393-1.5085-1.52-3.3763-2.6802-5.5508-2.6802-0.1538 0-1.4982-4e-3 -2.3521-6e-3v-2e-3h-8.9805c-1.3141 0-2.3771-1.0426-2.4237-2.3549 0.047-1.3123 1.1096-2.3549 2.4237-2.3549h16.853zm22.363 8e-3 -2.349 6.33h18.476c1.2888 0 2.3356 1.0028 2.4193 2.2795h0.018v2.6e-4h-0.0239v2.4298l-15.31 7e-3c-2.1745 0-4.0422 1.1602-5.5506 2.6802-3.1887 3.5728-3.3403 8.5643 0 11.994 1.5084 1.52 3.3761 2.6802 5.5506 2.6802l21.633 0.0126-0.0364-20.333c0-2.1912-0.95267-3.8733-2.4611-5.3933-1.5085-1.5201-3.3763-2.6802-5.5508-2.6802zm48.619 0-2.3493 6.33h18.476c1.2888 0 2.3353 1.0028 2.4191 2.2795h0.018v2.6e-4h-0.0239v2.4298l-15.31 7e-3c-2.1745 0-4.0424 1.1602-5.5508 2.6802-3.1886 3.5728-3.3402 8.5643 0 11.994 1.5085 1.52 3.3763 2.6802 5.5508 2.6802l21.633 0.0126-0.0364-20.333c0-2.1912-0.95268-3.8733-2.4611-5.3933-1.5085-1.5201-3.3763-2.6802-5.5508-2.6802zm-44.701 17.37h14.622v4.6857l-14.622 0.0239c-1.314 0-2.3771-1.0426-2.4237-2.3549 0.047-1.3123 1.1097-2.3547 2.4237-2.3547zm48.619 0h14.622v4.6857l-14.622 0.0239c-1.3141 0-2.3771-1.0426-2.4237-2.3549 0.0466-1.3123 1.1096-2.3547 2.4237-2.3547z" fill="currentColor"/></svg>
+```
+
+Source: Direct fetch / `icon.icepanel.io` — verify license before use
+
+### rstudio
+RStudio / Posit IDE for R and Python.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 128 128" fill="currentColor"><path fill="currentColor" d="M71.4 38.8c-1.5-.6-3.9-1-6.9-1.1-4.2-.1-9 .4-9.2.5v20c13.3.6 15.5-1.7 15.5-1.7 11.6-5.9 4.3-16.2.6-17.7z"/><path fill="currentColor" d="M64 0C28.6 0 0 28.6 0 64s28.6 64 64 64 64-28.6 64-64S99.3 0 64 0zm28.6 89.8H82L64.4 63.5h-9V84h9v5.8H41.5v-5.7l7.6-.1-.1-45.9c-.8-.2-7.5-.8-7.5-.8V32c1 1 7.9 1.2 7.9 1.2 1.6.1 3.9.2 5.2-.1 9.3-1.7 16.4-.4 16.4-.4 14 3.2 14.2 15.8 10.3 22.6-3.5 5.8-10.3 7.2-10.3 7.2l14.4 21.8 7.2-.1v5.6z"/></svg>
+```
+
+Source: Devicon / `rstudio-plain` (MIT)
+
+### qgis
+QGIS open-source GIS platform.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><title>QGIS</title><path d="M12.879 13.006v3.65l-3.004-3.048v-3.495h3.582l2.852 2.893h-3.43zm10.886 7.606V24h-3.654l-5.73-5.9v-3.55h3.354l6.03 6.062zm-10.828-1.448l3.372 3.371c-1.309.442-2.557.726-4.325.726C5.136 23.26 0 18.243 0 11.565 0 4.92 5.136 0 11.984 0 18.864 0 24 4.952 24 11.565c0 2.12-.523 4.076-1.457 5.759l-3.625-3.725a8.393 8.393 0 0 0 .24-2.005c0-4.291-3.148-7.527-7.1-7.527-3.954 0-7.248 3.236-7.248 7.527s3.33 7.6 7.247 7.6c.548 0 .661.017.88-.03z"/></svg>
+```
+
+Source: Simple Icons / `qgis` (CC0)
+
+## File formats
+
+### excel
+Microsoft Excel spreadsheet.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" /> <path d="M4 15l4 6" /> <path d="M4 21l4 -6" /> <path d="M17 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" /> <path d="M11 15v6h3" /></svg>
+```
+
+Source: Tabler Icons / `file-type-xls` (MIT)
+
+### csv
+Comma-separated values file.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" /> <path d="M7 16.5a1.5 1.5 0 0 0 -3 0v3a1.5 1.5 0 0 0 3 0" /> <path d="M10 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" /> <path d="M16 15l2 6l2 -6" /></svg>
+```
+
+Source: Tabler Icons / `file-type-csv` (MIT)
+
+### txt
+Plain text file.
+
+```svg
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M16.5 15h3" /> <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" /> <path d="M4.5 15h3" /> <path d="M6 15v6" /> <path d="M18 15v6" /> <path d="M10 15l4 6" /> <path d="M10 21l4 -6" /></svg>
+```
+
+Source: Tabler Icons / `file-type-txt` (MIT)
+
+---
+
+## License attribution
+
+- **Tabler Icons** — MIT — https://github.com/tabler/tabler-icons
+- **Simple Icons** — CC0 — https://github.com/simple-icons/simple-icons
+- **Devicon** — MIT — https://github.com/devicons/devicon
+- **log-z/logos** — MIT — https://github.com/log-z/logos
+
+All libraries' licenses permit redistribution, including in this repository's MIT-licensed source. Brand logos retain their respective trademarks; this set is for documentation and illustrative use only.

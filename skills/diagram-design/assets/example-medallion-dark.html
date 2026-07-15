@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-commerce analytics · Medallion · Dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #2d3142; --paper-2: #393e53; --ink: #f5f5f5; --muted: #bfc0c0;
+      --soft: #8e98ac; --rule: rgba(245,245,245,0.12); --accent: #f08a59;
+      --accent-tint: rgba(240,138,89,0.10); --link: #6a95d8;
+      --sans: 'Geist', system-ui, sans-serif; --serif: 'Instrument Serif', serif;
+      --mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+    .frame { width: 100%; max-width: 1200px; }
+    .eyebrow { margin-bottom: 0.5rem; color: var(--muted); font: 500 0.66rem var(--mono); letter-spacing: 0.18em; text-transform: uppercase; }
+    h1 { margin-bottom: 1.5rem; color: var(--ink); font: 400 clamp(1.5rem, 2.4vw + 0.75rem, 2rem)/1.15 var(--serif); letter-spacing: -0.02em; }
+    svg { display: block; width: 100%; min-width: 1040px; }
+    .tier-title { fill: var(--ink); font: 600 13px var(--sans); text-anchor: middle; }
+    .bucket, .field-value, .example-value { fill: var(--muted); font: 400 9px var(--mono); }
+    .bucket { text-anchor: middle; }
+    .field-value { color: var(--muted); }
+    .focal-text { fill: var(--accent); }
+    .field-label { fill: var(--ink); font: 600 11px var(--sans); }
+    .example-label, .arc-label, .path-tag { font-family: var(--mono); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+    .example-label { fill: var(--soft); font-size: 8px; }
+    .arc-label { font-size: 10px; text-anchor: middle; }
+    .path-title { fill: var(--ink); font: 600 11px var(--sans); }
+    .path-sub { fill: var(--muted); font: 400 9px var(--mono); }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <p class="eyebrow">Medallion · Diagram Design</p>
+    <h1>Five-tier e-commerce analytics storage</h1>
+
+    <svg viewBox="0 0 1040 548" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="medallion-title medallion-desc">
+      <title id="medallion-title">Five-tier e-commerce analytics medallion</title>
+      <desc id="medallion-desc">Clickstream events and order records move from raw storage through anonymized, staging, and aggregated tiers before lifecycle archiving.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bfc0c0"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f08a59"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6a95d8"/></marker>
+        <clipPath id="clip-raw"><rect x="16" y="80" width="172" height="380" rx="6"/></clipPath>
+        <clipPath id="clip-anon"><rect x="204" y="80" width="172" height="380" rx="6"/></clipPath>
+        <clipPath id="clip-stage"><rect x="392" y="80" width="172" height="380" rx="6"/></clipPath>
+        <clipPath id="clip-aggregate"><rect x="580" y="80" width="172" height="380" rx="6"/></clipPath>
+        <clipPath id="clip-archive"><rect x="768" y="80" width="172" height="380" rx="6"/></clipPath>
+      </defs>
+      <rect width="1040" height="548" fill="#2d3142"/>
+
+      <!-- Promotion arcs are the medallion type's required connector grammar. -->
+      <path d="M102 80 C102 0 290 0 290 80" fill="none" stroke="#bfc0c0" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <path d="M290 80 C290 0 478 0 478 80" fill="none" stroke="#bfc0c0" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <path d="M478 80 C478 0 666 0 666 80" fill="none" stroke="#f08a59" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+      <path d="M666 80 C666 0 854 0 854 80" fill="none" stroke="#bfc0c0" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <text x="196" y="50" class="arc-label" fill="#bfc0c0">MASK IDS</text>
+      <text x="384" y="50" class="arc-label" fill="#bfc0c0">CLEAN + JOIN</text>
+      <text x="572" y="50" class="arc-label" fill="#f08a59">AGGREGATE</text>
+      <text x="760" y="50" class="arc-label" fill="#bfc0c0">LIFECYCLE</text>
+
+      <!-- Raw -->
+      <rect x="16" y="80" width="172" height="380" rx="6" fill="rgba(245,245,245,0.04)"/>
+      <rect x="16" y="80" width="172" height="50" fill="rgba(142,152,172,0.16)" clip-path="url(#clip-raw)"/>
+      <rect x="16" y="80" width="172" height="380" rx="6" fill="none" stroke="#bfc0c0"/>
+      <text x="102" y="106" class="tier-title">Raw</text>
+      <text x="102" y="144" class="bucket">raw-commerce</text>
+      <text x="32" y="180" class="field-label">Tool</text>
+      <foreignObject x="32" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">NiFi ingest</div></foreignObject>
+      <text x="32" y="220" class="field-label">Format</text>
+      <foreignObject x="32" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">JSON · Parquet</div></foreignObject>
+      <text x="32" y="260" class="field-label">Writer</text>
+      <foreignObject x="32" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Data Engineer</div></foreignObject>
+      <text x="32" y="360" class="example-label">E-COMMERCE EXAMPLE</text>
+      <text x="32" y="374" class="example-value">clickstream events</text>
+      <text x="32" y="388" class="example-value">order records</text>
+
+      <!-- Anonymized -->
+      <rect x="204" y="80" width="172" height="380" rx="6" fill="rgba(245,245,245,0.04)"/>
+      <rect x="204" y="80" width="172" height="50" fill="rgba(245,245,245,0.08)" clip-path="url(#clip-anon)"/>
+      <rect x="204" y="80" width="172" height="380" rx="6" fill="none" stroke="rgba(245,245,245,0.30)"/>
+      <text x="290" y="106" class="tier-title">Anonymized</text>
+      <text x="290" y="144" class="bucket">anon-commerce</text>
+      <text x="220" y="180" class="field-label">Tool</text>
+      <foreignObject x="220" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Trino SQL</div></foreignObject>
+      <text x="220" y="220" class="field-label">Format</text>
+      <foreignObject x="220" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Iceberg · partitioned</div></foreignObject>
+      <text x="220" y="260" class="field-label">Writer</text>
+      <foreignObject x="220" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Data Engineer</div></foreignObject>
+      <text x="220" y="360" class="example-label">E-COMMERCE EXAMPLE</text>
+      <text x="220" y="374" class="example-value">session pseudonyms</text>
+      <text x="220" y="388" class="example-value">masked customer IDs</text>
+
+      <!-- Staging -->
+      <rect x="392" y="80" width="172" height="380" rx="6" fill="rgba(245,245,245,0.04)"/>
+      <rect x="392" y="80" width="172" height="50" fill="rgba(245,245,245,0.08)" clip-path="url(#clip-stage)"/>
+      <rect x="392" y="80" width="172" height="380" rx="6" fill="none" stroke="rgba(245,245,245,0.30)"/>
+      <text x="478" y="106" class="tier-title">Staging</text>
+      <text x="478" y="144" class="bucket">staging-commerce</text>
+      <text x="408" y="180" class="field-label">Tool</text>
+      <foreignObject x="408" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Trino · notebooks</div></foreignObject>
+      <text x="408" y="220" class="field-label">Format</text>
+      <foreignObject x="408" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Iceberg · cleaned</div></foreignObject>
+      <text x="408" y="260" class="field-label">Writer</text>
+      <foreignObject x="408" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Data Scientist</div></foreignObject>
+      <text x="408" y="360" class="example-label">E-COMMERCE EXAMPLE</text>
+      <text x="408" y="374" class="example-value">joined order facts</text>
+      <text x="408" y="388" class="example-value">validated event rows</text>
+
+      <!-- Aggregated focal tier -->
+      <rect x="580" y="80" width="172" height="380" rx="6" fill="rgba(240,138,89,0.12)"/>
+      <rect x="580" y="80" width="172" height="50" fill="rgba(240,138,89,0.20)" clip-path="url(#clip-aggregate)"/>
+      <rect x="580" y="80" width="172" height="380" rx="6" fill="none" stroke="#f08a59" stroke-width="1.6"/>
+      <text x="666" y="106" class="tier-title">Aggregated</text>
+      <text x="666" y="144" class="bucket focal-text">analytics-marts</text>
+      <text x="596" y="180" class="field-label">Tool</text>
+      <foreignObject x="596" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Trino INSERT</div></foreignObject>
+      <text x="596" y="220" class="field-label">Format</text>
+      <foreignObject x="596" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Iceberg · metrics</div></foreignObject>
+      <text x="596" y="260" class="field-label">Writer</text>
+      <foreignObject x="596" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Data Scientist</div></foreignObject>
+      <text x="596" y="360" class="example-label">E-COMMERCE EXAMPLE</text>
+      <text x="596" y="374" class="example-value focal-text">daily conversion rate</text>
+      <text x="596" y="388" class="example-value focal-text">revenue by channel</text>
+
+      <!-- Archive -->
+      <rect x="768" y="80" width="172" height="380" rx="6" fill="rgba(245,245,245,0.06)"/>
+      <rect x="768" y="80" width="172" height="50" fill="rgba(142,152,172,0.24)" clip-path="url(#clip-archive)"/>
+      <rect x="768" y="80" width="172" height="380" rx="6" fill="none" stroke="#bfc0c0" stroke-dasharray="5,3"/>
+      <text x="854" y="106" class="tier-title">Archive</text>
+      <text x="854" y="144" class="bucket">archive-commerce</text>
+      <text x="784" y="180" class="field-label">Tool</text>
+      <foreignObject x="784" y="186" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Object storage lifecycle</div></foreignObject>
+      <text x="784" y="220" class="field-label">Format</text>
+      <foreignObject x="784" y="226" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Cold tier · immutable</div></foreignObject>
+      <text x="784" y="260" class="field-label">Writer</text>
+      <foreignObject x="784" y="266" width="140" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="field-value" style="line-height:1.25">Data Engineer</div></foreignObject>
+      <text x="784" y="360" class="example-label">E-COMMERCE EXAMPLE</text>
+      <text x="784" y="374" class="example-value">retained clickstream</text>
+      <text x="784" y="388" class="example-value">closed order snapshots</text>
+
+      <!-- Write-method paths -->
+      <rect x="16" y="476" width="460" height="56" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)"/>
+      <rect x="24" y="482" width="64" height="12" rx="2" fill="none" stroke="rgba(245,245,245,0.30)" stroke-width="0.8"/>
+      <text x="56" y="491" class="path-tag" fill="#f5f5f5" font-size="7" text-anchor="middle">SQL PATH</text>
+      <text x="96" y="506" class="path-title">Trino INSERT INTO … SELECT</text>
+      <text x="96" y="522" class="path-sub">filter · join · aggregate — repeatable transforms</text>
+      <rect x="492" y="476" width="460" height="56" rx="6" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.20)"/>
+      <rect x="500" y="482" width="96" height="12" rx="2" fill="none" stroke="rgba(245,245,245,0.30)" stroke-width="0.8"/>
+      <text x="548" y="491" class="path-tag" fill="#f5f5f5" font-size="7" text-anchor="middle">NOTEBOOK PATH</text>
+      <text x="604" y="506" class="path-title">Python notebooks on object storage</text>
+      <text x="604" y="522" class="path-sub">explore · validate · model — interactive analysis</text>
+    </svg>
+  </main>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
   "name": "diagram-design",
-  "description": "Editorial-quality technical and product diagrams - 13 types rendered as standalone HTML with inline SVG, skinnable to match your brand",
-  "version": "1.0.0",
+  "description": "Editorial-quality technical and product diagrams - 26 types rendered as standalone HTML with inline SVG, skinnable to match your brand",
+  "version": "2.0.0",
   "author": {
     "name": "Cathryn Lavery",
     "url": "https://github.com/cathrynlavery"

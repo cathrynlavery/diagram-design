@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deploy frequency vs lead time · Scatter · dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 760px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Scatter · Diagram Design</p>
+    <h1>Deploy frequency vs. lead time · 12 teams</h1>
+
+    <!-- X: 0-20 deploys/week → 880px. x = 80 + f/20*880 = 80+44*f -->
+    <!-- Y: 0-24 days lead time → 380px. y = 420 - lt/24*380. High lt = high y (worse) -->
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Axis labels -->
+      <text transform="rotate(-90 24 230)" x="24" y="230" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">LEAD TIME (DAYS)</text>
+      <text x="520" y="492" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">DEPLOYS PER WEEK</text>
+
+      <!-- Gridlines -->
+      <!-- Horizontal (constant lead time) -->
+      <line x1="80" y1="325" x2="960" y2="325" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="80" y1="230" x2="960" y2="230" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="80" y1="135" x2="960" y2="135" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="80" y1="40"  x2="960" y2="40"  stroke="rgba(245,245,245,0.06)" stroke-width="0.8"/>
+      <!-- Vertical (constant deploy freq) -->
+      <line x1="256" y1="40" x2="256" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="432" y1="40" x2="432" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="608" y1="40" x2="608" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="784" y1="40" x2="784" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+
+      <!-- Axes -->
+      <line x1="80" y1="40" x2="80" y2="420" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <line x1="80" y1="420" x2="960" y2="420" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+
+      <!-- Y-axis labels (lead time: 0 at bottom, 24 at top) -->
+      <text x="72" y="324" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">6</text>
+      <text x="72" y="234" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">12</text>
+      <text x="72" y="139" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">18</text>
+      <text x="72" y="44"  fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">24</text>
+      <text x="72" y="424" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">0</text>
+
+      <!-- X-axis labels (deploy frequency) -->
+      <text x="80"  y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0</text>
+      <text x="256" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4</text>
+      <text x="432" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">8</text>
+      <text x="608" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">12</text>
+      <text x="784" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">16</text>
+      <text x="960" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">20</text>
+
+      <!-- Trend line (dashed, approximate) -->
+      <line x1="168" y1="103" x2="900" y2="388" stroke="rgba(245,245,245,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+
+      <!-- ─── DATA POINTS (non-focal first) ─── -->
+      <!-- (freq, lt) → (x=80+44*f, y=420-380*lt/24) -->
+      <!-- (2,20)→(168,103), (4,18)→(256,135), (4,16)→(256,167), (6,14)→(344,198) -->
+      <!-- (8,12)→(432,230), (8,10)→(432,262), (10,8)→(520,293), (12,6)→(608,325) -->
+      <!-- (12,10)→(608,262), (16,4)→(784,357), (18,3)→(872,372) FOCAL, (20,2)→(960,388) -->
+
+      <circle cx="168" cy="103" r="5" fill="#f5f5f5"/>
+      <circle cx="168" cy="103" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="256" cy="135" r="5" fill="#f5f5f5"/>
+      <circle cx="256" cy="135" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="256" cy="167" r="5" fill="#f5f5f5"/>
+      <circle cx="256" cy="167" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="344" cy="198" r="5" fill="#f5f5f5"/>
+      <circle cx="344" cy="198" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="432" cy="230" r="5" fill="#f5f5f5"/>
+      <circle cx="432" cy="230" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="432" cy="262" r="5" fill="#f5f5f5"/>
+      <circle cx="432" cy="262" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="520" cy="293" r="5" fill="#f5f5f5"/>
+      <circle cx="520" cy="293" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="608" cy="325" r="5" fill="#f5f5f5"/>
+      <circle cx="608" cy="325" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="608" cy="262" r="5" fill="#f5f5f5"/>
+      <circle cx="608" cy="262" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="784" cy="357" r="5" fill="#f5f5f5"/>
+      <circle cx="784" cy="357" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <circle cx="960" cy="388" r="5" fill="#f5f5f5"/>
+      <circle cx="960" cy="388" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+
+      <!-- FOCAL: Platform team (18,3) → (872,372) -->
+      <circle cx="872" cy="372" r="6" fill="#f5f5f5"/>
+      <circle cx="872" cy="372" r="6" fill="rgba(240,138,89,0.18)" stroke="#f08a59" stroke-width="1.2"/>
+
+      <!-- Focal label -->
+      <rect x="798" y="348" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="830" y="357" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PLATFORM</text>
+
+      <!-- Quadrant guides (optional) -->
+      <text x="88"  y="56"  fill="rgba(245,245,245,0.22)" font-size="8" font-family="'Geist Mono', monospace">HIGH LEAD TIME</text>
+      <text x="88"  y="412" fill="rgba(245,245,245,0.22)" font-size="8" font-family="'Geist Mono', monospace">LOW LEAD TIME</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <circle cx="52" cy="490" r="6" fill="rgba(240,138,89,0.18)" stroke="#f08a59" stroke-width="1.2"/>
+      <text x="68" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Platform team · best performer</text>
+
+      <circle cx="256" cy="490" r="5" fill="rgba(191,192,192,0.20)" stroke="#bfc0c0" stroke-width="1"/>
+      <text x="272" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Engineering team</text>
+
+      <line x1="416" y1="490" x2="440" y2="490" stroke="rgba(245,245,245,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="448" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Trend</text>
+    </svg>
+  </div>
+</body>
+</html>

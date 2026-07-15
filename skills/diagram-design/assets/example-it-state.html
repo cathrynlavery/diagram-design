@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Northwind Retail · Current IT Landscape</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142;
+      --muted: #4f5d75; --soft: #7a8399; --rule: rgba(45,49,66,0.12);
+      --accent: #eb6c36; --link: #2e5aa8;
+      --sans: 'Geist', system-ui, sans-serif;
+      --serif: 'Instrument Serif', serif;
+      --mono: 'Geist Mono', ui-monospace, monospace;
+    }
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+    .frame { width: 100%; max-width: 1200px; }
+    .eyebrow { margin-bottom: 0.5rem; color: var(--muted); font: 500 0.66rem/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; }
+    h1 { margin-bottom: 0.35rem; color: var(--ink); font: 400 clamp(1.5rem, 2.4vw + 0.75rem, 2rem)/1.15 var(--serif); letter-spacing: -0.02em; }
+    .subtitle { margin-bottom: 1.5rem; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+    .diagram { overflow-x: auto; }
+    svg { display: block; width: 100%; min-width: 920px; }
+    svg .zone { fill: rgba(45,49,66,0.02); stroke: rgba(45,49,66,0.10); stroke-width: 0.8; }
+    svg .zone-mask, svg .node-mask, svg .label-mask { fill: #f5f5f5; }
+    svg .zone-label, svg .arrow-label, svg .legend-label { font-family: 'Geist Mono', monospace; }
+    svg .zone-label { fill: rgba(45,49,66,0.40); font-size: 8px; letter-spacing: 0.14em; }
+    svg .node { fill: #fff; stroke: #2d3142; stroke-width: 1; }
+    svg .node.external { stroke: #4f5d75; stroke-dasharray: 4 3; }
+    svg .node.focal { fill: rgba(235,108,54,0.07); stroke: #eb6c36; stroke-width: 1.4; }
+    svg .node.survivor { fill: rgba(122,140,71,0.06); stroke: rgba(122,140,71,0.45); }
+    svg .node-name { fill: #2d3142; font: 600 12px 'Geist', sans-serif; }
+    svg .node-name.survivor { fill: #7a8c47; }
+    svg .sub { fill: #4f5d75; font: 400 10px 'Geist Mono', monospace; }
+    svg .sub.focal { fill: #eb6c36; }
+    svg .arrow-label { font-size: 8px; font-weight: 600; letter-spacing: 0.08em; }
+    svg .legend-label { fill: #4f5d75; font-size: 8px; }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <p class="eyebrow">IT current-state · Northwind Retail</p>
+    <h1>Legacy retail reporting landscape</h1>
+    <p class="subtitle">File exports, desktop spreadsheets, and manual publication before a shared data platform.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 960 500" role="img" aria-labelledby="it-title it-desc" xmlns="http://www.w3.org/2000/svg">
+        <title id="it-title">Northwind Retail current IT landscape</title>
+        <desc id="it-desc">Three zones show collection, processing, and dissemination through manual file handoffs.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+          <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2"/></symbol>
+          <symbol id="icon-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20h10M9 16v4M15 16v4"/></symbol>
+          <symbol id="icon-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+          <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 4.5a4 4 0 0 1 0 7M18 15a4 4 0 0 1 3 4v2"/></symbol>
+        </defs>
+
+        <rect width="960" height="500" fill="#f5f5f5"/>
+
+        <!-- Phase zones -->
+        <rect class="zone" x="16" y="52" width="256" height="360" rx="8"/>
+        <rect class="zone-mask" x="36" y="44" width="92" height="16"/>
+        <text class="zone-label" x="40" y="56">COLLECTION</text>
+        <rect class="zone" x="292" y="52" width="360" height="360" rx="8"/>
+        <rect class="zone-mask" x="312" y="44" width="92" height="16"/>
+        <text class="zone-label" x="316" y="56">PROCESSING</text>
+        <rect class="zone" x="672" y="52" width="272" height="360" rx="8"/>
+        <rect class="zone-mask" x="692" y="44" width="116" height="16"/>
+        <text class="zone-label" x="696" y="56">DISSEMINATION</text>
+
+        <!-- Connectors first; Shared Drive entries fan to y=108,124,140 -->
+        <path d="M 252,108 H 340" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <path d="M 252,196 H 308 Q 316,196 316,188 V 132 Q 316,124 324,124 H 340" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <path d="M 252,284 H 324 Q 332,284 332,276 V 148 Q 332,140 340,140" fill="none" stroke="#2e5aa8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow-link)"/>
+        <line x1="472" y1="148" x2="472" y2="232" stroke="#eb6c36" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow-accent)"/>
+        <line x1="472" y1="304" x2="472" y2="344" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <path d="M 604,268 H 654 Q 662,268 662,260 V 72 Q 662,64 670,64 H 800 Q 808,64 808,72 V 80" fill="none" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <line x1="808" y1="140" x2="808" y2="216" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="808" y1="272" x2="808" y2="344" stroke="#2e5aa8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow-link)"/>
+
+        <!-- Collection -->
+        <rect class="node-mask" x="36" y="80" width="216" height="56" rx="6"/><rect class="node" x="36" y="80" width="216" height="56" rx="6"/>
+        <use href="#icon-file" x="48" y="96" width="24" height="24" color="#2d3142"/><text class="node-name" x="80" y="106">Point-of-Sale Exports</text><text class="sub" x="80" y="122">nightly · CSV</text>
+        <rect class="node-mask" x="36" y="168" width="216" height="56" rx="6"/><rect class="node" x="36" y="168" width="216" height="56" rx="6"/>
+        <use href="#icon-file" x="48" y="184" width="24" height="24" color="#2d3142"/><text class="node-name" x="80" y="194">Online Store Export</text><text class="sub" x="80" y="210">orders · flat file</text>
+        <rect class="node-mask" x="36" y="256" width="216" height="56" rx="6"/><rect class="node external" x="36" y="256" width="216" height="56" rx="6"/>
+        <use href="#icon-file" x="48" y="272" width="24" height="24" color="#4f5d75"/><text class="node-name" x="80" y="282">Supplier Price Lists</text><text class="sub" x="80" y="298">external · XLSX</text>
+
+        <!-- Processing -->
+        <rect class="node-mask" x="340" y="80" width="264" height="68" rx="6"/><rect class="node focal" x="340" y="80" width="264" height="68" rx="6"/>
+        <use href="#icon-file" x="352" y="100" width="24" height="24" color="#eb6c36"/><text class="node-name" x="384" y="108">Shared Drive</text><text class="sub focal" x="384" y="124">no version control</text><text class="sub" x="384" y="140">department folders</text>
+        <rect class="node-mask" x="340" y="232" width="264" height="72" rx="6"/><rect class="node" x="340" y="232" width="264" height="72" rx="6"/>
+        <use href="#icon-screen" x="352" y="256" width="24" height="24" color="#2d3142"/><text class="node-name" x="384" y="262">Spreadsheet Handoffs</text><text class="sub" x="384" y="278">local workbooks · macros</text><text class="sub" x="384" y="292">manual reconciliation</text>
+        <rect class="node-mask" x="340" y="344" width="264" height="56" rx="6"/><rect class="node survivor" x="340" y="344" width="264" height="56" rx="6"/>
+        <use href="#icon-db" x="352" y="360" width="24" height="24" color="#7a8c47"/><text class="node-name survivor" x="384" y="370">On-prem RDBMS</text><text class="sub" x="384" y="386">inventory · finance</text>
+
+        <!-- Dissemination -->
+        <rect class="node-mask" x="704" y="80" width="208" height="60" rx="6"/><rect class="node focal" x="704" y="80" width="208" height="60" rx="6"/>
+        <use href="#icon-screen" x="716" y="100" width="24" height="24" color="#eb6c36"/><text class="node-name" x="748" y="108">Reporting Portal</text><text class="sub focal" x="748" y="124">manual refresh</text>
+        <rect class="node-mask" x="704" y="216" width="208" height="56" rx="6"/><rect class="node" x="704" y="216" width="208" height="56" rx="6"/>
+        <use href="#icon-file" x="716" y="232" width="24" height="24" color="#2d3142"/><text class="node-name" x="748" y="242">Email Report Packs</text><text class="sub" x="748" y="258">weekly · PDF</text>
+        <rect class="node-mask" x="704" y="344" width="208" height="56" rx="6"/><rect class="node external" x="704" y="344" width="208" height="56" rx="6"/>
+        <use href="#icon-users" x="716" y="360" width="24" height="24" color="#4f5d75"/><text class="node-name" x="748" y="370">Regional Managers</text><text class="sub" x="748" y="386">12 store regions</text>
+
+        <!-- Labels are source-bound with a 6px perpendicular gap -->
+        <rect class="label-mask" x="260" y="86" width="40" height="16" rx="2"/><text class="arrow-label" x="280" y="98" text-anchor="middle" fill="#2e5aa8">CSV</text>
+        <rect class="label-mask" x="260" y="174" width="52" height="16" rx="2"/><text class="arrow-label" x="286" y="186" text-anchor="middle" fill="#2e5aa8">EXPORT</text>
+        <rect class="label-mask" x="260" y="262" width="44" height="16" rx="2"/><text class="arrow-label" x="282" y="274" text-anchor="middle" fill="#2e5aa8">XLSX</text>
+        <rect class="label-mask" x="478" y="156" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="168" text-anchor="middle" fill="#eb6c36">COPY</text>
+        <rect class="label-mask" x="478" y="312" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="324" text-anchor="middle" fill="#4f5d75">LOAD</text>
+        <rect class="label-mask" x="612" y="246" width="44" height="16" rx="2"/><text class="arrow-label" x="634" y="258" text-anchor="middle" fill="#eb6c36">XLSX</text>
+        <rect class="label-mask" x="814" y="148" width="36" height="16" rx="2"/><text class="arrow-label" x="832" y="160" text-anchor="middle" fill="#2e5aa8">PDF</text>
+        <rect class="label-mask" x="814" y="280" width="48" height="16" rx="2"/><text class="arrow-label" x="838" y="292" text-anchor="middle" fill="#2e5aa8">EMAIL</text>
+
+        <!-- Legend strip -->
+        <line x1="16" y1="440" x2="944" y2="440" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+        <text class="legend-label" x="16" y="460" letter-spacing="0.14em">LEGEND</text>
+        <line x1="80" y1="456" x2="104" y2="456" stroke="#2e5aa8" stroke-width="1.2"/><text class="legend-label" x="112" y="460">data flow</text>
+        <line x1="208" y1="456" x2="232" y2="456" stroke="#eb6c36" stroke-width="1.4"/><text class="legend-label" x="240" y="460">pain-point</text>
+        <rect x="372" y="450" width="16" height="12" rx="2" fill="#fff" stroke="#4f5d75" stroke-width="0.8" stroke-dasharray="4 3"/><text class="legend-label" x="396" y="460">external</text>
+        <rect x="492" y="450" width="16" height="12" rx="2" fill="rgba(235,108,54,0.07)" stroke="#eb6c36"/><text class="legend-label" x="516" y="460">bottleneck</text>
+      </svg>
+    </div>
+  </main>
+</body>
+</html>

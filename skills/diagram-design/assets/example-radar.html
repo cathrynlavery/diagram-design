@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storage backends · Capability radar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Radar · Diagram Design</p>
+    <h1>Storage backends · Capability radar</h1>
+
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <!-- Concentric grid rings (f = 0.2, 0.4, 0.6, 0.8, 1.0) -->
+        <polygon points="500,208 530,230 519,266 481,266 470,230" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,176 561,220 538,292 462,292 439,220" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,144 591,211 556,317 444,317 409,211" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,112 622,201 575,343 425,343 378,201" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,80 652,191 594,369 406,369 348,191" fill="none" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+
+        <!-- Axis spokes (center to outer vertex) -->
+        <line x1="500" y1="240" x2="500" y2="80" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="652" y2="191" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="594" y2="369" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="406" y2="369" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="348" y2="191" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+
+        <!-- Axis labels (one word per spoke, Geist sans 11px 600) -->
+        <text x="500" y="62" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Small-file handling</text>
+        <text x="669" y="189" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Large-object reads</text>
+        <text x="605" y="400" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Write throughput</text>
+        <text x="395" y="400" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Operational simplicity</text>
+        <text x="331" y="189" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Iceberg integration</text>
+
+        <!-- Scale ticks on first (top) axis only -->
+        <text x="494" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">10</text>
+        <text x="494" y="114" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">8</text>
+        <text x="494" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">6</text>
+        <text x="494" y="178" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">4</text>
+        <text x="494" y="210" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">2</text>
+
+        <!-- Non-focal series (smallest to largest, back to front) -->
+        <!-- Ceph · series-2 dusty-blue · [7,7,7,4,6] -->
+        <polygon points="500,128 606,206 566,330 462,292 409,211" fill="rgba(94,122,155,0.18)" stroke="#5e7a9b" stroke-width="1.5"/>
+        <!-- GCS · series-3 mustard · [6,9,8,6,7] -->
+        <polygon points="500,144 637,196 575,343 444,317 394,206" fill="rgba(184,145,90,0.18)" stroke="#b8915a" stroke-width="1.5"/>
+        <!-- Amazon S3 · series-1 sage · [6,10,9,5,8] -->
+        <polygon points="500,144 652,191 585,356 453,305 378,201" fill="rgba(124,143,111,0.18)" stroke="#7c8f6f" stroke-width="1.5"/>
+
+        <!-- Focal series · MinIO · accent · [9,8,9,9,9] -->
+        <polygon points="500,96 622,201 585,356 415,356 363,196" fill="rgba(235,108,54,0.18)" stroke="#eb6c36" stroke-width="1.8"/>
+
+        <!-- Focal vertex dots (only on focal series) -->
+        <circle cx="500" cy="96"  r="4" fill="#eb6c36"/>
+        <circle cx="622" cy="201" r="4" fill="#eb6c36"/>
+        <circle cx="585" cy="356" r="4" fill="#eb6c36"/>
+        <circle cx="415" cy="356" r="4" fill="#eb6c36"/>
+        <circle cx="363" cy="196" r="4" fill="#eb6c36"/>
+
+        <!-- Legend -->
+        <line x1="40" y1="456" x2="960" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="472" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+        <rect x="40"  y="484" width="16" height="8" fill="rgba(235,108,54,0.18)" stroke="#eb6c36" stroke-width="1.5"/>
+        <text x="64"  y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">MinIO · recommended</text>
+
+        <rect x="220" y="484" width="16" height="8" fill="rgba(124,143,111,0.18)" stroke="#7c8f6f" stroke-width="1.5"/>
+        <text x="244" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Amazon S3</text>
+
+        <rect x="344" y="484" width="16" height="8" fill="rgba(94,122,155,0.18)" stroke="#5e7a9b" stroke-width="1.5"/>
+        <text x="368" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Ceph</text>
+
+        <rect x="424" y="484" width="16" height="8" fill="rgba(184,145,90,0.18)" stroke="#b8915a" stroke-width="1.5"/>
+        <text x="448" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Google Cloud Storage</text>
+
+        <text x="608" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">One coral. Position is the signal — color reserved for the recommended option.</text>
+      </svg>
+  </div>
+</body>
+</html>

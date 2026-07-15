@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open data lake · Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #2d3142;
+      --color-ink:    #f5f5f5;
+      --color-muted:  #bfc0c0;
+      --color-accent: #f08a59;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 960px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Diagram Design</p>
+    <h1>Open data lake · End-to-end stack</h1>
+
+    <svg viewBox="0 0 1000 488" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#bfc0c0"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#f08a59"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <rect x="4"   y="32" width="160" height="200" rx="8" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <rect x="176" y="32" width="160" height="200" rx="8" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <rect x="380" y="32" width="184" height="160" rx="8" fill="rgba(240,138,89,0.06)" stroke="rgba(240,138,89,0.22)" stroke-width="0.8"/>
+      <rect x="600" y="32" width="168" height="200" rx="8" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <rect x="804" y="32" width="164" height="280" rx="8" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+
+      <text x="84"  y="44" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">SOURCES</text>
+      <text x="256" y="44" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">INGEST</text>
+      <text x="472" y="44" fill="#f08a59" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">DATA LAKE</text>
+      <text x="688" y="44" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">QUERY</text>
+      <text x="876" y="44" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">CONSUME</text>
+
+      <line x1="152" y1="88"  x2="187" y2="88"  stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <line x1="152" y1="192" x2="187" y2="192" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <path d="M 324,80 H 350 Q 358,80 358,88 V 112 Q 358,120 366,120 H 391" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 324,200 H 350 Q 358,200 358,192 V 168 Q 358,160 366,160 H 391" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <path d="M 553,128 H 576 Q 584,128 584,120 V 96 Q 584,88 592,88 H 615" fill="none" stroke="#f08a59" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <path d="M 553,152 H 576 Q 584,152 584,160 V 180 Q 584,188 592,188 H 615" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <rect x="586" y="102" width="28" height="12" rx="2" fill="#2d3142"/>
+      <text x="600" y="111" fill="#f08a59" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SQL</text>
+
+      <path d="M 760,76 H 784 Q 788,76 788,68 H 815" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 760,100 H 780 Q 788,100 788,108 V 148 Q 788,156 796,156 H 815" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 760,180 H 782 Q 788,180 788,168 H 815" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 760,204 H 780 Q 788,204 788,212 V 232 Q 788,240 796,240 H 815" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#arrow)"/>
+
+      <path d="M 884,300 V 312 Q 884,320 876,320 H 480 Q 472,320 472,312 V 180" fill="none" stroke="rgba(245,245,245,0.30)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <rect x="660" y="314" width="36" height="12" rx="2" fill="#2d3142"/>
+      <text x="678" y="323" fill="#8e98ac" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WRITE</text>
+
+      <!-- App servers -->
+      <rect x="16" y="60" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="16" y="60" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="24" y="66" width="26" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="37" y="75" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <svg x="72" y="66" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f5f5f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3"/>
+        <path d="M3 15a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -2"/>
+        <path d="M7 8l0 .01"/><path d="M7 16l0 .01"/>
+      </svg>
+      <text x="84" y="102" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">App servers</text>
+      <text x="84" y="114" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Events · logs</text>
+
+      <!-- Databases -->
+      <rect x="16" y="164" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="16" y="164" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="24" y="170" width="26" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="37" y="179" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <svg x="72" y="170" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f5f5f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/>
+        <path d="M4 6v6a8 3 0 0 0 16 0v-6"/>
+        <path d="M4 12v6a8 3 0 0 0 16 0v-6"/>
+      </svg>
+      <text x="84" y="206" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Databases</text>
+      <text x="84" y="218" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CDC · exports</text>
+
+      <!-- Apache NiFi -->
+      <rect x="188" y="60" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="188" y="60" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="196" y="66" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="210" y="75" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FLOW</text>
+      <svg x="244" y="66" width="24" height="24" viewBox="0 0 24 24" fill="#f5f5f5">
+        <path d="M11.648 0a.093.093 0 0 0-.084.053A30.71 30.71 0 0 1 8.592 4.73c-2.09 2.728-5.145 6.466-5.145 10.364a8.201 8.201 0 0 0 8.201 8.2v-5.003c0-.106.087-.193.194-.193h2.81v-2.813c0-.106.087-.191.194-.191h5.004c0-3.9-3.056-7.636-5.145-10.364A30.712 30.712 0 0 1 11.732.053.094.094 0 0 0 11.648 0zm-1.632 3.867c.05 0 .08.034.037.112-.11.197-.218.397-.328.593-.396.702-.819 1.389-1.23 2.08-.196-.032-.39-.06-.585-.088.495-.651 1-1.296 1.48-1.959.153-.209.302-.423.454-.634a.24.24 0 0 1 .172-.104zM7.44 7.186c.221.035.444.076.666.119-.073.129-.15.256-.223.383a29.073 29.073 0 0 0-1.625 3.261c-.874 2.123-1.383 4.444-.77 6.707a8.222 8.222 0 0 0 2.217 3.74c.083.083-.02.216-.119.155a7.568 7.568 0 0 1-.93-.686A7.674 7.674 0 0 1 4.1 16.248c-.329-2.156.387-4.246 1.418-6.115a27.44 27.44 0 0 1 1.92-2.947zm7.931 8.435a.193.193 0 0 0-.191.191V18.3h2.677V15.62zm3.299 0V18.3h1.348a7.975 7.975 0 0 0 .515-2.678zm-6.303 3.004a.193.193 0 0 0-.191.193v2.485h2.678v-2.678Zm3.295.484v2.68h2.115a.562.562 0 0 0 .399-.162v-.004a.562.562 0 0 0 .16-.397V19.11zm3.674.182v1.98a7.999 7.999 0 0 0 1.217-1.98zm-6.969 2.824a.193.193 0 0 0-.191.192v1.672a7.997 7.997 0 0 0 2.678-.516v-1.348zm3.48.668V24a8.008 8.008 0 0 0 1.98-1.217z"/>
+      </svg>
+      <text x="256" y="102" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Apache NiFi</text>
+      <text x="256" y="114" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Route · transform</text>
+
+      <!-- Airflow -->
+      <rect x="188" y="164" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="188" y="164" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="196" y="170" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="210" y="179" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ORCH</text>
+      <svg x="244" y="170" width="24" height="24" viewBox="0 0 24 24" fill="#f5f5f5">
+        <path d="M17.195 16.822l4.002-4.102C23.55 10.308 23.934 5.154 24 .43a.396.396 0 0 0-.246-.373.392.392 0 0 0-.437.09l-6.495 6.658-4.102-4.003C10.309.45 5.154.066.43 0H.423a.397.397 0 0 0-.277.683l6.658 6.494-4.003 4.103C.45 13.692.065 18.846 0 23.57a.398.398 0 0 0 .683.282l6.494-6.657 3.934 3.837.17.165c2.41 2.353 7.565 2.737 12.288 2.803h.006a.397.397 0 0 0 .277-.683l-6.657-6.495z"/>
+      </svg>
+      <text x="256" y="206" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Airflow</text>
+      <text x="256" y="218" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">DAG scheduling</text>
+
+      <!-- MinIO (FOCAL) -->
+      <rect x="392" y="100" width="160" height="80" rx="8" fill="#2d3142"/>
+      <rect x="392" y="100" width="160" height="80" rx="8" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1.2"/>
+      <rect x="400" y="106" width="36" height="12" rx="2" fill="transparent" stroke="rgba(240,138,89,0.50)" stroke-width="0.8"/>
+      <text x="418" y="115" fill="rgba(240,138,89,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+      <svg x="460" y="108" width="24" height="24" viewBox="0 0 24 24" fill="#f08a59">
+        <path d="M13.2072.006c-.6216-.0478-1.2.1943-1.6211.582a2.15 2.15 0 0 0-.0938 3.0352l3.4082 3.5507a3.042 3.042 0 0 1-.664 4.6875l-.463.2383V7.2853a15.4198 15.4198 0 0 0-8.0174 10.4862v.0176l6.5487-3.3281v7.621L13.7794 24V13.6817l.8965-.4629a4.4432 4.4432 0 0 0 1.2207-7.0292l-3.371-3.5254a.7489.7489 0 0 1 .037-1.0547.7522.7522 0 0 1 1.0567.0371l.4668.4863-.006.0059 4.0704 4.2441a.0566.0566 0 0 0 .082 0 .06.06 0 0 0 0-.0703l-3.1406-5.1425-.1484.1425.1484-.1445C14.4945.3926 13.8287.0538 13.2072.006Zm-.9024 9.8652v2.9941l-4.1523 2.1484a13.9787 13.9787 0 0 1 2.7676-3.9277 14.1784 14.1784 0 0 1 1.3847-1.2148z"/>
+      </svg>
+      <text x="472" y="148" fill="#f08a59" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MinIO</text>
+      <text x="472" y="164" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.75">Object store · S3-API</text>
+
+      <!-- Trino -->
+      <rect x="616" y="60" width="144" height="56" rx="6" fill="#2d3142"/>
+      <rect x="616" y="60" width="144" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="624" y="66" width="36" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="642" y="75" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">QUERY</text>
+      <svg x="676" y="66" width="24" height="24" viewBox="0 0 24 24" fill="#f5f5f5">
+        <path d="M14.124 16.8529a.1615.1615 0 1 1 .1576.1614.1577.1577 0 0 1-.1576-.1614zm-5.607-.1576a.1614.1614 0 1 0 0 .3228.1614.1614 0 0 0 0-.3228zm10.1341-.6648v1.9869c-.031.5788-.524 1.0237-1.1029.9954h-.3843a5.0596 5.0596 0 0 1-1.1298 1.7178.3192.3192 0 0 0 0 .465l.2382.2191a.3036.3036 0 0 1 .0385.4304c-1.126 1.3835-2.9669 2.1521-5.0498 2.1521a6.575 6.575 0 0 1-4.8192-1.8985c-.0029-.0032-.0059-.0063-.0087-.0096a.6302.6302 0 0 1 .0548-.8896c.137-.1265.1371-.3462 0-.4727a4.944 4.944 0 0 1-1.126-1.714h-.3497c-.5797.0284-1.0737-.416-1.1068-.9954v-1.9869c.0351-.5779.5286-1.02 1.1068-.9915h.2728a5.7648 5.7648 0 0 1 2.0791-3.0936c-.4227-1.0991-1.1529-3.2551-1.226-5.0075C6.0229 4.4705 6.2189.078 7.8253.001c1.6064-.0768 1.3719 4.0275 1.0991 6.6946a32.732 32.732 0 0 0-.123 4.4503 6.994 6.994 0 0 1 2.4826-.4304 7.2414 7.2414 0 0 1 1.7371.2075c.2614-1.2682.8762-3.574 2.0292-5.1958 1.6717-2.352 3.4357-4.7808 4.6116-4.1006 1.176.6802-.3074 3.1398-1.3297 4.4272-1.0222 1.2874-2.7862 3.2089-3.3742 4.2274-.2114.3843-.4304.8032-.5956 1.1529a5.7375 5.7375 0 0 1 2.9169 3.6125h.073v-2.3058a.3075.3075 0 0 0-.1806-.2844.9148.9148 0 0 1-.5573-.8148 1.0184 1.0184 0 0 1 .9045-.9044c.5593-.0598 1.061.3452 1.1208.9044a.9187.9187 0 0 1-.5534.8148.3074.3074 0 0 0-.1691.2844v2.1522a.3113.3113 0 0 0 .1691.2805.9724.9724 0 0 1 .5648.857z"/>
+      </svg>
+      <text x="688" y="102" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Trino</text>
+      <text x="688" y="114" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">SQL · any format</text>
+
+      <!-- StarRocks -->
+      <rect x="616" y="164" width="144" height="56" rx="6" fill="#2d3142"/>
+      <rect x="616" y="164" width="144" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="624" y="170" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="638" y="179" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OLAP</text>
+      <svg x="676" y="170" width="24" height="24" viewBox="0 0 100 100" fill="#f5f5f5">
+        <path d="M11.8,26.4c-0.1,2.2,0.9,3.4,2.3,4.5c9,7.4,18,14.8,27,22.2c2.5,2.1,2.7,3.5,1,6.2c-4.4,6.7-8.8,13.4-13.2,20.1c-1.7,2.5-3.2,2.9-5.9,1.4c-2.8-1.6-5.6-3.2-8.4-4.8c-3.2-1.8-4.8-4.6-4.8-8.3c0-11.8,0-23.6,0-35.5C9.8,30.2,10.3,28.4,11.8,26.4z"/>
+        <path d="M87.9,73.8c0.6-2.3-0.5-3.5-1.9-4.6c-9-7.4-17.9-14.7-26.8-22.1c-2.9-2.4-3.1-3.6-1.1-6.7c4.3-6.6,8.7-13.2,13-19.8c1.7-2.6,3.3-2.9,6-1.4c2.8,1.6,5.6,3.2,8.3,4.8c3.2,1.8,4.7,4.5,4.7,8.2c0,11.9,0,23.7,0,35.6C90.2,69.9,89.6,71.9,87.9,73.8z"/>
+        <path d="M67.1,56.8c0.6,0.4,17.3,14.1,17.5,14.3c2.4,2.2,2.2,4.1-0.6,5.8C76.8,81,57.3,92.1,54.8,93.6c-3.2,1.9-6.4,1.9-9.6,0c-4.6-2.7-9.2-5.3-13.8-8c-2.2-1.3-2.2-2.7,0-3.9C42.3,75.5,53.1,69.2,64,63C66.5,61.6,68.2,60.1,67.1,56.8z"/>
+        <path d="M32.9,43.2c-0.6-0.4-17.3-14.1-17.5-14.3c-2.4-2.2-2.2-4.1,0.6-5.8C23.2,19,42.7,7.9,45.2,6.4c3.2-1.9,6.4-1.9,9.6,0c4.6,2.7,9.2,5.3,13.8,8c2.2,1.3,2.2,2.7,0,3.9C57.7,24.5,46.9,30.8,36,37C33.5,38.4,31.8,39.9,32.9,43.2z"/>
+      </svg>
+      <text x="688" y="206" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">StarRocks</text>
+      <text x="688" y="218" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">MPP · hot layer</text>
+
+      <!-- Superset -->
+      <rect x="816" y="60" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="816" y="60" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="824" y="66" width="18" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="833" y="75" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BI</text>
+      <svg x="872" y="66" width="24" height="24" viewBox="0 0 24 24" fill="#f5f5f5">
+        <path d="M6.168 6.045C2.603 6.045 0 8.579 0 12.014c0 3.434 2.603 5.941 6.168 5.941 2.184 0 3.888-1.026 5.775-3.078 1.53 2.033 4.037 3.136 5.89 3.078 3.566 0 6.167-2.503 6.167-5.941 0-3.438-2.601-5.97-6.168-5.97-2.864 0-5.138 2.425-5.771 3.173-.76-.9-1.674-1.665-2.682-2.274-1.019-.588-2.084-.898-3.211-.898z"/>
+      </svg>
+      <text x="884" y="102" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Superset</text>
+      <text x="884" y="114" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Dashboards</text>
+
+      <!-- JupyterLab -->
+      <rect x="816" y="152" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="816" y="152" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="824" y="158" width="22" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="835" y="167" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">NB</text>
+      <svg x="872" y="158" width="24" height="24" viewBox="0 0 24 24" fill="#f5f5f5">
+        <path d="M7.157 22.201A1.784 1.799 0 0 1 5.374 24a1.784 1.799 0 0 1-1.784-1.799 1.784 1.799 0 0 1 1.784-1.799 1.784 1.799 0 0 1 1.783 1.799zM20.582 1.427a1.415 1.427 0 0 1-1.415 1.428 1.415 1.427 0 0 1-1.416-1.428A1.415 1.427 0 0 1 19.167 0a1.415 1.427 0 0 1 1.415 1.427zM4.992 3.336A1.047 1.056 0 0 1 3.946 4.39a1.047 1.056 0 0 1-1.047-1.055A1.047 1.056 0 0 1 3.946 2.28a1.047 1.056 0 0 1 1.046 1.056zm7.336 1.517c3.769 0 7.06 1.38 8.768 3.424a9.363 9.363 0 0 0-3.393-4.547 9.238 9.238 0 0 0-5.377-1.728A9.238 9.238 0 0 0 6.95 3.73a9.363 9.363 0 0 0-3.394 4.547c1.713-2.04 5.004-3.424 8.772-3.424zm.001 13.295c-3.768 0-7.06-1.381-8.768-3.425a9.363 9.363 0 0 0 3.394 4.547A9.238 9.238 0 0 0 12.33 21a9.238 9.238 0 0 0 5.377-1.729 9.363 9.363 0 0 0 3.393-4.547c-1.712 2.044-5.003 3.425-8.772 3.425z"/>
+      </svg>
+      <text x="884" y="194" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">JupyterLab</text>
+      <text x="884" y="206" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Exploration</text>
+
+      <!-- Python -->
+      <rect x="816" y="244" width="136" height="56" rx="6" fill="#2d3142"/>
+      <rect x="816" y="244" width="136" height="56" rx="6" fill="rgba(245,245,245,0.06)" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <rect x="824" y="250" width="32" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.25)" stroke-width="0.8"/>
+      <text x="840" y="259" fill="rgba(245,245,245,0.45)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PROC</text>
+      <svg x="872" y="250" width="24" height="24" viewBox="0 0 24 24" fill="#f5f5f5">
+        <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
+      </svg>
+      <text x="884" y="286" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Python</text>
+      <text x="884" y="298" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Batch · ML</text>
+
+      <line x1="40" y1="432" x2="960" y2="432" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="448" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="460" width="20" height="12" rx="3" fill="rgba(240,138,89,0.12)" stroke="#f08a59" stroke-width="1.2"/>
+      <text x="68" y="471" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">MinIO data lake (focal)</text>
+
+      <rect x="220" y="460" width="20" height="12" rx="3" fill="rgba(245,245,245,0.08)" stroke="rgba(245,245,245,0.25)" stroke-width="1"/>
+      <text x="248" y="471" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Ingest · query tools</text>
+
+      <rect x="400" y="460" width="20" height="12" rx="3" fill="rgba(245,245,245,0.08)" stroke="rgba(245,245,245,0.25)" stroke-width="1"/>
+      <text x="428" y="471" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">BI · notebooks · pipelines</text>
+
+      <line x1="648" y1="462" x2="668" y2="462" stroke="rgba(245,245,245,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="676" y="468" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Write-back path (batch)</text>
+
+      <line x1="820" y1="462" x2="840" y2="462" stroke="#f08a59" stroke-width="1.2"/>
+      <text x="848" y="468" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Primary query path</text>
+    </svg>
+  </div>
+</body>
+</html>
