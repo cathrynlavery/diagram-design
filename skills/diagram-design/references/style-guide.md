@@ -49,6 +49,24 @@ A small set of desaturated, editorial-tone colors for chart types that genuinely
 
 Fills sit at `0.18` opacity light, `0.22` dark; strokes use the full color. **Don't backfill these tokens to non-chart types** — architecture, swimlane, etc. continue to use muted-ink variants. The series palette is opt-in for diagrams where overlapping shapes demand distinguishable color, not a license to add color elsewhere.
 
+### Terminal skin (opt-in alternate)
+
+A self-contained palette for the terminal-window primitive (see [primitive-terminal.md](primitive-terminal.md)) — a CLI-chrome register for dev-tool posts and technical social cards. It does not replace the default skin above and isn't affected by onboarding; it's a second, fixed skin you opt into per-diagram.
+
+| Token | Hex | Purpose |
+|---|---|---|
+| `terminal-page` | `#0a0a0a` | Page background behind the window |
+| `terminal-paper` | `#141414` | Window body, node fill |
+| `terminal-bar` | `#1b1b1b` | Titlebar strip |
+| `terminal-border` | `#2b2b2b` | Window border, hairlines |
+| `terminal-ink` | `#f5f5f5` | Primary text, primary stroke (same white-smoke as default `ink`) |
+| `terminal-muted` | `#9a9a9a` | Secondary text, sublabels, ring stroke |
+| `terminal-soft` | `#5c5c5c` | Tertiary — inactive dots, spokes |
+| `terminal-accent` | `#ff5a36` | The one accent — focal station, prompt sign, active dot |
+| `terminal-accent-tint` | `rgba(255,90,54,0.12)` | Fill for accent-bordered boxes |
+
+**1-accent rule still holds.** Everything that isn't `terminal-ink` or `terminal-muted`/`terminal-soft` should be `terminal-accent` — never introduce a second hue.
+
 ---
 
 ## Typography

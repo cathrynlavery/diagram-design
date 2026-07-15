@@ -240,16 +240,18 @@ diagram-design/
 │   ├── type-venn.md
 │   ├── type-pyramid.md
 │   ├── primitive-annotation.md      — italic-serif editorial callouts
-│   └── primitive-sketchy.md         — hand-drawn SVG filter variant
+│   ├── primitive-sketchy.md         — hand-drawn SVG filter variant
+│   └── primitive-terminal.md        — charcoal-black CLI-window variant
 ├── assets/
 │   ├── index.html                   — live gallery, tabbed
 │   ├── template*.html               — scaffolds for new diagrams
 │   ├── example-<type>.html          — 3 variants × 27 types
+│   ├── example-loop-terminal.html   — terminal-variant flagship
 │   └── example-quadrant-consultant.html  — consultant-special 2×2 scenario matrix
 └── docs/screenshots/                — the images in this README
 ```
 
-This keeps Claude's working context tight (only load what you need) and makes the skill easy to extend — drop a new `type-<name>.md` and wire it into the selection guide. The skill ships with 33 reference files covering every diagram type, primitive, and utility.
+This keeps Claude's working context tight (only load what you need) and makes the skill easy to extend — drop a new `type-<name>.md` and wire it into the selection guide. The skill ships with 34 reference files covering every diagram type, primitive, and utility.
 
 ### Contributing / skin lint
 
@@ -258,7 +260,7 @@ The repository-wide check `python3 scripts/lint-skin.py --all --baseline` must s
 
 ### What loads when
 
-The top-level `SKILL.md` is always in context. Everything else is pulled in only when relevant — this is what keeps the skill fast even with 33 reference files.
+The top-level `SKILL.md` is always in context. Everything else is pulled in only when relevant — this is what keeps the skill fast even with 34 reference files.
 
 | You ask for… | Claude loads |
 |---|---|
@@ -267,6 +269,7 @@ The top-level `SKILL.md` is always in context. Everything else is pulled in only
 | "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |
 | "Add an editorial callout to this diagram" | `SKILL.md` + `references/primitive-annotation.md` |
 | "Give me a hand-drawn version" | `SKILL.md` + `references/primitive-sketchy.md` |
+| "Give me a terminal / CLI-window version" | `SKILL.md` + `references/primitive-terminal.md` |
 | Routine diagram-making (any of the 27 diagrams) | Only `SKILL.md` + that one type's reference |
 
 No matter how many types exist, Claude only reads the one you need. Add a new type tomorrow and nothing else changes.

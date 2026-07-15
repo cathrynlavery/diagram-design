@@ -78,6 +78,7 @@ def allowed_colors():
     markdown = STYLE_GUIDE.read_text(encoding="utf-8")
     colors = table_hexes(markdown, "### Semantic roles")
     colors.update(table_hexes(markdown, "### Series palette"))
+    colors.update(table_hexes(markdown, "### Terminal skin"))
     colors.update({"#fff", "#ffffff"})
 
     rgb_triplets = set()

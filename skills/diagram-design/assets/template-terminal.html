@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagram</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --color-page: #0a0a0a;
+        --color-paper: #141414;
+        --color-bar: #1b1b1b;
+        --color-border: #2b2b2b;
+        --color-ink: #f5f5f5;
+        --color-muted: #9a9a9a;
+        --color-soft: #5c5c5c;
+        --color-accent: #ff5a36;
+        --color-accent-tint: rgba(255, 90, 54, 0.12);
+        --font-mono: "Geist Mono", ui-monospace, monospace;
+      }
+
+      body {
+        font-family: var(--font-mono);
+        background: var(--color-page);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 2rem;
+      }
+
+      .terminal {
+        width: 100%;
+        max-width: 1200px;
+        background: var(--color-paper);
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: var(--color-bar);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--color-soft);
+      }
+      .dot.accent {
+        background: var(--color-accent);
+      } /* exactly one of the three dots gets this */
+
+      .titlebar-name {
+        flex: 1;
+        text-align: center;
+        color: var(--color-muted);
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        margin-right: 46px; /* offsets the three dots so the name optically centers */
+      }
+
+      .frame {
+        padding: 2.25rem 2.5rem 2.5rem;
+      }
+
+      .prompt {
+        display: flex;
+        gap: 0.6em;
+        margin-bottom: 0.9rem;
+        color: var(--color-muted);
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .prompt .sign {
+        color: var(--color-accent);
+      }
+
+      h1 {
+        font-family: var(--font-mono);
+        font-size: clamp(1.5rem, 2.2vw + 0.8rem, 2.05rem);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        color: var(--color-ink);
+        margin-bottom: 1.5rem;
+      }
+      h1::before {
+        content: "# ";
+        color: var(--color-soft);
+      }
+
+      svg {
+        width: 100%;
+        min-width: 900px;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot accent"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="titlebar-name">[file.sh] — [diagram-slug]</div>
+      </div>
+      <main class="frame">
+        <p class="prompt">
+          <span class="sign">$</span> [command that "generated" this]
+        </p>
+        <h1>[Diagram title]</h1>
+
+        <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker
+              id="arrow"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 8 3, 0 6" fill="#9a9a9a" />
+            </marker>
+            <marker
+              id="arrow-accent"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 8 3, 0 6" fill="#ff5a36" />
+            </marker>
+
+            <!-- OPTIONAL: dot-pattern background. Uncomment and add <rect fill="url(#dots)"/> after the paper rect to enable. -->
+            <!--
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.08)"/>
+          </pattern>
+          --></defs>
+
+          <rect width="100%" height="100%" fill="#141414" />
+
+          <!-- Draw arrows first, then nodes. Replace with your content.
+             Text sizes run ~1-2px above the default scale: node-name 14px,
+             sublabel/arrow-label 9-10px, hub label 18px. See primitive-terminal.md. -->
+        </svg>
+      </main>
+    </div>
+  </body>
+</html>

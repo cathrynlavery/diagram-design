@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The self-improving loop · Terminal</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --page: #0a0a0a;
+        --paper: #141414;
+        --bar: #1b1b1b;
+        --border: #2b2b2b;
+        --ink: #f5f5f5;
+        --muted: #9a9a9a;
+        --soft: #5c5c5c;
+        --accent: #ff5a36;
+        --accent-tint: rgba(255, 90, 54, 0.12);
+        --mono: "Geist Mono", ui-monospace, monospace;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 2rem;
+        background: var(--page);
+        font-family: var(--mono);
+      }
+      .terminal {
+        width: 100%;
+        max-width: 1200px;
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: var(--bar);
+        border-bottom: 1px solid var(--border);
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--soft);
+      }
+      .dot.accent {
+        background: var(--accent);
+      }
+      .titlebar-name {
+        flex: 1;
+        text-align: center;
+        color: var(--muted);
+        font: 500 0.7rem var(--mono);
+        letter-spacing: 0.04em;
+        margin-right: 46px;
+      }
+      .frame {
+        padding: 2.25rem 2.5rem 2.5rem;
+      }
+      .prompt {
+        display: flex;
+        gap: 0.6em;
+        margin-bottom: 0.9rem;
+        color: var(--muted);
+        font: 500 0.8rem var(--mono);
+        letter-spacing: 0.01em;
+      }
+      .prompt .sign {
+        color: var(--accent);
+      }
+      h1 {
+        margin-bottom: 1.5rem;
+        color: var(--ink);
+        font: 700 clamp(1.5rem, 2.2vw + 0.8rem, 2.05rem)/1.2 var(--mono);
+        letter-spacing: -0.01em;
+      }
+      h1::before {
+        content: "# ";
+        color: var(--soft);
+      }
+      svg {
+        display: block;
+        width: 100%;
+        min-width: 900px;
+      }
+      .ring {
+        fill: none;
+        stroke: var(--muted);
+        stroke-width: 1.2;
+      }
+      .spoke {
+        fill: none;
+        stroke: var(--soft);
+        stroke-width: 1;
+        stroke-dasharray: 5 4;
+      }
+      .station {
+        fill: var(--paper);
+        stroke: var(--ink);
+        stroke-width: 1;
+      }
+      .station.focal {
+        fill: var(--accent-tint);
+        stroke: var(--accent);
+        stroke-width: 1.4;
+      }
+      .hub {
+        fill: var(--ink);
+      }
+      .node-name {
+        fill: var(--ink);
+        font: 600 14px var(--mono);
+        text-anchor: middle;
+      }
+      .focal-name {
+        fill: var(--accent);
+      }
+      .sublabel {
+        fill: var(--muted);
+        font: 400 9.5px var(--mono);
+        text-anchor: middle;
+      }
+      .hub-name {
+        fill: var(--paper);
+        font: 700 18px var(--mono);
+        text-anchor: middle;
+      }
+      .hub-sub {
+        fill: var(--paper);
+        opacity: 0.7;
+        font: 400 9.5px var(--mono);
+        text-anchor: middle;
+      }
+      .arrow-label {
+        fill: var(--muted);
+        font: 500 9px var(--mono);
+        letter-spacing: 0.08em;
+        text-anchor: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="terminal">
+      <div class="titlebar">
+        <div class="dot accent"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="titlebar-name">loop.sh — self-improving-loop</div>
+      </div>
+      <main class="frame">
+        <p class="prompt">
+          <span class="sign">$</span> diagram-design render --type loop
+        </p>
+        <h1>The self-improving loop</h1>
+
+        <svg
+          viewBox="0 0 1040 680"
+          xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-labelledby="loop-title loop-desc"
+        >
+          <title id="loop-title">The self-improving loop</title>
+          <desc id="loop-desc">
+            Six stations flow clockwise from Capture through Learn and back to
+            Capture. Each station writes shared state into one central memory
+            hub, with Decide highlighted as the human approval gate.
+          </desc>
+          <defs>
+            <pattern
+              id="dots"
+              width="22"
+              height="22"
+              patternUnits="userSpaceOnUse"
+            >
+              <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.08)" />
+            </pattern>
+            <marker
+              id="arrow"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 8 3, 0 6" fill="#9a9a9a" />
+            </marker>
+            <marker
+              id="arrow-soft"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 8 3, 0 6" fill="#5c5c5c" />
+            </marker>
+          </defs>
+          <rect width="1040" height="680" fill="#141414" />
+          <rect width="1040" height="680" fill="url(#dots)" opacity="0.7" />
+
+          <!-- Solid clockwise ring: six arcs on the same r=240 station circle. -->
+          <path
+            class="ring"
+            d="M600 113.726 A240 240 0 0 1 704.969 187.073"
+            marker-end="url(#arrow)"
+          />
+          <path
+            class="ring"
+            d="M743.285 252 A240 240 0 0 1 743.722 426.882"
+            marker-end="url(#arrow)"
+          />
+          <path
+            class="ring"
+            d="M705.731 492 A240 240 0 0 1 601.130 565.871"
+            marker-end="url(#arrow)"
+          />
+          <path
+            class="ring"
+            d="M440 566.274 A240 240 0 0 1 335.031 492.927"
+            marker-end="url(#arrow)"
+          />
+          <path
+            class="ring"
+            d="M296.715 428 A240 240 0 0 1 296.278 253.118"
+            marker-end="url(#arrow)"
+          />
+          <path
+            class="ring"
+            d="M334.269 188 A240 240 0 0 1 438.870 114.129"
+            marker-end="url(#arrow)"
+          />
+
+          <!-- Dashed write-backs: station inner edge to 6px before the hub stroke. -->
+          <path class="spoke" d="M520 132 V280" marker-end="url(#arrow-soft)" />
+          <path
+            class="spoke"
+            d="M672 252 L616 284"
+            marker-end="url(#arrow-soft)"
+          />
+          <path
+            class="spoke"
+            d="M672 428 L616 396"
+            marker-end="url(#arrow-soft)"
+          />
+          <path class="spoke" d="M520 548 V400" marker-end="url(#arrow-soft)" />
+          <path
+            class="spoke"
+            d="M368 428 L424 396"
+            marker-end="url(#arrow-soft)"
+          />
+          <path
+            class="spoke"
+            d="M368 252 L424 284"
+            marker-end="url(#arrow-soft)"
+          />
+
+          <!-- Curated spoke labels sit beside the line with an 8px visible gap. -->
+          <rect x="530" y="199" width="52" height="17" rx="4" fill="#141414" />
+          <text x="556" y="211.5" class="arrow-label">SIGNALS</text>
+          <rect x="457" y="463" width="58" height="17" rx="4" fill="#141414" />
+          <text x="486" y="475.5" class="arrow-label">OUTCOMES</text>
+
+          <!-- Stations -->
+          <rect class="station" x="440" y="68" width="160" height="64" rx="6" />
+          <text x="520" y="96.5" class="node-name">Capture</text>
+          <text x="520" y="116.5" class="sublabel">signals in / intake</text>
+
+          <rect
+            class="station"
+            x="648"
+            y="188"
+            width="160"
+            height="64"
+            rx="6"
+          />
+          <text x="728" y="216.5" class="node-name">Research</text>
+          <text x="728" y="236.5" class="sublabel">evidence pulled</text>
+
+          <rect
+            class="station focal"
+            x="648"
+            y="428"
+            width="160"
+            height="64"
+            rx="6"
+          />
+          <text x="728" y="456.5" class="node-name focal-name">Decide</text>
+          <text x="728" y="476.5" class="sublabel">human approves</text>
+
+          <rect
+            class="station"
+            x="440"
+            y="548"
+            width="160"
+            height="64"
+            rx="6"
+          />
+          <text x="520" y="576.5" class="node-name">Act</text>
+          <text x="520" y="596.5" class="sublabel">work ships</text>
+
+          <rect
+            class="station"
+            x="232"
+            y="428"
+            width="160"
+            height="64"
+            rx="6"
+          />
+          <text x="312" y="456.5" class="node-name">Measure</text>
+          <text x="312" y="476.5" class="sublabel">outcomes logged</text>
+
+          <rect
+            class="station"
+            x="232"
+            y="188"
+            width="160"
+            height="64"
+            rx="6"
+          />
+          <text x="312" y="216.5" class="node-name">Learn</text>
+          <text x="312" y="236.5" class="sublabel">playbook updated</text>
+
+          <!-- The one shared-state hub. -->
+          <rect class="hub" x="420" y="288" width="200" height="104" rx="8" />
+          <text x="520" y="337.5" class="hub-name">Shared memory</text>
+          <text x="520" y="360.5" class="hub-sub">one record, every loop</text>
+        </svg>
+      </main>
+    </div>
+  </body>
+</html>

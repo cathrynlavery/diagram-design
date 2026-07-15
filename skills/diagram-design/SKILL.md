@@ -193,6 +193,7 @@ Universal building blocks. Type-specialized primitives (lifeline, activation bar
 - Editorial callouts → [primitive-annotation.md](references/primitive-annotation.md)
 - Hand-drawn variant → [primitive-sketchy.md](references/primitive-sketchy.md)
 - Icon set (laptop, server, DB, K8s, Docker, AWS, …) → [primitive-icons.md](references/primitive-icons.md). Browse the gallery at [`assets/icons.html`](../assets/icons.html).
+- Terminal / CLI-window variant → [primitive-terminal.md](references/primitive-terminal.md)
 
 ### Background
 
@@ -457,6 +458,8 @@ Every diagram ships in three variants (see `assets/`):
 | **Consultant special** (quadrant only) | `example-quadrant-consultant.html` | BCG/McKinsey-style 2×2 scenario matrix. Clinical sans-serif, white bg, bold blue double-ended axes, named scenario cells. See [type-quadrant.md](references/type-quadrant.md#consultant-special-2x2-scenario-matrix). |
 
 **Sketchy variant** (optional, applied to any of the above) — see [primitive-sketchy.md](references/primitive-sketchy.md). SVG turbulence filter wobbles strokes for a hand-drawn feel. Good for essays, not for technical docs.
+
+**Terminal variant** (optional, replaces any of the above) — see [primitive-terminal.md](references/primitive-terminal.md). `template-terminal.html`, `example-<type>-terminal.html`. Charcoal-black CLI-window chrome, monospace type, one red-orange accent. Good for dev-tool / CLI-product posts and technical social cards; not brand-tokenized, so skip it for onboarded/brand-matched output.
 
 ### To create a new diagram
 
