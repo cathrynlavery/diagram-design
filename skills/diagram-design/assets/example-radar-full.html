@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storage backends · Capability radar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --color-link:#2e5aa8; --series-1:#7c8f6f; --series-2:#5e7a9b; --series-3:#b8915a; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 980px) { .cards { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral   { background: var(--color-accent); }
+    .card-dot.sage    { background: var(--series-1); }
+    .card-dot.dusty   { background: var(--series-2); }
+    .card-dot.mustard { background: var(--series-3); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Radar · Diagram Design</p>
+      <h1>Storage backends · Capability radar</h1>
+      <p class="subtitle">Four object-storage candidates scored 0–10 across five workload dimensions. The chart is a decision tool — the recommended option carries the only colored fill; everything else sits in the muted comparison palette.</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <polygon points="500,208 530,230 519,266 481,266 470,230" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,176 561,220 538,292 462,292 439,220" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,144 591,211 556,317 444,317 409,211" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,112 622,201 575,343 425,343 378,201" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <polygon points="500,80 652,191 594,369 406,369 348,191" fill="none" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+
+        <line x1="500" y1="240" x2="500" y2="80" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="652" y2="191" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="594" y2="369" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="406" y2="369" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+        <line x1="500" y1="240" x2="348" y2="191" stroke="rgba(45,49,66,0.20)" stroke-width="1"/>
+
+        <text x="500" y="62" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Small-file handling</text>
+        <text x="669" y="189" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Large-object reads</text>
+        <text x="605" y="400" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Write throughput</text>
+        <text x="395" y="400" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Operational simplicity</text>
+        <text x="331" y="189" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Iceberg integration</text>
+
+        <text x="494" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">10</text>
+        <text x="494" y="114" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">8</text>
+        <text x="494" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">6</text>
+        <text x="494" y="178" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">4</text>
+        <text x="494" y="210" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">2</text>
+
+        <polygon points="500,128 606,206 566,330 462,292 409,211" fill="rgba(94,122,155,0.18)" stroke="#5e7a9b" stroke-width="1.5"/>
+        <polygon points="500,144 637,196 575,343 444,317 394,206" fill="rgba(184,145,90,0.18)" stroke="#b8915a" stroke-width="1.5"/>
+        <polygon points="500,144 652,191 585,356 453,305 378,201" fill="rgba(124,143,111,0.18)" stroke="#7c8f6f" stroke-width="1.5"/>
+
+        <polygon points="500,96 622,201 585,356 415,356 363,196" fill="rgba(235,108,54,0.18)" stroke="#eb6c36" stroke-width="1.8"/>
+
+        <circle cx="500" cy="96"  r="4" fill="#eb6c36"/>
+        <circle cx="622" cy="201" r="4" fill="#eb6c36"/>
+        <circle cx="585" cy="356" r="4" fill="#eb6c36"/>
+        <circle cx="415" cy="356" r="4" fill="#eb6c36"/>
+        <circle cx="363" cy="196" r="4" fill="#eb6c36"/>
+
+        <line x1="40" y1="456" x2="960" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="472" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+        <rect x="40"  y="484" width="16" height="8" fill="rgba(235,108,54,0.18)" stroke="#eb6c36" stroke-width="1.5"/>
+        <text x="64"  y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">MinIO · recommended</text>
+
+        <rect x="220" y="484" width="16" height="8" fill="rgba(124,143,111,0.18)" stroke="#7c8f6f" stroke-width="1.5"/>
+        <text x="244" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Amazon S3</text>
+
+        <rect x="344" y="484" width="16" height="8" fill="rgba(94,122,155,0.18)" stroke="#5e7a9b" stroke-width="1.5"/>
+        <text x="368" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Ceph</text>
+
+        <rect x="424" y="484" width="16" height="8" fill="rgba(184,145,90,0.18)" stroke="#b8915a" stroke-width="1.5"/>
+        <text x="448" y="492" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Google Cloud Storage</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">RECOMMENDED</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>MinIO</h3></div>
+        <p>9 across the board, weakest only on large-object reads. The clear pick when small-file performance and Iceberg integration matter and you can run the operator yourself.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot sage"></span><h3>Amazon S3</h3></div>
+        <p>The reference implementation: top-class on large-object reads and write throughput, but a hard step down on operational simplicity once you factor in IAM, lifecycle, and bucket policy sprawl.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot dusty"></span><h3>Ceph</h3></div>
+        <p>Capable across the board, but the lowest score on operational simplicity. Pick it when you already run Ceph or need block + object + file from one cluster — not for a fresh greenfield.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot mustard"></span><h3>Google Cloud Storage</h3></div>
+        <p>Solid middle path. No standout dimension — which is itself an answer when the team optimises for "boring, managed, fine."</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>storage backends · capability radar</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

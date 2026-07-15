@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly signups · Line chart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --series-1:#7c8f6f; --series-2:#5e7a9b; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral { background: var(--color-accent); } .card-dot.sage { background: var(--series-1); } .card-dot.dusty { background: var(--series-2); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Line · Diagram Design</p>
+      <h1>Weekly signups · Organic leads the growth</h1>
+      <p class="subtitle">Signup volume by acquisition channel over eight weeks. Organic search is both the largest and fastest-growing channel; Direct is the stable baseline.</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/></pattern></defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+        <text transform="rotate(-90 24 230)" x="24" y="230" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SIGNUPS / WEEK</text>
+        <line x1="80" y1="357" x2="960" y2="357" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="293" x2="960" y2="293" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="230" x2="960" y2="230" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="167" x2="960" y2="167" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="103" x2="960" y2="103" stroke="rgba(45,49,66,0.08)" stroke-width="0.8"/>
+        <line x1="80" y1="40"  x2="960" y2="40"  stroke="rgba(45,49,66,0.06)" stroke-width="0.8"/>
+        <line x1="80" y1="40" x2="80" y2="420" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <line x1="80" y1="420" x2="960" y2="420" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text x="72" y="361" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">40</text>
+        <text x="72" y="297" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">80</text>
+        <text x="72" y="234" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">120</text>
+        <text x="72" y="171" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">160</text>
+        <text x="72" y="107" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">200</text>
+        <text x="72" y="44"  fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">240</text>
+        <polyline points="80,349 200,338 320,344 440,325 560,333 680,312 800,322 920,301" fill="none" stroke="#5e7a9b" stroke-width="1.2" stroke-linejoin="round"/>
+        <polyline points="80,293 200,290 320,281 440,278 560,284 680,274 800,270 920,265" fill="none" stroke="#7c8f6f" stroke-width="1.2" stroke-linejoin="round"/>
+        <polygon points="80,230 200,206 320,186 440,164 560,175 680,138 800,111 920,88 920,420 80,420" fill="rgba(235,108,54,0.06)"/>
+        <polyline points="80,230 200,206 320,186 440,164 560,175 680,138 800,111 920,88" fill="none" stroke="#eb6c36" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="80" cy="230" r="4" fill="#eb6c36"/><circle cx="200" cy="206" r="4" fill="#eb6c36"/><circle cx="320" cy="186" r="4" fill="#eb6c36"/><circle cx="440" cy="164" r="4" fill="#eb6c36"/>
+        <circle cx="560" cy="175" r="4" fill="#eb6c36"/><circle cx="680" cy="138" r="4" fill="#eb6c36"/><circle cx="800" cy="111" r="4" fill="#eb6c36"/><circle cx="920" cy="88" r="4" fill="#eb6c36"/>
+        <text x="80" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W1</text>
+        <text x="200" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W2</text>
+        <text x="320" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W3</text>
+        <text x="440" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W4</text>
+        <text x="560" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W5</text>
+        <text x="680" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W6</text>
+        <text x="800" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W7</text>
+        <text x="920" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">W8</text>
+        <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <line x1="40" y1="492" x2="64" y2="492" stroke="#eb6c36" stroke-width="1.8"/><circle cx="52" cy="492" r="4" fill="#eb6c36"/>
+        <text x="72" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Organic · focal</text>
+        <line x1="200" y1="492" x2="224" y2="492" stroke="#7c8f6f" stroke-width="1.2"/>
+        <text x="232" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Direct</text>
+        <line x1="316" y1="492" x2="340" y2="492" stroke="#5e7a9b" stroke-width="1.2"/>
+        <text x="348" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Referral</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">FOCAL · ORGANIC</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>Organic search driving 55% of new signups</h3></div>
+        <p>75% week-over-week growth over 8 weeks — from 120 to 210 signups. Two long-form guides published in W4 account for the step change. The W5 dip is a weekday holiday effect.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot sage"></span><h3>Direct: stable core</h3></div>
+        <p>22% growth (80→98) — this is mostly returning users and brand-aware discovery. The near-flat slope is a healthy baseline, not stagnation. It means the product retains its direct audience while organic expands.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot dusty"></span><h3>Referral: early signal</h3></div>
+        <p>67% growth (45→75), driven by one integration partner. Volatile week-to-week but directionally positive. Worth a dedicated channel review before investing further in partner programmes.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <span>weekly signups · acquisition channels</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

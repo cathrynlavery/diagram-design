@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Platform · Access Matrix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--paper:#f5f5f5;--ink:#2d3142;--muted:#4f5d75;--soft:#7a8399;--rule:rgba(45,49,66,.12);--accent:#eb6c36;--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',serif;--mono:'Geist Mono',ui-monospace,monospace}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:var(--paper);color:var(--ink);font-family:var(--sans)}
+    .frame{width:100%;max-width:1200px}.eyebrow{margin-bottom:.5rem;color:var(--muted);font:500 .66rem/1 var(--mono);letter-spacing:.18em;text-transform:uppercase}
+    h1{margin-bottom:.35rem;font:400 clamp(1.5rem,2.4vw + .75rem,2rem)/1.15 var(--serif);letter-spacing:-.02em}.subtitle{margin-bottom:1.5rem;color:var(--muted);font-size:.9rem;line-height:1.5}
+    .diagram{overflow-x:auto}svg{display:block;width:100%;min-width:1040px}
+    svg .component-head,svg .component{fill:#fff;stroke:rgba(45,49,66,.12);stroke-width:.8}svg .role{fill:#2d3142}
+    svg .head-name,svg .component-name,svg .role-name,svg .value{font-family:'Geist',sans-serif}svg .head-name,svg .component-name,svg .role-name{font-size:11px;font-weight:600}
+    svg .head-name,svg .component-name{fill:#2d3142}svg .role-name,svg .role-code{fill:#f5f5f5}svg .head-sub,svg .role-code,svg .hint,svg .legend-text,svg .focal-sub{font-family:'Geist Mono',monospace}
+    svg .head-sub,svg .hint,svg .legend-text{fill:#4f5d75}svg .head-sub,svg .role-code,svg .hint{font-size:9px}svg .role-code{opacity:.85}
+    svg .cell{stroke:rgba(45,49,66,.12);stroke-width:.6}svg .full{fill:rgba(45,49,66,.08)}svg .write{fill:#fff}svg .read{fill:rgba(79,93,117,.08)}svg .none{fill:#f5f5f5}
+    svg .value{font-size:10px}svg .value.full-text{fill:#2d3142;font-weight:600}svg .value.write-text{fill:#2d3142}svg .value.read-text{fill:#4f5d75}svg .value.none-text{fill:#7a8399}
+    svg .focal{fill:rgba(235,108,54,.07);stroke:#eb6c36;stroke-width:1.4}svg .focal-text{fill:#eb6c36;font-weight:600}svg .focal-sub{fill:#eb6c36;font-size:8px;opacity:.85}
+    svg .legend-text{font-size:9px}
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <p class="eyebrow">DP security matrix · Diagram Design</p><h1>Data platform access matrix</h1><p class="subtitle">Five operating roles × five platform components, expressed as admin, write, read, or none.</p>
+    <div class="diagram">
+      <svg viewBox="0 0 1084 400" role="img" aria-labelledby="matrix-title matrix-desc" xmlns="http://www.w3.org/2000/svg">
+        <title id="matrix-title">Data platform access matrix</title><desc id="matrix-desc">A five by five permission matrix for platform roles and components.</desc>
+        <rect width="1084" height="400" fill="#f5f5f5"/>
+
+        <!-- Header: y=72, h=52; role x positions derive from the 148px column formula -->
+        <rect class="component-head" x="12" y="72" width="208" height="52" rx="6"/><text class="head-name" x="116" y="96" text-anchor="middle">Component</text><text class="head-sub" x="116" y="112" text-anchor="middle">vs. AD group</text>
+        <rect class="role" x="232" y="72" width="148" height="52" rx="6"/><text class="role-name" x="306" y="92" text-anchor="middle">Data Engineer</text><text class="role-code" x="306" y="108" text-anchor="middle">GRP-DATA-ENG</text>
+        <rect class="role" x="396" y="72" width="148" height="52" rx="6"/><text class="role-name" x="470" y="92" text-anchor="middle">Data Scientist</text><text class="role-code" x="470" y="108" text-anchor="middle">GRP-DATA-SCI</text>
+        <rect class="role" x="560" y="72" width="148" height="52" rx="6"/><text class="role-name" x="634" y="92" text-anchor="middle">Analyst</text><text class="role-code" x="634" y="108" text-anchor="middle">GRP-ANALYST</text>
+        <rect class="role" x="724" y="72" width="148" height="52" rx="6"/><text class="role-name" x="798" y="92" text-anchor="middle">Administrator</text><text class="role-code" x="798" y="108" text-anchor="middle">GRP-ADMIN</text>
+        <rect class="role" x="888" y="72" width="148" height="52" rx="6"/><text class="role-name" x="962" y="92" text-anchor="middle">External Partner</text><text class="role-code" x="962" y="108" text-anchor="middle">GRP-PARTNER</text>
+
+        <!-- Object storage, y=140 -->
+        <rect class="component" x="12" y="140" width="208" height="36" rx="4"/><text class="component-name" x="24" y="162">Object storage</text><text class="hint" x="208" y="162" text-anchor="end">S3</text>
+        <rect class="cell write" x="232" y="140" width="148" height="36" rx="4"/><text class="value write-text" x="306" y="162" text-anchor="middle">Write</text>
+        <rect class="cell read" x="396" y="140" width="148" height="36" rx="4"/><text class="value read-text" x="470" y="162" text-anchor="middle">Read</text>
+        <rect class="cell none" x="560" y="140" width="148" height="36" rx="4"/><text class="value none-text" x="634" y="162" text-anchor="middle">None</text>
+        <rect class="cell full" x="724" y="140" width="148" height="36" rx="4"/><text class="value full-text" x="798" y="162" text-anchor="middle">Admin</text>
+        <rect class="cell none" x="888" y="140" width="148" height="36" rx="4"/><text class="value none-text" x="962" y="162" text-anchor="middle">None</text>
+
+        <!-- Query engine, y=180 -->
+        <rect class="component" x="12" y="180" width="208" height="36" rx="4"/><text class="component-name" x="24" y="202">Query engine</text><text class="hint" x="208" y="202" text-anchor="end">SQL</text>
+        <rect class="cell write" x="232" y="180" width="148" height="36" rx="4"/><text class="value write-text" x="306" y="202" text-anchor="middle">Write</text>
+        <rect class="cell read" x="396" y="180" width="148" height="36" rx="4"/><text class="value read-text" x="470" y="202" text-anchor="middle">Read</text>
+        <rect class="cell read" x="560" y="180" width="148" height="36" rx="4"/><text class="value read-text" x="634" y="202" text-anchor="middle">Read</text>
+        <rect class="cell full" x="724" y="180" width="148" height="36" rx="4"/><text class="value full-text" x="798" y="202" text-anchor="middle">Admin</text>
+        <rect class="cell read" x="888" y="180" width="148" height="36" rx="4"/><text class="value read-text" x="962" y="202" text-anchor="middle">Read</text>
+
+        <!-- Notebooks, y=220 -->
+        <rect class="component" x="12" y="220" width="208" height="36" rx="4"/><text class="component-name" x="24" y="242">Notebooks</text><text class="hint" x="208" y="242" text-anchor="end">PY</text>
+        <rect class="cell write" x="232" y="220" width="148" height="36" rx="4"/><text class="value write-text" x="306" y="242" text-anchor="middle">Write</text>
+        <rect class="cell write" x="396" y="220" width="148" height="36" rx="4"/><text class="value write-text" x="470" y="242" text-anchor="middle">Write</text>
+        <rect class="cell none" x="560" y="220" width="148" height="36" rx="4"/><text class="value none-text" x="634" y="242" text-anchor="middle">None</text>
+        <rect class="cell full" x="724" y="220" width="148" height="36" rx="4"/><text class="value full-text" x="798" y="242" text-anchor="middle">Admin</text>
+        <rect class="cell none" x="888" y="220" width="148" height="36" rx="4"/><text class="value none-text" x="962" y="242" text-anchor="middle">None</text>
+
+        <!-- BI tool, y=260; one focal access boundary -->
+        <rect class="component" x="12" y="260" width="208" height="36" rx="4"/><text class="component-name" x="24" y="282">BI tool</text><text class="hint" x="208" y="282" text-anchor="end">DASH</text>
+        <rect class="cell write" x="232" y="260" width="148" height="36" rx="4"/><text class="value write-text" x="306" y="282" text-anchor="middle">Write</text>
+        <rect class="cell read" x="396" y="260" width="148" height="36" rx="4"/><text class="value read-text" x="470" y="282" text-anchor="middle">Read</text>
+        <rect class="cell write" x="560" y="260" width="148" height="36" rx="4"/><text class="value write-text" x="634" y="282" text-anchor="middle">Write</text>
+        <rect class="cell full" x="724" y="260" width="148" height="36" rx="4"/><text class="value full-text" x="798" y="282" text-anchor="middle">Admin</text>
+        <rect class="focal" x="888" y="260" width="148" height="36" rx="4"/><text class="value focal-text" x="962" y="278" text-anchor="middle">Read</text><text class="focal-sub" x="962" y="290" text-anchor="middle">shared dashboards</text>
+
+        <!-- Orchestrator, y=300 -->
+        <rect class="component" x="12" y="300" width="208" height="36" rx="4"/><text class="component-name" x="24" y="322">Orchestrator</text><text class="hint" x="208" y="322" text-anchor="end">DAG</text>
+        <rect class="cell write" x="232" y="300" width="148" height="36" rx="4"/><text class="value write-text" x="306" y="322" text-anchor="middle">Write</text>
+        <rect class="cell read" x="396" y="300" width="148" height="36" rx="4"/><text class="value read-text" x="470" y="322" text-anchor="middle">Read</text>
+        <rect class="cell none" x="560" y="300" width="148" height="36" rx="4"/><text class="value none-text" x="634" y="322" text-anchor="middle">None</text>
+        <rect class="cell full" x="724" y="300" width="148" height="36" rx="4"/><text class="value full-text" x="798" y="322" text-anchor="middle">Admin</text>
+        <rect class="cell none" x="888" y="300" width="148" height="36" rx="4"/><text class="value none-text" x="962" y="322" text-anchor="middle">None</text>
+
+        <!-- Legend: rows_bottom=336, legend_y_top=356 -->
+        <line x1="12" y1="356" x2="1072" y2="356" stroke="rgba(45,49,66,.12)" stroke-width=".8"/><text class="legend-text" x="12" y="380" letter-spacing=".14em">LEGEND</text>
+        <rect class="cell full" x="96" y="368" width="16" height="12" rx="2"/><text class="legend-text" x="120" y="380">Admin</text><rect class="cell write" x="200" y="368" width="16" height="12" rx="2"/><text class="legend-text" x="224" y="380">Write</text><rect class="cell read" x="304" y="368" width="16" height="12" rx="2"/><text class="legend-text" x="328" y="380">Read</text><rect class="cell none" x="408" y="368" width="16" height="12" rx="2"/><text class="legend-text" x="432" y="380">None</text><rect class="focal" x="504" y="368" width="16" height="12" rx="2"/><text class="legend-text" x="528" y="380">partner read boundary</text>
+      </svg>
+    </div>
+  </main>
+</body>
+</html>

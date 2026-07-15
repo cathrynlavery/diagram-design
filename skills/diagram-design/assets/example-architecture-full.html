@@ -61,24 +61,39 @@
         <rect width="100%" height="100%" fill="#f5f5f5"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
+        <!-- Zone: Content services (drawn before arrows and nodes) -->
+        <rect x="616" y="128" width="164" height="272" rx="8"
+              fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="672" y="132" width="52" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="698" y="141" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">CONTENT</text>
+
         <!-- Arrows first (behind boxes) -->
         <line x1="168" y1="272" x2="220" y2="272" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
         <line x1="364" y1="272" x2="416" y2="272" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
-        <line x1="576" y1="256" x2="628" y2="212" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-        <line x1="576" y1="288" x2="628" y2="332" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 496,240 H 692 Q 700,240 700,232 V 224"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M 496,304 H 692 Q 700,304 700,312 V 320"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Dashed return: Cloudflare→Reader (cached HTML) -->
+        <path d="M 220,288 H 168" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
 
         <!-- Arrow labels -->
         <rect x="172" y="252" width="48" height="12" rx="2" fill="#f5f5f5"/>
         <text x="196" y="262" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HTTPS</text>
 
+        <rect x="172" y="278" width="32" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="188" y="287" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RESP</text>
+
         <rect x="368" y="252" width="48" height="12" rx="2" fill="#f5f5f5"/>
         <text x="392" y="262" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SSR</text>
 
-        <rect x="560" y="212" width="56" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="588" y="222" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">READ MDX</text>
+        <rect x="564" y="234" width="60" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="594" y="243" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">READ MDX</text>
 
-        <rect x="560" y="320" width="52" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="586" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">QUERY</text>
+        <rect x="568" y="298" width="44" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="590" y="307" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">QUERY</text>
 
         <!-- Node: Reader -->
         <rect x="40" y="240" width="128" height="64" rx="6" fill="#f5f5f5"/>
@@ -146,6 +161,9 @@
 
         <line x1="784" y1="442" x2="812" y2="442" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <text x="820" y="444" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Primary flow</text>
+
+        <line x1="900" y1="442" x2="928" y2="442" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+        <text x="936" y="444" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Return / async</text>
       </svg>
     </div>
 

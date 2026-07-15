@@ -35,6 +35,20 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 
 Any `rgba(28,25,23, X)` in light becomes `rgba(250,247,242, X)` in dark. Same opacities, RGB flipped. The accent gets a slight hue-shift brighter to read on dark paper.
 
+### Series palette (multi-series chart types only)
+
+A small set of desaturated, editorial-tone colors for chart types that genuinely need to distinguish multiple overlapping entities (currently: **radar**). The "1-focal" rule still holds — `accent` is reserved for the focal series; the palette below covers the rest.
+
+| Token | Light | Dark | Notes |
+|---|---|---|---|
+| `series-1` | `#7c8f6f` (sage) | `#9caf8f` | Non-focal series |
+| `series-2` | `#5e7a9b` (dusty-blue) | `#82a0c0` | Non-focal series |
+| `series-3` | `#b8915a` (mustard) | `#d3ad7a` | Non-focal series |
+| `series-4` | `#9c6b50` (rust-brown) | `#b88670` | Non-focal series |
+| `series-5` | `#6e6479` (slate) | `#8d8298` | Non-focal series |
+
+Fills sit at `0.18` opacity light, `0.22` dark; strokes use the full color. **Don't backfill these tokens to non-chart types** — architecture, swimlane, etc. continue to use muted-ink variants. The series palette is opt-in for diagrams where overlapping shapes demand distinguishable color, not a license to add color elsewhere.
+
 ---
 
 ## Typography

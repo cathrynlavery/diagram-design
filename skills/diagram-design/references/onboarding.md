@@ -1,17 +1,23 @@
-# Onboarding — generate your skin from a website
+# Onboarding — generate your skin from a design source
 
-**Goal:** point the skill at a site you like (your own, a competitor, a reference), and have it extract the palette + typography, then rewrite `style-guide.md` so every future diagram inherits that skin.
+**Goal:** point the skill at a design source — a website, an installed skill, or a local folder — and have it extract the palette + typography, then rewrite `style-guide.md` so every future diagram inherits that skin.
 
 Takes about 60 seconds.
 
+Three source methods are supported. Jump to the relevant section:
+
+- [§ URL](#url) — fetch a live website
+- [§ Skill](#skill) — read an installed Claude Code skill that carries design tokens
+- [§ Folder](#folder) — read a local design-system directory (CSS, JSON, Markdown)
+
 ---
 
-## The flow
+## The flow (all methods)
 
 ```
-URL you provide
+Source you provide (URL / skill name / folder path)
       ↓
-[1] fetch homepage (headless browser or HTTP)
+[1] read / fetch the source
       ↓
 [2] extract dominant colors + fonts
       ↓
@@ -26,17 +32,17 @@ future diagrams use your tokens
 
 ---
 
-## Invocation
+---
 
-Ask the skill:
+## § URL
+
+### Invocation
 
 > *"Onboard Schematic to my site — `https://example.com`"*
 
-Or run it with an explicit URL and the skill reads this file and executes the steps below.
-
 ---
 
-## Step 1 — fetch the page
+### Step 1 — fetch the page
 
 Use `agent-browser` (preferred) or a plain `fetch`. If the site has multiple pages worth sampling (landing + blog + product), fetch 2–3 and merge the palette signals.
 
@@ -64,6 +70,7 @@ Prefer CSS custom properties when the site exposes them (`:root { --accent: …;
 ### Fonts
 
 Read the rendered `font-family` stack of:
+
 - `<h1>` → `title` family
 - `<body>` → `node-name` family  
 - `<code>`, `<pre>`, or any mono-styled element → `sublabel` family
@@ -120,17 +127,139 @@ Also regenerate the dark variant via the inversion rule (`rgba(11,13,11, X)` →
 Write the new tokens to `style-guide.md`. Suggest running the `/regenerate-examples` flow (if it exists) or rebuilding one example to verify the new skin reads cleanly.
 
 After onboarding, the user should:
-1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 14 types.
+
+1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 26 types.
 2. If any type looks off, they usually need to tune `muted` (often too dark or too light against the new `paper`).
 
 ---
 
-## When onboarding fails
+## When URL onboarding fails
 
 - **Site uses webfonts you can't replicate** (custom-hosted, paid): keep the schematic defaults for typography and skin only the colors.
 - **Brand has 6+ colors** and you can't identify a clear hierarchy: pick one as `accent`, demote the rest to `muted` variants or ignore them. The schematic grammar only uses 5–7 roles.
 - **Site is dark-mode first**: flip the inversion — treat their dark paper as the default `paper`, and generate a light variant via inversion.
 - **Homepage is all imagery, no text**: ask for a blog or docs URL instead — text-heavy pages expose the type hierarchy.
+
+---
+
+## § Skill
+
+Extract tokens from an installed Claude Code skill that carries its own design system (e.g. a `brand-design` or `ui-kit` skill).
+
+### Invocation
+
+> *"Onboard Schematic from my `acme-design` skill"*
+
+Or the gate offers this as option (b) and the user names the skill.
+
+### Step 1 — locate the skill
+
+Search for the skill in order:
+
+1. `~/.claude/skills/<skill-name>/` (user install)
+2. `.claude/skills/<skill-name>/` (project install)
+3. Any path the user provides explicitly
+
+If not found, ask the user to confirm the skill name or provide the path.
+
+### Step 2 — read token sources
+
+Glob the skill directory for any of these files and read them all:
+
+| Priority | Pattern | What to look for |
+|---|---|---|
+| 1 | `*.css`, `colors*.css`, `tokens.css` | CSS custom properties in `:root { --color-*: …; }` |
+| 2 | `tokens.json`, `design-tokens.json`, `*.tokens.json` | Style Dictionary / Figma token JSON |
+| 3 | `SKILL.md`, `README.md` | Markdown tables listing colors, fonts, hex values |
+| 4 | `style-guide.md`, `*design*.md` | Any narrative design documentation |
+| 5 | `*.html` (preview/example files) | Inline `<style>` blocks — scan `:root` and `body` rules |
+
+Read all matches and merge — CSS custom properties take priority over inferred values from HTML.
+
+### Step 3 — extract colors and fonts
+
+**From CSS custom properties:**
+Map variable names to semantic roles using name-heuristics:
+
+| If the variable name contains… | Map to role |
+|---|---|
+| `background`, `bg`, `paper`, `surface`, `canvas` | `paper` |
+| `foreground`, `text`, `body`, `ink`, `on-surface` | `ink` |
+| `muted`, `subtle`, `secondary`, `caption` | `muted` |
+| `accent`, `brand`, `primary`, `cta`, `highlight` | `accent` |
+| `border`, `rule`, `divider`, `outline` | `rule` |
+| `mono`, `code`, `pre` | `sublabel` font |
+
+**From JSON tokens:** follow the same heuristics on key names. If the JSON follows Style Dictionary format (`{ "color": { "brand": { "value": "#…" } } }`), flatten the path and apply heuristics to the leaf key.
+
+**From Markdown tables:** look for rows with hex values (`#rrggbb`) adjacent to role-like words. A row like `| accent | #eb6c36 |` maps directly.
+
+**Fonts:** look for `font-family` rules, `@import` or `@font-face` declarations, and Markdown mentions of font names alongside size/weight.
+
+### Step 4 — map, validate, propose diff
+
+Same as the URL method: fill the role table, run contrast checks, show the diff, ask for approval before writing.
+
+### When skill extraction is ambiguous
+
+- **Skill has no CSS or token files**: fall back to reading all `.md` files and look for hex values mentioned in prose. Surface what you found and ask the user to confirm mappings before applying.
+- **Multiple accent candidates**: list them and ask the user to pick one. Don't guess.
+- **Skill is dark-mode first**: ask whether to treat the dark values as the `paper`/`ink` defaults or to invert.
+
+---
+
+## § Folder
+
+Extract tokens from a local directory — a checked-out design system repo, a Figma export, or any folder the user points you at.
+
+### Invocation
+
+> *"Onboard Schematic from my design system at `~/projects/brand/design-tokens/`"*
+
+Or the gate offers this as option (c) and the user provides the path.
+
+### Step 1 — discover files
+
+Glob the folder (recursively, up to 3 levels deep) for:
+
+```
+**/*.css
+**/*.scss        (read @forward / $variable declarations)
+**/tokens.json
+**/*.tokens.json
+**/design-tokens.json
+**/colors.json
+**/*style-guide*.md
+**/*design-system*.md
+**/README.md
+**/*.html        (scan <style> blocks only)
+```
+
+If the result set is large (>20 files), prefer files in the root and files whose names contain `color`, `token`, `brand`, `palette`, `style`, or `theme`.
+
+### Step 2 — read and merge
+
+Read every discovered file. Apply the same extraction logic as the Skill method (§ Skill → Step 3). CSS custom properties and JSON tokens take priority over inferred values from prose.
+
+**SCSS variables:** treat `$variable-name: value;` the same as a CSS custom property — apply name heuristics to `$variable-name`.
+
+**Figma token JSON** (Figma Tokens Plugin format):
+
+```json
+{ "colors": { "brand": { "primary": { "value": "#eb6c36", "type": "color" } } } }
+```
+
+Walk the tree; the leaf `value` fields are the colors, the path segments supply the role heuristic.
+
+### Step 3 — map, validate, propose diff
+
+Same as the URL method: run contrast checks, show the full diff against current `style-guide.md`, and write only after the user approves.
+
+### When folder extraction is ambiguous
+
+- **No structured token files, only prose docs**: read every `.md` in the root and extract hex values found near role-like words. Show the user a table of what you inferred — don't silently apply uncertain mappings.
+- **Multiple themes / color schemes found**: list them, ask the user which one to use as the diagram skin.
+- **Folder has zero readable files**: tell the user and ask for a more specific path or switch to manual token entry.
 
 ---
 

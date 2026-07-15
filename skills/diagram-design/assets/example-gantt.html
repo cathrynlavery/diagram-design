@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q2 product launch · Gantt</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 760px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Gantt · Diagram Design</p>
+    <h1>Q2 product launch · 12-week plan</h1>
+
+    <!-- viewBox 0 0 1000 500. Timeline x=200-956 = 756px / 12 weeks = 63px per week -->
+    <!-- Rows: label col x=20-196, timeline x=200-956 -->
+    <!-- Row height=40, bar h=24, bar top pad=8 -->
+    <!-- Week x = 200 + i*63, i=0..12 -->
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Phase zones (drawn before everything) -->
+      <!-- Phase 1 DISCOVERY: rows y=84,124 → zone y=72, h=84 -->
+      <rect x="12" y="72" width="976" height="84" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <!-- Phase 2 DESIGN: rows y=184,224,264 → zone y=172, h=120 -->
+      <rect x="12" y="172" width="976" height="120" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <!-- Phase 3 LAUNCH: rows y=324,364 → zone y=312, h=88 -->
+      <rect x="12" y="312" width="976" height="88" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+
+      <!-- Month headers at y=40-56 -->
+      <text x="326" y="52" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">April</text>
+      <text x="578" y="52" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">May</text>
+      <text x="830" y="52" fill="#2d3142" font-size="9" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">June</text>
+
+      <!-- Month separator lines -->
+      <line x1="452" y1="36" x2="452" y2="416" stroke="rgba(45,49,66,0.08)" stroke-width="0.8" stroke-dasharray="3,3"/>
+      <line x1="704" y1="36" x2="704" y2="416" stroke="rgba(45,49,66,0.08)" stroke-width="0.8" stroke-dasharray="3,3"/>
+
+      <!-- Week gridlines (vertical, hairline) -->
+      <line x1="263" y1="60" x2="263" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="326" y1="60" x2="326" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="389" y1="60" x2="389" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="515" y1="60" x2="515" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="578" y1="60" x2="578" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="641" y1="60" x2="641" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="767" y1="60" x2="767" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="830" y1="60" x2="830" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+      <line x1="893" y1="60" x2="893" y2="416" stroke="rgba(45,49,66,0.05)" stroke-width="0.6"/>
+
+      <!-- Timeline header line -->
+      <line x1="200" y1="60" x2="956" y2="60" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+      <!-- Left divider -->
+      <line x1="200" y1="36" x2="200" y2="416" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+
+      <!-- Phase labels (eyebrow style) -->
+      <text x="20" y="85" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DISCOVERY</text>
+      <text x="20" y="185" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DESIGN</text>
+      <text x="20" y="325" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LAUNCH</text>
+
+      <!-- ─── TASK BARS ─── -->
+      <!-- W_x = 200 + week_index * 63 -->
+      <!-- Row 1 y=84: Market research W1-W3 (i=0..2, x=200, dur=2*63=126) -->
+      <rect x="20"  y="92" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="108" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Market research</text>
+      <rect x="200" y="92" width="126" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="200" y="92" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Row 2 y=124: User interviews W2-W4 (i=1..3, x=263, dur=2*63=126) -->
+      <rect x="20"  y="132" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="148" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">User interviews</text>
+      <rect x="263" y="132" width="126" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="263" y="132" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Row 3 y=184: Wireframes W4-W6 (i=3..5, x=389, dur=2*63=126) -->
+      <rect x="20"  y="192" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="208" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Wireframes</text>
+      <rect x="389" y="192" width="126" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="389" y="192" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Row 4 y=224: Prototype W5-W8 (i=4..7, x=452, dur=3*63=189) -->
+      <rect x="20"  y="232" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="248" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Prototype</text>
+      <rect x="452" y="232" width="189" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="452" y="232" width="189" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Row 5 y=264 FOCAL: Design review W8-W9 (i=7..8, x=641, dur=63) -->
+      <rect x="20"  y="272" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="288" fill="#eb6c36" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Design review</text>
+      <rect x="641" y="272" width="63" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="641" y="272" width="63" height="24" rx="4" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="672" y="289" fill="#eb6c36" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">GATE</text>
+
+      <!-- Row 6 y=324: Development W7-W11 (i=6..10, x=578, dur=4*63=252) -->
+      <rect x="20"  y="332" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="348" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Development</text>
+      <rect x="578" y="332" width="252" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="578" y="332" width="252" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Row 7 y=364: Beta testing W10-W12 (i=9..11, x=767, dur=2*63=126) -->
+      <rect x="20"  y="372" width="176" height="24" fill="#f5f5f5"/>
+      <text x="20"  y="388" fill="#2d3142" font-size="10" font-weight="600" font-family="'Geist', sans-serif">Beta testing</text>
+      <rect x="767" y="372" width="126" height="24" rx="4" fill="#f5f5f5"/>
+      <rect x="767" y="372" width="126" height="24" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Legend -->
+      <line x1="40" y1="430" x2="960" y2="430" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="446" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="456" width="20" height="12" rx="3" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="68" y="466" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Design review · critical gate</text>
+
+      <rect x="280" y="456" width="20" height="12" rx="3" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="308" y="466" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Task</text>
+
+      <rect x="368" y="456" width="20" height="12" rx="3" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="396" y="466" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Phase</text>
+    </svg>
+  </div>
+</body>
+</html>
