@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bearer call with refresh · Sequence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1100px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 840px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Sequence · Diagram Design · Special</p>
+    <h1>Bearer call with refresh</h1>
+
+    <svg viewBox="0 0 960 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="seq-title seq-desc">
+      <title id="seq-title">Bearer call with refresh</title>
+      <desc id="seq-desc">Client calls API with a bearer token. An ALT fragment shows either a valid 200 response or a 401 path that refreshes via Auth and retries.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+        </marker>
+        <!-- Open arrowhead for async / fire-and-forget -->
+        <marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polyline points="0 0, 8 3, 0 6" fill="none" stroke="#4f5d75" stroke-width="1.2"/>
+        </marker>
+      </defs>
+
+      <!-- Background: paper + optional dots -->
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- =================================================================
+           LIFELINES — Client 160 · API 480 · Auth 800
+           ================================================================= -->
+      <line x1="160" y1="128" x2="160" y2="624" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="480" y1="128" x2="480" y2="624" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="800" y1="128" x2="800" y2="624" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- =================================================================
+           ACTIVATION BARS
+           ================================================================= -->
+      <!-- API holds control for the initial call -->
+      <rect x="476" y="180" width="8" height="88" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <!-- Client activation during refresh region -->
+      <rect x="156" y="360" width="8" height="200" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <!-- Auth activation for refresh -->
+      <rect x="796" y="400" width="8" height="64" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      <!-- API activation for retry -->
+      <rect x="476" y="496" width="8" height="64" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+
+      <!-- =================================================================
+           M1: Client → API  GET /resource (before ALT frame)
+           ================================================================= -->
+      <line x1="160" y1="176" x2="476" y2="176" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="248" y="160" width="128" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="312" y="170" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GET /RESOURCE + BEARER</text>
+
+      <!-- =================================================================
+           ALT COMBINED FRAGMENT — spans Client · API · Auth
+           Frame: x=88 y=208 w=752 h=360
+           ================================================================= -->
+      <rect x="88" y="208" width="752" height="360" rx="4"
+            fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <!-- Operator tab: ALT -->
+      <rect x="88" y="208" width="40" height="16" rx="2"
+            fill="#f5f5f5" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="108" y="220" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">ALT</text>
+
+      <!-- Region 1 guard -->
+      <text x="100" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.04em">[token valid]</text>
+
+      <!-- M2: API → Client  200 (coral headline success) -->
+      <line x1="476" y1="272" x2="168" y2="272" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="256" y="256" width="88" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="300" y="266" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">200 · BODY</text>
+
+      <!-- alt region divider -->
+      <line x1="96" y1="312" x2="832" y2="312"
+            stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+
+      <!-- Region 2 guard -->
+      <text x="100" y="336" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.04em">[else · 401]</text>
+
+      <!-- M3: API → Client  401 -->
+      <line x1="476" y1="368" x2="168" y2="368" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="272" y="352" width="56" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="300" y="362" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">401</text>
+
+      <!-- M4: Client → Auth  refresh (link-blue) -->
+      <line x1="164" y1="416" x2="796" y2="416" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="408" y="400" width="128" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="472" y="410" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">POST /TOKEN · REFRESH</text>
+
+      <!-- M5: Auth → Client  access (return dashed, filled marker) -->
+      <line x1="796" y1="456" x2="168" y2="456" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="424" y="440" width="96" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="472" y="450" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">200 · NEW ACCESS</text>
+
+      <!-- M6: Client → API  retry -->
+      <line x1="164" y1="504" x2="476" y2="504" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="248" y="488" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="304" y="498" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GET /RESOURCE · RETRY</text>
+
+      <!-- M7: API → Client  200 retry success (muted — coral already used) -->
+      <line x1="476" y1="544" x2="168" y2="544" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="256" y="528" width="88" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="300" y="538" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">200 · BODY</text>
+
+      <!-- =================================================================
+           M8: Client → Auth  async audit (open arrow, outside fragment)
+           ================================================================= -->
+      <line x1="164" y1="600" x2="796" y2="600" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <rect x="424" y="584" width="96" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="472" y="594" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AUDIT · ASYNC</text>
+
+      <!-- =================================================================
+           ACTOR BOXES — drawn after arrows
+           ================================================================= -->
+      <!-- Client (input / soft) -->
+      <rect x="88" y="72" width="144" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="88" y="72" width="144" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="96" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="112" y="89" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="160" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Client</text>
+      <text x="160" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">SPA · SDK</text>
+
+      <!-- API (focal) -->
+      <rect x="408" y="72" width="144" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="408" y="72" width="144" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="416" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
+      <text x="432" y="89" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
+      <text x="480" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Resource API</text>
+      <text x="480" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Bearer gate</text>
+
+      <!-- Auth (backend) -->
+      <rect x="728" y="72" width="144" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="728" y="72" width="144" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="736" y="80" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="754" y="89" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">AUTH</text>
+      <text x="800" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Auth</text>
+      <text x="800" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">token · refresh</text>
+
+      <!-- =================================================================
+           LEGEND
+           ================================================================= -->
+      <line x1="56" y1="648" x2="904" y2="648" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="56" y="664" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="56" y="680" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="76" y="688" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal / success</text>
+
+      <rect x="200" y="676" width="28" height="18" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      <text x="208" y="688" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace">ALT</text>
+      <text x="236" y="688" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Fragment</text>
+
+      <line x1="320" y1="684" x2="348" y2="684" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="356" y="688" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">HTTP call</text>
+
+      <line x1="448" y1="684" x2="476" y2="684" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <text x="484" y="688" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Return</text>
+
+      <line x1="560" y1="684" x2="588" y2="684" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-open)"/>
+      <text x="596" y="688" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Async open</text>
+
+      <line x1="696" y1="684" x2="724" y2="684" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="732" y="688" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Headline</text>
+    </svg>
+  </div>
+</body>
+</html>

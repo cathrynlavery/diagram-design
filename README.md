@@ -180,6 +180,8 @@ open ~/.claude/skills/diagram-design/assets/index.html
 # "Make me an architecture diagram of my app: frontend, backend, database, Redis cache."
 # "I need a quadrant showing Q2 projects by impact vs effort."
 # "Give me a sequence diagram of the OAuth handshake."
+# (branching token refresh uses the ALT combined-fragment grammar in type-sequence.md;
+#  see assets/example-sequence-oauth.html)
 ```
 
 Claude will pick the right type, build the HTML, and save it. You can also start from a template directly:
@@ -247,7 +249,8 @@ diagram-design/
 │   ├── template*.html               — scaffolds for new diagrams
 │   ├── example-<type>.html          — 3 variants × 27 types
 │   ├── example-loop-terminal.html   — terminal-variant flagship
-│   └── example-quadrant-consultant.html  — consultant-special 2×2 scenario matrix
+│   ├── example-quadrant-consultant.html  — consultant-special 2×2 scenario matrix
+│   └── example-sequence-oauth*.html — sequence special: bearer + ALT refresh
 └── docs/screenshots/                — the images in this README
 ```
 

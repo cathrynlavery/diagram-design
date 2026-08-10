@@ -344,6 +344,9 @@ Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
 | Max arrows / transitions | 12 |
 | Max coral elements | 2 |
 | Max lifelines (sequence) | 5 |
+| Max combined fragments (sequence) | 1 (default); 2 only if each is single-region `opt`/`loop` |
+| Max `alt` regions (sequence) | 2 |
+| Max fragment nesting (sequence) | 1 |
 | Max lanes (swimlane) | 5 |
 | Max items (quadrant) | 12 |
 | Max entities (ER) | 8 |
