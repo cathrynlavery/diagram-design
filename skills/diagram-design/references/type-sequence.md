@@ -8,8 +8,8 @@
 - Messages: horizontal arrows between lifelines; time flows top→down.
 - **Activation bar**: narrow rectangle (`w=8`, muted fill, 0.8 hairline stroke) on a lifeline spanning the interval that actor holds control. Stack for nested calls.
 - Self-messages: short U-shaped loop returning to the same lifeline; label right of the loop.
-- Return messages: dashed line in the same color as the originating call.
-- Coral on the primary success response or headline message — one, maybe two.
+- Return messages: **dashed** stroke + **filled** marker (never open). Prefer muted; optionally match the originating call color when pairing multi-hop stacks. Headline success may use solid coral (see Message kinds).
+- Coral on the primary success response or headline message — one, maybe two. Actor focal strokes do not count toward the coral message budget.
 - When the flow **branches** (valid vs invalid token, retry, optional step), draw a **combined fragment** frame — do not invent free-floating if/else arrow clusters.
 
 ## Message kinds
@@ -17,9 +17,9 @@
 | Kind | Stroke | Marker | When |
 |---|---|---|---|
 | Call (sync) | solid muted or link-blue | filled | Request that expects a reply |
-| Return | dashed, same color as the call | filled | Reply to a sync call |
+| Return | **dashed** muted (or match call color) | filled | Reply to a sync call — never solid |
 | Async / fire-and-forget | dashed muted | **open** arrowhead | Beacons, events, one-way notify |
-| Headline success | solid accent (≤1–2) | accent filled | Primary happy-path response |
+| Headline success | solid accent (≤1–2 messages) | accent filled | Primary happy-path response only |
 
 ### Open arrowhead (async)
 

@@ -89,7 +89,25 @@ def main() -> int:
             fail(f"{path.name} missing arrow-open async marker")
         if "Bearer" not in body and "BEARER" not in body:
             fail(f"{path.name} missing bearer call")
-    ok("oauth trio has ALT two-region structure + async open")
+        # Return grammar: 401 and retry 200 body must be dashed (not solid calls)
+        for y, label in (("368", "401"), ("544", "retry 200")):
+            # line at y1=y must include stroke-dasharray when present
+            m = re.search(
+                rf'<line[^>]*y1="{y}"[^>]*/?>',
+                body,
+            )
+            if not m:
+                fail(f"{path.name} missing return line at y1={y} ({label})")
+            if "stroke-dasharray" not in m.group(0):
+                fail(f"{path.name} {label} return at y1={y} must be dashed")
+        # First API activation must span past M2 (y=272)
+        act = re.search(
+            r'<rect x="476" y="180" width="8" height="(\d+)"',
+            body,
+        )
+        if not act or int(act.group(1)) < 100:
+            fail(f"{path.name} first API activation height must cover M2 (height>=100)")
+    ok("oauth trio has ALT two-region structure + async open + dashed returns")
 
     # Drive real skin linter entry point on new files
     cmd = [

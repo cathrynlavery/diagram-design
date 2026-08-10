@@ -87,7 +87,8 @@
       <line x1="480" y1="128" x2="480" y2="624" stroke="rgba(245,245,245,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
       <line x1="800" y1="128" x2="800" y2="624" stroke="rgba(245,245,245,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
 
-      <rect x="476" y="180" width="8" height="88" fill="rgba(245,245,245,0.06)" stroke="#bfc0c0" stroke-width="0.8"/>
+      <!-- First API activation brackets M1 call through M2 success return -->
+      <rect x="476" y="180" width="8" height="104" fill="rgba(245,245,245,0.06)" stroke="#bfc0c0" stroke-width="0.8"/>
       <rect x="156" y="360" width="8" height="200" fill="rgba(245,245,245,0.06)" stroke="#bfc0c0" stroke-width="0.8"/>
       <rect x="796" y="400" width="8" height="64" fill="rgba(245,245,245,0.06)" stroke="#bfc0c0" stroke-width="0.8"/>
       <rect x="476" y="496" width="8" height="64" fill="rgba(245,245,245,0.06)" stroke="#bfc0c0" stroke-width="0.8"/>
@@ -113,7 +114,8 @@
 
       <text x="100" y="336" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.04em">[else · 401]</text>
 
-      <line x1="476" y1="368" x2="168" y2="368" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M3: 401 return dashed -->
+      <line x1="476" y1="368" x2="168" y2="368" stroke="#bfc0c0" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
       <rect x="272" y="352" width="56" height="12" rx="2" fill="#2d3142"/>
       <text x="300" y="362" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">401</text>
 
@@ -129,7 +131,8 @@
       <rect x="248" y="488" width="112" height="12" rx="2" fill="#2d3142"/>
       <text x="304" y="498" fill="#6a95d8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GET /RESOURCE · RETRY</text>
 
-      <line x1="476" y1="544" x2="168" y2="544" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- M7: retry 200 return dashed -->
+      <line x1="476" y1="544" x2="168" y2="544" stroke="#bfc0c0" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
       <rect x="256" y="528" width="88" height="12" rx="2" fill="#2d3142"/>
       <text x="300" y="538" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">200 · BODY</text>
 
