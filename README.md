@@ -8,7 +8,7 @@
 
 *New in 2.0 — the Loop: flywheels with a shared-memory hub. The dashed lines are the write-backs.*
 
-27 types. One agent skill for Claude Code, Codex, and Pi. Your brand in 60 seconds — the skill reads your website and maps colors + fonts to every diagram.
+27 types. One agent skill for Claude Code, Codex, Pi, and GitHub Copilot. Your brand in 60 seconds — the skill reads your website and maps colors + fonts to every diagram.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
@@ -110,6 +110,10 @@ Run `/reload` in an open Pi session. The skill activates automatically for diagr
 npx skills add https://github.com/cathrynlavery/diagram-design --skill diagram-design
 ```
 
+**GitHub Copilot:**
+
+No install needed — the skill activates automatically when you clone or open this repo in VS Code with the GitHub Copilot extension. Copilot Chat picks up `.github/copilot-instructions.md` as workspace instructions. Reusable prompts (including `/export-diagram`) are available in `.github/prompts/` and surfaced in VS Code via the paperclip → **Prompt** menu or `@workspace /export-diagram`.
+
 ### Editable install
 
 Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Clone the repo and install the local path if you plan to customize the style guide:
@@ -124,7 +128,7 @@ pi install ~/code/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.claude/skills/diagram-design
 ```
 
-The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, Codex, and other Agent Skills-compatible tools use the same files.
+The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, Codex, and other Agent Skills-compatible tools use the same files. GitHub Copilot reads `.github/copilot-instructions.md`, which points to the same skill files.
 
 ---
 
@@ -224,6 +228,16 @@ Diagrams ship as self-contained HTML, but you can export the diagram itself for 
 /diagram-design:export path/to/diagram.html --png-only --scale=3
 ```
 
+**GitHub Copilot (VS Code):**
+
+Open Copilot Chat, attach the prompt via paperclip → **Prompt** → `export-diagram`, or type:
+
+```
+/export-diagram path/to/diagram.html
+/export-diagram path/to/diagram.html --svg-only
+/export-diagram path/to/diagram.html --png-only --scale=3
+```
+
 Or just ask in natural language:
 
 ```
@@ -244,6 +258,10 @@ Progressive disclosure. `SKILL.md` is a lean index — it tells the agent how to
 
 ```
 diagram-design/
+├── .github/
+│   ├── copilot-instructions.md      — Copilot workspace instructions (auto-loaded)
+│   └── prompts/
+│       └── export-diagram.prompt.md  — Copilot `/export-diagram` prompt
 ├── prompts/
 │   └── export-diagram.md            — Pi `/export-diagram` prompt template
 ├── skills/
