@@ -453,6 +453,20 @@ Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-syn
 
 All pull requests and pushes are automatically validated across Linux, Windows, and macOS runners via GitHub Actions CI (`.github/workflows/ci.yml`).
 
+`lint-skin.py` reads the source. `lint-render.py` renders it — headless Chromium
+measures the laid-out diagram and flags nodes clipped by the SVG viewport,
+collapsed SVGs, horizontal page overflow and JS errors: the breakage that only
+appears once a browser has applied real font metrics.
+
+```bash
+pip install playwright && playwright install chromium   # same dep as PNG export
+python3 scripts/lint-render.py --all                    # must stay green
+python3 scripts/lint-render.py <your-new-example.html>
+python3 scripts/lint-render.py --self-test              # proves the checks fire
+```
+
+No golden images, so there is nothing to re-record and no PNGs in the repo.
+
 ### What loads when
 
 At startup, the agent sees only the skill name and description. When a request matches, it loads `SKILL.md`; semantic, type, and animation references are pulled in only when relevant.
