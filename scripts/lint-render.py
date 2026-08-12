@@ -55,6 +55,7 @@ Requires Playwright (same dev dependency the PNG export uses):
 
 import argparse
 import base64
+import os
 import tempfile
 import sys
 from pathlib import Path
@@ -278,11 +279,16 @@ def display_path(path):
 
 
 def launch(playwright):
-    """Bundled Chromium, falling back to a system Chrome install."""
-    try:
-        return playwright.chromium.launch()
-    except Exception:
-        return playwright.chromium.launch(channel="chrome")
+    """Bundled Chromium, or the channel named by DIAGRAM_LINT_BROWSER_CHANNEL.
+
+    No silent fallback: in CI a missing bundled Chromium is a broken environment,
+    and quietly using whatever browser is lying around hides that.
+    """
+    channel = os.environ.get("DIAGRAM_LINT_BROWSER_CHANNEL")
+    if channel:
+        print(f"Using browser channel {channel!r} (DIAGRAM_LINT_BROWSER_CHANNEL).", file=sys.stderr)
+        return playwright.chromium.launch(channel=channel)
+    return playwright.chromium.launch()
 
 
 def block_network(context, allow_fonts):
@@ -546,7 +552,16 @@ def main():
     total_findings = 0
     total_notes = 0
     with sync_playwright() as playwright:
-        browser = launch(playwright)
+        try:
+            browser = launch(playwright)
+        except Exception as error:
+            print(
+                f"Could not launch a browser: {error}\n"
+                "  playwright install chromium\n"
+                "  (or set DIAGRAM_LINT_BROWSER_CHANNEL=chrome to use a system Chrome)",
+                file=sys.stderr,
+            )
+            return 2
         context = browser.new_context(viewport=VIEWPORT)
         block_network(context, args.fonts)
         if args.self_test:
@@ -563,6 +578,7 @@ def main():
             finally:
                 page.close()
 
+            findings.sort()
             total_findings += sum(1 for category, _ in findings if category not in NOTE_CATEGORIES)
             total_notes += sum(1 for category, _ in findings if category in NOTE_CATEGORIES)
             if not args.quiet:

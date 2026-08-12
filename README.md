@@ -479,6 +479,12 @@ Network is blocked while rendering (`--fonts` opts into the Google Fonts hosts
 and nothing else), which keeps font metrics identical across machines and keeps
 contributor HTML from reaching anything.
 
+**Font metrics differ between the default run and `--fonts`.** With network
+blocked — the default, and what CI runs — text is laid out in the fallback faces,
+not Instrument Serif and Geist. That is deterministic and machine-independent,
+which is what a linter needs, but it is not what your reader sees. Run
+`--fonts --all` locally when you care whether real text fits its box.
+
 ### What loads when
 
 At startup, the agent sees only the skill name and description. When a request matches, it loads `SKILL.md`; semantic, type, and animation references are pulled in only when relevant.
