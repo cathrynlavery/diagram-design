@@ -151,10 +151,34 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Rendered diagram layout validator.")
     parser.add_argument("file", nargs="?", help="Path to specific HTML diagram file to lint")
     parser.add_argument("--all", action="store_true", help="Lint all HTML files in skills/diagram-design/assets/")
+    parser.add_argument("--self-test", action="store_true", help="Run self-test suite against broken diagram fixture")
     parser.add_argument("--quiet", action="store_true", help="Suppress progress output")
 
     args = parser.parse_args()
     sync_playwright = check_playwright()
+
+    if getattr(args, "self_test", False):
+        fixture_path = FIXTURES_DIR / "sample-broken-layout.html"
+        if not fixture_path.exists():
+            print(f"FAIL: self-test fixture missing at {fixture_path}", file=sys.stderr)
+            return 1
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(viewport={"width": 1600, "height": 1200})
+            page = context.new_page()
+            findings = lint_file(page, fixture_path)
+            browser.close()
+
+        categories_found = {f["category"] for f in findings}
+        required_categories = {"clipped", "svg-collapsed", "page-overflow"}
+        missing = required_categories - categories_found
+        if missing:
+            print(f"FAIL: self-test failed to detect categories: {missing}", file=sys.stderr)
+            return 1
+
+        print("OK: self-test passed — all broken layout categories correctly detected.")
+        return 0
 
     files_to_lint: list[pathlib.Path] = []
     if args.file:

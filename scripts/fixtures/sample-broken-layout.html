@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sample Broken Layout Fixture for Self-Test</title>
+    <style>
+        body { margin: 0; padding: 0; }
+        .overflow-box { width: 3000px; height: 10px; background: red; }
+    </style>
+</head>
+<body>
+    <!-- Category: page-overflow -->
+    <div class="overflow-box"></div>
+
+    <!-- Category: svg-collapsed -->
+    <svg id="collapsed-svg" width="0" height="0"></svg>
+
+    <!-- Category: clipped -->
+    <svg id="clipped-svg" width="400" height="300" viewBox="0 0 400 300">
+        <circle cx="950" cy="150" r="50" fill="red" />
+    </svg>
+</body>
+</html>
