@@ -361,6 +361,8 @@ If you touch the Mermaid import path, `python3 scripts/verify-mermaid-import.py`
 it covers all supported grammars, multi-block Markdown, adversarial labels, trust-boundary
 behavior, resource caps, named failures, and reference/command wiring.
 
+To validate laid-out diagram geometry (clipped shapes, zero-height SVGs, page overflow), run `python3 scripts/lint-render.py --all` or `python3 scripts/lint-render.py --self-test`.
+
 All pull requests and pushes are automatically validated via GitHub Actions CI (`.github/workflows/ci.yml`).
 
 ### What loads when
