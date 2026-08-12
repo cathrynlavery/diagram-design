@@ -108,7 +108,7 @@ JS_MEASURE_LAYOUT = """
 """
 
 
-def lint_file(page: Any, html_path: pathlib.Path) -> list[dict[str, str]]:
+def lint_file(page: Any, html_path: pathlib.Path, screenshot_dir: pathlib.Path | None = None) -> list[dict[str, str]]:
     """Render a single HTML file in Playwright and measure layout invariants."""
     findings: list[dict[str, str]] = []
     console_errors: list[str] = []
@@ -141,6 +141,10 @@ def lint_file(page: Any, html_path: pathlib.Path) -> list[dict[str, str]]:
         for err in console_errors:
             findings.append({"file": str(html_path), "category": "console-error", "message": err})
 
+        if findings and screenshot_dir:
+            screenshot_dir.mkdir(parents=True, exist_ok=True)
+            page.screenshot(path=str(screenshot_dir / f"{html_path.stem}-failure.png"))
+
     except Exception as e:
         findings.append({"file": str(html_path), "category": "page-error", "message": str(e)})
 
@@ -152,10 +156,12 @@ def main() -> int:
     parser.add_argument("file", nargs="?", help="Path to specific HTML diagram file to lint")
     parser.add_argument("--all", action="store_true", help="Lint all HTML files in skills/diagram-design/assets/")
     parser.add_argument("--self-test", action="store_true", help="Run self-test suite against broken diagram fixture")
+    parser.add_argument("--screenshot-dir", help="Directory path to save Playwright layout failure screenshots")
     parser.add_argument("--quiet", action="store_true", help="Suppress progress output")
 
     args = parser.parse_args()
     sync_playwright = check_playwright()
+    screenshot_dir = pathlib.Path(args.screenshot_dir) if args.screenshot_dir else None
 
     if getattr(args, "self_test", False):
         fixture_path = FIXTURES_DIR / "sample-broken-layout.html"
@@ -167,7 +173,7 @@ def main() -> int:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1600, "height": 1200})
             page = context.new_page()
-            findings = lint_file(page, fixture_path)
+            findings = lint_file(page, fixture_path, screenshot_dir=screenshot_dir)
             browser.close()
 
         categories_found = {f["category"] for f in findings}
@@ -199,7 +205,7 @@ def main() -> int:
         page = context.new_page()
 
         for html_file in files_to_lint:
-            findings = lint_file(page, html_file)
+            findings = lint_file(page, html_file, screenshot_dir=screenshot_dir)
             all_findings.extend(findings)
 
         browser.close()
