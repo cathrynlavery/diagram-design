@@ -221,6 +221,19 @@ jobs:
         id: slopegraph_tests
         run: python scripts/test-verify-slopegraph.py
 
+      - name: Install Playwright Chromium
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      # The checks before the sweep: a broken linter must not be able to report
+      # a clean repository.
+      - name: Verify render linter checks
+        run: python3 scripts/lint-render.py --self-test
+
+      - name: Run render linter
+        run: python3 scripts/lint-render.py --all
+
       - name: Verify generated icon assets
         if: always()
         id: icons
