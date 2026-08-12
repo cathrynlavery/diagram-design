@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Automated Brand Onboarding CLI Tool for diagram-design.
 
-Extracts brand colors and typography from a website URL, local CSS folder, or design tokens,
+Extracts brand colors from a website URL, local CSS folder, or design tokens,
 validates WCAG AA contrast compliance, computes light/dark semantic role mappings,
 and updates skills/diagram-design/references/style-guide.md.
 
@@ -14,7 +14,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import math
 import os
 import pathlib
 import re
@@ -22,13 +21,13 @@ import sys
 import urllib.error
 import urllib.request
 from typing import NamedTuple
+from urllib.parse import urlparse
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_STYLE_GUIDE = REPO / "skills" / "diagram-design" / "references" / "style-guide.md"
 
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3}){1,2}\b")
 VAR_RE = re.compile(r"--([\w-]+)\s*:\s*([^;]+);")
-FONT_RE = re.compile(r"font-family\s*:\s*([^;]+);", re.IGNORECASE)
 
 
 class Color(NamedTuple):
@@ -65,13 +64,14 @@ def contrast_ratio(c1: Color, c2: Color) -> float:
     return (bright + 0.05) / (dark + 0.05)
 
 
-def ensure_contrast(foreground: Color, background: Color, min_ratio: float = 4.5) -> Color:
+def ensure_contrast(foreground: Color, background: Color, min_ratio: float = 4.5) -> tuple[Color, str | None]:
     """Adjust foreground color lightness to guarantee minimum WCAG contrast against background."""
-    if contrast_ratio(foreground, background) >= min_ratio:
-        return foreground
+    ratio = contrast_ratio(foreground, background)
+    if ratio >= min_ratio:
+        return foreground, None
 
+    orig_hex = foreground.to_hex()
     bg_lum = background.luminance()
-    # Darken foreground if background is light, lighten if background is dark
     make_darker = bg_lum > 0.5
     factor = 0.9 if make_darker else 1.1
 
@@ -87,20 +87,32 @@ def ensure_contrast(foreground: Color, background: Color, min_ratio: float = 4.5
             curr_b = min(255, max(1, int(curr_b * factor)))
 
         adjusted = Color(curr_r, curr_g, curr_b)
-        if contrast_ratio(adjusted, background) >= min_ratio:
-            return adjusted
+        new_ratio = contrast_ratio(adjusted, background)
+        if new_ratio >= min_ratio:
+            note = f"Adjusted {orig_hex} -> {adjusted.to_hex()} (WCAG AA contrast {new_ratio:.1f}:1 on {background.to_hex()})"
+            return adjusted, note
 
-    return Color(0, 0, 0) if make_darker else Color(255, 255, 255)
+    final_c = Color(0, 0, 0) if make_darker else Color(255, 255, 255)
+    final_ratio = contrast_ratio(final_c, background)
+    note = f"Adjusted {orig_hex} -> {final_c.to_hex()} (WCAG AA contrast {final_ratio:.1f}:1 on {background.to_hex()})"
+    return final_c, note
 
 
-def fetch_url_content(url: str) -> str:
-    """Fetch website HTML/CSS content with browser User-Agent."""
+def fetch_url_content(url: str, max_bytes: int = 5 * 1024 * 1024) -> str:
+    """Fetch website content enforcing http/https schemes and response size cap."""
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme '{parsed.scheme}': only http and https are permitted.")
+
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
-        return resp.read().decode("utf-8", errors="ignore")
+        content_bytes = resp.read(max_bytes + 1)
+        if len(content_bytes) > max_bytes:
+            raise ValueError(f"Response size exceeds maximum permitted cap of {max_bytes // (1024*1024)}MB.")
+        return content_bytes.decode("utf-8", errors="ignore")
 
 
 def extract_css_from_folder(folder_path: pathlib.Path) -> str:
@@ -118,8 +130,9 @@ def extract_css_from_folder(folder_path: pathlib.Path) -> str:
     return "\n".join(chunks)
 
 
-def extract_tokens(text: str) -> dict[str, str]:
+def extract_tokens(text: str) -> tuple[dict[str, str], list[str]]:
     """Extract colors and variables from text content."""
+    warnings: list[str] = []
     vars_found: dict[str, str] = {}
     for match in VAR_RE.finditer(text):
         name, val = match.group(1).lower(), match.group(2).strip()
@@ -147,6 +160,7 @@ def extract_tokens(text: str) -> dict[str, str]:
 
     # Fallback to frequency if custom properties were missing
     if not vars_found and hexes:
+        warnings.append("Warning: No CSS custom properties found; falling back to hex frequency ranking.")
         counts = {}
         for h in hexes:
             counts[h] = counts.get(h, 0) + 1
@@ -158,24 +172,31 @@ def extract_tokens(text: str) -> dict[str, str]:
         if len(sorted_colors) > 2:
             accent_hex = sorted_colors[2][0]
 
-    return {
+    tokens = {
         "paper": paper_hex,
         "ink": ink_hex,
         "accent": accent_hex,
         "muted": muted_hex,
     }
+    return tokens, warnings
 
 
-def compute_derived_roles(tokens: dict[str, str]) -> dict[str, dict[str, str]]:
+def compute_derived_roles(tokens: dict[str, str]) -> tuple[dict[str, dict[str, str]], list[str]]:
     """Compute light and dark variants for all 9 semantic roles with contrast enforcement."""
+    contrast_notes: list[str] = []
     paper_c = Color.from_hex(tokens["paper"])
     ink_c = Color.from_hex(tokens["ink"])
     accent_c = Color.from_hex(tokens["accent"])
     muted_c = Color.from_hex(tokens["muted"])
 
     # Enforce WCAG AA contrast on ink and muted against paper
-    ink_c = ensure_contrast(ink_c, paper_c, 4.5)
-    muted_c = ensure_contrast(muted_c, paper_c, 4.5)
+    ink_c, note_ink = ensure_contrast(ink_c, paper_c, 4.5)
+    if note_ink:
+        contrast_notes.append(note_ink)
+
+    muted_c, note_muted = ensure_contrast(muted_c, paper_c, 4.5)
+    if note_muted:
+        contrast_notes.append(note_muted)
 
     # Derived light values
     paper_2_c = Color(
@@ -193,7 +214,7 @@ def compute_derived_roles(tokens: dict[str, str]) -> dict[str, dict[str, str]]:
     accent_tint_str = f"rgba({accent_c.r},{accent_c.g},{accent_c.b},0.08)"
     link_c = Color(46, 90, 168)
 
-    # Dark mode inversion
+    # Dark mode dynamic brand inversion
     paper_dark = Color(
         max(0, 255 - paper_c.r),
         max(0, 255 - paper_c.g),
@@ -214,14 +235,26 @@ def compute_derived_roles(tokens: dict[str, str]) -> dict[str, dict[str, str]]:
         min(255, paper_dark.g + 12),
         min(255, paper_dark.b + 12)
     )
-    muted_dark = Color(191, 192, 192)
-    soft_dark = Color(142, 152, 172)
+    muted_dark = Color(
+        min(255, 255 - muted_c.r),
+        min(255, 255 - muted_c.g),
+        min(255, 255 - muted_c.b)
+    )
+    soft_dark = Color(
+        min(255, 255 - soft_c.r),
+        min(255, 255 - soft_c.g),
+        min(255, 255 - soft_c.b)
+    )
     rule_dark_str = f"rgba({ink_dark.r},{ink_dark.g},{ink_dark.b},0.12)"
-    rule_solid_dark_str = "rgba(191,192,192,0.25)"
+    rule_solid_dark_str = f"rgba({ink_dark.r},{ink_dark.g},{ink_dark.b},0.25)"
     accent_tint_dark_str = f"rgba({accent_dark.r},{accent_dark.g},{accent_dark.b},0.10)"
-    link_dark = Color(106, 149, 216)
+    link_dark = Color(
+        min(255, link_c.r + 60),
+        min(255, link_c.g + 60),
+        min(255, link_c.b + 60)
+    )
 
-    return {
+    roles = {
         "paper":       {"light": paper_c.to_hex(), "dark": paper_dark.to_hex()},
         "paper-2":     {"light": paper_2_c.to_hex(), "dark": paper_2_dark.to_hex()},
         "ink":         {"light": ink_c.to_hex(), "dark": ink_dark.to_hex()},
@@ -233,6 +266,7 @@ def compute_derived_roles(tokens: dict[str, str]) -> dict[str, dict[str, str]]:
         "accent-tint": {"light": accent_tint_str, "dark": accent_tint_dark_str},
         "link":        {"light": link_c.to_hex(), "dark": link_dark.to_hex()},
     }
+    return roles, contrast_notes
 
 
 def update_style_guide(roles: dict[str, dict[str, str]], style_guide_path: pathlib.Path, dry_run: bool = False) -> str:
@@ -255,7 +289,7 @@ def update_style_guide(roles: dict[str, dict[str, str]], style_guide_path: pathl
 
     if not dry_run and style_guide_path.exists():
         content = style_guide_path.read_text(encoding="utf-8")
-        table_pattern = re.compile(r"\| Role \| Purpose \|.*?\n(?:\|.*?\|\n)+", re.DOTALL)
+        table_pattern = re.compile(r"\| Role \| Purpose \| Default \(light\) \| Default \(dark\) \|.*?\n(?:\|.*?\|\n)+", re.DOTALL)
         if table_pattern.search(content):
             updated_content = table_pattern.sub(table_text + "\n", content, count=1)
             style_guide_path.write_text(updated_content, encoding="utf-8")
@@ -275,21 +309,30 @@ def main() -> int:
     style_guide_path = pathlib.Path(args.out) if args.out else DEFAULT_STYLE_GUIDE
 
     print("Onboarding diagram-design skin...")
-    if args.url:
-        print(f"Fetching website: {args.url}")
-        content = fetch_url_content(args.url)
-    else:
-        folder_path = pathlib.Path(args.folder)
-        if not folder_path.exists():
-            print(f"Error: folder path does not exist: {folder_path}", file=sys.stderr)
-            return 1
-        print(f"Reading local folder: {folder_path}")
-        content = extract_css_from_folder(folder_path)
+    try:
+        if args.url:
+            print(f"Fetching website: {args.url}")
+            content = fetch_url_content(args.url)
+        else:
+            folder_path = pathlib.Path(args.folder)
+            if not folder_path.exists():
+                print(f"Error: folder path does not exist: {folder_path}", file=sys.stderr)
+                return 1
+            print(f"Reading local folder: {folder_path}")
+            content = extract_css_from_folder(folder_path)
+    except Exception as e:
+        print(f"Error reading source content: {e}", file=sys.stderr)
+        return 1
 
-    raw_tokens = extract_tokens(content)
+    raw_tokens, warnings = extract_tokens(content)
+    for warn in warnings:
+        print(warn, file=sys.stderr)
     print(f"Extracted Raw Tokens: {raw_tokens}")
 
-    roles = compute_derived_roles(raw_tokens)
+    roles, contrast_notes = compute_derived_roles(raw_tokens)
+    for note in contrast_notes:
+        print(f"[WCAG AA] {note}")
+
     table_output = update_style_guide(roles, style_guide_path, dry_run=args.dry_run)
 
     print("\n--- Proposed Tokens Table ---")
