@@ -42,7 +42,10 @@ jobs:
         run: python3 scripts/verify-mermaid-import.py
 
       - name: Verify render layout validator self-test
-        run: python3 scripts/lint-render.py --self-test
+        run: |
+          python3 -m pip install playwright
+          python3 -m playwright install --with-deps chromium
+          python3 scripts/lint-render.py --self-test
       - name: Verify generated icon assets
         run: |
           python3 scripts/build-icons.py
