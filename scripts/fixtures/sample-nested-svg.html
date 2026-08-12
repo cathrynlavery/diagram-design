@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Open data lake · Nested SVG fixture</title>
+</head>
+<body>
+  <svg viewBox="0 0 480 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="nested-datalake-title nested-datalake-desc">
+    <title id="nested-datalake-title">Open data lake · End-to-end stack</title>
+    <desc id="nested-datalake-desc">A trimmed data lake architecture with app server, database, and Apache NiFi icon SVGs nested inside the diagram SVG.</desc>
+    <defs>
+      <pattern id="fixture-dots" width="16" height="16" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.8" fill="#d5d7de"/>
+      </pattern>
+    </defs>
+    <rect width="480" height="180" rx="12" fill="url(#fixture-dots)"/>
+
+    <g transform="translate(24 40)">
+      <rect width="120" height="96" rx="8" fill="white" stroke="#2d3142"/>
+      <svg x="48" y="16" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d3142" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 7a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3"/>
+        <path d="M3 15a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3l0 -2"/>
+        <path d="M7 8l0 .01"/><path d="M7 16l0 .01"/>
+      </svg>
+      <text x="60" y="64" text-anchor="middle" font-family="sans-serif" font-size="12">App servers</text>
+    </g>
+
+    <g transform="translate(180 40)">
+      <rect width="120" height="96" rx="8" fill="white" stroke="#2d3142"/>
+      <svg x="48" y="16" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2d3142" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/>
+        <path d="M4 6v6a8 3 0 0 0 16 0v-6"/>
+        <path d="M4 12v6a8 3 0 0 0 16 0v-6"/>
+      </svg>
+      <text x="60" y="64" text-anchor="middle" font-family="sans-serif" font-size="12">Databases</text>
+    </g>
+
+    <g transform="translate(336 40)">
+      <rect width="120" height="96" rx="8" fill="white" stroke="#eb6c36"/>
+      <svg x="48" y="16" width="24" height="24" viewBox="0 0 24 24" fill="#eb6c36" aria-hidden="true">
+        <path d="M11.648 0a.093.093 0 0 0-.084.053A30.71 30.71 0 0 1 8.592 4.73c-2.09 2.728-5.145 6.466-5.145 10.364a8.201 8.201 0 0 0 8.201 8.2v-5.003c0-.106.087-.193.194-.193h2.81v-2.813c0-.106.087-.191.194-.191h5.004c0-3.9-3.056-7.636-5.145-10.364A30.712 30.712 0 0 1 11.732.053.094.094 0 0 0 11.648 0z"/>
+      </svg>
+      <text x="60" y="64" text-anchor="middle" font-family="sans-serif" font-size="12">Apache NiFi</text>
+    </g>
+  </svg>
+</body>
+</html>

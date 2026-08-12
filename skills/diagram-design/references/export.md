@@ -6,7 +6,7 @@ Convert a generated diagram HTML file into a portable `.svg` and/or `.png` next 
 
 Load this file when:
 
-- The user invokes `/diagram-design:export <html-file>` (the plugin's slash command — defined in `commands/export.md` at the repo root).
+- The user invokes `/diagram-design:export <html-file>` (the plugin's slash command — defined in `commands/export-diagram.md` at the repo root).
 - The user asks in natural language to export, save, rasterize, convert, or download a diagram in `.svg` or `.png` form. Typical phrasings:
   - "export this as PNG"
   - "save as SVG"
@@ -26,8 +26,18 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
 
 ## SVG export procedure
 
+Run the shared extraction implementation:
+
+```
+python3 skills/diagram-design/scripts/figma_capture.py extract <src> [--stdout | --out PATH]
+```
+
+Without an output option, it validates the source and writes `<basename>.svg` next to it. Use `--out PATH` for an explicit destination or `--stdout` to emit the standalone SVG without writing a file.
+
+When running scripts isn't possible, use this manual fallback:
+
 1. Read the source HTML file.
-2. Extract the **first** `<svg ...>...</svg>` block. Use a multiline regex anchored on `<svg` and `</svg>`. Most generated diagrams have only one SVG; if there are multiple, the first is the diagram (gallery files are an exception — see *Edge cases*).
+2. Isolate the **first** complete `<svg ...>...</svg>` block with balanced, nested-aware tag parsing. Don't stop at the first `</svg>` — that truncates diagrams with nested SVGs, such as `example-datalake.html`. Most generated diagrams have only one SVG; if there are multiple, the first is the diagram (gallery files are an exception — see *Edge cases*).
 3. Make it standalone:
    - Ensure the opening tag has `xmlns="http://www.w3.org/2000/svg"`. Add it if missing.
    - Ensure a `viewBox` is present. The skill's templates always include one; warn the user if absent rather than guessing.
@@ -35,9 +45,10 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
    - Inject Google Fonts `@import` so the SVG renders with correct typography in a browser:
      ```svg
      <defs>
-       <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap');</style>
+       <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
      </defs>
      ```
+     Escaping the ampersands as `&amp;` is required for the standalone file to be well-formed XML.
      If the SVG already contains a `<defs>` block, **merge** the `<style>` into it (don't add a second `<defs>`).
 4. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
 5. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
@@ -125,6 +136,7 @@ If the target aspect ratio doesn't match the `viewBox` aspect ratio, say so and 
 
 - **Source is `assets/index.html`** (the gallery, multiple SVGs in one file): refuse the export and ask the user which specific diagram file they meant. Don't guess.
 - **No `<svg>` block found**: the source isn't a diagram file. Tell the user; don't write anything.
+- **Diagram contains `<foreignObject>`** (including the medallion examples): SVG export succeeds, but warn that import targets may render it with reduced fidelity.
 - **Surrounding HTML matters to the user**: they want cards/header in the image. Tell them this skill exports diagrams only, and recommend a browser-based full-page screenshot (or a separate PDF print).
 - **Source is missing fonts at runtime**: Playwright will substitute, the screenshot will look off. Check that the source HTML has the `<link href="...fonts.googleapis.com...">` tag in `<head>`. If absent, the file isn't from a current template — fix the source rather than working around it in export.
 
