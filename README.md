@@ -454,18 +454,30 @@ Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-syn
 All pull requests and pushes are automatically validated across Linux, Windows, and macOS runners via GitHub Actions CI (`.github/workflows/ci.yml`).
 
 `lint-skin.py` reads the source. `lint-render.py` renders it — headless Chromium
-measures the laid-out diagram and flags nodes clipped by the SVG viewport,
-collapsed SVGs, horizontal page overflow and JS errors: the breakage that only
-appears once a browser has applied real font metrics.
+reports what actually got painted, which catches content cut off by the SVG
+viewport, collapsed SVGs, horizontal page overflow, missing local assets and JS
+errors. Both run in CI on every pull request.
 
 ```bash
 pip install playwright && playwright install chromium   # same dep as PNG export
-python3 scripts/lint-render.py --all                    # must stay green
+python3 scripts/lint-render.py --self-test              # checks the checks
+python3 scripts/lint-render.py --all
 python3 scripts/lint-render.py <your-new-example.html>
-python3 scripts/lint-render.py --self-test              # proves the checks fire
+python3 scripts/lint-render.py --fonts --all           # measure with the real webfonts
 ```
 
+Clipping is measured by paint, not geometry: `getBoundingClientRect()` on an SVG
+child ignores stroke width, markers and filter bleed, and knows nothing about
+`clip-path` or `overflow: visible`, so it both misses real clipping and invents
+clipping that isn't there. Instead each SVG is screenshot as authored and again
+with its `overflow` released, and the two are diffed — ink that appears outside
+was being cut off. `--self-test` asserts that on fifteen fixtures, half of them
+cases that must *not* be flagged.
+
 No golden images, so there is nothing to re-record and no PNGs in the repo.
+Network is blocked while rendering (`--fonts` opts into the Google Fonts hosts
+and nothing else), which keeps font metrics identical across machines and keeps
+contributor HTML from reaching anything.
 
 ### What loads when
 
