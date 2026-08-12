@@ -111,14 +111,36 @@ JS_MEASURE_LAYOUT = """
 def lint_file(page: Any, html_path: pathlib.Path) -> list[dict[str, str]]:
     """Render a single HTML file in Playwright and measure layout invariants."""
     findings: list[dict[str, str]] = []
+    console_errors: list[str] = []
+
+    def on_console(msg: Any) -> None:
+        if msg.type == "error":
+            text = msg.text
+            # Filter remote Google WebFont network timeouts when running offline/proxied
+            if any(domain in text for domain in ("fonts.googleapis.com", "fonts.gstatic.com")):
+                return
+            console_errors.append(text)
+
+    page.on("console", on_console)
     file_url = html_path.as_uri()
 
     try:
         page.goto(file_url, wait_until="load", timeout=10000)
+
+        # Wait for webfonts to finish loading (resolving TypeError in evaluate calls)
+        try:
+            page.wait_for_function("document.fonts.status === 'loaded'", timeout=3000)
+        except Exception:
+            pass
+
         res = page.evaluate(JS_MEASURE_LAYOUT)
         if isinstance(res, list):
             for item in res:
                 findings.append({"file": str(html_path), "category": item["category"], "message": item["message"]})
+
+        for err in console_errors:
+            findings.append({"file": str(html_path), "category": "console-error", "message": err})
+
     except Exception as e:
         findings.append({"file": str(html_path), "category": "page-error", "message": str(e)})
 
