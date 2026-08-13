@@ -219,25 +219,25 @@
         <rect x="40" y="40" width="240" height="510" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
         <text x="60" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">INGRESS SOURCES</text>
 
-        <!-- Producer 1: Web App -->
+        <!-- Producer 1: Web App (Steady Flow: 4 req/sec) -->
         <rect x="60" y="96" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
         <text x="76" y="128" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Web Client App</text>
-        <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 120 req/sec</text>
+        <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 4 req/sec (Steady)</text>
 
-        <!-- Producer 2: Mobile API -->
+        <!-- Producer 2: Mobile API (Steady Flow: 3 req/sec) -->
         <rect x="60" y="196" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
         <text x="76" y="228" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Mobile Native API</text>
-        <text x="76" y="248" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 85 req/sec</text>
+        <text x="76" y="248" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 3 req/sec (Steady)</text>
 
-        <!-- Producer 3: Payment Webhook -->
+        <!-- Producer 3: Payment Webhook (Spike Flow: 8 req/sec) -->
         <rect x="60" y="296" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
         <text x="76" y="328" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Payment Webhooks</text>
-        <text x="76" y="348" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 210 req/sec</text>
+        <text x="76" y="348" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 8 req/sec (Spike)</text>
 
-        <!-- Producer 4: Legacy ERP -->
+        <!-- Producer 4: Legacy ERP (Spike Flow: 12 req/sec) -->
         <rect x="60" y="396" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
         <text x="76" y="428" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Legacy ERP Batch</text>
-        <text x="76" y="448" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 160 req/sec</text>
+        <text x="76" y="448" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 12 req/sec (Spike)</text>
 
         <!-- Central Queue Buffer Region (Width expanded to 370px for generous text margins) -->
         <rect x="340" y="150" width="370" height="320" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
@@ -245,7 +245,7 @@
         <text x="360" y="200" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Capacity: 5 slots (Bounded FIFO)</text>
 
         <!-- STEP 1: Ingress Traffic Arrives (Slots 1 & 2 + Initial 2/5 Queue Depth Badge) -->
-        <g data-motion-item data-step="1" aria-label="Step 1: Web App and Mobile API send ingress traffic into queue slots 1 and 2">
+        <g data-motion-item data-step="1" aria-label="Step 1: Web App and Mobile API send steady ingress traffic (7 req/sec total) into queue slots 1 and 2">
           <!-- Ingress Flow Arrows 1 & 2 -->
           <path d="M 260 132 L 340 234" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
           <path d="M 260 232 L 340 282" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
@@ -267,7 +267,7 @@
         </g>
 
         <!-- STEP 2: Ingress Spike Fills Queue (Slots 3, 4, 5 + Updated 5/5 Full Warn Queue Depth Badge) -->
-        <g data-motion-item data-step="2" aria-label="Step 2: Ingress spike fills queue to capacity 5/5 slots triggering bottleneck warning">
+        <g data-motion-item data-step="2" aria-label="Step 2: Payment and ERP traffic spike (20 req/sec total) fills queue to 5/5 slots capacity">
           <!-- Ingress Flow Arrows 3 & 4 -->
           <path d="M 260 332 L 340 322" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
           <path d="M 260 432 L 340 370" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
@@ -292,18 +292,18 @@
         </g>
 
         <!-- STEP 3: Rate Limiter Diverts Excess Traffic (429 Dropped Sink) -->
-        <g data-motion-item data-step="3" aria-label="Step 3: Rate limiter activates diverting excess traffic to 429 Too Many Requests sink">
+        <g data-motion-item data-step="3" aria-label="Step 3: Overflow backpressure activates, shedding excess 19 req/sec to 429 Rate Limiter sink">
           <!-- Overflow Diverter Connector -->
           <path d="M 525 150 L 525 92 L 760 92" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
           
           <!-- 429 Dropped Traffic Sink Node (Expanded to width 350px) -->
           <rect x="760" y="50" width="350" height="85" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
-          <text x="780" y="82" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">429 Rate Limiter &amp; Dropped Sink</text>
-          <text x="780" y="104" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Status: 429 Too Many Requests (Backpressure)</text>
+          <text x="780" y="82" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">429 Rate Limiter &amp; Overflow Sink</text>
+          <text x="780" y="104" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Status: 429 Backpressure (19 req/sec Shed)</text>
         </g>
 
         <!-- STEP 4: Worker Service Processing & Downstream Output -->
-        <g data-motion-item data-step="4" aria-label="Step 4: Constrained worker node processes queue emitting 200 OK downstream responses">
+        <g data-motion-item data-step="4" aria-label="Step 4: Constrained worker node processes queue at 8 req/sec max emitting 200 OK downstream responses">
           <!-- Worker Processing Connector -->
           <path d="M 710 310 L 760 280" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
 
@@ -320,14 +320,14 @@
           <!-- Downstream Service Node (Expanded to width 350px) -->
           <rect x="760" y="410" width="350" height="85" rx="6" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
           <text x="780" y="440" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Downstream Database &amp; Core API</text>
-          <text x="780" y="464" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Result: 200 OK Admitted Traffic Stream</text>
+          <text x="780" y="464" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Result: 200 OK Admitted Traffic Stream (8 req/sec)</text>
         </g>
 
         <!-- STEP 5: Equilibrium State & Performance Metrics Summary -->
-        <g data-motion-item data-step="5" aria-label="Step 5: System reaches equilibrium with steady throughput and zero dropped priority traffic">
+        <g data-motion-item data-step="5" aria-label="Step 5: System reaches controlled equilibrium protecting worker from overload while shedding excess traffic">
           <rect x="340" y="490" width="370" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
-          <text x="360" y="516" fill="#2d3142" font-family="'Geist', sans-serif" font-size="13" font-weight="600">System State: Equilibrium Achieved</text>
-          <text x="360" y="536" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Priority Ingress Guaranteed · Zero Loss</text>
+          <text x="360" y="516" fill="#2d3142" font-family="'Geist', sans-serif" font-size="13" font-weight="600">System State: Controlled Equilibrium</text>
+          <text x="360" y="536" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Worker Protected · Backpressure Active</text>
         </g>
 
         <!-- Precision SVG Legend Footer (Exact visual mini-arrows and mini-rects) -->
