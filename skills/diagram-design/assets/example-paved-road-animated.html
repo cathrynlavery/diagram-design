@@ -253,6 +253,45 @@
         <rect x="780" y="430" width="320" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
         <text x="800" y="460" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Security Operations Center</text>
         <text x="800" y="482" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Monitoring: Real-time Alerting Active</text>
+
+        <!-- STEP 1: Authorized Developer Code Ingress -->
+        <g data-motion-item data-step="1" aria-label="Step 1: Developer workstation pushes signed code commit into CI/CD Paved Road pipeline">
+          <path d="M 260 132 L 350 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="270" y="112" width="70" height="20" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="305" y="126" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">GIT PUSH</text>
+        </g>
+
+        <!-- STEP 2: CI/CD Build & Cryptographic Signing -->
+        <g data-motion-item data-step="2" aria-label="Step 2: CI/CD pipeline builds binary and generates cryptographic provenance signature">
+          <path d="M 520 168 L 520 215" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="440" y="178" width="160" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="520" y="194" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">PROVENANCE [SIGNED]</text>
+        </g>
+
+        <!-- STEP 3: Privileged Security Gate Inspection Pass & Runtime Deployment -->
+        <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy and deploys authorized artifact to isolated runtime">
+          <path d="M 690 132 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <path d="M 690 257 L 780 257" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="698" y="235" width="74" height="22" rx="3" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1" />
+          <text x="735" y="250" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+        </g>
+
+        <!-- STEP 4: Unauthorized Bypass Attempt Blocked at Trust Boundary -->
+        <g data-motion-item data-step="4" aria-label="Step 4: Unauthorized attacker direct connection attempt is blocked at trust boundary firewall">
+          <path d="M 260 432 L 760 432" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Blocked Wall Marker -->
+          <line x1="760" y1="400" x2="760" y2="464" stroke="#eb6c36" stroke-width="4" />
+          <rect x="630" y="420" width="115" height="24" rx="4" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2" />
+          <text x="687" y="436" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">× BLOCKED (FIREWALL)</text>
+        </g>
+
+        <!-- STEP 5: Audit Log & SIEM Security Monitoring Record -->
+        <g data-motion-item data-step="5" aria-label="Step 5: Immutable SIEM audit log records both authorized deployment and blocked attack attempt">
+          <path d="M 520 299 L 520 430" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <path d="M 760 448 L 690 448" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <rect x="470" y="350" width="100" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="520" y="366" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">AUDIT LOGGED</text>
+        </g>
       </svg>
     </div>
 
