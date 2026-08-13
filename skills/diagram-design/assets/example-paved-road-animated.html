@@ -273,12 +273,14 @@
           <text x="520" y="192" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">PROVENANCE [SIGNED]</text>
         </g>
 
-        <!-- STEP 3: Privileged Security Gate Inspection Pass & Runtime Deployment -->
-        <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy and deploys authorized artifact to isolated runtime">
-          <path d="M 690 132 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <path d="M 690 248 L 780 248" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="702" y="238" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="734" y="251" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
+        <!-- STEP 3: Security Gate Approval → Production Gateway → Database Deployment -->
+        <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy, approves artifact, and deploys via Production API Gateway to Isolated Core Database">
+          <!-- Gate ✓ PASS → Production API Gateway (diagonal: gate right edge to gateway left edge) -->
+          <path d="M 690 230 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="700" y="166" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="732" y="179" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
+          <!-- Production API Gateway → Isolated Core Database (vertical: gateway bottom to db top) -->
+          <path d="M 940 168 L 940 210" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
         </g>
 
         <!-- STEP 4: Unauthorized Bypass Attempt Blocked at Boundary Firewall -->
@@ -294,8 +296,8 @@
           <path d="M 620 286 L 620 435" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
           <!-- WAF Audit Trail (Runs directly down x=455 into Audit Log) -->
           <path d="M 455 397 L 455 435" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
-          <!-- SOC Monitoring Link -->
-          <path d="M 780 471 L 690 471" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <!-- SOC Monitoring Link (Data flows FROM Audit Log TO SOC for real-time monitoring) -->
+          <path d="M 690 471 L 780 471" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
           <!-- Audit Badge Chip -->
           <rect x="570" y="350" width="100" height="20" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
           <text x="620" y="364" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">AUDIT LOGGED</text>
@@ -303,9 +305,9 @@
 
         <!-- Precision SVG Legend Footer (Exact visual mini-arrows and mini-rects) -->
         <g data-motion-decorative aria-hidden="true">
-          <!-- Flow Line 1: Approved Road Ingress -->
+          <!-- Flow Line 1: Authorized Paved Road -->
           <line x1="40" y1="584" x2="65" y2="584" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <text x="73" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Approved Road Ingress</text>
+          <text x="73" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Authorized Paved Road</text>
 
           <!-- Flow Line 2: Blocked Bypass Attempt -->
           <line x1="230" y1="584" x2="255" y2="584" stroke="#eb6c36" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow-accent)" />
@@ -319,9 +321,9 @@
           <rect x="585" y="577" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
           <text x="607" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Firewall / Attacker Node</text>
 
-          <!-- Box 3: Audit Trail Badge -->
+          <!-- Box 3: Action / Status Label -->
           <rect x="775" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.25)" stroke-width="1" />
-          <text x="797" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Audit Trail Chip</text>
+          <text x="797" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Action / Status Label</text>
         </g>
       </svg>
     </div>
