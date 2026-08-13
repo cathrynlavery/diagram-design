@@ -301,9 +301,27 @@
           <text x="620" y="364" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">AUDIT LOGGED</text>
         </g>
 
-        <!-- Legend Line at Bottom (Exact Cathryn Pattern Signature Style) -->
-        <g data-motion-decorative aria-hidden="true" font-family="'Geist Mono', monospace" font-size="10" fill="#4f5d75">
-          <text x="40" y="555">✓ PERMITTED (APPROVED ROAD)    × BLOCKED (UNAUTHORIZED BYPASS)    :: AUDIT TRAIL RECORDED</text>
+        <!-- Precision SVG Legend Footer (Exact visual mini-arrows and mini-rects) -->
+        <g data-motion-decorative aria-hidden="true">
+          <!-- Flow Line 1: Approved Road Ingress -->
+          <line x1="40" y1="584" x2="65" y2="584" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <text x="73" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Approved Road Ingress</text>
+
+          <!-- Flow Line 2: Blocked Bypass Attempt -->
+          <line x1="230" y1="584" x2="255" y2="584" stroke="#eb6c36" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow-accent)" />
+          <text x="263" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Blocked Bypass Attempt</text>
+
+          <!-- Box 1: Paved Road Node -->
+          <rect x="440" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="462" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Paved Road Node</text>
+
+          <!-- Box 2: Attacker / Firewall Node -->
+          <rect x="585" y="577" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="607" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Firewall / Attacker Node</text>
+
+          <!-- Box 3: Audit Trail Badge -->
+          <rect x="775" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.25)" stroke-width="1" />
+          <text x="797" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Audit Trail Chip</text>
         </g>
       </svg>
     </div>
