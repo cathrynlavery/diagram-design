@@ -41,6 +41,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Every shipped motion template/example | `python3 scripts/verify-motion.py --shipped` |
 | Docs/routing sync (description hooks, gallery reachability, README tree) | `python3 scripts/verify-docs-sync.py` |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
+| Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
+| Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
@@ -58,13 +60,16 @@ python3 scripts/test-lint-a11y.py \
   && python3 scripts/verify-mermaid-import.py \
   && python3 scripts/test-verify-motion.py \
   && python3 scripts/verify-docs-sync.py \
-  && python3 scripts/test-self-check.py
+  && python3 scripts/test-self-check.py \
+  && python3 scripts/verify-geometry.py --all \
+  && python3 scripts/test-verify-geometry.py
 ```
 
 ### If a gate fails
 
 - **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
+- **`verify-geometry.py`:** a label mask overlaps a node declared later in the document, so the node fill clips the label at render time. Move the label to a free segment of its connector — keep the 6–10px gap from the stroke required by SKILL.md §6, and do not shrink the mask to sneak under the check.
 - **Icon assets:** you changed `scripts/vendor/icons/` or `scripts/build-icons.py` and the generated files went stale. Rerun `python3 scripts/build-icons.py` and commit the regenerated files.
 
 Do **not** add a file to `scripts/lint-skin-baseline.txt` to get your example through. The baseline exists only for legacy pre-2.0 examples that legitimately predate the current skin, and it still receives a11y checks.
@@ -104,7 +109,7 @@ Motion is opt-in. Start from `skills/diagram-design/assets/template-motion.html`
 
 ## Design decisions (ADRs)
 
-Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the 27-type taxonomy, the reveal-only autoplay rule, and the SKILL.md byte cap with its trigger-rich description requirement. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
+Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the 27-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, and geometric label placement being verified rather than reviewed. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
 
 ## Adding a new diagram type
 

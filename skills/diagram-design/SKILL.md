@@ -147,6 +147,7 @@ These mark "AI slop" schematics of any type:
 | Reproducing Mermaid's renderer layout | Imports automatic spacing and routing instead of making an editorial layout |
 | Diagonal / slanted connectors between off-axis nodes | Rounded right-angle (orthogonal) elbows are mandatory — see §6 Mandatory connector rules |
 | Arrow label sitting on or touching its connector | Label must have a 6–10px gap above the line so the connector stays visible |
+| Arrow label mask overlapping a node box | Nodes paint after labels — the fill clips the text into a fragment on the border. See §6 rule 6 |
 | Two connectors overlapping or running on the same path | Each connection must be independently traceable — bridge crossings, offset parallels |
 | Two connectors sharing a single attach point on a box | Fan attach points along the edge (≥12px apart) so every arrow is clearly distinct — see §6 rule 4 |
 | Connector routed behind a non-endpoint box without need | Reroute around intervening boxes; the dashed-transit exception (§6 rule 5) only applies when an unavoidable intervening box sits on the direct path |
@@ -260,7 +261,7 @@ Don't use the dot pattern when the diagram sits inside a product page, slide, or
 
 ### Mandatory connector rules
 
-These five rules are **non-negotiable**. Run the pre-output checklist (§9) to verify before producing any diagram.
+These six rules are **non-negotiable**. Run the pre-output checklist (§9) to verify before producing any diagram.
 
 1. **Rounded right-angle (orthogonal) connectors are mandatory.** Never use diagonal `<line>` or straight slanted paths between nodes that don't share an x or y axis. Every bend must be a quarter-arc with `r=8` (or `r=6` minimum for tight layouts). See `references/type-architecture.md` for the elbow-path formula. Reserve plain straight `<line>` only for connections whose endpoints share the same x or y coordinate. Diagonal connectors are an automatic fail.
 
@@ -281,6 +282,8 @@ These five rules are **non-negotiable**. Run the pre-output checklist (§9) to v
    - No marker (arrowhead) may land on the intervening box's edge — the marker resolves at the true destination only.
 
    When in doubt, reroute. The exception exists for the narrow case where rerouting is geometrically impossible, not as a shortcut to avoid layout work.
+
+6. **A label mask must not overlap a node drawn after it.** Rule 2 keeps the label off its own connector; this one keeps it off the boxes. Because nodes are painted after labels, a mask that lands partly inside a node is covered by the node fill and the text renders as a fragment sitting on the node border. Place the label on a segment of the connector that runs through open canvas — for a connector leaving a node's right edge, that means clearing the node's `x + width` before the mask starts. A mask fully *inside* a node is a badge chip and is fine; a mask overlapping a zone container is fine too, since zones are painted first. Verify with `python3 scripts/verify-geometry.py <file>`.
 
 ### Node box — full pattern
 
@@ -459,6 +462,7 @@ Run before producing any diagram.
 - [ ] **No two connectors overlap, share a stroke path, or run on top of each other? Crossings use the bridge/hop primitive?**
 - [ ] **When several connectors enter or exit the same edge of a box, each has its own attach point (≥12px apart)? No connector hides another?**
 - [ ] **No connector passes behind a non-endpoint box, except the unavoidable-intervening-box case (§6 rule 5) — and in that case, the stroke is dashed and the label sits at the visible end?**
+- [ ] **No label mask overlaps a node drawn after it? (Node fill would clip the text — §6 rule 6. In this repository, `python3 scripts/verify-geometry.py <file>`.)**
 - [ ] Every arrow label has an opaque `fill="#f5f5f5"` rect behind it?
 - [ ] Legend is a horizontal bottom strip, not floating?
 - [ ] No vertical `writing-mode` text?
