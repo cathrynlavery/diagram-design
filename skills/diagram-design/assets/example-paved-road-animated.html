@@ -211,10 +211,10 @@
         <text x="76" y="128" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Developer Workstation</text>
         <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Identity: dev_alice (mTLS)</text>
 
-        <!-- Node: Unauthorized Attacker -->
-        <rect x="60" y="396" width="200" height="72" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
-        <text x="76" y="428" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
-        <text x="76" y="448" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
+        <!-- Node: Unauthorized Attacker (Placed at y=320 so bypass line runs cleanly through empty space at y=356) -->
+        <rect x="60" y="320" width="200" height="72" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+        <text x="76" y="352" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
+        <text x="76" y="372" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
 
         <!-- Base Layout: Trust Zone 2 - Corporate CI/CD & Governance -->
         <rect x="330" y="40" width="380" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
@@ -272,25 +272,25 @@
         <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy and deploys authorized artifact to isolated runtime">
           <path d="M 690 132 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
           <path d="M 690 257 L 780 257" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="698" y="235" width="74" height="22" rx="3" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1" />
-          <text x="735" y="250" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <rect x="698" y="246" width="74" height="22" rx="3" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1" />
+          <text x="735" y="261" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
         </g>
 
-        <!-- STEP 4: Unauthorized Bypass Attempt Blocked at Trust Boundary -->
+        <!-- STEP 4: Unauthorized Bypass Attempt Blocked at Trust Boundary (Runs cleanly at y=356 through empty gap) -->
         <g data-motion-item data-step="4" aria-label="Step 4: Unauthorized attacker direct connection attempt is blocked at trust boundary firewall">
-          <path d="M 260 432 L 760 432" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" />
-          <!-- Blocked Wall Marker -->
-          <line x1="760" y1="400" x2="760" y2="464" stroke="#eb6c36" stroke-width="4" />
-          <rect x="630" y="420" width="115" height="24" rx="4" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2" />
-          <text x="687" y="436" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">× BLOCKED (FIREWALL)</text>
+          <path d="M 260 356 L 760 356" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" />
+          <!-- Blocked Wall Marker at Trust Boundary -->
+          <line x1="760" y1="324" x2="760" y2="388" stroke="#eb6c36" stroke-width="4" />
+          <rect x="630" y="344" width="115" height="24" rx="4" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2" />
+          <text x="687" y="360" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">× BLOCKED (FIREWALL)</text>
         </g>
 
         <!-- STEP 5: Audit Log & SIEM Security Monitoring Record -->
         <g data-motion-item data-step="5" aria-label="Step 5: Immutable SIEM audit log records both authorized deployment and blocked attack attempt">
           <path d="M 520 299 L 520 430" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <path d="M 760 448 L 690 448" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
-          <rect x="470" y="350" width="100" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="520" y="366" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">AUDIT LOGGED</text>
+          <path d="M 780 466 L 690 466" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <rect x="470" y="385" width="100" height="24" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="520" y="401" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">AUDIT LOGGED</text>
         </g>
       </svg>
     </div>
@@ -308,7 +308,8 @@
     <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
     <noscript><p>Animation controls require JavaScript. The complete final diagram is shown above.</p></noscript>
   </main>
-<script data-diagram-controls>
+
+  <script data-diagram-controls>
     (() => {
       const params = new URLSearchParams(location.search);
       const staticOverride = params.get('motion') === 'static' || document.documentElement.dataset.motion === 'static';
