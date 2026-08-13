@@ -203,7 +203,7 @@
         </defs>
 
         <!-- Base Layout: Trust Zone 1 - Public Ingress -->
-        <rect x="40" y="40" width="240" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <rect x="40" y="40" width="240" height="490" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
         <text x="60" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">PUBLIC INGRESS ZONE</text>
 
         <!-- Node: Developer Client -->
@@ -212,12 +212,12 @@
         <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Identity: dev_alice (mTLS)</text>
 
         <!-- Node: Unauthorized Attacker -->
-        <rect x="60" y="340" width="200" height="72" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
-        <text x="76" y="372" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
-        <text x="76" y="392" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
+        <rect x="60" y="325" width="200" height="72" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+        <text x="76" y="357" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
+        <text x="76" y="377" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
 
         <!-- Base Layout: Trust Zone 2 - Corporate CI/CD & Governance -->
-        <rect x="330" y="40" width="380" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <rect x="330" y="40" width="380" height="490" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
         <text x="350" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">CORPORATE GOVERNANCE ZONE</text>
 
         <!-- Node: CI/CD Pipeline -->
@@ -226,22 +226,22 @@
         <text x="370" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Build: Signed Artifact &amp; Policy Check</text>
 
         <!-- Node: Privileged Security Gate -->
-        <rect x="350" y="215" width="340" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
-        <text x="370" y="244" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Privileged Security Gate</text>
-        <text x="370" y="266" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Policy: OPA Signature &amp; Vulnerability Scan</text>
+        <rect x="350" y="210" width="340" height="76" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="370" y="238" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Privileged Security Gate</text>
+        <text x="370" y="258" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Policy: OPA Signature &amp; Vulnerability Scan</text>
 
-        <!-- Node: Boundary Firewall Node (Terminates Forbidden Ingress at Zone 2 Boundary) -->
-        <rect x="350" y="340" width="340" height="64" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
-        <text x="370" y="366" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Boundary Firewall &amp; WAF</text>
-        <text x="370" y="386" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11" font-weight="600">Status: × BLOCKED (Unauthorized Bypass)</text>
+        <!-- Node: Boundary Firewall & WAF (Left side x=350..560) -->
+        <rect x="350" y="325" width="210" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+        <text x="366" y="355" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="13" font-weight="600">Boundary Firewall &amp; WAF</text>
+        <text x="366" y="375" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10.5" font-weight="600">Status: × BLOCKED</text>
 
         <!-- Node: Audit Log Service -->
-        <rect x="350" y="440" width="340" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
-        <text x="370" y="470" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Centralized Audit Log Service</text>
-        <text x="370" y="492" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Storage: Immutable SIEM Audit Trail</text>
+        <rect x="350" y="435" width="340" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="370" y="465" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Centralized Audit Log Service</text>
+        <text x="370" y="485" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Storage: Immutable SIEM Audit Trail</text>
 
         <!-- Base Layout: Trust Zone 3 - Isolated Production Runtime -->
-        <rect x="760" y="40" width="360" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <rect x="760" y="40" width="360" height="490" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
         <text x="780" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">ISOLATED PRODUCTION RUNTIME</text>
 
         <!-- Node: Production API Gateway -->
@@ -250,14 +250,14 @@
         <text x="800" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Status: ADMITTED [TLS 1.3 Strict]</text>
 
         <!-- Node: Production Database -->
-        <rect x="780" y="215" width="320" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
-        <text x="800" y="244" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Isolated Core Database</text>
-        <text x="800" y="266" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Access: Paved Road Only (KMS Encrypted)</text>
+        <rect x="780" y="210" width="320" height="76" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="800" y="238" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Isolated Core Database</text>
+        <text x="800" y="258" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Access: Paved Road Only (KMS Encrypted)</text>
 
         <!-- Node: Security Operations Center -->
-        <rect x="780" y="440" width="320" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
-        <text x="800" y="470" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Security Operations Center</text>
-        <text x="800" y="492" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Monitoring: Real-time Alerting Active</text>
+        <rect x="780" y="435" width="320" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="800" y="465" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Security Operations Center</text>
+        <text x="800" y="485" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Monitoring: Real-time Alerting Active</text>
 
         <!-- STEP 1: Authorized Developer Code Ingress -->
         <g data-motion-item data-step="1" aria-label="Step 1: Developer workstation pushes signed code commit into CI/CD Paved Road pipeline">
@@ -268,34 +268,42 @@
 
         <!-- STEP 2: CI/CD Build & Cryptographic Signing -->
         <g data-motion-item data-step="2" aria-label="Step 2: CI/CD pipeline builds binary and generates cryptographic provenance signature">
-          <path d="M 520 168 L 520 215" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="440" y="180" width="160" height="22" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="520" y="195" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600">PROVENANCE [SIGNED]</text>
+          <path d="M 520 168 L 520 210" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="440" y="178" width="160" height="20" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="520" y="192" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">PROVENANCE [SIGNED]</text>
         </g>
 
         <!-- STEP 3: Privileged Security Gate Inspection Pass & Runtime Deployment -->
         <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy and deploys authorized artifact to isolated runtime">
           <path d="M 690 132 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <path d="M 690 257 L 780 257" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="702" y="246" width="65" height="20" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="734" y="260" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600">✓ PASS</text>
+          <path d="M 690 248 L 780 248" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="702" y="238" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="734" y="251" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
         </g>
 
         <!-- STEP 4: Unauthorized Bypass Attempt Blocked at Boundary Firewall -->
         <g data-motion-item data-step="4" aria-label="Step 4: Unauthorized attacker connection attempt is blocked at trust boundary firewall">
-          <!-- Connector STOPS at Zone 2 boundary Firewall node (x=350) with zero line crossing -->
-          <path d="M 260 372 L 350 372" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
-          <rect x="272" y="356" width="65" height="18" rx="3" fill="#ffffff" stroke="#eb6c36" stroke-width="1" />
-          <text x="304" y="369" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600">BYPASS</text>
+          <path d="M 260 361 L 350 361" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
+          <rect x="272" y="345" width="65" height="18" rx="3" fill="#ffffff" stroke="#eb6c36" stroke-width="1" />
+          <text x="304" y="358" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600">BYPASS</text>
         </g>
 
         <!-- STEP 5: Audit Log & SIEM Security Monitoring Record -->
         <g data-motion-item data-step="5" aria-label="Step 5: Immutable SIEM audit log records both authorized deployment and blocked attack attempt">
-          <path d="M 520 299 L 520 440" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <path d="M 520 404 L 520 440" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
-          <path d="M 780 476 L 690 476" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="470" y="414" width="100" height="20" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="520" y="428" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">AUDIT LOGGED</text>
+          <!-- Gate Audit Trail (Runs cleanly down the right side x=620, clear of Firewall node x=350..560!) -->
+          <path d="M 620 286 L 620 435" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <!-- WAF Audit Trail (Runs directly down x=455 into Audit Log) -->
+          <path d="M 455 397 L 455 435" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
+          <!-- SOC Monitoring Link -->
+          <path d="M 780 471 L 690 471" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <!-- Audit Badge Chip -->
+          <rect x="570" y="350" width="100" height="20" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="620" y="364" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">AUDIT LOGGED</text>
+        </g>
+
+        <!-- Legend Line at Bottom (Exact Cathryn Pattern Signature Style) -->
+        <g data-motion-decorative aria-hidden="true" font-family="'Geist Mono', monospace" font-size="10" fill="#4f5d75">
+          <text x="40" y="555">✓ PERMITTED (APPROVED ROAD)    × BLOCKED (UNAUTHORIZED BYPASS)    :: AUDIT TRAIL RECORDED</text>
         </g>
       </svg>
     </div>
