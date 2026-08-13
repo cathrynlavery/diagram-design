@@ -471,13 +471,18 @@ child ignores stroke width, markers and filter bleed, and knows nothing about
 `clip-path` or `overflow: visible`, so it both misses real clipping and invents
 clipping that isn't there. Instead each SVG is screenshot as authored and again
 with its `overflow` released, and the two are diffed — ink that appears outside
-was being cut off. `--self-test` asserts that on fifteen fixtures, half of them
-cases that must *not* be flagged.
+was being cut off. Releases are staged — the SVG alone, then each clipping
+ancestor — so a wrapper release can't mask spill at the SVG's own edge, and an SVG
+authored `overflow: visible` inside a clipping wrapper is still checked.
+`--self-test` asserts all of that on 23 cases, over half of them cases that must
+*not* be flagged, and it also asserts the DOM is byte-identical after measuring.
 
 No golden images, so there is nothing to re-record and no PNGs in the repo.
-Network is blocked while rendering (`--fonts` opts into the Google Fonts hosts
-and nothing else), which keeps font metrics identical across machines and keeps
-contributor HTML from reaching anything.
+Network is cut at the browser's resolver, which covers WebSockets and anything
+else that bypasses request routing, with request routing as a second layer;
+`--fonts` excludes exactly the two Google Fonts hostnames and allows them only
+over HTTPS. Since the oracle is pixels, CI pins Playwright and its Chromium build
+rather than installing whatever is newest.
 
 **Font metrics differ between the default run and `--fonts`.** With network
 blocked — the default, and what CI runs — text is laid out in the fallback faces,

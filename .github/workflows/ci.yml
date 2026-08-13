@@ -221,10 +221,16 @@ jobs:
         id: slopegraph_tests
         run: python scripts/test-verify-slopegraph.py
 
+      # lint-render.py's oracle is pixels, so the browser is part of the contract:
+      # pin Playwright exactly, and let that pin choose the Chromium build. Bump
+      # both together, deliberately, by editing PLAYWRIGHT_VERSION.
       - name: Install Playwright Chromium
+        env:
+          PLAYWRIGHT_VERSION: "1.62.0"
         run: |
-          pip install playwright
+          pip install "playwright==${PLAYWRIGHT_VERSION}"
           playwright install --with-deps chromium
+          python3 -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
 
       # The checks before the sweep: a broken linter must not be able to report
       # a clean repository.
