@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Paved Road Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --paper: #f5f5f5;
+      --paper-2: #ececec;
+      --ink: #2d3142;
+      --muted: #4f5d75;
+      --soft: #7a8399;
+      --rule: rgba(45,49,66,0.12);
+      --rule-strong: rgba(45,49,66,0.30);
+      --accent: #eb6c36;
+      --accent-tint: rgba(235,108,54,0.08);
+      --sans: 'Geist', system-ui, sans-serif;
+      --serif: 'Instrument Serif', serif;
+      --mono: 'Geist Mono', ui-monospace, monospace;
+      --motion-fast: 160ms;
+      --motion-step: 480ms;
+      --motion-hold: 720ms;
+      --motion-total: 3600ms;
+      --motion-ease: cubic-bezier(.2,.8,.2,1);
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--sans);
+    }
+    [data-motion-root] {
+      width: min(100%, 1280px);
+      margin: 0 auto;
+    }
+    .page-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font: 500 10px/1.4 var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font: 400 clamp(28px, 3vw, 40px)/1.08 var(--serif);
+      letter-spacing: -.02em;
+    }
+    .lede {
+      max-width: 540px;
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .diagram-wrap {
+      overflow-x: auto;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    svg { display: block; width: 100%; min-width: 920px; }
+
+    /* Motion item states */
+    .motion-ready [data-motion-item] {
+      opacity: .12;
+      transform: translateY(8px);
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: opacity var(--motion-step) var(--motion-ease),
+                  transform var(--motion-step) var(--motion-ease);
+    }
+    .motion-ready [data-motion-item].is-visible,
+    .motion-ready[data-frame="end"] [data-motion-item],
+    .motion-ready[data-frame="static"] [data-motion-item] {
+      opacity: 1;
+      transform: none;
+    }
+
+    html[data-motion="static"] [data-motion-controls] { display: none !important; }
+    html[data-motion="static"] [data-motion-item] {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+    html[data-motion="step"] [data-motion-controls],
+    html[data-motion="step"] [data-motion-decorative] { display: none !important; }
+    html[data-motion="step"] [data-motion-item] {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+      [data-motion-item] { opacity: 1 !important; transform: none !important; }
+      [data-motion-decorative] { display: none !important; }
+      [data-motion-controls] { display: none !important; }
+    }
+    @media print {
+      body { padding: 0; }
+      [data-motion-controls], [data-motion-decorative] { display: none !important; }
+      [data-motion-item] { opacity: 1 !important; transform: none !important; }
+    }
+
+    [data-motion-controls] {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      min-height: 60px;
+      padding: 8px 0;
+    }
+    .motion-ready [data-motion-controls] { display: flex; }
+    [data-motion-controls][hidden] { display: none !important; }
+    [data-motion-controls] button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--muted);
+      border-radius: 4px;
+      color: var(--ink);
+      background: var(--paper);
+      font: 600 12px/1 var(--sans);
+      cursor: pointer;
+    }
+    [data-motion-controls] button:hover { border-color: var(--accent); }
+    [data-motion-controls] button:focus-visible,
+    [data-motion-root]:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+    [data-motion-controls] button:disabled { cursor: not-allowed; opacity: .45; }
+    .keyboard-help {
+      margin-left: 8px;
+      color: var(--soft);
+      font: 500 9px/1.4 var(--mono);
+    }
+    [data-motion-status] {
+      display: block;
+      min-width: 272px;
+      min-height: 16px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font: 500 10px/1.4 var(--mono);
+      text-align: right;
+    }
+    noscript p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font: 500 10px/1.4 var(--mono);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <main data-motion-root data-motion-mode="step" data-step-count="5" data-step-current="5" data-frame="static" data-static-frame="complete" tabindex="-1">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Semantic pattern · Secure paved road</p>
+        <h1>Secure Paved Road Architecture</h1>
+      </div>
+      <p class="lede">
+        Authorized deployments follow a paved road with verified identity gates, while unauthorized bypass attempts are blocked at the trust boundary.
+      </p>
+    </header>
+
+    <div class="diagram-wrap">
+      <svg role="img" aria-labelledby="paved-road-animated-title paved-road-animated-desc" viewBox="0 0 1160 620" xmlns="http://www.w3.org/2000/svg" data-motion-primitive="secure-paved-road">
+        <title id="paved-road-animated-title">Secure Paved Road Architecture</title>
+        <desc id="paved-road-animated-desc">Interactive step-by-step demonstration of authorized paved-road deployment versus blocked unauthorized bypass attempts at trust boundaries.</desc>
+        <rect width="1160" height="620" fill="#f5f5f5"/>
+        <defs>
+          <marker id="arrow-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#2d3142" />
+          </marker>
+          <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#eb6c36" />
+          </marker>
+        </defs>
+
+        <!-- Base Layout: Trust Zone 1 - Public Ingress -->
+        <rect x="40" y="40" width="240" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <text x="60" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">PUBLIC INGRESS ZONE</text>
+
+        <!-- Node: Developer Client -->
+        <rect x="60" y="96" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="76" y="128" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Developer Workstation</text>
+        <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Identity: dev_alice (mTLS)</text>
+
+        <!-- Node: Unauthorized Attacker -->
+        <rect x="60" y="396" width="200" height="72" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+        <text x="76" y="428" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
+        <text x="76" y="448" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
+
+        <!-- Base Layout: Trust Zone 2 - Corporate CI/CD & Governance -->
+        <rect x="330" y="40" width="380" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <text x="350" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">CORPORATE GOVERNANCE ZONE</text>
+
+        <!-- Node: CI/CD Pipeline -->
+        <rect x="350" y="96" width="340" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="370" y="128" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">CI/CD Paved Road Pipeline</text>
+        <text x="370" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Build: Signed Artifact &amp; Policy Check</text>
+
+        <!-- Node: Privileged Security Gate -->
+        <rect x="350" y="215" width="340" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="370" y="244" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Privileged Security Gate</text>
+        <text x="370" y="266" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Policy: OPA Signature &amp; Vulnerability Scan</text>
+
+        <!-- Node: Audit Log Service -->
+        <rect x="350" y="430" width="340" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="370" y="460" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Centralized Audit Log Service</text>
+        <text x="370" y="482" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Storage: Immutable SIEM Audit Trail</text>
+
+        <!-- Base Layout: Trust Zone 3 - Isolated Production Runtime -->
+        <rect x="760" y="40" width="360" height="520" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <text x="780" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">ISOLATED PRODUCTION RUNTIME</text>
+
+        <!-- Node: Production API Gateway -->
+        <rect x="780" y="96" width="320" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="800" y="128" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Production API Gateway</text>
+        <text x="800" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Status: ADMITTED [TLS 1.3 Strict]</text>
+
+        <!-- Node: Production Database -->
+        <rect x="780" y="215" width="320" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="800" y="244" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Isolated Core Database</text>
+        <text x="800" y="266" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Access: Paved Road Only (KMS Encrypted)</text>
+
+        <!-- Node: Security Operations Center -->
+        <rect x="780" y="430" width="320" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="800" y="460" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Security Operations Center</text>
+        <text x="800" y="482" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Monitoring: Real-time Alerting Active</text>
+      </svg>
+    </div>
+
+    <!-- Pinned Motion Controls -->
+    <div data-motion-controls role="group" aria-label="Diagram playback controls">
+      <button type="button" data-motion-action="prev">Previous</button>
+      <button type="button" data-motion-action="play" aria-pressed="false">Play</button>
+      <button type="button" data-motion-action="pause" aria-pressed="true">Pause</button>
+      <button type="button" data-motion-action="next">Next</button>
+      <button type="button" data-motion-action="replay">Replay</button>
+      <span class="keyboard-help">←/→ step · Space play/pause · R replay · Home/End jump</span>
+      <span data-motion-status-visible aria-hidden="true">Step <span data-motion-step-label>5</span> of 5</span>
+    </div>
+    <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p>Animation controls require JavaScript. The complete final diagram is shown above.</p></noscript>
+  </main>
+</body>
+</html>
