@@ -38,7 +38,7 @@ future diagrams use your tokens
 
 ### Invocation
 
-> *"Onboard Schematic to my site — `https://example.com`"*
+> *"Onboard diagram-design to my site — `https://example.com`"*
 
 ---
 
@@ -111,7 +111,7 @@ Before writing, validate:
 
 - **AA contrast**: `ink` on `paper` ≥ 4.5:1. `muted` on `paper` ≥ 4.5:1 for body text.
 - **Accent is the most saturated color**: not muted-ish, not near-grey.
-- **paper ≠ pure white**: if the site uses `#ffffff`, fall back to `#fafaf7` to preserve Schematic's warm-neutral feel — or ask the user to confirm pure-white is intentional.
+- **paper ≠ pure white**: if the site uses `#ffffff`, fall back to `#fafaf7` to preserve Diagram Design's warm-neutral feel — or ask the user to confirm pure-white is intentional.
 
 If any check fails, propose an adjusted value and explain why.
 
@@ -170,7 +170,7 @@ Extract tokens from an installed Agent Skill that carries its own design system 
 
 ### Invocation
 
-> *"Onboard Schematic from my `acme-design` skill"*
+> *"Onboard diagram-design from my `acme-design` skill"*
 
 Or the gate offers this as option (b) and the user names the skill.
 
@@ -243,7 +243,7 @@ Extract tokens from a local directory — a checked-out design system repo, a Fi
 
 ### Invocation
 
-> *"Onboard Schematic from my design system at `~/projects/brand/design-tokens/`"*
+> *"Onboard diagram-design from my design system at `~/projects/brand/design-tokens/`"*
 
 Or the gate offers this as option (c) and the user provides the path.
 
