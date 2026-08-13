@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Verification script for the automated brand onboarding CLI tool (scripts/onboard.py).
 
-Verifies that onboard.py correctly parses CSS custom properties, calculates derived light/dark
-semantic roles, enforces WCAG AA contrast ratios, rejects invalid URL schemes, and updates style-guide.md.
+Verifies zero-confidence extraction guards, format-aware JSON/SCSS parsing, WCAG AA contrast enforcement
+for medium backgrounds and dark mode, atomic backup writes, and URL scheme rejection.
 
 Usage:
     python scripts/verify-onboarding.py
@@ -20,7 +20,7 @@ ONBOARD_SCRIPT = REPO / "scripts" / "onboard.py"
 STYLE_GUIDE = REPO / "skills" / "diagram-design" / "references" / "style-guide.md"
 
 
-def test_onboard_folder_dry_run() -> None:
+def test_onboard_folder_preview() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = pathlib.Path(tmpdir)
         css_file = tmp_path / "tokens.css"
@@ -33,7 +33,7 @@ def test_onboard_folder_dry_run() -> None:
 }
 """, encoding="utf-8")
 
-        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--dry-run"]
+        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path)]
         res = subprocess.run(cmd, capture_output=True, text=True)
 
         if res.returncode != 0:
@@ -42,16 +42,95 @@ def test_onboard_folder_dry_run() -> None:
             sys.exit(1)
 
         output = res.stdout
+        if "[Preview mode]" not in output:
+            print("FAIL: default mode must be preview mode", file=sys.stderr)
+            sys.exit(1)
+
         required_roles = ["paper", "paper-2", "ink", "muted", "soft", "rule", "rule-solid", "accent", "accent-tint", "link"]
         for role in required_roles:
             if f"`{role}`" not in output:
                 print(f"FAIL: role `{role}` missing from onboard.py output", file=sys.stderr)
                 sys.exit(1)
 
-        print("OK: onboard.py folder dry-run test passed")
+        print("OK: onboard.py folder preview mode test passed")
 
 
-def test_onboard_non_dry_run_table_update() -> None:
+def test_zero_confidence_extraction_guard() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = pathlib.Path(tmpdir)
+        empty_css = tmp_path / "empty.css"
+        empty_css.write_text("/* No hex colors or design tokens */ body { margin: 0; }", encoding="utf-8")
+
+        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--apply"]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+
+        if res.returncode == 0 or "Zero-confidence extraction" not in res.stderr:
+            print("FAIL: zero-confidence extraction did not halt execution", file=sys.stderr)
+            sys.exit(1)
+
+        print("OK: onboard.py zero-confidence extraction guard test passed")
+
+
+def test_format_aware_json_scss_parsing() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = pathlib.Path(tmpdir)
+        scss_file = tmp_path / "vars.scss"
+        scss_file.write_text("""
+$brand-bg: #101010;
+$brand-text: #f0f0f0;
+$brand-primary: #0088ff;
+""", encoding="utf-8")
+
+        json_file = tmp_path / "tokens.json"
+        json_file.write_text("""
+{
+  "color": {
+    "muted": "#888888"
+  }
+}
+""", encoding="utf-8")
+
+        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path)]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+
+        if res.returncode != 0:
+            print(f"FAIL: format-aware SCSS/JSON parsing failed: {res.stderr}", file=sys.stderr)
+            sys.exit(1)
+
+        if "`#101010`" not in res.stdout or "`#0088ff`" not in res.stdout:
+            print("FAIL: SCSS/JSON design tokens were not extracted correctly", file=sys.stderr)
+            sys.exit(1)
+
+        print("OK: onboard.py format-aware SCSS/JSON parsing test passed")
+
+
+def test_medium_bg_contrast_and_dark_mode_validation() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = pathlib.Path(tmpdir)
+        css_file = tmp_path / "medium.css"
+        # Medium background #888888 requires intelligent direction contrast adjustment
+        css_file.write_text("""
+:root {
+    --color-bg: #888888;
+    --color-text: #777777;
+}
+""", encoding="utf-8")
+
+        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path)]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+
+        if res.returncode != 0:
+            print(f"FAIL: medium background contrast calculation failed: {res.stderr}", file=sys.stderr)
+            sys.exit(1)
+
+        if "[WCAG AA] [Light Mode] Adjusted" not in res.stdout:
+            print("FAIL: WCAG AA contrast adjustment missing for medium background", file=sys.stderr)
+            sys.exit(1)
+
+        print("OK: onboard.py medium background & dark mode contrast validation test passed")
+
+
+def test_atomic_write_and_invalid_path() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = pathlib.Path(tmpdir)
         css_file = tmp_path / "tokens.css"
@@ -66,45 +145,33 @@ def test_onboard_non_dry_run_table_update() -> None:
         out_guide = tmp_path / "style-guide.md"
         out_guide.write_text(STYLE_GUIDE.read_text(encoding="utf-8"), encoding="utf-8")
 
-        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--out", str(out_guide)]
+        # 1. Test atomic write with --apply
+        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--out", str(out_guide), "--apply"]
         res = subprocess.run(cmd, capture_output=True, text=True)
 
         if res.returncode != 0:
-            print(f"FAIL: non-dry-run onboard.py failed with code {res.returncode}", file=sys.stderr)
+            print(f"FAIL: atomic --apply write failed: {res.stderr}", file=sys.stderr)
             sys.exit(1)
 
         updated_text = out_guide.read_text(encoding="utf-8")
         if "`#ffffff`" not in updated_text or "`#0066cc`" not in updated_text:
-            print("FAIL: style-guide.md table was not updated with extracted colors", file=sys.stderr)
+            print("FAIL: style-guide.md table was not updated atomically", file=sys.stderr)
             sys.exit(1)
 
-        print("OK: onboard.py non-dry-run table replacement test passed")
+        # 2. Test invalid --out path failure
+        bad_out = tmp_path / "non-existent-dir" / "style-guide.md"
+        cmd_bad = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--out", str(bad_out), "--apply"]
+        res_bad = subprocess.run(cmd_bad, capture_output=True, text=True)
 
-
-def test_contrast_adjustment() -> None:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = pathlib.Path(tmpdir)
-        css_file = tmp_path / "tokens.css"
-        # #e0e0e0 text on #fafafa paper fails WCAG AA (contrast ~1.2:1) and requires adjustment
-        css_file.write_text("""
-:root {
-    --color-bg: #fafafa;
-    --color-text: #e0e0e0;
-}
-""", encoding="utf-8")
-
-        cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--dry-run"]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-
-        if "[WCAG AA] Adjusted" not in res.stdout:
-            print("FAIL: contrast adjustment note missing for low-contrast text color", file=sys.stderr)
+        if res_bad.returncode == 0:
+            print("FAIL: onboard.py did not fail on invalid --out directory path", file=sys.stderr)
             sys.exit(1)
 
-        print("OK: onboard.py WCAG AA contrast adjustment test passed")
+        print("OK: onboard.py atomic write & output path validation test passed")
 
 
 def test_url_scheme_rejection() -> None:
-    cmd = [sys.executable, str(ONBOARD_SCRIPT), "--url", "file:///etc/passwd", "--dry-run"]
+    cmd = [sys.executable, str(ONBOARD_SCRIPT), "--url", "file:///etc/passwd"]
     res = subprocess.run(cmd, capture_output=True, text=True)
 
     if res.returncode == 0 or "only http and https are permitted" not in res.stderr:
@@ -115,12 +182,14 @@ def test_url_scheme_rejection() -> None:
 
 
 def main() -> int:
-    print("Running verification suite for onboard.py...")
-    test_onboard_folder_dry_run()
-    test_onboard_non_dry_run_table_update()
-    test_contrast_adjustment()
+    print("Running adversarial verification suite for onboard.py...")
+    test_onboard_folder_preview()
+    test_zero_confidence_extraction_guard()
+    test_format_aware_json_scss_parsing()
+    test_medium_bg_contrast_and_dark_mode_validation()
+    test_atomic_write_and_invalid_path()
     test_url_scheme_rejection()
-    print("ALL ONBOARDING GATES PASSED")
+    print("ALL ADVERSARIAL ONBOARDING GATES PASSED")
     return 0
 
 

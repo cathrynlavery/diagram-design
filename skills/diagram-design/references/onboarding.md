@@ -4,9 +4,9 @@
 
 Automated CLI tool:
 ```bash
-python scripts/onboard.py --url https://example.com
-python scripts/onboard.py --folder ./my-design-tokens
-python scripts/onboard.py --url https://example.com --dry-run
+python scripts/onboard.py --url https://example.com          # Preview mode (default)
+python scripts/onboard.py --url https://example.com --apply  # Atomic write mode with backup
+python scripts/onboard.py --folder ./my-design-tokens --apply
 ```
 
 Takes about 60 seconds.
