@@ -318,9 +318,35 @@
           <text x="360" y="536" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Priority Ingress Guaranteed · Zero Loss</text>
         </g>
 
-        <!-- Legend Line at Bottom (Exact Cathryn Pattern Signature Style) -->
-        <g data-motion-decorative aria-hidden="true" font-family="'Geist Mono', monospace" font-size="10" fill="#4f5d75">
-          <text x="40" y="580">― ADMITTED FLOW    ― HIGH INGRESS    - - BACKPRESSURE DROPPED    ☐ NORMAL SLOT    ☐ CAPACITY WARN    ■ OVERFLOWN (429)</text>
+        <!-- Precision SVG Legend Footer (Exact visual mini-arrows and mini-rects) -->
+        <g data-motion-decorative aria-hidden="true">
+          <!-- Flow Line 1: Admitted Flow -->
+          <line x1="40" y1="584" x2="65" y2="584" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <text x="73" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Admitted Flow</text>
+
+          <!-- Flow Line 2: High Ingress -->
+          <line x1="165" y1="584" x2="190" y2="584" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <text x="198" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">High Ingress</text>
+
+          <!-- Flow Line 3: 429 Backpressure -->
+          <line x1="285" y1="584" x2="310" y2="584" stroke="#eb6c36" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow-accent)" />
+          <text x="318" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">429 Backpressure</text>
+
+          <!-- Box 1: Normal Slot -->
+          <rect x="430" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="452" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Normal Slot</text>
+
+          <!-- Box 2: Capacity Warn Slot -->
+          <rect x="540" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="562" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Capacity Warn</text>
+
+          <!-- Box 3: Overflown 429 Slot -->
+          <rect x="660" y="577" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="682" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Overflown (429)</text>
+
+          <!-- Box 4: Depth / Full Counter Badge -->
+          <rect x="790" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.25)" stroke-width="1" />
+          <text x="812" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Depth Counter Badge</text>
         </g>
       </svg>
     </div>
