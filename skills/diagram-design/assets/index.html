@@ -194,7 +194,7 @@
         </div>
       </div>
 
-      <div class="tabs" id="type-tabs" role="tablist" aria-label="Diagram type">
+      <div class="tabs" id="type-tabs" role="radiogroup" aria-label="Diagram type">
         <button class="tab active" data-type="architecture">
           <span class="eyebrow">01</span>Architecture
         </button>
@@ -311,7 +311,7 @@
       <div
         class="tabs variants"
         id="variant-tabs"
-        role="tablist"
+        role="radiogroup"
         aria-label="Variant"
       >
         <button class="tab active" data-variant="">Minimal light</button>
@@ -334,30 +334,73 @@
       const openRaw = document.getElementById("open-raw");
 
       function update() {
-        const activeType = document.querySelector("#type-tabs .tab.active");
+        const activeType = [...document.querySelectorAll("#type-tabs .tab")].find(
+          (tab) => tab.dataset.type === state.type,
+        );
         const single = activeType && activeType.hasAttribute("data-single");
         const variantTabs = document.querySelectorAll("#variant-tabs .tab");
         if (single) state.variant = "";
         variantTabs.forEach((tab) => {
           tab.disabled = single && tab.dataset.variant !== "";
-          tab.classList.toggle("active", tab.dataset.variant === state.variant);
         });
+        for (const [containerId, key] of [
+          ["type-tabs", "type"],
+          ["variant-tabs", "variant"],
+        ]) {
+          document.querySelectorAll(`#${containerId} .tab`).forEach((tab) => {
+            const active = tab.dataset[key] === state[key];
+            tab.classList.toggle("active", active);
+            tab.setAttribute("aria-checked", String(active));
+            tab.tabIndex = active ? 0 : -1;
+          });
+        }
         const src = `example-${state.type}${state.variant}.html`;
         iframe.src = src;
         openRaw.href = src;
+        const selectedTabs = document.querySelectorAll('[role="radio"][aria-checked="true"]');
+        iframe.setAttribute(
+          "aria-labelledby",
+          [...selectedTabs].map((tab) => tab.id).join(" "),
+        );
       }
 
       function bindTabs(containerId, key) {
         const container = document.getElementById(containerId);
+        const tabs = [...container.querySelectorAll(".tab")];
+        tabs.forEach((tab, index) => {
+          tab.id = `${containerId}-${index}`;
+          tab.setAttribute("role", "radio");
+          tab.setAttribute("aria-controls", "preview");
+        });
+
+        function activate(tab, focus = false) {
+          state[key] = tab.dataset[key];
+          update();
+          if (focus) tab.focus();
+        }
+
         container.addEventListener("click", (e) => {
           const btn = e.target.closest(".tab");
           if (!btn) return;
-          container
-            .querySelectorAll(".tab")
-            .forEach((t) => t.classList.remove("active"));
-          btn.classList.add("active");
-          state[key] = btn.dataset[key];
-          update();
+          activate(btn);
+        });
+        container.addEventListener("keydown", (e) => {
+          const current = e.target.closest('[role="radio"]');
+          if (!current || !container.contains(current)) return;
+          const enabledTabs = tabs.filter((tab) => !tab.disabled);
+          const index = enabledTabs.indexOf(current);
+          let next;
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            next = enabledTabs[(index + 1) % enabledTabs.length];
+          }
+          if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            next = enabledTabs[(index - 1 + enabledTabs.length) % enabledTabs.length];
+          }
+          if (e.key === "Home") next = enabledTabs[0];
+          if (e.key === "End") next = enabledTabs.at(-1);
+          if (!next) return;
+          e.preventDefault();
+          activate(next, true);
         });
       }
 
