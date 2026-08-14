@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fan-in Queue & Ingress Bottleneck Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --paper: #f5f5f5;
+      --paper-2: #ececec;
+      --ink: #2d3142;
+      --muted: #4f5d75;
+      --soft: #7a8399;
+      --rule: rgba(45,49,66,0.12);
+      --rule-strong: rgba(45,49,66,0.30);
+      --accent: #eb6c36;
+      --accent-tint: rgba(235,108,54,0.08);
+      --sans: 'Geist', system-ui, sans-serif;
+      --serif: 'Instrument Serif', serif;
+      --mono: 'Geist Mono', ui-monospace, monospace;
+      --motion-fast: 160ms;
+      --motion-step: 480ms;
+      --motion-hold: 720ms;
+      --motion-total: 3600ms;
+      --motion-ease: cubic-bezier(.2,.8,.2,1);
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--sans);
+    }
+    [data-motion-root] {
+      width: min(100%, 1280px);
+      margin: 0 auto;
+    }
+    .page-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font: 500 10px/1.4 var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font: 400 clamp(28px, 3vw, 40px)/1.08 var(--serif);
+      letter-spacing: -.02em;
+    }
+    .lede {
+      max-width: 540px;
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .diagram-wrap {
+      overflow-x: auto;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    svg { display: block; width: 100%; min-width: 920px; }
+
+    /* Motion item states */
+    .motion-ready [data-motion-item] {
+      opacity: .12;
+      transform: translateY(8px);
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: opacity var(--motion-step) var(--motion-ease),
+                  transform var(--motion-step) var(--motion-ease);
+    }
+    .motion-ready [data-motion-item].is-visible,
+    .motion-ready[data-frame="end"] [data-motion-item],
+    .motion-ready[data-frame="static"] [data-motion-item] {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Queue depth badge transition rule: Step 1 badge hides when Step 2+ is reached */
+    [data-step-current="2"] .queue-depth-step1,
+    [data-step-current="3"] .queue-depth-step1,
+    [data-step-current="4"] .queue-depth-step1,
+    [data-step-current="5"] .queue-depth-step1,
+    [data-frame="end"] .queue-depth-step1,
+    [data-frame="static"] .queue-depth-step1 {
+      display: none !important;
+    }
+
+    html[data-motion="static"] [data-motion-controls] { display: none !important; }
+    html[data-motion="static"] [data-motion-item] {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+    html[data-motion="step"] [data-motion-controls],
+    html[data-motion="step"] [data-motion-decorative] { display: none !important; }
+    html[data-motion="step"] [data-motion-item] {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+      [data-motion-item] { opacity: 1 !important; transform: none !important; }
+      [data-motion-decorative] { display: none !important; }
+      [data-motion-controls] { display: none !important; }
+    }
+    @media print {
+      body { padding: 0; }
+      [data-motion-controls], [data-motion-decorative] { display: none !important; }
+      [data-motion-item] { opacity: 1 !important; transform: none !important; }
+    }
+
+    [data-motion-controls] {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      min-height: 60px;
+      padding: 8px 0;
+    }
+    .motion-ready [data-motion-controls] { display: flex; }
+    [data-motion-controls][hidden] { display: none !important; }
+    [data-motion-controls] button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--muted);
+      border-radius: 4px;
+      color: var(--ink);
+      background: var(--paper);
+      font: 600 12px/1 var(--sans);
+      cursor: pointer;
+    }
+    [data-motion-controls] button:hover { border-color: var(--accent); }
+    [data-motion-controls] button:focus-visible,
+    [data-motion-root]:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+    [data-motion-controls] button:disabled { cursor: not-allowed; opacity: .45; }
+    .keyboard-help {
+      margin-left: 8px;
+      color: var(--soft);
+      font: 500 9px/1.4 var(--mono);
+    }
+    [data-motion-status] {
+      display: block;
+      min-width: 272px;
+      min-height: 16px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font: 500 10px/1.4 var(--mono);
+      text-align: right;
+    }
+    noscript p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font: 500 10px/1.4 var(--mono);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <main data-motion-root data-motion-mode="step" data-step-count="5" data-step-current="5" data-frame="static" data-static-frame="complete" tabindex="-1">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Semantic pattern · Fan-in queue / bottleneck</p>
+        <h1>Fan-in Queue &amp; Ingress Bottleneck Analysis</h1>
+      </div>
+      <p class="lede">
+        Multiple ingress traffic sources converge on a bounded 5-slot queue buffer before processing by a constrained worker service.
+      </p>
+    </header>
+
+    <div class="diagram-wrap">
+      <svg role="img" aria-labelledby="queue-animated-title queue-animated-desc" viewBox="0 0 1160 620" xmlns="http://www.w3.org/2000/svg" data-motion-primitive="fan-in-queue">
+        <title id="queue-animated-title">Fan-in Queue and Bottleneck Analysis</title>
+        <desc id="queue-animated-desc">Interactive step-by-step demonstration of fan-in request ingress, queue buffering, rate-limiting, and worker service processing.</desc>
+        <rect width="1160" height="620" fill="#f5f5f5"/>
+        <defs>
+          <marker id="arrow-ink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#2d3142" />
+          </marker>
+          <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#eb6c36" />
+          </marker>
+          <marker id="arrow-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#4f5d75" />
+          </marker>
+        </defs>
+
+        <!-- Base Layout: Ingress Sources Region (Static) -->
+        <rect x="40" y="40" width="240" height="510" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <text x="60" y="72" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11" letter-spacing="1.6">INGRESS SOURCES</text>
+
+        <!-- Producer 1: Web App (Steady Flow: 4 req/sec) -->
+        <rect x="60" y="96" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="76" y="128" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Web Client App</text>
+        <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 4 req/sec (Steady)</text>
+
+        <!-- Producer 2: Mobile API (Steady Flow: 3 req/sec) -->
+        <rect x="60" y="196" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="76" y="228" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Mobile Native API</text>
+        <text x="76" y="248" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 3 req/sec (Steady)</text>
+
+        <!-- Producer 3: Payment Webhook (Spike Flow: 8 req/sec) -->
+        <rect x="60" y="296" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="76" y="328" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Payment Webhooks</text>
+        <text x="76" y="348" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 8 req/sec (Spike)</text>
+
+        <!-- Producer 4: Legacy ERP (Spike Flow: 12 req/sec) -->
+        <rect x="60" y="396" width="200" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+        <text x="76" y="428" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Legacy ERP Batch</text>
+        <text x="76" y="448" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Rate: 12 req/sec (Spike)</text>
+
+        <!-- Central Queue Buffer Region (Width expanded to 370px for generous text margins) -->
+        <rect x="340" y="150" width="370" height="320" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+        <text x="360" y="182" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Central Ingress Queue Buffer</text>
+        <text x="360" y="200" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Capacity: 5 slots (Bounded FIFO)</text>
+
+        <!-- STEP 1: Ingress Traffic Arrives (Slots 1 & 2 + Initial 2/5 Queue Depth Badge) -->
+        <g data-motion-item data-step="1" aria-label="Step 1: Web App and Mobile API send steady ingress traffic (7 req/sec total) into queue slots 1 and 2">
+          <!-- Ingress Flow Arrows 1 & 2 -->
+          <path d="M 260 132 L 340 234" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <path d="M 260 232 L 340 282" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+
+          <!-- Queue Slot 1 -->
+          <rect x="360" y="216" width="265" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="372" y="239" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10.5">Slot 1: req_web_8019 [GET /api]</text>
+
+          <!-- Queue Slot 2 -->
+          <rect x="360" y="260" width="265" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="372" y="283" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10.5">Slot 2: req_mob_4412 [POST /auth]</text>
+
+          <!-- Single Unified Queue Status Badge for Step 1 (DEPTH 2/5 - Spans full height of 5 slots) -->
+          <g class="queue-depth-step1">
+            <rect x="635" y="216" width="60" height="212" rx="4" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+            <text x="665" y="300" text-anchor="middle" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10">DEPTH</text>
+            <text x="665" y="330" text-anchor="middle" fill="#2d3142" font-family="'Geist', sans-serif" font-size="22" font-weight="600">2/5</text>
+          </g>
+        </g>
+
+        <!-- STEP 2: Ingress Spike Fills Queue (Slots 3, 4, 5 + Updated 5/5 Full Warn Queue Depth Badge) -->
+        <g data-motion-item data-step="2" aria-label="Step 2: Payment and ERP traffic spike (20 req/sec total) fills queue to 5/5 slots capacity">
+          <!-- Ingress Flow Arrows 3 & 4 -->
+          <path d="M 260 332 L 340 322" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <path d="M 260 432 L 340 370" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+
+          <!-- Queue Slot 3 -->
+          <rect x="360" y="304" width="265" height="36" rx="4" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="372" y="327" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10.5">Slot 3: req_pay_9920 [WEBHOOK]</text>
+
+          <!-- Queue Slot 4 -->
+          <rect x="360" y="348" width="265" height="36" rx="4" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="372" y="371" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10.5" font-weight="600">Slot 4: req_erp_1044 [BATCH]</text>
+
+          <!-- Queue Slot 5 -->
+          <rect x="360" y="392" width="265" height="36" rx="4" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="372" y="415" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10.5" font-weight="600">Slot 5: req_erp_1045 [FULL]</text>
+
+          <!-- Single Unified Queue Status Badge for Step 2+ (FULL 5/5 WARN - Replaces 2/5 badge seamlessly) -->
+          <rect x="635" y="216" width="60" height="212" rx="4" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="665" y="290" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">FULL</text>
+          <text x="665" y="325" text-anchor="middle" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="24" font-weight="600">5/5</text>
+          <text x="665" y="355" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="9.5" font-weight="600">WARN</text>
+        </g>
+
+        <!-- STEP 3: Rate Limiter Diverts Excess Traffic (429 Dropped Sink) -->
+        <g data-motion-item data-step="3" aria-label="Step 3: Overflow backpressure activates, shedding excess 19 req/sec to 429 Rate Limiter sink">
+          <!-- Overflow Diverter Connector -->
+          <path d="M 525 150 L 525 92 L 760 92" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
+          
+          <!-- 429 Dropped Traffic Sink Node (Expanded to width 350px) -->
+          <rect x="760" y="50" width="350" height="85" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="780" y="82" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">429 Rate Limiter &amp; Overflow Sink</text>
+          <text x="780" y="104" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Status: 429 Backpressure (19 req/sec Shed)</text>
+        </g>
+
+        <!-- STEP 4: Worker Service Processing & Downstream Output -->
+        <g data-motion-item data-step="4" aria-label="Step 4: Constrained worker node processes queue at 8 req/sec max emitting 200 OK downstream responses">
+          <!-- Worker Processing Connector -->
+          <path d="M 710 310 L 760 280" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+
+          <!-- Worker Node A (Expanded to width 350px) -->
+          <rect x="760" y="215" width="350" height="130" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="780" y="246" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Constrained Worker Service</text>
+          <text x="780" y="268" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Instance: Worker-Node-01</text>
+          <text x="780" y="290" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Service Capacity: 8 req/sec max</text>
+          <text x="780" y="312" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="11" font-weight="600">Status: PROCESSING [FIFO]</text>
+
+          <!-- 200 OK Downstream Connector -->
+          <path d="M 935 345 L 935 410" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+
+          <!-- Downstream Service Node (Expanded to width 350px) -->
+          <rect x="760" y="410" width="350" height="85" rx="6" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
+          <text x="780" y="440" fill="#2d3142" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Downstream Database &amp; Core API</text>
+          <text x="780" y="464" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Result: 200 OK Admitted Traffic Stream (8 req/sec)</text>
+        </g>
+
+        <!-- STEP 5: Equilibrium State & Performance Metrics Summary -->
+        <g data-motion-item data-step="5" aria-label="Step 5: System reaches controlled equilibrium protecting worker from overload while shedding excess traffic">
+          <rect x="340" y="490" width="370" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="360" y="516" fill="#2d3142" font-family="'Geist', sans-serif" font-size="13" font-weight="600">System State: Controlled Equilibrium</text>
+          <text x="360" y="536" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Worker Protected · Backpressure Active</text>
+        </g>
+
+        <!-- Precision SVG Legend Footer (Exact visual mini-arrows and mini-rects) -->
+        <g data-motion-decorative aria-hidden="true">
+          <!-- Flow Line 1: Admitted Flow -->
+          <line x1="40" y1="584" x2="65" y2="584" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <text x="73" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Admitted Flow</text>
+
+          <!-- Flow Line 2: High Ingress -->
+          <line x1="165" y1="584" x2="190" y2="584" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <text x="198" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">High Ingress</text>
+
+          <!-- Flow Line 3: 429 Backpressure -->
+          <line x1="285" y1="584" x2="310" y2="584" stroke="#eb6c36" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow-accent)" />
+          <text x="318" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">429 Backpressure</text>
+
+          <!-- Box 1: Normal Slot -->
+          <rect x="430" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
+          <text x="452" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Normal Slot</text>
+
+          <!-- Box 2: Capacity Warn Slot -->
+          <rect x="540" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="562" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Capacity Warn</text>
+
+          <!-- Box 3: Overflown 429 Slot -->
+          <rect x="660" y="577" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <text x="682" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Overflown (429)</text>
+
+          <!-- Box 4: Depth / Full Counter Badge -->
+          <rect x="790" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.25)" stroke-width="1" />
+          <text x="812" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Queue Depth Badge</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Pinned Motion Controls -->
+    <div data-motion-controls role="group" aria-label="Diagram playback controls">
+      <button type="button" data-motion-action="prev">Previous</button>
+      <button type="button" data-motion-action="play" aria-pressed="false">Play</button>
+      <button type="button" data-motion-action="pause" aria-pressed="true">Pause</button>
+      <button type="button" data-motion-action="next">Next</button>
+      <button type="button" data-motion-action="replay">Replay</button>
+      <span class="keyboard-help">←/→ step · Space play/pause · R replay · Home/End jump</span>
+      <span data-motion-status-visible aria-hidden="true">Step <span data-motion-step-label>5</span> of 5</span>
+    </div>
+    <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p>Animation controls require JavaScript. The complete final diagram is shown above.</p></noscript>
+  </main>
+
+  <script data-diagram-controls>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const staticOverride = params.get('motion') === 'static' || document.documentElement.dataset.motion === 'static';
+      const requestedStep = params.get('step');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      document.fonts.ready.then(() => { document.documentElement.dataset.fontsReady = 'true'; });
+
+      document.querySelectorAll('[data-motion-root]').forEach((root) => {
+        const count = Number(root.dataset.stepCount);
+        const hold = parseFloat(getComputedStyle(root).getPropertyValue('--motion-hold')) || 720;
+        const parsedStep = requestedStep !== null && /^\d+$/.test(requestedStep) ? Number(requestedStep) : null;
+        const exactStep = params.get('motion') === 'step' && Number.isSafeInteger(parsedStep) && parsedStep >= 0 && parsedStep <= count ? parsedStep : null;
+        const items = [...root.querySelectorAll('[data-motion-item]')];
+        const labels = Array.from({ length: count + 1 }, (_, index) => index === 0
+          ? 'Ready'
+          : items.filter((item) => !item.hasAttribute('data-motion-decorative') && Number(item.dataset.step) === index)
+              .map((item) => item.getAttribute('aria-label')).join('; '));
+        const controls = root.querySelector('[data-motion-controls]');
+        const status = root.querySelector('[data-motion-status]');
+        const visibleStep = root.querySelector('[data-motion-step-label]');
+        let step = count;
+        let timer = 0;
+        let playing = false;
+        let stepBeforeReduce = 0;
+        let resumeAfterReduce = root.dataset.motionMode === 'reveal';
+
+        const buttons = (action) => controls.querySelector(`[data-motion-action="${action}"]`);
+        const clearClock = () => { window.clearTimeout(timer); timer = 0; };
+        const announce = () => { status.textContent = `Step ${step} of ${count}: ${labels[step] || 'Complete'}`; };
+        const setControlsAvailable = (available) => {
+          controls.hidden = !available;
+          controls.setAttribute('aria-hidden', String(!available));
+          controls.dataset.playbackDisabled = String(!available);
+          controls.querySelectorAll('button').forEach((control) => { control.disabled = !available; });
+        };
+
+        function render(next, userInitiated = false) {
+          step = Math.max(0, Math.min(count, next));
+          root.dataset.stepCurrent = String(step);
+          root.dataset.frame = step === count ? 'end' : step === 0 ? 'start' : 'step';
+          items.forEach((item) => {
+            const itemStep = Number(item.dataset.step);
+            item.classList.toggle('is-visible', itemStep <= step);
+            item.classList.toggle('is-current', itemStep === step);
+          });
+          if (visibleStep) visibleStep.textContent = String(step);
+          const unavailable = controls.dataset.playbackDisabled === 'true';
+          buttons('prev').disabled = unavailable || step === 0;
+          buttons('next').disabled = unavailable || step === count;
+          if (userInitiated) announce();
+        }
+
+        function pause(userInitiated = false) {
+          clearClock();
+          playing = false;
+          root.classList.remove('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'false');
+          buttons('pause').setAttribute('aria-pressed', 'true');
+          if (userInitiated) status.textContent = `Paused at step ${step} of ${count}`;
+        }
+
+        function finish() {
+          pause(false);
+          root.dataset.frame = 'end';
+          status.textContent = `Complete · step ${count} of ${count}`;
+        }
+
+        function tick() {
+          if (!playing) return;
+          if (step >= count) { finish(); return; }
+          render(step + 1, false);
+          if (step >= count) { finish(); return; }
+          timer = window.setTimeout(tick, hold);
+        }
+
+        function play(fromStart = false, userInitiated = false) {
+          clearClock();
+          if (fromStart || step >= count) render(0, userInitiated);
+          playing = true;
+          root.classList.add('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'true');
+          buttons('pause').setAttribute('aria-pressed', 'false');
+          timer = window.setTimeout(tick, hold);
+        }
+
+        controls.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-motion-action]');
+          if (!button) return;
+          const action = button.dataset.motionAction;
+          if (action === 'play') play(false, true);
+          if (action === 'pause') pause(true);
+          if (action === 'replay') play(true, true);
+          if (action === 'prev') { pause(false); render(step - 1, true); }
+          if (action === 'next') { pause(false); render(step + 1, true); }
+        });
+
+        root.addEventListener('keydown', (event) => {
+          if (event.target.matches('input, textarea, select, a[href]')) return;
+          const keys = { ArrowLeft: step - 1, ArrowRight: step + 1, Home: 0, End: count };
+          if (event.code === 'Space' && !event.target.closest('button')) {
+            event.preventDefault();
+            playing ? pause(true) : play(false, true);
+            return;
+          }
+          if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'r') {
+            event.preventDefault();
+            play(true, true);
+            return;
+          }
+          if (!(event.key in keys)) return;
+          event.preventDefault();
+          pause(false);
+          render(keys[event.key], true);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden' && playing) pause(false);
+        });
+        reduce.addEventListener('change', (event) => {
+          if (event.matches && root.dataset.motionState !== 'reduced') {
+            stepBeforeReduce = step;
+            resumeAfterReduce = playing;
+          }
+          pause(false);
+          if (event.matches) {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'reduced';
+            status.textContent = 'Reduced motion · complete static frame · playback controls unavailable';
+          } else if (staticOverride || root.dataset.motionMode === 'none') {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'static';
+            status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+          } else {
+            delete root.dataset.motionState;
+            if (exactStep !== null) {
+              setControlsAvailable(false);
+              render(exactStep, false);
+              root.dataset.frame = 'step';
+              root.dataset.motionState = 'test';
+              status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+            } else {
+              setControlsAvailable(true);
+              render(stepBeforeReduce, false);
+              status.textContent = `Ready · step ${step} of ${count}`;
+              if (resumeAfterReduce && root.dataset.motionMode === 'reveal') {
+                play(false, false);
+              }
+            }
+            resumeAfterReduce = false;
+          }
+        });
+
+        if (staticOverride) {
+          document.documentElement.dataset.motion = 'static';
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = 'static';
+          status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+        } else if (reduce.matches || root.dataset.motionMode === 'none') {
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = reduce.matches ? 'reduced' : 'static';
+          status.textContent = reduce.matches
+            ? 'Reduced motion · complete static frame · playback controls unavailable'
+            : 'Static frame · complete diagram · playback controls unavailable';
+        } else if (exactStep !== null) {
+          document.documentElement.dataset.motion = 'step';
+          pause(false);
+          setControlsAvailable(false);
+          render(exactStep, false);
+          root.dataset.frame = 'step';
+          root.dataset.motionState = 'test';
+          status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+        } else if (root.dataset.motionMode === 'reveal') {
+          setControlsAvailable(true);
+          render(0, false);
+          play(false, false);
+        } else {
+          pause(false);
+          setControlsAvailable(true);
+          render(0, false);
+          status.textContent = `Ready · step 0 of ${count}`;
+        }
+        root.classList.add('motion-ready');
+      });
+    })();
+  </script>
+</body>
+</html>
