@@ -48,6 +48,8 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
 | A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
 | Sequence-doc consistency (ATL fragments, budgets) | `python3 scripts/verify-sequence-oauth.py` |
+| Semantic-motion verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-semantic-motion.py` |
+| Sequence-oauth verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-sequence-oauth.py` |
 | draw.io import path (real extractor vs fixtures + docs sync) | `python3 scripts/verify-drawio-import.py` |
 | Mermaid import path (grammars, adversarial input, caps, docs sync) | `python3 scripts/verify-mermaid-import.py` |
 | Optional motion contract (fallbacks, controls, budgets, determinism) | `python3 scripts/test-verify-motion.py` |
@@ -72,6 +74,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-motion.py --shipped \
   && python3 scripts/lint-skin.py --all --baseline \
   && python3 scripts/verify-sequence-oauth.py \
+  && python3 scripts/test-verify-semantic-motion.py \
+  && python3 scripts/test-verify-sequence-oauth.py \
   && python3 scripts/verify-drawio-import.py \
   && python3 scripts/verify-mermaid-import.py \
   && python3 scripts/test-verify-motion.py \
