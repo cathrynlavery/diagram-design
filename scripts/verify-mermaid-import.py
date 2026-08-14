@@ -455,6 +455,85 @@ def check_adversarial(tmp: Path) -> None:
     ok("adversarial labels stay inert; nesting, chains, fan-out, discards work")
 
 
+def check_sequence_grammar_forms(tmp: Path) -> None:
+    """Quoted participants, create directives, and full arrow vocabulary.
+
+    All constructs here are accepted by the real Mermaid parser (v11.x):
+    quoted participant/actor names with and without `as` aliases, `create`
+    directives, bidirectional `<<->>` / `<<-->>` arrows, and open arrows
+    `->` / `-->` that carry no arrowhead.
+    """
+    forms = tmp / "sequence-forms.mmd"
+    forms.write_text(
+        """sequenceDiagram
+participant "Alice Smith"
+participant "Bob Builder" as B
+actor "Carol Crane" as C
+create participant Dave
+Alice Smith->>B: hello
+B<<-->>Alice Smith: dotted bidir
+B<<->>C: solid bidir
+B->Dave: open arrow
+Dave-->C: dotted open
+C-)B: async
+C--xDave: cross
+""",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(forms), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if "Alice Smith" not in nodes:
+        fail("quoted participant without alias was dropped")
+    if nodes["B"]["label"] != "Bob Builder":
+        fail("quoted participant alias lost its display name")
+    if nodes["C"]["shape"] != "actor":
+        fail("quoted actor was not classified as an actor")
+    if "Dave" not in nodes:
+        fail("create participant was dropped")
+    if {node["label"] for node in payload["nodes"]} != {
+        "Alice Smith",
+        "Bob Builder",
+        "Carol Crane",
+        "Dave",
+    }:
+        fail("participant labels were mangled")
+
+    edges = payload["edges"]
+    dotted_bidir = next(e for e in edges if e["label"] == "dotted bidir")
+    if not dotted_bidir["bidirectional"] or dotted_bidir["style"] != "dashed":
+        fail("<<-->> was not retained as dashed and bidirectional")
+    solid_bidir = next(e for e in edges if e["label"] == "solid bidir")
+    if not solid_bidir["bidirectional"] or solid_bidir["style"] != "solid":
+        fail("<<->> was not retained as solid and bidirectional")
+    open_solid = next(e for e in edges if e["label"] == "open arrow")
+    if open_solid["arrowhead"] != "none" or not open_solid["undirected"]:
+        fail("`->` open arrow must carry no arrowhead and be undirected")
+    open_dotted = next(e for e in edges if e["label"] == "dotted open")
+    if open_dotted["style"] != "dashed" or open_dotted["arrowhead"] != "none":
+        fail("`-->` dotted open arrow was not retained as dashed with no arrowhead")
+    if next(e for e in edges if e["label"] == "async")["arrowhead"] != "async":
+        fail("`-)` async arrowhead was not retained")
+    if next(e for e in edges if e["label"] == "cross")["arrowhead"] != "cross":
+        fail("`--x` cross arrowhead was not retained")
+
+    compact = tmp / "compact-dotted.mmd"
+    compact.write_text(
+        "sequenceDiagram\nparticipant A\nparticipant B\nA-->>B: async reply\n",
+        encoding="utf-8",
+    )
+    compact_edges = json.loads(run_extract([str(compact), "--json"]))["diagrams"][0]["edges"]
+    if len(compact_edges) != 1 or compact_edges[0]["source"] != "A":
+        fail("`A-->>B` lost the source id or the edge itself")
+
+    broken = tmp / "malformed-bidir.mmd"
+    broken.write_text(
+        "sequenceDiagram\nparticipant A\nparticipant B\nA<<->>B\n",
+        encoding="utf-8",
+    )
+    expect_error([str(broken)], "malformed edge at line 4")
+    ok("quoted participants, create, and the full sequence arrow vocabulary parse")
+
+
 def check_errors_and_limits(tmp: Path) -> None:
     bad = tmp / "not-mermaid.txt"
     bad.write_text("flowchart TD\nA --> B\n", encoding="utf-8")
@@ -600,6 +679,7 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_sequence_grammar_forms(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()
