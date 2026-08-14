@@ -2,7 +2,7 @@
 """Verification script for the automated brand onboarding CLI tool (scripts/onboard.py).
 
 Verifies zero-confidence extraction guards, format-aware JSON/SCSS parsing, WCAG AA contrast enforcement
-for medium backgrounds and dark mode, atomic backup writes, and URL scheme rejection.
+for medium backgrounds and dark mode, crash-safe atomic write with retained backup, and URL scheme rejection.
 
 Usage:
     python scripts/verify-onboarding.py
@@ -85,7 +85,12 @@ $brand-primary: #0088ff;
         json_file.write_text("""
 {
   "color": {
-    "muted": "#888888"
+    "primary": {
+      "$value": "#ff5500"
+    },
+    "muted": {
+      "value": "#888888"
+    }
   }
 }
 """, encoding="utf-8")
@@ -97,8 +102,8 @@ $brand-primary: #0088ff;
             print(f"FAIL: format-aware SCSS/JSON parsing failed: {res.stderr}", file=sys.stderr)
             sys.exit(1)
 
-        if "`#101010`" not in res.stdout or "`#0088ff`" not in res.stdout:
-            print("FAIL: SCSS/JSON design tokens were not extracted correctly", file=sys.stderr)
+        if "`#101010`" not in res.stdout or "`#ff5500`" not in res.stdout:
+            print("FAIL: SCSS/JSON nested design tokens were not extracted correctly", file=sys.stderr)
             sys.exit(1)
 
         print("OK: onboard.py format-aware SCSS/JSON parsing test passed")
@@ -130,7 +135,7 @@ def test_medium_bg_contrast_and_dark_mode_validation() -> None:
         print("OK: onboard.py medium background & dark mode contrast validation test passed")
 
 
-def test_atomic_write_and_invalid_path() -> None:
+def test_atomic_write_and_retained_backup() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = pathlib.Path(tmpdir)
         css_file = tmp_path / "tokens.css"
@@ -143,9 +148,10 @@ def test_atomic_write_and_invalid_path() -> None:
 }
 """, encoding="utf-8")
         out_guide = tmp_path / "style-guide.md"
-        out_guide.write_text(STYLE_GUIDE.read_text(encoding="utf-8"), encoding="utf-8")
+        orig_content = STYLE_GUIDE.read_text(encoding="utf-8")
+        out_guide.write_text(orig_content, encoding="utf-8")
 
-        # 1. Test atomic write with --apply
+        # 1. Test atomic write with --apply and retained backup
         cmd = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--out", str(out_guide), "--apply"]
         res = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -158,6 +164,15 @@ def test_atomic_write_and_invalid_path() -> None:
             print("FAIL: style-guide.md table was not updated atomically", file=sys.stderr)
             sys.exit(1)
 
+        backup_file = out_guide.with_name(out_guide.name + ".bak")
+        if not backup_file.exists():
+            print("FAIL: retained backup file (.bak) was not preserved", file=sys.stderr)
+            sys.exit(1)
+
+        if backup_file.read_text(encoding="utf-8") != orig_content:
+            print("FAIL: retained backup file content does not match original style guide", file=sys.stderr)
+            sys.exit(1)
+
         # 2. Test invalid --out path failure
         bad_out = tmp_path / "non-existent-dir" / "style-guide.md"
         cmd_bad = [sys.executable, str(ONBOARD_SCRIPT), "--folder", str(tmp_path), "--out", str(bad_out), "--apply"]
@@ -167,7 +182,7 @@ def test_atomic_write_and_invalid_path() -> None:
             print("FAIL: onboard.py did not fail on invalid --out directory path", file=sys.stderr)
             sys.exit(1)
 
-        print("OK: onboard.py atomic write & output path validation test passed")
+        print("OK: onboard.py crash-safe atomic write & retained backup test passed")
 
 
 def test_url_scheme_rejection() -> None:
@@ -187,7 +202,7 @@ def main() -> int:
     test_zero_confidence_extraction_guard()
     test_format_aware_json_scss_parsing()
     test_medium_bg_contrast_and_dark_mode_validation()
-    test_atomic_write_and_invalid_path()
+    test_atomic_write_and_retained_backup()
     test_url_scheme_rejection()
     print("ALL ADVERSARIAL ONBOARDING GATES PASSED")
     return 0

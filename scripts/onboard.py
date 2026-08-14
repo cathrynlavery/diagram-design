@@ -18,6 +18,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import sys
 import tempfile
 import urllib.error
@@ -25,12 +26,17 @@ import urllib.request
 from typing import NamedTuple
 from urllib.parse import urlparse
 
+# Python minimum version check (3.10+)
+if sys.version_info < (3, 10):
+    sys.exit("Error: scripts/onboard.py requires Python 3.10 or higher.")
+
 REPO = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_STYLE_GUIDE = REPO / "skills" / "diagram-design" / "references" / "style-guide.md"
 
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3}){1,2}\b")
 VAR_RE = re.compile(r"--([\w-]+)\s*:\s*([^;]+);")
 SCSS_VAR_RE = re.compile(r"\$([\w-]+)\s*:\s*([^;]+);")
+TABLE_HEADER_PATTERN = re.compile(r"\| Role \| Purpose \| Default \(light\) \| Default \(dark\) \|")
 
 
 class Color(NamedTuple):
@@ -140,11 +146,16 @@ def fetch_url_content(url: str, max_bytes: int = 5 * 1024 * 1024) -> str:
         url,
         headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     )
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    resp = None
+    try:
+        resp = urllib.request.urlopen(req, timeout=15)
         content_bytes = resp.read(max_bytes + 1)
         if len(content_bytes) > max_bytes:
             raise ValueError(f"Response size exceeds maximum permitted cap of {max_bytes // (1024*1024)}MB.")
         return content_bytes.decode("utf-8", errors="ignore")
+    finally:
+        if resp is not None:
+            resp.close()
 
 
 def extract_css_from_folder(folder_path: pathlib.Path) -> str:
@@ -163,7 +174,7 @@ def extract_css_from_folder(folder_path: pathlib.Path) -> str:
 
 
 def extract_json_tokens(text: str) -> dict[str, str]:
-    """Format-aware JSON design token parser for nested token objects."""
+    """Format-aware JSON design token parser supporting arbitrary nested token object paths ($value, value, hex)."""
     found: dict[str, str] = {}
 
     def walk_json(obj: object, path: str = "") -> None:
@@ -173,20 +184,41 @@ def extract_json_tokens(text: str) -> dict[str, str]:
                 if isinstance(v, str):
                     m = HEX_RE.search(v)
                     if m:
-                        found[new_path.lower()] = m.group(0).lower()
+                        hex_val = m.group(0).lower()
+                        found[new_path.lower()] = hex_val
+                        # Normalize nested paths like color.primary.$value -> color.primary and primary
+                        parts = [p.lower() for p in new_path.split(".") if p.lower() not in ("$value", "value", "hex", "val", "color")]
+                        if parts:
+                            normalized_path = ".".join(parts)
+                            found[normalized_path] = hex_val
+                            found[parts[-1]] = hex_val
                 else:
                     walk_json(v, new_path)
         elif isinstance(obj, list):
             for i, item in enumerate(obj):
                 walk_json(item, f"{path}[{i}]")
 
-    # Try parsing text blocks as JSON
-    for block in re.findall(r"\{[^{}]+\}", text):
-        try:
-            data = json.loads(block)
-            walk_json(data)
-        except Exception:
-            pass
+    # 1. Parse entire text if it is valid JSON
+    try:
+        data = json.loads(text)
+        walk_json(data)
+    except Exception:
+        pass
+
+    # 2. Extract nested JSON blocks using balanced brace scan
+    stack: list[int] = []
+    for idx, char in enumerate(text):
+        if char == "{":
+            stack.append(idx)
+        elif char == "}" and stack:
+            start_idx = stack.pop()
+            if not stack:  # Outer-most JSON block found
+                block = text[start_idx : idx + 1]
+                try:
+                    data = json.loads(block)
+                    walk_json(data)
+                except Exception:
+                    pass
 
     return found
 
@@ -225,14 +257,30 @@ def extract_tokens(text: str) -> tuple[dict[str, str], list[str]]:
     accent_hex: str | None = None
     muted_hex: str | None = None
 
+    # Priority matching: exact key matches take precedence over partial substring matches
+    role_keywords = {
+        "paper": ["bg", "background", "paper", "surface"],
+        "ink": ["text", "ink", "foreground", "body"],
+        "accent": ["accent", "brand", "primary", "cta"],
+        "muted": ["muted", "secondary", "caption"],
+    }
+
+    # Pass 1: Exact matches (e.g. "primary", "bg", "text", "muted")
     for name, val in vars_found.items():
-        if not paper_hex and any(k in name for k in ("bg", "background", "paper", "surface")):
+        if name in role_keywords["paper"] and not paper_hex: paper_hex = val
+        if name in role_keywords["ink"] and not ink_hex: ink_hex = val
+        if name in role_keywords["accent"] and not accent_hex: accent_hex = val
+        if name in role_keywords["muted"] and not muted_hex: muted_hex = val
+
+    # Pass 2: Substring matches (e.g. "brand-primary", "color-bg")
+    for name, val in vars_found.items():
+        if not paper_hex and any(k in name for k in role_keywords["paper"]):
             paper_hex = val
-        elif not ink_hex and any(k in name for k in ("text", "ink", "foreground", "body")):
+        elif not ink_hex and any(k in name for k in role_keywords["ink"]):
             ink_hex = val
-        elif not accent_hex and any(k in name for k in ("accent", "brand", "primary", "cta")):
+        elif not accent_hex and any(k in name for k in role_keywords["accent"]):
             accent_hex = val
-        elif not muted_hex and any(k in name for k in ("muted", "secondary", "caption")):
+        elif not muted_hex and any(k in name for k in role_keywords["muted"]):
             muted_hex = val
 
     # Fallback to frequency ranking if variables were incomplete
@@ -269,7 +317,7 @@ def extract_tokens(text: str) -> tuple[dict[str, str], list[str]]:
 
 
 def compute_derived_roles(tokens: dict[str, str]) -> tuple[dict[str, dict[str, str]], list[str]]:
-    """Compute light and dark variants for all 9 semantic roles with double-ended WCAG contrast enforcement."""
+    """Compute light and dark variants for all 10 semantic roles with double-ended WCAG contrast enforcement."""
     contrast_notes: list[str] = []
     paper_c = Color.from_hex(tokens["paper"])
     ink_c = Color.from_hex(tokens["ink"])
@@ -293,7 +341,11 @@ def compute_derived_roles(tokens: dict[str, str]) -> tuple[dict[str, dict[str, s
         int(ink_c.b * 0.4 + muted_c.b * 0.6)
     )
     rule_str = f"rgba({ink_c.r},{ink_c.g},{ink_c.b},0.12)"
-    rule_solid_c = Color(191, 192, 192)
+    rule_solid_c = Color(
+        int(ink_c.r * 0.3 + paper_c.r * 0.7),
+        int(ink_c.g * 0.3 + paper_c.g * 0.7),
+        int(ink_c.b * 0.3 + paper_c.b * 0.7)
+    )
     accent_tint_str = f"rgba({accent_c.r},{accent_c.g},{accent_c.b},0.08)"
     link_c = Color(46, 90, 168)
 
@@ -315,7 +367,11 @@ def compute_derived_roles(tokens: dict[str, str]) -> tuple[dict[str, dict[str, s
         contrast_notes.append(f"[Dark Mode] {note_muted_dark}")
 
     rule_dark_str = f"rgba({ink_dark.r},{ink_dark.g},{ink_dark.b},0.12)"
-    rule_solid_dark_str = f"rgba({ink_dark.r},{ink_dark.g},{ink_dark.b},0.25)"
+    rule_solid_dark_c = Color(
+        int(ink_dark.r * 0.3 + paper_dark.r * 0.7),
+        int(ink_dark.g * 0.3 + paper_dark.g * 0.7),
+        int(ink_dark.b * 0.3 + paper_dark.b * 0.7)
+    )
     accent_tint_dark_str = f"rgba({accent_dark.r},{accent_dark.g},{accent_dark.b},0.10)"
     link_dark = Color(min(255, link_c.r + 60), min(255, link_c.g + 60), min(255, link_c.b + 60))
 
@@ -326,7 +382,7 @@ def compute_derived_roles(tokens: dict[str, str]) -> tuple[dict[str, dict[str, s
         "muted":       {"light": muted_c.to_hex(), "dark": muted_dark.to_hex()},
         "soft":        {"light": soft_c.to_hex(), "dark": soft_dark.to_hex()},
         "rule":        {"light": rule_str, "dark": rule_dark_str},
-        "rule-solid":  {"light": rule_solid_c.to_hex(), "dark": rule_solid_dark_str},
+        "rule-solid":  {"light": rule_solid_c.to_hex(), "dark": rule_solid_dark_c.to_hex()},
         "accent":      {"light": accent_c.to_hex(), "dark": accent_dark.to_hex()},
         "accent-tint": {"light": accent_tint_str, "dark": accent_tint_dark_str},
         "link":        {"light": link_c.to_hex(), "dark": link_dark.to_hex()},
@@ -334,8 +390,21 @@ def compute_derived_roles(tokens: dict[str, str]) -> tuple[dict[str, dict[str, s
     return roles, contrast_notes
 
 
+def validate_output_target(style_guide_path: pathlib.Path) -> None:
+    """Validate that target style guide file exists and contains expected semantic roles table header."""
+    if not style_guide_path.parent.exists():
+        raise FileNotFoundError(f"Target directory does not exist: {style_guide_path.parent}")
+
+    if not style_guide_path.exists():
+        raise FileNotFoundError(f"Target style guide file does not exist: {style_guide_path}")
+
+    content = style_guide_path.read_text(encoding="utf-8")
+    if not TABLE_HEADER_PATTERN.search(content):
+        raise ValueError(f"Target file {style_guide_path} does not contain expected semantic roles table header.")
+
+
 def update_style_guide(roles: dict[str, dict[str, str]], style_guide_path: pathlib.Path, apply_changes: bool = False) -> str:
-    """Generate Markdown tokens table and perform atomic write with recoverable backup if apply_changes is True."""
+    """Generate Markdown tokens table and perform crash-safe atomic write while retaining a recoverable backup."""
     lines = [
         "| Role | Purpose | Default (light) | Default (dark) |",
         "|---|---|---|---|",
@@ -353,35 +422,34 @@ def update_style_guide(roles: dict[str, dict[str, str]], style_guide_path: pathl
     table_text = "\n".join(lines)
 
     if apply_changes:
-        if not style_guide_path.parent.exists():
-            raise FileNotFoundError(f"Target directory does not exist: {style_guide_path.parent}")
-
-        if not style_guide_path.exists():
-            raise FileNotFoundError(f"Target style guide file does not exist: {style_guide_path}")
-
+        validate_output_target(style_guide_path)
         content = style_guide_path.read_text(encoding="utf-8")
+
         table_pattern = re.compile(r"\| Role \| Purpose \| Default \(light\) \| Default \(dark\) \|.*?\n(?:\|.*?\|\n)+", re.DOTALL)
         if not table_pattern.search(content):
             raise ValueError(f"Could not locate semantic roles table pattern in {style_guide_path}")
 
         updated_content = table_pattern.sub(table_text + "\n", content, count=1)
 
-        # Atomic write using backup file (.bak) and temp file
+        # Crash-safe atomic write flow while retaining a recoverable backup (.bak)
         backup_path = style_guide_path.with_name(style_guide_path.name + ".bak")
-        style_guide_path.replace(backup_path)
+        # Step 1: Copy original to backup first (retained backup, original target stays untouched until atomic swap)
+        shutil.copy2(style_guide_path, backup_path)
 
+        # Step 2: Write replacement to temporary file in same directory
+        temp_fd, temp_path_str = tempfile.mkstemp(dir=style_guide_path.parent, prefix="style-guide-", suffix=".tmp")
+        temp_path = pathlib.Path(temp_path_str)
         try:
-            temp_file = style_guide_path.with_name(style_guide_path.name + ".tmp")
-            temp_file.write_text(updated_content, encoding="utf-8")
-            temp_file.replace(style_guide_path)
-            # Remove temporary backup upon successful write
-            if backup_path.exists():
-                backup_path.unlink()
+            with open(temp_fd, "w", encoding="utf-8") as f:
+                f.write(updated_content)
+
+            # Step 3: Atomic replace target file
+            os.replace(temp_path, style_guide_path)
+            # Backup path style_guide_path.bak is deliberately retained as a recoverable backup
         except Exception as e:
-            # Restore from backup in case of write failure
-            if backup_path.exists():
-                backup_path.replace(style_guide_path)
-            raise IOError(f"Atomic write to style guide failed: {e}") from e
+            if temp_path.exists():
+                temp_path.unlink()
+            raise IOError(f"Crash-safe atomic write to style guide failed: {e}") from e
 
     return table_text
 
@@ -397,6 +465,14 @@ def main() -> int:
 
     args = parser.parse_args()
     style_guide_path = pathlib.Path(args.out) if args.out else DEFAULT_STYLE_GUIDE
+
+    # Validate output target prior to extraction if apply mode is requested
+    if args.apply:
+        try:
+            validate_output_target(style_guide_path)
+        except Exception as e:
+            print(f"Error validating output target: {e}", file=sys.stderr)
+            return 1
 
     print("Onboarding diagram-design skin...")
     try:
@@ -434,7 +510,7 @@ def main() -> int:
     print(table_output)
 
     if args.apply:
-        print(f"\n[Apply mode] Successfully updated {style_guide_path}")
+        print(f"\n[Apply mode] Successfully updated {style_guide_path} (backup retained at {style_guide_path}.bak)")
     else:
         print("\n[Preview mode] No changes were written to style-guide.md. Use --apply to commit changes.")
 
