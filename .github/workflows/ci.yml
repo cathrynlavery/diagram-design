@@ -161,6 +161,9 @@ jobs:
         id: geometry_tests
         run: python scripts/test-verify-geometry.py
 
+      - name: Verify onboarding CLI script
+        run: python3 scripts/verify-onboarding.py
+
       - name: Verify generated icon assets
         if: always()
         id: icons

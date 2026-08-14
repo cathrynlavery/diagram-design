@@ -2,6 +2,13 @@
 
 **Goal:** point the skill at a design source — a website, an installed skill, or a local folder — and have it extract the palette + typography, then rewrite `style-guide.md` so every future diagram inherits that skin.
 
+Automated CLI tool:
+```bash
+python scripts/onboard.py --url https://example.com          # Preview mode (default)
+python scripts/onboard.py --url https://example.com --apply  # Atomic write mode with backup
+python scripts/onboard.py --folder ./my-design-tokens --apply
+```
+
 Takes about 60 seconds.
 
 Three source methods are supported. Jump to the relevant section:
