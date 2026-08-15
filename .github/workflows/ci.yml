@@ -224,21 +224,32 @@ jobs:
       # lint-render.py's oracle is pixels, so the browser is part of the contract:
       # pin Playwright exactly, and let that pin choose the Chromium build. Bump
       # both together, deliberately, by editing PLAYWRIGHT_VERSION.
+      #
+      # One platform only. Antialiasing and font fallback differ per OS, so running
+      # a pixel comparison across the whole matrix would compare six oracles rather
+      # than one, and the thresholds are calibrated on Linux Chromium. The other
+      # matrix legs still run every source-level gate.
       - name: Install Playwright Chromium
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         env:
           PLAYWRIGHT_VERSION: "1.62.0"
+        shell: bash
         run: |
           pip install "playwright==${PLAYWRIGHT_VERSION}"
           playwright install --with-deps chromium
-          python3 -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
+          python -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
 
       # The checks before the sweep: a broken linter must not be able to report
       # a clean repository.
       - name: Verify render linter checks
-        run: python3 scripts/lint-render.py --self-test
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: render_selftest
+        run: python scripts/lint-render.py --self-test
 
       - name: Run render linter
-        run: python3 scripts/lint-render.py --all
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: render
+        run: python scripts/lint-render.py --all
 
       - name: Verify generated icon assets
         if: always()
@@ -282,3 +293,5 @@ jobs:
           echo "| Slopegraph Shared Scale | ${{ steps.slopegraph.outcome == 'success' && '✅ Passed' || (steps.slopegraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Checker | ${{ steps.slopegraph_tests.outcome == 'success' && '✅ Passed' || (steps.slopegraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
