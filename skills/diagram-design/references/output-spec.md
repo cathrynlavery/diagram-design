@@ -63,11 +63,11 @@ Node names shrink relative to the canvas as it grows — resist that. Scale the 
 
 | Role | standard | presentation | print |
 |---|---|---|---|
-| Title (Instrument Serif) | 28 | 40 | 32 |
-| Node name (Geist 600) | 12 | 16 | 12 |
-| Sublabel (Geist Mono) | 9 | 12 | 9 |
-| Arrow label (Geist Mono) | 8 | 12 | 8 |
-| Eyebrow / tag (Geist Mono) | 8 | 8 | 8 |
+| Title (`title`) | 28 | 40 | 32 |
+| Node name (`node-name`, 600) | 12 | 16 | 12 |
+| Sublabel (`sublabel`) | 9 | 12 | 9 |
+| Arrow label (`arrow-label`) | 8 | 12 | 8 |
+| Eyebrow / tag (`eyebrow`) | 8 | 8 | 8 |
 | Node box min height | 48 | 64 | 48 |
 | Min gap between nodes | 24 | 40 | 24 |
 
@@ -138,13 +138,13 @@ Two rules that hold at every audience level:
 
 ### Non-Latin labels
 
-Geist has no CJK coverage. When labels contain Japanese, Chinese, or Korean text, extend the family on those `<text>` elements — don't swap the whole skin:
+The skin's sans and mono families are unlikely to carry CJK coverage (the default Geist does not). When labels contain Japanese, Chinese, or Korean text, extend the family on those `<text>` elements — don't swap the whole skin:
 
 ```svg
-<text font-family="'Geist', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif">認証サービス</text>
+<text font-family="{node-name}, 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif">認証サービス</text>
 ```
 
-For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace`. CJK glyphs render ~10% wider than Latin at the same size — budget box width accordingly, and prefer 12px names over 8px sublabels for CJK, which goes muddy below 10px.
+For mono sublabels append the CJK mono fallbacks to the `sublabel` family: `{sublabel}, 'Noto Sans Mono CJK JP', monospace`. CJK glyphs render ~10% wider than Latin at the same size — budget box width accordingly, and prefer 12px names over 8px sublabels for CJK, which goes muddy below 10px.
 
 ---
 
