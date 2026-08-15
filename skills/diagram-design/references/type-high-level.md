@@ -109,7 +109,7 @@ chevron_cx(C)      = (x_boundaries[index(C)] + x_boundaries[index(C)+1]) / 2
 - Middle: `(x0,4) (x1-12,4) (x1,18) (x1-12,32) (x0,32) (x0+12,18)`
 - Last (rightmost): `(x0,4) (effective_w,4) (effective_w,32) (x0,32) (x0+12,18)`
 
-Fills alternate `#2d3142` / `#3d4460` (light mode) or `#3d4460` / `#4a5270` (dark mode). Labels: paper-colored mono `font-size=7`, `letter-spacing=0.14em`, `text-anchor=middle`, centered at `chevron_cx, 21`.
+Fills alternate between two steps of the **phase-band palette** (§6.1) — `band-1` / `band-2` in light mode, `band-2` / `band-3` in dark. Labels: `paper`-colored mono at the `eyebrow` role, `font-size=7`, `letter-spacing=0.14em`, `text-anchor=middle`, centered at `chevron_cx, 21`.
 
 **Color override** (per chevron, both horizontal and vertical): a chevron may declare an optional `color: "#hex"` that replaces the alternation fill for that one chevron. Use it to flag a phase that pairs with a custom-colored component (e.g., `Security` chevron in red when the Identity bar uses `color: "#b85450"`). Rules:
 
@@ -127,7 +127,7 @@ sources_w          = x_boundaries[1] - 8           # width of the first chevron,
 sources_h          = 336
 ```
 
-Stroke: `rgba(45,49,66,0.20)`, `stroke-width=0.8`, `stroke-dasharray=6,3`, `rx=6`. Zone fill: `rgba(45,49,66,0.02)`.
+Stroke: `ink @ 0.20`, `stroke-width=0.8`, `stroke-dasharray=6,3`, `rx=6`. Zone fill: `ink @ 0.02`.
 
 ### 2.4 Cluster boundary (solid)
 
@@ -138,7 +138,7 @@ cluster_w          = effective_w - cluster_x       # extends to right strip / ca
 cluster_h          = 336
 ```
 
-Stroke: `rgba(45,49,66,0.18)`, `stroke-width=1.2`, `rx=8`. Fill: `rgba(45,49,66,0.02)`. K8s icon + label at `(cluster_x + 16, 352)` (icon) and `(cluster_x + 40, 362)` (text).
+Stroke: `ink @ 0.18`, `stroke-width=1.2`, `rx=8`. Fill: `ink @ 0.02`. K8s icon + label at `(cluster_x + 16, 352)` (icon) and `(cluster_x + 40, 362)` (text).
 
 ### 2.5 Cross-cutting bars (identity, observability, …)
 
@@ -152,7 +152,7 @@ cross_w            = effective_w - 4               # spans body width, stops at 
 cross_h            = 40
 ```
 
-Stroke: `rgba(45,49,66,0.20)`, `stroke-width=0.8`, `rx=6`. Fill: `rgba(45,49,66,0.05)`. Icon at `(16, cross_y(k) + 10)`, name centered at `(effective_w / 2, cross_y(k) + 22)`, subtitle at `(effective_w / 2, cross_y(k) + 34)`.
+Stroke: `ink @ 0.20`, `stroke-width=0.8`, `rx=6`. Fill: `ink @ 0.05`. Icon at `(16, cross_y(k) + 10)`, name centered at `(effective_w / 2, cross_y(k) + 22)`, subtitle at `(effective_w / 2, cross_y(k) + 34)`.
 
 Reserved cross-cutting *concerns* (informational; user can name the actual bar whatever they want):
 - **Identity / Security** — Keycloak, LDAP/AD, Okta, Auth0, OIDC providers
@@ -172,7 +172,7 @@ bar_w              = cluster_w - 24
 bar_h              = 44
 ```
 
-Stroke: `rgba(45,49,66,0.18)`, `stroke-width=0.8`, `rx=4`. Fill: `rgba(45,49,66,0.05)`. Tool icon at the far right (`bar_x + bar_w - 50, 58`); name centered at `(bar_x + bar_w/2, 71)`; subtitle at `(bar_x + bar_w/2, 84)`.
+Stroke: `ink @ 0.18`, `stroke-width=0.8`, `rx=4`. Fill: `ink @ 0.05`. Tool icon at the far right (`bar_x + bar_w - 50, 58`); name centered at `(bar_x + bar_w/2, 71)`; subtitle at `(bar_x + bar_w/2, 84)`.
 
 ### 2.7 Component nodes (inside cluster)
 
@@ -191,7 +191,7 @@ gap                = 16
 row_top(k)         = first_top_y + k * (node_h + gap)   # k = 0..K-1
 ```
 
-**Focal node:** `fill="rgba(235,108,54,0.08)"`, `stroke="#eb6c36"`, `stroke-width=1.2`. Title text in accent color. All other nodes: white fill, `stroke=rgba(45,49,66,0.25)`, `stroke-width=1`.
+**Focal node:** `fill="{accent @ 0.08}"`, `stroke="{accent}"`, `stroke-width=1.2`. Title text in `accent`. All other nodes: white fill, `stroke={ink @ 0.25}`, `stroke-width=1`.
 
 Role badge top-left at `(node_x+8, node_y+6)`, size 12 high. Icon top-right at `(node_x+node_w-32, node_y+6)`, 24×24, monochrome via `currentColor`. Name centered at `(node_cx, node_y+44)` size 11 sans semibold. Subtitle at `(node_cx, node_y+56)` size 8 mono muted.
 
@@ -232,7 +232,7 @@ Adjacent edges share the same y (no gap), like horizontal chevrons share x at th
 - Middle: notch on top, point on bottom — `(strip_x, y0) (strip_x+strip_w/2, y0+12) (strip_x+strip_w, y0) (strip_x+strip_w, y1-12) (strip_x+strip_w/2, y1) (strip_x, y1-12)`
 - Last (bottommost): notch on top, flat bottom — `(strip_x, y0) (strip_x+strip_w/2, y0+12) (strip_x+strip_w, y0) (strip_x+strip_w, y1) (strip_x, y1)`
 
-Fills alternate `#2d3142` / `#3d4460` (same palette as horizontals). Labels: paper-colored mono `font-size=7`, `letter-spacing=0.14em`, **rotated −90°**, anchored at `(strip_x + strip_w/2, (y0+y1)/2)`.
+Fills alternate `band-1` / `band-2` (same phase-band palette as the horizontals, §6.1). Labels: `paper`-colored mono at the `eyebrow` role, `font-size=7`, `letter-spacing=0.14em`, **rotated −90°**, anchored at `(strip_x + strip_w/2, (y0+y1)/2)`.
 
 Vertical chevrons honor the per-chevron `color` override documented in §2.2 — apply the hex to the polygon fill, leave the rotated label paper-colored. Pair the override with the same hex on the chevron's paired bar/crosscut to bind them visually as one concern.
 
@@ -244,19 +244,19 @@ These are non-negotiable. Pick the style **automatically** from the topology —
 
 | `style` | Stroke | Width | Dash | Marker | When required |
 |---|---|---|---|---|---|
-| `primary` | `#eb6c36` | 1.2 | — | `arrow-accent` | Every edge whose endpoint is the `focal` node. |
-| `secondary` | `#4f5d75` | 1.0 | — | `arrow` | Default for source→component and component→component when neither endpoint is focal. |
-| `trigger` | `#4f5d75` | 1.0 | `4,3` | `arrow-sm` | Every edge originating from a `kind: bar` component. |
-| `query` | `rgba(45,49,66,0.30)` | 1.0 | `4,3` | `arrow` | Read-back edges (e.g., focal ↔ Trino). |
+| `primary` | `accent` | 1.2 | — | `arrow-accent` | Every edge whose endpoint is the `focal` node. |
+| `secondary` | `muted` | 1.0 | — | `arrow` | Default for source→component and component→component when neither endpoint is focal. |
+| `trigger` | `muted` | 1.0 | `4,3` | `arrow-sm` | Every edge originating from a `kind: bar` component. |
+| `query` | `ink @ 0.30` | 1.0 | `4,3` | `arrow` | Read-back edges (e.g., focal ↔ Trino). |
 
 **Defs block** (required, exactly these four markers):
 
 ```svg
 <defs>
-  <marker id="arrow"        markerWidth="8" markerHeight="6" refX="7" refY="3"   orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-  <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3"   orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
-  <marker id="arrow-sm"     markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto"><polygon points="0 0, 6 2.5, 0 5" fill="#4f5d75"/></marker>
-  <marker id="arrow-dim"    markerWidth="8" markerHeight="6" refX="7" refY="3"   orient="auto"><polygon points="0 0, 8 3, 0 6" fill="rgba(45,49,66,0.45)"/></marker>
+  <marker id="arrow"        markerWidth="8" markerHeight="6" refX="7" refY="3"   orient="auto"><polygon points="0 0, 8 3, 0 6" fill="{muted}"/></marker>
+  <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3"   orient="auto"><polygon points="0 0, 8 3, 0 6" fill="{accent}"/></marker>
+  <marker id="arrow-sm"     markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto"><polygon points="0 0, 6 2.5, 0 5" fill="{muted}"/></marker>
+  <marker id="arrow-dim"    markerWidth="8" markerHeight="6" refX="7" refY="3"   orient="auto"><polygon points="0 0, 8 3, 0 6" fill="{ink @ 0.45}"/></marker>
 </defs>
 ```
 
@@ -393,24 +393,32 @@ The visual contract: the vertical chevron's column visually "owns" the bar/cross
 
 ## 6. Dark mode
 
-When `dark: true`, swap these tokens:
+`paper`, `ink`, `muted`, and `accent` invert with the skin — look up the dark column in [`style-guide.md`](style-guide.md). Every derived value in this reference is expressed as **role-at-opacity**, so it needs no dark-mode handling: `ink @ 0.18` resolves to dark ink on light paper and light ink on dark paper automatically.
 
-| Token | Light | Dark |
+Only these differ between modes:
+
+| Element | Light | Dark | Why it differs |
+|---|---|---|---|
+| Muted text | `muted` | `ink @ 0.65` | Dark mode softens secondary text by opacity rather than by hue |
+| Dashed border | `ink @ 0.20` | `ink @ 0.22` | A hairline needs marginally more presence on dark paper |
+| Node fill | `#ffffff` (white) | `ink @ 0.06` | White is opaque; on dark paper the node lifts off the ground instead |
+| Node stroke | `ink @ 0.25` | `ink @ 0.20` | Light ink on dark paper reads stronger at equal opacity |
+| Focal fill | `accent @ 0.08` | `accent @ 0.12` | ditto |
+| Phase bands | `band-1` / `band-2` | `band-2` / `band-3` | The alternation shifts one step lighter (§6.1) |
+
+Unchanged across modes: cluster border `ink @ 0.18`, dot pattern `ink @ 0.10`, focal stroke `accent`, accent connector `accent`, and the chevron label, which is always `paper`.
+
+### 6.1 Phase-band palette
+
+The chevron banner needs a **dark band with paper-colored labels in both modes**, so it can't be built from `ink` alone — in dark mode `ink` *is* the light color. It therefore uses three fixed steps, independent of the light/dark flip:
+
+| Token | Value | Use |
 |---|---|---|
-| Page paper | `#f5f5f5` | `#1c1f2e` |
-| Ink | `#2d3142` | `#f5f5f5` |
-| Muted text | `#4f5d75` | `rgba(245,245,245,0.65)` |
-| Chevron dark fill | `#2d3142` | `#3d4460` |
-| Chevron light fill | `#3d4460` | `#4a5270` |
-| Chevron label | `#f5f5f5` | `#f5f5f5` (unchanged) |
-| Dashed border | `rgba(45,49,66,0.20)` | `rgba(245,245,245,0.22)` |
-| Cluster border | `rgba(45,49,66,0.18)` | `rgba(245,245,245,0.18)` |
-| Node fill | white | `rgba(245,245,245,0.06)` |
-| Node stroke | `rgba(45,49,66,0.25)` | `rgba(245,245,245,0.20)` |
-| Focal fill | `rgba(235,108,54,0.08)` | `rgba(240,138,89,0.12)` |
-| Focal stroke | `#eb6c36` | `#f08a59` |
-| Accent connector | `#eb6c36` | `#f08a59` |
-| Dot pattern | `rgba(45,49,66,0.10)` | `rgba(245,245,245,0.10)` |
+| `band-1` | `#2d3142` | Darkest step — odd chevrons, light mode |
+| `band-2` | `#3d4460` | Middle step — even chevrons light, odd chevrons dark |
+| `band-3` | `#4a5270` | Lightest step — even chevrons, dark mode |
+
+**These are not semantic roles and they do not follow the active skin.** They are the one place this type steps outside [`style-guide.md`](style-guide.md), and `scripts/lint-skin.py` rejects `band-2` and `band-3` as off-palette — the shipped high-level examples are listed in `scripts/lint-skin-baseline.txt` for exactly this reason. When you re-skin, derive three analogous steps from the new brand's darkest neutral (equal lightness steps, each holding ≥ 4.5:1 against `paper` for the label text) and keep the label `paper`.
 
 ---
 
