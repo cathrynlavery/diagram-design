@@ -28,7 +28,7 @@ So I built a Claude Code skill for it. Twenty-seven visual types, editorial qual
 
 ---
 
-## What it makes
+### What it makes
 
 All 27 visual types ship in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
