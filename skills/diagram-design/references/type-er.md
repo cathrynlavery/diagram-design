@@ -1,6 +1,8 @@
 # ER / Data Model
 
-**Best for:** database schemas, API resource relationships, domain models.
+**Best for:** conceptual and logical data models, API resource relationships, domain models — anything where the story is *entities and cardinality*.
+
+**Not for the physical schema.** ER is entity-level: relationship lines join *boxes* and carry cardinality at each end. When the point is real tables with SQL types, constraint chips, indexes, and foreign keys that anchor **column to column**, use [`type-db-schema.md`](type-db-schema.md) instead.
 
 ## Layout conventions
 - Each entity is a two-section box:
