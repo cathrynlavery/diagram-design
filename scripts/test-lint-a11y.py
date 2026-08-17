@@ -162,6 +162,13 @@ def main() -> int:
             '<path d="M0 0h1v1z"/></svg>\n',
             directory,
         )
+        cjk_svg = VALID_SVG.replace("fixture-title", "cjk-fonts-title").replace(
+            "fixture-desc", "cjk-fonts-desc"
+        ).replace(
+            '  <rect width="10" height="10"/>',
+            '  <text font-family="Hiragino Sans, Noto Sans JP, Yu Gothic, Noto Sans Mono CJK JP, sans-serif">ラベル</text>',
+        )
+        require_pass("cjk-fonts", cjk_svg, directory)
         template_source = MOTION_TEMPLATE.read_text(encoding="utf-8")
         controller_match = re.search(
             r"<script\b[^>]*data-diagram-controls[^>]*>(.*?)</script\s*>",
