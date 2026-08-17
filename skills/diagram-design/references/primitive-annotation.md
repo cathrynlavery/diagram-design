@@ -5,14 +5,14 @@ Use for editorial asides — the "italic pointer" that marks a detail without co
 ## Grammar
 
 ```svg
-<!-- 1. Italic Instrument Serif text -->
-<text x="904" y="36" fill="#2d3142" font-size="14" font-style="italic"
-      font-family="'Instrument Serif', serif" text-anchor="end">no imports, no configuration</text>
+<!-- 1. Italic serif text — the `callout` role from style-guide.md -->
+<text x="904" y="36" fill="{ink}" font-size="14" font-style="italic"
+      font-family="{callout}" text-anchor="end">no imports, no configuration</text>
 <!-- 2. Dashed Bézier leader -->
 <path d="M 820 44 Q 700 84 520 216" fill="none"
-      stroke="rgba(45,49,66,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+      stroke="{ink @ 0.40}" stroke-width="1" stroke-dasharray="4,3"/>
 <!-- 3. Landing dot -->
-<circle cx="520" cy="216" r="2" fill="#2d3142"/>
+<circle cx="520" cy="216" r="2" fill="{ink}"/>
 ```
 
 ## Rules
@@ -25,9 +25,9 @@ Use for editorial asides — the "italic pointer" that marks a detail without co
 
 | Intent | Text | Leader |
 |---|---|---|
-| Neutral aside | ink `#2d3142` | `rgba(45,49,66,0.40)` |
-| Focal / accent | coral `#eb6c36` | `rgba(235,108,54,0.50)` |
-| Tertiary (muted) | muted `#4f5d75` | `rgba(45,49,66,0.30)` |
+| Neutral aside | `ink` | `ink @ 0.40` |
+| Focal / accent | `accent` | `accent @ 0.50` |
+| Tertiary (muted) | `muted` | `ink @ 0.30` |
 
 ## Anti-patterns
 - Solid arrow leader (reads as a flow arrow).

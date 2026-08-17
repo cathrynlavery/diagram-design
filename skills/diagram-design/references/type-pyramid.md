@@ -13,13 +13,13 @@ Don't mix orientations on one diagram.
 - Consistent layer height (56–72px).
 - Widths decrease linearly from base to apex (pyramid) or top to bottom (funnel). When showing real funnel data, widths must be honest (proportional to count/percentage).
 - Each layer has:
-  - **Name label** centered inside the trapezoid — Geist 12–14px 600.
-  - **Sublabel** below or beside the name — Geist Mono 9–10px.
+  - **Name label** centered inside the trapezoid — `node-name` role, 12–14px 600.
+  - **Sublabel** below or beside the name — `sublabel` role, 9–10px.
   - **Side annotation** (right or left) — optional. For funnels: drop-off percentage here (`−40%`).
 - Fill: subtle graded tints OR all paper-2 with hairline dividers (cleaner). Pick one.
 - Stroke: 1px hairline between layers; outer silhouette 1px muted or ink.
 - **Coral on ONE layer only**: apex of pyramid, conversion layer of funnel, or critical bottleneck.
-- Optional left-margin axis arrow + Geist Mono label (`rarer ↑`, `drop-off ↓`).
+- Optional left-margin axis arrow + `eyebrow`-role label (`rarer ↑`, `drop-off ↓`).
 
 ## Anti-patterns
 - 7+ layers (illegible — compress or split).
