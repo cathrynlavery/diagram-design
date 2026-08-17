@@ -744,11 +744,18 @@ def _parse_sequence(
 ) -> None:
     fragment_stack: list[dict[str, Any]] = []
     participant_re = re.compile(
-        r"^(participant|actor)\s+([\w.:-]+)(?:\s+as\s+(.+))?$", re.I
+        r"^(?:create\s+)?(participant|actor)\s+"
+        r"(?:\"([^\"]+)\"|'([^']+)'|([\w.:-]+))"
+        r"(?:\s+as\s+(.+))?$",
+        re.I,
     )
+    # Endpoints may be bare ids or multi-word names introduced by a quoted
+    # `participant "Alice Smith"` declaration; the lazy id keeps `A-->>B`
+    # from swallowing dashes into the source.
     message_re = re.compile(
-        r"^([\w.:-]+?)(?:\(\))?\s*(--?>>|--?>|--?\)|--?x)"
-        r"\s*[+-]?\s*(?:\(\))?([\w.:-]+)\s*:\s*(.*)$"
+        r"^([\w.:-]+?(?: [\w.:-]+)*?)(?:\(\))?\s*"
+        r"(<<--?>>|--?>>|--?>|--?\)|--?x)"
+        r"\s*[+-]?\s*(?:\(\))?([\w.:-]+?(?: [\w.:-]+)*?)\s*:\s*(.*)$"
     )
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
@@ -759,11 +766,23 @@ def _parse_sequence(
             continue
         participant = participant_re.match(text)
         if participant:
-            node_id = participant.group(2)
+            kind = participant.group(1).casefold()
+            quoted = participant.group(2) or participant.group(3)
+            bare = participant.group(4)
+            alias = participant.group(5)
+            if quoted is not None:
+                # `participant "Alice Smith" as A` — messages use the alias,
+                # the quoted string is the display name.
+                node_id = alias or quoted
+                label = quoted
+            else:
+                # `participant A as Alice` — the bare token is the id.
+                node_id = bare
+                label = alias or bare
             diagram.add_node(
                 node_id,
-                clean_label(participant.group(3) or node_id),
-                "actor" if participant.group(1).casefold() == "actor" else "lifeline",
+                clean_label(label),
+                "actor" if kind == "actor" else "lifeline",
             )
             continue
         fragment = re.match(r"^(alt|opt|loop|par|critical|break)\b\s*(.*)$", text, re.I)
@@ -795,17 +814,32 @@ def _parse_sequence(
         message = message_re.match(text)
         if message:
             source, token, target, label = message.groups()
-            diagram.add_node(source, source, "lifeline")
-            diagram.add_node(target, target, "lifeline")
+            # Auto-add endpoints only when undeclared, so an earlier
+            # `actor`/`participant` declaration keeps its shape and label.
+            for endpoint in (source, target):
+                if endpoint not in diagram.node_map:
+                    diagram.add_node(endpoint, endpoint, "lifeline")
+            if token.endswith("x"):
+                arrowhead = "cross"
+            elif token.endswith(")"):
+                arrowhead = "async"
+            elif token.endswith(">>"):
+                arrowhead = "arrow"
+            else:  # `->` / `-->` are open arrows with no arrowhead
+                arrowhead = "none"
             diagram.add_edge(
                 source,
                 target,
                 clean_label(label),
-                "dashed" if token.startswith("--") else "solid",
-                "cross" if token.endswith("x") else "async" if token.endswith(")") else "arrow",
+                "dashed"
+                if token.startswith("--") or token.startswith("<<--")
+                else "solid",
+                arrowhead,
+                bidirectional=token.startswith("<<"),
+                undirected=arrowhead == "none",
             )
             continue
-        if re.search(r"--?>>|--?>|--?\)|--?x", text):
+        if re.search(r"<<--?>>|--?>>|--?>|--?\)|--?x", text):
             _fail(f"malformed edge at line {line_number}")
 
 

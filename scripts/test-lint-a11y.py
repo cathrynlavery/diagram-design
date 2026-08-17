@@ -363,6 +363,49 @@ def main() -> int:
             "font-family: unsupported font family: Unapproved Sans",
             directory,
         )
+        cjk_name_svg = VALID_SVG.replace("fixture-title", "cjk-name-stack-title").replace(
+            "fixture-desc", "cjk-name-stack-desc"
+        )
+        require_pass(
+            "cjk-name-stack",
+            cjk_name_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist\', \'Hiragino Sans\', \'Noto Sans JP\', '
+                '\'Yu Gothic\', sans-serif">認証サービス</text>\n</svg>',
+            ),
+            directory,
+        )
+        cjk_mono_svg = VALID_SVG.replace("fixture-title", "cjk-mono-stack-title").replace(
+            "fixture-desc", "cjk-mono-stack-desc"
+        )
+        require_pass(
+            "cjk-mono-stack",
+            cjk_mono_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist Mono\', \'Noto Sans Mono CJK JP\', '
+                'monospace">포트 443</text>\n</svg>',
+            ),
+            directory,
+        )
+        cjk_css_svg = VALID_SVG.replace("fixture-title", "cjk-css-stack-title").replace(
+            "fixture-desc", "cjk-css-stack-desc"
+        )
+        require_pass(
+            "cjk-css-stack",
+            '<style>text { font-family: "Geist", "Hiragino Sans", "Noto Sans JP", '
+            '"Yu Gothic", sans-serif; }</style>\n' + cjk_css_svg,
+            directory,
+        )
+        yu_gothic_ui_svg = VALID_SVG.replace(
+            "fixture-title", "yu-gothic-ui-title"
+        ).replace("fixture-desc", "yu-gothic-ui-desc")
+        require_lint_finding(
+            "yu-gothic-ui",
+            '<style>text { font-family: "Yu Gothic UI", sans-serif; }</style>\n'
+            + yu_gothic_ui_svg,
+            "font-family: unsupported font family: Yu Gothic UI",
+            directory,
+        )
 
         spec = importlib.util.spec_from_file_location("build_icons", BUILD_ICONS)
         if spec is None or spec.loader is None:
