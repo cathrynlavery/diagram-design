@@ -92,6 +92,14 @@ def main() -> int:
             "wedge",
         ),
         (
+            "unmarked quantitative wedge",
+            VALID.replace(
+                '</svg>',
+                '<path d="M100 100 L100 20 A80 80 0 0 1 180 100 Z"/></svg>',
+            ),
+            "wedge",
+        ),
+        (
             "blank value label",
             VALID.replace(
                 '<text data-polar-value-label="">25</text>',

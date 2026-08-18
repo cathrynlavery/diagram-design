@@ -42,7 +42,7 @@ class Category:
 class Chart:
     attrs: dict[str, str]
     categories: list[Category]
-    wedge_count: int
+    path_count: int
 
 
 def _float(value: str | None) -> float:
@@ -116,9 +116,12 @@ class PolarParser(HTMLParser):
                     label = ValueLabel(attrs=data, text="")
                     current.value_labels.append(label)
                     self._value_label_stack.append((depth, label))
-            if tag == "path" and "data-polar-wedge" in data:
+            # The polar contract uses lines, circles, and text. Reject paths
+            # fail-closed so a filled sector cannot bypass the gate by omitting
+            # a verifier-specific annotation.
+            if tag == "path":
                 assert self._chart is not None
-                self._chart.wedge_count += 1
+                self._chart.path_count += 1
 
         self._stack.append(tag)
 
@@ -344,8 +347,10 @@ def check(path: Path) -> list[str]:
         elif hypot(marker_end[0] - expected_x, marker_end[1] - expected_y) > TOLERANCE:
             findings.append(f"marker endpoint outside tolerance for {category.name!r}")
 
-    if chart.wedge_count:
-        findings.append(f"wedge elements are forbidden ({chart.wedge_count})")
+    if chart.path_count:
+        findings.append(
+            f"path elements are forbidden to prevent wedge encoding ({chart.path_count})"
+        )
     return findings
 
 

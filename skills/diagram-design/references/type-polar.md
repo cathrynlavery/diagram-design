@@ -50,6 +50,8 @@ Angles are expressed in radians for calculation; `start_angle` is supplied in de
 
 The value ray is the line segment from `(cx, cy)` to `(x_i, y_i)`. Its visible length is exactly proportional to `v`. Endpoint circles have constant radius and encode no additional quantity. No filled sector may sit behind or beneath a value ray, because its area would compete with the declared radius encoding.
 
+The element carrying `data-polar-chart` must not contain any SVG `<path>` element. Use `<line>` for spokes and value rays, `<circle>` for rings and endpoint markers, and `<text>` for labels. This fail-closed primitive contract lets the verifier reject filled sectors without relying on contributor-supplied annotations.
+
 ### Zero
 
 For `v = 0`, `radius_i = 0`. Render no value ray and no endpoint marker. Keep the faint full-radius category spoke, and render the category's numeric label as `0`. A single scale label at the center also marks the shared zero baseline. Do not add a minimum hub, minimum ray length, displaced marker, or other visible magnitude.
