@@ -51,6 +51,27 @@ jobs:
       - name: Validate Claude marketplace package without warnings
         run: npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict
 
+  python39-compat:
+    name: Python 3.9 Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Verify linter compatibility
+        run: |
+          python scripts/test-lint-a11y.py
+          python scripts/lint-skin.py --all --baseline
+
   validate:
     name: Lint & Verify (${{ matrix.os }}, Python ${{ matrix.python-version }})
     strategy:
