@@ -83,7 +83,7 @@ A self-contained palette for the terminal-window primitive (see [primitive-termi
 ### Font stack
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&display=swap" rel="stylesheet">
 ```
 
 ### Korean labels
@@ -95,6 +95,10 @@ Geist and Instrument Serif have no Hangul coverage. Any `<text>` element contain
 ```
 
 Noto Sans KR ships in the font link above, so the same file renders identically on macOS, Windows, and a colleague's browser. The local families are there for offline viewing.
+
+Instrument Serif has no Hangul either, so a Korean page title falls through `Times New Roman` to the platform's generic serif - Apple SD Gothic Neo on macOS, Batang on Windows. Two machines then show two different titles. `Noto Serif KR` ships in the same font link and sits in `--font-serif` right after Instrument Serif, which keeps a mixed Latin/Korean title consistent: Latin words stay in Instrument Serif, Hangul resolves to Noto Serif KR.
+
+The subsetting cost is small. Google's `css2` endpoint splits Korean into unicode-range slices, so a page with a handful of Korean labels downloads only the slices it touches, not the whole face.
 
 Three rules that follow from Hangul metrics:
 

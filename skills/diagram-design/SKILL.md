@@ -192,12 +192,12 @@ Type-specific anti-patterns live in each `references/type-*.md`.
 - **Arrow label** — Geist Mono, 8px — annotation on arrows
 - **Editorial aside** — Instrument Serif *italic*, 14px — callouts only
 
-**Korean labels** — Geist has no Hangul. Korean `<text>` gets `'Geist', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`; at 12px/600 a Hangul syllable advances 11px against 6.5px for a Latin character, so size the box from `11 x syllables + 6.5 x latin + 3 x spaces` and round up to a multiple of 4. Sublabels stay Latin. Never below 12px - so a Korean arrow label, eyebrow, or legend item drops the 8px mono all-caps treatment and becomes 12px sans at weight 500. Full rules in [`references/style-guide.md`](references/style-guide.md#korean-labels).
+**Korean labels** — Geist has no Hangul. Korean `<text>` gets `'Geist', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif`; at 12px/600 a Hangul syllable advances 11px against 6.5px for a Latin character, so size the box from `11 x syllables + 6.5 x latin + 3 x spaces` and round up to a multiple of 4. Korean page titles need `'Instrument Serif', 'Noto Serif KR', serif` for the same reason. Sublabels stay Latin. Never below 12px - so a Korean arrow label, eyebrow, or legend item drops the 8px mono all-caps treatment and becomes 12px sans at weight 500. Full rules in [`references/style-guide.md`](references/style-guide.md#korean-labels).
 
 **Mono is for technical content.** Names are Geist sans. Page title is Instrument Serif. Italic Instrument Serif is reserved for annotation callouts. Never JetBrains Mono as a blanket "dev" font.
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&display=swap" rel="stylesheet">
 ```
 
 ---
