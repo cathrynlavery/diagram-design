@@ -117,13 +117,13 @@ Codex refreshes configured Git marketplaces at startup. To fetch immediately, ru
 pi install https://github.com/cathrynlavery/diagram-design
 ```
 
-Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram` prompt template. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
+Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, and `/profile` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
 
 > **One-time migration:** an existing standalone `npx skills add` copy will not start following the Codex marketplace automatically. Remove that standalone copy, then use the Codex marketplace commands above. Likewise, uninstall a personal Cowork copy and reinstall Diagram Design from your organization's marketplace. Future marketplace version bumps then flow through each client's native update path.
 
 ### Editable install
 
-Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Clone the repo and install the local path if you plan to customize the style guide:
+Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Saved profiles in `~/.diagram-design/profiles/` survive updates, and projects with a `.diagram-design` marker are unaffected. Clone the repo and install the local path if you plan to customize the working style guide directly:
 
 ```bash
 git clone git@github.com:cathrynlavery/diagram-design.git ~/code/diagram-design
@@ -194,6 +194,12 @@ The skill won't silently ship default-skinned diagrams into a branded project. O
 > *"This is your first diagram in this project. The style guide is still at the default. Want to run onboarding, paste tokens manually, or proceed with default?"*
 
 See [`skills/diagram-design/references/onboarding.md`](skills/diagram-design/references/onboarding.md) for the full spec.
+
+### Working with multiple clients
+
+Onboard a brand once, save the result as a named profile, then add a `.diagram-design` marker containing `profile: <slug>` to each client project. Marker projects read `~/.diagram-design/profiles/<slug>.md` directly, so parallel workspaces can use different brands without overwriting a shared installed `style-guide.md`.
+
+The profile library is shared across Claude Code, Codex, and Pi. Use `/diagram-design:profile` in Claude Code, `/profile` in Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagram-design/references/profiles.md) for the storage, marker, and recovery contract.
 
 ---
 
@@ -321,10 +327,12 @@ diagram-design/
 ├── commands/
 │   ├── export-diagram.md            — Claude Code export command
 │   ├── import-drawio.md             — Claude Code draw.io import command
-│   └── import-mermaid.md            — Claude Code Mermaid import command
+│   ├── import-mermaid.md            — Claude Code Mermaid import command
+│   └── profile.md                   — Claude Code client-profile command
 ├── prompts/
 │   ├── export-diagram.md            — Pi `/export-diagram` prompt template
-│   └── import-mermaid.md            — Pi Mermaid import prompt template
+│   ├── import-mermaid.md            — Pi Mermaid import prompt template
+│   └── profile.md                   — Pi `/profile` prompt template
 ├── skills/
 │   └── diagram-design/
 │       ├── SKILL.md                 — philosophy, selection guide, checklist
@@ -333,6 +341,7 @@ diagram-design/
 │       │   ├── semantic-patterns.md — behavior patterns independent of layout
 │       │   ├── animation.md         — optional motion + accessibility contract
 │       │   ├── onboarding.md        — the URL-to-tokens flow
+│       │   ├── profiles.md          — named client profiles + project markers
 │       │   ├── import-drawio.md     — draw.io redraw procedure
 │       │   ├── import-mermaid.md    — Mermaid redraw procedure
 │       │   ├── output-spec.md       — format × size × detail level
@@ -372,6 +381,7 @@ diagram-design/
 │   ├── bump-plugin-version.py       — synchronized Claude/Codex version bump
 │   ├── verify-plugin-package.py     — version + marketplace package gate
 │   ├── test-plugin-package.py       — adversarial package-gate tests
+│   ├── test-verify-docs-sync.py     — docs/profile-surface gate tests
 │   └── fixtures/
 │       ├── sample-flowchart.mmd
 │       ├── sample-readme-with-mermaid.md
@@ -397,7 +407,7 @@ it covers all supported grammars, multi-block Markdown, adversarial labels, trus
 behavior, resource caps, named failures, and reference/command wiring.
 
 Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
-Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, or the README tree names a file that doesn't exist. The skill also ships `skills/diagram-design/scripts/self_check.py` — a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. Settled design decisions (why one pinned controller, why patterns never add types, the autoplay policy, the SKILL.md byte cap, why label placement is verified geometrically) live as short ADRs in `docs/adr/` — read them before relitigating one, add one when you settle a new policy.
+Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative `references/*.md` link in SKILL.md is broken, or the Claude/Pi profile surfaces drift from `profiles.md`. `python3 scripts/test-verify-docs-sync.py` exercises those newer checks adversarially. The skill also ships `skills/diagram-design/scripts/self_check.py` — a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. Settled design decisions (why one pinned controller, why patterns never add types, the autoplay policy, the SKILL.md byte cap, why label placement is verified geometrically, and why client profiles use marker-first resolution) live as short ADRs in `docs/adr/` — read them before relitigating one, add one when you settle a new policy.
 
 All pull requests and pushes are automatically validated across Linux, Windows, and macOS runners via GitHub Actions CI (`.github/workflows/ci.yml`).
 
@@ -412,6 +422,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Compare why these two policy requests differ" | `SKILL.md` + `references/semantic-patterns.md` + `references/type-flowchart.md` |
 | "Animate that policy trace" | Prior selection + `references/animation.md` |
 | "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |
+| "Use my saved Acme client profile" | `SKILL.md` + `references/profiles.md` + `~/.diagram-design/profiles/acme.md` |
 | "Add an editorial callout to this diagram" | `SKILL.md` + `references/primitive-annotation.md` |
 | "Give me a hand-drawn version" | `SKILL.md` + `references/primitive-sketchy.md` |
 | "Give me a terminal / CLI-window version" | `SKILL.md` + `references/primitive-terminal.md` |

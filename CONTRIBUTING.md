@@ -52,7 +52,7 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Mermaid import path (grammars, adversarial input, caps, docs sync) | `python3 scripts/verify-mermaid-import.py` |
 | Optional motion contract (fallbacks, controls, budgets, determinism) | `python3 scripts/test-verify-motion.py` |
 | Every shipped motion template/example | `python3 scripts/verify-motion.py --shipped` |
-| Docs/routing sync (description hooks, gallery reachability, README tree) | `python3 scripts/verify-docs-sync.py` |
+| Docs/routing sync (description hooks, gallery, README tree, reference links, profile surfaces) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
@@ -76,6 +76,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-mermaid-import.py \
   && python3 scripts/test-verify-motion.py \
   && python3 scripts/verify-docs-sync.py \
+  && python3 scripts/test-verify-docs-sync.py \
   && python3 scripts/test-self-check.py \
   && python3 scripts/verify-geometry.py --all \
   && python3 scripts/test-verify-geometry.py

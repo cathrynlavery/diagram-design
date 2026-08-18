@@ -27,8 +27,15 @@ Source you provide (URL / skill name / folder path)
       ↓
 [5] write the diff (with your approval)
       ↓
+[6] offer to save as a named client profile
+      ↓
 future diagrams use your tokens
 ```
+
+Gate-only choices use the same finish:
+
+- **(d) Manual:** accept the user's tokens, write them under a new `Custom tokens` section in `style-guide.md`, then offer to save a named profile.
+- **(e) Default:** proceed with the shipped skin. To persist that choice for this project, offer to write a `.diagram-design` marker containing exactly `profile: default`; write it only with explicit consent.
 
 ---
 
@@ -145,6 +152,8 @@ The receipt is required when the user says “match this site,” “use their b
 ---
 
 ## Step 5 — apply
+
+Before overwriting a still-pristine guide, create the recoverable `default` snapshot if it does not exist, following [`profiles.md`](profiles.md). Retain the pre-diff body for that snapshot; never snapshot newly customized tokens as `default`.
 
 Write the new tokens to `style-guide.md`. Suggest running the `/regenerate-examples` flow (if it exists) or rebuilding one example to verify the new skin reads cleanly.
 
@@ -292,6 +301,6 @@ Same as the URL method: run contrast checks, show the full diff against current 
 
 ---
 
-## Future: per-project skins
+## Multiple clients? Save a profile
 
-If the user wants multiple skins (one per project), duplicate `style-guide.md` as `style-guides/<project>.md` and add a header comment pointing the build to the active one. That's a v5.2 feature — for now, one skin per skill install.
+After every onboarding method, offer to save the completed guide as a named client profile. Follow [`profiles.md`](profiles.md) for the canonical home-directory library, metadata header, strict slug validation, and project marker. A project with a `.diagram-design` marker reads its profile directly, so parallel client workspaces do not overwrite one shared working copy.

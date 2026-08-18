@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Three drift classes, each of which has shipped before:
+Five drift classes, each of which has shipped before:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -9,6 +9,8 @@ Three drift classes, each of which has shipped before:
 2. The gallery (assets/index.html) must reach every shipped example, and every
    gallery tab must point at a file that exists.
 3. Every concrete file named in README.md's architecture tree must exist.
+4. Every relative references/*.md link in SKILL.md must resolve.
+5. Claude and Pi profile surfaces must both route to the profile reference.
 """
 
 from __future__ import annotations
@@ -29,6 +31,10 @@ DESCRIPTION_ALIASES = {
     "line chart": "line",
     "scatter plot": "scatter",
 }
+PROFILE_SURFACES = (
+    Path("commands/profile.md"),
+    Path("prompts/profile.md"),
+)
 
 
 def normalized(text: str) -> str:
@@ -114,17 +120,57 @@ def check_readme_tree(errors: list[str]) -> None:
             errors.append(f"README architecture tree names {token!r} but no such file exists")
 
 
+def skill_reference_links(markdown: str) -> list[str]:
+    """Return direct relative links from SKILL.md into references/."""
+    return re.findall(
+        r"\]\((references/[A-Za-z0-9][A-Za-z0-9_.-]*\.md)(?:#[^)]*)?\)",
+        markdown,
+    )
+
+
+def check_skill_reference_links(
+    errors: list[str], markdown: str, skill_directory: Path
+) -> None:
+    for target in sorted(set(skill_reference_links(markdown))):
+        if not (skill_directory / target).is_file():
+            errors.append(f"SKILL.md links to missing reference {target!r}")
+
+
+def check_profile_surfaces(errors: list[str], root: Path) -> None:
+    reference = root / "skills/diagram-design/references/profiles.md"
+    if not reference.is_file():
+        errors.append("profile source of truth is missing: skills/diagram-design/references/profiles.md")
+    for relative in PROFILE_SURFACES:
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"profile surface is missing: {relative.as_posix()}")
+            continue
+        if "references/profiles.md" not in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"profile surface does not route to references/profiles.md: {relative.as_posix()}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     check_description(errors)
     check_gallery(errors)
     check_readme_tree(errors)
+    check_skill_reference_links(
+        errors,
+        SKILL.read_text(encoding="utf-8"),
+        SKILL.parent,
+    )
+    check_profile_surfaces(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
             print(f"  - {error}")
         return 1
-    print("OK docs sync: description hooks, gallery reachability, README tree")
+    print(
+        "OK docs sync: description hooks, gallery reachability, README tree, "
+        "reference links, profile surfaces"
+    )
     return 0
 
 
