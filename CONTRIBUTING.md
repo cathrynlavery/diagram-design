@@ -58,6 +58,8 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
 | Treemap cells match the values they are labelled with, and labels fit | `python3 scripts/verify-treemap.py --all` |
 | Treemap checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-treemap.py` |
+| Dumbbell domain resolves finitely and its marks clear 3:1 | `python3 scripts/verify-dumbbell.py` |
+| Dumbbell checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-dumbbell.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
@@ -84,7 +86,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-geometry.py --all \
   && python3 scripts/test-verify-geometry.py \
   && python3 scripts/verify-treemap.py --all \
-  && python3 scripts/test-verify-treemap.py
+  && python3 scripts/test-verify-treemap.py \n  && python3 scripts/verify-dumbbell.py \n  && python3 scripts/test-verify-dumbbell.py
 ```
 
 ### If a gate fails
