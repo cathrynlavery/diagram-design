@@ -13,6 +13,12 @@
     .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
     h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + 0.75rem,2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
     svg { width:100%; min-width:900px; display:block; }
+    @media (max-height:700px) {
+      body { padding-top:0.75rem; padding-bottom:0.75rem; }
+      .frame { max-width:960px; }
+      .eyebrow { margin-bottom:0.25rem; }
+      h1 { margin-bottom:0.5rem; }
+    }
   </style>
 </head>
 <body>
