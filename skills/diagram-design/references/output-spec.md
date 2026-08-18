@@ -142,9 +142,10 @@ Geist has no CJK coverage. When labels contain Japanese, Chinese, or Korean text
 
 ```svg
 <text font-family="'Geist', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif">認証サービス</text>
+<text font-family="'Geist', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif">인증 서비스</text>
 ```
 
-For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace`. CJK glyphs render ~10% wider than Latin at the same size — budget box width accordingly, and prefer 12px names over 8px sublabels for CJK, which goes muddy below 10px.
+The Hiragino/Yu Gothic stack carries no Hangul glyphs, so Korean labels need the Korean stack — don't reuse the Japanese one. For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace` (Japanese) or `'Geist Mono', 'Noto Sans Mono CJK KR', monospace` (Korean). CJK glyphs render ~10% wider than Latin at the same size — budget box width accordingly, and prefer 12px names over 8px sublabels for CJK, which goes muddy below 10px.
 
 ---
 

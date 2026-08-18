@@ -406,6 +406,49 @@ def main() -> int:
             "font-family: unsupported font family: Yu Gothic UI",
             directory,
         )
+        kr_name_svg = VALID_SVG.replace("fixture-title", "kr-name-stack-title").replace(
+            "fixture-desc", "kr-name-stack-desc"
+        )
+        require_pass(
+            "kr-name-stack",
+            kr_name_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist\', \'Apple SD Gothic Neo\', \'Noto Sans KR\', '
+                '\'Malgun Gothic\', sans-serif">인증 서비스</text>\n</svg>',
+            ),
+            directory,
+        )
+        kr_mono_svg = VALID_SVG.replace("fixture-title", "kr-mono-stack-title").replace(
+            "fixture-desc", "kr-mono-stack-desc"
+        )
+        require_pass(
+            "kr-mono-stack",
+            kr_mono_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist Mono\', \'Noto Sans Mono CJK KR\', '
+                'monospace">포트 443</text>\n</svg>',
+            ),
+            directory,
+        )
+        kr_css_svg = VALID_SVG.replace("fixture-title", "kr-css-stack-title").replace(
+            "fixture-desc", "kr-css-stack-desc"
+        )
+        require_pass(
+            "kr-css-stack",
+            '<style>text { font-family: "Geist", "Apple SD Gothic Neo", "Noto Sans KR", '
+            '"Malgun Gothic", sans-serif; }</style>\n' + kr_css_svg,
+            directory,
+        )
+        malgun_semilight_svg = VALID_SVG.replace(
+            "fixture-title", "malgun-semilight-title"
+        ).replace("fixture-desc", "malgun-semilight-desc")
+        require_lint_finding(
+            "malgun-gothic-semilight",
+            '<style>text { font-family: "Malgun Gothic Semilight", sans-serif; }</style>\n'
+            + malgun_semilight_svg,
+            "font-family: unsupported font family: Malgun Gothic Semilight",
+            directory,
+        )
 
         spec = importlib.util.spec_from_file_location("build_icons", BUILD_ICONS)
         if spec is None or spec.loader is None:

@@ -207,6 +207,35 @@ D:::danger --- E
     if thick["label"] != "critical" or thick["style"] != "thick":
         fail("labeled thick link did not retain its label and thick style")
 
+    compact_file = tmp / "compact-labeled-links.mmd"
+    compact_file.write_text(
+        """flowchart LR
+A[Start]-->B{Gate}
+B--yes-->C[Done]
+B--no-->A
+C-.fast.->D
+D==crit==>E
+E--tie---A
+F --o G --> H
+I----->J
+""",
+        encoding="utf-8",
+    )
+    compact = json.loads(run_extract([str(compact_file), "--json"]))["diagrams"][0]
+    compact_ids = sorted(node["id"] for node in compact["nodes"])
+    if compact_ids != ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]:
+        fail(f"compact edge labels materialized phantom nodes: {compact_ids}")
+    compact_labels = [edge["label"] for edge in compact["edges"]]
+    if compact_labels[:6] != ["", "yes", "no", "fast", "crit", "tie"]:
+        fail(f"compact edge labels were not retained: {compact_labels}")
+    if compact_labels[6:] != ["", "", ""]:
+        fail(
+            "operator characters or chained links were misread as compact "
+            f"labels: {compact_labels}"
+        )
+    if compact["edges"][3]["style"] != "dashed" or compact["edges"][4]["style"] != "thick":
+        fail("compact dotted/thick labeled links lost their styles")
+
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
         '''flowchart LR

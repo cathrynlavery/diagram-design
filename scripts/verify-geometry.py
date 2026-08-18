@@ -17,8 +17,10 @@ Paint order is what makes this a defect rather than a stylistic choice:
 Shape heuristics follow the shipped templates:
 
 * A node is a `<rect>` at least 60x40 - large enough for a title and sublabel.
-* A label mask is a `<rect>` 20-120 wide and 8-14 tall - the masking plate that
-  SKILL.md prescribes for arrow labels and zone eyebrows.
+* A label mask is a `<rect>` 20-200 wide and 8-14 tall - the masking plate that
+  SKILL.md prescribes for arrow labels and zone eyebrows. The width cap covers
+  the long mono plates shipped in example-sequence-oauth.html (128px) and the
+  wider plates CJK labels need at the same glyph count.
 * A mask fully contained in a node is a badge chip (`EXT`, `EDGE`, `ORIG`) and
   is legal.
 
@@ -49,7 +51,7 @@ RECT_RE = re.compile(
 NODE_MIN_W = 60.0
 NODE_MIN_H = 40.0
 MASK_MIN_W = 20.0
-MASK_MAX_W = 120.0
+MASK_MAX_W = 200.0
 MASK_MIN_H = 8.0
 MASK_MAX_H = 14.0
 EPSILON = 0.5
