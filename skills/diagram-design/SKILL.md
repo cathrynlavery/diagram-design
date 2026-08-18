@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create branded architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, loop/flywheel, nested, tree, org chart, layer stack, Venn, pyramid/funnel, bar, line, Gantt and scatter charts, high-level, process, medallion, data flow, DP integration, or DP security matrix diagrams as standalone HTML/SVG/PNG. Redraw .drawio/.drawio.png/.drawio.svg or Mermaid .mmd sources at a chosen size/detail; onboard brand tokens from a website; add semantic patterns, callouts, accessible motion, or sketchy/hand-drawn styling.
+description: Create branded architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, loop/flywheel, nested, tree, org chart, layer stack, Venn, pyramid/funnel, treemap, bar, line, Gantt and scatter charts, high-level, process, medallion, data flow, DP integration, or DP security matrix diagrams as standalone HTML/SVG/PNG. Redraw .drawio/.drawio.png/.drawio.svg or Mermaid .mmd sources at a chosen size/detail; onboard brand tokens from a website; add semantic patterns, callouts, accessible motion, or sketchy/hand-drawn styling.
 license: MIT
 metadata:
   version: "2.4"
@@ -10,7 +10,7 @@ metadata:
 
 Create visual diagrams as self-contained HTML files with inline SVG and CSS, following an opinionated editorial design system.
 
-Twenty-seven visual types. Semantic patterns describe behavior independently; type references describe layout. Details load from `references/` only when selected.
+Twenty-eight visual types. Semantic patterns describe behavior independently; type references describe layout. Details load from `references/` only when selected.
 
 ---
 
@@ -49,7 +49,7 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 27 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 28 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
 
@@ -78,7 +78,7 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
-### Visual-type guide (27)
+### Visual-type guide (28)
 
 | If you're showing… | Use | Reference |
 |---|---|---|
@@ -100,6 +100,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Overlap between sets | **Venn** | [type-venn.md](references/type-venn.md) |
 | Ranked hierarchy or conversion drop-off | **Pyramid / funnel** | [type-pyramid.md](references/type-pyramid.md) |
 | Quantitative comparison across categories | **Bar chart** | [type-bar.md](references/type-bar.md) |
+| Part-of-whole where the relative sizes are the story | **Treemap** | [type-treemap.md](references/type-treemap.md) |
 | Continuous trends over time | **Line chart** | [type-line.md](references/type-line.md) |
 | Tasks and phases on a timeline | **Gantt** | [type-gantt.md](references/type-gantt.md) |
 | Distribution and correlation between two variables | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
@@ -378,6 +379,7 @@ Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
 | Max radar series | 5 |
 | Max focal radar series | 1 |
 | Max bars (bar chart) | 8 |
+| Max cells (treemap) | 8 |
 | Max series (line chart) | 5 |
 | Max tasks (Gantt) | 12 |
 | Max points (scatter plot) | 30 |

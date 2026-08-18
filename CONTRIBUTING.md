@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 27 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io and Mermaid sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 28 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io and Mermaid sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -56,6 +56,8 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
+| Treemap cells match the values they are labelled with, and labels fit | `python3 scripts/verify-treemap.py --all` |
+| Treemap checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-treemap.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
@@ -79,7 +81,9 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-docs-sync.py \
   && python3 scripts/test-self-check.py \
   && python3 scripts/verify-geometry.py --all \
-  && python3 scripts/test-verify-geometry.py
+  && python3 scripts/test-verify-geometry.py \
+  && python3 scripts/verify-treemap.py --all \
+  && python3 scripts/test-verify-treemap.py
 ```
 
 ### If a gate fails
@@ -127,7 +131,7 @@ Motion is opt-in. Start from `skills/diagram-design/assets/template-motion.html`
 
 ## Design decisions (ADRs)
 
-Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the 27-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, and geometric label placement being verified rather than reviewed. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
+Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the visual-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, and geometric label placement being verified rather than reviewed. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
 
 ## Adding a new diagram type
 
