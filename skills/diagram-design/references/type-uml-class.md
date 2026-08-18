@@ -9,7 +9,7 @@
 | Sequence | [type-sequence.md](type-sequence.md) |
 | State machine | [type-state.md](type-state.md) |
 | Component | [type-architecture.md](type-architecture.md) |
-| Deployment | [type-deployment.md](type-deployment.md) |
+| Deployment | [type-architecture.md](type-architecture.md) |
 | Activity | [type-swimlane.md](type-swimlane.md) or [type-flowchart.md](type-flowchart.md) |
 | Conceptual / domain ER | [type-er.md](type-er.md) |
 
