@@ -13,11 +13,12 @@ later-painted nodes) reads a cell against the number printed inside it.
    The failure is real - the smallest cell absorbs the whole 4px-grid residue,
    because 4px is a third of a sliver and a rounding error on a giant.
 
-2. LABEL FIT - a label must stay inside the cell it names. Cells have no clip
-   path, so an overlong label bleeds into the neighbouring cell or off the
-   viewBox and reads as belonging to the wrong thing. A cell too small for its
-   label is not a nudge-the-coordinates problem: drop the label (the cell keeps
-   its honest area) or merge the tail into a named "Other".
+2. LABEL AND MARKER FIT - a label or information marker must stay inside the
+   cell it names. Cells have no clip path, so overflow bleeds into a neighbour
+   or off the viewBox and reads as belonging to the wrong thing. A cell too
+   small for its annotation is not a nudge-the-coordinates problem: drop the
+   annotation (the cell keeps its honest area) or merge the tail into a named
+   "Other".
 
 Text extent is estimated from font metrics rather than measured in a browser,
 deliberately: every other gate here is pure Python and runs in CI with no
@@ -51,6 +52,7 @@ CELL_RE = re.compile(
     re.IGNORECASE,
 )
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
+CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*)/?>", re.IGNORECASE)
 ATTR_RE = re.compile(r'(?P<name>[\w:-]+)="(?P<value>[^"]*)"')
 ROTATE_RE = re.compile(r"rotate\(\s*(?P<deg>-?[\d.]+)")
 TAG_RE = re.compile(r"<[^>]+>")
@@ -78,6 +80,7 @@ EPSILON = 1.0
 # honest rounding and tight enough to have caught the 30%-undersized sliver this
 # check exists for.
 AREA_TOLERANCE = 8.0
+MARKER_EPSILON = 0.01
 
 
 class Box:
@@ -244,6 +247,45 @@ def check(path: Path) -> list[str]:
                 f"by {detail} — drop the label or merge the cell into a named Other"
             )
 
+    # Information marks are 8–12px discs placed inside sliver cells. Their
+    # one-letter text can fit while the surrounding disc still crosses a cell
+    # boundary, so circles need their own containment check.
+    for m in CIRCLE_RE.finditer(source):
+        attrs = {a.group("name"): a.group("value") for a in ATTR_RE.finditer(m.group("attrs"))}
+        try:
+            cx = float(attrs["cx"])
+            cy = float(attrs["cy"])
+            radius = float(attrs["r"])
+        except (KeyError, ValueError):
+            continue
+        if not 4.0 <= radius <= 6.0:
+            continue
+        host_index = None
+        for index, cell in enumerate(cells):
+            if not cell.contains_point(cx, cy):
+                continue
+            if host_index is None or cell.area < cells[host_index].area:
+                host_index = index
+        if host_index is None:
+            continue
+        host = cells[host_index]
+        overflow = {
+            "left": host.x - (cx - radius),
+            "top": host.y - (cy - radius),
+            "right": (cx + radius) - host.right,
+            "bottom": (cy + radius) - host.bottom,
+        }
+        breached = {
+            side: over for side, over in overflow.items() if over > MARKER_EPSILON
+        }
+        if breached:
+            detail = " / ".join(f"{over:.1f} {side}" for side, over in breached.items())
+            findings.append(
+                f"{path.name}:{line_of(source, m.start())}: information marker "
+                f"overflows its {host.w:g}x{host.h:g} cell by {detail} — "
+                "drop the marker and identify the sliver in the legend"
+            )
+
     claims = {index: parse_claim(" ".join(texts)) for index, texts in labels.items()}
     # Only compare on a basis every cell states, so the shares share a
     # denominator. Percentages win when present: they are the claim itself.
@@ -280,7 +322,9 @@ def targets(args: argparse.Namespace) -> list[Path]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Verify treemap area fidelity and label fit.")
+    parser = argparse.ArgumentParser(
+        description="Verify treemap area fidelity and label/marker fit."
+    )
     parser.add_argument("paths", nargs="*", help="HTML files to check")
     parser.add_argument("--all", action="store_true", help="check every shipped treemap example")
     args = parser.parse_args()
@@ -302,7 +346,9 @@ def main() -> int:
     if findings:
         print(f"\n{len(findings)} treemap finding(s) across {checked} file(s).")
         return 1
-    print(f"OK treemap: {checked} file(s), area matches labels and every label fits its cell")
+    print(
+        f"OK treemap: {checked} file(s), area matches labels and every label/marker fits its cell"
+    )
     return 0
 
 

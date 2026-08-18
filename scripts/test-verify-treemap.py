@@ -138,6 +138,25 @@ def main() -> int:
             else:
                 print("OK: a label overflowing the top edge is rejected")
 
+        # 4d. A sliver can be narrower than the fixed 10px information-mark
+        #     disc. The marker must never cross into the neighbouring cell.
+        marker_over = source.replace(
+            '<rect x="940" y="296" width="16" height="124"',
+            '<rect x="940" y="296" width="8" height="124"',
+        ).replace('cx="948" cy="358"', 'cx="944" cy="358"').replace(
+            '<text x="948" y="361"', '<text x="944" y="361"'
+        )
+        if marker_over == source:
+            failures.append("could not build the overflowing-marker fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "markeroverflow.html", marker_over))
+            if code == 0:
+                failures.append("information mark overflowing a sliver cell was accepted")
+            elif "information marker" not in output:
+                failures.append(f"marker overflow not named in the finding: {output.strip()}")
+            else:
+                print("OK: an information mark overflowing its cell is rejected")
+
         # 5. The shipped example leaves its smallest cell deliberately
         #    unlabelled. That must not switch the area check off for the cells
         #    that ARE labelled — the failure mode where a checker reports clean
