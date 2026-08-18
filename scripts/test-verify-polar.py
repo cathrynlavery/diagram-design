@@ -91,6 +91,62 @@ def main() -> int:
             VALID.replace('</svg>', '<path data-polar-wedge="" d="M0 0"/></svg>'),
             "wedge",
         ),
+        (
+            "blank value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="">   </text>',
+            ),
+            "finite numeric",
+        ),
+        (
+            "mismatched value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="">26</text>',
+            ),
+            "does not match",
+        ),
+        (
+            "hidden value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" hidden>25</text>',
+            ),
+            "explicitly hidden",
+        ),
+        (
+            "aria-hidden value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" aria-hidden="true">25</text>',
+            ),
+            "explicitly hidden",
+        ),
+        (
+            "display-none value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" style="display: none">25</text>',
+            ),
+            "explicitly hidden",
+        ),
+        (
+            "visibility-hidden value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" style="visibility: hidden">25</text>',
+            ),
+            "explicitly hidden",
+        ),
+        (
+            "opacity-zero value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" style="opacity: 0">25</text>',
+            ),
+            "explicitly hidden",
+        ),
     ]
 
     failures: list[str] = []

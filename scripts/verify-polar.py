@@ -22,6 +22,12 @@ TOLERANCE = 0.75
 
 
 @dataclass
+class ValueLabel:
+    attrs: dict[str, str]
+    text: str
+
+
+@dataclass
 class Category:
     name: str
     index: int
@@ -29,7 +35,7 @@ class Category:
     focal: bool
     rays: list[dict[str, str]]
     markers: list[dict[str, str]]
-    value_labels: int
+    value_labels: list[ValueLabel]
 
 
 @dataclass
@@ -64,6 +70,7 @@ class PolarParser(HTMLParser):
         self._chart_depth: int | None = None
         self._chart: Chart | None = None
         self._category_stack: list[tuple[int, Category]] = []
+        self._value_label_stack: list[tuple[int, ValueLabel]] = []
 
     def _in_chart(self) -> bool:
         return self._chart is not None and self._chart_depth is not None
@@ -94,7 +101,7 @@ class PolarParser(HTMLParser):
                     focal=data.get("data-polar-focal", "").casefold() == "true",
                     rays=[],
                     markers=[],
-                    value_labels=0,
+                    value_labels=[],
                 )
                 assert self._chart is not None
                 self._chart.categories.append(category)
@@ -106,12 +113,18 @@ class PolarParser(HTMLParser):
                 elif tag == "circle" and "data-polar-marker" in data:
                     current.markers.append(data)
                 elif tag == "text" and "data-polar-value-label" in data:
-                    current.value_labels += 1
+                    label = ValueLabel(attrs=data, text="")
+                    current.value_labels.append(label)
+                    self._value_label_stack.append((depth, label))
             if tag == "path" and "data-polar-wedge" in data:
                 assert self._chart is not None
                 self._chart.wedge_count += 1
 
         self._stack.append(tag)
+
+    def handle_data(self, data: str) -> None:
+        if self._value_label_stack:
+            self._value_label_stack[-1][1].text += data
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs)
@@ -123,12 +136,15 @@ class PolarParser(HTMLParser):
             self._stack.pop()
         depth = len(self._stack)
 
+        while self._value_label_stack and self._value_label_stack[-1][0] >= depth:
+            self._value_label_stack.pop()
         while self._category_stack and self._category_stack[-1][0] >= depth:
             self._category_stack.pop()
         if self._chart_depth is not None and depth <= self._chart_depth:
             self._chart = None
             self._chart_depth = None
             self._category_stack.clear()
+            self._value_label_stack.clear()
 
 
 def _parse(path: Path) -> PolarParser:
@@ -144,6 +160,24 @@ def _point(attrs: dict[str, str], x_key: str, y_key: str) -> tuple[float, float]
     if not isfinite(x) or not isfinite(y):
         return None
     return x, y
+
+
+def _explicitly_hidden(attrs: dict[str, str]) -> bool:
+    if "hidden" in attrs or attrs.get("aria-hidden", "").strip().casefold() == "true":
+        return True
+    for declaration in attrs.get("style", "").split(";"):
+        if ":" not in declaration:
+            continue
+        name, raw_value = declaration.split(":", 1)
+        name = name.strip().casefold()
+        value = raw_value.split("!", 1)[0].strip().casefold()
+        if (name == "display" and value == "none") or (
+            name == "visibility" and value == "hidden"
+        ):
+            return True
+        if name == "opacity" and _float(value) == 0:
+            return True
+    return False
 
 
 def check(path: Path) -> list[str]:
@@ -240,15 +274,27 @@ def check(path: Path) -> list[str]:
     )
     for category in chart.categories:
         value = category.value
+        if len(category.value_labels) != 1:
+            findings.append(
+                f"category {category.name!r} value-label count is {len(category.value_labels)}, expected one"
+            )
+        else:
+            label = category.value_labels[0]
+            label_value = _float(label.text.strip())
+            if _explicitly_hidden(label.attrs):
+                findings.append(f"category {category.name!r} value label is explicitly hidden")
+            if not isfinite(label_value):
+                findings.append(f"category {category.name!r} value label must be finite numeric")
+            elif isfinite(value) and label_value != value:
+                findings.append(
+                    f"category {category.name!r} value label {label_value:g} "
+                    f"does not match data-polar-value {value:g}"
+                )
         if not isfinite(value):
             findings.append(f"non-numeric category value for {category.name!r}")
             continue
         if isinstance(minimum, float) and isinstance(maximum, float) and not minimum <= value <= maximum:
             findings.append(f"value {value:g} outside {minimum:g}..{maximum:g}")
-        if category.value_labels != 1:
-            findings.append(
-                f"category {category.name!r} value-label count is {category.value_labels}, expected one"
-            )
         if value == 0:
             if category.rays or category.markers:
                 findings.append(f"zero category {category.name!r} must not carry a ray or marker")
