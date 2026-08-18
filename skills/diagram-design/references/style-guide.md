@@ -83,8 +83,25 @@ A self-contained palette for the terminal-window primitive (see [primitive-termi
 ### Font stack
 
 ```html
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
 ```
+
+### Korean labels
+
+Geist and Instrument Serif have no Hangul coverage. Any `<text>` element containing Korean gets the fallback stack below - extend the family on that element, never swap the skin.
+
+```svg
+<text font-family="'Geist', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif">결제 서비스</text>
+```
+
+Noto Sans KR ships in the font link above, so the same file renders identically on macOS, Windows, and a colleague's browser. The local families are there for offline viewing.
+
+Three rules that follow from Hangul metrics:
+
+- **Width budget.** Measured in Noto Sans KR at `node-name` size (12px / 600): one Hangul syllable advances **11px**, a space **3px**, and a typical Geist Latin character **6.5px**. Estimate the label as `11 x syllables + 6.5 x latin chars + 3 x spaces`, add the box padding, then round the box width up to the next multiple of 4. Sizing a Korean label off Latin character count will overflow it.
+- **Sublabels stay Latin.** Ports, protocols, field types, and URLs are Latin anyway - keep `Geist Mono` there and don't translate them. Korean in an 8px mono sublabel is unreadable and has no mono face to fall back to.
+- **Floor of 12px.** Hangul goes muddy below 12px. If a Korean name doesn't fit at 12px, cut the name, don't shrink the type.
+- **Arrow labels, eyebrows, and legend text switch register.** Those slots are 7-8px Geist Mono all-caps, and Hangul has neither a mono face here nor legibility at that size. A Korean label in one of those slots becomes 12px sans at weight 500, no letter-spacing, no uppercase transform - and the mask rect grows with it (16px tall, width from the formula above, still rounded to a multiple of 4). Latin labels in the same diagram keep the mono treatment.
 
 **Load-bearing rule:** Mono is for *technical* content (ports, commands, URLs, field types). Names go in Geist sans. Page title is Instrument Serif. Italic Instrument Serif is reserved for annotation callouts (see [primitive-annotation.md](primitive-annotation.md)). **Never JetBrains Mono** as a blanket "dev" font.
 
