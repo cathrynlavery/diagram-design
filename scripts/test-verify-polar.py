@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import sys
 import tempfile
+from contextlib import redirect_stdout
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -120,6 +122,23 @@ def main() -> int:
         findings = module.check_variants((light, dark, full))
         if not any("variant data drift" in finding for finding in findings):
             failures.append(f"variant data drift: expected finding, got {findings}")
+
+        first = root / "first.html"
+        second = root / "second.html"
+        first.write_text(VALID, encoding="utf-8")
+        second.write_text(
+            VALID.replace('data-polar-inner-radius="0"', 'data-polar-inner-radius="25"'),
+            encoding="utf-8",
+        )
+        output = io.StringIO()
+        with redirect_stdout(output):
+            exit_code = module.main([str(first), str(second)])
+        rendered = output.getvalue()
+        expected = f"FAIL {second}: inner radius must be zero"
+        if exit_code != 1 or expected not in rendered:
+            failures.append(
+                f"CLI path attribution: expected {expected!r}, got exit={exit_code}, output={rendered!r}"
+            )
 
     if failures:
         print("FAILURES:")

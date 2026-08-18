@@ -330,35 +330,38 @@ def _signature(path: Path) -> tuple[object, ...] | None:
     )
 
 
-def check_variants(paths: Sequence[Path]) -> list[str]:
-    """Check each variant and ensure all variants carry one shared dataset."""
+def _check_variants_with_paths(paths: Sequence[Path]) -> list[tuple[Path, str]]:
+    """Return variant findings while retaining the file that owns each finding."""
 
-    findings: list[str] = []
+    findings: list[tuple[Path, str]] = []
     signatures: list[tuple[object, ...] | None] = []
     for path in paths:
         if not path.exists():
-            findings.append(f"file not found: {path}")
+            findings.append((path, f"file not found: {path}"))
             signatures.append(None)
             continue
-        findings.extend(check(path))
+        findings.extend((path, finding) for finding in check(path))
         signatures.append(_signature(path))
     present = [signature for signature in signatures if signature is not None]
     if len(present) >= 2 and any(signature != present[0] for signature in present[1:]):
-        findings.append("variant data drift")
+        findings.append((paths[0], "variant data drift"))
     return findings
+
+
+def check_variants(paths: Sequence[Path]) -> list[str]:
+    """Check each variant and ensure all variants carry one shared dataset."""
+
+    return [finding for _path, finding in _check_variants_with_paths(paths)]
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     paths = [Path(argument) for argument in (argv if argv is not None else sys.argv[1:])]
     if not paths:
         paths = list(DEFAULT_PATHS)
-    findings = check_variants(paths)
+    findings = _check_variants_with_paths(paths)
     if findings:
-        for finding in findings:
-            path = paths[0] if finding == "variant data drift" else None
-            if path is None and finding.startswith("file not found: "):
-                path = Path(finding.removeprefix("file not found: "))
-            print(f"FAIL {path or paths[0]}: {finding}")
+        for path, finding in findings:
+            print(f"FAIL {path}: {finding}")
         return 1
     for path in paths:
         print(f"OK {path}")
