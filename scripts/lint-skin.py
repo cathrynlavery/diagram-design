@@ -5,6 +5,8 @@ Pre-2.0 examples may legitimately fail because they were built against an older
 skin. Use ``--all --baseline`` to skip those documented legacy files.
 """
 
+from __future__ import annotations
+
 import argparse
 import hashlib
 import re
@@ -57,6 +59,10 @@ ALLOWED_FONTS = {
     "noto sans jp",
     "yu gothic",
     "noto sans mono cjk jp",
+    "apple sd gothic neo",
+    "noto sans kr",
+    "malgun gothic",
+    "noto sans mono cjk kr",
     "system-ui",
     "sans-serif",
     "serif",

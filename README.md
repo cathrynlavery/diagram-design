@@ -243,9 +243,9 @@ Already have diagrams in draw.io / diagrams.net or Mermaid? Point the skill at t
 *A 12-node draw.io file redrawn at `balanced` detail for a blog post. The source's six pastel fills became one accent; its hand-dragged coordinates became a 4px grid.*
 
 ```
-/diagram-design:import platform.drawio
-/diagram-design:import platform.drawio --size=slide-16x9 --detail=simplified --audience=executive
-/diagram-design:import platform.drawio --detail=faithful --format=png --page=all
+/diagram-design:import-drawio platform.drawio
+/diagram-design:import-drawio platform.drawio --size=slide-16x9 --detail=simplified --audience=executive
+/diagram-design:import-drawio platform.drawio --detail=faithful --format=png --page=all
 /diagram-design:import-mermaid README.md --diagram=all
 /diagram-design:import-mermaid architecture.mmd --size=slide-16x9 --detail=simplified
 ```
@@ -294,9 +294,9 @@ Diagrams ship as self-contained HTML, but you can export the diagram itself for 
 **Claude Code:**
 
 ```
-/diagram-design:export path/to/diagram.html
-/diagram-design:export path/to/diagram.html --svg-only
-/diagram-design:export path/to/diagram.html --png-only --scale=3
+/diagram-design:export-diagram path/to/diagram.html
+/diagram-design:export-diagram path/to/diagram.html --svg-only
+/diagram-design:export-diagram path/to/diagram.html --png-only --scale=3
 ```
 
 Or just ask in natural language:
