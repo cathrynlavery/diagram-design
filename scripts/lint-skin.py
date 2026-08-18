@@ -5,6 +5,8 @@ Pre-2.0 examples may legitimately fail because they were built against an older
 skin. Use ``--all --baseline`` to skip those documented legacy files.
 """
 
+from __future__ import annotations
+
 import argparse
 import hashlib
 import re
