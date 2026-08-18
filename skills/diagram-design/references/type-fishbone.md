@@ -38,7 +38,7 @@ far_y(k) = CY ∓ 168
 | 4 | fourth | below | 400 | 304, 488 |
 | 5 | fifth | above | 240 | 144, 152 |
 
-A 6th bone (below) would attach at `x=80`, far endpoint `(-16, 488)` — off-canvas, which is exactly why 6 is the hard ceiling; widen `HEAD` or drop a category before adding a 6th.
+A 6th bone (below) would attach at `x=80`, far endpoint `(-16, 488)`, and its category tag would run from `x=-76` to `x=44` against a viewBox that starts at `x=-40`. It clips. **Five is the ceiling at `HEAD=1200`**: to draw a 6th, widen `HEAD` by at least 160 and shift the viewBox origin with it, or drop a category.
 
 **Sub-cause ticks** sit at fractions `m/6` along the bone (`m = 2, 4` for two ticks; `m = 3` for one), so their coordinates stay on the 4px grid:
 
@@ -53,14 +53,14 @@ The tick itself is a 32px horizontal line from `(tick_x, tick_y)` to `(tick_x - 
 
 | Limit | Rule |
 |---|---|
-| Max categories (bones) | 6 |
+| Max categories (bones) | 5 at `HEAD=1200`. A 6th requires a widened canvas — see Geometry |
 | Max sub-causes per bone | 3 |
 | Max sub-causes total | 18 |
 | Max accent elements | 2 (root-cause bone+tag, effect box) |
 
 ## Anti-patterns
 
-- **More than 6 bones.** The spine runs out of room and the diagram stops being readable — split by subsystem into two fishbones instead.
+- **More than 5 bones on the default canvas.** The 6th tag clips the viewBox. Widen `HEAD` deliberately, or split by subsystem into two fishbones.
 - **Sub-causes that restate the category.** A "Deploy" bone with a sub-cause labeled "deployment issue" adds a node without adding information.
 - **A bone with zero sub-causes.** An empty category is a placeholder, not a finding — delete the bone or don't draw it until there's something under it.
 - **Accenting more than one root cause.** If two categories are both confirmed, that's two diagrams (or a merged cause) — not two accent bones. The 2-accent budget is load-bearing for the "this is the answer" signal.
