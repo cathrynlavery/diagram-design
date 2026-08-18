@@ -210,9 +210,14 @@ def check(path: Path) -> list[str]:
         box = label_box(attrs, m.group("body"))
         if box is None:
             continue
+        # Host is resolved from the text's ANCHOR, not its box corner. An
+        # end- or middle-anchored label extends left of its anchor, so a box
+        # corner can land outside the very cell the label belongs to - which
+        # would silently attribute it to a neighbour, or to nothing at all.
+        anchor_x, anchor_y = float(attrs["x"]), float(attrs["y"])
         host_index = None
         for index, cell in enumerate(cells):
-            if not cell.contains_point(box.x, box.y):
+            if not cell.contains_point(anchor_x, anchor_y):
                 continue
             if host_index is None or cell.area < cells[host_index].area:
                 host_index = index
@@ -221,14 +226,22 @@ def check(path: Path) -> list[str]:
         host = cells[host_index]
         labels[host_index].append(plain(m.group("body")))
 
-        over_r = box.right - host.right
-        over_b = box.bottom - host.bottom
-        if over_r > EPSILON or over_b > EPSILON:
+        # All four edges. Checking only right and bottom passes an end-anchored
+        # label hanging off the left, or a label whose ascent clears the top -
+        # both of which read as belonging to the neighbouring cell.
+        overflow = {
+            "left": host.x - box.x,
+            "top": host.y - box.y,
+            "right": box.right - host.right,
+            "bottom": box.bottom - host.bottom,
+        }
+        breached = {side: over for side, over in overflow.items() if over > EPSILON}
+        if breached:
+            detail = " / ".join(f"{over:.1f} {side}" for side, over in breached.items())
             findings.append(
                 f"{path.name}:{line_of(source, m.start())}: label "
                 f"{plain(m.group('body'))[:38]!r} overflows its {host.w:g}x{host.h:g} cell "
-                f"by {max(over_r, 0):.1f} right / {max(over_b, 0):.1f} bottom — drop the "
-                f"label or merge the cell into a named Other"
+                f"by {detail} — drop the label or merge the cell into a named Other"
             )
 
     claims = {index: parse_claim(" ".join(texts)) for index, texts in labels.items()}

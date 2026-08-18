@@ -36,7 +36,7 @@ Focal cell: replace the fill with `rgba(235,108,54,0.16)` and the stroke with `#
 
 ## Honest-data rule
 
-**Area is the only encoding.** Never clip, floor, or log-scale a cell to make it visible, and never drop a cell because it is small — a treemap claims to show a whole, so an omitted part makes the picture a lie. A part too small to label gets a rotated label or an abbreviation; parts too small to draw get merged into one honest, named "Other". If several cells are invisible at the target size, the data wants a bar chart.
+**Area is the only encoding.** Never clip, floor, or log-scale a cell to make it visible, and never drop a cell because it is small — a treemap claims to show a whole, so an omitted part makes the picture a lie. A part too small to label gets the info mark and a legend entry, not a rotated label; parts too small to draw get merged into one honest, named "Other". If several cells are invisible at the target size, the data wants a bar chart.
 
 Watch the smallest cell hardest: it is the one that grid snapping and gutters distort most, and the one nobody checks. Beware, too, the rounding you *display*: six values each rounded up can sum past the total you printed underneath them. Either carry enough precision that the parts reconcile, or say plainly in the source line that they don't (`PARTS ROUNDED, MAY NOT SUM`).
 

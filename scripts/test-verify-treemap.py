@@ -104,6 +104,40 @@ def main() -> int:
             else:
                 print("OK: a label wider than its cell is rejected")
 
+        # 4b. Overflow off the LEFT edge, via an end-anchored label. Checking
+        #     only the right and bottom edges would pass this silently, and the
+        #     text would read as belonging to the cell next door.
+        left_over = source.replace(
+            '<text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600"',
+            '<text x="804" y="324" text-anchor="end" fill="#2d3142" font-size="12" font-weight="600"',
+        )
+        if left_over == source:
+            failures.append("could not build the left-overflow fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "leftoverflow.html", left_over))
+            if code == 0:
+                failures.append("label hanging off the left of its cell was accepted")
+            elif "left" not in output:
+                failures.append(f"left overflow not named in the finding: {output.strip()}")
+            else:
+                print("OK: a label overflowing the left edge is rejected")
+
+        # 4c. Overflow off the TOP edge — the label's ascent clears the cell.
+        top_over = source.replace(
+            '<text x="592" y="68" fill="#2d3142" font-size="13"',
+            '<text x="592" y="44" fill="#2d3142" font-size="13"',
+        )
+        if top_over == source:
+            failures.append("could not build the top-overflow fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "topoverflow.html", top_over))
+            if code == 0:
+                failures.append("label overflowing the top of its cell was accepted")
+            elif "top" not in output:
+                failures.append(f"top overflow not named in the finding: {output.strip()}")
+            else:
+                print("OK: a label overflowing the top edge is rejected")
+
         # 5. The shipped example leaves its smallest cell deliberately
         #    unlabelled. That must not switch the area check off for the cells
         #    that ARE labelled — the failure mode where a checker reports clean
