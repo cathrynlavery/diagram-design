@@ -147,6 +147,30 @@ def main() -> int:
             ),
             "explicitly hidden",
         ),
+        (
+            "direct display-none value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" display=" NONE ">25</text>',
+            ),
+            "explicitly hidden",
+        ),
+        (
+            "direct visibility-hidden value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" visibility=" HiDdEn ">25</text>',
+            ),
+            "explicitly hidden",
+        ),
+        (
+            "direct opacity-zero value label",
+            VALID.replace(
+                '<text data-polar-value-label="">25</text>',
+                '<text data-polar-value-label="" opacity=" 0.0 ">25</text>',
+            ),
+            "explicitly hidden",
+        ),
     ]
 
     failures: list[str] = []

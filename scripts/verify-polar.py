@@ -165,6 +165,12 @@ def _point(attrs: dict[str, str], x_key: str, y_key: str) -> tuple[float, float]
 def _explicitly_hidden(attrs: dict[str, str]) -> bool:
     if "hidden" in attrs or attrs.get("aria-hidden", "").strip().casefold() == "true":
         return True
+    if attrs.get("display", "").strip().casefold() == "none":
+        return True
+    if attrs.get("visibility", "").strip().casefold() == "hidden":
+        return True
+    if "opacity" in attrs and _float(attrs["opacity"].strip()) == 0:
+        return True
     for declaration in attrs.get("style", "").split(";"):
         if ":" not in declaration:
             continue
