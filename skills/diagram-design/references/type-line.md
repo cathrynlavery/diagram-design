@@ -86,24 +86,42 @@ Not for: three or more states (that is the **line chart** above, or a bump chart
 
 #### Declaring the values
 
-**Every series line declares its own two values.** They are what makes the slope checkable:
+**Every visible string that carries meaning is bound to an attribute stating the same thing.** That is the whole contract, and it exists because each unbound string is a place the figure can be made to lie while every geometric check stays green.
 
 ```svg
+<!-- State captions: data-axis names the axis, data-state binds the text -->
+<text data-axis="from" data-state="BEFORE" x="320" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">BEFORE</text>
+<text data-axis="to" data-state="AFTER" x="680" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">AFTER</text>
+
+<!-- A series: the line declares its two values, and each of its four labels
+     declares which series and which end it belongs to -->
 <line data-series="Recommender" data-from="238" data-to="431"
       x1="320" y1="303.5" x2="680" y2="140.5" stroke="#eb6c36" stroke-width="2.4"/>
 <circle cx="320" cy="303.5" r="4" fill="#eb6c36"/>
 <circle cx="680" cy="140.5" r="4" fill="#eb6c36"/>
-<text x="272" y="307" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Recommender</text>
+<text data-series="Recommender" data-end="from" data-role="name" x="272" y="307" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Recommender</text>
 <text data-series="Recommender" data-end="from" x="304" y="307" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">238</text>
 <text data-series="Recommender" data-end="to" x="696" y="144" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">431</text>
-<text x="728" y="144" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif">Recommender</text>
+<text data-series="Recommender" data-end="to" data-role="name" x="728" y="144" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif">Recommender</text>
 ```
 
-Non-focal series: `stroke="rgba(45,49,66,0.68)"` at `stroke-width="1.2"`, dots `r=3`, name at `font-weight="500"`.
+Non-focal series: `stroke="rgba(45,49,66,0.68)"` at `stroke-width="1.2"`, dots `r=3`, names at `font-weight="500"`.
 
-The checker reads `data-from` / `data-to`, never the rendered text, so a series whose label is missing or restyled stays in the verified set instead of quietly leaving it — and its missing label is reported as its own finding. `data-end` binds each printed value back to its series, which is what lets a label and the geometry be cross-checked as two statements of one fact.
+What each binding buys, and what it costs to omit:
 
-Two things it deliberately leaves to you. **Direction:** an axis whose `y` grows with value passes, because that is correct for a rank slopegraph where rank 1 belongs at the top, and nothing in the file distinguishes an intended inversion from a mistaken one. **Absolute truth:** every check is internal consistency, so a figure whose labels and declared values are all wrong by the same constant is self-consistent and passes. The source line is where the domain reaches the reader, and prose is not parsed.
+| Binding | Without it |
+|---|---|
+| `data-from` / `data-to` on the line | The checker would have to read the labels, and a series whose label went missing would drop silently out of the verified set — the exact hole that let a treemap cell ship 50% oversized. |
+| `data-end` on a value label | A printed number could not be cross-checked against the value it claims to state. |
+| `data-role="name"` on a name label | Two series names could be exchanged between rows, renaming both lines, with every number still correct in isolation. |
+| `data-axis` on a state caption | The captions could be swapped, reversing the direction every slope is read in. |
+| `data-state` on a state caption | Swapping just the two visible strings leaves both captions in place and reverses the figure anyway. |
+
+`scripts/verify-slopegraph.py` requires all of them, cross-checks each visible string against its binding, and reports any label drawn nearer another series' endpoint than its own — a label on the wrong row renames the line.
+
+**No `transform` on any of it.** The checker reads raw `x`/`y` attributes, so a `transform` on a series line, on a bound label, on an ancestor `<g>`, or in a CSS rule moves the rendered mark away from the number that was verified — `transform="translate(0 80)"` on one line slid its endpoint 80px past every green check. Transforms are rejected rather than resolved: a partial implementation of the SVG transform stack looks like coverage without being it. Bake the offset into the coordinates. The rotated value-axis caption is fine — it is neither verified geometry nor a bound label.
+
+**Print one complete number per value label.** A unit suffix is fine (`208ms`); a thousands separator that changes the value is not, and neither is a second number in the same label. Reading only the first numeric fragment let the label `512,000` agree with metadata that said `512`.
 
 #### Anti-patterns
 
@@ -116,6 +134,8 @@ Two things it deliberately leaves to you. **Direction:** an axis whose `y` grows
 - A value label in `accent`, or any text in `soft` (3.48:1 on paper).
 - Gridlines, or a value axis that repeats numbers the endpoints already print.
 - Annotating the crossing with a date, or reading any intermediate value off a slope.
+- A `transform` on a series line, a bound label, an ancestor group, or in CSS — it moves the mark away from the checked coordinate.
+- An unbound visible string: a name, a value or a state caption with no attribute stating the same thing.
 - Curving the connector. There is nothing between the two points to curve through.
 
 ## Examples
