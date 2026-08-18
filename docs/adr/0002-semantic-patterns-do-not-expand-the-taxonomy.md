@@ -1,6 +1,6 @@
-# ADR 0002 — Semantic patterns never expand the 27-type taxonomy
+# ADR 0002 — Semantic patterns never expand the 29-type taxonomy
 
-**Status:** accepted (v2.3)
+**Status:** accepted (v2.3; amended v2.6)
 
 ## Context
 
@@ -8,7 +8,7 @@ Auditing behavior-rich figures (queues, policy traces, trust boundaries) showed 
 
 ## Decision
 
-Behavior is a separate axis. The seven semantic patterns in `references/semantic-patterns.md` each route to the **nearest existing visual type** for layout; a pattern owns semantic primitives and a tighter budget, never a second layout grammar. The visual-type count stays at 27 unless a genuinely new *layout* grammar appears.
+Behavior is a separate axis. The seven semantic patterns in `references/semantic-patterns.md` each route to the **nearest existing visual type** for layout; a pattern owns semantic primitives and a tighter budget, never a second layout grammar. Treemap and Polar are admitted new layout grammars, so the visual-type count is now 29 and stays there unless another genuinely new *layout* grammar appears.
 
 ## Consequences
 
@@ -19,5 +19,7 @@ Behavior is a separate axis. The seven semantic patterns in `references/semantic
 ## Amendments
 
 **2026-08-18 — the count is 28.** Treemap was admitted under the escape clause above: recursive area subdivision is a layout grammar no existing type provides (bar encodes with length, nested with containment and no quantity, pyramid with rank). It shipped the full §10 set, and the counters named above moved 27 → 28 together with the prose.
+
+**2026-08-18 — the count is 29.** Polar was admitted under the same escape clause: angle encodes ordered cyclic categories and linear radius encodes one quantitative series, a layout grammar no existing type provides. It shipped the full §10 set, and the counters named above moved 28 → 29 together with the prose.
 
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.

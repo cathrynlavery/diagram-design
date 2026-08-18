@@ -30,6 +30,7 @@ GALLERY = ROOT / "skills/diagram-design/assets/index.html"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 README = ROOT / "README.md"
 VARIANTS = ("", "-dark", "-full")
+VISUAL_TYPE_COUNT = 29
 # Types whose selection-table name differs from its description vocabulary.
 DESCRIPTION_ALIASES = {
     "bar chart": "bar",
@@ -72,8 +73,10 @@ def check_description(errors: list[str]) -> None:
         errors.append("SKILL.md frontmatter description is missing")
         return
     types = selection_table_types(markdown)
-    if len(types) != 28:
-        errors.append(f"expected 28 visual types in the selection table; found {len(types)}")
+    if len(types) != VISUAL_TYPE_COUNT:
+        errors.append(
+            f"expected {VISUAL_TYPE_COUNT} visual types in the selection table; found {len(types)}"
+        )
     for name in types:
         key = normalized(name)
         key = DESCRIPTION_ALIASES.get(key, key)
