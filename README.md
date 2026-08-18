@@ -12,7 +12,7 @@
 
 *New in 2.3: semantic system patterns and optional accessible motion, while static output stays the default.*
 
-28 visual types. One agent skill for Claude Code, Codex, and Pi. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io or Mermaid sources at a chosen format, size, and detail level.
+29 visual types. One agent skill for Claude Code, Codex, and Pi. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io or Mermaid sources at a chosen format, size, and detail level.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
@@ -22,7 +22,7 @@ No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
 I write at [littlemight.com](https://littlemight.com?utm_source=diagram-design&utm_medium=readme&utm_campaign=github&utm_content=intro) (and run [BestSelf.co](https://bestself.co?utm_source=diagram-design&utm_medium=readme&utm_campaign=github&utm_content=intro) on the side). Every time I needed a diagram — an architecture sketch, a flowchart, a pyramid of what matters most — I'd ask Claude and get back a generic rounded-box thing that looked nothing like the rest of the site. I'd either fight with Figma for 30 minutes or just skip the diagram.
 
-So I built a Claude Code skill for it. Twenty-eight visual types, editorial quality, matches your brand in 60 seconds by reading your website.
+So I built a Claude Code skill for it. Twenty-nine visual types, editorial quality, matches your brand in 60 seconds by reading your website.
 
 > *The highest-quality move is usually deletion.* Every node earns its place. The accent color is reserved for the 1–2 things the reader should look at first. Target density: 4/10.
 
@@ -30,7 +30,7 @@ So I built a Claude Code skill for it. Twenty-eight visual types, editorial qual
 
 ## What it makes
 
-All 28 visual types ship in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+All 29 visual types ship in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -81,11 +81,11 @@ All 28 visual types ship in three static variants: minimal light, minimal dark, 
 <tr>
   <td align="center"><img src="docs/screenshots/dp-security-matrix.png" alt="DP security matrix"><br><b>DP security matrix</b><br><sub>Per-role access permissions</sub></td>
   <td align="center"><img src="docs/screenshots/treemap.png" alt="Treemap"><br><b>Treemap</b><br><sub>Part-of-whole by area</sub></td>
-  <td></td>
+  <td align="center"><img src="docs/screenshots/dependency.png" alt="Dependency graph"><br><b>Dependency graph</b><br><sub>Fan-in and cycles a tree cannot show</sub></td>
 </tr>
 </table>
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through all 28 diagrams with light / dark / full-editorial tabs.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through all 29 diagrams with light / dark / full-editorial tabs.
 
 ---
 
@@ -185,7 +185,7 @@ Every diagram template gives the inline SVG an accessible name and description: 
 
 ### Manual override
 
-Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there — all 28 diagrams, the annotation primitive, and the gallery all inherit semantic role names (`accent`, not `#eb6c36`).
+Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there — all 29 diagrams, the annotation primitive, and the gallery all inherit semantic role names (`accent`, not `#eb6c36`).
 
 ### First-run gate
 
@@ -206,7 +206,7 @@ The profile library is shared across Claude Code, Codex, and Pi. Use `/diagram-d
 ## Quickstart
 
 ```bash
-# From a cloned checkout, open the gallery to see all 28 diagrams
+# From a cloned checkout, open the gallery to see all 29 diagrams
 open skills/diagram-design/assets/index.html       # macOS
 xdg-open skills/diagram-design/assets/index.html  # Linux
 
@@ -370,7 +370,7 @@ diagram-design/
 │       └── assets/
 │           ├── index.html           — live gallery, tabbed
 │           ├── template*.html       — scaffolds for new diagrams
-│           ├── example-<type>.html  — 3 variants × 28 types
+│           ├── example-<type>.html  — 3 variants × 29 types
 │           ├── example-loop-terminal.html
 │           ├── example-quadrant-consultant.html
 │           ├── example-import-drawio.html
@@ -429,7 +429,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Give me a terminal / CLI-window version" | `SKILL.md` + `references/primitive-terminal.md` |
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
-| Routine static diagram-making (any of the 28 visual types) | Only `SKILL.md` + that one type's reference |
+| Routine static diagram-making (any of the 29 visual types) | Only `SKILL.md` + that one type's reference |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
 
