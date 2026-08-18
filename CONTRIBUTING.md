@@ -46,6 +46,7 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
 | Animated-example structure and accessibility | `python3 scripts/verify-semantic-motion.py --example-only` |
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
+| Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
 | A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
 | Sequence-doc consistency (ATL fragments, budgets) | `python3 scripts/verify-sequence-oauth.py` |
 | draw.io import path (real extractor vs fixtures + docs sync) | `python3 scripts/verify-drawio-import.py` |
@@ -73,6 +74,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-semantic-motion.py --example-only \
   && python3 scripts/verify-motion.py --shipped \
   && python3 scripts/lint-skin.py --all --baseline \
+  && python3 scripts/test-verify-polar.py \
+  && python3 scripts/verify-polar.py \
   && python3 scripts/verify-sequence-oauth.py \
   && python3 scripts/verify-drawio-import.py \
   && python3 scripts/verify-mermaid-import.py \

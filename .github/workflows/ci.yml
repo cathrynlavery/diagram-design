@@ -142,6 +142,14 @@ jobs:
         id: skin
         run: python scripts/lint-skin.py --all --baseline
 
+      - name: Verify quantitative polar chart
+        if: always()
+        id: polar
+        shell: bash
+        run: |
+          python scripts/test-verify-polar.py
+          python scripts/verify-polar.py
+
       - name: Verify sequence OAuth specs
         if: always()
         id: oauth
@@ -221,6 +229,7 @@ jobs:
           echo "| Devicon Normalization | ${{ steps.devicon.outcome == 'success' && '✅ Passed' || (steps.devicon.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mojibake Repair Utility | ${{ steps.mojibake.outcome == 'success' && '✅ Passed' || (steps.mojibake.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Draw.io Import Extractor | ${{ steps.drawio.outcome == 'success' && '✅ Passed' || (steps.drawio.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
