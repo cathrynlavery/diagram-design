@@ -21,3 +21,11 @@ Behavior is a separate axis. The seven semantic patterns in `references/semantic
 **2026-08-18 — the count is 28.** Treemap was admitted under the escape clause above: recursive area subdivision is a layout grammar no existing type provides (bar encodes with length, nested with containment and no quantity, pyramid with rank). It shipped the full §10 set, and the counters named above moved 27 → 28 together with the prose.
 
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.
+
+**2026-08-18 — the count is 29.** User journey was admitted under the escape clause above; the
+grammar argument is in the pull request that adds it. It ships the full §10 set — reference, three
+static variants, gallery entry — and the two counters moved 28 → 29 together with the prose.
+
+This is one of several grammars proposed together in #78 and split into one pull request each at the
+maintainer's request, so each gets an independent decision. Whichever lands first takes 29; the rest
+renumber against main rather than assuming an order.
