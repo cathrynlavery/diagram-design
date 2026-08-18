@@ -177,6 +177,57 @@ def main() -> int:
             else:
                 print("OK: an unlabelled sliver does not disable the area check")
 
+        # 6. The unlabelled sliver, both directions. This is the gap issue #89
+        #    reported: with the basis derived from in-cell labels, the one cell
+        #    carrying no label was the one cell nothing verified — and it is the
+        #    cell a 4px grid distorts most. Both rects of the pair move, because
+        #    a mask and a body at different sizes are two cells, not one.
+        for label, width, direction in (("oversized", "24", "larger"), ("undersized", "8", "smaller")):
+            mutated = source.replace(
+                '<rect x="940" y="296" width="16" height="124"',
+                f'<rect x="940" y="296" width="{width}" height="124"',
+            )
+            if mutated == source:
+                failures.append(f"could not build the {label}-sliver fixture (anchor moved)")
+                continue
+            code, output = run(write(directory, f"sliver-{label}.html", mutated))
+            if code == 0:
+                failures.append(
+                    f"{label} unlabelled sliver was accepted — the cell with no label "
+                    f"is exactly the one that must still be checked"
+                )
+            elif "declares" not in output:
+                failures.append(f"{label} sliver reported without an area finding: {output.strip()}")
+            else:
+                print(f"OK: an unlabelled sliver drawn {direction} than it declares is rejected")
+
+        # 7. Fail closed. A cell with no declared share is unverifiable, and
+        #    reporting OK on it is the defect, not a tolerable gap.
+        stripped = source.replace(' data-share="0.56"', "", 1)
+        if stripped == source:
+            failures.append("could not build the missing-metadata fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "nometa.html", stripped))
+            if code == 0:
+                failures.append("a cell with no data-share was accepted — must fail closed")
+            elif "no data-share" not in output:
+                failures.append(f"missing metadata reported without the right finding: {output.strip()}")
+            else:
+                print("OK: a cell with no declared share fails closed")
+
+        # 8. A label that disagrees with the metadata it sits on.
+        divergent = source.replace("4.78B · 59% of world", "4.78B · 42% of world")
+        if divergent == source:
+            failures.append("could not build the label-divergence fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "divergent.html", divergent))
+            if code == 0:
+                failures.append("a label contradicting its own data-share was accepted")
+            elif "same fact" not in output:
+                failures.append(f"divergence reported without the right finding: {output.strip()}")
+            else:
+                print("OK: a label contradicting its cell's declared share is rejected")
+
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:

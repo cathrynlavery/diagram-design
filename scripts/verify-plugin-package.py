@@ -203,6 +203,33 @@ def verify_codex_skill_path(root: Path, codex_manifest: dict[str, Any], errors: 
         errors.append(f"Codex skills path does not contain {PLUGIN_NAME}/SKILL.md")
 
 
+def verify_skill_metadata_version(root: Path, manifests: dict[str, dict[str, Any]], errors: list[str]) -> None:
+    """SKILL.md's metadata version must track the manifests' MAJOR.MINOR.
+
+    The manifests are bumped by a script; SKILL.md's `metadata.version` is
+    hand-maintained, so a minor release drifts silently - 2.4 sat against
+    2.5.0 manifests until a post-merge sweep caught it. Nothing else reads
+    both numbers, so nothing else can notice.
+    """
+    skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
+    if not skill.is_file():
+        errors.append(f"missing {skill.relative_to(root).as_posix()}")
+        return
+    text = skill.read_text(encoding="utf-8")
+    match = re.search(r"^\s*version:\s*\"?([\d.]+)\"?\s*$", text, re.MULTILINE)
+    if match is None:
+        errors.append("SKILL.md frontmatter has no metadata.version")
+        return
+    declared = match.group(1)
+    manifest_version = str(manifests["Claude"].get("version", ""))
+    expected = ".".join(manifest_version.split(".")[:2])
+    if declared != expected:
+        errors.append(
+            f"SKILL.md metadata.version {declared!r} must track the manifest "
+            f"MAJOR.MINOR {expected!r} (manifests are at {manifest_version})"
+        )
+
+
 def verify_package(root: Path, base_ref: str) -> list[str]:
     errors: list[str] = []
     manifests: dict[str, dict[str, Any]] = {}
@@ -214,6 +241,7 @@ def verify_package(root: Path, base_ref: str) -> list[str]:
     if len(manifests) == len(MANIFEST_PATHS):
         verify_versions(root, base_ref, manifests, errors)
         verify_manifest_identity(manifests, errors)
+        verify_skill_metadata_version(root, manifests, errors)
         verify_codex_skill_path(root, manifests["Codex"], errors)
     verify_marketplaces(root, errors)
     return errors
