@@ -1,6 +1,6 @@
-# ADR 0007 — Ten new layout grammars (27 → 37 visual types)
+# ADR 0007 — Ten new layout grammars (28 → 38 visual types)
 
-**Status:** accepted (v2.5)
+**Status:** accepted (v2.6)
 
 ## Context
 
@@ -51,11 +51,12 @@ Kept out on purpose, so the next audit does not relitigate them.
 - **Mindmap** — radial restatement of tree. Same information, same grammar, different projection.
 - **UML use case** — stick-figure actors and ovals inside a system boundary. A real grammar, but the ovals carry no structure and the figure rarely survives an editorial cut.
 - **Pie / donut** — the repository's own rule ("lists of anything → a table") already rejects it.
-- **Git graph, packet / bit-field, treemap** — real grammars, but narrow audiences and weak editorial fit. Revisit only on demand.
+- **Git graph, packet / bit-field** — real grammars, but narrow audiences and weak editorial fit. Revisit only on demand.
+- **Treemap** — originally listed here on the same grounds, then overtaken by a shipped implementation: it was admitted separately in #87 under the ADR 0002 escape clause while this work was in review. The count below accounts for it. Kept in this list so the reversal is on the record rather than silently dropped.
 
 ## Consequences
 
-- The verifiable count moves to 37. `verify-docs-sync.py` and `verify-semantic-motion.py` both hardcode it, by design: adding a type must be a conscious edit, not a silent drift.
+- The verifiable count moves to 38. `verify-docs-sync.py` and `verify-semantic-motion.py` both hardcode it, by design: adding a type must be a conscious edit, not a silent drift.
 - Four of the ten carry a documented, narrow exemption from §6 rule 1 (orthogonal elbows): sankey ribbons, fishbone bones, wardley dependency links, journey sentiment curves. Each exemption is scoped in its own type reference and covers that element only. The other six obey §6 in full; kanban and story map simply have no connectors.
 - **ER's scope was narrowed, not duplicated.** `type-er.md` now states that it is entity-level and points at `type-db-schema.md` for the physical schema. Without that edit the two types would have overlapping "Best for" claims and the router would be ambiguous.
 - The ADR 0004 byte cap became binding. Adding these types required trimming SKILL.md body prose: the §11 import consequences were compressed, the terminal-variant and typography paragraphs were tightened, and §4's six connector anti-pattern rows collapsed into one row pointing at §6 — that table was the third statement of rules already given in full in §6 and checked one by one in §9. `SKILL.md` sits at ~39.2 KB against the 40 KB cap. The next type must be paid for the same way, never by trimming the frontmatter description.
