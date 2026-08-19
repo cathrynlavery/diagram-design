@@ -211,9 +211,10 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # The phrasing varies, so match the count rather than the one sentence it went
 # stale in. Two forms carry it: the bare count standing in for the table
 # (`one of the 27`), and a count attached to the taxonomy noun with room for
-# adjectives between (`28 visual types`, `28 supported visual diagram types`).
-# The second clause insists on that noun so an unrelated quantity — `accepts 2
-# file types` — is not rejected by a gate about the visual taxonomy.
+# adjectives between, in either order (`28 visual types`, `28 supported visual
+# diagram types`, `28 types of visual diagrams`). Those clauses insist on that
+# noun so an unrelated quantity — `accepts 2 file types` — is not rejected by a
+# gate about the visual taxonomy.
 #
 # Every gap is whitespace-tolerant because both commands already wrap the
 # sentence that carried the stale count, so a count can land just after the
@@ -224,7 +225,8 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # the docstring say "numeral" so the gate does not claim more than it checks.
 HARDCODED_COUNT_RE = re.compile(
     r"one\s+of\s+(?:the\s+)?\d+\b"
-    r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b",
+    r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
+    r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b",
     re.IGNORECASE,
 )
 COUNT_SURFACES = (

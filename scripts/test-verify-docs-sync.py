@@ -203,6 +203,7 @@ diagram-design/
             "`--type` forces one of 28.\n",
             "The skill draws 28 visual types.\n",
             "The skill draws 28 supported visual diagram types.\n",
+            "The skill supports 28 types of visual diagrams.\n",
         ):
             mermaid.write_text(stale, encoding="utf-8")
             errors = []
@@ -219,6 +220,7 @@ diagram-design/
             "`--type` accepts 2 file types.\n",
             "Produces 3 output types.\n",
             "`--detail=faithful` allows 24 nodes.\n",
+            "Reads 2 types of visual file.\n",
         ):
             mermaid.write_text(routed + benign, encoding="utf-8")
             errors = []
