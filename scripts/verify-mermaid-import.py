@@ -599,6 +599,59 @@ def check_gantt(tmp: Path) -> None:
         if actual != wanted:
             fail(f"gantt metadata arity mis-parsed for {label!r}: {actual!r} != {wanted!r}")
 
+    # A declared `dateFormat` decides what a date looks like, and the extractor
+    # never reads one. Under `MMM` a date is `Jan`; under `A` it is `PM`; under
+    # `DD MMM YYYY` it carries spaces. Every one of these was silently dropped
+    # by a classifier that inspected the value instead of counting the items.
+    custom_format = tmp / "gantt-custom-format.mmd"
+    custom_format.write_text(
+        "gantt\n"
+        "    dateFormat DD MMM YYYY\n"
+        "    section S\n"
+        "        Spaced with id    :task1, 02 Jan 2026, 03 Feb 2026\n"
+        "        Spaced without id : 04 Mar 2026, 05 Apr 2026\n"
+        "        Month name        : January, February\n"
+        "        Meridiem          : pm, AM\n"
+        "        Lone month        : Jan\n"
+        "        Id like a date    : 2026-01-01, 2026-02-01, 2026-03-01\n",
+        encoding="utf-8",
+    )
+    custom = json.loads(run_extract([str(custom_format), "--json"]))["diagrams"][0]
+    expected = {
+        "Spaced with id": ("task1", "start: 02 Jan 2026; end: 03 Feb 2026"),
+        "Spaced without id": (None, "start: 04 Mar 2026; end: 05 Apr 2026"),
+        "Month name": (None, "start: January; end: February"),
+        "Meridiem": (None, "start: pm; end: AM"),
+        # One item is the end condition, whatever it is written in.
+        "Lone month": (None, "end: Jan"),
+        # Three items make the first the id even when it reads as a date.
+        "Id like a date": ("2026-01-01", "start: 2026-02-01; end: 2026-03-01"),
+    }
+    for label, (wanted_id, wanted_fields) in expected.items():
+        node = _by_label(custom, label)
+        if wanted_id is not None and node["id"] != wanted_id:
+            fail(f"gantt id mis-assigned for {label!r}: {node['id']!r} != {wanted_id!r}")
+        if _fields(node) != wanted_fields:
+            fail(f"gantt dates mis-parsed for {label!r}: {_fields(node)!r} != {wanted_fields!r}")
+
+    # Mermaid's table runs from one item to three. Outside that the source is
+    # either placing a task with no schedule or using a slot the grammar has
+    # none for, and an empty slot is worse than either: collapsing it re-reads
+    # the rest at a lower arity, so `id,,<date>` draws its id as a start date.
+    for name, source, message in (
+        (
+            "too-many",
+            "Task :t, 2026-01-01, 2026-01-02, 2026-01-03\n",
+            "gantt task declares 4 metadata items at line 3",
+        ),
+        ("tags-only", "Task :done, crit\n", "gantt task declares 0 metadata items at line 3"),
+        ("no-metadata", "Task :\n", "gantt task has an empty metadata slot at line 3"),
+        ("empty-slot", "Task :t,,2026-01-02\n", "gantt task has an empty metadata slot at line 3"),
+    ):
+        arity_error = tmp / f"gantt-{name}.mmd"
+        arity_error.write_text(f"gantt\n    section S\n        {source}", encoding="utf-8")
+        expect_error([str(arity_error)], message)
+
     malformed = tmp / "gantt-malformed.mmd"
     malformed.write_text("gantt\n    section S\n        Task with no metadata\n", encoding="utf-8")
     expect_error([str(malformed)], "malformed gantt task at line 3")
