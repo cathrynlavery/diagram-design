@@ -682,9 +682,18 @@ def check_timeline() -> None:
     first = _by_label(payload, "T+0m")
     if first["fields"] != ["Latency alert fires", "Pager routed to on-call"]:
         fail(f"timeline events were not kept on their period: {first['fields']}")
+    # A continuation line opening with `:` belongs to the period above it. The
+    # drawable count above is the other half of this: a spurious period would
+    # push it to 6 and put an unlabelled marker on the timeline.
+    continued = _by_label(payload, "T+7m")
+    if continued["fields"] != [
+        "Error budget burn confirmed",
+        "Customer reports start arriving",
+    ]:
+        fail(f"a continuation line left its period: {continued['fields']}")
     if payload["analysis"]["orphans"]:
         fail("an edgeless grammar must not report every node as unconnected")
-    ok("timeline parses: sections, periods, multi-event rows")
+    ok("timeline parses: sections, periods, multi-event and continuation rows")
 
 
 def check_mindmap(tmp: Path) -> None:

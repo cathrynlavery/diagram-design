@@ -1185,6 +1185,7 @@ def _parse_timeline(
     # draws one marker per period, and promoting each event to a node would
     # turn every drawn period into a container the budget stops counting.
     section: str | None = None
+    period: Node | None = None
     for _line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
@@ -1202,8 +1203,15 @@ def _parse_timeline(
                 None,
                 container=True,
             ).id
+            period = None
             continue
         parts = [clean_label(part) for part in text.split(":")]
+        if not parts[0] and period is not None:
+            # A line opening with `:` continues the period above it. Drawing a
+            # period for it would put an unlabelled marker on the timeline and
+            # strand its events away from the period they belong to.
+            period.fields.extend(event for event in parts[1:] if event)
+            continue
         period = diagram.add_node(
             _leaf_id(diagram, "period"), parts[0], "period", section
         )
