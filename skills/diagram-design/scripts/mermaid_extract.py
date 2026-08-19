@@ -1042,9 +1042,6 @@ GANTT_META_KEYS = {
 GANTT_TAGS = {"done", "active", "crit", "milestone", "vert"}
 GANTT_DURATION_RE = re.compile(r"^\d+(?:\.\d+)?\s*(?:ms|s|m|h|d|w|y)$", re.I)
 GANTT_RELATION_RE = re.compile(r"^(after|until)\s+(.+)$", re.I)
-# A declared date is digits plus separators. A task id that happens to start
-# with a digit still carries a letter, so it stays an id.
-GANTT_DATE_RE = re.compile(r"^\d[\d\-/.:\s]*$")
 
 
 def _container_id(diagram: Diagram, prefix: str) -> str:
@@ -1055,55 +1052,61 @@ def _leaf_id(diagram: Diagram, prefix: str) -> str:
     return f"{prefix}-{sum(1 for node in diagram.nodes if not node.container) + 1}"
 
 
-def _gantt_task_fields(metadata: str) -> tuple[str | None, list[str], list[str]]:
+def _gantt_task_fields(
+    metadata: str, line_number: int
+) -> tuple[str | None, list[str], list[str]]:
     """Split a task's metadata into an optional id, inert fields, and `after` ids.
 
     Dates are carried as text. The extractor never parses or arithmetics a
     calendar; the redraw needs the declared values, not a computed timeline.
     """
+    # Mermaid reads task metadata by arity, not by what the values look like:
+    # three items are id + start condition + end condition, two are the two
+    # conditions, one is the end condition alone with the start inherited from
+    # the task above. Tags may sit anywhere and do not count. Inspecting the
+    # values instead would have to know the declared `dateFormat` — under `MMM`
+    # a date is `Jan`, and under `A` it is `PM` — and the extractor deliberately
+    # never parses a calendar.
     status: list[str] = []
-    after: list[str] = []
-    until: list[str] = []
-    duration = ""
-    positional: list[str] = []
+    items: list[str] = []
     for part in metadata.split(","):
         value = part.strip()
         if not value:
-            continue
+            # Dropping an empty slot silently re-reads the remaining items at a
+            # lower arity: `id,,2026-01-02` would become a two-item task whose
+            # id is read as its start date.
+            _fail(f"gantt task has an empty metadata slot at line {line_number}")
         if value.casefold() in GANTT_TAGS:
             status.append(value.casefold())
             continue
+        items.append(value)
+
+    # Mermaid's table runs from one item to three. Below that a task declares no
+    # schedule at all and cannot be placed on the chart; above it, the source is
+    # saying something the grammar has no slot for.
+    if not 1 <= len(items) <= 3:
+        _fail(
+            f"gantt task declares {len(items)} metadata items at line {line_number}; "
+            f"Mermaid allows one to three besides tags"
+        )
+    task_id = items[0] if len(items) == 3 else None
+    conditions = items[1:] if len(items) == 3 else items
+
+    after: list[str] = []
+    until: list[str] = []
+    fields: list[str] = []
+    for name, value in zip(("start", "end") if len(conditions) == 2 else ("end",), conditions):
         relation = GANTT_RELATION_RE.match(value)
         if relation is not None:
             targets = relation.group(2).split()
-            if relation.group(1).casefold() == "after":
-                after.extend(targets)
-            else:
-                until.extend(targets)
+            (after if relation.group(1).casefold() == "after" else until).extend(targets)
             continue
-        if GANTT_DURATION_RE.match(value):
-            duration = value
+        # A length is only ever an end condition; in the start slot the same
+        # text is a date the source declared.
+        if name == "end" and GANTT_DURATION_RE.match(value):
+            fields.append(f"dur: {value}")
             continue
-        positional.append(value)
-
-    task_id = next(
-        (value for value in positional if not GANTT_DATE_RE.match(value)), None
-    )
-    dates = [value for value in positional if GANTT_DATE_RE.match(value)]
-    # Mermaid's task-metadata table is positional. A lone date is the task's
-    # *end*, with the start inherited from the task above it; a date only means
-    # "start" when something else supplies the end — a length, an `until`, or a
-    # second date. Labelling every first date `start` moved single-date tasks a
-    # whole task-length earlier in the redraw.
-    if len(dates) >= 2:
-        names = ("start", "end")
-    elif duration or until:
-        names = ("start",)
-    else:
-        names = ("end",)
-    fields = [f"{name}: {value}" for name, value in zip(names, dates)]
-    if duration:
-        fields.append(f"dur: {duration}")
+        fields.append(f"{name}: {value}")
     if after:
         fields.append(f"after: {' '.join(after)}")
     if until:
@@ -1141,7 +1144,7 @@ def _parse_gantt(
         label, separator, metadata = text.partition(":")
         if not separator:
             _fail(f"malformed gantt task at line {line_number}")
-        task_id, fields, after = _gantt_task_fields(metadata)
+        task_id, fields, after = _gantt_task_fields(metadata, line_number)
         node = diagram.add_node(
             task_id or _leaf_id(diagram, "task"),
             clean_label(label),

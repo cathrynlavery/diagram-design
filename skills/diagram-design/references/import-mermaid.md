@@ -26,7 +26,7 @@ The four schedule-and-hierarchy grammars carry structure that is neither a node 
 
 | Grammar | Nodes | Edges | Node fields | `meta` |
 |---|---|---|---|---|
-| `gantt` | Sections are containers; tasks are drawable | `after <id>` dependencies | `start`, `end`, `dur`, `after`, `until`, `status` — a lone date is an `end`, per Mermaid's positional metadata table | `title`, `dateFormat`, `axisFormat`, `excludes`, … |
+| `gantt` | Sections are containers; tasks are drawable | `after <id>` dependencies | `start`, `end`, `dur`, `after`, `until`, `status` — a lone date is an `end`, per Mermaid's positional metadata table; metadata is read by item count, so dates are carried as declared, whatever `dateFormat` wrote them | `title`, `dateFormat`, `axisFormat`, `excludes`, … |
 | `quadrantChart` | One point per entry | none | `x`, `y` (0–1, enforced) | `title`, `x-axis`, `y-axis`, `quadrant-1`…`quadrant-4` |
 | `timeline` | Sections are containers; periods are drawable | none | one field per event on that period, including events on a continuation line | `title` |
 | `mindmap` | Every topic is drawable | parent → child, no arrowhead | — | — |
@@ -38,7 +38,7 @@ Two consequences worth knowing before you read the digest. Gantt tasks and quadr
 - `--max-rows N` controls digest table length; default 40.
 - `--out PATH` writes the digest without changing its content.
 
-The extractor exits 2 rather than guessing when a source is malformed — an unparsable edge or gantt task, a quadrant coordinate outside the unit square, or a timeline continuation line with no period above it to continue. If the extractor exits 2, report its message verbatim and stop. Do not render the source or paste it into an online editor as a fallback.
+The extractor exits 2 rather than guessing when a source is malformed — an unparsable edge or gantt task, a gantt task whose metadata is empty or outside Mermaid's one-to-three items, a quadrant coordinate outside the unit square, or a timeline continuation line with no period above it to continue. If the extractor exits 2, report its message verbatim and stop. Do not render the source or paste it into an online editor as a fallback.
 
 ## Step 2 — Set the four dials
 
