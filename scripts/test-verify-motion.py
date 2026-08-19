@@ -402,7 +402,7 @@ def main() -> int:
             missing_guide = directory / "missing-guide.md"
             missing_guide.write_text(
                 original_skill.read_text(encoding="utf-8").replace(
-                    "### Visual-type guide (27)", "### Visual guide"
+                    "### Visual-type guide (28)", "### Visual guide"
                 ),
                 encoding="utf-8",
             )
@@ -410,7 +410,7 @@ def main() -> int:
             markdown_errors = semantic_module.verify_markdown()
         finally:
             semantic_module.SKILL = original_skill
-        if not any("must contain the 27-row visual-type guide" in error for error in markdown_errors):
+        if not any("must contain the 28-row visual-type guide" in error for error in markdown_errors):
             raise AssertionError(f"missing visual-guide anchor was accepted: {markdown_errors}")
         print("OK: missing visual-type guide anchor is rejected")
 

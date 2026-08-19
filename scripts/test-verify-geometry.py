@@ -14,6 +14,7 @@ ASSET_DIR = ROOT / "skills/diagram-design/assets"
 ARCHITECTURE = ASSET_DIR / "example-architecture.html"
 SWIMLANE = ASSET_DIR / "example-swimlane.html"
 ZONED = ASSET_DIR / "example-dp-integration.html"
+SEQUENCE_OAUTH = ASSET_DIR / "example-sequence-oauth.html"
 
 
 def load_verifier():
@@ -99,9 +100,30 @@ def main() -> int:
         0,
     )
 
+    # A long mono plate (128px, as shipped in example-sequence-oauth.html) or a
+    # wide CJK label plate must be recognized as a mask and checked like any other.
+    check(
+        "wide mono mask clipped by a later node",
+        document('<rect x="180" y="80" width="128" height="12" rx="2" fill="#f5f5f5"/>' + node),
+        1,
+    )
+    check(
+        "wide mono mask over an earlier node is legal",
+        document(node + '<rect x="180" y="80" width="128" height="12" rx="2" fill="#f5f5f5"/>'),
+        0,
+    )
+    # Wide-but-tall rects are container header bars or row stripes, not masks —
+    # the height cap stays at 14 so they are never reported.
+    check(
+        "container header bar is not a mask",
+        document('<rect x="80" y="80" width="188" height="16" rx="2" fill="#eee"/>' + node),
+        0,
+    )
+
     check_file("shipped architecture example", ARCHITECTURE, 0)
     check_file("shipped swimlane example", SWIMLANE, 0)
     check_file("shipped zoned example", ZONED, 0)
+    check_file("shipped sequence-oauth example", SEQUENCE_OAUTH, 0)
 
     if failures:
         print("\nFAILURES:")

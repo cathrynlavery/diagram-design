@@ -6,7 +6,7 @@ Turn a `.drawio` file into an editorial-quality diagram at the format, size, and
 
 ## Trigger
 
-Load this file when the user points at a `.drawio`, `.drawio.xml`, `.drawio.png`, or `.drawio.svg` file and wants a diagram out of it — "convert this drawio", "redraw this diagram", "make this presentable", "この drawio をきれいにして", or the `/diagram-design:import` slash command.
+Load this file when the user points at a `.drawio`, `.drawio.xml`, `.drawio.png`, or `.drawio.svg` file and wants a diagram out of it — "convert this drawio", "redraw this diagram", "make this presentable", "この drawio をきれいにして", or the `/diagram-design:import-drawio` slash command.
 
 ---
 

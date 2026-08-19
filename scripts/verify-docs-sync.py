@@ -11,10 +11,15 @@ Five drift classes, each of which has shipped before:
 3. Every concrete file named in README.md's architecture tree must exist.
 4. Every relative references/*.md link in SKILL.md must resolve.
 5. Claude and Pi profile surfaces must both route to the profile reference.
+6. The plugin manifests repeat the SKILL.md description verbatim. They are the
+   text a user reads *before installing*, so by ADR 0004's own argument they
+   need every type's lexical hook too - and nothing else notices when they
+   drift, because they are four separate copies of one sentence.
 """
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -67,8 +72,8 @@ def check_description(errors: list[str]) -> None:
         errors.append("SKILL.md frontmatter description is missing")
         return
     types = selection_table_types(markdown)
-    if len(types) != 27:
-        errors.append(f"expected 27 visual types in the selection table; found {len(types)}")
+    if len(types) != 28:
+        errors.append(f"expected 28 visual types in the selection table; found {len(types)}")
     for name in types:
         key = normalized(name)
         key = DESCRIPTION_ALIASES.get(key, key)
@@ -151,9 +156,62 @@ def check_profile_surfaces(errors: list[str], root: Path) -> None:
             )
 
 
+MANIFEST_DESCRIPTIONS = (
+    (Path(".claude-plugin/plugin.json"), ("description",)),
+    (Path(".claude-plugin/marketplace.json"), ("description",)),
+    (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
+)
+
+
+def find_key(node: object, key: str) -> str | None:
+    """First value for *key* anywhere in a nested JSON document."""
+    if isinstance(node, dict):
+        if isinstance(node.get(key), str):
+            return node[key]
+        for value in node.values():
+            found = find_key(value, key)
+            if found is not None:
+                return found
+    elif isinstance(node, list):
+        for value in node:
+            found = find_key(value, key)
+            if found is not None:
+                return found
+    return None
+
+
+def check_manifest_descriptions(errors: list[str], root: Path) -> None:
+    markdown = SKILL.read_text(encoding="utf-8")
+    description = normalized(frontmatter_description(markdown))
+    if not description:
+        return
+    types = selection_table_types(markdown)
+    for relative, keys in MANIFEST_DESCRIPTIONS:
+        path = root / relative
+        if not path.exists():
+            errors.append(f"missing plugin manifest: {relative.as_posix()}")
+            continue
+        document = json.loads(path.read_text(encoding="utf-8"))
+        for key in keys:
+            value = find_key(document, key)
+            if value is None:
+                errors.append(f"{relative.as_posix()} has no {key!r}")
+                continue
+            text = normalized(value)
+            for name in types:
+                hook = DESCRIPTION_ALIASES.get(normalized(name), normalized(name))
+                if hook not in text:
+                    errors.append(
+                        f"{relative.as_posix()} {key!r} lost the lexical hook for "
+                        f"type {name!r} (expected {hook!r}) — it must name every "
+                        f"type the SKILL.md description names"
+                    )
+
+
 def main() -> int:
     errors: list[str] = []
     check_description(errors)
+    check_manifest_descriptions(errors, ROOT)
     check_gallery(errors)
     check_readme_tree(errors)
     check_skill_reference_links(
@@ -169,7 +227,7 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, profile surfaces"
+        "reference links, profile surfaces, manifest descriptions"
     )
     return 0
 

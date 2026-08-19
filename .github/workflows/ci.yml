@@ -51,6 +51,27 @@ jobs:
       - name: Validate Claude marketplace package without warnings
         run: npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict
 
+  python39-compat:
+    name: Python 3.9 Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Verify linter compatibility
+        run: |
+          python scripts/test-lint-a11y.py
+          python scripts/lint-skin.py --all --baseline
+
   validate:
     name: Lint & Verify (${{ matrix.os }}, Python ${{ matrix.python-version }})
     strategy:
@@ -129,7 +150,9 @@ jobs:
       - name: Verify draw.io import script
         if: always()
         id: drawio
-        run: python scripts/verify-drawio-import.py
+        run: |
+          python scripts/verify-drawio-import.py
+          python scripts/test-verify-drawio-import.py
 
       - name: Verify Mermaid import script
         if: always()
@@ -163,6 +186,35 @@ jobs:
         if: always()
         id: geometry_tests
         run: python scripts/test-verify-geometry.py
+
+      - name: Verify treemap area fidelity and label fit
+        if: always()
+        id: treemap
+        run: python scripts/verify-treemap.py --all
+
+      - name: Verify treemap checker
+        if: always()
+        id: treemap_tests
+        run: python scripts/test-verify-treemap.py
+
+      - name: Verify dumbbell domain and contrast rules
+        if: always()
+        id: dumbbell
+        run: python scripts/verify-dumbbell.py
+
+      - name: Verify dumbbell checker
+        if: always()
+        id: dumbbell_tests
+        run: python scripts/test-verify-dumbbell.py
+      - name: Verify slopegraph shared scale and endpoint values
+        if: always()
+        id: slopegraph
+        run: python scripts/verify-slopegraph.py --all
+
+      - name: Verify slopegraph checker
+        if: always()
+        id: slopegraph_tests
+        run: python scripts/test-verify-slopegraph.py
 
       - name: Verify generated icon assets
         if: always()
@@ -198,4 +250,10 @@ jobs:
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dumbbell Domain & Contrast | ${{ steps.dumbbell.outcome == 'success' && '✅ Passed' || (steps.dumbbell.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dumbbell Checker | ${{ steps.dumbbell_tests.outcome == 'success' && '✅ Passed' || (steps.dumbbell_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Slopegraph Shared Scale | ${{ steps.slopegraph.outcome == 'success' && '✅ Passed' || (steps.slopegraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Slopegraph Checker | ${{ steps.slopegraph_tests.outcome == 'success' && '✅ Passed' || (steps.slopegraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
