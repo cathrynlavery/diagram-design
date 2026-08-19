@@ -208,7 +208,16 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # A command that spells the type count out has to be edited by every PR that
 # adds a type, and is the one file such a PR has no reason to open. Both import
 # commands were left at 27 while the selection table moved on.
-HARDCODED_COUNT_RE = re.compile(r"one of the \d+\b")
+# The phrasing varies, so match the count rather than one sentence: `one of the
+# 27`, `28 visual types`, and `28 types` all go stale the same way. Every gap is
+# whitespace-tolerant because both commands already wrap the sentence that
+# carried the stale count — a line-at-a-time scan would miss a count that landed
+# just after the wrap, which is why the whole file is searched at once and the
+# line is derived from the match offset.
+HARDCODED_COUNT_RE = re.compile(
+    r"one\s+of\s+the\s+\d+\b|\b\d+\s+(?:[\w-]+\s+)?types\b",
+    re.IGNORECASE,
+)
 COUNT_SURFACES = (
     Path("commands/import-drawio.md"),
     Path("commands/import-mermaid.md"),
@@ -216,18 +225,21 @@ COUNT_SURFACES = (
 
 
 def check_type_counts(errors: list[str], root: Path) -> None:
-    """No routing surface may spell out how many visual types there are."""
+    """No routing surface may spell the visual-type count out as a number."""
     for relative in COUNT_SURFACES:
         path = root / relative
         if not path.is_file():
             errors.append(f"type-count surface is missing: {relative.as_posix()}")
             continue
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if HARDCODED_COUNT_RE.search(line):
-                errors.append(
-                    f"{relative.as_posix()}:{number} hardcodes the visual-type count; "
-                    f"point at SKILL.md \u00a73 instead so adding a type cannot leave it stale"
-                )
+        text = path.read_text(encoding="utf-8")
+        for match in HARDCODED_COUNT_RE.finditer(text):
+            number = text.count("\n", 0, match.start()) + 1
+            phrase = " ".join(match.group(0).split())
+            errors.append(
+                f"{relative.as_posix()}:{number} hardcodes the visual-type count "
+                f"({phrase!r}); point at SKILL.md \u00a73 instead so adding a type "
+                f"cannot leave it stale"
+            )
 
 
 MANIFEST_DESCRIPTIONS = (
