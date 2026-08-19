@@ -20,9 +20,9 @@ Thirty-nine visual types. Semantic patterns describe behavior independently; typ
 
 Resolve the project's `.diagram-design` marker per [`references/profiles.md`](references/profiles.md) first. A valid marker — including `profile: default` — selects its guide directly, skips this gate, and is never copied over the installed working copy; a malformed or missing-profile marker follows the visible failure handling in that reference.
 
-Otherwise open [`references/style-guide.md`](references/style-guide.md). If every semantic role and typography family is still shipped-default (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36` atomic-tangerine), **pause and ask** whether to brand it first — from a website URL, an installed skill, a local design-system folder, pasted tokens, or a saved client profile — or to proceed with the default. Then follow the matching section of [`references/onboarding.md`](references/onboarding.md), or `profiles.md` for a saved profile.
+Otherwise open [`references/style-guide.md`](references/style-guide.md). A valid leading profile header names the copied-in active profile and skips this gate too. Without one, if every semantic role and typography family is still shipped-default (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36` atomic-tangerine), **pause and ask** whether to brand it first — from a website URL, an installed skill, a local design-system folder, pasted tokens, or a saved client profile — or to proceed with the default. Then follow the matching section of [`references/onboarding.md`](references/onboarding.md), or `profiles.md` for a saved profile.
 
-Any semantic-role value or typography family differing from the shipped defaults means the skin is already chosen: skip the gate on later runs, and offer once to save an unsaved custom skin as a named profile.
+Without a header, any semantic-role value or typography family differing from the shipped defaults means the skin is already chosen: skip the gate on later runs, and offer once to save an unsaved custom skin as a named profile.
 
 ---
 

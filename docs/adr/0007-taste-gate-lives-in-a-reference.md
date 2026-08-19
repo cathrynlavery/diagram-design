@@ -1,6 +1,6 @@
 # ADR 0007 — The taste gate moves to a reference; the connector rules stay in SKILL.md
 
-**Status:** accepted (v2.6)
+**Status:** accepted (v2.4)
 
 ## Context
 
