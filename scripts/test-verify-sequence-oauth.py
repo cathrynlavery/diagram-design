@@ -3,15 +3,15 @@
 
 verify-sequence-oauth.py drives its checks against the real shipped
 sequence-diagram assets from a top-level main(), so it is exercised here as a
-CLI smoke test (pass) plus an adversarial case that mutates a temporary copy
-of the shipped OAuth examples to confirm a broken guard/return is rejected.
-This mirrors the CLI smoke-test pattern used by test-verify-motion.py for
-verify-motion.py.
+CLI smoke test (pass) plus an adversarial case that mutates a minimal temporary
+copy of just the files main() reads before it reaches the dashed-return check
+(type-sequence.md plus the cold-cache and oauth example trios) to confirm a
+broken guard/return is rejected. This mirrors the CLI smoke-test pattern used
+by test-verify-motion.py for verify-motion.py.
 """
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,6 +19,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 VERIFIER = ROOT / "scripts/verify-sequence-oauth.py"
+TYPE_SEQ = ROOT / "skills/diagram-design/references/type-sequence.md"
+ASSETS = ROOT / "skills/diagram-design/assets"
+COLD = [
+    ASSETS / "example-sequence.html",
+    ASSETS / "example-sequence-dark.html",
+    ASSETS / "example-sequence-full.html",
+]
+OAUTH = [
+    ASSETS / "example-sequence-oauth.html",
+    ASSETS / "example-sequence-oauth-dark.html",
+    ASSETS / "example-sequence-oauth-full.html",
+]
 
 
 def run_verifier(cwd: Path, verifier: Path = VERIFIER) -> subprocess.CompletedProcess[str]:
@@ -43,14 +55,25 @@ def main() -> int:
     # Removing the dashed-return marker from the 401 response must be rejected.
     # verify-sequence-oauth.py resolves every path relative to its own file
     # location (ROOT = parent of scripts/), so the adversarial case runs
-    # against a full temporary copy of the repository tree.
+    # against a minimal temporary copy that mirrors just the relative paths
+    # main() reads before the dashed-return check (type-sequence.md plus the
+    # cold-cache and oauth example trios) — not the full repository tree.
     with tempfile.TemporaryDirectory(prefix="verify-sequence-oauth-") as temp_dir:
         temp_root = Path(temp_dir) / "repo"
-        shutil.copytree(ROOT, temp_root)
-        oauth_copy = (
-            temp_root
-            / "skills/diagram-design/assets/example-sequence-oauth.html"
-        )
+        temp_verifier = temp_root / "scripts/verify-sequence-oauth.py"
+        temp_verifier.parent.mkdir(parents=True, exist_ok=True)
+        temp_verifier.write_text(VERIFIER.read_text(encoding="utf-8"), encoding="utf-8")
+
+        temp_type_seq = temp_root / TYPE_SEQ.relative_to(ROOT)
+        temp_type_seq.parent.mkdir(parents=True, exist_ok=True)
+        temp_type_seq.write_text(TYPE_SEQ.read_text(encoding="utf-8"), encoding="utf-8")
+
+        for path in (*COLD, *OAUTH):
+            dest = temp_root / path.relative_to(ROOT)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+
+        oauth_copy = temp_root / OAUTH[0].relative_to(ROOT)
         original = oauth_copy.read_text(encoding="utf-8")
         target_line = (
             '<line x1="476" y1="368" x2="168" y2="368" stroke="#4f5d75" '
@@ -72,7 +95,6 @@ def main() -> int:
 
         # verify-sequence-oauth.py resolves ROOT from its own __file__, so the
         # adversarial run must invoke the copy inside temp_root, not VERIFIER.
-        temp_verifier = temp_root / "scripts/verify-sequence-oauth.py"
         broken_result = run_verifier(temp_root, verifier=temp_verifier)
         if broken_result.returncode == 0:
             raise AssertionError(
