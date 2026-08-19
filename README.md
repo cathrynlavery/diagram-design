@@ -461,7 +461,7 @@ errors. Both run in CI on every pull request.
 ```bash
 pip install playwright && playwright install chromium   # same dep as PNG export
 python3 scripts/lint-render.py --self-test              # checks the checks
-python3 scripts/lint-render.py --all
+python3 scripts/lint-render.py --all                   # examples and templates
 python3 scripts/lint-render.py <your-new-example.html>
 python3 scripts/lint-render.py --fonts --all           # measure with the real webfonts
 ```

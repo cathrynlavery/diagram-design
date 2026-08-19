@@ -281,6 +281,16 @@ def parse_args():
     return parser.parse_args()
 
 
+def shipped_assets():
+    """Every asset that ships and renders: examples *and* the templates they are
+    scaffolded from. A broken template ships broken diagrams, so leaving templates
+    out of --all was a hole (thanks @greptile). index.html and icons.html are
+    galleries of the others, so they add no coverage.
+    """
+    patterns = ("example-*.html", "template*.html")
+    return sorted({path for pattern in patterns for path in ASSET_DIR.glob(pattern)})
+
+
 def display_path(path):
     try:
         return str(path.resolve().relative_to(ROOT))
@@ -747,7 +757,7 @@ def main():
         )
         return 2
 
-    paths = sorted(ASSET_DIR.glob("example-*.html")) if args.all else args.files
+    paths = shipped_assets() if args.all else args.files
     if not paths and not args.self_test:
         print("Nothing to check. Pass files, --all or --self-test.", file=sys.stderr)
         return 2
