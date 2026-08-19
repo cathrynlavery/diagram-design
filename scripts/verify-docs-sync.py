@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Five drift classes, each of which has shipped before:
+Seven drift classes, each of which has shipped before:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -15,6 +15,8 @@ Five drift classes, each of which has shipped before:
    text a user reads *before installing*, so by ADR 0004's own argument they
    need every type's lexical hook too - and nothing else notices when they
    drift, because they are four separate copies of one sentence.
+7. The High-Level reproducibility checklist must agree with its canvas formula
+   and retain sequential numbering.
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ SKILL = ROOT / "skills/diagram-design/SKILL.md"
 GALLERY = ROOT / "skills/diagram-design/assets/index.html"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 README = ROOT / "README.md"
+HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
 VARIANTS = ("", "-dark", "-full")
 # Types whose selection-table name differs from its description vocabulary.
 DESCRIPTION_ALIASES = {
@@ -156,6 +159,54 @@ def check_profile_surfaces(errors: list[str], root: Path) -> None:
             )
 
 
+def check_high_level_reference(errors: list[str], markdown: str) -> None:
+    width_formula = re.search(
+        r"^effective_w\s*=\s*(\d+)\s*-\s*right_strip_w\s*-\s*strip_margin",
+        markdown,
+        re.MULTILINE,
+    )
+    right_strip = re.search(r"^right_strip_w\s*=\s*(\d+)\s+if", markdown, re.MULTILINE)
+    strip_margin = re.search(r"^strip_margin\s*=\s*(\d+)\s+if", markdown, re.MULTILINE)
+    if not all((width_formula, right_strip, strip_margin)):
+        errors.append("High-Level canvas is missing the effective-width formula")
+        return
+
+    checklist = re.search(
+        r"^## 7\. Reproducibility checklist[^\n]*\n(.*?)(?=^## |\Z)",
+        markdown,
+        re.MULTILINE | re.DOTALL,
+    )
+    if checklist is None:
+        errors.append("High-Level reproducibility checklist is missing")
+        return
+
+    items = re.findall(r"^(\d+)\.\s+(.+)$", checklist.group(1), re.MULTILINE)
+    numbers = [int(number) for number, _ in items]
+    expected_numbers = list(range(1, len(numbers) + 1))
+    if numbers != expected_numbers:
+        rendered = ",".join(str(number) for number in numbers)
+        errors.append(
+            "High-Level reproducibility checklist numbering is not sequential: "
+            f"expected 1..{len(numbers)}, found {rendered}"
+        )
+
+    item_three = next((text for number, text in items if number == "3"), "")
+    checklist_width = re.search(r"effective_w\s*=\s*(\d+)", item_three)
+    expected_width = (
+        int(width_formula.group(1))
+        - int(right_strip.group(1))
+        - int(strip_margin.group(1))
+    )
+    if checklist_width is None:
+        errors.append("High-Level checklist item 3 is missing effective_w")
+    elif int(checklist_width.group(1)) != expected_width:
+        errors.append(
+            f"High-Level checklist item 3 has effective_w={checklist_width.group(1)}; "
+            f"expected {width_formula.group(1)} - {right_strip.group(1)} - "
+            f"{strip_margin.group(1)} = {expected_width}"
+        )
+
+
 MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/plugin.json"), ("description",)),
     (Path(".claude-plugin/marketplace.json"), ("description",)),
@@ -220,6 +271,7 @@ def main() -> int:
         SKILL.parent,
     )
     check_profile_surfaces(errors, ROOT)
+    check_high_level_reference(errors, HIGH_LEVEL_REFERENCE.read_text(encoding="utf-8"))
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -227,7 +279,7 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, profile surfaces, manifest descriptions"
+        "reference links, profile surfaces, manifest descriptions, High-Level invariants"
     )
     return 0
 

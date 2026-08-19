@@ -12,6 +12,37 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY = ROOT / "scripts" / "verify-docs-sync.py"
 
+HIGH_LEVEL_REFERENCE = """\
+## 2. Layout formulas — deterministic geometry
+
+### 2.1 Canvas
+
+```
+has_vertical       = any(c.vertical for c in chevrons)
+right_strip_w      = 28  if has_vertical else 0
+strip_margin       = 8   if has_vertical else 0
+effective_w        = 1000 - right_strip_w - strip_margin
+```
+
+## 7. Reproducibility checklist (the taste gate)
+
+1. Check one.
+2. Check two.
+3. If a vertical chevron exists, `effective_w = 964`; otherwise, `effective_w = 1000`.
+4. Check four.
+5. Check five.
+6. Check six.
+7. Check seven.
+8. Check eight.
+9. Check nine.
+10. Check ten.
+11. Check eleven.
+12. Check twelve.
+13. Check thirteen.
+
+## 8. Anti-patterns
+"""
+
 
 def load_verify_module():
     sys.dont_write_bytecode = True
@@ -90,8 +121,37 @@ def main() -> int:
         if errors != [expected]:
             raise AssertionError(f"stale Pi prompt was not reported: {errors}")
 
+        errors = []
+        verify.check_high_level_reference(errors, HIGH_LEVEL_REFERENCE)
+        if errors:
+            raise AssertionError(f"valid High-Level reference failed: {errors}")
+
+        errors = []
+        verify.check_high_level_reference(
+            errors,
+            HIGH_LEVEL_REFERENCE.replace("effective_w = 964", "effective_w = 972", 1),
+        )
+        expected = (
+            "High-Level checklist item 3 has effective_w=972; "
+            "expected 1000 - 28 - 8 = 964"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"stale effective width was not reported: {errors}")
+
+        errors = []
+        verify.check_high_level_reference(
+            errors,
+            HIGH_LEVEL_REFERENCE.replace("13. Check thirteen.", "11. Check thirteen."),
+        )
+        expected = (
+            "High-Level reproducibility checklist numbering is not sequential: "
+            "expected 1..13, found 1,2,3,4,5,6,7,8,9,10,11,12,11"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"duplicate checklist number was not reported: {errors}")
+
     print(
-        "PASS: docs sync checks reference links and Claude/Pi profile-surface parity"
+        "PASS: docs sync checks references, profile surfaces, and High-Level invariants"
     )
     return 0
 
