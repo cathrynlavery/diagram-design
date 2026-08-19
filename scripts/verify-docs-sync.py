@@ -208,14 +208,23 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # A command that spells the type count out has to be edited by every PR that
 # adds a type, and is the one file such a PR has no reason to open. Both import
 # commands were left at 27 while the selection table moved on.
-# The phrasing varies, so match the count rather than one sentence: `one of the
-# 27`, `28 visual types`, and `28 types` all go stale the same way. Every gap is
-# whitespace-tolerant because both commands already wrap the sentence that
-# carried the stale count — a line-at-a-time scan would miss a count that landed
-# just after the wrap, which is why the whole file is searched at once and the
-# line is derived from the match offset.
+# The phrasing varies, so match the count rather than the one sentence it went
+# stale in. Two forms carry it: the bare count standing in for the table
+# (`one of the 27`), and a count attached to the taxonomy noun with room for
+# adjectives between (`28 visual types`, `28 supported visual diagram types`).
+# The second clause insists on that noun so an unrelated quantity — `accepts 2
+# file types` — is not rejected by a gate about the visual taxonomy.
+#
+# Every gap is whitespace-tolerant because both commands already wrap the
+# sentence that carried the stale count, so a count can land just after the
+# wrap. That is why the whole file is searched at once and the line is derived
+# from the match offset rather than iterating lines.
+#
+# Word-form numerals (`Twenty-eight visual types`) are out of scope; README and
+# the docstring say "numeral" so the gate does not claim more than it checks.
 HARDCODED_COUNT_RE = re.compile(
-    r"one\s+of\s+the\s+\d+\b|\b\d+\s+(?:[\w-]+\s+)?types\b",
+    r"one\s+of\s+(?:the\s+)?\d+\b"
+    r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b",
     re.IGNORECASE,
 )
 COUNT_SURFACES = (
@@ -225,7 +234,7 @@ COUNT_SURFACES = (
 
 
 def check_type_counts(errors: list[str], root: Path) -> None:
-    """No routing surface may spell the visual-type count out as a number."""
+    """No routing surface may write the visual-type count as a numeral."""
     for relative in COUNT_SURFACES:
         path = root / relative
         if not path.is_file():

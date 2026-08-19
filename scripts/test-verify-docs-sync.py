@@ -194,14 +194,15 @@ diagram-design/
             raise AssertionError(f"a command pointing at SKILL.md failed: {errors}")
 
         # The stale wording the gate was written for, the same wording wrapped
-        # across the line the real commands wrap on, and the two alternatives a
-        # rewrite would reach for. Each is the only defect in the tree, so the
-        # gate has to report exactly one error.
+        # across the line the real commands wrap on, and the rewrites a later
+        # edit would reach for. Each is the only defect in the tree, so the gate
+        # has to report exactly one error.
         for stale in (
             "`--type` forces one of the 27.\n",
             "`--type` forces one of the\n27 visual types.\n",
+            "`--type` forces one of 28.\n",
             "The skill draws 28 visual types.\n",
-            "The skill draws 28 types.\n",
+            "The skill draws 28 supported visual diagram types.\n",
         ):
             mermaid.write_text(stale, encoding="utf-8")
             errors = []
@@ -209,6 +210,22 @@ diagram-design/
             if len(errors) != 1 or "hardcodes the visual-type count" not in errors[0]:
                 raise AssertionError(
                     f"a hardcoded count was not reported for {stale!r}: {errors}"
+                )
+
+        # Counts that are not the visual-type count must pass. A gate that
+        # rejects "accepts 2 file types" is one contributors route around, and
+        # both commands already carry unrelated numbers in their flag docs.
+        for benign in (
+            "`--type` accepts 2 file types.\n",
+            "Produces 3 output types.\n",
+            "`--detail=faithful` allows 24 nodes.\n",
+        ):
+            mermaid.write_text(routed + benign, encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if errors:
+                raise AssertionError(
+                    f"a count unrelated to the taxonomy was rejected for {benign!r}: {errors}"
                 )
 
         # Restore the routed wording first: leaving a stale count behind lets
