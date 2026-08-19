@@ -14,6 +14,7 @@ Redraw the Mermaid source at `$1` in this skill's design system, following [`ski
 Full argument string: `$ARGUMENTS`
 
 Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` blocks.
+Supported grammars are `flowchart`/`graph`, `sequenceDiagram`, `stateDiagram-v2`, `erDiagram`, `gantt`, `quadrantChart`, `timeline`, and `mindmap`.
 
 ## Defaults
 

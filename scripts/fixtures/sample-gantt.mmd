@@ -1,0 +1,12 @@
+gantt
+    title Platform migration
+    dateFormat YYYY-MM-DD
+    axisFormat %m-%d
+    excludes weekends
+    section Discovery
+        Inventory the estate      :done, inv, 2026-01-05, 10d
+        Interview service owners  :done, 2026-01-12, 8d
+    section Cutover
+        Dual-write the ledger     :active, crit, dual, after inv, 15d
+        Freeze the legacy writer  :freeze, after dual, 3d
+        Go-live                   :milestone, live, 2026-03-02, 0d

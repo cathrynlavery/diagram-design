@@ -281,7 +281,7 @@ Already have diagrams in draw.io / diagrams.net or Mermaid? Point the skill at t
 Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, or *"この Mermaid をスライド用にきれいにして"*.
 
 Reads the common containers draw.io writes — `.drawio`, `.drawio.xml`, `.drawio.png` (embedded diagram), and `.drawio.svg` — including compressed payloads that look like base64 garbage in an editor.
-For Mermaid, it accepts `.mmd`, `.mermaid`, and one or more fenced `mermaid` blocks in Markdown. It parses text only: no rendering, JavaScript, browser, network, or followed click targets.
+For Mermaid, it accepts `.mmd`, `.mermaid`, and one or more fenced `mermaid` blocks in Markdown, in the `flowchart`/`graph`, `sequenceDiagram`, `stateDiagram-v2`, `erDiagram`, `gantt`, `quadrantChart`, `timeline`, and `mindmap` grammars. It parses text only: no rendering, JavaScript, browser, network, or followed click targets.
 
 ### The four dials
 
