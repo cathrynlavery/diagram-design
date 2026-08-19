@@ -180,8 +180,36 @@ diagram-design/
         if errors != [expected]:
             raise AssertionError(f"missing Factory native path was not reported: {errors}")
 
+        counted = root / "commands"
+        counted.mkdir(parents=True, exist_ok=True)
+        drawio = counted / "import-drawio.md"
+        mermaid = counted / "import-mermaid.md"
+        for path in (drawio, mermaid):
+            path.write_text(
+                "`--type` forces one of the visual types in SKILL.md \u00a73.\n",
+                encoding="utf-8",
+            )
+
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"a command pointing at SKILL.md failed: {errors}")
+
+        mermaid.write_text("`--type` forces one of the 27.\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if len(errors) != 1 or "hardcodes the visual-type count" not in errors[0]:
+            raise AssertionError(f"a hardcoded count was not reported: {errors}")
+
+        drawio.unlink()
+        errors = []
+        verify.check_type_counts(errors, root)
+        if not any("type-count surface is missing" in error for error in errors):
+            raise AssertionError(f"a missing command surface was not reported: {errors}")
+
     print(
-        "PASS: docs sync checks references, profile surfaces, and Factory install contract"
+        "PASS: docs sync checks reference links, Claude/Pi profile-surface parity, "
+        "the Factory install contract, and hardcoded type counts"
     )
     return 0
 

@@ -205,6 +205,31 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
         )
 
 
+# A command that spells the type count out has to be edited by every PR that
+# adds a type, and is the one file such a PR has no reason to open. Both import
+# commands were left at 27 while the selection table moved on.
+HARDCODED_COUNT_RE = re.compile(r"one of the \d+\b")
+COUNT_SURFACES = (
+    Path("commands/import-drawio.md"),
+    Path("commands/import-mermaid.md"),
+)
+
+
+def check_type_counts(errors: list[str], root: Path) -> None:
+    """No routing surface may spell out how many visual types there are."""
+    for relative in COUNT_SURFACES:
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"type-count surface is missing: {relative.as_posix()}")
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if HARDCODED_COUNT_RE.search(line):
+                errors.append(
+                    f"{relative.as_posix()}:{number} hardcodes the visual-type count; "
+                    f"point at SKILL.md \u00a73 instead so adding a type cannot leave it stale"
+                )
+
+
 MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/plugin.json"), ("description",)),
     (Path(".claude-plugin/marketplace.json"), ("description",)),
@@ -271,6 +296,7 @@ def main() -> int:
         SKILL.parent,
     )
     check_profile_surfaces(errors, ROOT)
+    check_type_counts(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -278,7 +304,8 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, profile surfaces, manifest descriptions, Factory install contract"
+        "reference links, profile surfaces, manifest descriptions, "
+        "Factory install contract, type counts"
     )
     return 0
 

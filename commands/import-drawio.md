@@ -22,7 +22,8 @@ Accepts `.drawio`, `.drawio.xml`, `.xml`, `.drawio.png`, and `.drawio.svg`.
 - `--detail=balanced` · `--audience=mixed`.
 - `--variant=light` — the minimal light template.
 - A single-page file selects its only page; a multi-page file lists pages and asks which to use.
-- Type is chosen from the extracted structure; `--type` forces one of the 38.
+- Type is chosen from the extracted structure; `--type` forces one of the visual types in
+  [`SKILL.md` §3](../skills/diagram-design/SKILL.md).
 
 ## Flags
 
