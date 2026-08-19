@@ -1090,7 +1090,18 @@ def _gantt_task_fields(metadata: str) -> tuple[str | None, list[str], list[str]]
         (value for value in positional if not GANTT_DATE_RE.match(value)), None
     )
     dates = [value for value in positional if GANTT_DATE_RE.match(value)]
-    fields = [f"{name}: {value}" for name, value in zip(("start", "end"), dates)]
+    # Mermaid's task-metadata table is positional. A lone date is the task's
+    # *end*, with the start inherited from the task above it; a date only means
+    # "start" when something else supplies the end — a length, an `until`, or a
+    # second date. Labelling every first date `start` moved single-date tasks a
+    # whole task-length earlier in the redraw.
+    if len(dates) >= 2:
+        names = ("start", "end")
+    elif duration or until:
+        names = ("start",)
+    else:
+        names = ("end",)
+    fields = [f"{name}: {value}" for name, value in zip(names, dates)]
     if duration:
         fields.append(f"dur: {duration}")
     if after:
@@ -1172,6 +1183,15 @@ def _parse_quadrant(
         if point.group("extra").strip():
             # Per-point radius, colour, and stroke are source styling.
             diagram.discarded["style_directives"] += 1
+        # Mermaid defines the quadrant plane as the unit square, so a coordinate
+        # outside it has no position to redraw. Carrying it through would place
+        # the point off-canvas or silently clamp it into a quadrant the source
+        # never chose; both are worse than reporting the source as malformed.
+        for axis in ("x", "y"):
+            if not 0.0 <= float(point.group(axis)) <= 1.0:
+                _fail(
+                    f"quadrant point {axis} out of the 0-1 range at line {line_number}"
+                )
         node = diagram.add_node(
             _leaf_id(diagram, "point"), clean_label(point.group("name")), "point"
         )
@@ -1186,7 +1206,7 @@ def _parse_timeline(
     # turn every drawn period into a container the budget stops counting.
     section: str | None = None
     period: Node | None = None
-    for _line_number, raw in lines[header_position + 1 :]:
+    for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
             continue
@@ -1194,6 +1214,7 @@ def _parse_timeline(
         lowered = keyword.casefold()
         if lowered == "title":
             diagram.meta["title"] = clean_label(remainder)
+            period = None
             continue
         if lowered == "section":
             section = diagram.add_node(
@@ -1206,10 +1227,15 @@ def _parse_timeline(
             period = None
             continue
         parts = [clean_label(part) for part in text.split(":")]
-        if not parts[0] and period is not None:
+        if not parts[0]:
             # A line opening with `:` continues the period above it. Drawing a
             # period for it would put an unlabelled marker on the timeline and
-            # strand its events away from the period they belong to.
+            # strand its events away from the period they belong to. With no
+            # period above it there is nothing to continue, and the fallback
+            # node id would surface in the redraw as a period the source never
+            # named — inventing content the import is not allowed to invent.
+            if period is None:
+                _fail(f"timeline continuation without a period at line {line_number}")
             period.fields.extend(event for event in parts[1:] if event)
             continue
         period = diagram.add_node(

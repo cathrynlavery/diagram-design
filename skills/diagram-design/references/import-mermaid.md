@@ -26,9 +26,9 @@ The four schedule-and-hierarchy grammars carry structure that is neither a node 
 
 | Grammar | Nodes | Edges | Node fields | `meta` |
 |---|---|---|---|---|
-| `gantt` | Sections are containers; tasks are drawable | `after <id>` dependencies | `start`, `end`, `dur`, `after`, `until`, `status` | `title`, `dateFormat`, `axisFormat`, `excludes`, … |
-| `quadrantChart` | One point per entry | none | `x`, `y` (0–1) | `title`, `x-axis`, `y-axis`, `quadrant-1`…`quadrant-4` |
-| `timeline` | Sections are containers; periods are drawable | none | one field per event on that period | `title` |
+| `gantt` | Sections are containers; tasks are drawable | `after <id>` dependencies | `start`, `end`, `dur`, `after`, `until`, `status` — a lone date is an `end`, per Mermaid's positional metadata table | `title`, `dateFormat`, `axisFormat`, `excludes`, … |
+| `quadrantChart` | One point per entry | none | `x`, `y` (0–1, enforced) | `title`, `x-axis`, `y-axis`, `quadrant-1`…`quadrant-4` |
+| `timeline` | Sections are containers; periods are drawable | none | one field per event on that period, including events on a continuation line | `title` |
 | `mindmap` | Every topic is drawable | parent → child, no arrowhead | — | — |
 
 Two consequences worth knowing before you read the digest. Gantt tasks and quadrant items get the 12-item budget from SKILL.md §7 rather than the default 9, and the `budget:` line names the cap it applied. Grammars that are edgeless by design (`gantt` with no dependencies, `quadrantChart`, `timeline`) omit the `unconnected:` line, because listing every node there would be noise rather than the first rung of the degrade ladder.
@@ -38,7 +38,7 @@ Two consequences worth knowing before you read the digest. Gantt tasks and quadr
 - `--max-rows N` controls digest table length; default 40.
 - `--out PATH` writes the digest without changing its content.
 
-If the extractor exits 2, report its message verbatim and stop. Do not render the source or paste it into an online editor as a fallback.
+The extractor exits 2 rather than guessing when a source is malformed — an unparsable edge or gantt task, a quadrant coordinate outside the unit square, or a timeline continuation line with no period above it to continue. If the extractor exits 2, report its message verbatim and stop. Do not render the source or paste it into an online editor as a fallback.
 
 ## Step 2 — Set the four dials
 

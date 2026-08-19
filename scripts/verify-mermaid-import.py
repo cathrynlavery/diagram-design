@@ -637,10 +637,39 @@ def check_gantt(tmp: Path) -> None:
     if "after: ghost" not in _fields(orphan["nodes"][1]):
         fail("an unresolved dependency must still be reported as a field")
 
+    # Mermaid reads a lone date as the task's end, inheriting the start from the
+    # task above; a date only means "start" when a length, an `until`, or a
+    # second date supplies the end. Getting this backwards moves a single-date
+    # task a whole task-length earlier in the redraw.
+    positional = tmp / "gantt-positional.mmd"
+    positional.write_text(
+        "gantt\n"
+        "    dateFormat YYYY-MM-DD\n"
+        "    section S\n"
+        "        Lone end      :2026-03-01\n"
+        "        Start and dur :2026-03-02, 5d\n"
+        "        Both dates    :2026-03-10, 2026-03-20\n"
+        "        After and end :after-task, after lone, 2026-04-01\n"
+        "        Start until   :2026-05-01, until after-task\n",
+        encoding="utf-8",
+    )
+    arity = json.loads(run_extract([str(positional), "--json"]))["diagrams"][0]
+    expected = {
+        "Lone end": "end: 2026-03-01",
+        "Start and dur": "start: 2026-03-02; dur: 5d",
+        "Both dates": "start: 2026-03-10; end: 2026-03-20",
+        "After and end": "end: 2026-04-01; after: lone",
+        "Start until": "start: 2026-05-01; until: after-task",
+    }
+    for label, wanted in expected.items():
+        actual = _fields(_by_label(arity, label))
+        if actual != wanted:
+            fail(f"gantt metadata arity mis-parsed for {label!r}: {actual!r} != {wanted!r}")
+
     malformed = tmp / "gantt-malformed.mmd"
     malformed.write_text("gantt\n    section S\n        Task with no metadata\n", encoding="utf-8")
     expect_error([str(malformed)], "malformed gantt task at line 3")
-    ok("gantt parses: sections, ids, dates, tags, dependencies, budget")
+    ok("gantt parses: sections, ids, dates, tags, dependencies, metadata arity, budget")
 
 
 def check_quadrant(tmp: Path) -> None:
@@ -666,7 +695,18 @@ def check_quadrant(tmp: Path) -> None:
     malformed = tmp / "quadrant-malformed.mmd"
     malformed.write_text("quadrantChart\n    Campaign A: 0.3, 0.6\n", encoding="utf-8")
     expect_error([str(malformed)], "malformed quadrant point at line 2")
-    ok("quadrantChart parses: axes, quadrant names, points, discards")
+    # 0 and 1 are on the plane, not off it: a range check written with the wrong
+    # comparison would reject the two corners every quadrant chart uses.
+    corners = tmp / "quadrant-corners.mmd"
+    corners.write_text(
+        "quadrantChart\n  Low: [0, 0]\n  High: [1, 1]\n", encoding="utf-8"
+    )
+    edge = json.loads(run_extract([str(corners), "--json"]))["diagrams"][0]
+    if _fields(_by_label(edge, "Low")) != "x: 0; y: 0":
+        fail("a point at the origin corner was rejected or mangled")
+    if _fields(_by_label(edge, "High")) != "x: 1; y: 1":
+        fail("a point at the far corner was rejected or mangled")
+    ok("quadrantChart parses: axes, quadrant names, points, bounds, discards")
 
 
 def check_timeline() -> None:
@@ -911,6 +951,26 @@ def check_errors_and_limits(tmp: Path) -> None:
     malformed_state = tmp / "malformed-state.mmd"
     malformed_state.write_text("stateDiagram-v2\nIdle -->\n", encoding="utf-8")
     expect_error([str(malformed_state)], "malformed edge at line 2")
+
+    # A continuation line with nothing above it to continue. Every anchor the
+    # parser clears has to reach the same error, or one of them silently draws
+    # a period the source never named.
+    for name, source in (
+        ("first", "timeline\n    : orphan\n"),
+        ("section", "timeline\n    section S\n        : orphan\n"),
+        ("title", "timeline\n    title T\n    : orphan\n"),
+    ):
+        orphan = tmp / f"orphan-{name}.mmd"
+        orphan.write_text(source, encoding="utf-8")
+        expect_error([str(orphan)], "timeline continuation without a period")
+
+    for axis, source in (
+        ("x", "quadrantChart\n  A: [1.01, 0.5]\n"),
+        ("y", "quadrantChart\n  A: [0.5, -0.01]\n"),
+    ):
+        out_of_range = tmp / f"quadrant-{axis}.mmd"
+        out_of_range.write_text(source, encoding="utf-8")
+        expect_error([str(out_of_range)], f"quadrant point {axis} out of the 0-1 range")
 
     malformed_er = tmp / "malformed-er.mmd"
     malformed_er.write_text("erDiagram\nCUSTOMER ||--o{\n", encoding="utf-8")
