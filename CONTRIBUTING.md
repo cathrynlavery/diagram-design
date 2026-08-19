@@ -158,7 +158,7 @@ Motion is opt-in. Start from `skills/diagram-design/assets/template-motion.html`
 
 ## Design decisions (ADRs)
 
-Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the visual-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, and geometric label placement being verified rather than reviewed. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
+Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the visual-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, geometric label placement being verified rather than reviewed, and the taste gate living in a reference while the connector rules stay in `SKILL.md`. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
 
 ## Adding a new diagram type
 
