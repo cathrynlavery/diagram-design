@@ -221,6 +221,16 @@ jobs:
         id: slopegraph_tests
         run: python scripts/test-verify-slopegraph.py
 
+      - name: Verify sankey flow conservation
+        if: always()
+        id: sankey
+        run: python scripts/verify-sankey.py --all
+
+      - name: Verify sankey checker
+        if: always()
+        id: sankey_tests
+        run: python scripts/test-verify-sankey.py
+
       - name: Verify generated icon assets
         if: always()
         id: icons
@@ -262,4 +272,6 @@ jobs:
           echo "| Dumbbell Checker | ${{ steps.dumbbell_tests.outcome == 'success' && '✅ Passed' || (steps.dumbbell_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Shared Scale | ${{ steps.slopegraph.outcome == 'success' && '✅ Passed' || (steps.slopegraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Checker | ${{ steps.slopegraph_tests.outcome == 'success' && '✅ Passed' || (steps.slopegraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sankey Flow Conservation | ${{ steps.sankey.outcome == 'success' && '✅ Passed' || (steps.sankey.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sankey Checker | ${{ steps.sankey_tests.outcome == 'success' && '✅ Passed' || (steps.sankey_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
