@@ -26,8 +26,10 @@ def category(index: int, value: int, endpoint: tuple[float, float] | None) -> st
     if endpoint is not None:
         x, y = endpoint
         body = (
-            f'<line data-polar-ray="" x1="100" y1="100" x2="{x}" y2="{y}"/>'
-            f'<circle data-polar-marker="" cx="{x}" cy="{y}" r="4"/>' + body
+            f'<line data-polar-ray="" x1="100" y1="100" x2="{x}" y2="{y}" '
+            'stroke-width="2"/>'
+            f'<circle data-polar-marker="" cx="{x}" cy="{y}" r="4" '
+            'stroke-width="1.2"/>' + body
         )
     return (
         f'<g data-polar-category="c{index}" data-polar-index="{index}" '
@@ -42,6 +44,25 @@ def document(categories: str, extra_svg: str = "") -> str:
         'data-polar-radius="100" data-polar-min="0" data-polar-max="100" '
         'data-polar-start-angle="-90" data-polar-clockwise="true" '
         'data-polar-radius-encoding="linear" data-polar-inner-radius="0">'
+        '<rect data-polar-background="" width="100%" height="100%" fill="white"/>'
+        '<circle data-polar-ring="" cx="100" cy="100" r="20" fill="none" '
+        'stroke-width="0.8"/>'
+        '<circle data-polar-ring="" cx="100" cy="100" r="40" fill="none" '
+        'stroke-width="0.8"/>'
+        '<circle data-polar-ring="" cx="100" cy="100" r="60" fill="none" '
+        'stroke-width="0.8"/>'
+        '<circle data-polar-ring="" cx="100" cy="100" r="80" fill="none" '
+        'stroke-width="0.8"/>'
+        '<circle data-polar-ring="" cx="100" cy="100" r="100" fill="none" '
+        'stroke-width="0.8"/>'
+        '<line data-polar-spoke="" data-polar-index="0" x1="100" y1="100" '
+        'x2="100" y2="0" stroke-width="0.8"/>'
+        '<line data-polar-spoke="" data-polar-index="1" x1="100" y1="100" '
+        'x2="200" y2="100" stroke-width="0.8"/>'
+        '<line data-polar-spoke="" data-polar-index="2" x1="100" y1="100" '
+        'x2="100" y2="200" stroke-width="0.8"/>'
+        '<line data-polar-spoke="" data-polar-index="3" x1="100" y1="100" '
+        'x2="0" y2="100" stroke-width="0.8"/>'
         f'{extra_svg}{categories}</svg></body></html>'
     )
 
@@ -98,6 +119,302 @@ def main() -> int:
                 '<path d="M100 100 L100 20 A80 80 0 0 1 180 100 Z"/></svg>',
             ),
             "wedge",
+        ),
+        (
+            "polygon area encoding",
+            VALID.replace(
+                '</svg>',
+                '<polygon points="100,100 100,20 180,100" fill="red"/></svg>',
+            ),
+            "unsupported SVG element <polygon>",
+        ),
+        (
+            "external referenced shape",
+            VALID.replace('</svg>', '<use href="#polar-wedge"/></svg>'),
+            "unsupported SVG element <use>",
+        ),
+        (
+            "URL-valued ray marker",
+            VALID.replace(
+                'data-polar-ray=""',
+                'data-polar-ray="" marker-end="url(https://example.com/marker.svg#tip)"',
+                1,
+            ),
+            "URL-valued SVG attribute marker-end is forbidden",
+        ),
+        (
+            "external chart stylesheet",
+            VALID.replace(
+                '<body>',
+                '<head><link rel="stylesheet" href="https://example.com/chart.css"></head><body>',
+            ),
+            "external stylesheets are forbidden in polar documents",
+        ),
+        (
+            "CSS geometry override",
+            VALID.replace(
+                '<body>',
+                '<head><style>[data-polar-ray]{stroke-width:40!important}</style></head><body>',
+            ),
+            "CSS geometry properties are forbidden in polar documents",
+        ),
+        (
+            "CSS imported stylesheet",
+            VALID.replace(
+                '<body>',
+                '<head><style>@import url(https://attacker.invalid/polar.css);</style></head><body>',
+            ),
+            "CSS stylesheet loading is forbidden in polar documents",
+        ),
+        (
+            "CSS marker radius override",
+            VALID.replace(
+                '<body>',
+                '<head><style>circle[data-polar-marker]{r:40px}</style></head><body>',
+            ),
+            "CSS geometry properties are forbidden in polar documents",
+        ),
+        (
+            "CSS marker position override",
+            VALID.replace(
+                '<body>',
+                '<head><style>circle[data-polar-marker]{cx:1000px;cy:1000px}</style></head><body>',
+            ),
+            "CSS geometry properties are forbidden in polar documents",
+        ),
+        (
+            "CSS all shorthand override",
+            VALID.replace(
+                '<body>',
+                '<head><style>[data-polar-ray]{all:initial!important}</style></head><body>',
+            ),
+            "CSS selectors must not target data-polar-chart",
+        ),
+        (
+            "CSS individual scale override",
+            VALID.replace(
+                '<body>',
+                '<head><style>[data-polar-ray]{scale:10}</style></head><body>',
+            ),
+            "CSS selectors must not target data-polar-chart",
+        ),
+        (
+            "inline CSS marker radius override",
+            VALID.replace(
+                'data-polar-marker="" cx="125"',
+                'data-polar-marker="" style="r:40px" cx="125"',
+                1,
+            ),
+            "inline CSS geometry properties are forbidden inside data-polar-chart",
+        ),
+        (
+            "inline CSS marker position override",
+            VALID.replace(
+                'data-polar-marker="" cx="125"',
+                'data-polar-marker="" style="cx:1000px;cy:1000px" cx="125"',
+                1,
+            ),
+            "inline CSS geometry properties are forbidden inside data-polar-chart",
+        ),
+        (
+            "inline CSS ray translation",
+            VALID.replace(
+                'data-polar-ray=""',
+                'data-polar-ray="" style="translate:100px 0"',
+                1,
+            ),
+            "inline styles are forbidden inside data-polar-chart",
+        ),
+        (
+            "inline CSS marker offset path",
+            VALID.replace(
+                'data-polar-marker=""',
+                'data-polar-marker="" style="offset-path:path(&quot;M0 0L100 0&quot;);offset-distance:100%"',
+                1,
+            ),
+            "inline styles are forbidden inside data-polar-chart",
+        ),
+        (
+            "classed chart primitive",
+            VALID.replace('data-polar-marker=""', 'data-polar-marker="" class="marker"', 1),
+            "class attributes are forbidden inside data-polar-chart",
+        ),
+        (
+            "duplicate ray stroke-width",
+            VALID.replace(
+                'stroke-width="2"', 'stroke-width="40" stroke-width="2"', 1
+            ),
+            "duplicate attribute stroke-width on <line>",
+        ),
+        (
+            "duplicate marker radius",
+            VALID.replace('r="4" stroke-width="1.2"',
+                          'r="40" r="4" stroke-width="1.2"', 1),
+            "duplicate attribute r on <circle>",
+        ),
+        (
+            "duplicate ring fill",
+            VALID.replace('r="20" fill="none"',
+                          'r="20" fill="red" fill="none"', 1),
+            "duplicate attribute fill on <circle>",
+        ),
+        (
+            "mismatched chart end tag",
+            VALID.replace(
+                '</svg>',
+                '</bogus><polygon points="100,100 100,20 180,100"/></svg>',
+            ),
+            "mismatched closing tag </bogus>",
+        ),
+        (
+            "nested SVG",
+            VALID.replace('</svg>', '<svg></svg></svg>'),
+            "unsupported SVG element <svg>",
+        ),
+        (
+            "unmarked filled circle",
+            VALID.replace(
+                '</svg>', '<circle cx="100" cy="100" r="80" fill="red"/></svg>'
+            ),
+            "circle must be a ring or category marker",
+        ),
+        (
+            "unmarked rectangle",
+            VALID.replace(
+                '</svg>', '<rect width="50%" height="50%" fill="red"/></svg>'
+            ),
+            "rect must be the chart background",
+        ),
+        (
+            "partial chart background",
+            VALID.replace('data-polar-background="" width="100%"',
+                          'data-polar-background="" width="50%"'),
+            "background must cover the full chart",
+        ),
+        (
+            "filled grid ring",
+            VALID.replace(
+                '</svg>',
+                '<circle data-polar-ring="" cx="100" cy="100" r="80" fill="red"/></svg>',
+            ),
+            "ring must use fill none",
+        ),
+        (
+            "off-grid ring",
+            VALID.replace(
+                '</svg>',
+                '<circle data-polar-ring="" cx="100" cy="100" r="70" fill="none" stroke-width="0.8"/></svg>',
+            ),
+            "ring radius 70 is not a 20% scale interval",
+        ),
+        (
+            "thick grid ring",
+            VALID.replace(
+                '</svg>',
+                '<circle data-polar-ring="" cx="100" cy="100" r="80" fill="none" stroke-width="40"/></svg>',
+            ),
+            "ring stroke-width 40 does not match expected 0.8",
+        ),
+        (
+            "inline-style thick grid ring",
+            VALID.replace(
+                'r="80" fill="none" stroke-width="0.8"',
+                'r="80" fill="none" stroke-width="0.8" style="stroke-width: 40"',
+            ),
+            "ring stroke-width 40 does not match expected 0.8",
+        ),
+        (
+            "missing grid ring",
+            VALID.replace(
+                '<circle data-polar-ring="" cx="100" cy="100" r="20" fill="none" '
+                'stroke-width="0.8"/>',
+                '',
+            ),
+            "grid-ring count is 4, expected five",
+        ),
+        (
+            "duplicate grid radius",
+            VALID.replace('r="20" fill="none"', 'r="40" fill="none"'),
+            "ring radii must cover 20% through 100% intervals",
+        ),
+        (
+            "small-radius duplicate grid rings",
+            VALID.replace('data-polar-radius="100"', 'data-polar-radius="1"')
+            .replace('r="20" fill="none"', 'r="0.5" fill="none"')
+            .replace('r="40" fill="none"', 'r="0.5" fill="none"')
+            .replace('r="60" fill="none"', 'r="0.5" fill="none"')
+            .replace('r="80" fill="none"', 'r="0.5" fill="none"')
+            .replace('r="100" fill="none"', 'r="0.5" fill="none"'),
+            "ring radii must cover 20% through 100% intervals",
+        ),
+        (
+            "oversized endpoint marker",
+            VALID.replace('data-polar-marker="" cx="125" cy="100" r="4"',
+                          'data-polar-marker="" cx="125" cy="100" r="40"'),
+            "marker radius 40 does not match expected 4",
+        ),
+        (
+            "thick endpoint marker",
+            VALID.replace('cx="125" cy="100" r="4" stroke-width="1.2"',
+                          'cx="125" cy="100" r="4" stroke-width="40"'),
+            "marker stroke-width 40 does not match expected 1.2",
+        ),
+        (
+            "unmarked thick line",
+            VALID.replace(
+                '</svg>',
+                '<line x1="100" y1="100" x2="200" y2="100" stroke-width="80"/></svg>',
+            ),
+            "line must be a spoke, category ray, or rule",
+        ),
+        (
+            "thick category ray",
+            VALID.replace('data-polar-ray="" x1="100" y1="100" x2="125" y2="100" '
+                          'stroke-width="2"',
+                          'data-polar-ray="" x1="100" y1="100" x2="125" y2="100" '
+                          'stroke-width="40"'),
+            "ray stroke-width 40 does not match expected 2",
+        ),
+        (
+            "missing category spoke",
+            VALID.replace(
+                '<line data-polar-spoke="" data-polar-index="3" x1="100" y1="100" '
+                'x2="0" y2="100" stroke-width="0.8"/>',
+                '',
+            ),
+            "spoke indices must be contiguous 0..3",
+        ),
+        (
+            "thick chart rule",
+            VALID.replace(
+                '</svg>',
+                '<line data-polar-rule="" x1="0" y1="210" x2="200" y2="210" '
+                'stroke-width="40"/></svg>',
+            ),
+            "rule stroke-width 40 does not match expected 0.8",
+        ),
+        (
+            "duplicate chart rules",
+            VALID.replace(
+                '</svg>',
+                '<line data-polar-rule="" x1="0" y1="210" x2="200" y2="210" '
+                'stroke-width="0.8"/>'
+                '<line data-polar-rule="" x1="0" y1="220" x2="200" y2="220" '
+                'stroke-width="0.8"/></svg>',
+            ),
+            "chart rule count is 2, expected at most one",
+        ),
+        (
+            "transformed chart geometry",
+            VALID.replace('<g data-polar-category="c1"',
+                          '<g transform="scale(10)" data-polar-category="c1"'),
+            "transforms are forbidden inside data-polar-chart",
+        ),
+        (
+            "non-SVG chart root",
+            VALID.replace('<svg data-polar-chart=""', '<div data-polar-chart=""')
+            .replace('</svg>', '</div>'),
+            "data-polar-chart must be an SVG element",
         ),
         (
             "blank value label",
