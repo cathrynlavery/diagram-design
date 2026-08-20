@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Increment the synchronized Claude and Codex plugin manifest versions."""
+"""Increment the synchronized Claude, Codex, and Factory manifest versions."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MANIFEST_PATHS = (
     Path(".claude-plugin/plugin.json"),
     Path(".codex-plugin/plugin.json"),
+    Path(".factory-plugin/plugin.json"),
 )
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
@@ -46,7 +47,7 @@ def bump(root: Path, part: str = "patch") -> str:
     if any(version != raw_versions[0] for version in raw_versions[1:]):
         rendered = ", ".join(
             f"{relative}={version!r}"
-            for (relative, _), version in zip(manifests, raw_versions, strict=True)
+            for (relative, _), version in zip(manifests, raw_versions)
         )
         raise PackageVersionError(f"manifest versions are not synchronized: {rendered}")
 
@@ -74,7 +75,7 @@ def bump(root: Path, part: str = "patch") -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Increment both plugin manifests (patch by default)."
+        description="Increment all plugin manifests (patch by default)."
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--major", action="store_true", help="increment the major version")
@@ -90,7 +91,7 @@ def main() -> int:
     except PackageVersionError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    print(f"Updated Claude and Codex plugin manifests to {version}")
+    print(f"Updated Claude, Codex, and Factory plugin manifests to {version}")
     return 0
 
 

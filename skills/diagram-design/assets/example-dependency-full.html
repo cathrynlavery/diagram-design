@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeScript monorepo dependency graph · Dependency</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --color-link:#2e5aa8; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.ink { background: var(--color-ink); } .card-dot.muted { background: var(--color-muted); } .card-dot.coral { background: var(--color-accent); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p, .card ul { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; list-style: none; }
+    .card li { margin-bottom: 0.3rem; padding-left: 0.875rem; position: relative; }
+    .card li::before { content: '—'; position: absolute; left: 0; color: rgba(45,49,66,0.25); font-size: 0.75rem; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Dependency · Diagram Design</p>
+      <h1>TypeScript monorepo dependency graph</h1>
+      <p class="subtitle">Nine packages, ranked by dependency depth. A tree can't show what matters here — that <code>shared-types</code> has four dependents, or that <code>utils</code> depends back on it. Coral is spent on exactly that cycle.</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependency-full-title dependency-full-desc">
+        <title id="dependency-full-title">TypeScript monorepo dependency graph</title>
+        <desc id="dependency-full-desc">Ranked dependency graph of a TypeScript monorepo showing shared-types as the highest fan-in package with four dependents, and one back-edge cycle from utils into shared-types.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+          </marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+          </marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+          </marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- Rank labels (left margin) -->
+        <text x="40" y="108" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">RANK 0</text>
+        <text x="40" y="228" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">RANK 1</text>
+        <text x="40" y="348" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">RANK 2</text>
+        <text x="40" y="468" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">RANK 3</text>
+
+        <!-- Connectors drawn before boxes -->
+        <!-- web -> api (straight, same column) -->
+        <line x1="400" y1="136" x2="400" y2="200" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- web -> ui-kit (elbow, bridged over the web->api crossing at x=400) -->
+        <path d="M 360,136 V 152 Q 360,160 368,160 H 392 a 8,8 0 0,1 16,0 H 552 Q 560,160 560,168 V 200" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- admin -> ui-kit (straight, same column) -->
+        <line x1="600" y1="136" x2="600" y2="200" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- admin -> api (elbow, bridged over the web->ui-kit crossing) -->
+        <path d="M 640,136 V 168 Q 640,176 632,176 H 568 a 8,8 0 0,0 -16,0 H 448 Q 440,176 440,184 V 200" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- api -> shared-types (straight, same column) -->
+        <line x1="400" y1="256" x2="400" y2="320" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- api -> db (elbow, routed at y=304 - 16px below the ui-kit->shared-types elbow at y=288 so the two never run colinear) -->
+        <path d="M 440,256 V 296 Q 440,304 448,304 H 592 Q 600,304 600,312 V 320" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- ui-kit -> shared-types (elbow, bridges the api->shared-types crossing at x=400 and the api->db vertical at x=440) -->
+        <path d="M 572,256 V 280 Q 572,288 564,288 H 448 a 8,8 0 0,0 -16,0 H 408 a 8,8 0 0,0 -16,0 H 368 Q 360,288 360,296 V 320" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- ui-kit -> tokens (elbow, routed around the outside via the left margin, at y=272 - 16px clear of the ui-kit->shared-types elbow at y=288 so the two never run parallel closer than 12px; bridges the ui-kit->shared-types vertical at x=572, the api->shared-types crossing at x=400, and the api->db vertical at x=440) -->
+        <path d="M 628,256 V 264 Q 628,272 620,272 H 580 a 8,8 0 0,0 -16,0 H 448 a 8,8 0 0,0 -16,0 H 408 a 8,8 0 0,0 -16,0 H 188 Q 180,272 180,280 V 460 Q 180,468 188,468 H 220" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- db -> shared-types (straight, same row) -->
+        <line x1="520" y1="348" x2="480" y2="348" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- shared-types -> utils (elbow) -->
+        <path d="M 372,376 V 400 Q 372,408 380,408 H 492 Q 500,408 500,416 V 440" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <!-- shared-types -> zod (elbow) -->
+        <path d="M 428,376 V 388 Q 428,396 436,396 H 692 Q 700,396 700,404 V 440" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+
+        <!-- Cycle back-edge: utils -> shared-types, routed below the tokens/utils row and above the legend hairline -->
+        <!-- Hop on the accent (dashed, less-important) stroke where it crosses the ui-kit->tokens connector at (196,468) -->
+        <path d="M 440,496 V 500 Q 440,508 432,508 H 204 Q 196,508 196,500 V 476 a 8,8 0 0,0 0,-16 V 356 Q 196,348 204,348 H 320" fill="none" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-accent)"/>
+        <rect x="204" y="504" width="40" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="224" y="513" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CYCLE</text>
+
+        <!-- web -->
+        <rect x="320" y="80" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="320" y="80" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="328" y="86" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="342" y="95" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+        <rect x="444" y="88" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="458" y="97" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0 IN</text>
+        <text x="400" y="114" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">web</text>
+        <text x="400" y="130" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">apps/web</text>
+
+        <!-- admin -->
+        <rect x="520" y="80" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="520" y="80" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="528" y="86" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="542" y="95" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+        <rect x="644" y="88" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="658" y="97" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0 IN</text>
+        <text x="600" y="114" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">admin</text>
+        <text x="600" y="130" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">apps/admin</text>
+
+        <!-- api -->
+        <rect x="320" y="200" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="320" y="200" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="328" y="206" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="342" y="215" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+        <rect x="444" y="208" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="458" y="217" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2 IN</text>
+        <text x="400" y="234" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">api</text>
+        <text x="400" y="250" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">services/api</text>
+
+        <!-- ui-kit -->
+        <rect x="520" y="200" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="520" y="200" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="528" y="206" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="542" y="215" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PKG</text>
+        <rect x="644" y="208" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="658" y="217" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2 IN</text>
+        <text x="600" y="234" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ui-kit</text>
+        <text x="600" y="250" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">packages/ui-kit</text>
+
+        <!-- shared-types (highest fan-in) -->
+        <rect x="320" y="320" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="320" y="320" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="328" y="326" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="342" y="335" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PKG</text>
+        <rect x="444" y="328" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="458" y="337" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4 IN</text>
+        <text x="400" y="354" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">shared-types</text>
+        <text x="400" y="370" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">packages/shared-types</text>
+
+        <!-- db -->
+        <rect x="520" y="320" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="520" y="320" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="528" y="326" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="542" y="335" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+        <rect x="644" y="328" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="658" y="337" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1 IN</text>
+        <text x="600" y="354" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">db</text>
+        <text x="600" y="370" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">services/db</text>
+
+        <!-- tokens (leaf) -->
+        <rect x="220" y="440" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="220" y="440" width="160" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <rect x="228" y="446" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="242" y="455" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PKG</text>
+        <rect x="344" y="448" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="358" y="457" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1 IN</text>
+        <text x="300" y="474" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">tokens</text>
+        <text x="300" y="490" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">packages/tokens</text>
+
+        <!-- utils (holds the outgoing cycle edge) -->
+        <rect x="420" y="440" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="420" y="440" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <rect x="428" y="446" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="442" y="455" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PKG</text>
+        <rect x="544" y="448" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="558" y="457" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1 IN</text>
+        <text x="500" y="474" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">utils</text>
+        <text x="500" y="490" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">packages/utils</text>
+
+        <!-- zod (external) -->
+        <rect x="620" y="440" width="160" height="56" rx="6" fill="#f5f5f5"/>
+        <rect x="620" y="440" width="160" height="56" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <rect x="628" y="446" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="642" y="455" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+        <rect x="744" y="448" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+        <text x="758" y="457" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1 IN</text>
+        <text x="700" y="474" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">zod</text>
+        <text x="700" y="490" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">v3.23 · npm</text>
+
+        <!-- Legend strip -->
+        <line x1="40" y1="524" x2="960" y2="524" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="540" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+        <rect x="40" y="556" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="64" y="565" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Internal package</text>
+
+        <rect x="192" y="556" width="16" height="12" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="216" y="565" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">External / third-party</text>
+
+        <rect x="380" y="556" width="16" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
+        <text x="404" y="565" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Leaf (no outgoing)</text>
+
+        <line x1="552" y1="562" x2="580" y2="562" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="5,4"/>
+        <text x="588" y="565" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Cycle (back-edge)</text>
+
+        <text x="700" y="565" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Badges show fan-in — a tree can't express convergence.</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">THE HEADLINE</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>One cycle, spent deliberately</h3></div>
+        <p>Coral appears exactly twice: the dashed back-edge from <code>utils</code> into <code>shared-types</code>, and its <code>CYCLE</code> label. Everything else — including the four-dependent fan-in on <code>shared-types</code> — stays ink and muted, because only the cycle is the editorial point.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink"></span><h3>Why not a tree</h3></div>
+        <ul><li>shared-types has four parents, not one</li><li>utils depends back on its own ancestor</li><li>a tree can render neither honestly</li></ul>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot muted"></span><h3>Read the badges</h3></div>
+        <p>The small <code>N IN</code> chip on every node is the fan-in count. It's the fastest way to spot where a change ripples widest before reading a single arrow.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>typescript monorepo dependency graph</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

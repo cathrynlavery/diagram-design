@@ -51,6 +51,13 @@ MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkd"}
 MERMAID_SUFFIXES = {".mmd", ".mermaid"}
 
 
+def _configure_stdout_utf8() -> None:
+    """Emit digests as UTF-8 even when Windows selects a legacy codepage."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8", errors="strict")
+
+
 def _fail(message: str) -> NoReturn:
     print(f"mermaid_extract: {message}", file=sys.stderr)
     raise SystemExit(2)
@@ -1322,4 +1329,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    _configure_stdout_utf8()
     raise SystemExit(main())

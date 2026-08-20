@@ -145,7 +145,7 @@ Geist has no CJK coverage. When labels contain Japanese, Chinese, or Korean text
 <text font-family="'Geist', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif">인증 서비스</text>
 ```
 
-The Hiragino/Yu Gothic stack carries no Hangul glyphs, so Korean labels need the Korean stack — don't reuse the Japanese one. For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace` (Japanese) or `'Geist Mono', 'Noto Sans Mono CJK KR', monospace` (Korean). CJK glyphs render ~10% wider than Latin at the same size — budget box width accordingly, and prefer 12px names over 8px sublabels for CJK, which goes muddy below 10px.
+The Hiragino/Yu Gothic stack carries no Hangul glyphs, so Korean labels need the Korean stack — don't reuse the Japanese one. For mono sublabels use `'Geist Mono', 'Noto Sans Mono CJK JP', monospace` (Japanese) or `'Geist Mono', 'Noto Sans Mono CJK KR', monospace` (Korean). Budget **1em per full-width CJK glyph**, not a small percentage over the average Latin glyph; `verify-treemap.py` uses that conservative contract for Unicode wide/full-width characters and treats combining marks as non-advancing. Prefer 12px names over 8px sublabels for CJK, which goes muddy below 10px. Actual width still varies by fallback font, so run the relevant geometry verifier after translating labels.
 
 ---
 

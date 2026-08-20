@@ -159,7 +159,7 @@ Write the new tokens to `style-guide.md`. Suggest running the `/regenerate-examp
 
 After onboarding, the user should:
 
-1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 28 types.
+1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 38 types.
 2. If any type looks off, they usually need to tune `muted` (often too dark or too light against the new `paper`).
 
 ---
@@ -197,6 +197,12 @@ Use the installed-skill location exposed by the current agent when available. Ot
 
 1. `~/.claude/skills/<skill-name>/` (user install)
 2. `.claude/skills/<skill-name>/` (project install)
+
+**Factory Droid:**
+
+1. `~/.factory/skills/<skill-name>/` (personal install)
+2. `.factory/skills/<skill-name>/` from the current directory through the repo root (folder-specific or project install)
+3. The active path shown in `/skills` under **Plugins**; installed plugins keep the shared `skills/<skill-name>/` directory inside Droid's plugin cache
 
 Finally, check any path the user provides explicitly. If the skill is still not found, ask the user to confirm the name or provide its path.
 
