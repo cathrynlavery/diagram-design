@@ -284,6 +284,9 @@ B--no-->A
 C-.fast.->D
 D==crit==>E
 E--tie---A
+K<--both-->L
+M o--circle--o N
+O x--blocked--x P
 F --o G --> H
 I----->J
 """,
@@ -291,18 +294,30 @@ I----->J
     )
     compact = json.loads(run_extract([str(compact_file), "--json"]))["diagrams"][0]
     compact_ids = sorted(node["id"] for node in compact["nodes"])
-    if compact_ids != ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]:
+    if compact_ids != [
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P",
+    ]:
         fail(f"compact edge labels materialized phantom nodes: {compact_ids}")
     compact_labels = [edge["label"] for edge in compact["edges"]]
-    if compact_labels[:6] != ["", "yes", "no", "fast", "crit", "tie"]:
+    if compact_labels[:9] != [
+        "", "yes", "no", "fast", "crit", "tie", "both", "circle", "blocked",
+    ]:
         fail(f"compact edge labels were not retained: {compact_labels}")
-    if compact_labels[6:] != ["", "", ""]:
+    if compact_labels[9:] != ["", "", ""]:
         fail(
             "operator characters or chained links were misread as compact "
             f"labels: {compact_labels}"
         )
     if compact["edges"][3]["style"] != "dashed" or compact["edges"][4]["style"] != "thick":
         fail("compact dotted/thick labeled links lost their styles")
+    arrow_bidir, circle_bidir, cross_bidir = compact["edges"][6:9]
+    if not arrow_bidir["bidirectional"] or arrow_bidir["arrowhead"] != "arrow":
+        fail("compact labeled `<-- -->` link lost bidirectional arrow semantics")
+    if not circle_bidir["bidirectional"] or circle_bidir["arrowhead"] != "circle":
+        fail("compact labeled `o-- --o` link lost bidirectional circle semantics")
+    if not cross_bidir["bidirectional"] or cross_bidir["arrowhead"] != "cross":
+        fail("compact labeled `x-- --x` link lost bidirectional cross semantics")
 
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(

@@ -605,17 +605,18 @@ def _edge_operators(text: str) -> list[_Operator]:
     # Labeled links carry the label between the opening and closing operator:
     # `A-- text -->B`, `A-. retry .-> B`, `A== critical ==> B`, and the
     # undirected forms of each. The compact form drops the spaces —
-    # `B--yes-->C` — so its label may not contain whitespace, and the operator
-    # characters themselves may not open one (keeping `A----->B` unlabeled and
-    # `A --o B --> C` two separate links).
+    # `B--yes-->C` — and may retain a left arrow/circle/cross marker, as in
+    # `A<--yes-->B` or `A o--yes--o B`. Its label may not contain whitespace,
+    # and the operator characters themselves may not open one (keeping
+    # `A----->B` unlabeled and `A --o B --> C` two separate links).
     text_edge = re.compile(
-        r"(?:--|-\.|==)"
-        r"(?:\s+(.+?)\s+|(?![-=.\s])([^\s|<>]+?))"
-        r"(\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+        r"(?P<opening>(?:<|[xo])?(?:--|-\.|==))"
+        r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
+        r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
     )
     for match in text_edge.finditer(mask):
-        token = match.group(3)
-        label_group = 1 if match.group(1) is not None else 2
+        token = match.group("opening") + match.group("closing")
+        label_group = "spaced" if match.group("spaced") is not None else "compact"
         style, arrowhead, bidirectional, undirected = _operator_style(token)
         operators.append(
             _Operator(
