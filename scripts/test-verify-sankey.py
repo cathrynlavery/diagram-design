@@ -236,6 +236,29 @@ def main() -> int:
             "a rect that is not any shape this figure draws",
         )
 
+        # 8a-bis. A rect's SIZE is not enough — its position decides what it may
+        #     claim to be. A swatch-sized 16x8 rect is a legend key below the
+        #     band floor and ink over the figure inside it, where it is exactly
+        #     big enough to cover a printed value. And a bar-width rect BELOW
+        #     the band is a shape parse_bars will never read: unrefused, it is
+        #     ink this checker certified without examining.
+        case(
+            failures, directory, "swatch-in-plot",
+            source.replace(ANNOT,
+                '      <rect x="600" y="300" width="16" height="8" fill="#f5f5f5"/>\n'
+                + ANNOT, 1),
+            source, "neither a node bar",
+            "a swatch-sized rect parked inside the plot band",
+        )
+        case(
+            failures, directory, "bar-below-band",
+            source.replace(ANNOT,
+                '      <rect x="600" y="496" width="12" height="8" fill="#2d3142"/>\n'
+                + ANNOT, 1),
+            source, "neither a node bar",
+            "a bar-width rect below the plot band",
+        )
+
         # 8b. Strip every ribbon. Eight node bars remain, so the file still looks
         #     like a sankey — but there is no flow left at all, and every
         #     conservation check would pass on it vacuously.

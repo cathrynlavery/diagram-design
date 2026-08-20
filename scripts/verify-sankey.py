@@ -866,19 +866,28 @@ def certify_readable(name: str, source: str) -> list[str]:
                 continue                                    # the paper, or its texture
             width, why_w = length_px(raw_w)
             height, why_h = length_px(raw_h)
-            if why_w or why_h:
-                refuse(offset, f"draws a <rect> whose size cannot be read: {why_w or why_h}. "
-                               f"A bar height IS the volume it claims, so a size this "
-                               f"checker has to guess at is a sum it cannot stand behind")
+            # y decides WHICH shape a rect may claim to be — a swatch lives in
+            # the legend region and a bar in the plot band — so an unreadable y
+            # is refused along with an unreadable size. Absent y is SVG's 0.
+            y, why_y = length_px((attrs.get("y") or "0").strip() or "0")
+            if why_w or why_h or why_y:
+                refuse(offset, f"draws a <rect> whose size or position cannot be read: "
+                               f"{why_w or why_h or why_y}. A bar height IS the volume it "
+                               f"claims, so a value this checker has to guess at is a sum "
+                               f"it cannot stand behind")
                 continue
-            if (width, height) == LEGEND_SWATCH:
-                continue                                    # a legend key
-            if width is None or not (BAR_MIN_W <= width <= BAR_MAX_W):
-                refuse(offset, f"draws a <rect> {raw_w or '?'}x{raw_h or '?'}, which is "
-                               f"neither a node bar, a legend swatch, nor the full-bleed "
-                               f"paper. A rect that is none of those is ink laid over the "
-                               f"figure, and painted last it covers whatever was just "
-                               f"measured")
+            if (width, height) == LEGEND_SWATCH and y is not None and y >= BAND_BOTTOM:
+                continue                                    # a legend key, in the legend
+            if (width is not None and height is not None and y is not None
+                    and BAR_MIN_W <= width <= BAR_MAX_W and height >= BAR_MIN_H
+                    and BAND_TOP <= y and y + height <= BAND_BOTTOM):
+                continue                                    # a node bar; parse_bars reads it
+            refuse(offset, f"draws a <rect> {raw_w or '?'}x{raw_h or '?'} at y={y:g}, "
+                           f"which is neither a node bar, a legend swatch, nor the "
+                           f"full-bleed paper — a bar lives inside the plot band and a "
+                           f"swatch below it. A rect that is none of those is ink laid "
+                           f"over the figure, and painted last it covers whatever was "
+                           f"just measured")
         if tag == "line":
             width_px, why = stroke_width_px(attrs)
             if why or width_px is None:
