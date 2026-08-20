@@ -100,7 +100,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Stacked abstraction levels | **Layer stack** | [type-layers.md](references/type-layers.md) |
 | Overlap between sets | **Venn** | [type-venn.md](references/type-venn.md) |
 | Ranked hierarchy or conversion drop-off | **Pyramid / funnel** | [type-pyramid.md](references/type-pyramid.md) |
-| Quantitative comparison across categories | **Bar chart** | [type-bar.md](references/type-bar.md) |
+| Quantitative comparison across categories, or one variable's distribution (histogram) | **Bar chart** | [type-bar.md](references/type-bar.md) |
 | Part-of-whole where the relative sizes are the story | **Treemap** | [type-treemap.md](references/type-treemap.md) |
 | Continuous trends over time, change between exactly two states (slopegraph), or one distribution per series (ridgeline) | **Line chart** | [type-line.md](references/type-line.md) |
 | Tasks and phases on a timeline | **Gantt** | [type-gantt.md](references/type-gantt.md) |
