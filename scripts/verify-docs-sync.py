@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Seven drift classes, each of which has shipped before:
+Eight drift classes, each of which has shipped before:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -17,6 +17,9 @@ Seven drift classes, each of which has shipped before:
    drift, because they are four separate copies of one sentence.
 7. Factory Droid's README install commands and native manifest path must agree
    with the package metadata instead of becoming a second hand-maintained API.
+8. An import command that writes the visual-type count as a numeral has to be
+   edited by every PR that adds a type — and is the one file such a PR has no
+   reason to open. Both commands were left at 27 while the table moved on.
 """
 
 from __future__ import annotations
