@@ -10,8 +10,11 @@ Exit 0 only when all gates pass. Intended for local/PR checks alongside:
 from __future__ import annotations
 
 import base64
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import re
 import struct
 import subprocess
@@ -43,6 +46,10 @@ def ok(msg: str) -> None:
     print(f"OK: {msg}")
 
 
+def normalize_newlines(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def run_extract(args: list[str]) -> str:
     proc = subprocess.run(
         [sys.executable, str(EXTRACT), *args],
@@ -54,6 +61,71 @@ def run_extract(args: list[str]) -> str:
     if proc.returncode != 0:
         fail(f"extractor exited {proc.returncode} for {args}: {proc.stderr.strip()}")
     return proc.stdout
+
+
+def check_legacy_stdout_encoding(tmp: Path) -> None:
+    source = tmp / "unicode-stdout.drawio"
+    source.write_text(
+        """<mxfile><diagram name="日本語">
+<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="2" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
+<mxGeometry x="0" y="0" width="120" height="60" as="geometry"/>
+</mxCell></root></mxGraphModel></diagram></mxfile>""",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "cp1252"
+    env["PYTHONUTF8"] = "0"
+    process = subprocess.run(
+        [sys.executable, str(EXTRACT), str(source)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if process.returncode != 0:
+        fail(
+            "draw.io extractor failed with legacy stdout encoding: "
+            + process.stderr.decode("utf-8", errors="replace").strip()
+        )
+    try:
+        output = process.stdout.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        fail(f"draw.io extractor did not emit UTF-8 stdout: {error}")
+    for needle in ("日本語", "登录", "続行 ⇒ résumé", "⏎"):
+        if needle not in output:
+            fail(f"UTF-8 draw.io digest lost {needle!r}: {output!r}")
+    if "�" in output:
+        fail("UTF-8 draw.io digest contains a replacement character")
+    destination = tmp / "unicode-stdout.md"
+    file_process = subprocess.run(
+        [sys.executable, str(EXTRACT), str(source), "--out", str(destination)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if file_process.returncode != 0:
+        fail("draw.io --out failed under a legacy Windows encoding")
+    file_output = destination.read_text(encoding="utf-8")
+    if normalize_newlines(file_output) != normalize_newlines(output):
+        fail("draw.io --out no longer matches its UTF-8 stdout digest")
+
+    class CallerOwnedStdout(io.StringIO):
+        def __init__(self) -> None:
+            super().__init__()
+            self.reconfigured = False
+
+        def reconfigure(self, **_kwargs: object) -> None:
+            self.reconfigured = True
+
+    caller_stdout = CallerOwnedStdout()
+    extractor = load_extractor_module()
+    with contextlib.redirect_stdout(caller_stdout):
+        result = extractor.main([str(source)])
+    if result != 0 or caller_stdout.reconfigured:
+        fail("imported draw.io main() reconfigured its caller-owned stdout")
+    if "登录" not in caller_stdout.getvalue():
+        fail("imported draw.io main() did not write to its caller-owned stdout")
+    ok("draw.io stdout stays lossless UTF-8 under a legacy Windows encoding")
 
 
 def load_extractor_module():
@@ -341,6 +413,16 @@ def check_security_and_limits(tmp: Path) -> None:
 
 def check_docs() -> None:
     import_text = IMPORT_REF.read_text(encoding="utf-8")
+    expected_slash_command = f"/diagram-design:{COMMAND.stem}"
+    documented_slash_commands = set(
+        re.findall(r"`(/diagram-design:[a-z0-9-]+)`", import_text)
+    )
+    if documented_slash_commands != {expected_slash_command}:
+        rendered = ", ".join(sorted(documented_slash_commands)) or "none"
+        fail(
+            "import-drawio.md slash command does not match "
+            f"{COMMAND.name}: expected {expected_slash_command}, found {rendered}"
+        )
     for needle in (
         "drawio_extract.py",
         "output-spec.md",
@@ -433,6 +515,7 @@ def main() -> int:
         check_files()
         check_parse_raw()
         check_containers(tmp)
+        check_legacy_stdout_encoding(tmp)
         check_digest_escaping(tmp)
         check_security_and_limits(tmp)
         check_docs()

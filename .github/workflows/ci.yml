@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         env:
           GIT_CONFIG_COUNT: "1"
           GIT_CONFIG_KEY_0: "core.autocrlf"
@@ -31,12 +31,12 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
@@ -58,12 +58,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.9"
 
@@ -84,7 +84,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         env:
           GIT_CONFIG_COUNT: "1"
           GIT_CONFIG_KEY_0: "core.autocrlf"
@@ -93,7 +93,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -158,7 +158,9 @@ jobs:
       - name: Verify draw.io import script
         if: always()
         id: drawio
-        run: python scripts/verify-drawio-import.py
+        run: |
+          python scripts/verify-drawio-import.py
+          python scripts/test-verify-drawio-import.py
 
       - name: Verify Mermaid import script
         if: always()
@@ -177,6 +179,11 @@ jobs:
         run: |
           python scripts/verify-docs-sync.py
           python scripts/test-verify-docs-sync.py
+
+      - name: Verify canonical screenshot freshness
+        if: always()
+        id: screenshots
+        run: python scripts/verify-screenshot-freshness.py
 
       - name: Verify packaged self-check
         if: always()
@@ -202,6 +209,25 @@ jobs:
         if: always()
         id: treemap_tests
         run: python scripts/test-verify-treemap.py
+
+      - name: Verify dumbbell domain and contrast rules
+        if: always()
+        id: dumbbell
+        run: python scripts/verify-dumbbell.py
+
+      - name: Verify dumbbell checker
+        if: always()
+        id: dumbbell_tests
+        run: python scripts/test-verify-dumbbell.py
+      - name: Verify slopegraph shared scale and endpoint values
+        if: always()
+        id: slopegraph
+        run: python scripts/verify-slopegraph.py --all
+
+      - name: Verify slopegraph checker
+        if: always()
+        id: slopegraph_tests
+        run: python scripts/test-verify-slopegraph.py
 
       - name: Verify generated icon assets
         if: always()
@@ -235,9 +261,14 @@ jobs:
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Optional Motion Contract | ${{ steps.motion.outcome == 'success' && '✅ Passed' || (steps.motion.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dumbbell Domain & Contrast | ${{ steps.dumbbell.outcome == 'success' && '✅ Passed' || (steps.dumbbell.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dumbbell Checker | ${{ steps.dumbbell_tests.outcome == 'success' && '✅ Passed' || (steps.dumbbell_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Slopegraph Shared Scale | ${{ steps.slopegraph.outcome == 'success' && '✅ Passed' || (steps.slopegraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Slopegraph Checker | ${{ steps.slopegraph_tests.outcome == 'success' && '✅ Passed' || (steps.slopegraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

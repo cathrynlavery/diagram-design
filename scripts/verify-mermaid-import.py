@@ -8,8 +8,11 @@ command wiring. Exit 0 only when every gate passes.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -38,6 +41,10 @@ def ok(message: str) -> None:
     print(f"OK: {message}")
 
 
+def normalize_newlines(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def invoke(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(EXTRACT), *args],
@@ -56,6 +63,67 @@ def run_extract(args: list[str]) -> str:
             f"{process.stderr.strip()}"
         )
     return process.stdout
+
+
+def check_legacy_stdout_encoding(tmp: Path) -> None:
+    source = tmp / "unicode-stdout.mmd"
+    source.write_text(
+        'flowchart TD\nA["登录<br/>続行 ⇒"] --> B["résumé"]\n',
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "cp1252"
+    env["PYTHONUTF8"] = "0"
+    process = subprocess.run(
+        [sys.executable, str(EXTRACT), str(source)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if process.returncode != 0:
+        fail(
+            "Mermaid extractor failed with legacy stdout encoding: "
+            + process.stderr.decode("utf-8", errors="replace").strip()
+        )
+    try:
+        output = process.stdout.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        fail(f"Mermaid extractor did not emit UTF-8 stdout: {error}")
+    for needle in ("登录", "続行 ⇒", "résumé", "⏎"):
+        if needle not in output:
+            fail(f"UTF-8 Mermaid digest lost {needle!r}: {output!r}")
+    if "�" in output:
+        fail("UTF-8 Mermaid digest contains a replacement character")
+    destination = tmp / "unicode-stdout.md"
+    file_process = subprocess.run(
+        [sys.executable, str(EXTRACT), str(source), "--out", str(destination)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if file_process.returncode != 0:
+        fail("Mermaid --out failed under a legacy Windows encoding")
+    file_output = destination.read_text(encoding="utf-8")
+    if normalize_newlines(file_output) != normalize_newlines(output):
+        fail("Mermaid --out no longer matches its UTF-8 stdout digest")
+
+    class CallerOwnedStdout(io.StringIO):
+        def __init__(self) -> None:
+            super().__init__()
+            self.reconfigured = False
+
+        def reconfigure(self, **_kwargs: object) -> None:
+            self.reconfigured = True
+
+    caller_stdout = CallerOwnedStdout()
+    extractor = load_extractor_module()
+    with contextlib.redirect_stdout(caller_stdout):
+        result = extractor.main([str(source)])
+    if result != 0 or caller_stdout.reconfigured:
+        fail("imported Mermaid main() reconfigured its caller-owned stdout")
+    if "登录" not in caller_stdout.getvalue():
+        fail("imported Mermaid main() did not write to its caller-owned stdout")
+    ok("Mermaid stdout stays lossless UTF-8 under a legacy Windows encoding")
 
 
 def expect_error(args: list[str], message: str) -> None:
@@ -708,6 +776,7 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)

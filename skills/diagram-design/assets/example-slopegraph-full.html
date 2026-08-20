@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>p95 by service, before and after · Slopegraph</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral { background: var(--color-accent); }
+    .card-dot.ink-strong { background: rgba(45,49,66,0.80); }
+    .card-dot.ink-light { background: rgba(45,49,66,0.62); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Slopegraph · Diagram Design</p>
+      <h1>One service went the other way</h1>
+      <p class="subtitle">p95 response time per service before and after the caching layer, both axes on one 100-to-550ms scale. Four services got faster. The recommender got 81% slower, and being the only line going up it crosses three of them.</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="slopegraph-full-title slopegraph-full-desc">
+        <title id="slopegraph-full-title">One service went the other way</title>
+        <desc id="slopegraph-full-desc">Slopegraph of p95 response time by service before and after a caching layer, on one shared 100-to-550-millisecond scale; four services got faster and the recommender got slower, crossing three of them.</desc>
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <!-- Both axes carry the SAME 100-550 ms scale. That is the whole claim of a
+             slopegraph and the only thing that makes one slope comparable with
+             another; scripts/verify-slopegraph.py enforces it against the values
+             each line declares. -->
+        <text transform="rotate(-90 24 230)" x="24" y="230" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">P95 RESPONSE TIME, MS</text>
+
+        <!-- No gridlines: every endpoint prints its own value, so a gridline would
+             be ink carrying nothing. The two axis rules are the scale. -->
+        <line x1="320" y1="40" x2="320" y2="420" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text data-axis="from" data-state="BEFORE" x="320" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">BEFORE</text>
+        <line x1="680" y1="40" x2="680" y2="420" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text data-axis="to" data-state="AFTER" x="680" y="440" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">AFTER</text>
+
+        <line data-series="Search" data-from="512" data-to="208" x1="320" y1="72.1" x2="680" y2="328.8" stroke="rgba(45,49,66,0.80)" stroke-width="1.2"/>
+        <circle cx="320" cy="72.1" r="3" fill="rgba(45,49,66,0.80)"/>
+        <circle cx="680" cy="328.8" r="3" fill="rgba(45,49,66,0.80)"/>
+        <text data-series="Search" data-end="from" data-role="name" x="272" y="75.6" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">Search</text>
+        <text data-series="Search" data-end="from" x="304" y="75.6" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">512</text>
+        <text data-series="Search" data-end="to" x="696" y="332.3" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">208</text>
+        <text data-series="Search" data-end="to" data-role="name" x="728" y="332.3" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">Search</text>
+
+        <line data-series="Catalog" data-from="376" data-to="164" x1="320" y1="186.9" x2="680" y2="366" stroke="rgba(45,49,66,0.74)" stroke-width="1.2"/>
+        <circle cx="320" cy="186.9" r="3" fill="rgba(45,49,66,0.74)"/>
+        <circle cx="680" cy="366" r="3" fill="rgba(45,49,66,0.74)"/>
+        <text data-series="Catalog" data-end="from" data-role="name" x="272" y="190.4" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">Catalog</text>
+        <text data-series="Catalog" data-end="from" x="304" y="190.4" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">376</text>
+        <text data-series="Catalog" data-end="to" x="696" y="369.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">164</text>
+        <text data-series="Catalog" data-end="to" data-role="name" x="728" y="369.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">Catalog</text>
+
+        <line data-series="Checkout" data-from="291" data-to="143" x1="320" y1="258.7" x2="680" y2="383.7" stroke="rgba(45,49,66,0.68)" stroke-width="1.2"/>
+        <circle cx="320" cy="258.7" r="3" fill="rgba(45,49,66,0.68)"/>
+        <circle cx="680" cy="383.7" r="3" fill="rgba(45,49,66,0.68)"/>
+        <text data-series="Checkout" data-end="from" data-role="name" x="272" y="262.2" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">Checkout</text>
+        <text data-series="Checkout" data-end="from" x="304" y="262.2" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">291</text>
+        <text data-series="Checkout" data-end="to" x="696" y="387.2" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">143</text>
+        <text data-series="Checkout" data-end="to" data-role="name" x="728" y="387.2" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">Checkout</text>
+
+        <line data-series="Auth" data-from="154" data-to="121" x1="320" y1="374.4" x2="680" y2="402.3" stroke="rgba(45,49,66,0.62)" stroke-width="1.2"/>
+        <circle cx="320" cy="374.4" r="3" fill="rgba(45,49,66,0.62)"/>
+        <circle cx="680" cy="402.3" r="3" fill="rgba(45,49,66,0.62)"/>
+        <text data-series="Auth" data-end="from" data-role="name" x="272" y="377.9" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">Auth</text>
+        <text data-series="Auth" data-end="from" x="304" y="377.9" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">154</text>
+        <text data-series="Auth" data-end="to" x="696" y="405.8" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">121</text>
+        <text data-series="Auth" data-end="to" data-role="name" x="728" y="405.8" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">Auth</text>
+
+        <!-- Recommender FOCAL -- and it is the series that got WORSE. The accent marks
+             the editorially focal line, never the winner. Focus is carried by STROKE
+             WEIGHT, not tone: the accent measures 2.86:1 on light paper, so on tone
+             alone the focal line would read fainter than the ink ramp it is meant to
+             dominate. Its labels stay ink/muted for the same reason -- accent text
+             misses AA at this size. Being the only ascending line it crosses three of
+             the other four -- not Auth, which starts and ends below it, because moving
+             the opposite way does not guarantee meeting. The crossings are left
+             unannotated: two endpoints say nothing about WHEN the regression started. -->
+        <line data-series="Recommender" data-from="238" data-to="431" x1="320" y1="303.5" x2="680" y2="140.5" stroke="#eb6c36" stroke-width="2.4"/>
+        <circle cx="320" cy="303.5" r="4" fill="#eb6c36"/>
+        <circle cx="680" cy="140.5" r="4" fill="#eb6c36"/>
+        <text data-series="Recommender" data-end="from" data-role="name" x="272" y="307" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Recommender</text>
+        <text data-series="Recommender" data-end="from" x="304" y="307" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">238</text>
+        <text data-series="Recommender" data-end="to" x="696" y="144" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">431</text>
+        <text data-series="Recommender" data-end="to" data-role="name" x="728" y="144" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif">Recommender</text>
+
+        <!-- Legend -->
+        <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <text x="960" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">P95 RESPONSE TIME IN MS, LOWER IS BETTER · SAME 100-550 SCALE ON BOTH AXES · ILLUSTRATIVE FIGURES, NOT A MEASURED RELEASE</text>
+
+        <line x1="40" y1="492" x2="64" y2="492" stroke="#eb6c36" stroke-width="2.4"/>
+        <circle cx="52" cy="492" r="4" fill="#eb6c36"/>
+        <text x="72" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Recommender · focal, the only regression</text>
+        <line x1="320" y1="492" x2="344" y2="492" stroke="rgba(45,49,66,0.80)" stroke-width="1.2"/>
+        <circle cx="332" cy="492" r="3" fill="rgba(45,49,66,0.80)"/>
+        <text x="352" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Other services · strongest tone was slowest before</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">FOCAL · RECOMMENDER</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>The recommender went from fourth-slowest to slowest</h3></div>
+        <p>238ms to 431ms. It is the only line that rises, so it crosses three of the other four — all but Auth, which stays below it throughout. Where it crosses on the page is an artifact of joining two endpoints with a straight line: this chart cannot say when the regression started, only that it is there.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink-strong"></span><h3>Search won the most and is still the second slowest</h3></div>
+        <p>512ms to 208ms, down 304 — the steepest slope here. It started so far above everything else that the largest absolute win still leaves it near the top. Level and change share one scale, which is what lets you read both at once.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink-light"></span><h3>Auth barely moved because it had nothing to win</h3></div>
+        <p>154ms to 121ms, down 33. Nearly flat, and low on the axis — a shallow slope down here means a service that was already fast, while the same shallow slope near the top would mean a cache that did not work.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <span>p95 response time · before and after the caching layer · illustrative</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

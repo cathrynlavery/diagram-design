@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI assistant product · Wardley map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #2d3142;
+      --color-ink:     #f5f5f5;
+      --color-muted:   #bfc0c0;
+      --color-accent:  #f08a59;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Wardley map · Diagram Design</p>
+    <h1>AI assistant product · Wardley map</h1>
+
+    <svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="wardley-dark-title wardley-dark-desc">
+      <title id="wardley-dark-title">AI assistant product · Wardley map</title>
+      <desc id="wardley-dark-desc">Wardley map plotting an AI assistant product's value chain from the user-facing need down to raw infrastructure against genesis-to-commodity evolution, with agent orchestration commoditising toward the product band.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#f08a59"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Axis lines (value chain vertical, evolution horizontal) -->
+      <line x1="120" y1="60" x2="120" y2="340" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+      <line x1="120" y1="340" x2="920" y2="340" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+
+      <!-- Evolution band separators -->
+      <line x1="320" y1="60" x2="320" y2="340" stroke="rgba(245,245,245,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <line x1="520" y1="60" x2="520" y2="340" stroke="rgba(245,245,245,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <line x1="720" y1="60" x2="720" y2="340" stroke="rgba(245,245,245,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+
+      <!-- Band labels -->
+      <text x="220" y="356" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.18em">GENESIS</text>
+      <text x="420" y="356" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.18em">CUSTOM-BUILT</text>
+      <text x="620" y="356" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.18em">PRODUCT</text>
+      <text x="820" y="356" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.18em">COMMODITY</text>
+
+      <!-- Value-chain axis labels (stacked lines, never writing-mode) -->
+      <text x="112" y="44" fill="#f5f5f5" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">VISIBLE TO</text>
+      <text x="112" y="56" fill="#f5f5f5" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">THE USER</text>
+      <text x="112" y="352" fill="#f5f5f5" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">INVISIBLE</text>
+
+      <!-- Dependency links (exempt from the orthogonal-elbow rule — position is the data) -->
+      <line x1="420" y1="92" x2="620" y2="124" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="620" y1="124" x2="420" y2="156" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="420" y1="156" x2="220" y2="188" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="420" y1="156" x2="620" y2="220" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="420" y1="156" x2="680" y2="252" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="620" y1="220" x2="820" y2="316" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="680" y1="252" x2="820" y2="284" stroke="#bfc0c0" stroke-width="0.8"/>
+      <line x1="220" y1="188" x2="680" y2="252" stroke="#bfc0c0" stroke-width="0.8"/>
+
+      <!-- Movement arrow (the 2nd accent element) -->
+      <line x1="428" y1="156" x2="504" y2="156" stroke="#f08a59" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-accent)"/>
+
+      <!-- Components -->
+      <circle cx="420" cy="92" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="420" y="80" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Answer in the flow of work</text>
+
+      <circle cx="620" cy="124" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="620" y="112" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Chat UI</text>
+
+      <!-- Moving component (the 1st accent element) -->
+      <circle cx="420" cy="156" r="6" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1.5"/>
+      <text x="420" y="144" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Agent orchestration</text>
+
+      <circle cx="220" cy="188" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="220" y="176" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Eval harness</text>
+
+      <circle cx="620" cy="220" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="620" y="208" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Vector store</text>
+
+      <circle cx="680" cy="252" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="680" y="240" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">LLM API</text>
+
+      <circle cx="820" cy="284" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="820" y="272" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">GPU compute</text>
+
+      <circle cx="820" cy="316" r="6" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="836" y="320" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Object storage</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="396" x2="960" y2="396" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="412" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <circle cx="48" cy="428" r="4" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+      <text x="64" y="432" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Component</text>
+
+      <line x1="220" y1="428" x2="248" y2="428" stroke="#bfc0c0" stroke-width="0.8"/>
+      <text x="256" y="432" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Dependency</text>
+
+      <circle cx="404" cy="428" r="4" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1.5"/>
+      <line x1="416" y1="428" x2="440" y2="428" stroke="#f08a59" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="448" y="432" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Evolving</text>
+
+      <text x="560" y="432" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">One coral. Position along evolution is the signal — the arrow marks what's about to commoditise.</text>
+    </svg>
+  </div>
+</body>
+</html>
