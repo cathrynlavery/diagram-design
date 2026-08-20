@@ -280,6 +280,83 @@ def verify_codex_skill_path(root: Path, codex_manifest: dict[str, Any], errors: 
         errors.append(f"Codex skills path does not contain {PLUGIN_NAME}/SKILL.md")
 
 
+def parse_frontmatter_metadata_version(text: str) -> str | None:
+    """Return exactly one direct ``metadata.version`` from YAML frontmatter.
+
+    This intentionally does not search the Markdown body: examples and prose
+    are allowed to mention ``version:``, but they cannot validate package
+    metadata. The small parser is limited to the mapping shape this skill owns
+    and rejects duplicate or nested version keys instead of guessing.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    try:
+        closing = next(
+            index for index in range(1, len(lines)) if lines[index].strip() == "---"
+        )
+    except StopIteration:
+        return None
+
+    frontmatter = lines[1:closing]
+    metadata_rows = [
+        index
+        for index, line in enumerate(frontmatter)
+        if re.fullmatch(r"metadata:\s*(?:#.*)?", line)
+    ]
+    if len(metadata_rows) != 1:
+        return None
+
+    start = metadata_rows[0] + 1
+    block: list[str] = []
+    for line in frontmatter[start:]:
+        if line and not line[0].isspace():
+            break
+        block.append(line)
+
+    content = [line for line in block if line.strip() and not line.lstrip().startswith("#")]
+    if not content:
+        return None
+    direct_indent = min(len(line) - len(line.lstrip()) for line in content)
+    versions: list[str] = []
+    for line in content:
+        indent = len(line) - len(line.lstrip())
+        if indent != direct_indent:
+            continue
+        match = re.fullmatch(
+            r"\s*version:\s*(?:\"([^\"]+)\"|'([^']+)'|([0-9]+(?:\.[0-9]+)*))\s*(?:#.*)?",
+            line,
+        )
+        if match is not None:
+            versions.append(next(value for value in match.groups() if value is not None))
+    return versions[0] if len(versions) == 1 else None
+
+
+def verify_skill_metadata_version(root: Path, manifests: dict[str, dict[str, Any]], errors: list[str]) -> None:
+    """SKILL.md's metadata version must track the manifests' MAJOR.MINOR.
+
+    The manifests are bumped by a script; SKILL.md's `metadata.version` is
+    hand-maintained, so a minor release drifts silently - 2.4 sat against
+    2.5.0 manifests until a post-merge sweep caught it. Nothing else reads
+    both numbers, so nothing else can notice.
+    """
+    skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
+    if not skill.is_file():
+        errors.append(f"missing {skill.relative_to(root).as_posix()}")
+        return
+    declared = parse_frontmatter_metadata_version(skill.read_text(encoding="utf-8"))
+    if declared is None:
+        errors.append("SKILL.md frontmatter has no metadata.version")
+        return
+    manifest_version = str(manifests["Claude"].get("version", ""))
+    expected = ".".join(manifest_version.split(".")[:2])
+    if declared != expected:
+        errors.append(
+            f"SKILL.md metadata.version {declared!r} must track the manifest "
+            f"MAJOR.MINOR {expected!r} (manifests are at {manifest_version})"
+        )
+
+
 def verify_package(root: Path, base_ref: str) -> list[str]:
     errors: list[str] = []
     manifests: dict[str, dict[str, Any]] = {}
@@ -291,6 +368,7 @@ def verify_package(root: Path, base_ref: str) -> list[str]:
     if len(manifests) == len(MANIFEST_PATHS):
         verify_versions(root, base_ref, manifests, errors)
         verify_manifest_identity(manifests, errors)
+        verify_skill_metadata_version(root, manifests, errors)
         verify_codex_skill_path(root, manifests["Codex"], errors)
     verify_marketplaces(root, errors)
     return errors

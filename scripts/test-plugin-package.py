@@ -92,12 +92,26 @@ def seed_package(
             ],
         },
     )
-    skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
-    skill.parent.mkdir(parents=True, exist_ok=True)
-    skill.write_text(f"---\nname: {PLUGIN_NAME}\n---\n", encoding="utf-8")
+    write_skill(root, version)
     command = root / "commands" / "export-diagram.md"
     command.parent.mkdir(parents=True, exist_ok=True)
     command.write_text("Export the diagram.\n", encoding="utf-8")
+
+
+def write_skill(root: Path, version: str) -> None:
+    """Fixture SKILL.md, whose metadata.version tracks the manifest MAJOR.MINOR.
+
+    The verifier gates that relationship, so a fixture that omits it is not a
+    valid package and would only prove the gate can be tripped by its own
+    test data.
+    """
+    skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
+    skill.parent.mkdir(parents=True, exist_ok=True)
+    minor = ".".join(version.split(".")[:2])
+    skill.write_text(
+        f'---\nname: {PLUGIN_NAME}\nmetadata:\n  version: "{minor}"\n---\n',
+        encoding="utf-8",
+    )
 
 
 @contextmanager
@@ -130,6 +144,10 @@ def set_versions(
         payload = json.loads((root / relative).read_text(encoding="utf-8"))
         payload["version"] = version
         write_json(root / relative, payload)
+    # Keep the fixture's SKILL.md in step with the Claude manifest, so these
+    # cases exercise the version rules they are about rather than tripping the
+    # metadata-drift gate every time.
+    write_skill(root, claude)
 
 
 def set_existing_versions(root: Path, version: str) -> None:
@@ -259,6 +277,32 @@ def test_verifier() -> None:
             "Factory manifest deletion",
             VERIFY.verify_package(root, "HEAD"),
             "could not read",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
+        skill.write_text(
+            f'---\nname: {PLUGIN_NAME}\n---\n\nExample only:\nversion: "1.2"\n',
+            encoding="utf-8",
+        )
+        expect_failure(
+            "version line outside frontmatter",
+            VERIFY.verify_package(root, "HEAD"),
+            "frontmatter has no metadata.version",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
+        skill.write_text(
+            f'---\nname: {PLUGIN_NAME}\nversion: "1.2"\nmetadata:\n  owner: test\n---\n',
+            encoding="utf-8",
+        )
+        expect_failure(
+            "version outside metadata mapping",
+            VERIFY.verify_package(root, "HEAD"),
+            "frontmatter has no metadata.version",
         )
 
 

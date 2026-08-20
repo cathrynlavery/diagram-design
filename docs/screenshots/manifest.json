@@ -177,8 +177,8 @@
       "slug": "treemap",
       "source": "skills/diagram-design/assets/example-treemap.html",
       "screenshot": "docs/screenshots/treemap.png",
-      "source_sha256": "41e11b175c5c2e77716b1193c28ae9e02bde755283d8624628d1f1c9e9a78a4e",
-      "screenshot_sha256": "b9e2b356e444bd75284130e31e71a7c6c5c1bd880fca066083bd9de87cca9372",
+      "source_sha256": "e7014bd22d5bc1a5b173747caca0dc6d2916cec5a3038d2b953187e45245e1b4",
+      "screenshot_sha256": "780ceae4760ecaf02cda02d1783e578b40900c8ac9e6f7f9eead8c95cc75fb7a",
       "width": 2400,
       "height": 1202
     },

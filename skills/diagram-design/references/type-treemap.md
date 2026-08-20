@@ -21,13 +21,23 @@ Not for: ranked lists where exact values matter more than proportion (use a **ba
 - **Contrast:** compute the ceiling against the token you actually ship. The 9px value line is `muted`, not `ink`, and `muted` needs a lighter cell than `ink` does: measured against the composited fill, the top of the ramp can go to **0.16 on light paper and 0.14 on dark** before it drops under 4.5:1. (`ink` would tolerate 0.20 — which is exactly the number you will write down if you check the wrong token.) A mid-tone fill — solid accent, or 50% ink — fails against both light and dark text; use the tint-plus-stroke pattern instead. The source line takes `muted` too: `soft` measures 3.48:1 on paper and never reaches AA anywhere on this ramp.
 - **Legend:** the house block (rule, `LEGEND`, keys), naming the focal cell, the direction of the ink ramp, and any cell carrying an info mark. The source line rides the same row as `LEGEND`, right-aligned in mono 8px, stating what area encodes plus the dataset and its date.
 
+### Declaring the share
+
+**Every cell carries `data-share` — including cells too small to label.** It is the cell's percentage of the whole, and it is what makes the area checkable:
+
+```svg
+<rect x="X" y="Y" width="W" height="H" rx="2" data-share="18.29" fill="…" stroke="…"/>
+```
+
+Without it, a verifier has to infer the intended share from the text inside the cell, which quietly exempts the one cell that has no text — and that is the sliver, the cell the 4px grid distorts most. A shipped treemap once had its smallest cell drawn 50% oversized with every gate green for exactly this reason. `scripts/verify-treemap.py` now fails closed on any cell without it, and cross-checks `data-share` against the percentage the label prints, because a label and the metadata are two statements of one fact.
+
 ### Cell element pattern
 
 ```svg
 <!-- Opaque paper mask prevents the dot pattern showing through the tint -->
 <rect x="X" y="Y" width="W" height="H" rx="2" fill="#f5f5f5"/>
 <!-- Cell body -->
-<rect x="X" y="Y" width="W" height="H" rx="2" fill="rgba(45,49,66,0.18)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<rect x="X" y="Y" width="W" height="H" rx="2" data-share="18.29" fill="rgba(45,49,66,0.16)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
 <text x="X+16" y="Y+28" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', sans-serif">NAME</text>
 <text x="X+16" y="Y+46" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">VALUE · SHARE</text>
 ```
@@ -43,7 +53,7 @@ Watch the smallest cell hardest: it is the one that grid snapping and gutters di
 ## Anti-patterns
 
 - More than 8 cells without an "Other" bucket (unlabelable slivers).
-- Cells that do not sum to the stated whole, or a percentage column that doesn't total 100.
+- A stated total the cells contradict by more than display rounding — or rounding that is never disclosed. Rounded parts that miss the total by a hair are honest once the source line says so; silently printing figures that don't reconcile is not.
 - Stripe layout instead of squarified — defeats area comparison.
 - Rainbow fills: one hue per cell destroys the rank reading and the one-accent rule.
 - Nesting more than two levels deep in a static diagram; a second level needs a heavier border and its own label tier, and a third is unreadable without interaction.
