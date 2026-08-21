@@ -610,7 +610,11 @@ def _edge_operators(text: str) -> list[_Operator]:
     # and the operator characters themselves may not open one (keeping
     # `A----->B` unlabeled and `A --o B --> C` two separate links).
     text_edge = re.compile(
-        r"(?P<opening><(?:--|-\.|==)|(?<![\w.:-])[xo](?:--|-\.|==)|(?:--|-\.|==))"
+        r"(?P<opening>"
+        r"<(?:--|-\.|==)"
+        r"|(?<!\A)(?<![\w.:-])[xo](?:--|-\.|==)"
+        r"|(?:--|-\.|==)"
+        r")"
         r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
         r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
     )

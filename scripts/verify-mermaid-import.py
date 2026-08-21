@@ -324,6 +324,27 @@ I----->J
     if compact["edges"][9]["source"] != "Box" or compact["edges"][10]["source"] != "Echo":
         fail("source IDs ending in x/o were consumed as left edge markers")
 
+    single_marker_source_file = tmp / "single-marker-source-links.mmd"
+    single_marker_source_file.write_text(
+        """flowchart LR
+x--yes-->B
+o--go-->C
+""",
+        encoding="utf-8",
+    )
+    single_marker_source = json.loads(
+        run_extract([str(single_marker_source_file), "--json"])
+    )["diagrams"][0]
+    single_marker_edges = [
+        (edge["source"], edge["target"], edge["label"])
+        for edge in single_marker_source["edges"]
+    ]
+    if single_marker_edges != [
+        ("x", "B", "yes"),
+        ("o", "C", "go"),
+    ]:
+        fail("single-character x/o source IDs were consumed as left edge markers")
+
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
         '''flowchart LR
