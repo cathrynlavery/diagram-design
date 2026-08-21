@@ -22,7 +22,7 @@ Resolve the project's `.diagram-design` marker per [`references/profiles.md`](re
 
 Otherwise open [`references/style-guide.md`](references/style-guide.md). A valid leading profile header names the copied-in active profile and skips this gate too. Without one, if every semantic role and typography family is still shipped-default (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36` atomic-tangerine), **pause and ask** whether to brand it first — from a website URL, an installed skill, a local design-system folder, pasted tokens, or a saved client profile — or to proceed with the default. Then follow the matching section of [`references/onboarding.md`](references/onboarding.md), or `profiles.md` for a saved profile.
 
-Without a header, any semantic-role value or typography family differing from the shipped defaults means the skin is already chosen: skip the gate on later runs, and offer once to save an unsaved custom skin as a named profile.
+Without a header, any semantic-role value or typography family differing from the shipped defaults means the skin is already chosen — except a changed `accent` on its own, which `profiles.md` §2 refuses to read as customization: skip the gate on later runs, and offer once to save an unsaved custom skin as a named profile.
 
 ---
 
