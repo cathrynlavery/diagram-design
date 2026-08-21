@@ -21,9 +21,11 @@ Six invariants:
    rule says cannot happen; a skipped rank is an empty row the reader fills
    with a series that is not there.
 
-3. STRAIGHT SEGMENTS - a data-series path is M followed by L commands only.
-   A spline between two quarterly snapshots draws data nobody measured; the
-   draft this gate came from calls them subway curves and bans them outright.
+3. STRAIGHT SEGMENTS - a data-series path is absolute M followed by absolute
+   L commands only. A spline between two quarterly snapshots draws data nobody
+   measured; the draft this gate came from calls them subway curves and bans
+   them outright. Relative commands are refused rather than folded into their
+   absolute twins, because their numbers are not where the marks land.
 
 4. SHARED COLUMNS - every series visits the same x positions in the same
    order, and each snapshot caption sits on the column it names, bound with
@@ -96,7 +98,7 @@ DOT_TOLERANCE = 0.01      # px, a dot against its vertex
 CAPTION_TOLERANCE = 0.5   # px, a snapshot caption against its column
 LABEL_ROW_OFFSET = 3.5    # px, a label baseline below its vertex, per the reference
 MIN_SNAPSHOTS, MAX_SNAPSHOTS = 3, 6
-MAX_SERIES = 8
+MIN_SERIES, MAX_SERIES = 4, 8
 FOCAL_WIDTH, PLAIN_WIDTH = 2.4, 1.2
 ACCENTS = {"#eb6c36", "#f08a59"}   # light and dark skin accent tokens
 
@@ -222,9 +224,22 @@ def parse_series(source: str, findings: list, name: str) -> list:
                 "verify its positions" % (name, line_of(source, match.start()), label)
             )
             continue
-        # Straight segments only. A curve between two snapshots draws data
-        # nobody measured; M + L* is the entire permitted grammar.
-        if [c.upper() for c in commands] != ["M"] + ["L"] * (len(points) - 1):
+        # Straight segments in ABSOLUTE commands only: M + L* is the entire
+        # permitted grammar. A curve between two snapshots draws data nobody
+        # measured. And a relative command is refused rather than folded into
+        # its absolute twin - `l120,56` renders against the previous point
+        # while the numbers this checker reads look like absolute coordinates,
+        # so folding case would certify a figure at positions it never drew.
+        if any(c.islower() for c in commands):
+            findings.append(
+                "%s:%d: series %r uses relative path commands (%s) — a relative "
+                "coordinate renders against the previous point, so the numbers "
+                "this checker reads are not where the marks land. Write the path "
+                "in absolute M/L commands"
+                % (name, line_of(source, match.start()), label, "/".join(commands))
+            )
+            continue
+        if commands != ["M"] + ["L"] * (len(points) - 1):
             findings.append(
                 "%s:%d: series %r draws %s — a bump chart joins adjacent snapshots "
                 "with straight segments only. A spline invents a trajectory between "
@@ -642,6 +657,13 @@ def check_source(path: Path, raw: str) -> list:
             "%s: %d series against a budget of %d — past that the crossings stop "
             "being readable and the figure becomes spaghetti with a legend"
             % (path.name, len(series), MAX_SERIES)
+        )
+    elif len(series) < MIN_SERIES:
+        findings.append(
+            "%s: %d series against a budget of %d-%d — below %d a sentence or a "
+            "pair of slopes says it shorter, and rank stops being a crowd worth "
+            "charting"
+            % (path.name, len(series), MIN_SERIES, MAX_SERIES, MIN_SERIES)
         )
     columns = len(series[0].points)
     if not MIN_SNAPSHOTS <= columns <= MAX_SNAPSHOTS:
