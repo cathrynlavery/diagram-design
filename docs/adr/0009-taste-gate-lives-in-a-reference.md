@@ -1,19 +1,19 @@
 # ADR 0009 — The taste gate moves to a reference; the connector rules stay in SKILL.md
 
-**Status:** accepted (v2.5.18)
+**Status:** accepted (v2.6.3)
 
 ## Context
 
 ADR 0004 set `MAX_SKILL_BYTES` at 40,000 and ruled that the frontmatter `description` — the only
 text an agent reads before deciding to load the skill — is never traded for body prose. At
-v2.5.15, after ADR 0007 admitted ten new types, `SKILL.md` was 38,874 bytes: 97% of the cap,
-less than one visual type of headroom.
+v2.6.1, after ADR 0007 admitted ten new types and the 2.6.0 release added a thirty-ninth,
+`SKILL.md` was 39,453 bytes: 99% of the cap, with 547 bytes left.
 Adding a type is not optional prose. It costs a §3 selection row, a §7 budget row, and a
 lexical hook in the description that `verify-docs-sync.py` requires. The next type would have
 hit the cap, and the cheapest way out of that corner is the wrong one — cutting the description.
 
-Two sections were candidates for extraction. §9, the pre-output checklist, was 3,808 bytes.
-§6, the core SVG primitives, was 9,673 — by far the largest, and the tempting answer.
+Two sections were candidates for extraction. §9, the pre-output checklist, was 3,875 bytes.
+§6, the core SVG primitives, was 9,726 — by far the largest, and the tempting answer.
 
 ## Decision
 
@@ -34,7 +34,7 @@ Two sections were candidates for extraction. §9, the pre-output checklist, was 
 
 ## Consequences
 
-- `SKILL.md` is 35,287 bytes, leaving ~4,700 of headroom: room for several types rather than
+- `SKILL.md` is 35,859 bytes, leaving ~4,100 of headroom: room for several types rather than
   a fraction of one.
 - The taste gate is now a file an installed agent must read to run, so a type reference or command
   that tells the agent to "run the §9 gate" is telling it to load `taste-gate.md`. Both phrasings
