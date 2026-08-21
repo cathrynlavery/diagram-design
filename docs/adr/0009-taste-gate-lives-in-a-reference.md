@@ -34,7 +34,7 @@ Two sections were candidates for extraction. §9, the pre-output checklist, was 
 
 ## Consequences
 
-- `SKILL.md` is 35,867 bytes, leaving ~4,100 of headroom: room for several types rather than
+- `SKILL.md` is 35,872 bytes, leaving ~4,100 of headroom: room for several types rather than
   a fraction of one.
 - `verify-docs-sync.py` requires `SKILL.md` itself to name every packaged runtime file, so a
   section that cites one cannot be moved out wholesale: the five-group summary keeps
