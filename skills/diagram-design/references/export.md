@@ -63,31 +63,21 @@ If the import fails, surface this exact instruction to the user and stop:
 > Playwright isn't installed. To enable PNG export, run:
 > ```
 > pip install playwright
-> playwright install chromium
+> playwright install webkit    # or chromium, or firefox — any one engine works
 > ```
 > Then ask me to export again.
 
-Don't auto-install. The user asked for one feature, not a system change.
+Don't auto-install. The user asked for one feature, not a system change. Nothing in this path is engine-specific — it loads a local HTML file and screenshots one element — so never direct a user to install Chromium when another engine is already present.
 
 ### Rasterize
 
-Write the snippet below to a temp file and run it with `python <tmp.py> <src.html> <out.png>`:
+Run the bundled script (it ships inside the skill, next to the extractors):
 
-```python
-from playwright.sync_api import sync_playwright
-import sys, pathlib
-
-src, out = sys.argv[1], sys.argv[2]
-scale = int(sys.argv[3]) if len(sys.argv) > 3 else 2
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page(device_scale_factor=scale)
-    page.goto(f"file://{pathlib.Path(src).resolve()}")
-    page.wait_for_load_state("networkidle")
-    page.locator("svg").first.screenshot(path=out, omit_background=True)
-    browser.close()
 ```
+python scripts/export_png.py <src.html> <out.png> [scale]
+```
+
+It launches the first installed engine in WebKit → Chromium → Firefox order and reports which one it used. Only Playwright's "Executable doesn't exist" failure advances the fallback; any other launch error — a crash, a permissions problem, a bad configuration — propagates with its real message so it is never misreported as a missing browser. If no engine is installed at all, it exits with the per-engine list and the install hint above. Fallback and error-reporting behavior is covered by `scripts/test-export-png-fallback.py` at the repo root.
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg.
 

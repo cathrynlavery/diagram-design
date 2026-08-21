@@ -70,6 +70,7 @@ jobs:
       - name: Verify linter compatibility
         run: |
           python scripts/test-lint-a11y.py
+          python scripts/test-export-png-fallback.py
           python scripts/lint-skin.py --all --baseline
 
   validate:
@@ -101,6 +102,8 @@ jobs:
         if: always()
         id: a11y
         run: python scripts/test-lint-a11y.py
+      - name: Export fallback tests
+        run: python scripts/test-export-png-fallback.py
 
       - name: Verify semantic pattern documentation
         if: always()
