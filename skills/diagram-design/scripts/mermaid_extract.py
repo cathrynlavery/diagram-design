@@ -113,6 +113,11 @@ class Diagram:
     discarded: dict[str, int] = field(
         default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
     )
+    # Ids the source declares anywhere in the block. Collected before parsing
+    # so a generated id avoids one that has not been reached yet: `add_node`
+    # merges on a repeated id, so numbering only past what already exists made
+    # the result depend on whether the explicit id came first.
+    reserved_ids: set[str] = field(default_factory=set)
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
 
     @property
@@ -338,8 +343,10 @@ def _kind_and_direction(
             return "gantt", "LR", position
         if re.match(r"^quadrantChart\b", text, re.I):
             return "quadrantChart", "TD", position
-        if re.match(r"^timeline\b", text, re.I):
-            return "timeline", "LR", position
+        timeline = re.match(r"^timeline\b\s*(LR|TD)?\b", text, re.I)
+        if timeline is not None:
+            # `timeline TD` is valid Mermaid; LR is the default.
+            return "timeline", (timeline.group(1) or "LR").upper(), position
         if re.match(r"^mindmap\b", text, re.I):
             return "mindmap", "TD", position
         token = text.split(maxsplit=1)[0]
@@ -1017,11 +1024,16 @@ GANTT_META_KEYS = {
     "includes",
     "todaymarker",
     "weekday",
+    "weekend",
     "inclusiveenddates",
     "topaxis",
     "displaymode",
 }
 GANTT_TAGS = {"done", "active", "crit", "milestone", "vert"}
+# Mermaid concatenates the tokens of repeated `excludes`/`includes` lines
+# (docs/syntax/gantt.md), so overwriting the key drops the earlier holidays.
+GANTT_REPEATABLE_META = {"excludes", "includes"}
+GANTT_WEEKEND_DAYS = {"friday", "saturday"}
 GANTT_DURATION_RE = re.compile(r"^\d+(?:\.\d+)?\s*(?:ms|s|m|h|d|w|y)$", re.I)
 GANTT_RELATION_RE = re.compile(r"^(after|until)\s+(.+)$", re.I)
 GANTT_CLICK_RE = re.compile(r"^click\s+\S+\s+(?:call|href)\b", re.I)
@@ -1035,7 +1047,10 @@ def _free_id(diagram: Diagram, prefix: str, taken: int) -> str:
     it folds a child into its own parent, producing a self-edge.
     """
     ordinal = taken + 1
-    while f"{prefix}-{ordinal}" in diagram.node_map:
+    while (
+        f"{prefix}-{ordinal}" in diagram.node_map
+        or f"{prefix}-{ordinal}" in diagram.reserved_ids
+    ):
         ordinal += 1
     return f"{prefix}-{ordinal}"
 
@@ -1132,7 +1147,15 @@ def _parse_gantt(
         keyword, _separator, remainder = text.partition(" ")
         lowered = keyword.casefold()
         if lowered in GANTT_META_KEYS:
-            diagram.meta[lowered] = clean_label(remainder)
+            value = clean_label(remainder)
+            if lowered == "weekend" and value.casefold() not in GANTT_WEEKEND_DAYS:
+                _fail(
+                    f"gantt `weekend` takes friday or saturday at line {line_number}"
+                )
+            if lowered in GANTT_REPEATABLE_META and lowered in diagram.meta:
+                diagram.meta[lowered] = f"{diagram.meta[lowered]} {value}".strip()
+            else:
+                diagram.meta[lowered] = value
             continue
         if lowered == "section":
             section = diagram.add_node(
@@ -1200,8 +1223,14 @@ def _parse_quadrant(
                 _fail(
                     f"quadrant point {axis} out of the 0-1 range at line {line_number}"
                 )
+        name = point.group("name")
+        stripped = _strip_class_suffix(name)
+        if stripped != name:
+            # `Point B:::class1: [x, y]` attaches a class; the class is styling
+            # and the label is the part in front of it.
+            diagram.discarded["style_directives"] += 1
         node = diagram.add_node(
-            _leaf_id(diagram, "point"), clean_label(point.group("name")), "point"
+            _leaf_id(diagram, "point"), clean_label(stripped), "point"
         )
         node.fields.extend([f"x: {point.group('x')}", f"y: {point.group('y')}"])
 
@@ -1235,6 +1264,11 @@ def _parse_timeline(
             period = None
             continue
         parts = [clean_label(part) for part in text.split(":")]
+        if len(parts) < 2 or not any(parts[1:]):
+            # Mermaid's timeline row is `{period} : {event}`. A bare line has no
+            # event to carry, and promoting it to a period would draw a marker
+            # the source never described.
+            _fail(f"timeline row without an event at line {line_number}")
         if not parts[0]:
             # A line opening with `:` continues the period above it. Drawing a
             # period for it would put an unlabelled marker on the timeline and
@@ -1282,6 +1316,38 @@ def _mindmap_topic(text: str) -> tuple[str | None, str, str]:
     return None, clean_label(text), "rect"
 
 
+def _mindmap_logical_lines(
+    lines: list[tuple[int, str]]
+) -> list[tuple[int, str]]:
+    """Rejoin a Markdown string that a mindmap topic spreads over several lines.
+
+    A mindmap is indentation-structured, so a continuation line looks exactly
+    like a deeper topic. Splitting `id["`a\nb`"]` into three topics invents two
+    nodes and leaves the delimiters stranded in their labels. The first line's
+    indentation is kept, because that is what decides the topic's depth.
+    """
+    joined: list[tuple[int, str]] = []
+    pending: tuple[int, str] | None = None
+    for line_number, raw in lines:
+        expanded = raw.expandtabs(4)
+        if pending is None:
+            if expanded.count('["`') > expanded.count('`"]'):
+                pending = (line_number, expanded.rstrip())
+                continue
+            joined.append((line_number, expanded))
+            continue
+        start_number, accumulated = pending
+        accumulated = f"{accumulated} {expanded.strip()}"
+        if '`"]' in expanded:
+            joined.append((start_number, accumulated))
+            pending = None
+        else:
+            pending = (start_number, accumulated)
+    if pending is not None:
+        _fail(f"unterminated mindmap Markdown string at line {pending[0]}")
+    return joined
+
+
 def _parse_mindmap(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
@@ -1289,7 +1355,7 @@ def _parse_mindmap(
     # every mindmap topic is drawn in a tree redraw, and container nodes are
     # counted as grouping, not as drawable content.
     stack: list[tuple[int, str]] = []
-    for _line_number, raw in lines[header_position + 1 :]:
+    for _line_number, raw in _mindmap_logical_lines(lines[header_position + 1 :]):
         expanded = raw.expandtabs(4)
         text = expanded.strip()
         if not text:
@@ -1311,10 +1377,39 @@ def _parse_mindmap(
         stack.append((indent, node.id))
 
 
+def _declared_ids(kind: str, lines: list[tuple[int, str]], header_position: int) -> set[str]:
+    """Collect the ids a gantt or mindmap block declares, before parsing it.
+
+    Only these two grammars let a source name a node, and both interleave named
+    and anonymous nodes freely. Reading them up front is what makes a generated
+    id independent of where the declared one sits in the file.
+    """
+    declared: set[str] = set()
+    if kind == "gantt":
+        for _line_number, raw in lines[header_position + 1 :]:
+            _label, separator, metadata = raw.strip().partition(":")
+            if not separator:
+                continue
+            for item in metadata.split(","):
+                item = item.strip()
+                if item and item.casefold() not in GANTT_TAGS:
+                    declared.add(item)
+    elif kind == "mindmap":
+        for _line_number, raw in lines[header_position + 1 :]:
+            text = raw.expandtabs(4).strip()
+            if not text or text.startswith("::"):
+                continue
+            topic_id, _label, _shape = _mindmap_topic(_strip_class_suffix(text))
+            if topic_id:
+                declared.add(topic_id)
+    return declared
+
+
 def parse_block(block: SourceBlock) -> Diagram:
     lines = _prepared_lines(block)
     kind, direction, header_position = _kind_and_direction(lines)
     diagram = Diagram(block.index, kind, block.source_line, direction=direction)
+    diagram.reserved_ids = _declared_ids(kind, lines, header_position)
     if kind == "flowchart":
         _parse_flowchart(diagram, lines, header_position)
     elif kind == "sequenceDiagram":

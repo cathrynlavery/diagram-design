@@ -840,6 +840,86 @@ def check_generated_ids_and_directive_lookalikes(tmp: Path) -> None:
     ok("generated ids stay clear of declared ones; directive lookalikes survive")
 
 
+def check_grammar_conformance(tmp: Path) -> None:
+    """Cases the four grammars define that the extractor used to read wrongly."""
+    late = tmp / "late-id.mmd"
+    late.write_text(
+        "mindmap\n  Root\n    First\n    topic-2((Explicit later))\n", encoding="utf-8"
+    )
+    payload = json.loads(run_extract([str(late), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if labels != ["Root", "First", "Explicit later"]:
+        fail(f"a declared id reached after a generated one merged them: {labels}")
+
+    multiline = tmp / "mindmap-markdown.mmd"
+    multiline.write_text(
+        'mindmap\n  root\n    id1["`Line one\n    Line two\n    Line three`"]\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(multiline), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if labels != ["root", "Line one Line two Line three"]:
+        fail(f"a multi-line Markdown topic was split into separate nodes: {labels}")
+    bad = tmp / "mindmap-unterminated.mmd"
+    bad.write_text(
+        'mindmap\n  root\n    id1["`unterminated\n', encoding="utf-8"
+    )
+    expect_error([str(bad)], "unterminated mindmap Markdown string")
+
+    weekend = tmp / "gantt-weekend.mmd"
+    weekend.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  weekend friday\n  section Work\n"
+        "  Build :2026-01-03, 2d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(weekend), "--json"]))["diagrams"][0]
+    if payload["meta"].get("weekend") != "friday":
+        fail(f"`weekend friday` was not read as metadata: {payload['meta']}")
+    bad = tmp / "gantt-weekend-bad.mmd"
+    bad.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  weekend tuesday\n  section W\n  B :2026-01-03, 2d\n", encoding="utf-8"
+    )
+    expect_error([str(bad)], "gantt `weekend` takes friday or saturday")
+
+    excludes = tmp / "gantt-excludes.mmd"
+    excludes.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  excludes weekends\n  excludes 2026-01-05\n"
+        "  section Work\n  Build :2026-01-03, 5d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(excludes), "--json"]))["diagrams"][0]
+    excluded = payload["meta"].get("excludes", "")
+    for token in ("weekends", "2026-01-05"):
+        if token not in excluded:
+            fail(f"repeated `excludes` lost {token!r}: {excluded!r}")
+
+    quadrant = tmp / "quadrant-class.mmd"
+    quadrant.write_text(
+        "quadrantChart\n  x-axis Low --> High\n  y-axis Low --> High\n"
+        "  Point A: [0.3, 0.6]\n  Point B:::class1: [0.7, 0.4]\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(quadrant), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if labels != ["Point A", "Point B"]:
+        fail(f"a `:::class` attachment stayed in the point label: {labels}")
+    if payload["discarded"]["style_directives"] != 1:
+        fail("the discarded class attachment was not counted as styling")
+
+    for header, expected in (("timeline TD", "TD"), ("timeline", "LR"), ("timeline LR", "LR")):
+        source = tmp / f"timeline-{expected}-{len(header)}.mmd"
+        source.write_text(f"{header}\n  2024 : Alpha\n  2025 : Beta\n", encoding="utf-8")
+        payload = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+        if payload["direction"] != expected:
+            fail(f"`{header}` reported direction {payload['direction']}, want {expected}")
+    bad = tmp / "timeline-no-event.mmd"
+    bad.write_text(
+        "timeline\n  title Roadmap\n  2024 : Alpha\n  Period without event\n", encoding="utf-8"
+    )
+    expect_error([str(bad)], "timeline row without an event")
+    ok("gantt, quadrant, timeline, and mindmap follow their declared grammars")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload = json.loads(run_extract([str(ADVERSARIAL), "--json"]))
     diagram = payload["diagrams"][0]
@@ -1144,6 +1224,7 @@ def main() -> int:
         check_mindmap(tmp)
         check_grammar_adversarial()
         check_generated_ids_and_directive_lookalikes(tmp)
+        check_grammar_conformance(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()
