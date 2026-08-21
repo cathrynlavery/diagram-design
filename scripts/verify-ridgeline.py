@@ -103,6 +103,14 @@ ATTR_RE = re.compile(
 )
 DECLARES_BINS_RE = re.compile(r"\bdata-bins\s*=", re.IGNORECASE)
 NUM_RE = re.compile(r"[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?")
+# Path-data tokens, number branch FIRST so an exponent's `e` is consumed as part
+# of its number instead of being read as a command. See parse_d.
+D_TOKEN_RE = re.compile(
+    r"(?P<num>[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?)"
+    r"|(?P<cmd>[A-Za-z])"
+    r"|(?P<sep>[\s,]+)"
+    r"|(?P<junk>[\s\S])"
+)
 # En dash or hyphen, because a range printed with either reads the same.
 RANGE_LABEL_RE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)\s*(\S.*)?$")
 
@@ -202,9 +210,28 @@ def looks_like_ridgeline(path: Path, source: str) -> bool:
 
 
 def parse_d(d: str):
-    """(commands, points) for a closed polygon path, or (None, None)."""
-    commands = re.findall(r"[A-Za-z]", d)
-    numbers = [float(n) for n in NUM_RE.findall(d)]
+    """(commands, points) for a closed polygon path, or (None, None).
+
+    Tokenised left to right with numbers tried BEFORE letters, because `e` and
+    `E` are letters inside a valid coordinate: `3.5e2` is one number, not a
+    number followed by an `e` command. Scanning for `[A-Za-z]` separately would
+    invent that command and then reject a perfectly good path for having one
+    token too many. A letter that survives the number branch is a real command
+    (and is held to the M/L/Z vocabulary by the caller); anything else makes the
+    path unreadable, which is a finding rather than a skip.
+    """
+    commands, numbers = [], []
+    for match in D_TOKEN_RE.finditer(d):
+        kind = match.lastgroup
+        if kind == "num":
+            try:
+                numbers.append(float(match.group()))
+            except ValueError:
+                return None, None
+        elif kind == "cmd":
+            commands.append(match.group())
+        elif kind == "junk":
+            return None, None
     if len(numbers) % 2 != 0:
         return None, None
     points = list(zip(numbers[0::2], numbers[1::2]))

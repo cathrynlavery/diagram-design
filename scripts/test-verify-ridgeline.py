@@ -236,6 +236,28 @@ def main() -> int:
             else:
                 print("OK: lowercase z is accepted (it is not a relative command)")
 
+        # 7b-ii. `e` and `E` are letters INSIDE a valid coordinate. `4.4e2` is
+        #     440, one number and no command, so a checker that scans for
+        #     [A-Za-z] separately invents a command and rejects a good path.
+        #     Positive case, and a falsified twin proving the number was read as
+        #     the value it spells rather than skipped.
+        exponent = source.replace("L440,269.6", "L4.4e2,269.6", 1)
+        if exponent == source:
+            failures.append("could not build the exponent fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "exponent.html", exponent))
+            if code != 0:
+                failures.append("a coordinate in scientific notation was rejected: %s"
+                                % output.strip())
+            else:
+                print("OK: a coordinate in scientific notation is accepted")
+        case(
+            failures, directory, "exponent-lie",
+            source.replace("L440,269.6", "L4.4e2,2.7e2", 1),
+            source, "one amplitude",
+            "a falsified coordinate written in scientific notation",
+        )
+
         # 7c. Implicit command repetition (`L a,b c,d`) is legal SVG, but this
         #     checker pairs commands with points positionally, so it must say so
         #     rather than mis-pair them behind a green tick.
