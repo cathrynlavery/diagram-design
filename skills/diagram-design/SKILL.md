@@ -445,7 +445,7 @@ Five groups, in order:
 1. **Type fit** — right pattern, right type, right reference loaded; would prose do the job instead?
 2. **Remove test** — which node, arrow, or label can go?
 3. **Signal** — ≤2 accent elements, legend complete, inside the §7 budget.
-4. **Technical** — accessible-SVG contract, elbow connectors, label masks, the 4px grid, and the packaged `self_check.py`.
+4. **Technical** — accessible-SVG contract, elbow connectors, label masks, the 4px grid, and the packaged `scripts/self_check.py`.
 5. **Typography** — sans for names, mono for technical strings, serif for the title.
 
 Nothing ships without it. If you are about to skip a group because "this one is simple", that is the diagram the gate was written for.

@@ -34,8 +34,12 @@ Two sections were candidates for extraction. §9, the pre-output checklist, was 
 
 ## Consequences
 
-- `SKILL.md` is 35,859 bytes, leaving ~4,100 of headroom: room for several types rather than
+- `SKILL.md` is 35,867 bytes, leaving ~4,100 of headroom: room for several types rather than
   a fraction of one.
+- `verify-docs-sync.py` requires `SKILL.md` itself to name every packaged runtime file, so a
+  section that cites one cannot be moved out wholesale: the five-group summary keeps
+  `scripts/self_check.py` visible to strict bundlers even though the checklist item lives in the
+  reference. Extraction is bounded by what the bundler scans, not only by byte count.
 - The taste gate is now a file an installed agent must read to run, so a type reference or command
   that tells the agent to "run the §9 gate" is telling it to load `taste-gate.md`. Both phrasings
   point at the same content; keep the §9 numbering stable so existing citations stay valid.
