@@ -75,6 +75,8 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Sankey checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-sankey.py` |
 | Bubble positions sit on shared axis scales and area encodes every declared size | `python3 scripts/verify-bubble.py --all` |
 | Bubble checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bubble.py` |
+| Beeswarm dots sit exactly at their values on one shared scale with no overprint | `python3 scripts/verify-beeswarm.py --all` |
+| Beeswarm checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-beeswarm.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
@@ -120,7 +122,9 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-sankey.py --all \
   && python3 scripts/test-verify-sankey.py \
   && python3 scripts/verify-bubble.py --all \
-  && python3 scripts/test-verify-bubble.py
+  && python3 scripts/test-verify-bubble.py \
+  && python3 scripts/verify-beeswarm.py --all \
+  && python3 scripts/test-verify-beeswarm.py
 ```
 
 ### If a gate fails
@@ -132,6 +136,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
 - **`verify-ridgeline.py`:** a ridge is drawn on its own amplitude, a baseline sits off the stack's pitch or away from its drawn rule, a ridge is sampled on its own x positions, or a printed range is wider than the bins it claims. Fix the geometry or the declaration so they state one thing — never renormalise a single ridge to make it readable, and never move a baseline to buy one ridge headroom.
 - **`verify-bubble.py`:** a bubble is drawn off the shared axis scale its peers describe, its radius disagrees with the one area constant (`r = K·√size`), a second bubble wears the accent, an overlapping smaller bubble is painted under a larger one, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never nudge a bubble to open up space, because crowded bubbles mean the values really are close.
+- **`verify-beeswarm.py`:** a dot is drawn off the shared value scale its peers describe, two dots declaring one value sit at two positions, a pair overprints instead of dodging, a second radius or a second non-focal fill appears, a second dot wears the accent, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never move a dot along the value axis to open up space, because crowding is data and the dodge is the only honest resolution.
 - **`verify-geometry.py`:** a label mask overlaps a node declared later in the document, so the node fill clips the label at render time. Move the label to a free segment of its connector — keep the 6–10px gap from the stroke required by SKILL.md §6, and do not shrink the mask to sneak under the check.
 - **Icon assets:** you changed `scripts/vendor/icons/` or `scripts/build-icons.py` and the generated files went stale. Rerun `python3 scripts/build-icons.py` and commit the regenerated files.
 
