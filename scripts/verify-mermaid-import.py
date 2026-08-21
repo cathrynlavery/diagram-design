@@ -833,6 +833,80 @@ def check_grammar_adversarial() -> None:
     ok("new grammars keep adversarial labels inert and drop nothing silently")
 
 
+def check_generated_ids_and_directive_lookalikes(tmp: Path) -> None:
+    """Source-declared ids must not be overwritten, and data must not read as a directive.
+
+    All three cases below lost nodes silently — no error, no discard counter,
+    just a smaller diagram than the source described.
+    """
+    collide = tmp / "id-collision.mmd"
+    collide.write_text(
+        "mindmap\n  topic-2((Root))\n    First child\n    Second child\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(collide), "--json"]))["diagrams"][0]
+    if len(payload["nodes"]) != 3:
+        fail(f"a declared id absorbed generated siblings: {len(payload['nodes'])} nodes")
+    if any(edge["source"] == edge["target"] for edge in payload["edges"]):
+        fail("a child folded into its own parent and produced a self-edge")
+    if payload["analysis"]["has_cycle"]:
+        fail("id collision produced a cycle in a mindmap")
+
+    gantt_ids = tmp / "gantt-id-collision.mmd"
+    gantt_ids.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section Work\n"
+        "  Explicit :task-2, 2026-01-03, 2d\n  Anonymous :2026-01-05, 2d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(gantt_ids), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    for label in ("Explicit", "Anonymous"):
+        if label not in labels:
+            fail(f"gantt task {label!r} was absorbed by a colliding generated id")
+
+    quadrant = tmp / "quadrant-lookalike.mmd"
+    quadrant.write_text(
+        "quadrantChart\n  x-axis Low --> High\n  y-axis Low --> High\n"
+        "  Style debt: [0.4, 0.6]\n  Class coupling: [0.7, 0.3]\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(quadrant), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    for label in ("Style debt", "Class coupling"):
+        if label not in labels:
+            fail(f"quadrant point {label!r} was discarded as a styling directive")
+    if payload["discarded"]["style_directives"]:
+        fail("a readable quadrant point must not count as discarded styling")
+
+    gantt = tmp / "gantt-lookalike.mmd"
+    gantt.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section Metrics\n"
+        "  Click rate :2026-01-03, 2d\n  Style guide review :2026-01-05, 2d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(gantt), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    for label in ("Click rate", "Style guide review"):
+        if label not in labels:
+            fail(f"gantt task {label!r} was discarded as a directive")
+    if payload["discarded"]["click_handlers"]:
+        fail("a readable gantt task must not count as a discarded click handler")
+
+    real = tmp / "gantt-real-click.mmd"
+    real.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section Work\n"
+        "  Build :a1, 2026-01-03, 2d\n"
+        '  click a1 href "https://example.invalid/x"\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(real), "--json"]))["diagrams"][0]
+    if payload["discarded"]["click_handlers"] != 1:
+        fail("a genuine `click <task> href ...` must still be discarded and counted")
+    if "example.invalid" in json.dumps(payload):
+        fail("click URL crossed the trust boundary into output")
+    ok("generated ids stay clear of declared ones; directive lookalikes survive")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload = json.loads(run_extract([str(ADVERSARIAL), "--json"]))
     diagram = payload["diagrams"][0]
@@ -1136,6 +1210,7 @@ def main() -> int:
         check_timeline()
         check_mindmap(tmp)
         check_grammar_adversarial()
+        check_generated_ids_and_directive_lookalikes(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()

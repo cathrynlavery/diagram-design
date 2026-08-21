@@ -31,7 +31,7 @@ The four schedule-and-hierarchy grammars carry structure that is neither a node 
 | `timeline` | Sections are containers; periods are drawable | none | one field per event on that period, including events on a continuation line | `title` |
 | `mindmap` | Every topic is drawable | parent → child, no arrowhead | — | — |
 
-Two consequences worth knowing before you read the digest. Gantt tasks and quadrant items get the 12-item budget from SKILL.md §7 rather than the default 9, and the `budget:` line names the cap it applied. Grammars that are edgeless by design (`gantt` with no dependencies, `quadrantChart`, `timeline`) omit the `unconnected:` line, because listing every node there would be noise rather than the first rung of the degrade ladder.
+Two consequences worth knowing before you read the digest. Gantt tasks and quadrant items get the 12-item budget from SKILL.md §7 rather than the default 9, and the `budget:` line names the cap it applied. Grammars that are edgeless by design (`gantt`, `quadrantChart`, `timeline`) omit the `unconnected:` line — `gantt` included even when `after` dependencies do connect some tasks, because a gantt task standing alone is a schedule entry, not an abandoned note, because listing every node there would be noise rather than the first rung of the degrade ladder.
 
 - `--diagram all` selects every fenced block. Default is diagram 0.
 - `--json` emits the full IR, including ER fields and sequence fragments.
@@ -124,7 +124,8 @@ Markdown is the Mermaid analogue of multi-page draw.io. The header lists every f
 | `malformed edge at line N` | Report the line number and stop. Do not guess endpoints. |
 | `malformed gantt task at line N` / `malformed quadrant point at line N` | Same rule: report the line and stop. A task needs `Label : metadata`; a point needs `Name: [x, y]`. |
 | A gantt `after` naming an id the source never declares | No edge is invented; the dependency survives as a field. Say so in the fidelity ledger. |
-| Gantt or quadrant over 12 items, mindmap deeper than 4 | Over the type's §7 budget — collapse a section or split into overview + detail. |
+| Gantt or quadrant over 12 items | Over the type's §7 budget — collapse a section or split into overview + detail. |
+| A mindmap whose reported `depth` runs past 4 | Not a budget flag — the digest reports depth, you judge it against §7. |
 | Node/edge/source limit exceeded | Ask for a smaller source or split by subgraph. Never bypass the cap. |
 | Unconnected nodes listed | Usually legends or abandoned notes. Drop only with a fidelity-ledger entry. |
 | Click handlers present | They were discarded. Never open or reproduce their targets. |

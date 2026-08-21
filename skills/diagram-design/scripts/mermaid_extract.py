@@ -1042,14 +1042,30 @@ GANTT_META_KEYS = {
 GANTT_TAGS = {"done", "active", "crit", "milestone", "vert"}
 GANTT_DURATION_RE = re.compile(r"^\d+(?:\.\d+)?\s*(?:ms|s|m|h|d|w|y)$", re.I)
 GANTT_RELATION_RE = re.compile(r"^(after|until)\s+(.+)$", re.I)
+GANTT_CLICK_RE = re.compile(r"^click\s+\S+\s+(?:call|href)\b", re.I)
+
+
+def _free_id(diagram: Diagram, prefix: str, taken: int) -> str:
+    """Number a generated id past anything the source already declared.
+
+    `add_node` merges on a repeated id, so a generated `task-2` colliding with a
+    source-declared `task-2` silently folds two nodes into one — and in a mindmap
+    it folds a child into its own parent, producing a self-edge.
+    """
+    ordinal = taken + 1
+    while f"{prefix}-{ordinal}" in diagram.node_map:
+        ordinal += 1
+    return f"{prefix}-{ordinal}"
 
 
 def _container_id(diagram: Diagram, prefix: str) -> str:
-    return f"{prefix}-{sum(1 for node in diagram.nodes if node.container) + 1}"
+    return _free_id(diagram, prefix, sum(1 for node in diagram.nodes if node.container))
 
 
 def _leaf_id(diagram: Diagram, prefix: str) -> str:
-    return f"{prefix}-{sum(1 for node in diagram.nodes if not node.container) + 1}"
+    return _free_id(
+        diagram, prefix, sum(1 for node in diagram.nodes if not node.container)
+    )
 
 
 def _gantt_task_fields(
@@ -1125,7 +1141,11 @@ def _parse_gantt(
         text = raw.strip()
         if not text:
             continue
-        if _discard_nonsemantic(diagram, text):
+        # Only Mermaid's own `click <task> call|href ...` is a directive here.
+        # Matching a bare `click `/`style ` prefix would eat a task named
+        # "Click rate" or "Style debt", and gantt has no style statement at all.
+        if GANTT_CLICK_RE.match(text):
+            diagram.discarded["click_handlers"] += 1
             continue
         keyword, _separator, remainder = text.partition(" ")
         lowered = keyword.casefold()
@@ -1174,14 +1194,17 @@ def _parse_quadrant(
         text = raw.strip()
         if not text:
             continue
-        if _discard_nonsemantic(diagram, text):
-            continue
         meta = QUADRANT_META_RE.match(text)
         if meta is not None:
             diagram.meta[meta.group(1).casefold()] = clean_label(meta.group(2))
             continue
         point = QUADRANT_POINT_RE.match(text)
         if point is None:
+            # A line that parses as a point is a point. Only what the grammar
+            # cannot read is considered a styling directive, so a point named
+            # "Style debt" survives.
+            if _discard_nonsemantic(diagram, text):
+                continue
             _fail(f"malformed quadrant point at line {line_number}")
         if point.group("extra").strip():
             # Per-point radius, colour, and stroke are source styling.
