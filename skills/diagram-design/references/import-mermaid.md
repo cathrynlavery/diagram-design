@@ -31,6 +31,8 @@ The four schedule-and-hierarchy grammars carry structure that is neither a node 
 | `timeline` | Sections are containers; periods are drawable | none | one field per event on that period, including events on a continuation line | `title` |
 | `mindmap` | Every topic is drawable | parent → child, no arrowhead | — | — |
 
+Grammar details the digest preserves. A `timeline` header may carry `LR` or `TD` and the declared direction is reported. Repeated gantt `excludes` / `includes` lines accumulate the way Mermaid concatenates them rather than overwriting. A quadrant point's `:::class` attachment is styling, so it is counted as discarded and kept out of the label. A mindmap topic whose Markdown string spans several lines is rejoined into one topic, since its continuation lines would otherwise read as deeper topics.
+
 Two consequences worth knowing before you read the digest. Gantt tasks and quadrant items get the 12-item budget from SKILL.md §7 rather than the default 9, and the `budget:` line names the cap it applied. Grammars that are edgeless by design (`gantt`, `quadrantChart`, `timeline`) omit the `unconnected:` line — `gantt` included even when `after` dependencies do connect some tasks, because a gantt task standing alone is a schedule entry, not an abandoned note, because listing every node there would be noise rather than the first rung of the degrade ladder.
 
 - `--diagram all` selects every fenced block. Default is diagram 0.
@@ -38,7 +40,7 @@ Two consequences worth knowing before you read the digest. Gantt tasks and quadr
 - `--max-rows N` controls digest table length; default 40.
 - `--out PATH` writes the digest without changing its content.
 
-The extractor exits 2 rather than guessing when a source is malformed — an unparsable edge or gantt task, a gantt task whose metadata is empty or outside Mermaid's one-to-three items, a quadrant coordinate outside the unit square, or a timeline continuation line with no period above it to continue. If the extractor exits 2, report its message verbatim and stop. Do not render the source or paste it into an online editor as a fallback.
+The extractor exits 2 rather than guessing when a source is malformed — an unparsable edge or gantt task, a gantt task whose metadata is empty or outside Mermaid's one-to-three items, a quadrant coordinate outside the unit square, a timeline continuation line with no period above it to continue, a timeline row carrying no event, a `weekend` that is neither friday nor saturday, or an unterminated mindmap Markdown string. If the extractor exits 2, report its message verbatim and stop. Do not render the source or paste it into an online editor as a fallback.
 
 ## Step 2 — Set the four dials
 
@@ -123,6 +125,9 @@ Markdown is the Mermaid analogue of multi-page draw.io. The header lists every f
 | Unsupported kind such as `pie`, `gitGraph`, `journey`, `C4Context`, `classDiagram`, or `sankey` | Report the supported-kinds message verbatim. Do not approximate it with a different type. |
 | `malformed edge at line N` | Report the line number and stop. Do not guess endpoints. |
 | `malformed gantt task at line N` / `malformed quadrant point at line N` | Same rule: report the line and stop. A task needs `Label : metadata`; a point needs `Name: [x, y]`. |
+| `timeline row without an event at line N` | Mermaid's row is `{period} : {event}`. A bare period has nothing to carry, so it is refused rather than drawn. |
+| `gantt \`weekend\` takes friday or saturday at line N` | Those are the only two values Mermaid defines. |
+| `unterminated mindmap Markdown string at line N` | A topic opened `["\`` and never closed it, so its depth and label are both unknown. |
 | A gantt `after` naming an id the source never declares | No edge is invented; the dependency survives as a field. Say so in the fidelity ledger. |
 | Gantt or quadrant over 12 items | Over the type's §7 budget — collapse a section or split into overview + detail. |
 | A mindmap whose reported `depth` runs past 4 | Not a budget flag — the digest reports depth, you judge it against §7. |
