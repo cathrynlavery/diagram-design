@@ -171,6 +171,17 @@ def main() -> int:
             "a spline between two snapshots",
         )
 
+        # 4b. Relative commands: `l120,56` renders against the previous point
+        #     while the parsed numbers read as absolute, so folding case would
+        #     certify a figure at positions it never drew. Refused outright.
+        case(
+            failures, directory, "relative-path",
+            source.replace('d="M320,88 L440,144 L560,256 L680,368"',
+                           'd="M320,88 l120,56 l120,112 l120,112"'),
+            source, "relative path commands",
+            "a series drawn with relative path commands",
+        )
+
         # 5. A printed rank disagreeing with the declared one.
         case(
             failures, directory, "mislabelled",
@@ -363,6 +374,8 @@ def main() -> int:
         for name, fixture, expect, describe in (
             ("too-many-series", synthetic(9, 4), "budget",
              "nine series against a budget of eight"),
+            ("too-few-series", synthetic(3, 4), "budget",
+             "three series against a budget floor of four"),
             ("too-many-cols", synthetic(4, 7), "budget",
              "seven snapshots against a budget of six"),
             ("too-few-cols", synthetic(4, 2), "slopegraph",

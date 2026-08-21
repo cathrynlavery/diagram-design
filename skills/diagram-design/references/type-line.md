@@ -164,7 +164,7 @@ Everything the slopegraph's colour section says holds here unchanged: one accent
 **State the ranking key and the tie-break in the source line.** Rank hides magnitude by design, so the footnote is where a reader learns what "first" means and why no two series ever share a row. `scripts/verify-bump.py` gates the geometry half: every snapshot's ranks must be a permutation of 1..N — a duplicated rank is a tie the stated tie-break cannot produce, and a skipped rank is an empty row the reader fills with a series that is not there.
 
 - **If the ranking measure changed definition between snapshots, the chart is invalid** — ranks under different measures are not comparable, and no drawing convention repairs that.
-- **A series that enters late or leaves early starts or stops.** A real gap is drawn as absence, never interpolated across.
+- **A series that enters late or leaves early starts or stops.** A real gap is drawn as absence, never interpolated across. The shipped grammar has no way to *declare* a gap yet, so `verify-bump.py` requires every series to visit every snapshot — a series with fewer vertices than columns is a finding until a gap declaration exists, because widening the rule without one would let a truncated series pass as a deliberate exit.
 - **Never smooth a tie into a crossing.** The tie-break decides the order; drawing anything else invents a rank.
 - **Never nudge a vertex off its row** to dodge a label collision — it reads as a rank between two ranks, and the checker treats it as the lie it is.
 
