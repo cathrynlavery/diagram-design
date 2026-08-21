@@ -438,7 +438,7 @@ Rules:
 
 ## 9. Pre-Output Checklist (Taste Gate)
 
-**Load [`references/taste-gate.md`](references/taste-gate.md) and run it once, after drawing and before writing the file out.** It is the one gate every diagram passes, and it is a reference rather than a section here because it is read at the end of the job, not while choosing a type.
+**Load [`references/taste-gate.md`](references/taste-gate.md) and run it once on the finished file, before handing it to the user.** It is the one gate every diagram passes, and it is a reference rather than a section here because it is read at the end of the job, not while choosing a type.
 
 Five groups, in order:
 
