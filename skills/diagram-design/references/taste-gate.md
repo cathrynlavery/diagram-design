@@ -1,6 +1,6 @@
 # Pre-Output Checklist (Taste Gate)
 
-Run this once, after the diagram is drawn and before it is written out. Section numbers below refer to `SKILL.md`.
+Write the finished file first, then run this once against it and re-run after each fix until it passes; only then hand the file over. Section numbers below refer to `SKILL.md`.
 
 ## Type fit
 
