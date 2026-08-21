@@ -278,6 +278,15 @@ jobs:
         if: always()
         id: bubble_tests
         run: python scripts/test-verify-bubble.py
+      - name: Verify bump chart rank grid
+        if: always()
+        id: bump
+        run: python scripts/verify-bump.py --all
+
+      - name: Verify bump checker
+        if: always()
+        id: bump_tests
+        run: python scripts/test-verify-bump.py
 
       # lint-render.py's oracle is pixels, so the browser is part of the contract:
       # pin Playwright exactly, and let that pin choose the Chromium build. Bump
@@ -361,6 +370,8 @@ jobs:
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bubble Checker | ${{ steps.bubble_tests.outcome == 'success' && '✅ Passed' || (steps.bubble_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bump Chart Rank Grid | ${{ steps.bump.outcome == 'success' && '✅ Passed' || (steps.bump.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bump Checker | ${{ steps.bump_tests.outcome == 'success' && '✅ Passed' || (steps.bump_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
