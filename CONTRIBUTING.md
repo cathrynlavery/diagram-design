@@ -69,6 +69,8 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Dumbbell checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-dumbbell.py` |
 | Slopegraph axes share one scale and every endpoint matches its printed value | `python3 scripts/verify-slopegraph.py --all` |
 | Slopegraph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-slopegraph.py` |
+| Streamgraph layers tile one shared scale on a symmetric baseline and every total is a sum | `python3 scripts/verify-streamgraph.py --all` |
+| Streamgraph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-streamgraph.py` |
 | Ridgeline ridges share one amplitude and every printed range matches its bins | `python3 scripts/verify-ridgeline.py --all` |
 | Ridgeline checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-ridgeline.py` |
 | Sankey flow conservation and ribbon geometry | `python3 scripts/verify-sankey.py --all` |
@@ -115,6 +117,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-dumbbell.py \
   && python3 scripts/verify-slopegraph.py --all \
   && python3 scripts/test-verify-slopegraph.py \
+  && python3 scripts/verify-streamgraph.py --all \
+  && python3 scripts/test-verify-streamgraph.py \
   && python3 scripts/verify-ridgeline.py --all \
   && python3 scripts/test-verify-ridgeline.py \
   && python3 scripts/verify-sankey.py --all \
@@ -130,6 +134,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
 - **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 39 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
+- **`verify-streamgraph.py`:** a layer's drawn thickness disagrees with its declared values, the stack has a gap or overlap, the envelope drifts off its midline, or a boundary curve bends away from where its vertices put it. Fix the geometry or the declaration so they state one thing — never bridge a zero period, float a band to open room, or reshape a curve between vertices to smooth the story.
 - **`verify-ridgeline.py`:** a ridge is drawn on its own amplitude, a baseline sits off the stack's pitch or away from its drawn rule, a ridge is sampled on its own x positions, or a printed range is wider than the bins it claims. Fix the geometry or the declaration so they state one thing — never renormalise a single ridge to make it readable, and never move a baseline to buy one ridge headroom.
 - **`verify-bubble.py`:** a bubble is drawn off the shared axis scale its peers describe, its radius disagrees with the one area constant (`r = K·√size`), a second bubble wears the accent, an overlapping smaller bubble is painted under a larger one, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never nudge a bubble to open up space, because crowded bubbles mean the values really are close.
 - **`verify-geometry.py`:** a label mask overlaps a node declared later in the document, so the node fill clips the label at render time. Move the label to a free segment of its connector — keep the 6–10px gap from the stroke required by SKILL.md §6, and do not shrink the mask to sneak under the check.
