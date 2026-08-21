@@ -51,6 +51,8 @@
       "python3 scripts/test-verify-dumbbell.py",
       "python3 scripts/verify-slopegraph.py --all",
       "python3 scripts/test-verify-slopegraph.py",
+      "python3 scripts/verify-streamgraph.py --all",
+      "python3 scripts/test-verify-streamgraph.py",
       "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-design/references/primitive-icons.md"
     ],
     "required_check_names": [],
