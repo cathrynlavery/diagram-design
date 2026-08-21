@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Per-request latency, one dot per request · Beeswarm · dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #2d3142;
+      --color-ink:    #f5f5f5;
+      --color-muted:  #bfc0c0;
+      --color-accent: #f08a59;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 760px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Beeswarm · Diagram Design</p>
+    <h1>The median hides the tail</h1>
+
+    <!-- Value axis: 0-440ms over 880px, x = 80 + 2*ms, linear from zero.
+         The vertical (swarm) axis carries NO meaning: each dot's y offset is
+         greedy packing at pitch 10 (2r+2) around the y=230 midline, first
+         free slot alternating above/below, and overlap is never resolved by
+         moving a dot along the value axis. scripts/verify-beeswarm.py derives
+         the value scale from the dots themselves and flags any dot that
+         disagrees with its peers, any overlapping pair, and any second dot
+         radius or non-focal fill. -->
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="beeswarm-dark-title beeswarm-dark-desc">
+      <title id="beeswarm-dark-title">The median hides the tail</title>
+      <desc id="beeswarm-dark-desc">Beeswarm of 138 per-request latency samples for one checkout endpoint on a shared linear value axis from zero; vertical spread is packing only and carries no value, and three requests past 380 ms form the p99 tail.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Axis caption -->
+      <text x="520" y="492" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">PER-REQUEST LATENCY, MS</text>
+
+      <!-- Vertical gridlines only: the swarm axis has no scale to grid.
+           A horizontal rule through the band would invite reading the
+           packing offsets as values, which they are not. -->
+      <line x1="280" y1="40" x2="280" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="480" y1="40" x2="480" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="680" y1="40" x2="680" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+      <line x1="880" y1="40" x2="880" y2="420" stroke="rgba(245,245,245,0.08)" stroke-width="0.8"/>
+
+      <!-- Value axis, from zero. -->
+      <line x1="80" y1="420" x2="960" y2="420" stroke="rgba(245,245,245,0.25)" stroke-width="1"/>
+
+      <!-- Tick labels are BOUND: data-tick names the (one) value axis and
+           data-value the number the tick claims to sit at. verify-beeswarm.py
+           cross-checks each against the scale the dots themselves describe. -->
+      <text data-tick="x" data-value="0" x="80" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0</text>
+      <text data-tick="x" data-value="100" x="280" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">100</text>
+      <text data-tick="x" data-value="200" x="480" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">200</text>
+      <text data-tick="x" data-value="300" x="680" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">300</text>
+      <text data-tick="x" data-value="400" x="880" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">400</text>
+
+      <!-- ─── THE SWARM. One dot = one request, every dot exactly at its
+           value on the shared axis; the vertical offset is the greedy dodge
+           and states nothing. One radius for every dot (size as a second
+           encoding is a bubble chart) and one ink fill for every non-focal
+           dot (opacity as a value encoding is banned while dodging). Each
+           dot sits on a paper underlay so gridlines do not show through
+           the translucent fill. -->
+      <circle cx="184" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="52" cx="184" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="186" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="53" cx="186" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="190" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="55" cx="190" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="192" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="56" cx="192" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="200" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="60" cx="200" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="202" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="61" cx="202" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="202" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="61" cx="202" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="214" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="67" cx="214" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="218" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="69" cx="218" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="226" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="73" cx="226" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="232" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="76" cx="232" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="232" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="76" cx="232" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="234" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="77" cx="234" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="240" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="80" cx="240" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="240" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="80" cx="240" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="244" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="82" cx="244" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="244" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="82" cx="244" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="246" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="83" cx="246" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="248" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="84" cx="248" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="248" cy="260" r="4" fill="#2d3142"/>
+      <circle data-value="84" cx="248" cy="260" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="248" cy="190" r="4" fill="#2d3142"/>
+      <circle data-value="84" cx="248" cy="190" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="250" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="85" cx="250" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="250" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="85" cx="250" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="252" cy="270" r="4" fill="#2d3142"/>
+      <circle data-value="86" cx="252" cy="270" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="254" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="87" cx="254" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="256" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="88" cx="256" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="256" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="88" cx="256" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="256" cy="180" r="4" fill="#2d3142"/>
+      <circle data-value="88" cx="256" cy="180" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="258" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="89" cx="258" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="258" cy="260" r="4" fill="#2d3142"/>
+      <circle data-value="89" cx="258" cy="260" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="260" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="90" cx="260" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="260" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="90" cx="260" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="260" cy="190" r="4" fill="#2d3142"/>
+      <circle data-value="90" cx="260" cy="190" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="262" cy="270" r="4" fill="#2d3142"/>
+      <circle data-value="91" cx="262" cy="270" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="268" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="94" cx="268" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="270" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="95" cx="270" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="278" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="99" cx="278" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="278" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="99" cx="278" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="278" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="99" cx="278" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="286" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="103" cx="286" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="286" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="103" cx="286" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="290" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="105" cx="290" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="290" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="105" cx="290" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="292" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="106" cx="292" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="292" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="106" cx="292" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="292" cy="260" r="4" fill="#2d3142"/>
+      <circle data-value="106" cx="292" cy="260" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="292" cy="190" r="4" fill="#2d3142"/>
+      <circle data-value="106" cx="292" cy="190" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="292" cy="270" r="4" fill="#2d3142"/>
+      <circle data-value="106" cx="292" cy="270" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="294" cy="180" r="4" fill="#2d3142"/>
+      <circle data-value="107" cx="294" cy="180" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="294" cy="280" r="4" fill="#2d3142"/>
+      <circle data-value="107" cx="294" cy="280" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="296" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="108" cx="296" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="298" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="109" cx="298" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="300" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="110" cx="300" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="300" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="110" cx="300" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="300" cy="170" r="4" fill="#2d3142"/>
+      <circle data-value="110" cx="300" cy="170" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="306" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="113" cx="306" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="308" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="114" cx="308" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="308" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="114" cx="308" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="310" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="115" cx="310" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="310" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="115" cx="310" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="312" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="116" cx="312" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="314" cy="260" r="4" fill="#2d3142"/>
+      <circle data-value="117" cx="314" cy="260" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="314" cy="190" r="4" fill="#2d3142"/>
+      <circle data-value="117" cx="314" cy="190" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="314" cy="270" r="4" fill="#2d3142"/>
+      <circle data-value="117" cx="314" cy="270" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="316" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="118" cx="316" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="316" cy="180" r="4" fill="#2d3142"/>
+      <circle data-value="118" cx="316" cy="180" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="318" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="119" cx="318" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="320" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="120" cx="320" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="324" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="122" cx="324" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="326" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="123" cx="326" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="326" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="123" cx="326" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="334" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="127" cx="334" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="334" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="127" cx="334" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="334" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="127" cx="334" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="334" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="127" cx="334" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="336" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="128" cx="336" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="342" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="131" cx="342" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="344" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="132" cx="344" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="350" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="135" cx="350" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="354" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="137" cx="354" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="362" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="141" cx="362" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="366" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="143" cx="366" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="370" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="145" cx="370" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="370" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="145" cx="370" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="372" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="146" cx="372" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="376" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="148" cx="376" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="380" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="150" cx="380" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="382" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="151" cx="382" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="384" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="152" cx="384" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="384" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="152" cx="384" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="386" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="153" cx="386" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="390" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="155" cx="390" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="390" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="155" cx="390" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="394" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="157" cx="394" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="394" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="157" cx="394" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="402" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="161" cx="402" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="404" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="162" cx="404" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="408" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="164" cx="408" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="428" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="174" cx="428" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="444" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="182" cx="444" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="454" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="187" cx="454" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="458" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="189" cx="458" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="460" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="190" cx="460" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="468" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="194" cx="468" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="470" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="195" cx="470" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="470" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="195" cx="470" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="472" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="196" cx="472" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="472" cy="250" r="4" fill="#2d3142"/>
+      <circle data-value="196" cx="472" cy="250" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="474" cy="200" r="4" fill="#2d3142"/>
+      <circle data-value="197" cx="474" cy="200" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="482" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="201" cx="482" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="488" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="204" cx="488" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="492" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="206" cx="492" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="494" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="207" cx="494" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="508" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="214" cx="508" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="510" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="215" cx="510" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="514" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="217" cx="514" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="518" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="219" cx="518" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="530" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="225" cx="530" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="538" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="229" cx="538" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="546" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="233" cx="546" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="546" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="233" cx="546" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="556" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="238" cx="556" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="578" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="249" cx="578" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="590" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="255" cx="590" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="592" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="256" cx="592" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="608" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="264" cx="608" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="616" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="268" cx="616" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="634" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="277" cx="634" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="640" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="280" cx="640" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="646" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="283" cx="646" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="650" cy="220" r="4" fill="#2d3142"/>
+      <circle data-value="285" cx="650" cy="220" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="652" cy="240" r="4" fill="#2d3142"/>
+      <circle data-value="286" cx="652" cy="240" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="658" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="289" cx="658" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="658" cy="210" r="4" fill="#2d3142"/>
+      <circle data-value="289" cx="658" cy="210" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="704" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="312" cx="704" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="856" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="388" data-name="req-77d3" cx="856" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="884" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="402" data-name="req-09aa" cx="884" cy="230" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <circle cx="942" cy="230" r="4" fill="#2d3142"/>
+      <circle data-value="431" data-name="req-4c1f" cx="942" cy="230" r="4" fill="rgba(240,138,89,0.55)" stroke="#f08a59" stroke-width="1.2"/>
+
+      <!-- Labels: the p99 tail only, one tier per label, alternating sides,
+           each bound to its dot by data-name and tied to it by a hairline
+           leader. verify-beeswarm.py proves each label sits nearer its own
+           dot than any other named dot along the value axis. -->
+      <line x1="856" y1="222" x2="856" y2="158" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <rect x="826" y="141" width="60" height="12" rx="2" fill="#2d3142"/>
+      <text data-name="req-77d3" data-role="label" x="856" y="150" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-77D3</text>
+      <line x1="884" y1="238" x2="884" y2="298" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <rect x="854" y="301" width="60" height="12" rx="2" fill="#2d3142"/>
+      <text data-name="req-09aa" data-role="label" x="884" y="310" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-09AA</text>
+      <line x1="942" y1="222" x2="942" y2="128" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <rect x="912" y="111" width="60" height="12" rx="2" fill="#2d3142"/>
+      <text data-name="req-4c1f" data-role="label" x="942" y="120" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-4C1F</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <text x="960" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">ONE DOT = ONE REQUEST · VALUE AXIS 0–440 MS, LINEAR FROM ZERO · VERTICAL SPREAD IS PACKING, NOT A VALUE · ILLUSTRATIVE FIGURES, NOT MEASURED TRAFFIC</text>
+
+      <circle cx="52" cy="490" r="4" fill="rgba(240,138,89,0.55)" stroke="#f08a59" stroke-width="1.2"/>
+      <text x="68" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">req-4c1f · focal, the slowest request in the window</text>
+      <circle cx="660" cy="490" r="4" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text x="676" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">request · vertical offset is packing only</text>
+    </svg>
+  </div>
+</body>
+</html>
