@@ -345,6 +345,32 @@ o--go-->C
     ]:
         fail("single-character x/o source IDs were consumed as left edge markers")
 
+    chained_marker_source_file = tmp / "chained-marker-source-links.mmd"
+    chained_marker_source_file.write_text(
+        """flowchart LR
+A--yes-->x--go-->B
+C--no--> o--wait-->D
+E-->|maybe|x--next-->F
+""",
+        encoding="utf-8",
+    )
+    chained_marker_source = json.loads(
+        run_extract([str(chained_marker_source_file), "--json"])
+    )["diagrams"][0]
+    chained_marker_edges = [
+        (edge["source"], edge["target"], edge["label"])
+        for edge in chained_marker_source["edges"]
+    ]
+    if chained_marker_edges != [
+        ("A", "x", "yes"),
+        ("x", "B", "go"),
+        ("C", "o", "no"),
+        ("o", "D", "wait"),
+        ("E", "x", "maybe"),
+        ("x", "F", "next"),
+    ]:
+        fail("chained x/o endpoint IDs were consumed as left edge markers")
+
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
         '''flowchart LR

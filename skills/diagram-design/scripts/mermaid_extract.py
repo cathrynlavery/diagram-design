@@ -612,19 +612,32 @@ def _edge_operators(text: str) -> list[_Operator]:
     text_edge = re.compile(
         r"(?P<opening>"
         r"<(?:--|-\.|==)"
-        r"|(?<!\A)(?<![\w.:-])[xo](?:--|-\.|==)"
+        r"|(?<![\w.:-])[xo](?:--|-\.|==)"
         r"|(?:--|-\.|==)"
         r")"
         r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
         r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
     )
+    trailing_operator = re.compile(
+        r"(?:\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+        r"(?:\|[^|\n]*\|)?\s*$"
+    )
     for match in text_edge.finditer(mask):
-        token = match.group("opening") + match.group("closing")
+        opening = match.group("opening")
+        operator_start = match.start()
+        if opening.startswith(("x", "o")):
+            prefix = mask[:operator_start]
+            if not prefix.strip() or trailing_operator.search(prefix):
+                # Here x/o is the endpoint before a regular opening operator,
+                # not a left marker: `x--yes-->B` or `A-->x--go-->B`.
+                operator_start += 1
+                opening = opening[1:]
+        token = opening + match.group("closing")
         label_group = "spaced" if match.group("spaced") is not None else "compact"
         style, arrowhead, bidirectional, undirected = _operator_style(token)
         operators.append(
             _Operator(
-                match.start(),
+                operator_start,
                 match.end(),
                 clean_label(text[match.start(label_group) : match.end(label_group)]),
                 style,
@@ -633,7 +646,7 @@ def _edge_operators(text: str) -> list[_Operator]:
                 undirected,
             )
         )
-        occupied.append((match.start(), match.end()))
+        occupied.append((operator_start, match.end()))
 
     pattern = re.compile(
         r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}"
