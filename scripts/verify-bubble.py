@@ -43,7 +43,10 @@ Seven invariants:
    four parseable bubbles is a finding, never a pass. Four because the outlier
    test is leave-one-out and each fit needs three points; below that nothing
    here is verifiable, and a checker that reports OK because it found nothing
-   to compare is the bug, not the gate.
+   to compare is the bug, not the gate. The same rule covers a bubble whose
+   peers all share one value on an axis: its leave-one-out fit is degenerate,
+   so it would define the scale rather than be checked against it, and an
+   unmeasurable mark is reported rather than skipped.
 
 The basis for geometry is the `data-x` / `data-y` / `data-size` triple each
 bubble circle declares, never the rendered text. The scales are derived from
@@ -446,6 +449,23 @@ def check_axis(bubbles: list, axis: str, findings: list, source: str,
             % (name, line, axis)
         )
         return None, None
+
+    # A bubble whose PEERS all share one value cannot be measured: the
+    # leave-one-out fit for it is degenerate, so `outliers` skips it, and the
+    # full-set fit passes exactly through wherever it was drawn — its position
+    # would define the scale rather than be checked by it. Fail closed: that
+    # is an unverifiable mark, not a pass. (Greptile flagged the silent skip.)
+    for index, (value, _drawn) in enumerate(points):
+        peer_values = {points[i][0] for i in range(len(points)) if i != index}
+        if len(peer_values) < 2:
+            b = bubbles[index]
+            findings.append(
+                "%s:%d: bubble %r holds the only distinct %s value (%g) — its "
+                "peers cannot describe a scale to check it against, so its "
+                "position would define the axis instead of being verified by "
+                "it. An axis needs two distinct values among the other bubbles"
+                % (name, line_of(source, b.offset), b.name, axis, value)
+            )
 
     for index, drawn, expected in outliers(points, RESIDUAL_TOLERANCE):
         b = bubbles[index]

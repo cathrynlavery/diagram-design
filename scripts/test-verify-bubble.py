@@ -295,6 +295,18 @@ def run_cases(h: Harness) -> int:
                               focal="none"), TICKS),
         r"the x axis has no two distinct declared values",
     )
+    # The lone bubble whose peers all share one value: its leave-one-out fit is
+    # degenerate, so the residual test skips it and the full-set fit passes
+    # through wherever it was drawn. Skipping silently let a bubble at a wrong
+    # coordinate ship clean; it must be reported as unverifiable instead.
+    lone = honest_block([("A", 100, 1.0, 400), ("B", 100, 2.0, 100),
+                         ("C", 100, 0.5, 225)], focal="none")
+    lone += bubble("Lone", 300, 3.0, 25, drawn_cx=cx(300) + 40)
+    h.expect_finding(
+        "a bubble holding the only distinct x value is reported, not skipped",
+        document(lone, TICKS),
+        r"bubble 'Lone' holds the only distinct x value",
+    )
 
     # ── Area lies ─────────────────────────────────────────────────────────
     proportional = ""
