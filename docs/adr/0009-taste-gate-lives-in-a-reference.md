@@ -34,7 +34,7 @@ Two sections were candidates for extraction. §9, the pre-output checklist, was 
 
 ## Consequences
 
-- `SKILL.md` is 35,970 bytes, leaving ~4,000 of headroom: room for several types rather than
+- `SKILL.md` is 36,037 bytes, leaving ~3,900 of headroom: room for several types rather than
   a fraction of one. Every figure here is `wc -c` on the file, and the per-section ones are the
   bytes from a `## N.` heading up to the next one — re-measure rather than trust the number.
 - `verify-docs-sync.py` requires `SKILL.md` itself to name every packaged runtime file, so a
