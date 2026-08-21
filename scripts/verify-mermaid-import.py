@@ -284,6 +284,11 @@ B--no-->A
 C-.fast.->D
 D==crit==>E
 E--tie---A
+K<--both-->L
+M o--circle--o N
+O x--blocked--x P
+Box--yes-->C
+Echo--go-->D
 F --o G --> H
 I----->J
 """,
@@ -291,18 +296,80 @@ I----->J
     )
     compact = json.loads(run_extract([str(compact_file), "--json"]))["diagrams"][0]
     compact_ids = sorted(node["id"] for node in compact["nodes"])
-    if compact_ids != ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]:
+    if compact_ids != [
+        "A", "B", "Box", "C", "D", "E", "Echo", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P",
+    ]:
         fail(f"compact edge labels materialized phantom nodes: {compact_ids}")
     compact_labels = [edge["label"] for edge in compact["edges"]]
-    if compact_labels[:6] != ["", "yes", "no", "fast", "crit", "tie"]:
+    if compact_labels[:11] != [
+        "", "yes", "no", "fast", "crit", "tie", "both", "circle", "blocked",
+        "yes", "go",
+    ]:
         fail(f"compact edge labels were not retained: {compact_labels}")
-    if compact_labels[6:] != ["", "", ""]:
+    if compact_labels[11:] != ["", "", ""]:
         fail(
             "operator characters or chained links were misread as compact "
             f"labels: {compact_labels}"
         )
     if compact["edges"][3]["style"] != "dashed" or compact["edges"][4]["style"] != "thick":
         fail("compact dotted/thick labeled links lost their styles")
+    arrow_bidir, circle_bidir, cross_bidir = compact["edges"][6:9]
+    if not arrow_bidir["bidirectional"] or arrow_bidir["arrowhead"] != "arrow":
+        fail("compact labeled `<-- -->` link lost bidirectional arrow semantics")
+    if not circle_bidir["bidirectional"] or circle_bidir["arrowhead"] != "circle":
+        fail("compact labeled `o-- --o` link lost bidirectional circle semantics")
+    if not cross_bidir["bidirectional"] or cross_bidir["arrowhead"] != "cross":
+        fail("compact labeled `x-- --x` link lost bidirectional cross semantics")
+    if compact["edges"][9]["source"] != "Box" or compact["edges"][10]["source"] != "Echo":
+        fail("source IDs ending in x/o were consumed as left edge markers")
+
+    single_marker_source_file = tmp / "single-marker-source-links.mmd"
+    single_marker_source_file.write_text(
+        """flowchart LR
+x--yes-->B
+o--go-->C
+""",
+        encoding="utf-8",
+    )
+    single_marker_source = json.loads(
+        run_extract([str(single_marker_source_file), "--json"])
+    )["diagrams"][0]
+    single_marker_edges = [
+        (edge["source"], edge["target"], edge["label"])
+        for edge in single_marker_source["edges"]
+    ]
+    if single_marker_edges != [
+        ("x", "B", "yes"),
+        ("o", "C", "go"),
+    ]:
+        fail("single-character x/o source IDs were consumed as left edge markers")
+
+    chained_marker_source_file = tmp / "chained-marker-source-links.mmd"
+    chained_marker_source_file.write_text(
+        """flowchart LR
+A--yes-->x--go-->B
+C--no--> o--wait-->D
+E-->|maybe|x--next-->F
+""",
+        encoding="utf-8",
+    )
+    chained_marker_source = json.loads(
+        run_extract([str(chained_marker_source_file), "--json"])
+    )["diagrams"][0]
+    chained_marker_edges = [
+        (edge["source"], edge["target"], edge["label"])
+        for edge in chained_marker_source["edges"]
+    ]
+    if chained_marker_edges != [
+        ("A", "x", "yes"),
+        ("x", "B", "go"),
+        ("C", "o", "no"),
+        ("o", "D", "wait"),
+        ("E", "x", "maybe"),
+        ("x", "F", "next"),
+    ]:
+        fail("chained x/o endpoint IDs were consumed as left edge markers")
 
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
