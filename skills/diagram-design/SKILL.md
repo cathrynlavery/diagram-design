@@ -102,7 +102,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Ranked hierarchy or conversion drop-off | **Pyramid / funnel** | [type-pyramid.md](references/type-pyramid.md) |
 | Quantitative comparison across categories | **Bar chart** | [type-bar.md](references/type-bar.md) |
 | Part-of-whole where the relative sizes are the story | **Treemap** | [type-treemap.md](references/type-treemap.md) |
-| Continuous trends over time, or change between exactly two states (slopegraph) | **Line chart** | [type-line.md](references/type-line.md) |
+| Continuous trends over time, change between exactly two states (slopegraph), or one distribution per series (ridgeline) | **Line chart** | [type-line.md](references/type-line.md) |
 | Tasks and phases on a timeline | **Gantt** | [type-gantt.md](references/type-gantt.md) |
 | Distribution and correlation between two variables | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
 | End-to-end data stack on a container cluster | **High-Level** | [type-high-level.md](references/type-high-level.md) |
