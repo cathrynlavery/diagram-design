@@ -484,28 +484,63 @@ def normalize_hex(value):
     return value
 
 
-def table_hexes(markdown, heading):
-    """Return hex colors from the first Markdown table after *heading*."""
-    start = markdown.find(heading)
-    if start < 0:
-        raise ValueError(f"missing {heading!r} in {STYLE_GUIDE}")
+TOKEN_TABLE_HEADER_RE = re.compile(
+    r"\b(hex|token|role|light|dark|default)\b", re.IGNORECASE
+)
 
-    table_started = False
-    colors = set()
-    for line in markdown[start:].splitlines()[1:]:
-        if line.startswith("|"):
-            table_started = True
-            colors.update(normalize_hex(match.group()) for match in HEX_RE.finditer(line))
-        elif table_started:
-            break
-    return colors
+
+def iter_token_table_rows(markdown):
+    """Yield body rows of Markdown tables that declare skin tokens.
+
+    A table qualifies when its header row (the first pipe-prefixed line of a
+    contiguous table block, outside fenced code) names a token-shaped column:
+    hex, token, role, light, dark, or default. This keeps the style guide the
+    single source of truth for the palette -- custom skins may add their own
+    token sections or drop opt-in ones -- while prose tables and fenced
+    examples never contribute colors, so a stray hex in an illustration
+    cannot silently widen the palette.
+    """
+    in_fence = False
+    in_table = False
+    table_declares_tokens = False
+    for line in markdown.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_fence = not in_fence
+            in_table = False
+            continue
+        if in_fence:
+            continue
+        if stripped.startswith("|"):
+            if not in_table:
+                in_table = True
+                table_declares_tokens = bool(
+                    TOKEN_TABLE_HEADER_RE.search(stripped)
+                )
+                continue  # the header row itself declares columns, not colors
+            if table_declares_tokens:
+                yield line
+        else:
+            in_table = False
 
 
 def allowed_colors():
+    """Palette the current skin declares, from its token tables.
+
+    Discovery is heading-independent (a reskin may rename, add, or drop
+    sections -- the shipped "### Terminal skin" palette is opt-in, for
+    example) but table-shape-dependent: only tables whose header names a
+    token column contribute hexes. On the shipped style guide this yields
+    exactly the same palette as the previous three-heading lookup; see
+    scripts/test-lint-custom-skin.py for the equivalence and rejection
+    tests.
+    """
     markdown = STYLE_GUIDE.read_text(encoding="utf-8")
-    colors = table_hexes(markdown, "### Semantic roles")
-    colors.update(table_hexes(markdown, "### Series palette"))
-    colors.update(table_hexes(markdown, "### Terminal skin"))
+    colors = {
+        normalize_hex(match.group())
+        for row in iter_token_table_rows(markdown)
+        for match in HEX_RE.finditer(row)
+    }
     colors.update({"#fff", "#ffffff"})
 
     rgb_triplets = set()

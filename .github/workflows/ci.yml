@@ -70,6 +70,7 @@ jobs:
       - name: Verify linter compatibility
         run: |
           python scripts/test-lint-a11y.py
+          python scripts/test-lint-custom-skin.py
           python scripts/lint-skin.py --all --baseline
 
   validate:
@@ -101,6 +102,8 @@ jobs:
         if: always()
         id: a11y
         run: python scripts/test-lint-a11y.py
+      - name: Custom-skin palette tests
+        run: python scripts/test-lint-custom-skin.py
 
       - name: Verify semantic pattern documentation
         if: always()
