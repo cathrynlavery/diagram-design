@@ -29,6 +29,11 @@ PROMPT = ROOT / "prompts/import-mermaid.md"
 FLOW = ROOT / "scripts/fixtures/sample-flowchart.mmd"
 README_FIXTURE = ROOT / "scripts/fixtures/sample-readme-with-mermaid.md"
 ADVERSARIAL = ROOT / "scripts/fixtures/sample-adversarial.mmd"
+GANTT = ROOT / "scripts/fixtures/sample-gantt.mmd"
+QUADRANT = ROOT / "scripts/fixtures/sample-quadrant.mmd"
+TIMELINE = ROOT / "scripts/fixtures/sample-timeline.mmd"
+MINDMAP = ROOT / "scripts/fixtures/sample-mindmap.mmd"
+ADVERSARIAL_GRAMMARS = ROOT / "scripts/fixtures/sample-adversarial-grammars.mmd"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-mermaid.html"
 
 
@@ -505,6 +510,416 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def _fields(node: dict) -> str:
+    return "; ".join(node["fields"])
+
+
+def _by_label(payload: dict, label: str) -> dict:
+    for node in payload["nodes"]:
+        if node["label"] == label:
+            return node
+    fail(f"no node labelled {label!r}")
+    raise AssertionError  # unreachable; fail() exits
+
+
+def check_gantt(tmp: Path) -> None:
+    payload = json.loads(run_extract([str(GANTT), "--json"]))["diagrams"][0]
+    if payload["kind"] != "gantt" or payload["direction"] != "LR":
+        fail("gantt header or direction was not recognized")
+    if payload["analysis"]["type_candidates"] != ["gantt"]:
+        fail("gantt does not route to the Gantt type")
+    if payload["meta"].get("dateformat") != "YYYY-MM-DD":
+        fail("gantt dateFormat was not retained as meta")
+    if payload["meta"].get("title") != "Platform migration":
+        fail("gantt title was not retained as meta")
+    if payload["analysis"]["containers"] != 2:
+        fail("gantt sections did not become containers")
+    if payload["analysis"]["node_budget"] != 12:
+        fail("gantt must use the 12-task budget, not the default 9")
+
+    dated = _by_label(payload, "Inventory the estate")
+    if dated["id"] != "inv":
+        fail("an explicit gantt task id was not used as the node id")
+    if _fields(dated) != "start: 2026-01-05; dur: 10d; status: done":
+        fail(f"gantt task metadata mis-parsed: {_fields(dated)}")
+
+    # A task with an id but no date must not read its id as a start date.
+    dependent = _by_label(payload, "Dual-write the ledger")
+    if dependent["id"] != "dual" or "start:" in _fields(dependent):
+        fail(f"gantt id/date split mis-parsed: {_fields(dependent)}")
+    if "after: inv" not in _fields(dependent) or "status: active crit" not in _fields(dependent):
+        fail(f"gantt tags or dependency lost: {_fields(dependent)}")
+
+    milestone = _by_label(payload, "Go-live")
+    if "status: milestone" not in _fields(milestone):
+        fail("gantt milestone tag was not retained")
+
+    dependencies = {(edge["source"], edge["target"]) for edge in payload["edges"]}
+    if ("inv", "dual") not in dependencies or ("dual", "freeze") not in dependencies:
+        fail(f"`after` dependencies did not become edges: {dependencies}")
+    if any(edge["label"] != "after" for edge in payload["edges"]):
+        fail("gantt dependency edges must be labelled `after`")
+
+    dangling = tmp / "gantt-dangling.mmd"
+    dangling.write_text(
+        "gantt\n    section S\n        Task :t1, after ghost, 2d\n", encoding="utf-8"
+    )
+    orphan = json.loads(run_extract([str(dangling), "--json"]))["diagrams"][0]
+    if orphan["edges"]:
+        fail("an `after` pointing at an unknown id must not invent an edge")
+    if "after: ghost" not in _fields(orphan["nodes"][1]):
+        fail("an unresolved dependency must still be reported as a field")
+
+    # Mermaid reads a lone date as the task's end, inheriting the start from the
+    # task above; a date only means "start" when a length, an `until`, or a
+    # second date supplies the end. Getting this backwards moves a single-date
+    # task a whole task-length earlier in the redraw.
+    positional = tmp / "gantt-positional.mmd"
+    positional.write_text(
+        "gantt\n"
+        "    dateFormat YYYY-MM-DD\n"
+        "    section S\n"
+        "        Lone end      :2026-03-01\n"
+        "        Start and dur :2026-03-02, 5d\n"
+        "        Both dates    :2026-03-10, 2026-03-20\n"
+        "        After and end :after-task, after lone, 2026-04-01\n"
+        "        Start until   :2026-05-01, until after-task\n",
+        encoding="utf-8",
+    )
+    arity = json.loads(run_extract([str(positional), "--json"]))["diagrams"][0]
+    expected = {
+        "Lone end": "end: 2026-03-01",
+        "Start and dur": "start: 2026-03-02; dur: 5d",
+        "Both dates": "start: 2026-03-10; end: 2026-03-20",
+        "After and end": "end: 2026-04-01; after: lone",
+        "Start until": "start: 2026-05-01; until: after-task",
+    }
+    for label, wanted in expected.items():
+        actual = _fields(_by_label(arity, label))
+        if actual != wanted:
+            fail(f"gantt metadata arity mis-parsed for {label!r}: {actual!r} != {wanted!r}")
+
+    # A declared `dateFormat` decides what a date looks like, and the extractor
+    # never reads one. Under `MMM` a date is `Jan`; under `A` it is `PM`; under
+    # `DD MMM YYYY` it carries spaces. Every one of these was silently dropped
+    # by a classifier that inspected the value instead of counting the items.
+    custom_format = tmp / "gantt-custom-format.mmd"
+    custom_format.write_text(
+        "gantt\n"
+        "    dateFormat DD MMM YYYY\n"
+        "    section S\n"
+        "        Spaced with id    :task1, 02 Jan 2026, 03 Feb 2026\n"
+        "        Spaced without id : 04 Mar 2026, 05 Apr 2026\n"
+        "        Month name        : January, February\n"
+        "        Meridiem          : pm, AM\n"
+        "        Lone month        : Jan\n"
+        "        Id like a date    : 2026-01-01, 2026-02-01, 2026-03-01\n",
+        encoding="utf-8",
+    )
+    custom = json.loads(run_extract([str(custom_format), "--json"]))["diagrams"][0]
+    expected = {
+        "Spaced with id": ("task1", "start: 02 Jan 2026; end: 03 Feb 2026"),
+        "Spaced without id": (None, "start: 04 Mar 2026; end: 05 Apr 2026"),
+        "Month name": (None, "start: January; end: February"),
+        "Meridiem": (None, "start: pm; end: AM"),
+        # One item is the end condition, whatever it is written in.
+        "Lone month": (None, "end: Jan"),
+        # Three items make the first the id even when it reads as a date.
+        "Id like a date": ("2026-01-01", "start: 2026-02-01; end: 2026-03-01"),
+    }
+    for label, (wanted_id, wanted_fields) in expected.items():
+        node = _by_label(custom, label)
+        if wanted_id is not None and node["id"] != wanted_id:
+            fail(f"gantt id mis-assigned for {label!r}: {node['id']!r} != {wanted_id!r}")
+        if _fields(node) != wanted_fields:
+            fail(f"gantt dates mis-parsed for {label!r}: {_fields(node)!r} != {wanted_fields!r}")
+
+    # Mermaid's table runs from one item to three. Outside that the source is
+    # either placing a task with no schedule or using a slot the grammar has
+    # none for, and an empty slot is worse than either: collapsing it re-reads
+    # the rest at a lower arity, so `id,,<date>` draws its id as a start date.
+    for name, source, message in (
+        (
+            "too-many",
+            "Task :t, 2026-01-01, 2026-01-02, 2026-01-03\n",
+            "gantt task declares 4 metadata items at line 3",
+        ),
+        ("tags-only", "Task :done, crit\n", "gantt task declares 0 metadata items at line 3"),
+        ("no-metadata", "Task :\n", "gantt task has an empty metadata slot at line 3"),
+        ("empty-slot", "Task :t,,2026-01-02\n", "gantt task has an empty metadata slot at line 3"),
+    ):
+        arity_error = tmp / f"gantt-{name}.mmd"
+        arity_error.write_text(f"gantt\n    section S\n        {source}", encoding="utf-8")
+        expect_error([str(arity_error)], message)
+
+    malformed = tmp / "gantt-malformed.mmd"
+    malformed.write_text("gantt\n    section S\n        Task with no metadata\n", encoding="utf-8")
+    expect_error([str(malformed)], "malformed gantt task at line 3")
+    ok("gantt parses: sections, ids, dates, tags, dependencies, metadata arity, budget")
+
+
+def check_quadrant(tmp: Path) -> None:
+    payload = json.loads(run_extract([str(QUADRANT), "--json"]))["diagrams"][0]
+    if payload["analysis"]["type_candidates"] != ["quadrant"]:
+        fail("quadrantChart does not route to the Quadrant type")
+    for key, value in (
+        ("x-axis", "Low effort --> High effort"),
+        ("quadrant-2", "Do first"),
+        ("title", "Service modernization priorities"),
+    ):
+        if payload["meta"].get(key) != value:
+            fail(f"quadrant meta {key!r} was not retained: {payload['meta'].get(key)!r}")
+    if len(payload["nodes"]) != 4 or payload["edges"]:
+        fail("quadrant points or edge count mis-parsed")
+    if _fields(_by_label(payload, "Billing API")) != "x: 0.72; y: 0.86":
+        fail("quadrant coordinates were not retained")
+    if payload["discarded"]["style_directives"] != 1:
+        fail("per-point radius/colour styling must be counted and discarded")
+    if payload["analysis"]["orphans"]:
+        fail("an edgeless grammar must not report every node as unconnected")
+
+    malformed = tmp / "quadrant-malformed.mmd"
+    malformed.write_text("quadrantChart\n    Campaign A: 0.3, 0.6\n", encoding="utf-8")
+    expect_error([str(malformed)], "malformed quadrant point at line 2")
+    # 0 and 1 are on the plane, not off it: a range check written with the wrong
+    # comparison would reject the two corners every quadrant chart uses.
+    corners = tmp / "quadrant-corners.mmd"
+    corners.write_text(
+        "quadrantChart\n  Low: [0, 0]\n  High: [1, 1]\n", encoding="utf-8"
+    )
+    edge = json.loads(run_extract([str(corners), "--json"]))["diagrams"][0]
+    if _fields(_by_label(edge, "Low")) != "x: 0; y: 0":
+        fail("a point at the origin corner was rejected or mangled")
+    if _fields(_by_label(edge, "High")) != "x: 1; y: 1":
+        fail("a point at the far corner was rejected or mangled")
+    ok("quadrantChart parses: axes, quadrant names, points, bounds, discards")
+
+
+def check_timeline() -> None:
+    payload = json.loads(run_extract([str(TIMELINE), "--json"]))["diagrams"][0]
+    if payload["analysis"]["type_candidates"] != ["timeline"]:
+        fail("timeline does not route to the Timeline type")
+    if payload["meta"].get("title") != "Incident response":
+        fail("timeline title was not retained as meta")
+    if payload["analysis"]["containers"] != 3:
+        fail("timeline sections did not become containers")
+    if payload["analysis"]["nodes_drawable"] != 5:
+        fail("timeline periods must stay drawable rather than becoming containers")
+    first = _by_label(payload, "T+0m")
+    if first["fields"] != ["Latency alert fires", "Pager routed to on-call"]:
+        fail(f"timeline events were not kept on their period: {first['fields']}")
+    # A continuation line opening with `:` belongs to the period above it. The
+    # drawable count above is the other half of this: a spurious period would
+    # push it to 6 and put an unlabelled marker on the timeline.
+    continued = _by_label(payload, "T+7m")
+    if continued["fields"] != [
+        "Error budget burn confirmed",
+        "Customer reports start arriving",
+    ]:
+        fail(f"a continuation line left its period: {continued['fields']}")
+    if payload["analysis"]["orphans"]:
+        fail("an edgeless grammar must not report every node as unconnected")
+    ok("timeline parses: sections, periods, multi-event and continuation rows")
+
+
+def check_mindmap(tmp: Path) -> None:
+    payload = json.loads(run_extract([str(MINDMAP), "--json"]))["diagrams"][0]
+    if payload["analysis"]["type_candidates"] != ["tree", "nested"]:
+        fail("mindmap does not route to the Tree type")
+    if payload["analysis"]["containers"]:
+        fail("mindmap topics must stay drawable rather than becoming containers")
+    if payload["analysis"]["max_depth"] != 3:
+        fail(f"mindmap nesting depth mis-parsed: {payload['analysis']['max_depth']}")
+    root = _by_label(payload, "Release readiness")
+    if root["id"] != "root" or root["shape"] != "circle":
+        fail("an explicit mindmap id or its `((...))` shape was lost")
+    if payload["analysis"]["entry_points"] != ["Release readiness"]:
+        fail("the mindmap root is not reported as the single entry point")
+    if payload["discarded"]["style_directives"] != 1:
+        fail("`::icon(...)` must be counted and discarded")
+    if any(edge["arrowhead"] != "none" for edge in payload["edges"]):
+        fail("mindmap branches must be undecorated parent -> child edges")
+    nested = _by_label(payload, "Consumer pacts")
+    parents = [edge["source"] for edge in payload["edges"] if edge["target"] == nested["id"]]
+    if [_by_label(payload, "Contract tests")["id"]] != parents:
+        fail("mindmap indentation did not produce the declared parent")
+
+    tabs = tmp / "mindmap-tabs.mmd"
+    tabs.write_text("mindmap\n\troot((R))\n\t\tChild\n", encoding="utf-8")
+    tabbed = json.loads(run_extract([str(tabs), "--json"]))["diagrams"][0]
+    if len(tabbed["edges"]) != 1:
+        fail("tab-indented mindmap nesting was not recognized")
+    ok("mindmap parses: indentation, shapes, ids, icon discards")
+
+
+def check_grammar_adversarial() -> None:
+    payload = json.loads(run_extract([str(ADVERSARIAL_GRAMMARS), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if any("<script" in label or "<br" in label for label in labels):
+        fail("markup survived into a mindmap label")
+    if "Visit https://example.invalid/exfiltrate?token=abc" not in labels:
+        fail("a URL label must survive as inert text, not be followed or dropped")
+    if "style directives are not mindmap keywords" not in labels:
+        fail("a topic starting with `style` must not be silently discarded")
+    if payload["discarded"]["style_directives"] != 1:
+        fail("only `::icon(...)` should count as discarded styling here")
+    ok("new grammars keep adversarial labels inert and drop nothing silently")
+
+
+def check_generated_ids_and_directive_lookalikes(tmp: Path) -> None:
+    """Source-declared ids must not be overwritten, and data must not read as a directive.
+
+    All three cases below lost nodes silently — no error, no discard counter,
+    just a smaller diagram than the source described.
+    """
+    collide = tmp / "id-collision.mmd"
+    collide.write_text(
+        "mindmap\n  topic-2((Root))\n    First child\n    Second child\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(collide), "--json"]))["diagrams"][0]
+    if len(payload["nodes"]) != 3:
+        fail(f"a declared id absorbed generated siblings: {len(payload['nodes'])} nodes")
+    if any(edge["source"] == edge["target"] for edge in payload["edges"]):
+        fail("a child folded into its own parent and produced a self-edge")
+    if payload["analysis"]["has_cycle"]:
+        fail("id collision produced a cycle in a mindmap")
+
+    gantt_ids = tmp / "gantt-id-collision.mmd"
+    gantt_ids.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section Work\n"
+        "  Explicit :task-2, 2026-01-03, 2d\n  Anonymous :2026-01-05, 2d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(gantt_ids), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    for label in ("Explicit", "Anonymous"):
+        if label not in labels:
+            fail(f"gantt task {label!r} was absorbed by a colliding generated id")
+
+    quadrant = tmp / "quadrant-lookalike.mmd"
+    quadrant.write_text(
+        "quadrantChart\n  x-axis Low --> High\n  y-axis Low --> High\n"
+        "  Style debt: [0.4, 0.6]\n  Class coupling: [0.7, 0.3]\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(quadrant), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    for label in ("Style debt", "Class coupling"):
+        if label not in labels:
+            fail(f"quadrant point {label!r} was discarded as a styling directive")
+    if payload["discarded"]["style_directives"]:
+        fail("a readable quadrant point must not count as discarded styling")
+
+    gantt = tmp / "gantt-lookalike.mmd"
+    gantt.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section Metrics\n"
+        "  Click rate :2026-01-03, 2d\n  Style guide review :2026-01-05, 2d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(gantt), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    for label in ("Click rate", "Style guide review"):
+        if label not in labels:
+            fail(f"gantt task {label!r} was discarded as a directive")
+    if payload["discarded"]["click_handlers"]:
+        fail("a readable gantt task must not count as a discarded click handler")
+
+    real = tmp / "gantt-real-click.mmd"
+    real.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  section Work\n"
+        "  Build :a1, 2026-01-03, 2d\n"
+        '  click a1 href "https://example.invalid/x"\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(real), "--json"]))["diagrams"][0]
+    if payload["discarded"]["click_handlers"] != 1:
+        fail("a genuine `click <task> href ...` must still be discarded and counted")
+    if "example.invalid" in json.dumps(payload):
+        fail("click URL crossed the trust boundary into output")
+    ok("generated ids stay clear of declared ones; directive lookalikes survive")
+
+
+def check_grammar_conformance(tmp: Path) -> None:
+    """Cases the four grammars define that the extractor used to read wrongly."""
+    late = tmp / "late-id.mmd"
+    late.write_text(
+        "mindmap\n  Root\n    First\n    topic-2((Explicit later))\n", encoding="utf-8"
+    )
+    payload = json.loads(run_extract([str(late), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if labels != ["Root", "First", "Explicit later"]:
+        fail(f"a declared id reached after a generated one merged them: {labels}")
+
+    multiline = tmp / "mindmap-markdown.mmd"
+    multiline.write_text(
+        'mindmap\n  root\n    id1["`Line one\n    Line two\n    Line three`"]\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(multiline), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if labels != ["root", "Line one Line two Line three"]:
+        fail(f"a multi-line Markdown topic was split into separate nodes: {labels}")
+    bad = tmp / "mindmap-unterminated.mmd"
+    bad.write_text(
+        'mindmap\n  root\n    id1["`unterminated\n', encoding="utf-8"
+    )
+    expect_error([str(bad)], "unterminated mindmap Markdown string")
+
+    weekend = tmp / "gantt-weekend.mmd"
+    weekend.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  weekend friday\n  section Work\n"
+        "  Build :2026-01-03, 2d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(weekend), "--json"]))["diagrams"][0]
+    if payload["meta"].get("weekend") != "friday":
+        fail(f"`weekend friday` was not read as metadata: {payload['meta']}")
+    bad = tmp / "gantt-weekend-bad.mmd"
+    bad.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  weekend tuesday\n  section W\n  B :2026-01-03, 2d\n", encoding="utf-8"
+    )
+    expect_error([str(bad)], "gantt `weekend` takes friday or saturday")
+
+    excludes = tmp / "gantt-excludes.mmd"
+    excludes.write_text(
+        "gantt\n  dateFormat YYYY-MM-DD\n  excludes weekends\n  excludes 2026-01-05\n"
+        "  section Work\n  Build :2026-01-03, 5d\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(excludes), "--json"]))["diagrams"][0]
+    excluded = payload["meta"].get("excludes", "")
+    for token in ("weekends", "2026-01-05"):
+        if token not in excluded:
+            fail(f"repeated `excludes` lost {token!r}: {excluded!r}")
+
+    quadrant = tmp / "quadrant-class.mmd"
+    quadrant.write_text(
+        "quadrantChart\n  x-axis Low --> High\n  y-axis Low --> High\n"
+        "  Point A: [0.3, 0.6]\n  Point B:::class1: [0.7, 0.4]\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(quadrant), "--json"]))["diagrams"][0]
+    labels = [node["label"] for node in payload["nodes"]]
+    if labels != ["Point A", "Point B"]:
+        fail(f"a `:::class` attachment stayed in the point label: {labels}")
+    if payload["discarded"]["style_directives"] != 1:
+        fail("the discarded class attachment was not counted as styling")
+
+    for header, expected in (("timeline TD", "TD"), ("timeline", "LR"), ("timeline LR", "LR")):
+        source = tmp / f"timeline-{expected}-{len(header)}.mmd"
+        source.write_text(f"{header}\n  2024 : Alpha\n  2025 : Beta\n", encoding="utf-8")
+        payload = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+        if payload["direction"] != expected:
+            fail(f"`{header}` reported direction {payload['direction']}, want {expected}")
+    bad = tmp / "timeline-no-event.mmd"
+    bad.write_text(
+        "timeline\n  title Roadmap\n  2024 : Alpha\n  Period without event\n", encoding="utf-8"
+    )
+    expect_error([str(bad)], "timeline row without an event")
+    ok("gantt, quadrant, timeline, and mindmap follow their declared grammars")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload = json.loads(run_extract([str(ADVERSARIAL), "--json"]))
     diagram = payload["diagrams"][0]
@@ -632,6 +1047,7 @@ C--xDave: cross
 
 
 def check_errors_and_limits(tmp: Path) -> None:
+    extractor = load_extractor_module()
     bad = tmp / "not-mermaid.txt"
     bad.write_text("flowchart TD\nA --> B\n", encoding="utf-8")
     expect_error([str(bad)], "not a Mermaid file")
@@ -656,8 +1072,13 @@ def check_errors_and_limits(tmp: Path) -> None:
     pie.write_text('pie title Pets\n  "Dogs" : 4\n', encoding="utf-8")
     expect_error(
         [str(pie)],
-        "unsupported diagram kind: `pie` (supported: flowchart, sequenceDiagram, stateDiagram-v2, erDiagram)",
+        f"unsupported diagram kind: `pie` (supported: {extractor.SUPPORTED_KINDS})",
     )
+    for kind in ("gantt", "quadrantChart", "timeline", "mindmap"):
+        if kind.casefold() in extractor.UNSUPPORTED_KINDS:
+            fail(f"{kind} is parsed but still listed as unsupported")
+        if kind not in extractor.SUPPORTED_KINDS:
+            fail(f"{kind} is parsed but missing from the supported-kinds message")
 
     malformed = tmp / "malformed.mmd"
     malformed.write_text("flowchart TD\nA -->\n", encoding="utf-8")
@@ -671,6 +1092,26 @@ def check_errors_and_limits(tmp: Path) -> None:
     malformed_state.write_text("stateDiagram-v2\nIdle -->\n", encoding="utf-8")
     expect_error([str(malformed_state)], "malformed edge at line 2")
 
+    # A continuation line with nothing above it to continue. Every anchor the
+    # parser clears has to reach the same error, or one of them silently draws
+    # a period the source never named.
+    for name, source in (
+        ("first", "timeline\n    : orphan\n"),
+        ("section", "timeline\n    section S\n        : orphan\n"),
+        ("title", "timeline\n    title T\n    : orphan\n"),
+    ):
+        orphan = tmp / f"orphan-{name}.mmd"
+        orphan.write_text(source, encoding="utf-8")
+        expect_error([str(orphan)], "timeline continuation without a period")
+
+    for axis, source in (
+        ("x", "quadrantChart\n  A: [1.01, 0.5]\n"),
+        ("y", "quadrantChart\n  A: [0.5, -0.01]\n"),
+    ):
+        out_of_range = tmp / f"quadrant-{axis}.mmd"
+        out_of_range.write_text(source, encoding="utf-8")
+        expect_error([str(out_of_range)], f"quadrant point {axis} out of the 0-1 range")
+
     malformed_er = tmp / "malformed-er.mmd"
     malformed_er.write_text("erDiagram\nCUSTOMER ||--o{\n", encoding="utf-8")
     expect_error([str(malformed_er)], "malformed edge at line 2")
@@ -680,7 +1121,6 @@ def check_errors_and_limits(tmp: Path) -> None:
     expect_error([str(tmp / "missing.mmd")], "no such file")
     expect_error([str(FLOW), "--out", str(tmp)], "cannot write")
 
-    extractor = load_extractor_module()
     too_many_nodes = tmp / "nodes.mmd"
     too_many_nodes.write_text(
         "flowchart TD\n"
@@ -778,6 +1218,13 @@ def main() -> int:
         check_markdown_and_grammars(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)
+        check_gantt(tmp)
+        check_quadrant(tmp)
+        check_timeline()
+        check_mindmap(tmp)
+        check_grammar_adversarial()
+        check_generated_ids_and_directive_lookalikes(tmp)
+        check_grammar_conformance(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()

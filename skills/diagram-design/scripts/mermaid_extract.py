@@ -6,9 +6,9 @@ fetches, or executes Mermaid, JavaScript, URLs, directives, or label content.
 Every label and directive value is untrusted data. Click targets and styling are
 counted and discarded; retained labels are emitted only as inert text.
 
-Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2, and
-erDiagram. Inputs may be .mmd, .mermaid, or Markdown files containing fenced
-``mermaid`` blocks.
+Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2,
+erDiagram, gantt, quadrantChart, timeline, and mindmap. Inputs may be .mmd,
+.mermaid, or Markdown files containing fenced ``mermaid`` blocks.
 
 Usage:
     python3 mermaid_extract.py <file> [--diagram N|all] [--json]
@@ -32,21 +32,28 @@ from typing import Any, NoReturn
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
 MAX_NODES = 2000
 MAX_EDGES = 5000
-SUPPORTED_KINDS = "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram"
+SUPPORTED_KINDS = (
+    "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram, gantt, "
+    "quadrantChart, timeline, mindmap"
+)
 UNSUPPORTED_KINDS = {
     "pie",
-    "mindmap",
     "gitgraph",
-    "quadrantchart",
-    "timeline",
     "c4context",
     "sankey",
     "sankey-beta",
-    "gantt",
     "journey",
     "classdiagram",
     "statediagram",
 }
+# Grammars whose nodes carry no connections by design. Listing every node as
+# "unconnected" there would be noise, not the degrade-ladder signal that line
+# carries for a flowchart.
+MOSTLY_EDGELESS_KINDS = {"gantt", "quadrantChart", "timeline"}
+# SKILL.md §7 caps drawable nodes at 9, but gives Gantt tasks and quadrant
+# items 12. The digest reports the cap that actually applies.
+DEFAULT_NODE_BUDGET = 9
+NODE_BUDGET = {"gantt": 12, "quadrantChart": 12}
 MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkd"}
 MERMAID_SUFFIXES = {".mmd", ".mermaid"}
 
@@ -100,9 +107,17 @@ class Diagram:
     edges: list[Edge] = field(default_factory=list)
     fragments: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # Structure that is neither a node nor an edge: axis labels, quadrant
+    # names, a gantt date format, a declared title. Inert text, never config.
+    meta: dict[str, str] = field(default_factory=dict)
     discarded: dict[str, int] = field(
         default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
     )
+    # Ids the source declares anywhere in the block. Collected before parsing
+    # so a generated id avoids one that has not been reached yet: `add_node`
+    # merges on a repeated id, so numbering only past what already exists made
+    # the result depend on whether the explicit id came first.
+    reserved_ids: set[str] = field(default_factory=set)
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
 
     @property
@@ -324,6 +339,16 @@ def _kind_and_direction(
             return "stateDiagram-v2", "TD", position
         if re.match(r"^erDiagram\b", text, re.I):
             return "erDiagram", "TD", position
+        if re.match(r"^gantt\b", text, re.I):
+            return "gantt", "LR", position
+        if re.match(r"^quadrantChart\b", text, re.I):
+            return "quadrantChart", "TD", position
+        timeline = re.match(r"^timeline\b\s*(LR|TD)?\b", text, re.I)
+        if timeline is not None:
+            # `timeline TD` is valid Mermaid; LR is the default.
+            return "timeline", (timeline.group(1) or "LR").upper(), position
+        if re.match(r"^mindmap\b", text, re.I):
+            return "mindmap", "TD", position
         token = text.split(maxsplit=1)[0]
         if token.casefold() in UNSUPPORTED_KINDS:
             _fail(
@@ -990,16 +1015,415 @@ def _parse_er(
             _fail(f"malformed edge at line {line_number}")
 
 
+GANTT_META_KEYS = {
+    "title",
+    "dateformat",
+    "axisformat",
+    "tickinterval",
+    "excludes",
+    "includes",
+    "todaymarker",
+    "weekday",
+    "weekend",
+    "inclusiveenddates",
+    "topaxis",
+    "displaymode",
+}
+GANTT_TAGS = {"done", "active", "crit", "milestone", "vert"}
+# Mermaid concatenates the tokens of repeated `excludes`/`includes` lines
+# (docs/syntax/gantt.md), so overwriting the key drops the earlier holidays.
+GANTT_REPEATABLE_META = {"excludes", "includes"}
+GANTT_WEEKEND_DAYS = {"friday", "saturday"}
+GANTT_DURATION_RE = re.compile(r"^\d+(?:\.\d+)?\s*(?:ms|s|m|h|d|w|y)$", re.I)
+GANTT_RELATION_RE = re.compile(r"^(after|until)\s+(.+)$", re.I)
+GANTT_CLICK_RE = re.compile(r"^click\s+\S+\s+(?:call|href)\b", re.I)
+
+
+def _free_id(diagram: Diagram, prefix: str, taken: int) -> str:
+    """Number a generated id past anything the source already declared.
+
+    `add_node` merges on a repeated id, so a generated `task-2` colliding with a
+    source-declared `task-2` silently folds two nodes into one — and in a mindmap
+    it folds a child into its own parent, producing a self-edge.
+    """
+    ordinal = taken + 1
+    while (
+        f"{prefix}-{ordinal}" in diagram.node_map
+        or f"{prefix}-{ordinal}" in diagram.reserved_ids
+    ):
+        ordinal += 1
+    return f"{prefix}-{ordinal}"
+
+
+def _container_id(diagram: Diagram, prefix: str) -> str:
+    return _free_id(diagram, prefix, sum(1 for node in diagram.nodes if node.container))
+
+
+def _leaf_id(diagram: Diagram, prefix: str) -> str:
+    return _free_id(
+        diagram, prefix, sum(1 for node in diagram.nodes if not node.container)
+    )
+
+
+def _gantt_task_fields(
+    metadata: str, line_number: int
+) -> tuple[str | None, list[str], list[str]]:
+    """Split a task's metadata into an optional id, inert fields, and `after` ids.
+
+    Dates are carried as text. The extractor never parses or arithmetics a
+    calendar; the redraw needs the declared values, not a computed timeline.
+    """
+    # Mermaid reads task metadata by arity, not by what the values look like:
+    # three items are id + start condition + end condition, two are the two
+    # conditions, one is the end condition alone with the start inherited from
+    # the task above. Tags may sit anywhere and do not count. Inspecting the
+    # values instead would have to know the declared `dateFormat` — under `MMM`
+    # a date is `Jan`, and under `A` it is `PM` — and the extractor deliberately
+    # never parses a calendar.
+    status: list[str] = []
+    items: list[str] = []
+    for part in metadata.split(","):
+        value = part.strip()
+        if not value:
+            # Dropping an empty slot silently re-reads the remaining items at a
+            # lower arity: `id,,2026-01-02` would become a two-item task whose
+            # id is read as its start date.
+            _fail(f"gantt task has an empty metadata slot at line {line_number}")
+        if value.casefold() in GANTT_TAGS:
+            status.append(value.casefold())
+            continue
+        items.append(value)
+
+    # Mermaid's table runs from one item to three. Below that a task declares no
+    # schedule at all and cannot be placed on the chart; above it, the source is
+    # saying something the grammar has no slot for.
+    if not 1 <= len(items) <= 3:
+        _fail(
+            f"gantt task declares {len(items)} metadata items at line {line_number}; "
+            f"Mermaid allows one to three besides tags"
+        )
+    task_id = items[0] if len(items) == 3 else None
+    conditions = items[1:] if len(items) == 3 else items
+
+    after: list[str] = []
+    until: list[str] = []
+    fields: list[str] = []
+    for name, value in zip(("start", "end") if len(conditions) == 2 else ("end",), conditions):
+        relation = GANTT_RELATION_RE.match(value)
+        if relation is not None:
+            targets = relation.group(2).split()
+            (after if relation.group(1).casefold() == "after" else until).extend(targets)
+            continue
+        # A length is only ever an end condition; in the start slot the same
+        # text is a date the source declared.
+        if name == "end" and GANTT_DURATION_RE.match(value):
+            fields.append(f"dur: {value}")
+            continue
+        fields.append(f"{name}: {value}")
+    if after:
+        fields.append(f"after: {' '.join(after)}")
+    if until:
+        fields.append(f"until: {' '.join(until)}")
+    if status:
+        fields.append(f"status: {' '.join(status)}")
+    return task_id, fields, after
+
+
+def _parse_gantt(
+    diagram: Diagram, lines: list[tuple[int, str]], header_position: int
+) -> None:
+    section: str | None = None
+    pending: list[tuple[str, list[str]]] = []
+    for line_number, raw in lines[header_position + 1 :]:
+        text = raw.strip()
+        if not text:
+            continue
+        # Only Mermaid's own `click <task> call|href ...` is a directive here.
+        # Matching a bare `click `/`style ` prefix would eat a task named
+        # "Click rate" or "Style debt", and gantt has no style statement at all.
+        if GANTT_CLICK_RE.match(text):
+            diagram.discarded["click_handlers"] += 1
+            continue
+        keyword, _separator, remainder = text.partition(" ")
+        lowered = keyword.casefold()
+        if lowered in GANTT_META_KEYS:
+            value = clean_label(remainder)
+            if lowered == "weekend" and value.casefold() not in GANTT_WEEKEND_DAYS:
+                _fail(
+                    f"gantt `weekend` takes friday or saturday at line {line_number}"
+                )
+            if lowered in GANTT_REPEATABLE_META and lowered in diagram.meta:
+                diagram.meta[lowered] = f"{diagram.meta[lowered]} {value}".strip()
+            else:
+                diagram.meta[lowered] = value
+            continue
+        if lowered == "section":
+            section = diagram.add_node(
+                _container_id(diagram, "section"),
+                clean_label(remainder),
+                "container",
+                None,
+                container=True,
+            ).id
+            continue
+        label, separator, metadata = text.partition(":")
+        if not separator:
+            _fail(f"malformed gantt task at line {line_number}")
+        task_id, fields, after = _gantt_task_fields(metadata, line_number)
+        node = diagram.add_node(
+            task_id or _leaf_id(diagram, "task"),
+            clean_label(label),
+            "task",
+            section,
+        )
+        node.fields.extend(fields)
+        pending.append((node.id, after))
+
+    for task, dependencies in pending:
+        for dependency in dependencies:
+            if dependency in diagram.node_map and dependency != task:
+                diagram.add_edge(dependency, task, "after", "dashed")
+
+
+QUADRANT_META_RE = re.compile(r"^(title|x-axis|y-axis|quadrant-[1-4])\b\s*(.*)$", re.I)
+QUADRANT_POINT_RE = re.compile(
+    r"^(?P<name>.+?)\s*:\s*\[\s*(?P<x>[-+]?\d*\.?\d+)\s*,"
+    r"\s*(?P<y>[-+]?\d*\.?\d+)\s*\](?P<extra>.*)$"
+)
+
+
+def _parse_quadrant(
+    diagram: Diagram, lines: list[tuple[int, str]], header_position: int
+) -> None:
+    for line_number, raw in lines[header_position + 1 :]:
+        text = raw.strip()
+        if not text:
+            continue
+        meta = QUADRANT_META_RE.match(text)
+        if meta is not None:
+            diagram.meta[meta.group(1).casefold()] = clean_label(meta.group(2))
+            continue
+        point = QUADRANT_POINT_RE.match(text)
+        if point is None:
+            # A line that parses as a point is a point. Only what the grammar
+            # cannot read is considered a styling directive, so a point named
+            # "Style debt" survives.
+            if _discard_nonsemantic(diagram, text):
+                continue
+            _fail(f"malformed quadrant point at line {line_number}")
+        if point.group("extra").strip():
+            # Per-point radius, colour, and stroke are source styling.
+            diagram.discarded["style_directives"] += 1
+        # Mermaid defines the quadrant plane as the unit square, so a coordinate
+        # outside it has no position to redraw. Carrying it through would place
+        # the point off-canvas or silently clamp it into a quadrant the source
+        # never chose; both are worse than reporting the source as malformed.
+        for axis in ("x", "y"):
+            if not 0.0 <= float(point.group(axis)) <= 1.0:
+                _fail(
+                    f"quadrant point {axis} out of the 0-1 range at line {line_number}"
+                )
+        name = point.group("name")
+        stripped = _strip_class_suffix(name)
+        if stripped != name:
+            # `Point B:::class1: [x, y]` attaches a class; the class is styling
+            # and the label is the part in front of it.
+            diagram.discarded["style_directives"] += 1
+        node = diagram.add_node(
+            _leaf_id(diagram, "point"), clean_label(stripped), "point"
+        )
+        node.fields.extend([f"x: {point.group('x')}", f"y: {point.group('y')}"])
+
+
+def _parse_timeline(
+    diagram: Diagram, lines: list[tuple[int, str]], header_position: int
+) -> None:
+    # Events stay as fields of their period rather than child nodes: a timeline
+    # draws one marker per period, and promoting each event to a node would
+    # turn every drawn period into a container the budget stops counting.
+    section: str | None = None
+    period: Node | None = None
+    for line_number, raw in lines[header_position + 1 :]:
+        text = raw.strip()
+        if not text:
+            continue
+        keyword, _separator, remainder = text.partition(" ")
+        lowered = keyword.casefold()
+        if lowered == "title":
+            diagram.meta["title"] = clean_label(remainder)
+            period = None
+            continue
+        if lowered == "section":
+            section = diagram.add_node(
+                _container_id(diagram, "section"),
+                clean_label(remainder),
+                "container",
+                None,
+                container=True,
+            ).id
+            period = None
+            continue
+        parts = [clean_label(part) for part in text.split(":")]
+        if len(parts) < 2 or not any(parts[1:]):
+            # Mermaid's timeline row is `{period} : {event}`. A bare line has no
+            # event to carry, and promoting it to a period would draw a marker
+            # the source never described.
+            _fail(f"timeline row without an event at line {line_number}")
+        if not parts[0]:
+            # A line opening with `:` continues the period above it. Drawing a
+            # period for it would put an unlabelled marker on the timeline and
+            # strand its events away from the period they belong to. With no
+            # period above it there is nothing to continue, and the fallback
+            # node id would surface in the redraw as a period the source never
+            # named — inventing content the import is not allowed to invent.
+            if period is None:
+                _fail(f"timeline continuation without a period at line {line_number}")
+            period.fields.extend(event for event in parts[1:] if event)
+            continue
+        period = diagram.add_node(
+            _leaf_id(diagram, "period"), parts[0], "period", section
+        )
+        period.fields.extend(event for event in parts[1:] if event)
+
+
+# Mindmap-only delimiters. `))text((` is a bang and `)text(` is a cloud, so
+# both are matched before the rounded/circle forms they would otherwise shadow.
+MINDMAP_SHAPES = (
+    ("))", "((", "bang"),
+    (")", "(", "cloud"),
+    ("(((", ")))", "circle"),
+    ("((", "))", "circle"),
+    ("([", "])", "stadium"),
+    ("{{", "}}", "hexagon"),
+    ("[", "]", "rect"),
+    ("(", ")", "round"),
+)
+
+
+def _mindmap_topic(text: str) -> tuple[str | None, str, str]:
+    """Return an explicit id (when the topic declares one), label, and shape."""
+    match = re.match(r"^([\w.:-]+)(.*)$", text, re.UNICODE)
+    if match is not None:
+        rest = match.group(2).strip()
+        for opening, closing, shape in MINDMAP_SHAPES:
+            if (
+                len(rest) > len(opening) + len(closing)
+                and rest.startswith(opening)
+                and rest.endswith(closing)
+            ):
+                label = rest[len(opening) : len(rest) - len(closing)]
+                return match.group(1), clean_label(label), shape
+    return None, clean_label(text), "rect"
+
+
+def _mindmap_logical_lines(
+    lines: list[tuple[int, str]]
+) -> list[tuple[int, str]]:
+    """Rejoin a Markdown string that a mindmap topic spreads over several lines.
+
+    A mindmap is indentation-structured, so a continuation line looks exactly
+    like a deeper topic. Splitting `id["`a\nb`"]` into three topics invents two
+    nodes and leaves the delimiters stranded in their labels. The first line's
+    indentation is kept, because that is what decides the topic's depth.
+    """
+    joined: list[tuple[int, str]] = []
+    pending: tuple[int, str] | None = None
+    for line_number, raw in lines:
+        expanded = raw.expandtabs(4)
+        if pending is None:
+            if expanded.count('["`') > expanded.count('`"]'):
+                pending = (line_number, expanded.rstrip())
+                continue
+            joined.append((line_number, expanded))
+            continue
+        start_number, accumulated = pending
+        accumulated = f"{accumulated} {expanded.strip()}"
+        if '`"]' in expanded:
+            joined.append((start_number, accumulated))
+            pending = None
+        else:
+            pending = (start_number, accumulated)
+    if pending is not None:
+        _fail(f"unterminated mindmap Markdown string at line {pending[0]}")
+    return joined
+
+
+def _parse_mindmap(
+    diagram: Diagram, lines: list[tuple[int, str]], header_position: int
+) -> None:
+    # Branches become parent -> child edges rather than container membership:
+    # every mindmap topic is drawn in a tree redraw, and container nodes are
+    # counted as grouping, not as drawable content.
+    stack: list[tuple[int, str]] = []
+    for _line_number, raw in _mindmap_logical_lines(lines[header_position + 1 :]):
+        expanded = raw.expandtabs(4)
+        text = expanded.strip()
+        if not text:
+            continue
+        if text.startswith("::"):
+            # `::icon(fa fa-book)` decorates a topic; source styling is dropped.
+            # `style`/`classDef` are not mindmap keywords, so a topic that
+            # happens to start with one stays a topic instead of vanishing.
+            diagram.discarded["style_directives"] += 1
+            continue
+        indent = len(expanded) - len(expanded.lstrip())
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+        topic_id, label, shape = _mindmap_topic(_strip_class_suffix(text))
+        node = diagram.add_node(topic_id or _leaf_id(diagram, "topic"), label, shape)
+        node.depth = len(stack)
+        if stack:
+            diagram.add_edge(stack[-1][1], node.id, "", "solid", "none")
+        stack.append((indent, node.id))
+
+
+def _declared_ids(kind: str, lines: list[tuple[int, str]], header_position: int) -> set[str]:
+    """Collect the ids a gantt or mindmap block declares, before parsing it.
+
+    Only these two grammars let a source name a node, and both interleave named
+    and anonymous nodes freely. Reading them up front is what makes a generated
+    id independent of where the declared one sits in the file.
+    """
+    declared: set[str] = set()
+    if kind == "gantt":
+        for _line_number, raw in lines[header_position + 1 :]:
+            _label, separator, metadata = raw.strip().partition(":")
+            if not separator:
+                continue
+            for item in metadata.split(","):
+                item = item.strip()
+                if item and item.casefold() not in GANTT_TAGS:
+                    declared.add(item)
+    elif kind == "mindmap":
+        for _line_number, raw in lines[header_position + 1 :]:
+            text = raw.expandtabs(4).strip()
+            if not text or text.startswith("::"):
+                continue
+            topic_id, _label, _shape = _mindmap_topic(_strip_class_suffix(text))
+            if topic_id:
+                declared.add(topic_id)
+    return declared
+
+
 def parse_block(block: SourceBlock) -> Diagram:
     lines = _prepared_lines(block)
     kind, direction, header_position = _kind_and_direction(lines)
     diagram = Diagram(block.index, kind, block.source_line, direction=direction)
+    diagram.reserved_ids = _declared_ids(kind, lines, header_position)
     if kind == "flowchart":
         _parse_flowchart(diagram, lines, header_position)
     elif kind == "sequenceDiagram":
         _parse_sequence(diagram, lines, header_position)
     elif kind == "stateDiagram-v2":
         _parse_state(diagram, lines, header_position)
+    elif kind == "gantt":
+        _parse_gantt(diagram, lines, header_position)
+    elif kind == "quadrantChart":
+        _parse_quadrant(diagram, lines, header_position)
+    elif kind == "timeline":
+        _parse_timeline(diagram, lines, header_position)
+    elif kind == "mindmap":
+        _parse_mindmap(diagram, lines, header_position)
     else:
         _parse_er(diagram, lines, header_position)
     _finalize_degrees(diagram)
@@ -1069,12 +1493,20 @@ def analyze(diagram: Diagram) -> dict[str, Any]:
     ]
     entry_points = [name(node) for node in leaves if node.out_degree and not node.in_degree]
     terminals = [name(node) for node in leaves if node.in_degree and not node.out_degree]
-    orphans = [name(node) for node in leaves if not node.in_degree and not node.out_degree]
+    orphans = (
+        []
+        if diagram.kind in MOSTLY_EDGELESS_KINDS
+        else [name(node) for node in leaves if not node.in_degree and not node.out_degree]
+    )
     candidates = {
         "flowchart": ["flowchart" if shapes.get("rhombus") else "architecture", "architecture"],
         "sequenceDiagram": ["sequence"],
         "stateDiagram-v2": ["state machine"],
         "erDiagram": ["ER / data model"],
+        "gantt": ["gantt"],
+        "quadrantChart": ["quadrant"],
+        "timeline": ["timeline"],
+        "mindmap": ["tree", "nested"],
     }[diagram.kind]
     candidates = list(dict.fromkeys(candidates))
     collapsible = [
@@ -1093,6 +1525,7 @@ def analyze(diagram: Diagram) -> dict[str, Any]:
     ]
     collapsible.sort(key=lambda item: item["children"], reverse=True)
     drawable = len(leaves)
+    node_budget = NODE_BUDGET.get(diagram.kind, DEFAULT_NODE_BUDGET)
     return {
         "nodes_total": len(diagram.nodes),
         "nodes_drawable": drawable,
@@ -1110,7 +1543,8 @@ def analyze(diagram: Diagram) -> dict[str, Any]:
         "orphans": orphans[:6],
         "type_candidates": candidates,
         "collapsible_groups": collapsible[:8],
-        "over_node_budget": drawable > 9,
+        "node_budget": node_budget,
+        "over_node_budget": drawable > node_budget,
         "over_edge_budget": len(diagram.edges) > 12,
     }
 
@@ -1152,10 +1586,19 @@ def digest(
                 f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}",
                 f"- shapes: {info['shapes']}",
                 f"- type candidates: {', '.join(info['type_candidates'])}",
-                f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
+                f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} "
+                f"(max {info['node_budget']}), "
                 f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
             ]
         )
+        if diagram.meta:
+            output.append(
+                "- meta: "
+                + "; ".join(
+                    f"{key}={_escape_markdown(value)}"
+                    for key, value in diagram.meta.items()
+                )
+            )
         if diagram.discarded["style_directives"] or diagram.discarded["click_handlers"]:
             output.append(
                 f"- discarded: {diagram.discarded['style_directives']} style directives, "
@@ -1260,6 +1703,7 @@ def to_json(path: Path, diagrams: list[Diagram], selected: list[Diagram]) -> str
                     "source_line": diagram.source_line,
                     "direction": diagram.direction,
                     "analysis": analyze(diagram),
+                    "meta": diagram.meta,
                     "discarded": diagram.discarded,
                     "fragments": diagram.fragments,
                     "notes": diagram.notes,
