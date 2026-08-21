@@ -337,6 +337,34 @@ def run_cases(h):
         r"'Suite'.*bottom boundary sits 6\.0 px above layer 'Unit'",
     )
 
+    # A per-period reorder: at one period two layers exchange places in the
+    # stack while every thickness stays true to its declared value and the
+    # envelope stays centred. The only lie is the order - and it must surface
+    # through the seam checks, or the fixed-order guarantee is decorative.
+    swap_at = 3
+    crossed_body = ""
+    positions = {}
+    for i in range(len(ROWS[0][1])):
+        order = ["Docs", "Unit", "Suite"]
+        if i == swap_at:
+            order = ["Docs", "Suite", "Unit"]
+        total = sum(values[i] for _name, values in ROWS)
+        y = MIDLINE + total * SCALE / 2
+        for name in order:
+            values = dict(ROWS)[name]
+            positions.setdefault(name, {})[i] = (round(y - values[i] * SCALE, 1),
+                                                 round(y, 1))
+            y -= values[i] * SCALE
+    for name, values in ROWS:
+        top = [(XS[i], positions[name][i][0]) for i in range(len(values))]
+        bottom = [(XS[i], positions[name][i][1]) for i in range(len(values))]
+        crossed_body += layer_markup(name, values, top, bottom)
+    h.expect_finding(
+        "two layers exchanged at one period are reported as a broken seam",
+        document(crossed_body + captions() + legend(ROWS)),
+        r"must tile with no gaps and no overlaps, in one fixed order",
+    )
+
     # 4. Symmetric baseline. Pin the envelope bottom to y=420: every layer
     # still tiles and every thickness still matches, so the only lie left is
     # the baseline - and it must be named alone.
