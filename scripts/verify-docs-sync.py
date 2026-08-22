@@ -146,6 +146,36 @@ def check_gallery(errors: list[str]) -> None:
     for name in sorted(types):
         if f"example-{name}.html" not in on_disk:
             errors.append(f"gallery tab {name!r} points at a missing example-{name}.html")
+    # Detect duplicate eyebrow numbers (display labels on each tab button).
+    seen_eyebrows: set[str] = set()
+    for m in re.finditer(r'<span class="eyebrow">(\d+)</span>', source):
+        num = m.group(1)
+        if num in seen_eyebrows:
+            errors.append(
+                f"gallery has duplicate eyebrow number {num!r}; "
+                "check tab order in assets/index.html"
+            )
+        else:
+            seen_eyebrows.add(num)
+    # Detect data-single types so we can skip the three-variant check for them.
+    single_types: set[str] = set()
+    for btn in re.finditer(r"<button[^>]+>", source):
+        tag = btn.group(0)
+        if "data-single" in tag:
+            tm = re.search(r'data-type="([^"]+)"', tag)
+            if tm:
+                single_types.add(tm.group(1))
+    # Verify that every non-single gallery tab has dark and full variants on disk.
+    for name in sorted(types):
+        if name in single_types:
+            continue
+        for variant in ("-dark", "-full"):
+            fname = f"example-{name}{variant}.html"
+            if fname not in on_disk:
+                errors.append(
+                    f"gallery tab {name!r} is missing {fname}; "
+                    "add the variant or mark the tab data-single"
+                )
 
 
 def readme_tree_tokens(markdown: str) -> list[str]:

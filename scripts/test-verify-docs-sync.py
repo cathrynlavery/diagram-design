@@ -419,9 +419,94 @@ diagram-design/
         if errors != [expected]:
             raise AssertionError(f"duplicate checklist number was not reported: {errors}")
 
+    # ── gallery guard tests ───────────────────────────────────────────────────
+    # Helper: build a minimal gallery HTML with arbitrary tab markup.
+    def make_tab(type_name: str, eyebrow: str, *, single: bool = False) -> str:
+        single_attr = " data-single" if single else ""
+        return (
+            f'<button class="tab" data-type="{type_name}"{single_attr}>'
+            f'<span class="eyebrow">{eyebrow}</span>{type_name}</button>'
+        )
+
+    def make_gallery_html(*tabs: str) -> str:
+        return (
+            '<!doctype html><html><body><div id="type-tabs">'
+            + "".join(tabs)
+            + "</div></body></html>"
+        )
+
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-gallery-") as gal_tmp:
+        gal_dir = Path(gal_tmp)
+        gallery_file = gal_dir / "index.html"
+        asset_dir = gal_dir / "assets"
+        asset_dir.mkdir()
+
+        def run_gallery_check(html: str, filenames: list[str]) -> list[str]:
+            for f in asset_dir.glob("example-*.html"):
+                f.unlink()
+            gallery_file.write_text(html, encoding="utf-8")
+            for fname in filenames:
+                (asset_dir / fname).write_text("", encoding="utf-8")
+            orig_gallery = verify.GALLERY
+            orig_asset_dir = verify.ASSET_DIR
+            verify.GALLERY = gallery_file
+            verify.ASSET_DIR = asset_dir
+            errs: list[str] = []
+            try:
+                verify.check_gallery(errs)
+            finally:
+                verify.GALLERY = orig_gallery
+                verify.ASSET_DIR = orig_asset_dir
+            return errs
+
+        full_trio = ["example-x.html", "example-x-dark.html", "example-x-full.html"]
+
+        # 1. Duplicate eyebrow number is caught.
+        html = make_gallery_html(make_tab("x", "01"), make_tab("y", "01"))
+        files = full_trio + ["example-y.html", "example-y-dark.html", "example-y-full.html"]
+        errs = run_gallery_check(html, files)
+        if not any("duplicate eyebrow" in e and "01" in e for e in errs):
+            raise AssertionError(f"duplicate eyebrow not caught: {errs}")
+        print("OK gallery: duplicate eyebrow number caught")
+
+        # 2. Unique eyebrow numbers pass without error.
+        html = make_gallery_html(make_tab("x", "01"), make_tab("y", "02"))
+        errs = run_gallery_check(html, files)
+        if any("duplicate eyebrow" in e for e in errs):
+            raise AssertionError(f"unique eyebrows raised false positive: {errs}")
+        print("OK gallery: unique eyebrow numbers produce no error")
+
+        # 3. Non-single tab missing -dark variant is caught.
+        html = make_gallery_html(make_tab("x", "01"))
+        errs = run_gallery_check(html, ["example-x.html", "example-x-full.html"])
+        if not any("x" in e and "dark" in e for e in errs):
+            raise AssertionError(f"missing -dark not caught: {errs}")
+        print("OK gallery: missing -dark variant caught")
+
+        # 4. Non-single tab missing -full variant is caught.
+        errs = run_gallery_check(html, ["example-x.html", "example-x-dark.html"])
+        if not any("x" in e and "full" in e for e in errs):
+            raise AssertionError(f"missing -full not caught: {errs}")
+        print("OK gallery: missing -full variant caught")
+
+        # 5. data-single tab with only the light file passes (no false positive).
+        html = make_gallery_html(make_tab("x", "01", single=True))
+        errs = run_gallery_check(html, ["example-x.html"])
+        if any("x" in e and ("dark" in e or "full" in e) for e in errs):
+            raise AssertionError(f"data-single tab raised false variant error: {errs}")
+        print("OK gallery: data-single tab exempt from variant check")
+
+        # 6. Complete non-single tab (all three variants present) passes.
+        html = make_gallery_html(make_tab("x", "01"))
+        errs = run_gallery_check(html, full_trio)
+        if any("x" in e for e in errs):
+            raise AssertionError(f"complete tab raised unexpected error: {errs}")
+        print("OK gallery: complete non-single tab passes")
+
     print(
         "PASS: docs sync checks references, strict-bundler packaging, routing surfaces, "
-        "Factory install contract, type-count routing, and High-Level invariants"
+        "Factory install contract, type-count routing, High-Level invariants, "
+        "and gallery guards"
     )
     return 0
 
