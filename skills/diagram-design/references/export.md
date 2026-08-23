@@ -39,8 +39,13 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
      </defs>
      ```
      If the SVG already contains a `<defs>` block, **merge** the `<style>` into it (don't add a second `<defs>`).
-4. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
-5. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
+4. Normalize colors for strict SVG 1.1 consumers. This design system's tokens are authored as `rgba(...)` (see `style-guide.md`) and render correctly wherever colors are read as CSS — browsers, Figma, Illustrator. PowerPoint's SVG importer does not: it treats `rgba(...)` and `transparent` as unrecognized and paints them **opaque black**, turning a barely-there tint into a solid block that swallows the label inside it. The transform below is lossless (every replacement renders identically to the original in a browser), so apply it to every `fill` and `stroke` presentation attribute in the extracted SVG:
+   - `fill="rgba(r,g,b,a)"` → `fill="#rrggbb"` plus a new `fill-opacity="a"` attribute on the same element (same pattern for `stroke` / `stroke-opacity`).
+   - `fill="transparent"` → `fill="none"` (same for `stroke="transparent"`).
+
+   Two attribute-scoped regexes cover this — match the presentation attribute and its value, not the bare string, so nothing outside `fill="..."` / `stroke="..."` is touched. The shipped templates and examples only ever express color through these two presentation attributes, never `style="..."` or a `<style>` block, so no other surface needs this pass.
+5. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
+6. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
 
 ### Caveat to surface to the user
 
