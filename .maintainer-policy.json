@@ -51,6 +51,10 @@
       "python3 scripts/test-verify-dumbbell.py",
       "python3 scripts/verify-slopegraph.py --all",
       "python3 scripts/test-verify-slopegraph.py",
+      "python3 scripts/verify-ridgeline.py --all",
+      "python3 scripts/test-verify-ridgeline.py",
+      "python3 scripts/verify-bubble.py --all",
+      "python3 scripts/test-verify-bubble.py",
       "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-design/references/primitive-icons.md"
     ],
     "required_check_names": [],

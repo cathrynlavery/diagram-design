@@ -61,4 +61,8 @@ Kept out on purpose, so the next audit does not relitigate them.
 - **ER's scope was narrowed, not duplicated.** `type-er.md` now states that it is entity-level and points at `type-db-schema.md` for the physical schema. Without that edit the two types would have overlapping "Best for" claims and the router would be ambiguous.
 - The ADR 0004 byte cap became binding. Adding these types required trimming SKILL.md body prose: the §11 import consequences were compressed, the terminal-variant and typography paragraphs were tightened, and §4's six connector anti-pattern rows collapsed into one row pointing at §6 — that table was the third statement of rules already given in full in §6 and checked one by one in §9. `SKILL.md` sits at ~39.2 KB against the 40 KB cap. The next type must be paid for the same way, never by trimming the frontmatter description.
 - Per-type budget rows stayed in SKILL.md §7 rather than moving into the type references, because several older references (venn, pyramid, layers, ER, swimlane, timeline) do not state their own limits. Moving the rows out would have lost those numbers.
-- `docs/screenshots/` has no PNGs for the new types yet; the README lists them in a text table instead of the image grid until the screenshots are generated.
+- At acceptance time, `docs/screenshots/` had no PNGs for the new types; README listed them in a text table pending generation.
+
+## Amendment — canonical screenshots shipped
+
+The ten types now have canonical PNGs, image-grid entries in README, and source/screenshot digests in `docs/screenshots/manifest.json`. Polar was admitted separately afterward and moved the repository-wide count from 38 to 39; this ADR still records the ten-type 28 → 38 decision.

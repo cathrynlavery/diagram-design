@@ -142,6 +142,14 @@ jobs:
         id: skin
         run: python scripts/lint-skin.py --all --baseline
 
+      - name: Verify quantitative polar chart
+        if: always()
+        id: polar
+        shell: bash
+        run: |
+          python scripts/test-verify-polar.py
+          python scripts/verify-polar.py
+
       - name: Verify sequence OAuth specs
         if: always()
         id: oauth
@@ -173,6 +181,16 @@ jobs:
         if: always()
         id: motion
         run: python scripts/test-verify-motion.py
+
+      - name: Verify doctor diagnostics contract
+        if: always()
+        id: doctor
+        run: python scripts/verify-doctor.py
+
+      - name: Verify doctor diagnostics tests
+        if: always()
+        id: doctor_tests
+        run: python scripts/test-verify-doctor.py
 
       - name: Verify docs and routing sync
         if: always()
@@ -231,6 +249,66 @@ jobs:
         id: slopegraph_tests
         run: python scripts/test-verify-slopegraph.py
 
+      - name: Verify sankey flow conservation
+        if: always()
+        id: sankey
+        run: python scripts/verify-sankey.py --all
+
+      - name: Verify sankey checker
+        if: always()
+        id: sankey_tests
+        run: python scripts/test-verify-sankey.py
+
+      - name: Verify ridgeline shared amplitude
+        if: always()
+        id: ridgeline
+        run: python scripts/verify-ridgeline.py --all
+
+      - name: Verify ridgeline checker
+        if: always()
+        id: ridgeline_tests
+        run: python scripts/test-verify-ridgeline.py
+
+      - name: Verify bubble positions and area encoding
+        if: always()
+        id: bubble
+        run: python scripts/verify-bubble.py --all
+
+      - name: Verify bubble checker
+        if: always()
+        id: bubble_tests
+        run: python scripts/test-verify-bubble.py
+
+      # lint-render.py's oracle is pixels, so the browser is part of the contract:
+      # pin Playwright exactly, and let that pin choose the Chromium build. Bump
+      # both together, deliberately, by editing PLAYWRIGHT_VERSION.
+      #
+      # One platform only. Antialiasing and font fallback differ per OS, so running
+      # a pixel comparison across the whole matrix would compare six oracles rather
+      # than one, and the thresholds are calibrated on Linux Chromium. The other
+      # matrix legs still run every source-level gate.
+      - name: Install Playwright Chromium
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        env:
+          PLAYWRIGHT_VERSION: "1.62.0"
+        shell: bash
+        run: |
+          pip install "playwright==${PLAYWRIGHT_VERSION}"
+          playwright install --with-deps chromium
+          python -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
+
+      # The checks before the sweep: a broken linter must not be able to report
+      # a clean repository.
+      - name: Verify render linter checks
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: render_selftest
+        run: python scripts/lint-render.py --self-test
+
+      - name: Run render linter
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: render
+        run: python scripts/lint-render.py --all
+
       - name: Verify generated icon assets
         if: always()
         id: icons
@@ -257,12 +335,15 @@ jobs:
           echo "| Devicon Normalization | ${{ steps.devicon.outcome == 'success' && '✅ Passed' || (steps.devicon.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mojibake Repair Utility | ${{ steps.mojibake.outcome == 'success' && '✅ Passed' || (steps.mojibake.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Semantic-Motion Verifier Tests | ${{ steps.semantic_motion_tests.outcome == 'success' && '✅ Passed' || (steps.semantic_motion_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence-OAuth Verifier Tests | ${{ steps.oauth_tests.outcome == 'success' && '✅ Passed' || (steps.oauth_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Draw.io Import Extractor | ${{ steps.drawio.outcome == 'success' && '✅ Passed' || (steps.drawio.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Optional Motion Contract | ${{ steps.motion.outcome == 'success' && '✅ Passed' || (steps.motion.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Doctor Diagnostics Contract | ${{ steps.doctor.outcome == 'success' && '✅ Passed' || (steps.doctor.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -274,4 +355,12 @@ jobs:
           echo "| Dumbbell Checker | ${{ steps.dumbbell_tests.outcome == 'success' && '✅ Passed' || (steps.dumbbell_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Shared Scale | ${{ steps.slopegraph.outcome == 'success' && '✅ Passed' || (steps.slopegraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Checker | ${{ steps.slopegraph_tests.outcome == 'success' && '✅ Passed' || (steps.slopegraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sankey Flow Conservation | ${{ steps.sankey.outcome == 'success' && '✅ Passed' || (steps.sankey.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sankey Checker | ${{ steps.sankey_tests.outcome == 'success' && '✅ Passed' || (steps.sankey_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ridgeline Shared Amplitude | ${{ steps.ridgeline.outcome == 'success' && '✅ Passed' || (steps.ridgeline.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bubble Checker | ${{ steps.bubble_tests.outcome == 'success' && '✅ Passed' || (steps.bubble_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

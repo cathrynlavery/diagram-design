@@ -162,6 +162,19 @@
         background: var(--paper);
         display: block;
       }
+
+      @media (max-width: 640px) {
+        #type-tabs {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overscroll-behavior-inline: contain;
+          padding-bottom: 0.25rem;
+          scrollbar-width: thin;
+        }
+        #type-tabs .tab {
+          flex: 0 0 auto;
+        }
+      }
     </style>
   </head>
   <body>
@@ -240,107 +253,116 @@
         <button class="tab new" data-type="radar">
           <span class="eyebrow">15</span>Radar
         </button>
+        <button class="tab new" data-type="polar">
+          <span class="eyebrow">16</span>Polar
+        </button>
         <button class="tab new" data-type="loop">
-          <span class="eyebrow">16</span>Loop
+          <span class="eyebrow">17</span>Loop
         </button>
         <button class="tab new" data-type="datalake">
-          <span class="eyebrow">17</span>Data lake
+          <span class="eyebrow">18</span>Data lake
         </button>
         <button class="tab new" data-type="bar">
-          <span class="eyebrow">18</span>Bar
+          <span class="eyebrow">19</span>Bar
         </button>
         <button class="tab new" data-type="line">
-          <span class="eyebrow">19</span>Line
+          <span class="eyebrow">20</span>Line
         </button>
         <button class="tab new" data-type="gantt">
-          <span class="eyebrow">20</span>Gantt
+          <span class="eyebrow">21</span>Gantt
         </button>
         <button class="tab new" data-type="scatter">
-          <span class="eyebrow">21</span>Scatter
+          <span class="eyebrow">22</span>Scatter
+        </button>
+        <button class="tab new" data-type="bubble">
+          <span class="eyebrow">22</span>Scatter · bubble
         </button>
         <button class="tab new" data-type="medallion">
-          <span class="eyebrow">22</span>Medallion
+          <span class="eyebrow">23</span>Medallion
         </button>
         <button class="tab new" data-type="high-level">
-          <span class="eyebrow">23</span>High-Level
+          <span class="eyebrow">24</span>High-Level
         </button>
         <button class="tab new" data-type="process">
-          <span class="eyebrow">24</span>Process
+          <span class="eyebrow">25</span>Process
         </button>
         <button class="tab new" data-type="data-flow">
-          <span class="eyebrow">26</span>Data flow
+          <span class="eyebrow">27</span>Data flow
         </button>
         <button class="tab new" data-type="dp-integration">
-          <span class="eyebrow">27</span>DP integration
+          <span class="eyebrow">28</span>DP integration
         </button>
         <button class="tab new" data-type="high-level-vertical">
-          <span class="eyebrow">28</span>High-Level / Parametric
+          <span class="eyebrow">29</span>High-Level / Parametric
         </button>
         <button class="tab new" data-type="treemap">
-          <span class="eyebrow">29</span>Treemap
+          <span class="eyebrow">30</span>Treemap
         </button>
         <button class="tab new" data-type="slopegraph">
           <span class="eyebrow">30</span>Line · slopegraph
         </button>
+        <button class="tab new" data-type="ridgeline">
+          <span class="eyebrow">20</span>Line · ridgeline
+        </button>
         <button class="tab new" data-type="dp-security-matrix">
-          <span class="eyebrow">32</span>DP security matrix
+          <span class="eyebrow">33</span>DP security matrix
         </button>
         <button class="tab new" data-type="it-state">
-          <span class="eyebrow">33</span>IT current-state
+          <span class="eyebrow">34</span>IT current-state
         </button>
         <button class="tab new" data-type="sankey">
-          <span class="eyebrow">34</span>Sankey
+          <span class="eyebrow">35</span>Sankey
         </button>
         <button class="tab new" data-type="fishbone">
-          <span class="eyebrow">35</span>Fishbone
+          <span class="eyebrow">36</span>Fishbone
         </button>
         <button class="tab new" data-type="wardley">
-          <span class="eyebrow">36</span>Wardley map
+          <span class="eyebrow">37</span>Wardley map
         </button>
         <button class="tab new" data-type="kanban">
-          <span class="eyebrow">37</span>Kanban
+          <span class="eyebrow">38</span>Kanban
         </button>
         <button class="tab new" data-type="journey">
-          <span class="eyebrow">38</span>User journey
+          <span class="eyebrow">39</span>User journey
         </button>
         <button class="tab new" data-type="deployment">
-          <span class="eyebrow">39</span>Deployment
+          <span class="eyebrow">40</span>Deployment
         </button>
         <button class="tab new" data-type="dependency">
-          <span class="eyebrow">40</span>Dependency graph
+          <span class="eyebrow">41</span>Dependency graph
         </button>
         <button class="tab new" data-type="uml-class">
-          <span class="eyebrow">41</span>UML class
+          <span class="eyebrow">42</span>UML class
         </button>
         <button class="tab new" data-type="story-map">
-          <span class="eyebrow">42</span>Story map
+          <span class="eyebrow">43</span>Story map
         </button>
         <button class="tab new" data-type="db-schema">
-          <span class="eyebrow">43</span>Database schema
+          <span class="eyebrow">44</span>Database schema
         </button>
         <button class="tab new" data-type="sequence-oauth">
-          <span class="eyebrow">44</span>Sequence · OAuth
+          <span class="eyebrow">45</span>Sequence · OAuth
         </button>
         <button class="tab new" data-type="import-drawio" data-single>
-          <span class="eyebrow">45</span>Import · draw.io
+          <span class="eyebrow">46</span>Import · draw.io
         </button>
         <button class="tab new" data-type="import-mermaid" data-single>
-          <span class="eyebrow">46</span>Import · Mermaid
+          <span class="eyebrow">47</span>Import · Mermaid
         </button>
         <button class="tab new" data-type="quadrant-consultant" data-single>
-          <span class="eyebrow">47</span>Quadrant · consultant
+          <span class="eyebrow">48</span>Quadrant · consultant
         </button>
         <button class="tab new" data-type="loop-terminal" data-single>
-          <span class="eyebrow">48</span>Loop · terminal
+          <span class="eyebrow">49</span>Loop · terminal
         </button>
         <button class="tab new" data-type="policy-trace-animated" data-single>
-          <span class="eyebrow">49</span>Policy trace · animated
+          <span class="eyebrow">50</span>Policy trace · animated
         </button>
         <button class="tab new" data-type="queue-animated" data-single>
-          <span class="eyebrow">50</span>Fan-in queue · animated
+          <span class="eyebrow">51</span>Fan-in queue · animated
         </button>
         <button class="tab new" data-type="paved-road-animated" data-single>
-          <span class="eyebrow">51</span>Secure paved road · animated
+          <span class="eyebrow">52</span>Secure paved road · animated
         </button>
       </div>
 

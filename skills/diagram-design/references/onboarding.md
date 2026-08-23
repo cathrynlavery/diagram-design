@@ -159,7 +159,7 @@ Write the new tokens to `style-guide.md`. Suggest running the `/regenerate-examp
 
 After onboarding, the user should:
 
-1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 38 types.
+1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 39 types.
 2. If any type looks off, they usually need to tune `muted` (often too dark or too light against the new `paper`).
 
 ---

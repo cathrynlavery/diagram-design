@@ -1,6 +1,6 @@
 ---
 description: Save, load, inspect, update, reset, or delete diagram-design client profiles
-argument-hint: [list|save|load|show|update|reset|delete] [name]
+argument-hint: "[list|save|load|show|update|reset|delete] [name]"
 allowed-tools:
   - Read
   - Write

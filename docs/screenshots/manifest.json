@@ -102,6 +102,15 @@
       "height": 1202
     },
     {
+      "slug": "polar",
+      "source": "skills/diagram-design/assets/example-polar.html",
+      "screenshot": "docs/screenshots/polar.png",
+      "source_sha256": "596e2042f18044ef1fa2c2eb849f39fa5c7767b2a17e272617ebd27e10bc86b1",
+      "screenshot_sha256": "a1dd1d4cb38db2217759c5d256cc56d832acc4f3077f090cc8691d6e4f82ef31",
+      "width": 2400,
+      "height": 1202
+    },
+    {
       "slug": "loop",
       "source": "skills/diagram-design/assets/example-loop.html",
       "screenshot": "docs/screenshots/loop.png",

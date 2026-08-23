@@ -1,16 +1,16 @@
 ---
 name: diagram-design
-description: Create branded architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, loop/flywheel, nested, tree, org chart, layer stack, Venn, pyramid/funnel, treemap, bar, line, Gantt and scatter charts, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, or database schema diagrams as standalone HTML/SVG/PNG. Redraw .drawio/.drawio.png/.drawio.svg or Mermaid .mmd sources at a chosen size/detail; onboard brand tokens from a website; add semantic patterns, callouts, accessible motion, or sketchy/hand-drawn styling.
+description: Create branded architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, Venn, pyramid/funnel, treemap, bar, line, Gantt and scatter charts, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, or database schema diagrams as standalone HTML/SVG/PNG. Redraw .drawio/.drawio.png/.drawio.svg or Mermaid .mmd sources at a chosen size/detail; onboard brand tokens from a website; add semantic patterns, callouts, accessible motion, or sketchy/hand-drawn styling.
 license: MIT
 metadata:
-  version: "2.5"
+  version: "2.6"
 ---
 
 # Diagram Design
 
 Create visual diagrams as self-contained HTML files with inline SVG and CSS, following an opinionated editorial design system.
 
-Thirty-eight visual types. Semantic patterns describe behavior independently; type references describe layout. Details load from `references/` only when selected.
+Thirty-nine visual types. Semantic patterns describe behavior independently; type references describe layout. Details load from `references/` only when selected.
 
 ---
 
@@ -49,7 +49,7 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 38 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 39 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
 
@@ -78,7 +78,7 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
-### Visual-type guide (38)
+### Visual-type guide (39)
 
 | If you're showing… | Use | Reference |
 |---|---|---|
@@ -92,6 +92,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Cross-functional process with handoffs | **Swimlane** | [type-swimlane.md](references/type-swimlane.md) |
 | Two-axis positioning / prioritization | **Quadrant** | [type-quadrant.md](references/type-quadrant.md) |
 | Multiple entities scored across 3–5 quantitative criteria | **Radar / Spider** | [type-radar.md](references/type-radar.md) |
+| One quantitative series across cyclic categories; angle=category, radius=magnitude | **Polar chart** | [type-polar.md](references/type-polar.md) |
 | Reinforcing cycle / flywheel where the last step feeds the first and a shared hub accumulates state | **Loop** | [type-loop.md](references/type-loop.md) |
 | Hierarchy through containment / scope | **Nested** | [type-nested.md](references/type-nested.md) |
 | Parent → children relationships | **Tree** | [type-tree.md](references/type-tree.md) |
@@ -101,9 +102,9 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Ranked hierarchy or conversion drop-off | **Pyramid / funnel** | [type-pyramid.md](references/type-pyramid.md) |
 | Quantitative comparison across categories | **Bar chart** | [type-bar.md](references/type-bar.md) |
 | Part-of-whole where the relative sizes are the story | **Treemap** | [type-treemap.md](references/type-treemap.md) |
-| Continuous trends over time, or change between exactly two states (slopegraph) | **Line chart** | [type-line.md](references/type-line.md) |
+| Continuous trends over time, change between exactly two states (slopegraph), or one distribution per series (ridgeline) | **Line chart** | [type-line.md](references/type-line.md) |
 | Tasks and phases on a timeline | **Gantt** | [type-gantt.md](references/type-gantt.md) |
-| Distribution and correlation between two variables | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
+| Distribution and correlation between two variables, or three with area-sized marks (bubble) | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
 | End-to-end data stack on a container cluster | **High-Level** | [type-high-level.md](references/type-high-level.md) |
 | Multi-actor sequential process with data handoffs | **Process** | [type-process.md](references/type-process.md) |
 | Multi-tier data storage with quality levels and access policies | **Medallion** | [type-medallion.md](references/type-medallion.md) |
@@ -383,6 +384,9 @@ Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
 | Max radar axes | 5 |
 | Max radar series | 5 |
 | Max focal radar series | 1 |
+| Max polar categories | 8 |
+| Max polar series | 1 |
+| Max focal polar categories | 1 |
 | Max bars (bar chart) | 8 |
 | Max cells (treemap) | 8 |
 | Max series (line chart) | 5 |

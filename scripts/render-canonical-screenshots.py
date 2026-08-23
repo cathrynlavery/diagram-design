@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the 38 canonical minimal-light examples and record their digests."""
+"""Render the 39 canonical minimal-light examples and record their digests."""
 
 from __future__ import annotations
 
@@ -21,8 +21,8 @@ from screenshot_catalog import (
 
 def main() -> int:
     slugs = canonical_slugs()
-    if len(slugs) != 38 or len(slugs) != len(set(slugs)):
-        raise SystemExit(f"expected 38 unique canonical types; found {len(slugs)}")
+    if len(slugs) != 39 or len(slugs) != len(set(slugs)):
+        raise SystemExit(f"expected 39 unique canonical types; found {len(slugs)}")
 
     SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, object]] = []
@@ -56,7 +56,7 @@ def main() -> int:
                     "height": height,
                 }
             )
-            print(f"[{index:02d}/38] {slug}: {width}x{height}")
+            print(f"[{index:02d}/39] {slug}: {width}x{height}")
         browser.close()
 
     payload = {
