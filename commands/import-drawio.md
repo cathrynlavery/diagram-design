@@ -46,6 +46,6 @@ Accepts `.drawio`, `.drawio.xml`, `.xml`, `.drawio.png`, and `.drawio.svg`.
 6. **Requested detail level is impossible at the requested size** (e.g. `faithful` on a 40-node source at `slide-16x9`) → say so before drawing and propose overview + per-zone detail.
 7. **`--detail=faithful` above 9 nodes** → zone the layout; above 24 nodes, split into overview + detail files.
 8. **Never carry over source coordinates, colors, or fonts.** The output is a redraw in the project's `style-guide.md` skin.
-9. Run the SKILL.md §9 taste gate and the `output-spec.md` §6 checklist before writing.
+9. Write the files, then run the SKILL.md §9 taste gate and the `output-spec.md` §6 checklist against them before reporting — three of the gate's checks take the file as an argument.
 
 After writing the files, report the paths, sizes, the four dials used, and the fidelity ledger (what was merged, collapsed, or dropped).
