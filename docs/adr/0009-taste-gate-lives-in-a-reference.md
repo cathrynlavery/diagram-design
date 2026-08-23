@@ -1,13 +1,13 @@
 # ADR 0009 — The taste gate moves to a reference; the connector rules stay in SKILL.md
 
-**Status:** accepted (v2.6.3)
+**Status:** accepted (v2.6.7)
 
 ## Context
 
 ADR 0004 set `MAX_SKILL_BYTES` at 40,000 and ruled that the frontmatter `description` — the only
 text an agent reads before deciding to load the skill — is never traded for body prose. At
-v2.6.1, after ADR 0007 admitted ten new types and the 2.6.0 release added a thirty-ninth,
-`SKILL.md` was 39,453 bytes: 99% of the cap, with 547 bytes left.
+v2.6.5, after ADR 0007 admitted ten new types and the 2.6.0 release added a thirty-ninth,
+`SKILL.md` was 39,535 bytes: 99% of the cap, with 465 bytes left.
 Adding a type is not optional prose. It costs a §3 selection row, a §7 budget row, and a
 lexical hook in the description that `verify-docs-sync.py` requires. The next type would have
 hit the cap, and the cheapest way out of that corner is the wrong one — cutting the description.
@@ -34,7 +34,7 @@ Two sections were candidates for extraction. §9, the pre-output checklist, was 
 
 ## Consequences
 
-- `SKILL.md` is 36,037 bytes, leaving ~3,900 of headroom: room for several types rather than
+- `SKILL.md` is 36,119 bytes, leaving ~3,900 of headroom: room for several types rather than
   a fraction of one. Every figure here is `wc -c` on the file, and the per-section ones are the
   bytes from a `## N.` heading up to the next one — re-measure rather than trust the number.
 - `verify-docs-sync.py` requires `SKILL.md` itself to name every packaged runtime file, so a
