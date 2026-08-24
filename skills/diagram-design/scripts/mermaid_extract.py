@@ -293,9 +293,14 @@ def _frontmatter_end(lines: list[str]) -> int:
     return -1
 
 
+ACCESSIBILITY_RE = re.compile(r"^(?:accTitle|accDescr)\s*:", re.I)
+ACCESSIBILITY_BLOCK_RE = re.compile(r"^accDescr\s*\{", re.I)
+
+
 def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
     prepared: list[tuple[int, str]] = []
     in_directive = False
+    in_accessibility = False
     lines = block.text.splitlines()
     frontmatter_end = _frontmatter_end(lines)
     for offset, raw in enumerate(lines):
@@ -317,6 +322,23 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         if stripped.startswith("%%"):
+            prepared.append((line_number, ""))
+            continue
+        if in_accessibility:
+            if "}" in stripped:
+                in_accessibility = False
+            prepared.append((line_number, ""))
+            continue
+        if ACCESSIBILITY_RE.match(stripped):
+            # `accTitle:` / `accDescr:` are valid in every Mermaid grammar and
+            # describe the rendered figure, not its content. They are source
+            # config, so they are dropped the way frontmatter is — otherwise
+            # they surface as a task, a period, or a parse failure.
+            prepared.append((line_number, ""))
+            continue
+        if ACCESSIBILITY_BLOCK_RE.match(stripped):
+            if "}" not in stripped[stripped.find("{") :]:
+                in_accessibility = True
             prepared.append((line_number, ""))
             continue
         prepared.append((line_number, raw.rstrip()))
@@ -814,7 +836,7 @@ def _parse_sequence(
         r"\s*[+-]?\s*(?:\(\))?([\w.:-]+?(?: [\w.:-]+)*?)\s*:\s*(.*)$"
     )
     for line_number, raw in lines[header_position + 1 :]:
-        text = raw.strip()
+        text = _strip_inline_comment(raw.strip())
         if not text:
             continue
         lowered = text.casefold()
@@ -925,7 +947,7 @@ def _parse_state(
 ) -> None:
     containers: list[str] = []
     for line_number, raw in lines[header_position + 1 :]:
-        text = raw.strip()
+        text = _strip_inline_comment(raw.strip())
         if not text:
             continue
         if _discard_nonsemantic(diagram, text):
@@ -1055,6 +1077,9 @@ GANTT_WEEKEND_DAYS = {"friday", "saturday"}
 GANTT_DURATION_RE = re.compile(r"^\d+(?:\.\d+)?\s*(?:ms|s|m|h|d|w|y)$", re.I)
 GANTT_RELATION_RE = re.compile(r"^(after|until)\s+(.+)$", re.I)
 GANTT_CLICK_RE = re.compile(r"^click\s+\S+\s+(?:call|href)\b", re.I)
+# A timeline event opens with a colon followed by whitespace; a colon that is
+# not is part of the event text (timeline.jison).
+TIMELINE_EVENT_START = re.compile(r":(?=\s)")
 
 
 def _free_id(diagram: Diagram, prefix: str, taken: int) -> str:
@@ -1071,6 +1096,24 @@ def _free_id(diagram: Diagram, prefix: str, taken: int) -> str:
     ):
         ordinal += 1
     return f"{prefix}-{ordinal}"
+
+
+def _strip_inline_comment(text: str, extra: str | None = None) -> str:
+    """Drop a trailing `%%` (or grammar-specific) comment outside quotes.
+
+    The shared preprocessing only removes a comment that starts a line, so
+    `child(Child) %% note` reached the new parsers with the comment attached
+    and cost the topic its shape and id.
+    """
+    mask = _top_level_mask(text)
+    cut = len(text)
+    for token in ("%%", extra):
+        if not token:
+            continue
+        index = mask.find(token)
+        if index != -1:
+            cut = min(cut, index)
+    return text[:cut].strip()
 
 
 def _container_id(diagram: Diagram, prefix: str) -> str:
@@ -1262,7 +1305,9 @@ def _parse_timeline(
     section: str | None = None
     period: Node | None = None
     for line_number, raw in lines[header_position + 1 :]:
-        text = raw.strip()
+        # timeline.jison reads a period as `[^#:\n]+`, so `#` opens a comment
+        # in this grammar the way `%%` does everywhere.
+        text = _strip_inline_comment(raw.strip(), "#")
         if not text:
             continue
         keyword, _separator, remainder = text.partition(" ")
@@ -1281,8 +1326,18 @@ def _parse_timeline(
             ).id
             period = None
             continue
-        parts = [clean_label(part) for part in text.split(":")]
-        if len(parts) < 2 or not any(parts[1:]):
+        start = TIMELINE_EVENT_START.search(text)
+        if start is None:
+            # Mermaid's timeline lexer reads an event as `":" \s ...`, and lets
+            # the event text carry a colon that is *not* followed by whitespace
+            # (`":"(?!\s)` in timeline.jison). So a bare line has no event, and
+            # a URL's `://` is text rather than a separator.
+            _fail(f"timeline row without an event at line {line_number}")
+        parts = [clean_label(text[: start.start()])] + [
+            clean_label(part)
+            for part in TIMELINE_EVENT_START.split(text[start.start() :])[1:]
+        ]
+        if not any(parts[1:]):
             # Mermaid's timeline row is `{period} : {event}`. A bare line has no
             # event to carry, and promoting it to a period would draw a marker
             # the source never described.
@@ -1320,6 +1375,18 @@ MINDMAP_SHAPES = (
 
 def _mindmap_topic(text: str) -> tuple[str | None, str, str]:
     """Return an explicit id (when the topic declares one), label, and shape."""
+    for opening, closing, shape in MINDMAP_SHAPES:
+        # `nodeWithoutId : NODE_DSTART NODE_DESCR NODE_DEND` — `((Root))` with no
+        # identifier in front is a shape, and Mermaid uses the inner text as both
+        # id and label. Matched before the id form, which would read the whole
+        # thing as a plain label with the delimiters still attached.
+        if (
+            len(text) > len(opening) + len(closing)
+            and text.startswith(opening)
+            and text.endswith(closing)
+        ):
+            label = clean_label(text[len(opening) : len(text) - len(closing)])
+            return None, label, shape
     match = re.match(r"^([\w.:-]+)(.*)$", text, re.UNICODE)
     if match is not None:
         rest = match.group(2).strip()
@@ -1373,9 +1440,10 @@ def _parse_mindmap(
     # every mindmap topic is drawn in a tree redraw, and container nodes are
     # counted as grouping, not as drawable content.
     stack: list[tuple[int, str]] = []
+    root_indent: int | None = None
     for _line_number, raw in _mindmap_logical_lines(lines[header_position + 1 :]):
         expanded = raw.expandtabs(4)
-        text = expanded.strip()
+        text = _strip_inline_comment(expanded.strip())
         if not text:
             continue
         if text.startswith("::"):
@@ -1385,6 +1453,12 @@ def _parse_mindmap(
             diagram.discarded["style_directives"] += 1
             continue
         indent = len(expanded) - len(expanded.lstrip())
+        if root_indent is None:
+            root_indent = indent
+        elif indent <= root_indent and stack:
+            # Mermaid's mindmap has one root. Accepting a second would return a
+            # disconnected forest for input the renderer rejects.
+            _fail(f"mindmap has a second root at line {_line_number}")
         while stack and stack[-1][0] >= indent:
             stack.pop()
         topic_id, label, shape = _mindmap_topic(_strip_class_suffix(text))

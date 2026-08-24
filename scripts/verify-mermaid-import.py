@@ -987,6 +987,60 @@ def check_grammar_conformance(tmp: Path) -> None:
     ok("gantt, quadrant, timeline, and mindmap follow their declared grammars")
 
 
+def check_grammar_lexer_rules(tmp: Path) -> None:
+    """Cases the grammars' own lexers define, read from the .jison sources."""
+    shapes = tmp / "mindmap-no-id.mmd"
+    shapes.write_text("mindmap\n  ((Root))\n    (Child)\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(shapes), "--json"]))["diagrams"][0]
+    seen = [(node["label"], node["shape"]) for node in payload["nodes"]]
+    if seen != [("Root", "circle"), ("Child", "round")]:
+        fail(f"`nodeWithoutId` shapes were read as plain labels: {seen}")
+
+    # timeline.jison: `":"\s(?:[^:\n]|":"(?!\s))+` — only a colon followed by
+    # whitespace separates, so a URL's `://` stays inside the event.
+    url = tmp / "timeline-url.mmd"
+    url.write_text(
+        "timeline\n  title T\n  2024 : Visit https://example.com/x : Second\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(url), "--json"]))["diagrams"][0]
+    events = payload["nodes"][0]["fields"]
+    if events != ["Visit https://example.com/x", "Second"]:
+        fail(f"a colon inside event text was treated as a separator: {events}")
+
+    for source, name in (
+        ("gantt\n  dateFormat YYYY-MM-DD\n  accTitle: Release plan\n  section W\n"
+         "  Build :2026-01-03, 2d\n", "gantt-acc.mmd"),
+        ("quadrantChart\n  accTitle: Debt map\n  x-axis Low --> High\n"
+         "  y-axis Low --> High\n  A: [0.3, 0.6]\n", "quadrant-acc.mmd"),
+        ("timeline\n  accDescr {\n    multi-line\n  }\n  2024 : Alpha\n", "timeline-acc.mmd"),
+    ):
+        path = tmp / name
+        path.write_text(source, encoding="utf-8")
+        payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        labels = [node["label"] for node in payload["nodes"]]
+        if any("acc" in label.casefold() for label in labels):
+            fail(f"{name}: an accessibility directive became a node: {labels}")
+
+    comment = tmp / "mindmap-comment.mmd"
+    comment.write_text("mindmap\n  root\n    child(Child) %% comment\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(comment), "--json"]))["diagrams"][0]
+    child = payload["nodes"][-1]
+    if child["label"] != "Child" or child["shape"] != "round":
+        fail(f"an inline `%%` comment reached the topic: {child['label']!r}")
+
+    hashed = tmp / "timeline-hash.mmd"
+    hashed.write_text("timeline\n  2024 : Alpha # trailing note\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(hashed), "--json"]))["diagrams"][0]
+    if payload["nodes"][0]["fields"] != ["Alpha"]:
+        fail(f"`#` is a timeline comment: {payload['nodes'][0]['fields']}")
+
+    forest = tmp / "mindmap-two-roots.mmd"
+    forest.write_text("mindmap\n  RootOne\n  RootTwo\n", encoding="utf-8")
+    expect_error([str(forest)], "mindmap has a second root")
+    ok("mindmap shapes, timeline colons, accessibility, and comments follow the lexers")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload = json.loads(run_extract([str(ADVERSARIAL), "--json"]))
     diagram = payload["diagrams"][0]
@@ -1292,6 +1346,7 @@ def main() -> int:
         check_grammar_adversarial()
         check_generated_ids_and_directive_lookalikes(tmp)
         check_grammar_conformance(tmp)
+        check_grammar_lexer_rules(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()
