@@ -11,7 +11,7 @@ as a value. `lint-skin.py` reads colors and fonts and `verify-geometry.py`
 reads label masks; neither compares a drawn coordinate against the value
 bound to it.
 
-Eight invariants:
+Nine invariants:
 
 1. SHARED VALUE SCALE - every dot's position on the value axis must sit where
    one linear scale puts its declared value. Two dots declaring the same
@@ -36,19 +36,33 @@ Eight invariants:
 
 5. AT MOST ONE ACCENT DOT - one focal claim per figure, on either skin.
 
-6. BOUND LABELS, BOTH WAYS - a dot that declares data-name has exactly one
-   label bound to it and vice versa; the visible text matches the binding
-   (case aside - labels ship small-caps); and each label sits nearer its own
-   dot than any other named dot along the value axis, because two labels
-   exchanged between outliers rename both while every number stays correct.
-   At most 6 dots are named - past that the tail is a list, not a story.
+6. UNTRANSFORMED GEOMETRY - every coordinate read here is a raw attribute,
+   so anything that moves a mark afterwards invalidates the check that
+   passed. Three carriers do that: a `transform` attribute, an inline
+   `style="transform: ..."`, and a rule in a <style> block - on a dot, on a
+   bound label or tick, or on an ancestor. Covering only the attribute is
+   what let `style="transform: translateX(...)"` slide a dot past every
+   position check and still report clean. Transforms are rejected rather
+   than resolved, as in verify-slopegraph.py: a partial implementation of
+   the SVG transform stack is worse than an honest refusal, because it
+   looks like coverage.
 
-7. BOUND TICKS ON THE DOTS' SCALE - the value axis needs at least two tick
+7. BOUND LABELS, BOTH WAYS, ON A UNIQUE NAME - a dot that declares data-name
+   has exactly one label bound to it and vice versa; the visible text matches
+   the binding (case aside - labels ship small-caps); and each label sits
+   nearer its own dot than any other named dot along the value axis, because
+   two labels exchanged between outliers rename both while every number stays
+   correct. The name itself must be non-empty and unique: identity is a map
+   key, and a map key collides silently, so two dots sharing one data-name
+   collapsed into a single entry and one label satisfied both. At most 6 dots
+   are named - past that the tail is a list, not a story.
+
+8. BOUND TICKS ON THE DOTS' SCALE - the value axis needs at least two tick
    labels bound with data-tick="x"/data-value, each printing exactly the
    number it declares and drawn where the dots' own scale puts that value.
    data-tick="y" is itself a finding: the swarm axis has no scale to tick.
 
-8. FAIL CLOSED - a file that presents as a beeswarm but yields fewer than
+9. FAIL CLOSED - a file that presents as a beeswarm but yields fewer than
    four dots on four distinct values is a finding, never a pass. Four
    because the scale test is leave-one-out and each fit needs three points;
    below that nothing here is verifiable. The documented budget (20-300
@@ -281,33 +295,61 @@ def looks_like_beeswarm(path: Path, source: str) -> bool:
     return "beeswarm" in named_text(source)
 
 
+def transform_carrier(attrs: dict):
+    """How this element carries a transform, phrased for the finding, or None.
+
+    A transform reaches the renderer by three carriers and the `transform`
+    ATTRIBUTE is only the most visible one. Reading the attribute alone let
+    `style="transform: translateX(...)"` on a dot, a bound label, a tick or an
+    ancestor group move the rendered mark after its raw coordinates had
+    already been validated, and the file still reported clean. The third
+    carrier, a rule in a <style> block, is reported separately because
+    nothing here can tell which marks such a rule selects.
+    """
+    if "transform" in attrs:
+        return "transform=%r" % attrs["transform"]
+    style = attrs.get("style")
+    if style is not None and CSS_TRANSFORM_RE.search(style):
+        return "style=%r" % style
+    return None
+
+
 def transformed_spans(source: str) -> list:
-    """Offset ranges enclosed by a <g>/<svg> that carries a transform.
+    """(start, end, how) for each range enclosed by a transformed <g>/<svg>.
 
     Element-level transforms are easy to see; an ancestor's is not, and shifts
     everything inside it identically - exactly the change that leaves all
-    internal consistency intact while moving every mark on the page.
+    internal consistency intact while moving every mark on the page. Both
+    element carriers count on a group: the attribute and an inline style.
     """
     events = []
     for match in GROUP_OPEN_RE.finditer(source):
         if match.group("selfclose"):
             continue
-        events.append((match.start(), 0, "transform" in attrs_of(match.group("attrs"))))
+        attrs = attrs_of(match.group("attrs"))
+        how = None
+        if "transform" in attrs:
+            how = "an ancestor <g>/<svg> transform"
+        elif transform_carrier(attrs) is not None:
+            how = "an ancestor <g>/<svg> style transform"
+        events.append((match.start(), 0, how))
     for match in GROUP_CLOSE_RE.finditer(source):
-        events.append((match.start(), 1, False))
-    events.sort()
+        events.append((match.start(), 1, None))
+    # Sort on (offset, kind) only. The third field is a message now, so a
+    # bare sort() would compare a str against None to break a tie and raise.
+    events.sort(key=lambda event: (event[0], event[1]))
     stack, spans = [], []
-    for position, kind, transformed in events:
+    for position, kind, how in events:
         if kind == 0:
-            stack.append((position, transformed))
+            stack.append((position, how))
         elif stack:
             start, was_transformed = stack.pop()
             if was_transformed:
-                spans.append((start, position))
+                spans.append((start, position, was_transformed))
     # An unclosed transformed group covers everything after it.
     for start, was_transformed in stack:
         if was_transformed:
-            spans.append((start, len(source)))
+            spans.append((start, len(source), was_transformed))
     return spans
 
 
@@ -365,11 +407,22 @@ def parse_dots(source: str, findings: list, name: str) -> list:
 
 
 def check_transforms(source: str, findings: list, name: str) -> None:
-    """No transform may move verified geometry or a bound label."""
+    """No transform may move verified geometry or a bound label.
+
+    Rejected rather than resolved, following verify-slopegraph.py: a partial
+    implementation of the SVG transform stack is worse than an honest
+    refusal, because it looks like coverage. All three carriers are held to
+    that rule - the `transform` attribute, an inline `style="transform: ..."`,
+    and a rule in a <style> block - because a gate that closes one of three
+    doorways guards nothing at all.
+    """
     spans = transformed_spans(source)
 
-    def enclosed(offset):
-        return any(start <= offset <= end for start, end in spans)
+    def enclosing(offset):
+        for start, end, how in spans:
+            if start <= offset <= end:
+                return how
+        return None
 
     def report(offset, what, how):
         findings.append(
@@ -379,25 +432,29 @@ def check_transforms(source: str, findings: list, name: str) -> None:
             "coordinates instead" % (name, line_of(source, offset), what, how)
         )
 
+    def check_element(offset, attrs, what):
+        how = transform_carrier(attrs)
+        if how is None:
+            how = enclosing(offset)
+        if how is not None:
+            report(offset, what, how)
+
     for match in CIRCLE_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
         if "data-value" not in attrs:
             continue
-        what = "the dot for value %s" % attrs["data-value"]
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+        check_element(match.start(), attrs,
+                      "the dot for value %s" % attrs["data-value"])
 
     for match in TEXT_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
         if "data-name" not in attrs and "data-tick" not in attrs:
             continue
-        what = "a bound label (%s)" % plain(match.group("body"))[:20]
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+        # Named for what it is: a tick and an outlier label fail this check
+        # for the same reason but are fixed in different places.
+        kind = "tick" if "data-tick" in attrs else "label"
+        check_element(match.start(), attrs, "a bound %s (%s)"
+                      % (kind, plain(match.group("body"))[:20]))
 
     for match in STYLE_RE.finditer(source):
         found = CSS_TRANSFORM_RE.search(match.group("body"))
@@ -561,13 +618,45 @@ def check_labels(dots: list, source: str, findings: list, name: str) -> None:
             "focal dot and the outliers a reader will look for; past that the "
             "tail is a list, not a story" % (name, len(named), MAX_NAMED)
         )
-    positions = {d.name: d.cx for d in named}
+    # Identity is a map key, and a map key collides SILENTLY. Built as a
+    # comprehension this dropped one of two dots sharing a data-name, so a
+    # single label satisfied both and a file carrying two marks under one
+    # name reported clean. The collision is detected here, never resolved by
+    # letting the last writer win, and an ambiguous name is verified no
+    # further: nothing about its position or its label is knowable.
+    positions: dict = {}
+    ambiguous = set()
+    for dot in named:
+        if not dot.name.strip():
+            findings.append(
+                "%s:%d: a dot declares an empty data-name — identity must be "
+                "a name a label can be bound to, and an empty one binds "
+                "nothing while satisfying every check that looks for a name"
+                % (name, line_of(source, dot.offset))
+            )
+            ambiguous.add(dot.name)
+            continue
+        if dot.name in positions:
+            findings.append(
+                "%s:%d: a second dot declares data-name %r — one name, one "
+                "mark. Two dots sharing a name collapse into one entry, so a "
+                "single label satisfies both and neither position is checked"
+                % (name, line_of(source, dot.offset), dot.name)
+            )
+            ambiguous.add(dot.name)
+            continue
+        positions[dot.name] = dot.cx
+    for collided in ambiguous:
+        positions.pop(collided, None)
+
     seen = set()
     for match in TEXT_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
         label = attrs.get("data-name")
         if label is None:
             continue
+        if label in ambiguous:
+            continue      # the collision is the finding; placement is moot
         offset = match.start()
         body = plain(match.group("body"))
         if label not in positions:
@@ -617,6 +706,8 @@ def check_labels(dots: list, source: str, findings: list, name: str) -> None:
                 )
                 break
     for dot in named:
+        if dot.name in ambiguous:
+            continue      # already reported; a second finding is noise
         if dot.name not in seen:
             findings.append(
                 "%s:%d: dot %r declares data-name but no label is bound to it "

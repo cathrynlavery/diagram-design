@@ -164,13 +164,13 @@ What each binding buys, and what it costs to omit:
 | Binding | Without it |
 |---|---|
 | `data-value` on the circle | A dot nudged along the value axis could not be caught — the drawn position would be the only statement of the value. |
-| `data-name` on the focal/outlier circles | An unnamed outlier cannot be labelled or cross-checked, and two swapped labels rename both dots silently. |
+| `data-name` on the focal/outlier circles | An unnamed outlier cannot be labelled or cross-checked, and two swapped labels rename both dots silently. The name must be non-empty and unique to one dot: two dots sharing a name collapse into one entry, so a single label satisfies both. |
 | `data-name` on a label | The label floats free — it could name a dot that is not there, or drift to a neighbour. |
 | `data-tick` / `data-value` on a tick | The printed axis could be relabelled wholesale — every dot honestly placed on a scale the axis lies about. |
 
-`scripts/verify-beeswarm.py` derives the value scale from the dots themselves, requires dots sharing a value to share a position, refuses any overprinted pair, holds every dot to one radius and every non-focal dot to one fill, caps the accent at one dot and the labels at six, and checks every bound label and tick against the mark it describes; `scripts/test-verify-beeswarm.py` proves each check in both polarities and pins the sibling scope treaty in both directions.
+`scripts/verify-beeswarm.py` derives the value scale from the dots themselves, requires dots sharing a value to share a position, refuses any overprinted pair, holds every dot to one radius and every non-focal dot to one fill, caps the accent at one dot and the labels at six, requires every `data-name` to be non-empty and unique, and checks every bound label and tick against the mark it describes; `scripts/test-verify-beeswarm.py` proves each check in both polarities and pins the sibling scope treaty in both directions.
 
-**No `transform` on any of it.** The checker reads raw `cx`/`cy`/`r` and `x`/`y` attributes, so a transform on a dot, a bound label, an ancestor `<g>`, or in a CSS rule moves the rendered mark away from the number that was verified. Bake the offset into the coordinates.
+**No `transform` on any of it, by any carrier.** The checker reads raw `cx`/`cy`/`r` and `x`/`y` attributes, so anything that moves a mark afterwards invalidates the check that passed. All three carriers are refused — the `transform` attribute, an inline `style="transform: …"`, and a rule in a `<style>` block — on a dot, on a bound label or tick, or on an ancestor `<g>`/`<svg>`. Bake the offset into the coordinates.
 
 #### Anti-patterns
 
@@ -180,7 +180,8 @@ What each binding buys, and what it costs to omit:
 - Meaning smuggled into the swarm axis: sorting the dodge by a second variable, or a midline drawn as if it were a scale.
 - A hue per group instead of one ink plus a single accent.
 - Labelling more than the focal dot and a handful of outliers.
-- A `transform` on a dot, a bound label, an ancestor group, or in CSS.
+- A `transform` on a dot, a bound label, a tick or an ancestor group — as an attribute, as an inline `style="transform: …"`, or as a CSS rule.
+- Two dots wearing the same `data-name`, or an empty one: a name that identifies two marks identifies neither.
 - An unbound visible string: a label or an axis tick with no attribute stating the same thing.
 
 ## Examples

@@ -357,6 +357,25 @@ def run_cases(h: Harness) -> int:
         document(swarm(13), seven_named, TICKS, seven_labels),
         r"7 dots carry data-name against a budget of 6",
     )
+    # Identity is a map key, and a map key collides silently: two dots sharing
+    # one data-name overwrote each other in the positions map, so ONE label
+    # satisfied both dots and the file reported clean (review of PR #142).
+    h.expect_only_one(
+        "two dots sharing one data-name are reported, not collapsed into one",
+        document(swarm(22), dot(300, name="req-a"), dot(400, 1, name="req-a"),
+                 TICKS, label("req-a", cx(300))),
+        r"a second dot declares data-name 'req-a'",
+    )
+    h.expect_only_one(
+        "an empty data-name is reported — an identity nothing can be bound to",
+        document(swarm(23), dot(300, name=""), TICKS),
+        r"declares an empty data-name",
+    )
+    h.expect_only_one(
+        "a whitespace-only data-name is empty once rendered, and reported",
+        document(swarm(23), dot(300, name="  "), TICKS),
+        r"declares an empty data-name",
+    )
 
     # ── Tick lies ─────────────────────────────────────────────────────────
     h.expect_finding(
@@ -423,6 +442,41 @@ def run_cases(h: Harness) -> int:
     h.expect_clean(
         "text-transform in CSS is styling, not movement",
         "<style>.label { text-transform: uppercase; }</style>" + honest(),
+    )
+    # A transform reaches the renderer by three carriers, and the attribute is
+    # only the most visible one. An inline `style="transform: …"` moved a dot,
+    # a bound label, a tick and an ancestor group past every coordinate check
+    # here and reported clean (review of PR #142).
+    h.expect_finding(
+        "an inline style transform on a dot is rejected",
+        document(swarm(23),
+                 dot(300, extra='style="transform: translateX(80px)"'), TICKS),
+        r"the dot for value 300 carries style=",
+    )
+    h.expect_finding(
+        "an inline style transform on a bound label is rejected",
+        document(swarm(23), dot(300, name="req-a"), TICKS,
+                 label("req-a", cx(300),
+                       extra='style="transform: translate(40px, 0)"')),
+        r"a bound label .* carries style=",
+    )
+    h.expect_finding(
+        "an inline style transform on an axis tick is rejected",
+        document(swarm(), tick(0),
+                 tick(400, extra='style="transform: translateX(60px)"')),
+        r"a bound tick .* carries style=",
+    )
+    h.expect_finding(
+        "an inline style transform on an ancestor <g> moves every mark inside it",
+        document('  <g style="transform: translateY(40px)">\n', swarm(),
+                 "  </g>\n", TICKS),
+        r"an ancestor <g>/<svg> style transform",
+    )
+    h.expect_clean(
+        "text-transform in an inline style is styling, not movement",
+        document(swarm(23), dot(300, name="req-a"), TICKS,
+                 label("req-a", cx(300),
+                       extra='style="text-transform: uppercase"')),
     )
 
     # ── Malformed markup: findings, never tracebacks, never silence ───────
