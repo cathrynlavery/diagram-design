@@ -14,6 +14,12 @@ So the mutations below run the defect in **both directions on both skins**:
 - `darker is larger` over a dark-ink ramp must pass, in the very same words;
 - `lighter is larger` must fail on light paper and pass on dark.
 
+A second gap, raised in review on #156, gets the same treatment: wording the
+grammar cannot parse used to be silently treated as no claim, so the gate was
+widest open exactly where an author phrased things in their own words. The cases
+below pin both halves of the fix - the widened forms are checked against the
+ramp rather than merely accepted, and anything still unparsed fails closed.
+
 Each case is named for exactly what it asserts and nothing more. A case named
 for more than it proves is how a verification gap hides.
 
@@ -352,7 +358,86 @@ def main():
             else:
                 print("OK: rank_declared_on_the_mask_rect_still_joins_the_ramp")
 
-        # 15. Usage errors are exit 2, distinct from a finding.
+        # 15. The fail-open path raised in review on #156: a claim phrased
+        #     outside the grammar was treated as no claim at all. Wording a
+        #     reader receives as directional must never pass unchecked.
+        for label, phrasing in (
+            ("comma_correlative", "the larger the cell, the darker it is"),
+            ("passive_voice", "bigger cells are painted darker"),
+        ):
+            fixture = light_source.replace(SHIPPED_KEY, "Other continents · " + phrasing, 1)
+            code, output = run(write(directory, "unparsed-{}.html".format(label), fixture))
+            if code != 1:
+                failures.append(
+                    "unparseable_directional_wording_fails_closed[{}]: exit {} - {}".format(
+                        label, code, output.strip()
+                    )
+                )
+            elif "no supported sentence form binds it" not in output:
+                failures.append(
+                    "unparseable_directional_wording_fails_closed[{}]: finding does not name "
+                    "the parse failure - {}".format(label, output.strip())
+                )
+            else:
+                print("OK: unparseable_directional_wording_fails_closed[{}]".format(label))
+
+        # 16. A widened connector must be CHECKED, not merely accepted: one
+        #     phrasing, opposite verdicts on the two skins. Accepting it without
+        #     measuring would trade a silent gap for a silent pass.
+        for label, source, expected in (("light", light_source, 0), ("dark", dark_source, 1)):
+            fixture = source.replace(
+                SHIPPED_KEY, "Other continents · darker represents larger", 1
+            )
+            code, output = run(write(directory, "represents-{}.html".format(label), fixture))
+            if code != expected:
+                failures.append(
+                    "darker_represents_larger_passes_on_light_and_fails_on_dark[{}]: exit {} "
+                    "- {}".format(label, code, output.strip())
+                )
+            else:
+                print(
+                    "OK: darker_represents_larger_passes_on_light_and_fails_on_dark[{}]".format(
+                        label
+                    )
+                )
+
+        # 17. One correct sentence must not launder an unparsed one beside it,
+        #     which is why overlap is judged per span rather than per element.
+        mixed = light_source.replace(
+            SHIPPED_KEY,
+            "Other continents · stronger contrast is larger. Bigger cells are painted darker.",
+            1,
+        )
+        code, output = run(write(directory, "mixed.html", mixed))
+        if code != 1:
+            failures.append(
+                "bound_claim_does_not_excuse_unparsed_wording_beside_it: exit {} - {}".format(
+                    code, output.strip()
+                )
+            )
+        else:
+            print("OK: bound_claim_does_not_excuse_unparsed_wording_beside_it")
+
+        # 18. The backstop is a proximity rule, not a word blocklist. A tone word
+        #     and a magnitude word far apart in one sentence are not a claim;
+        #     flagging them would make the gate unusable and get it switched off.
+        distant = light_source.replace(
+            SHIPPED_KEY,
+            "Darker cells sit to the right of the layout, while the source line below the "
+            "rule states a larger total",
+            1,
+        )
+        code, output = run(write(directory, "distant.html", distant))
+        if code != 0:
+            failures.append(
+                "tone_word_far_from_magnitude_word_is_not_a_claim: exit {} - {}".format(
+                    code, output.strip()
+                )
+            )
+        else:
+            print("OK: tone_word_far_from_magnitude_word_is_not_a_claim")
+
+        # 19. Usage errors are exit 2, distinct from a finding.
         code, output = run(directory / "does-not-exist.html")
         if code != 2:
             failures.append("missing_file_is_a_usage_error: exit {} - {}".format(code, output.strip()))

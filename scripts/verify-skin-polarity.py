@@ -53,6 +53,15 @@ rank-bearing ramp members, a rank or opacity order that is not strictly
 monotonic, or an axis whose direction measures flat - is a finding, not a pass.
 An unverifiable claim is the state this defect shipped in.
 
+A claim the grammar cannot *parse* is unverifiable in exactly the same way, so
+it fails too. A tone word sitting within six words of a magnitude word is read
+as a directional claim; if no supported sentence form binds it, the file is
+reported rather than passed. Without that backstop the gate would be widest
+open precisely where an author phrased the claim in their own words - and the
+narrower the grammar, the quieter the hole. Widening the vocabulary alone
+cannot fix this: there is always one more phrasing, and every one of them would
+have been silently exempt.
+
 Usage:
     python3 scripts/verify-skin-polarity.py --all
     python3 scripts/verify-skin-polarity.py skills/diagram-design/assets/example-treemap-dark.html
@@ -121,15 +130,26 @@ TONE_TERMS = (
 TONE_ALT = "|".join(term[0] for term in TONE_TERMS)
 
 MAGNITUDE_TERMS = (
-    (r"larger|largest|bigger|biggest|greater|greatest|more|higher|longer|taller", +1),
-    (r"smaller|smallest|lesser|less|fewer|fewest|lower|shorter", -1),
+    (
+        r"largest|larger|biggest|bigger|greatest|greater|highest|higher|"
+        r"longest|longer|tallest|taller|most|more",
+        +1,
+    ),
+    (
+        r"smallest|smaller|fewest|fewer|lowest|lower|shortest|shorter|"
+        r"lesser|least|less",
+        -1,
+    ),
 )
 MAGNITUDE_ALT = "|".join(term[0] for term in MAGNITUDE_TERMS)
 
 # `X is Y` and its mirror `Y is X` assert the same relation, so both are read.
 # The optional intervening words let `darker means a larger share` bind without
 # letting the two halves drift into separate sentences.
-CONNECTOR = r"(?:is|are|was|were|means?|equals?|indicates?|shows?|=|->|→)"
+CONNECTOR = (
+    r"(?:is|are|was|were|means?|equals?|indicates?|shows?|represents?|denotes?|"
+    r"marks?|signals?|reads as|maps to|stands for|=|->|→)"
+)
 CLAIM_RE = re.compile(
     r"\b(?P<tone>" + TONE_ALT + r")\b(?:\s+\w+){0,2}?\s+" + CONNECTOR + r"\s+"
     r"(?:the\s+|a\s+|an\s+)?(?P<magnitude>" + MAGNITUDE_ALT + r")\b",
@@ -138,6 +158,20 @@ CLAIM_RE = re.compile(
 MIRROR_RE = re.compile(
     r"\b(?P<magnitude>" + MAGNITUDE_ALT + r")\b(?:\s+\w+){0,2}?\s+" + CONNECTOR + r"\s+"
     r"(?:the\s+|a\s+|an\s+)?(?P<tone>" + TONE_ALT + r")\b",
+    re.IGNORECASE,
+)
+
+# The backstop. Deliberately loose where the grammars above are strict: any tone
+# word within six words of a magnitude word reads as a directional claim to a
+# human, whether or not a supported sentence form binds it. Six words spans the
+# natural constructions ("the larger the cell, the darker it is") without
+# reaching across a sentence boundary into unrelated copy. Measured across every
+# shipped asset it flags nothing the strict grammars already bind, so it costs no
+# false positives and converts the silent gap into a finding.
+LOOSE_GAP = r"(?:\W+\w+){0,6}?\W+"
+LOOSE_CLAIM_RE = re.compile(
+    r"\b(?:" + TONE_ALT + r")\b" + LOOSE_GAP + r"(?:" + MAGNITUDE_ALT + r")\b"
+    r"|\b(?:" + MAGNITUDE_ALT + r")\b" + LOOSE_GAP + r"(?:" + TONE_ALT + r")\b",
     re.IGNORECASE,
 )
 
@@ -171,15 +205,20 @@ class Member:
 class Claim:
     """A directional tone assertion found in rendered copy."""
 
-    __slots__ = ("axis", "tone_dir", "magnitude_dir", "phrase", "copy", "offset")
+    __slots__ = (
+        "axis", "tone_dir", "magnitude_dir", "phrase", "copy", "offset", "span"
+    )
 
-    def __init__(self, axis, tone_dir, magnitude_dir, phrase, copy, offset):
+    def __init__(self, axis, tone_dir, magnitude_dir, phrase, copy, offset, span):
         self.axis = axis
         self.tone_dir = tone_dir
         self.magnitude_dir = magnitude_dir
         self.phrase = phrase
         self.copy = copy
         self.offset = offset
+        # Span within `copy`, so an unbound directional phrase elsewhere in the
+        # same sentence is not excused by this one having parsed.
+        self.span = span
 
     @property
     def expected(self):
@@ -397,20 +436,58 @@ def parse_claims(source):
                     continue
                 seen.add(key)
                 claims.append(
-                    Claim(axis, tone_dir, magnitude, hit.group(0), copy, match.start())
+                    Claim(
+                        axis, tone_dir, magnitude, hit.group(0), copy,
+                        match.start(), hit.span(),
+                    )
                 )
     return claims
+
+
+def find_unparsed(source, claims):
+    """Directional wording no supported sentence form bound.
+
+    Overlap is judged per span, not per element: a sentence that binds one claim
+    must not excuse a second, differently-phrased one beside it.
+    """
+    bound = {}
+    for claim in claims:
+        bound.setdefault(claim.offset, []).append(claim.span)
+
+    unparsed = []
+    for match in COPY_RE.finditer(source):
+        copy = plain(match.group("body"))
+        if not copy:
+            continue
+        spans = bound.get(match.start(), [])
+        for hit in LOOSE_CLAIM_RE.finditer(copy):
+            start, end = hit.span()
+            if any(start < known_end and known_start < end for known_start, known_end in spans):
+                continue
+            unparsed.append((hit.group(0), copy, match.start()))
+    return unparsed
 
 
 def check(path):
     """(findings, made_a_claim) for one file."""
     source = path.read_text(encoding="utf-8")
     claims = parse_claims(source)
-    if not claims:
+    unparsed = find_unparsed(source, claims)
+    if not claims and not unparsed:
         # Nothing is asserted, so nothing can contradict the ramp.
         return [], False
 
     findings = []
+    for phrase, copy, offset in unparsed:
+        findings.append(
+            '{}:{}: copy reads as a directional tone claim - "{}" in "{}" - but no '
+            "supported sentence form binds it, so it would go unchecked. Rephrase it "
+            "as <tone> <is|means|represents> <magnitude> (\"stronger contrast is "
+            "larger\"), or separate the two words so it no longer reads as a "
+            "claim".format(path.name, line_of(source, offset), phrase, excerpt(copy))
+        )
+    if not claims:
+        return findings, True
     paper = resolve_paper(source)
     if paper is None:
         for claim in claims:
