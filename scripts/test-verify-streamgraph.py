@@ -477,6 +477,31 @@ def run_cases(h):
         r"prints more than one numeric token",
     )
 
+    # The wrong-name case: data-layer and data-total both stay correct, so
+    # every numeric check passes and only the string a reader actually sees is
+    # wrong. This is the shape a legend lies in.
+    h.expect_only_one(
+        "a legend entry printing another layer's name is reported",
+        document(figure()).replace(
+            'y="496">Docs · 30 min<', 'y="496">Unit · 30 min<', 1),
+        r"legend entry for 'Docs' prints 'Unit · 30 min', which does not name",
+    )
+
+    h.expect_only_one(
+        "a legend entry naming two layers at once is reported",
+        document(figure()).replace(
+            'y="496">Docs · 30 min<', 'y="496">Docs and Unit · 30 min<', 1),
+        r"legend entry for 'Docs' also prints 'Unit'",
+    )
+
+    # And the check must not tighten into "the name and nothing else": the
+    # shipped entries annotate with · focal and · paused.
+    h.expect_clean(
+        "a legend entry may annotate beyond its layer name and its total",
+        document(figure()).replace(
+            'y="496">Docs · 30 min<', 'y="496">Docs · 30 min · paused<', 1),
+    )
+
     # Period caption bindings.
     h.expect_finding(
         "a missing period caption is reported",
@@ -631,6 +656,50 @@ def run_cases(h):
         "a figure with a single verifiable layer fails closed",
         document(figure(rows=ROWS[:1])),
         r"declares 1 verifiable layer",
+    )
+
+    # 8. Duplicate attributes are read the way the browser reads them.
+    # HTML drops a repeated attribute and keeps the first, so a last-wins
+    # reader validates bytes that are not in the document. Chromium confirms
+    # it on the shipped example: append a second d and the parsed DOM keeps
+    # d="M 0 0 Z" while the real path is absent.
+    h.check(
+        "attrs_of keeps the first of a duplicated attribute",
+        verify.attrs_of(' d="first" data-x="1" d="second" data-x="2"')
+        == {"d": "first", "data-x": "1"},
+        detail=repr(verify.attrs_of(' d="first" d="second"')),
+    )
+
+    h.expect_finding(
+        "a duplicated d is read first-wins, so an invalid first d is reported",
+        document(figure()).replace(' d="', ' d="M 0 0 Z" d="', 1),
+        r"layer 'Docs'.s path must contain exactly one L",
+    )
+
+    h.expect_only_one(
+        "a duplicated data-values is read first-wins, so a dishonest first list "
+        "is reported",
+        document(figure()).replace(
+            'data-values="8,9,7,6,0,0"',
+            'data-values="0,0,6,7,9,8" data-values="8,9,7,6,0,0"', 1),
+        r"'Docs' draws .* thickness at period",
+    )
+
+    h.expect_finding(
+        "a duplicated data-total is read first-wins, so a dishonest first total "
+        "is reported",
+        document(figure()).replace(
+            'data-total="30"', 'data-total="34" data-total="30"', 1),
+        r"'Docs' declares a total of 34 but its values sum to 30",
+    )
+
+    # The rule is first-wins, not "a repeated attribute is an error": when the
+    # first value is the honest one the browser draws an honest figure, and so
+    # this checker must stay silent.
+    h.expect_clean(
+        "a duplicated attribute whose first value is honest still passes",
+        document(figure()).replace(
+            ' fill="#2d3142"/>', ' d="M 0 0 Z" fill="#2d3142"/>', 1),
     )
 
     # ── The fixture-isolation fix, held in place ──────────────────────────

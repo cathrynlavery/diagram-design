@@ -38,13 +38,20 @@ Seven invariants, in the spirit of ADR 0005 and the slopegraph checker:
    anything else is refused rather than half-parsed.
 
 6. LABELS BOUND TO MEANING - each legend entry binds its layer and its printed
-   total, and the total must equal the sum of that layer's declared values.
-   Each period caption binds its column index and its visible text. Unbound,
-   captions can be exchanged or a layer quietly dropped from the legend.
+   total, the total must equal the sum of that layer's declared values, and the
+   entry's visible text must name the layer it binds and no other. Each period
+   caption binds its column index and its visible text. Unbound, captions can be
+   exchanged or a layer quietly dropped from the legend - and a right datum under
+   a wrong string is still a wrong figure: an entry reading one layer's name over
+   another's data-layer clears every numeric check and labels the wrong band.
 
 7. FAIL CLOSED - a file that presents as a streamgraph but yields nothing
    parseable is a finding, never a pass. A checker that reports OK because it
    found nothing to compare is the bug, not the gate.
+
+Attributes are read the way a browser reads them: on a repeated attribute the
+first occurrence wins and the rest are not in the document at all. See
+`attrs_of` - a last-wins reader validates bytes the browser discarded.
 
 The basis for geometry is the `data-values` list each layer's path declares,
 never the rendered text. A layer whose legend entry is missing stays in the
@@ -143,7 +150,22 @@ def blank_comments(source: str) -> str:
 
 
 def attrs_of(raw: str) -> dict:
-    return {m.group("name"): m.group("value") for m in ATTR_RE.finditer(raw)}
+    """Attributes as the browser reads them: on a repeat, the FIRST wins.
+
+    HTML parsing drops a duplicate attribute rather than overwriting the one
+    already on the token, so a second `d` on a path is not merely ignored -
+    it is not in the document at all. A dict comprehension does the opposite,
+    and that gap is a fail-open every caller inherits: a path carrying an
+    invalid first `d` and a valid second renders the invalid geometry while a
+    last-wins reader checks, and passes, bytes the browser threw away.
+    Confirmed in Chromium against the shipped example - the parsed DOM keeps
+    `d="M 0 0 Z"` and the real path is absent. The fix belongs here, at the
+    one place attributes are read, not at whichever call sites noticed it.
+    """
+    attrs = {}
+    for match in ATTR_RE.finditer(raw):
+        attrs.setdefault(match.group("name"), match.group("value"))
+    return attrs
 
 
 def plain(body: str) -> str:
@@ -571,6 +593,26 @@ def check_controls(layers: list, findings: list, source: str, name: str) -> None
             )
 
 
+def layers_named_in(body: str, names) -> set:
+    """Which declared layer names the visible text actually prints.
+
+    Longest candidate first at each position, so a layer called "Unit" is
+    not reported as appearing inside a sibling called "Unit tests".
+    """
+    ordered = sorted(names, key=len, reverse=True)
+    found = set()
+    index = 0
+    while index < len(body):
+        for candidate in ordered:
+            if candidate and body.startswith(candidate, index):
+                found.add(candidate)
+                index += len(candidate)
+                break
+        else:
+            index += 1
+    return found
+
+
 def check_legend(layers: list, source: str, findings: list, name: str) -> None:
     """Every layer in the legend with its total; every total a sum, not a typo."""
     declared = {layer.name: layer for layer in layers}
@@ -635,6 +677,29 @@ def check_legend(layers: list, source: str, findings: list, name: str) -> None:
                 "%s:%d: the legend entry for %r prints %r but declares %g — the "
                 "label and the binding must state one number"
                 % (name, line_of(source, offset), layer.name, body[:28], total)
+            )
+
+        # The number is bound; the NAME must be bound too. An entry reading
+        # "Unit · 688 min" above data-layer="End-to-end" with End-to-end's
+        # real total satisfies every check above and still hands the reader
+        # the wrong band. A hidden datum being right is not the figure being
+        # right - the visible string is what anyone actually reads.
+        printed = layers_named_in(body, declared)
+        if layer.name not in printed:
+            findings.append(
+                "%s:%d: the legend entry for %r prints %r, which does not name "
+                "that layer — bind the visible name as well as the number, or "
+                "an entry can label the wrong band while its data-layer and its "
+                "total stay right"
+                % (name, line_of(source, offset), layer.name, body[:28])
+            )
+        elif printed - {layer.name}:
+            findings.append(
+                "%s:%d: the legend entry for %r also prints %s — one entry names "
+                "one band, or the reader cannot tell which band it labels"
+                % (name, line_of(source, offset), layer.name,
+                   ", ".join(repr(other)
+                             for other in sorted(printed - {layer.name})))
             )
 
 

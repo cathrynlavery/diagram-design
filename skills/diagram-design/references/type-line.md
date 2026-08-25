@@ -259,7 +259,7 @@ Not for: exact per-period values (the reader gets shape, not numbers — use a *
 <text data-layer="Docs" data-total="76" x="808" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Docs · 76 min · paused</text>
 ```
 
-What the checker holds against those bindings: every layer's on-curve vertices sit at the shared period columns; per-period thickness matches `data-values` on one shared scale; layers tile with no gap or overlap; the envelope stays centred on one midline; control points sit where Catmull-Rom at 1/6 chord puts them (so the curve between vertices is determined by the vertices, not free to editorialise); the legend total matches both its printed text and the sum of the declared values; and each period caption sits on its own column reading exactly its `data-period`. Paths must use plain absolute `M`/`C`/`L`/`Z` — anything else is refused rather than half-parsed, and **no `transform`** may touch a layer path, a bound label, or an ancestor group, for the same reason as the slopegraph: the checker reads raw coordinates.
+What the checker holds against those bindings: every layer's on-curve vertices sit at the shared period columns; per-period thickness matches `data-values` on one shared scale; layers tile with no gap or overlap; the envelope stays centred on one midline; control points sit where Catmull-Rom at 1/6 chord puts them (so the curve between vertices is determined by the vertices, not free to editorialise); each legend entry names its own layer and no other, and its total matches both its printed text and the sum of the declared values; and each period caption sits on its own column reading exactly its `data-period`. Paths must use plain absolute `M`/`C`/`L`/`Z` — anything else is refused rather than half-parsed, and **no `transform`** may touch a layer path, a bound label, or an ancestor group, for the same reason as the slopegraph: the checker reads raw coordinates.
 
 #### Anti-patterns
 
@@ -272,7 +272,7 @@ What the checker holds against those bindings: every layer's on-curve vertices s
 - Text on a layer fill, or a layer name carrying digits.
 - Moving a vertex off its true value to tame smoothing overshoot or open room for an annotation.
 - A `transform` on a layer path, a bound label, an ancestor group, or in CSS.
-- An unbound visible string: a period caption or legend total with no attribute stating the same thing.
+- An unbound visible string: a period caption, a legend name or a legend total with no attribute stating the same thing. An entry printing one layer's name above another's `data-layer` satisfies every number in the figure and still hands the reader the wrong band.
 
 ## Examples
 
