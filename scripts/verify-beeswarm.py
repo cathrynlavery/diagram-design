@@ -36,16 +36,27 @@ Nine invariants:
 
 5. AT MOST ONE ACCENT DOT - one focal claim per figure, on either skin.
 
-6. UNTRANSFORMED GEOMETRY - every coordinate read here is a raw attribute,
-   so anything that moves a mark afterwards invalidates the check that
-   passed. Three carriers do that: a `transform` attribute, an inline
-   `style="transform: ..."`, and a rule in a <style> block - on a dot, on a
-   bound label or tick, or on an ancestor. Covering only the attribute is
-   what let `style="transform: translateX(...)"` slide a dot past every
-   position check and still report clean. Transforms are rejected rather
-   than resolved, as in verify-slopegraph.py: a partial implementation of
-   the SVG transform stack is worse than an honest refusal, because it
-   looks like coverage.
+6. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute,
+   so anything that positions a mark afterwards invalidates the check that
+   passed. Two axes, and this check has been widened along both:
+
+   CARRIER - a `transform` attribute, an inline `style="..."`, or a rule in
+   a <style> block, on a dot, on a bound label or tick, or on an ancestor.
+   Reading the attribute alone let `style="transform: translateX(...)"`
+   slide a dot past every position check and still report clean.
+
+   PROPERTY - `transform:` is one of four spellings. CSS Transforms Level 2
+   splits it into `translate`/`rotate`/`scale`, which compose with it, so
+   `style="translate: 80px 0"` moved a mark with the word "transform" never
+   appearing. The SVG geometry properties (cx/cy/r/x/y) are shorter still:
+   CSS beats the presentation attribute, so a rule replaces the very number
+   verified here. CSS_MOVES_MARK_RE carries the full set.
+
+   Rejected rather than resolved, as in verify-slopegraph.py: a partial
+   implementation of the SVG transform stack is worse than an honest
+   refusal, because it looks like coverage. The enumeration is the weak
+   point and it is named as such - a property nobody here thought of is a
+   door, which is why the set is spelled out at its definition.
 
 7. BOUND LABELS, BOTH WAYS, ON A UNIQUE NAME - a dot that declares data-name
    has exactly one label bound to it and vice versa; the visible text matches
@@ -118,9 +129,34 @@ NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
-# `transform:` but not `text-transform:`. The full-editorial template uses the
-# latter, so an unguarded pattern would report every editorial variant.
-CSS_TRANSFORM_RE = re.compile(r"(?<![\w-])transform\s*:", re.IGNORECASE)
+# Every CSS property that can move or resize a mark WITHOUT touching the
+# attributes this checker reads. The enumeration IS the invariant, and it has
+# already been wrong twice: `transform:` alone missed `style="transform: ..."`
+# entirely, and once that was fixed `style="translate: 80px 0"` walked past it
+# too, because CSS Transforms Level 2 splits the transform into four separate
+# properties. Three families reach a mark:
+#
+#   transform / translate / rotate / scale   the four transform properties;
+#       the individual three compose WITH `transform`, so each is its own door
+#   cx / cy / r / x / y                      SVG geometry properties. CSS wins
+#       over the presentation attribute, so a rule here replaces the very
+#       number that was verified - a more direct lie than any transform
+#   offset-path / -distance / -position      CSS motion path, which places the
+#       element somewhere else entirely
+#
+# Anchored to a declaration start, so `text-transform:` (the full-editorial
+# skin uses it) and `--custom:` never match, and the `rotate` inside
+# `transform: rotate(45deg)` is read once as the property and never as the
+# function in its value. A vendor prefix is optional so `-webkit-transform:`
+# is not a free pass.
+CSS_MOVES_MARK_RE = re.compile(
+    r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
+    r"(?P<prop>transform|translate|rotate|scale"
+    r"|cx|cy|r|x|y"
+    r"|offset-(?:path|distance|position))"
+    r"\s*:",
+    re.IGNORECASE,
+)
 TAG_RE = re.compile(r"<[^>]+>")
 # The COMPLETE numeric token an author may print: sign, comma-grouped
 # thousands, decimals, leading-dot decimals, exponents. Matching only the
@@ -309,8 +345,10 @@ def transform_carrier(attrs: dict):
     if "transform" in attrs:
         return "transform=%r" % attrs["transform"]
     style = attrs.get("style")
-    if style is not None and CSS_TRANSFORM_RE.search(style):
-        return "style=%r" % style
+    if style is not None:
+        found = CSS_MOVES_MARK_RE.search(style)
+        if found is not None:
+            return "style=%r (the %s property)" % (style, found.group("prop").lower())
     return None
 
 
@@ -457,14 +495,15 @@ def check_transforms(source: str, findings: list, name: str) -> None:
                       % (kind, plain(match.group("body"))[:20]))
 
     for match in STYLE_RE.finditer(source):
-        found = CSS_TRANSFORM_RE.search(match.group("body"))
+        found = CSS_MOVES_MARK_RE.search(match.group("body"))
         if found:
             findings.append(
-                "%s:%d: a CSS `transform` declaration — this checker cannot "
-                "tell which marks it applies to, and a transform on verified "
+                "%s:%d: a CSS `%s` declaration — this checker cannot tell "
+                "which marks it applies to, and one that positions verified "
                 "geometry invalidates every coordinate here. Remove it, or "
                 "bake the offset into the coordinates"
-                % (name, line_of(source, match.start("body") + found.start()))
+                % (name, line_of(source, match.start("body") + found.start()),
+                   found.group("prop").lower())
             )
 
 

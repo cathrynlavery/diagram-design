@@ -170,7 +170,7 @@ What each binding buys, and what it costs to omit:
 
 `scripts/verify-beeswarm.py` derives the value scale from the dots themselves, requires dots sharing a value to share a position, refuses any overprinted pair, holds every dot to one radius and every non-focal dot to one fill, caps the accent at one dot and the labels at six, requires every `data-name` to be non-empty and unique, and checks every bound label and tick against the mark it describes; `scripts/test-verify-beeswarm.py` proves each check in both polarities and pins the sibling scope treaty in both directions.
 
-**No `transform` on any of it, by any carrier.** The checker reads raw `cx`/`cy`/`r` and `x`/`y` attributes, so anything that moves a mark afterwards invalidates the check that passed. All three carriers are refused — the `transform` attribute, an inline `style="transform: …"`, and a rule in a `<style>` block — on a dot, on a bound label or tick, or on an ancestor `<g>`/`<svg>`. Bake the offset into the coordinates.
+**Nothing may position a mark except its own attributes.** The checker reads raw `cx`/`cy`/`r` and `x`/`y`, so anything applied afterwards invalidates the check that passed. Every carrier is refused — the `transform` attribute, an inline `style="…"`, and a rule in a `<style>` block — on a dot, on a bound label or tick, or on an ancestor `<g>`/`<svg>`. So is every positioning property, not just `transform`: the Level 2 individual properties `translate`/`rotate`/`scale`, the SVG geometry properties `cx`/`cy`/`r`/`x`/`y` (CSS beats the presentation attribute), and CSS motion path. Bake the offset into the coordinates. `line-height`, `color` and font declarations are untouched — they do not move anything.
 
 #### Anti-patterns
 
@@ -180,7 +180,7 @@ What each binding buys, and what it costs to omit:
 - Meaning smuggled into the swarm axis: sorting the dodge by a second variable, or a midline drawn as if it were a scale.
 - A hue per group instead of one ink plus a single accent.
 - Labelling more than the focal dot and a handful of outliers.
-- A `transform` on a dot, a bound label, a tick or an ancestor group — as an attribute, as an inline `style="transform: …"`, or as a CSS rule.
+- Positioning a dot, a bound label, a tick or an ancestor group from CSS — `transform`, `translate`, `rotate`, `scale`, a geometry property (`cx`/`cy`/`r`/`x`/`y`) or a motion path — whether as an attribute, an inline `style`, or a rule in a `<style>` block.
 - Two dots wearing the same `data-name`, or an empty one: a name that identifies two marks identifies neither.
 - An unbound visible string: a label or an axis tick with no attribute stating the same thing.
 

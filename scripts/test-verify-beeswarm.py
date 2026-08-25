@@ -478,6 +478,70 @@ def run_cases(h: Harness) -> int:
                  label("req-a", cx(300),
                        extra='style="text-transform: uppercase"')),
     )
+    # CSS Transforms Level 2 splits the transform into four properties, so
+    # `transform:` is one of four spellings and the other three moved a mark
+    # with the word "transform" never appearing (greptile on PR #142).
+    h.expect_finding(
+        "an inline translate on a dot is rejected",
+        document(swarm(23),
+                 dot(300, extra='style="translate: 80px 0"'), TICKS),
+        r"the dot for value 300 carries style=.*the translate property",
+    )
+    h.expect_finding(
+        "an inline rotate on a bound label is rejected",
+        document(swarm(23), dot(300, name="req-a"), TICKS,
+                 label("req-a", cx(300), extra='style="rotate: 45deg"')),
+        r"a bound label .* carries style=.*the rotate property",
+    )
+    h.expect_finding(
+        "an inline scale on an axis tick is rejected",
+        document(swarm(), tick(0),
+                 tick(400, extra='style="scale: 2"')),
+        r"a bound tick .* carries style=.*the scale property",
+    )
+    h.expect_finding(
+        "an inline translate on an ancestor <g> moves every mark inside it",
+        document('  <g style="translate: 0 40px">\n', swarm(),
+                 "  </g>\n", TICKS),
+        r"an ancestor <g>/<svg> style transform",
+    )
+    h.expect_finding(
+        "a vendor-prefixed inline transform is not a free pass",
+        document(swarm(23),
+                 dot(300, extra='style="-webkit-transform: translateX(80px)"'),
+                 TICKS),
+        r"the dot for value 300 carries style=",
+    )
+    # Geometry properties are the shorter lie: CSS wins over the presentation
+    # attribute, so a rule replaces the very number that was verified.
+    h.expect_finding(
+        "a CSS cx declaration is rejected — it overrides the verified attribute",
+        "<style>circle { cx: 900px; }</style>" + honest(),
+        r"a CSS `cx` declaration",
+    )
+    h.expect_finding(
+        "a CSS translate declaration is rejected",
+        "<style>.dot { translate: 80px 0; }</style>" + honest(),
+        r"a CSS `translate` declaration",
+    )
+    h.expect_finding(
+        "a CSS offset-path declaration is rejected",
+        "<style>.dot { offset-path: path(\'M0,0 L80,0\'); }</style>" + honest(),
+        r"a CSS `offset-path` declaration",
+    )
+    # The house idiom across 37 shipped examples: line-height, color, font.
+    # None of it positions a mark, and firing on it would get this gate
+    # switched off rather than obeyed.
+    h.expect_clean(
+        "line-height and color in an inline style are not movement",
+        document(swarm(23), dot(300, name="req-a"), TICKS,
+                 label("req-a", cx(300),
+                       extra='style="line-height:1.4;color:#2d3142"')),
+    )
+    h.expect_clean(
+        "a CSS transition naming transform is not a transform declaration",
+        "<style>.dot { transition: transform 0.2s; }</style>" + honest(),
+    )
 
     # ── Malformed markup: findings, never tracebacks, never silence ───────
     h.expect_finding(
