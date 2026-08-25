@@ -154,7 +154,7 @@ Same contract as the slopegraph: **every visible string that carries meaning is 
 <text data-role="n" data-value="550" x="960" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">n = 550</text>
 ```
 
-**No `transform` on any verified geometry or bound label, including ancestors** — the checker reads raw attributes, so a transform moves the rendered mark away from the number that was verified. Bake offsets into coordinates. The rotated axis caption is fine; it is neither verified geometry nor a bound label.
+**No `transform` on any verified geometry or bound label, including ancestors** — the checker reads raw attributes, so a transform moves the rendered mark away from the number that was verified. Bake offsets into coordinates. The rotated axis caption is fine; it is neither verified geometry nor a bound label. CSS transforms are judged by reach: a rule whose selector can touch the SVG's marks is rejected, while one scoped to page chrome the SVG never uses (a card hover) is allowed. State `n` once; if it is repeated, every declaration is validated and they must agree.
 
 `scripts/verify-histogram.py --all` gates the shipped examples: equal declared and drawn widths, tiled edges, a shared baseline that the `0` tick sits on, one linear count scale across bars *and* ticks, every printed numeral matching its binding, n equal to the sum, and the marker at its declared value — within half a bin of the binned mean when it claims to be one. `scripts/test-verify-histogram.py` holds the checker itself to both polarities.
 

@@ -177,6 +177,67 @@ bound_transform = mutate("bound-transform",
 case("a transform on verified geometry is a finding",
      any("transform on verified geometry" in f for f in findings_of(bound_transform)))
 
+# ── repeated n declarations (single-slot reading kept only the last one) ─────
+
+n_twice_disagree = mutate("n-twice-disagree",
+                          '<text data-role="n" data-value="550"',
+                          '<text data-role="n" data-value="550" x="700" y="497">n = 550</text>'
+                          '<text data-role="n" data-value="490"')
+n_twice_disagree.write_text(
+    n_twice_disagree.read_text(encoding="utf-8").replace(
+        'data-value="490" x="960" y="497" fill="#4f5d75" font-size="8.5" font-family="\'Geist Mono\', monospace" text-anchor="end">n = 550<',
+        'data-value="490" x="960" y="497" fill="#4f5d75" font-size="8.5" font-family="\'Geist Mono\', monospace" text-anchor="end">n = 490<'),
+    encoding="utf-8")
+case("two n declarations that disagree are a finding",
+     any("n declarations disagree" in f for f in findings_of(n_twice_disagree)))
+case("the wrong duplicate n is also checked against the sum, not shadowed",
+     any("silently dropped or invented" in f for f in findings_of(n_twice_disagree)))
+
+n_twice_agree = mutate("n-twice-agree",
+                       '<text data-role="n" data-value="550"',
+                       '<text data-role="n" data-value="550" x="700" y="497">n = 550</text>'
+                       '<text data-role="n" data-value="550"')
+case("two n declarations that agree are not a finding",
+     findings_of(n_twice_agree) == [],
+     "; ".join(findings_of(n_twice_agree)[:2]))
+
+# ── CSS transform scope: reachability, not document-wide rejection ───────────
+
+css_chrome = mutate("css-chrome",
+                    "svg { width: 100%; min-width: 760px; display: block; }",
+                    "svg { width: 100%; min-width: 760px; display: block; }\n"
+                    "    .frame:hover { transform: translateY(-2px); }")
+case("a CSS transform scoped to page chrome the SVG never uses is allowed",
+     findings_of(css_chrome) == [],
+     "; ".join(findings_of(css_chrome)[:2]))
+
+css_element = mutate("css-element",
+                     "svg { width: 100%; min-width: 760px; display: block; }",
+                     "svg { width: 100%; min-width: 760px; display: block; }\n"
+                     "    text { transform: translate(0, 80px); }")
+case("a CSS transform on an SVG element type is a finding",
+     any("can reach verified geometry" in f for f in findings_of(css_element)))
+
+css_attr = mutate("css-attr",
+                  "svg { width: 100%; min-width: 760px; display: block; }",
+                  "svg { width: 100%; min-width: 760px; display: block; }\n"
+                  "    [data-bin-start] { transform: scaleY(0.5); }")
+case("a CSS transform on an attribute selector is a finding",
+     any("can reach verified geometry" in f for f in findings_of(css_attr)))
+
+css_svg_class = mutate("css-svg-class",
+                       'data-bin-start="0" data-bin-end="100" data-count="18" x="80"',
+                       'class="bin" data-bin-start="0" data-bin-end="100" data-count="18" x="80"')
+css_svg_class.write_text(
+    css_svg_class.read_text(encoding="utf-8").replace(
+        "svg { width: 100%; min-width: 760px; display: block; }",
+        "svg { width: 100%; min-width: 760px; display: block; }\n"
+        "    .bin { transform: translateY(-4px); }"),
+    encoding="utf-8")
+case("a CSS transform on a class the SVG uses is a finding",
+     any("targets a class or id the SVG uses" in f
+         for f in findings_of(css_svg_class)))
+
 # ── fail closed ──────────────────────────────────────────────────────────────
 
 husk = TMP / "example-histogram-husk.html"

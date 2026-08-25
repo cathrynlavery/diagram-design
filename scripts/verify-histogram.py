@@ -38,7 +38,11 @@ Seven invariants:
 6. UNTRANSFORMED GEOMETRY - coordinates are read as raw attributes, so a
    `transform` on verified geometry, on a bound label, or on any group moves
    the rendered mark away from the number that was verified. Transforms are
-   rejected rather than resolved.
+   rejected rather than resolved. CSS transforms are judged by reachability:
+   a rule whose selector can touch the SVG's marks (element types, universal
+   or attribute selectors, classes/ids the SVG uses) is rejected; a rule
+   scoped to chrome the SVG never uses - a card hover, a header easing - is
+   allowed, because rejecting it teaches authors to widen the checker.
 
 7. FAIL CLOSED - a file that presents as a histogram but yields fewer than
    three parseable bins is a finding, never a pass, and `--all` must find the
@@ -276,10 +280,67 @@ def check_transforms(source: str, findings: list, name: str) -> None:
             findings.append("%s:%d: transform on a bound label moves the printed "
                             "number away from where it was verified"
                             % (name, line_of(source, match.start())))
+    check_css_transforms(source, findings, name)
+
+
+CSS_RULE_RE = re.compile(r"(?P<sel>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
+SVG_SPAN_RE = re.compile(r"<svg\b.*?</svg\s*>", re.IGNORECASE | re.DOTALL)
+SVG_ELEMENT_TOKEN_RE = re.compile(
+    r"(?<![\w.#-])(?:svg|g|rect|line|text|circle|path|polygon|polyline|ellipse|tspan)(?![\w-])"
+)
+SEL_CLASS_RE = re.compile(r"\.([-\w]+)")
+SEL_ID_RE = re.compile(r"#([-\w]+)")
+CLASS_ATTR_RE = re.compile(r"""\bclass\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+ID_ATTR_RE = re.compile(r"""\bid\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+
+
+def check_css_transforms(source: str, findings: list, name: str) -> None:
+    """Reject a CSS transform only where it can reach verified geometry.
+
+    A document-wide scan rejected transforms on selectors that cannot touch
+    the SVG at all - a hover lift on an editorial card, say - which teaches
+    authors to widen the checker rather than fix figures. So the question
+    asked here is reachability: a transform-carrying rule is a finding when
+    its selector names an SVG element type, the universal or an attribute
+    selector, or a class/id that the SVG markup actually uses. A rule scoped
+    to classes/ids that never appear inside the SVG cannot move a verified
+    mark and is allowed. A transform this parse cannot attribute to any rule
+    is still a finding - unparseable style is never a pass."""
+    svg_classes: set = set()
+    svg_ids: set = set()
+    for span in SVG_SPAN_RE.finditer(source):
+        for m in CLASS_ATTR_RE.finditer(span.group(0)):
+            svg_classes.update(m.group(1).split())
+        for m in ID_ATTR_RE.finditer(span.group(0)):
+            svg_ids.add(m.group(1))
     for style in STYLE_RE.finditer(source):
-        if CSS_TRANSFORM_RE.search(style.group("body")):
-            findings.append("%s:%d: CSS transform can move verified geometry "
-                            "invisibly to an attribute reader"
+        body = style.group("body")
+        if not CSS_TRANSFORM_RE.search(body):
+            continue
+        attributed = 0
+        for rule in CSS_RULE_RE.finditer(body):
+            if not CSS_TRANSFORM_RE.search(rule.group("body")):
+                continue
+            attributed += 1
+            selector = rule.group("sel")
+            where = "%s:%d" % (name, line_of(source,
+                                             style.start() + rule.start()))
+            if SVG_ELEMENT_TOKEN_RE.search(selector) or "*" in selector \
+                    or "[data-" in selector:
+                findings.append("%s: CSS transform on %r can reach verified "
+                                "geometry; bake offsets into coordinates"
+                                % (where, selector.strip()))
+                continue
+            classes = set(SEL_CLASS_RE.findall(selector))
+            ids = set(SEL_ID_RE.findall(selector))
+            if classes & svg_classes or ids & svg_ids:
+                findings.append("%s: CSS transform on %r targets a class or id "
+                                "the SVG uses; it can move a verified mark"
+                                % (where, selector.strip()))
+        if attributed == 0:
+            findings.append("%s:%d: a CSS transform this checker cannot "
+                            "attribute to any rule - unparseable style is a "
+                            "finding, never a pass"
                             % (name, line_of(source, style.start())))
 
 
@@ -465,8 +526,14 @@ def check_counts(source: str, bins: list, findings: list, name: str) -> None:
 
 
 def check_n(source: str, bins: list, findings: list, name: str) -> None:
+    """Every n declaration is validated, and they must all agree.
+
+    A single-slot reading kept only the last declaration, so a file could
+    print two contradictory sample counts and be judged solely on whichever
+    came later - the earlier one, still visible to the reader, was never
+    compared against anything."""
     total = sum(b.count for b in bins)
-    stated = None
+    stated = []
     for match in TEXT_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
         if attrs.get("data-role") != "n":
@@ -482,16 +549,22 @@ def check_n(source: str, bins: list, findings: list, name: str) -> None:
         elif abs(printed - declared) > VALUE_TOLERANCE:
             findings.append("%s: n label prints %g but declares %g"
                             % (where, printed, declared))
-        stated = (where, declared)
-    if stated is None:
+        stated.append((where, declared))
+    if not stated:
         findings.append("%s: no printed n (data-role=\"n\") - a histogram that "
                         "does not state its n cannot be checked for dropped data"
                         % name)
         return
-    where, declared = stated
-    if abs(declared - total) > VALUE_TOLERANCE:
-        findings.append("%s: n = %g but the bins sum to %g - data has been "
-                        "silently dropped or invented" % (where, declared, total))
+    values = sorted({declared for _, declared in stated})
+    if len(values) > 1:
+        findings.append("%s: %d n declarations disagree (%s) - a reader cannot "
+                        "tell which sample the figure claims"
+                        % (name, len(stated),
+                           ", ".join("%g" % v for v in values)))
+    for where, declared in stated:
+        if abs(declared - total) > VALUE_TOLERANCE:
+            findings.append("%s: n = %g but the bins sum to %g - data has been "
+                            "silently dropped or invented" % (where, declared, total))
 
 
 def check_marker(source: str, bins: list, findings: list, name: str,
