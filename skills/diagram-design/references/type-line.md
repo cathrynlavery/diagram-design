@@ -215,7 +215,7 @@ Not for: exactly two snapshots (that is the **slopegraph** above); magnitude sto
 - **One vertical axis rule per snapshot**, evenly pitched inside the plot, with the label gutters of the slopegraph: names right-aligned ending at `x=272` and first ranks at `x=304` on the left, mirrored from `x=696` (ranks) and `x=728` (names) on the right. The shipped example runs four axes at `x` 320/440/560/680 — the same 360px run as the slopegraph, spent in three segments instead of one.
 - **Rank rows on a fixed pitch.** The shipped grid is `y = 88 + 56 × (rank − 1)`. Rank is ordinal, so — unlike the slopegraph, whose endpoint `y` values are data-scaled and grid-exempt — **every vertex lands exactly on the 4px grid**, and `scripts/verify-bump.py` enforces the row placement with no tolerance at all. There is no honest reason for a vertex to sit off its row.
 - **Straight segments between adjacent snapshots, dots at every vertex** (`r=3`, focal `r=4`). Never splines: a curve between two quarterly snapshots draws a trajectory nobody measured. The draft this variant came from calls them subway curves and bans them outright.
-- **Labels at first and last appearance** — name and rank (`#1`…`#6`, the sigil keeps a rank from reading as a magnitude) at both ends, each on its own series' row.
+- **Labels at first and last appearance** — name and rank (`#1`…`#6`, the sigil keeps a rank from reading as a magnitude) at both ends, each on its own series' row **and in the gutter outboard of the end it names**. Both coordinates are required and both are checked: the row says which series a label belongs to, the column says which *end* of it, and neither implies the other. A first-end label slid along its row into the plot prints every rank correctly and reads against the wrong snapshot.
 - **Snapshot captions** in Geist Mono 9px, centred under each axis, bound with `data-axis` / `data-state` exactly as the slopegraph binds its two.
 - **Series count 4–8, snapshots 3–6.** Two snapshots are a slopegraph; past six the columns compress until rank changes cannot be followed.
 - **No gridlines.** The dots are the readable positions and the axis rules are the columns.
@@ -244,7 +244,7 @@ The binding contract is the slopegraph's, one level up: the path declares its ra
 <text data-axis="0" data-state="Q1" x="320" y="416" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">Q1</text>
 ```
 
-`data-ranks` is the basis of every geometric check, so a series whose labels go missing stays in the verified set and the missing label is itself reported. `scripts/verify-bump.py` covers the grid, the permutations, the segments, the dots, the focus pairing, the label bindings and the captions; `scripts/test-verify-bump.py` proves each check in both polarities.
+`data-ranks` is the basis of every geometric check, so a series whose labels go missing stays in the verified set and the missing label is itself reported. `scripts/verify-bump.py` covers the grid, the permutations, the segments, the dots, the focus pairing, the label bindings, label placement on both axes and the captions; `scripts/test-verify-bump.py` proves each check in both polarities. The gutter x is read off the figure — every label sharing an end and a role must agree on one column — so a resized plot needs no constant changed here.
 
 ## Examples
 

@@ -8,6 +8,13 @@ two series tying at a rank the footnote's tie-break rule forbids, a spline
 invented between quarterly snapshots, a printed rank disagreeing with the
 declared one, a label drawn on a neighbour's row.
 
+The endpoint-placement cases (9b-9g) pin the half of that contract a row
+check cannot see. A label states two things - which series it belongs to
+(its row) and which END of that series (its column) - and the second was
+previously unverified, so a coordinate could be deleted or slid along its
+row and still be certified. Each case names one coordinate and one
+direction, because a case named for more than it proves hides the rest.
+
 The synthetic figures at the end prove the checker reads the FIGURE's own grid
 rather than memorising the shipped layout: a valid bump chart at a different
 top and pitch must pass, and the budget rules must fire on series and snapshot
@@ -40,6 +47,12 @@ FOCAL_D = 'd="M320,88 L440,144 L560,256 L680,368"'
 FOCAL_PATH = ('<path data-series="legacy-http" data-ranks="1,2,4,6" '
               'd="M320,88 L440,144 L560,256 L680,368" fill="none" '
               'stroke="#eb6c36" stroke-width="2.4"/>')
+# The focal series' left-gutter name label, and the gutter it shares with the
+# five other series. The shipped left gutter is x=272 (names) against a first
+# column at x=320; the right gutter mirrors it from x=728.
+FIRST_NAME = ('data-series="legacy-http" data-end="first" data-role="name" '
+              'x="272" y="91.5"')
+FIRST_NAME_GUTTER = 'data-role="name" x="272"' 
 
 
 def invoke(argv):
@@ -224,6 +237,71 @@ def main() -> int:
             source.replace('      <text data-series="legacy-http" data-end="first" data-role="rank" x="304" y="91.5" fill="#4f5d75" font-size="9" font-family="\'Geist Mono\', monospace" text-anchor="end">#1</text>\n', "", 1),
             source, "prints no first rank",
             "a series with no first rank label",
+        )
+
+        # 9b. A coordinate that is absent is not a coordinate that is
+        #     unverified: SVG defaults a missing x or y to 0, so the browser
+        #     draws the label at the edge of the frame. Deleting one used to
+        #     be certified, because the check compared nothing and said OK.
+        case(
+            failures, directory, "label-no-y",
+            source.replace(FIRST_NAME, FIRST_NAME.replace(' y="91.5"', ""), 1),
+            source, "has no readable y",
+            "an endpoint label with no y coordinate",
+        )
+        case(
+            failures, directory, "label-no-x",
+            source.replace(FIRST_NAME, FIRST_NAME.replace(' x="272"', ""), 1),
+            source, "has no readable x",
+            "an endpoint label with no x coordinate",
+        )
+
+        # 9c. Present but unreadable is the same defect wearing an attribute.
+        case(
+            failures, directory, "label-empty-y",
+            source.replace(FIRST_NAME, FIRST_NAME.replace('y="91.5"', 'y=""'), 1),
+            source, "has no readable y",
+            "an endpoint label whose y is present but empty",
+        )
+
+        # 9d. "1e400" parses as a number and overflows to inf, which sits
+        #     further than any tolerance from every real coordinate - so a
+        #     distance test passes it by default unless finiteness is required.
+        case(
+            failures, directory, "label-non-finite-x",
+            source.replace(FIRST_NAME, FIRST_NAME.replace('x="272"', 'x="1e400"'), 1),
+            source, "has no readable x",
+            "an endpoint label whose x overflows to infinity",
+        )
+
+        # 9e. The reported repro: one first-end label slid from its gutter
+        #     toward the middle of the plot. Its row is untouched and every
+        #     rank it prints is still correct, so row proximity alone clears it.
+        case(
+            failures, directory, "label-x-inboard",
+            source.replace(FIRST_NAME, FIRST_NAME.replace('x="272"', 'x="500"'), 1),
+            source, "inboard of the first endpoint",
+            "a first-end label moved toward the middle of the chart",
+        )
+
+        # 9f. The same displacement applied to every name label in the gutter.
+        #     The gutter stays perfectly self-consistent, so only the endpoint
+        #     test can fire - which is what makes it independent of 9g.
+        case(
+            failures, directory, "label-gutter-inboard",
+            source.replace(FIRST_NAME_GUTTER, 'data-role="name" x="500"'),
+            source, "inboard of the first endpoint",
+            "a whole first-end name gutter moved inside the plot",
+        )
+
+        # 9g. And the other direction: one label slid further out. It stays
+        #     outboard of its endpoint, so only its disagreement with the
+        #     gutter its five peers share reveals it.
+        case(
+            failures, directory, "label-off-gutter",
+            source.replace(FIRST_NAME, FIRST_NAME.replace('x="272"', 'x="240"'), 1),
+            source, "gutter its",
+            "a first-end label moved off the gutter its peers share",
         )
 
         # 10. Transforms: on the series, on an ancestor, and from CSS. Raw

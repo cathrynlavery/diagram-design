@@ -31,15 +31,22 @@ Six invariants:
    order, and each snapshot caption sits on the column it names, bound with
    data-axis and data-state exactly as the slopegraph binds its two.
 
-5. LABELS BOUND TO MEANING - each series prints its name and its rank at
-   first and last appearance, each label bound by data-series / data-end /
-   data-role, each printed "#k" agreeing with the declared rank, and each
-   sitting on its own series' row rather than a neighbour's.
+5. LABELS BOUND TO MEANING AND PLACED ON BOTH AXES - each series prints its
+   name and its rank at first and last appearance, each label bound by
+   data-series / data-end / data-role, each printed "#k" agreeing with the
+   declared rank, each sitting on its own series' row rather than a
+   neighbour's, and each in the gutter outboard of the end it names. Row and
+   column answer different questions - WHICH SERIES and WHICH END - so a
+   label with an impeccable row and a deleted or displaced x is misplaced
+   and used to be certified.
 
 6. FAIL CLOSED - zero parseable series, a path that declares data-series but
-   cannot be read, a vertex with no dot, or a transform anywhere near verified
-   geometry is a finding, never a skip. A checker that reports OK because it
-   found nothing to compare is the bug, not the gate.
+   cannot be read, a vertex with no dot, a label coordinate that is absent,
+   empty or non-finite, or a transform anywhere near verified geometry is a
+   finding, never a skip. A checker that reports OK because it found nothing
+   to compare is the bug, not the gate. An absent attribute is the loudest
+   version of this: it is not an unspecified position, it is the browser's
+   default one, and it renders.
 
 WHAT THIS DOES NOT CHECK, deliberately:
 
@@ -62,6 +69,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
 from pathlib import Path
@@ -129,15 +137,23 @@ def attrs_of(raw: str) -> dict:
 
 
 def number(value):
+    """An SVG coordinate, or None when it cannot be placed.
+
+    None covers absent, unparseable AND non-finite, because every caller
+    treats None as "report this" rather than "skip this". "1e400" parses and
+    overflows to inf, which compares further-than-any-tolerance from every
+    real coordinate and would otherwise sail through a naive distance test.
+    """
     if value is None:
         return None
     match = NUM_RE.fullmatch(value.strip())
     if not match:
         return None
     try:
-        return float(match.group(0))
+        parsed = float(match.group(0))
     except ValueError:
         return None
+    return parsed if math.isfinite(parsed) else None
 
 
 def line_of(source: str, offset: int) -> int:
@@ -496,17 +512,29 @@ def collect_bound_labels(source: str, findings: list, name: str) -> dict:
                 % (name, line_of(source, match.start()), end, role, label)
             )
             continue
-        bound[key] = (plain(match.group("body")), number(attrs.get("y")), match.start())
+        bound[key] = (plain(match.group("body")), number(attrs.get("x")),
+                      number(attrs.get("y")), match.start())
     return bound
 
 
 def check_labels(series: list, source: str, findings: list, name: str) -> None:
-    """Names and ranks printed at both ends, bound, agreeing, and on their row."""
+    """Names and ranks printed at both ends, bound, agreeing, and placed.
+
+    Placement is verified on BOTH axes, because each answers a different
+    question and neither implies the other. The row (y) says which series a
+    label belongs to; the column (x) says which END of that series it belongs
+    to. A first-end label slid along its own row into the middle of the plot
+    keeps every rank correct and every row correct while reading against the
+    wrong snapshot - so a row-only check certifies it.
+    """
     bound = collect_bound_labels(source, findings, name)
     declared = {s.name: s for s in series}
+    # check_columns has already established that every series shares these.
+    columns = [x for x, _ in series[0].points]
+    gutters = {}
 
-    for (label, end, role), (body, y, offset) in sorted(
-        bound.items(), key=lambda item: item[1][2]
+    for (label, end, role), (body, x, y, offset) in sorted(
+        bound.items(), key=lambda item: item[1][3]
     ):
         if label not in declared:
             findings.append(
@@ -523,23 +551,56 @@ def check_labels(series: list, source: str, findings: list, name: str) -> None:
             continue
         s = declared[label]
         vertex_y = s.points[0][1] if end == "first" else s.points[-1][1]
+        endpoint_x = columns[0] if end == "first" else columns[-1]
+
+        # Both coordinates must be readable before either can be judged. An
+        # absent x or y is not "unspecified": SVG defaults it to 0, so the
+        # browser draws the label hard against the edge of the frame while a
+        # checker that skips the comparison reports the figure clean. That
+        # skip is invariant 6's named failure, so it is a finding here.
+        unplaced = [axis for axis, value in (("x", x), ("y", y)) if value is None]
+        if unplaced:
+            findings.append(
+                "%s:%d: the %s %s label for series %r has no readable %s — the "
+                "browser falls back to 0 and draws it at the edge of the frame, "
+                "so an unreadable coordinate is a misplaced label, never an "
+                "unchecked one"
+                % (name, line_of(source, offset), end, role, label,
+                   " or ".join(unplaced))
+            )
+            continue
+
+        gutters.setdefault((end, role), []).append((x, label, offset))
+
+        # Column placement: a label inboard of its own endpoint sits over the
+        # plot, beside a snapshot it does not describe.
+        if (end == "first" and x > endpoint_x + GRID_TOLERANCE) or (
+            end == "last" and x < endpoint_x - GRID_TOLERANCE
+        ):
+            findings.append(
+                "%s:%d: the %s %s label for series %r is drawn at x=%g, inboard "
+                "of the %s endpoint at x=%g — a label inside the plot is read "
+                "against whichever snapshot it lands on"
+                % (name, line_of(source, offset), end, role, label, x, end,
+                   endpoint_x)
+            )
+
         # Row placement: nearer another series' same-end vertex than its own
         # means the label renames a line, with every number still correct.
-        if y is not None:
-            own = abs(y - (vertex_y + LABEL_ROW_OFFSET))
-            for other in series:
-                if other.name == label:
-                    continue
-                other_y = other.points[0][1] if end == "first" else other.points[-1][1]
-                if abs(y - (other_y + LABEL_ROW_OFFSET)) < own:
-                    findings.append(
-                        "%s:%d: the %s %s label for series %r is drawn at y=%g, "
-                        "nearer %r's endpoint than its own — a label on the wrong "
-                        "row renames the line"
-                        % (name, line_of(source, offset), end, role, label, y,
-                           other.name)
-                    )
-                    break
+        own = abs(y - (vertex_y + LABEL_ROW_OFFSET))
+        for other in series:
+            if other.name == label:
+                continue
+            other_y = other.points[0][1] if end == "first" else other.points[-1][1]
+            if abs(y - (other_y + LABEL_ROW_OFFSET)) < own:
+                findings.append(
+                    "%s:%d: the %s %s label for series %r is drawn at y=%g, "
+                    "nearer %r's endpoint than its own — a label on the wrong "
+                    "row renames the line"
+                    % (name, line_of(source, offset), end, role, label, y,
+                       other.name)
+                )
+                break
         if role == "rank":
             match = RANK_LABEL_RE.match(body)
             declared_rank = s.ranks[0] if end == "first" else s.ranks[-1]
@@ -573,6 +634,30 @@ def check_labels(series: list, source: str, findings: list, name: str) -> None:
                         "the reader traces a line to an unlabelled end"
                         % (name, line_of(source, s.offset), s.name, end, role)
                     )
+
+    # Every label sharing an end and a role is one gutter, so the figure
+    # declares its own gutter x the way it declares its own rank grid: by
+    # agreement across series, with no constant written down here. The
+    # inboard test above catches a label dragged across its endpoint; this
+    # catches one slid the other way, which stays outboard and keeps its row.
+    # How far out the gutter as a whole sits is a layout question and belongs
+    # to lint-render.py - this gate only requires that there BE one gutter.
+    for (end, role), placed in sorted(gutters.items()):
+        if len(placed) < 2:
+            continue
+        tally = {}
+        for x, _, _ in placed:
+            tally[x] = tally.get(x, 0) + 1
+        gutter = max(sorted(tally), key=lambda value: tally[value])
+        for x, label, offset in placed:
+            if abs(x - gutter) > GRID_TOLERANCE:
+                findings.append(
+                    "%s:%d: the %s %s label for series %r is drawn at x=%g, off "
+                    "the x=%g gutter its %d peers share — one label out of "
+                    "column points at a snapshot of its own"
+                    % (name, line_of(source, offset), end, role, label, x,
+                       gutter, tally[gutter])
+                )
 
 
 def check_captions(series: list, source: str, findings: list, name: str) -> None:
