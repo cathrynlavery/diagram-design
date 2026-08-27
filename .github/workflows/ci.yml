@@ -155,6 +155,16 @@ jobs:
         id: oauth
         run: python scripts/verify-sequence-oauth.py
 
+      - name: Verify semantic-motion verifier
+        if: always()
+        id: semantic_motion_tests
+        run: python scripts/test-verify-semantic-motion.py
+
+      - name: Verify sequence-oauth verifier
+        if: always()
+        id: oauth_tests
+        run: python scripts/test-verify-sequence-oauth.py
+
       - name: Verify draw.io import script
         if: always()
         id: drawio
@@ -327,6 +337,8 @@ jobs:
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semantic-Motion Verifier Tests | ${{ steps.semantic_motion_tests.outcome == 'success' && '✅ Passed' || (steps.semantic_motion_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sequence-OAuth Verifier Tests | ${{ steps.oauth_tests.outcome == 'success' && '✅ Passed' || (steps.oauth_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Draw.io Import Extractor | ${{ steps.drawio.outcome == 'success' && '✅ Passed' || (steps.drawio.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Optional Motion Contract | ${{ steps.motion.outcome == 'success' && '✅ Passed' || (steps.motion.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
