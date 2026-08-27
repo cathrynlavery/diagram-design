@@ -146,6 +146,62 @@ def check_gallery(errors: list[str]) -> None:
     for name in sorted(types):
         if f"example-{name}.html" not in on_disk:
             errors.append(f"gallery tab {name!r} points at a missing example-{name}.html")
+    # Parse eyebrow numbers and parent-type bindings from tab buttons.
+    # Variants (data-parent-type) may share their declared parent's eyebrow
+    # number; uniqueness is enforced only among independent (non-variant) types.
+    tab_eyebrows: dict[str, str] = {}  # data-type → eyebrow number
+    tab_parents: dict[str, str] = {}   # data-type → data-parent-type
+    for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)</span>', source):
+        attrs, eyebrow = m.group(1), m.group(2)
+        tm = re.search(r'data-type="([^"]+)"', attrs)
+        pm = re.search(r'data-parent-type="([^"]+)"', attrs)
+        if tm:
+            tab_eyebrows[tm.group(1)] = eyebrow
+            if pm:
+                tab_parents[tm.group(1)] = pm.group(1)
+    # Enforce uniqueness among independent (non-variant) types.
+    seen_eyebrows: dict[str, str] = {}  # eyebrow → first independent type
+    for t, num in tab_eyebrows.items():
+        if t in tab_parents:
+            continue
+        if num in seen_eyebrows:
+            errors.append(
+                f"gallery has duplicate eyebrow number {num!r} on independent types "
+                f"{seen_eyebrows[num]!r} and {t!r}; check tab order in assets/index.html"
+            )
+        else:
+            seen_eyebrows[num] = t
+    # Enforce that each variant's eyebrow matches its declared parent's.
+    for t, parent in tab_parents.items():
+        if parent not in tab_eyebrows:
+            errors.append(
+                f"gallery tab {t!r} declares data-parent-type={parent!r} "
+                f"but no tab with data-type={parent!r} exists"
+            )
+        elif tab_eyebrows.get(t) != tab_eyebrows[parent]:
+            errors.append(
+                f"gallery tab {t!r} has eyebrow {tab_eyebrows.get(t)!r} but its "
+                f"parent {parent!r} uses {tab_eyebrows[parent]!r}; they must match"
+            )
+    # Detect data-single types so we can skip the three-variant check for them.
+    single_types: set[str] = set()
+    for btn in re.finditer(r"<button[^>]+>", source):
+        tag = btn.group(0)
+        if "data-single" in tag:
+            tm = re.search(r'data-type="([^"]+)"', tag)
+            if tm:
+                single_types.add(tm.group(1))
+    # Verify that every non-single gallery tab has dark and full variants on disk.
+    for name in sorted(types):
+        if name in single_types:
+            continue
+        for variant in ("-dark", "-full"):
+            fname = f"example-{name}{variant}.html"
+            if fname not in on_disk:
+                errors.append(
+                    f"gallery tab {name!r} is missing {fname}; "
+                    "add the variant or mark the tab data-single"
+                )
 
 
 def readme_tree_tokens(markdown: str) -> list[str]:
