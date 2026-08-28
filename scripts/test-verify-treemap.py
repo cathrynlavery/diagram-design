@@ -75,7 +75,8 @@ def main() -> int:
         ("주문 v2.1", 5.0, "Hangul with a version suffix (digits and a period)"),
         ("API 게이트웨이 v2", 9.2, "leading Latin acronym, trailing digit"),
         ("주문（원본）", 6.0, "full-width parentheses are wide, not narrow"),
-        ("한글e\u0301", 2.6, "a decomposed combining acute adds no advance"),
+        ("한글e\u0301", 2.6, "a decomposed combining acute adds no advance (Mn)"),
+        ("한글e\u20dd", 2.6, "an enclosing circle adds no advance (Me)"),
         ("", 0.0, "an empty label costs nothing"),
     ):
         actual = ESTIMATED_ADVANCE(label, False)
