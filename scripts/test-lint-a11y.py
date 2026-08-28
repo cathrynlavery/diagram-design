@@ -474,7 +474,7 @@ def main() -> int:
             "kr-name-stack",
             kr_name_svg.replace(
                 "</svg>",
-                '<text font-family="\'Geist\', \'Apple SD Gothic Neo\', \'Noto Sans KR\', '
+                '<text font-family="\'Geist\', \'Noto Sans KR\', \'Apple SD Gothic Neo\', '
                 '\'Malgun Gothic\', sans-serif">인증 서비스</text>\n</svg>',
             ),
             directory,
@@ -496,7 +496,7 @@ def main() -> int:
         )
         require_pass(
             "kr-css-stack",
-            '<style>text { font-family: "Geist", "Apple SD Gothic Neo", "Noto Sans KR", '
+            '<style>text { font-family: "Geist", "Noto Sans KR", "Apple SD Gothic Neo", '
             '"Malgun Gothic", sans-serif; }</style>\n' + kr_css_svg,
             directory,
         )
