@@ -20,11 +20,11 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 | `paper-2` | Diagram container bg, secondary fill | `#ececec` | `#393e53` |
 | `ink` | Primary text, primary stroke | `#2d3142` (jet-black) | `#f5f5f5` (white-smoke) |
 | `muted` | Secondary text, default arrow stroke | `#4f5d75` (blue-slate) | `#bfc0c0` (silver) |
-| `soft` | Sublabels, boundary labels | `#7a8399` | `#8e98ac` |
+| `soft` | Sublabels, boundary labels | `#5a6580` | `#7a8598` |
 | `rule` | Hairline borders | `rgba(45,49,66,0.12)` | `rgba(245,245,245,0.12)` |
 | `rule-solid` | Stronger borders, baselines | `#bfc0c0` (silver) | `rgba(191,192,192,0.25)` |
-| `accent` | Focal / 1–2 max per diagram | `#eb6c36` (atomic-tangerine) | `#f08a59` |
-| `accent-tint` | Fill for accent-bordered boxes | `rgba(235,108,54,0.08)` | `rgba(240,138,89,0.10)` |
+| `accent` | Focal / 1–2 max per diagram | `#d9542a` (atomic-tangerine) | `#f08a59` |
+| `accent-tint` | Fill for accent-bordered boxes | `rgba(217,84,42,0.08)` | `rgba(240,138,89,0.10)` |
 | `link` | HTTP/API calls, external arrows | `#2e5aa8` | `#6a95d8` |
 
 > **Brand palette source:** this skin maps to a five-color brand palette — `jet-black #2d3142`, `silver #bfc0c0`, `white-smoke #f5f5f5`, `atomic-tangerine #eb6c36`, `blue-slate #4f5d75`. The `soft`, `rule`, and `link` tokens are derived (lighter slate, ink-at-opacity, and a saturated variant in the blue-slate hue family) to cover roles the brand palette doesn't name directly.
