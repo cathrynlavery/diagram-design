@@ -256,7 +256,7 @@ cp skills/diagram-design/assets/template-motion.html my-diagram.html # optional 
 
 ### Semantic patterns and optional motion
 
-When behavior matters, the skill chooses a semantic pattern first and a visual type second. The seven routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, and compensating security layers. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagram-design/references/semantic-patterns.md).
+When behavior matters, the skill chooses a semantic pattern first and a visual type second. The eight routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, compensating security layers, and traceable block decomposition. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagram-design/references/semantic-patterns.md).
 
 Motion is optional and does not create another visual type. [`animation.md`](skills/diagram-design/references/animation.md) defines `none`, `reveal`, `step`, and `loop` modes with a complete static first frame, deterministic timing, and controls when interaction is available. Reduced-motion output shows the complete static frame and hides/disables playback controls. Motion HTML uses the exact reviewed controller from `template-motion.html`; arbitrary or modified inline scripts, remote assets, CSS imports, and executable HTML attributes are rejected. The default is `none`: ordinary output remains static and script-free. [`example-policy-trace-animated.html`](skills/diagram-design/assets/example-policy-trace-animated.html) is the self-contained interactive example.
 
@@ -317,6 +317,7 @@ Diagrams ship as self-contained HTML, but you can export the diagram itself for 
 /export-diagram path/to/diagram.html
 /export-diagram path/to/diagram.html --svg-only
 /export-diagram path/to/diagram.html --png-only --scale=3
+/export-diagram path/to/diagram.html --registry
 ```
 
 **Claude Code:**
@@ -325,6 +326,7 @@ Diagrams ship as self-contained HTML, but you can export the diagram itself for 
 /diagram-design:export-diagram path/to/diagram.html
 /diagram-design:export-diagram path/to/diagram.html --svg-only
 /diagram-design:export-diagram path/to/diagram.html --png-only --scale=3
+/diagram-design:export-diagram path/to/diagram.html --registry
 ```
 
 Or just ask in natural language:
@@ -338,6 +340,8 @@ Or just ask in natural language:
 - **PNG** — rasterizes the diagram via Playwright at 2× by default. One-time setup: `pip install playwright && playwright install chromium`.
 
 Both formats are diagram-only — editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagram-design/references/export.md`](skills/diagram-design/references/export.md) for the full procedure.
+
+- **`--registry`** — for diagrams using the [traceable block decomposition](skills/diagram-design/references/semantic-patterns.md) pattern, also emits `<basename>.registry.json`, a structured projection of every block's `data-block-*` metadata. Combine with either raster format or run alone. See [`skills/diagram-design/references/export-registry.md`](skills/diagram-design/references/export-registry.md).
 
 For motion-enabled HTML, export the explicit final state: open `?motion=static`, wait for `document.fonts.ready`, and confirm the motion root has `data-frame="static"` before capture. Use `?motion=step&step=N` only when a named intermediate frame was requested.
 
@@ -377,6 +381,7 @@ diagram-design/
 │       │   ├── import-mermaid.md    — Mermaid redraw procedure
 │       │   ├── output-spec.md       — format × size × detail level
 │       │   ├── export.md            — SVG / PNG export + sizing
+│       │   ├── export-registry.md   — block-metadata JSON sidecar export
 │       │   ├── type-architecture.md
 │       │   ├── type-flowchart.md
 │       │   ├── type-sequence.md
@@ -457,6 +462,7 @@ it covers all supported grammars, multi-block Markdown, adversarial labels, trus
 behavior, resource caps, named failures, and reference/command wiring.
 
 Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
+Diagrams using the traceable block decomposition pattern get a structural gate on top of that: `python3 scripts/verify-block-registry.py --all` fails CI on a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block in the same file, a cycle in the parent chain, or a block missing `data-block-name` — the same defects that would make `--registry`'s exported JSON (see [`export-registry.md`](skills/diagram-design/references/export-registry.md)) misrepresent the tree it claims to describe. `python3 scripts/test-verify-block-registry.py` keeps that checker honest in both directions.
 Treemaps get a second geometric gate, because their whole claim is that area *is* the encoding: `python3 scripts/verify-treemap.py --all` fails CI when a cell's share of the drawn area doesn't match the value printed inside it, or when a label overruns the cell it names. It measures area error as a *relative* figure — an absolute one passes exactly the small cells most likely to be wrong. `python3 scripts/test-verify-treemap.py` keeps it honest in both directions.
 Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a scanner-visible support path is not shipped inside the skill package, or any command/prompt surface drifts from its routed reference. `python3 scripts/test-verify-docs-sync.py` exercises those newer checks adversarially, including the strict-bundler behavior used by Hermes Agent. The skill also ships `skills/diagram-design/scripts/self_check.py` — a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. Settled design decisions (why one pinned controller, why patterns never add types, the autoplay policy, the SKILL.md byte cap, why label placement is verified geometrically, and why client profiles use marker-first resolution) live as short ADRs in `docs/adr/` — read them before relitigating one, add one when you settle a new policy.
 

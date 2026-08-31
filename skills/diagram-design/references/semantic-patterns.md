@@ -15,6 +15,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 | Which routes cross a trust boundary and which routes are blocked | **Secure paved road** | Architecture |
 | Which controls apply at each enforcement surface | **Governance / control catalog** | Layer stack |
 | How defenses reduce risk and what risk remains | **Compensating security layers** | Layer stack |
+| Which sub-elements a system decomposes into, each independently citable and traced to its implementation | **Traceable block decomposition** | Tree |
 
 ## 1. Fan-in queue / bottleneck
 
@@ -113,6 +114,22 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 **Static fallback:** Show the complete propagation chain: initial risk → mitigation → escaped risk at every layer → final residual risk and response.
 
 **Nearest visual type:** **Layer stack**; use **Nested** when containment boundaries, rather than ordered compensation, carry the meaning.
+
+## 8. Traceable block decomposition
+
+**Selection triggers:** A system or product must decompose into addressable, individually citable sub-elements — each with a stable identifier a reader (or a future filing) can point at directly, not a name alone. The reader needs to trace a specific block to its parent, to what it consumes and produces, and to the code that implements it. This describes *structure* (what the system is made of), not a process — for a sequence of actions, choose a pattern that routes to Flowchart or Swimlane instead.
+
+**Required primitives:** A stable dotted ID per block (e.g. `FC3-001-02`), shown as a compact badge using the existing node-box type-tag chip (SKILL.md §6 "Node box — full pattern") — never as a separate connector-adjacent label. A noun-phrase block name — the structural element itself ("Timeline Engine"), not an action performed on it — in the node's existing name slot. Parent-child structure is Tree's own elbow connector; this pattern adds no new connector semantics or connector labels. At most one short inbound and one short outbound flow-port label per block, in the existing Geist Mono sublabel slot, shown only when both fit without crowding the name — omit by default. Every block's full record — inputs, outputs, constraints, assumptions, and an implementation path — lives in `data-block-*` attributes on the node (`data-block-id`, `data-block-parent`, `data-block-name`, and terse `data-block-input` / `-output` / `-constraint` / `-assumption` / `-impl` values) and, for anything longer than a short phrase, in the sidecar registry (see `export-registry.md`) — never as additional visible diagram text.
+
+**Complexity budget:** Tree's own root+3-tier / 5-per-level caps and the global 9-node ceiling apply as-is — this pattern does not raise them. A hierarchy that needs more splits into a linked set of diagrams, one per subsystem, each independently traceable; the sidecar registry is the layer that reassembles the full graph across files. At most one in/out port-label pair per block when shown at all; constraints and assumptions are never rendered as visible text, only carried in metadata.
+
+**Anti-patterns:** Four-sided ICOM boxes with Input/Control/Output/Mechanism arrows on every side — that is IDEF0's grammar, not this pattern's, and it does not fit Tree's connector rules. Drawing input/output arrows between siblings or cousins — that is a dependency graph's job; route to that type instead if cross-block flow must be drawn. Verb-phrase block names — name the structural element, not an action; if a block is genuinely an activity, it likely belongs in a companion Flowchart or Swimlane diagram, not this tree. An ID badge with no matching `data-block-id`, or a rename not mirrored in the registry. Treating the visible diagram as the complete record — it is a bounded view; the registry is the source of truth for anything not drawn. Labeling the tree connector itself with an ID or name — Tree has no connector-label convention today and this pattern must not invent one.
+
+**Static fallback:** This pattern has no animated form — it is always static; bespoke interaction (click-to-expand, filter-by-ID) is out of this skill's scope entirely (see ADR 0001). Every ID badge, block name, and any shown port label must be legible in the single rendered frame.
+
+**Nearest visual type:** **Tree** — Nested's single-chain containment cannot show two children of one parent; Dependency graph permits multi-parent nodes and cycles this pattern must forbid; Architecture's zones are flat, capped at 3, and explicitly route overflow to Swimlane, not to nested grouping.
+
+**A note on provenance, not a claim of compliance:** "block," noun-phrase naming, and "flow port" are SysML Block Definition Diagram vocabulary, used because this pattern documents structure, the thing SysML's naming convention is for (IDEF0's verb-phrase convention documents *functions* instead — the wrong fit here). This is SysML-*informed* vocabulary applied to Tree's existing layout grammar, not a claim of SysML compliance: no OCL constraints, no XMI interchange, no tool-certified conformance, and no IDEF0 compliance either.
 
 ## Composition rules
 

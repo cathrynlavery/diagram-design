@@ -223,6 +223,16 @@ jobs:
         id: geometry_tests
         run: python scripts/test-verify-geometry.py
 
+      - name: Verify block registry
+        if: always()
+        id: block_registry
+        run: python scripts/verify-block-registry.py --all
+
+      - name: Verify block registry checker
+        if: always()
+        id: block_registry_tests
+        run: python scripts/test-verify-block-registry.py
+
       - name: Verify treemap area fidelity and label fit
         if: always()
         id: treemap
@@ -382,6 +392,8 @@ jobs:
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Block Registry | ${{ steps.block_registry.outcome == 'success' && '✅ Passed' || (steps.block_registry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Block Registry Checker | ${{ steps.block_registry_tests.outcome == 'success' && '✅ Passed' || (steps.block_registry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dumbbell Domain & Contrast | ${{ steps.dumbbell.outcome == 'success' && '✅ Passed' || (steps.dumbbell.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

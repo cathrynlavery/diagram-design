@@ -75,6 +75,7 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 | Trust boundaries plus permitted/forbidden ingress or deploy paths | **Secure paved road** → Architecture |
 | Controls grouped by where they are enforced | **Governance / control catalog** → Layer stack |
 | Defenses compensate for prior gaps and residual risk propagates | **Compensating security layers** → Layer stack |
+| Hierarchical, ID-addressable decomposition needing per-block I/O, constraints, and a code link | **Traceable block decomposition** → Tree |
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
@@ -288,7 +289,7 @@ These six rules are **non-negotiable**. Run the pre-output checklist (§9) to ve
 
    When in doubt, reroute. The exception exists for the narrow case where rerouting is geometrically impossible, not as a shortcut to avoid layout work.
 
-6. **A label mask must not overlap a node drawn after it.** Rule 2 keeps the label off its own connector; this one keeps it off the boxes. Because nodes are painted after labels, a mask that lands partly inside a node is covered by the node fill and the text renders as a fragment sitting on the node border. Place the label on a segment of the connector that runs through open canvas — for a connector leaving a node's right edge, that means clearing the node's `x + width` before the mask starts. A mask fully *inside* a node is a badge chip and is fine; a mask overlapping a zone container is fine too, since zones are painted first. From a repository checkout, verify with `python3 <repo-root>/scripts/verify-geometry.py <file>`.
+6. **A label mask must not overlap a node drawn after it.** Rule 2 keeps the label off its own connector; this one keeps it off the boxes. Because nodes are painted after labels, a mask that lands partly inside a node is covered by the node fill and the text renders as a fragment sitting on the node border. Place the label on a segment of the connector that runs through open canvas — for a connector leaving a node's right edge, that means clearing the node's `x + width` before the mask starts. A mask fully *inside* a node is a badge chip and is fine; a mask overlapping a zone container is fine too, since zones are painted first.
 
 ### Node box — full pattern
 
@@ -487,7 +488,7 @@ Run before producing any diagram.
 - [ ] No vertical `writing-mode` text?
 - [ ] `viewBox` expanded for the legend strip (~60px)?
 - [ ] Every font size, coord, width, height, gap divisible by 4?
-- [ ] From the installed skill directory, did `python3 scripts/self_check.py <file>` pass? (Accessible-SVG contract, single-file safety, motion basics; ships with the skill.)
+- [ ] From the installed skill directory, did `python3 scripts/self_check.py <file>` pass? (Accessible-SVG contract, single-file safety, motion basics.)
 - [ ] If animated, does the complete static/no-JS frame work, does reduced motion hide/disable playback, and is the controller copied verbatim from `assets/template-motion.html`? From a repository checkout, also run `python3 <repo-root>/scripts/verify-motion.py path/to/generated.html` plus the skin linter; from an installed skill, manually check print and static-query states on top of the self-check.
 
 **Typography:**
@@ -552,7 +553,7 @@ Every imported diagram is shaped by four decisions. Full spec in [`references/ou
 | **Detail** | `faithful` (≤24 nodes, zoned) · `balanced` (≤12) · `simplified` (≤7) | `balanced` |
 | **Audience** | `engineer` · `mixed` · `executive` — governs wording, not count | `mixed` |
 
-Two consequences: the size preset sets the `viewBox` **and** the type ramp (a slide gets 16px node names, not 12px), and `faithful` is the only exemption from the §7 budget — conditional, zoned above 9 nodes, split above 24. The §6 connector rules never relax.
+Two consequences: the size preset sets the `viewBox` **and** the type ramp (a slide gets 16px node names, not 12px), and `faithful` is the only exemption from the §7 budget — conditional, zoned above 9 nodes, split above 24.
 
 ---
 
