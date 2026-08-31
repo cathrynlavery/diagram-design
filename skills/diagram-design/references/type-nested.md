@@ -1,6 +1,6 @@
 # Nested Containment
 
-**Best for:** hierarchy through containment — scope boundaries, CLAUDE.md cascade, trust zones, folder nesting, blast radius. Outer = broader, inner = more specific.
+**Best for:** hierarchy through containment — scope boundaries, trust zones, folder nesting, blast radius. Outer = broader, inner = more specific.
 
 ## Layout conventions
 - 3–5 rounded rectangles (`rx=8`), nested with consistent inset padding (24–32px horizontal, 32–36px vertical recommended).
