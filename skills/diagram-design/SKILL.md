@@ -289,7 +289,7 @@ These six rules are **non-negotiable**. Run the pre-output checklist (§9) to ve
 
    When in doubt, reroute. The exception exists for the narrow case where rerouting is geometrically impossible, not as a shortcut to avoid layout work.
 
-6. **A label mask must not overlap a node drawn after it.** Rule 2 keeps the label off its own connector; this one keeps it off the boxes. Because nodes are painted after labels, a mask that lands partly inside a node is covered by the node fill and the text renders as a fragment sitting on the node border. Place the label on a segment of the connector that runs through open canvas — for a connector leaving a node's right edge, that means clearing the node's `x + width` before the mask starts. A mask fully *inside* a node is a badge chip and is fine; a mask overlapping a zone container is fine too, since zones are painted first.
+6. **A label mask must not overlap a node drawn after it.** Rule 2 keeps the label off its own connector; this one keeps it off the boxes. Because nodes are painted after labels, a mask that lands partly inside a node is covered by the node fill and the text renders as a fragment sitting on the node border. Place the label on a segment of the connector that runs through open canvas — for a connector leaving a node's right edge, that means clearing the node's `x + width` before the mask starts. A mask fully *inside* a node is a badge chip and is fine; a mask overlapping a zone container is fine too, since zones are painted first. From a repository checkout, verify with `python3 <repo-root>/scripts/verify-geometry.py <file>`.
 
 ### Node box — full pattern
 
@@ -544,7 +544,7 @@ An import is bounded by its source: never invent a component to fill a layout, a
 
 ### Output dials — format, size, detail level, audience
 
-Every imported diagram is shaped by four decisions. Full spec in [`references/output-spec.md`](references/output-spec.md); set them **before** drawing, since they change the deliverable, layout, density, and wording.
+Every imported diagram is shaped by four decisions, set **before** drawing — full spec in [`references/output-spec.md`](references/output-spec.md).
 
 | Dial | Options | Default |
 |---|---|---|
@@ -553,7 +553,7 @@ Every imported diagram is shaped by four decisions. Full spec in [`references/ou
 | **Detail** | `faithful` (≤24 nodes, zoned) · `balanced` (≤12) · `simplified` (≤7) | `balanced` |
 | **Audience** | `engineer` · `mixed` · `executive` — governs wording, not count | `mixed` |
 
-Two consequences: the size preset sets the `viewBox` **and** the type ramp (a slide gets 16px node names, not 12px), and `faithful` is the only exemption from the §7 budget — conditional, zoned above 9 nodes, split above 24.
+Two consequences: the size preset sets the `viewBox` **and** the type ramp (a slide gets 16px node names, not 12px), and `faithful` is the only exemption from the §7 budget — conditional, zoned above 9 nodes, split above 24. The §6 connector rules never relax.
 
 ---
 
@@ -573,10 +573,10 @@ Every diagram is an accessible figure by default:
 
 1. Its `<svg>` carries `role="img"` and `aria-labelledby` naming the diagram's `<title>` and `<desc>`.
 2. `<title>` is the first child of `<svg>`, before `<defs>`. Assistive technology may ignore a title placed later.
-3. The IDs are prefixed per diagram and variant: `<slug>-title` / `<slug>-desc`, where the slug matches the file (`loop`, `loop-dark`, `loop-full`). Bare `title` / `desc` IDs are banned because two inline diagrams would create duplicate IDs and the second could be announced with the first diagram's name.
+3. The IDs are prefixed per diagram and variant: `<slug>-title` / `<slug>-desc`, where the slug matches the file (`loop`, `loop-dark`, `loop-full`). Bare `title` / `desc` IDs are banned — two inline diagrams would otherwise share one ID, and the second could be announced with the first's name.
 4. `<title>` is the short name of the subject — roughly the page `<h1>`, and about 60 characters or fewer.
 5. `<desc>` is one sentence stating what the diagram shows in terms a reader needs without the image. Describe the content, not the geometry: “Org chart showing a command center routing work to specialist agents and escalation owners,” not “A box at the top with five boxes below it.” A shape-by-shape narration is worse than no useful description.
-6. Decorative-only SVG, such as the specimen glyphs in `assets/icons.html`, carries `aria-hidden="true"` instead. Giving decorative marks accessible names adds noise.
+6. Decorative-only SVG, such as the specimen glyphs in `assets/icons.html`, carries `aria-hidden="true"` instead.
 
 ### Exporting to PNG / SVG
 
