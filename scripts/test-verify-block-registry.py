@@ -178,6 +178,55 @@ def main() -> int:
         0,
     )
 
+    # A literal '>' inside a quoted attribute value, positioned BEFORE
+    # data-block-id in the tag, is valid HTML and must not truncate the tag
+    # match — a naive [^>]* match would lose data-block-id entirely and the
+    # block would silently vanish (0 findings AND 0 blocks, a false-clean
+    # pass on a file that has a real, valid block).
+    check(
+        "literal greater-than before id does not truncate the tag",
+        document(
+            '<rect data-block-constraint="output > input" data-block-id="FC3-001" '
+            'data-block-name="X" x="0" y="0" width="160" height="48" rx="6"/>'
+        ),
+        0,
+    )
+
+    # Same hazard with the '>' positioned after id/name — must also survive;
+    # this ordering happened to work even before the fix, so it guards
+    # against a regression that only re-breaks the before-id ordering above.
+    check(
+        "literal greater-than after id does not truncate the tag",
+        document(
+            '<rect data-block-id="FC3-001" data-block-name="X" '
+            'data-block-constraint="output > input" x="0" y="0" width="160" height="48" rx="6"/>'
+        ),
+        0,
+    )
+
+    # Single-quoted attribute values are valid HTML; the parser must not
+    # silently see zero blocks on a file that uses them.
+    check(
+        "single-quoted attribute values are recognized",
+        document(
+            "<rect data-block-id='FC3-001' data-block-name='X' "
+            "x='0' y='0' width='160' height='48' rx='6'/>"
+        ),
+        0,
+    )
+
+    # Mixed quoting within one tag -- an adversarial author (or a hand-edit)
+    # might quote some attributes one way and others another; both must be
+    # read, not just whichever style the parser happens to expect.
+    check(
+        "mixed quoting styles in one tag",
+        document(
+            '<rect data-block-id="FC3-001" data-block-name=\'X\' '
+            'data-block-parent="FC3-000" x="0" y="0" width="160" height="48" rx="6"/>'
+        ),
+        1,  # data-block-parent references FC3-000, which this document never defines
+    )
+
     if failures:
         print("\nFAILURES:")
         for failure in failures:

@@ -17,6 +17,14 @@ independent of verify-geometry.py: that script catches a label mask clipped
 by a node painted after it, this one catches a block registry that does not
 cohere as a tree.
 
+The tag matcher treats a quoted attribute value (single or double) as one
+unit rather than stopping at the first literal `>`, and the attribute matcher
+accepts either quote style. A naive `[^>]*` tag match truncates silently on a
+value like `data-block-constraint="output > input"` -- valid HTML, and if
+that attribute happens to sit before data-block-id in the tag, the entire
+block vanishes from the scan with no error, which is worse than a crash: a
+file with a real block passes CI as if it had none.
+
 Usage:
     python3 scripts/verify-block-registry.py --all
     python3 scripts/verify-block-registry.py skills/diagram-design/assets/example-x.html
@@ -33,8 +41,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-TAG_RE = re.compile(r"<[a-zA-Z][\w:-]*\b([^>]*)>", re.DOTALL)
-ATTR_RE = re.compile(r'\bdata-block-([a-z-]+)="([^"]*)"')
+TAG_RE = re.compile(
+    r"""<[a-zA-Z][\w:-]*\b((?:"[^"]*"|'[^']*'|[^>"'])*)>""",
+    re.DOTALL,
+)
+ATTR_RE = re.compile(r"""\bdata-block-([a-z-]+)=(?:"([^"]*)"|'([^']*)')""")
 
 
 @dataclass
@@ -48,7 +59,10 @@ class Block:
 def parse_blocks(source: str) -> list[Block]:
     blocks: list[Block] = []
     for tag in TAG_RE.finditer(source):
-        attrs = dict(ATTR_RE.findall(tag.group(1)))
+        attrs: dict[str, str] = {}
+        for attr in ATTR_RE.finditer(tag.group(1)):
+            name, double_quoted, single_quoted = attr.groups()
+            attrs[name] = double_quoted if double_quoted is not None else single_quoted
         if "id" not in attrs:
             continue
         blocks.append(

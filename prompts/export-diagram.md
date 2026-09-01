@@ -9,8 +9,9 @@ Full argument string: `$ARGUMENTS`
 
 ## Defaults
 
-- Produce both `.svg` and `.png` next to source (for example, `diagram.html` → `diagram.svg` + `diagram.png`).
+- With no format flags, or with `--svg-only`/`--png-only`/`--scale`/`--output` but no `--registry`: produce both `.svg` and `.png` next to source (for example, `diagram.html` → `diagram.svg` + `diagram.png`).
 - Render PNG at `device_scale_factor=2`.
+- `--registry` given alone, with neither `--svg-only` nor `--png-only` also present, produces only the registry JSON — the SVG/PNG defaults above do not apply, and Playwright is never required. Add `--svg-only` and/or `--png-only` explicitly to also get an image.
 
 ## Flags
 
@@ -18,7 +19,7 @@ Full argument string: `$ARGUMENTS`
 - `--png-only` — emit PNG only.
 - `--scale=1`, `--scale=2`, or `--scale=3` — override PNG device scale factor.
 - `--output=<path>` — override output base path; append format extension.
-- `--registry` — also emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Independent of `--svg-only`/`--png-only`/`--scale`; combine with either or run alone.
+- `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Never needs Playwright. Used alone (see Defaults) it is the only output; combine with `--svg-only` and/or `--png-only` to also produce an image.
 
 ## Required behavior
 
@@ -29,5 +30,6 @@ Full argument string: `$ARGUMENTS`
 5. `--scale` outside {1, 2, 3} → reject.
 6. Both `--svg-only` and `--png-only` supplied → reject them as mutually exclusive.
 7. `--registry` requested but source has no `data-block-id` attributes → refuse; write nothing. Per the export-registry reference's edge-case section.
+8. `--registry` is the only flag given (no `--svg-only`/`--png-only`) → emit only the registry JSON; do not also produce SVG/PNG and do not check for Playwright.
 
 After export, report output paths plus sizes.
