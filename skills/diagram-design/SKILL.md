@@ -152,7 +152,7 @@ These mark "AI slop" schematics of any type:
 | Shadow on any element | Shadows are out. Borders are in. |
 | `rounded-2xl` on boxes | Max radius 6–10px or none |
 | Coral on every "important" node | Coral is 1–2 editorial accents, not a signaling system |
-| Hidden-by-default disclosure (hover or `:target` panels) | Exports, print, and touch lose the content — the static frame must be complete |
+| Hidden-by-default disclosure (hover or `:target` panels) | Exports, print, and touch lose the content — the static frame must be complete (nested `<title>` excepted — see [animation.md](references/animation.md)) |
 | Reproducing Mermaid's renderer layout | Imports automatic spacing and routing instead of making an editorial layout |
 | Any breach of the six §6 connector rules | Diagonal slants, labels touching their stroke, masks clipped by a later node, overlapping paths, shared attach points, transit behind a non-endpoint box — each is an automatic fail; §6 states them in full |
 
@@ -201,8 +201,6 @@ Type-specific anti-patterns live in each type reference linked in the guide.
 - **Editorial aside** — Instrument Serif *italic*, 14px — callouts only
 
 **Korean labels** — Geist and Instrument Serif carry no Hangul. Extend the family on that `<text>`, budget 1em per Unicode wide or full-width character and the Latin advance for every other, and never set Hangul below 12px. Full rules in [`style-guide.md`](references/style-guide.md#korean-labels).
-
-**Mono is for technical content only** — see §4.
 
 ```html
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&display=swap" rel="stylesheet">
