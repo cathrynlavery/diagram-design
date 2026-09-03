@@ -89,9 +89,9 @@
             data-block-output="Settled transaction record"
             data-block-constraint="Every transaction reaches exactly one terminal state"
             data-block-impl="src/payments/gateway/"/>
-      <rect x="428" y="46" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
-      <text x="442" y="55" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace"
-            text-anchor="middle" letter-spacing="0.08em">SYS</text>
+      <rect x="428" y="46" width="46" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
+      <text x="451" y="55" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001</text>
       <text x="500" y="70" fill="#2d3142" font-size="12" font-weight="600"
             font-family="'Geist', sans-serif" text-anchor="middle">Payment Gateway</text>
       <text x="500" y="86" fill="#4f5d75" font-size="9"
@@ -106,9 +106,9 @@
             data-block-constraint="Never persists a raw card number"
             data-block-assumption="Runs behind the PCI-scoped boundary"
             data-block-impl="src/payments/authorization/"/>
-      <rect x="208" y="186" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="224" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
-            text-anchor="middle" letter-spacing="0.08em">AUTH</text>
+      <rect x="208" y="186" width="62" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="239" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001-01</text>
       <text x="280" y="210" fill="#2d3142" font-size="12" font-weight="600"
             font-family="'Geist', sans-serif" text-anchor="middle">Card Authorization</text>
       <text x="280" y="226" fill="#4f5d75" font-size="9"
@@ -122,9 +122,9 @@
             data-block-output="Risk score and hold/release decision"
             data-block-constraint="Blocks release above the configured risk threshold"
             data-block-impl="src/payments/fraud/"/>
-      <rect x="428" y="186" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="444" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
-            text-anchor="middle" letter-spacing="0.08em">RISK</text>
+      <rect x="428" y="186" width="62" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="459" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001-02</text>
       <text x="500" y="210" fill="#2d3142" font-size="12" font-weight="600"
             font-family="'Geist', sans-serif" text-anchor="middle">Fraud Screening</text>
       <text x="500" y="226" fill="#4f5d75" font-size="9"
@@ -138,9 +138,9 @@
             data-block-output="Settled transaction record"
             data-block-constraint="Append-only, no ledger row is ever mutated after write"
             data-block-impl="src/payments/ledger/"/>
-      <rect x="648" y="186" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="662" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
-            text-anchor="middle" letter-spacing="0.08em">LDG</text>
+      <rect x="648" y="186" width="62" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="679" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001-03</text>
       <text x="720" y="210" fill="#2d3142" font-size="12" font-weight="600"
             font-family="'Geist', sans-serif" text-anchor="middle">Settlement Ledger</text>
       <text x="720" y="226" fill="#4f5d75" font-size="9"
