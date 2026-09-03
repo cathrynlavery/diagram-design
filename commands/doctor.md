@@ -1,6 +1,6 @@
 ---
 description: Run one-shot environment diagnostics for Diagram Design readiness
-argument-hint: [--strict] [--json]
+argument-hint: "[--strict] [--json]"
 allowed-tools:
   - Read
   - Bash

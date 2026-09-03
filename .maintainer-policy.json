@@ -22,14 +22,20 @@
       }
     ],
     "require_synchronized": true,
-    "require_unique_across_open_prs": true,
-    "bump_command": "python3 scripts/bump-plugin-version.py"
+    "require_unique_across_open_prs": false,
+    "bump_command": "python3 scripts/bump-plugin-version.py",
+    "bumped_by": "auto-bump workflow on push to main (ADR 0009)",
+    "pr_manifest_version_changes": "forbidden",
+    "bump_size_labels": {
+      "minor": "release:minor",
+      "major": "release:major"
+    }
   },
   "gates": {
     "local_commands": [
       "python3 scripts/test-plugin-package.py",
       "python3 scripts/test-maintainer-policy.py",
-      "python3 scripts/verify-plugin-package.py origin/main",
+      "python3 scripts/verify-plugin-package.py --require-no-bump origin/main",
       "npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict",
       "python3 scripts/test-lint-a11y.py",
       "python3 scripts/verify-semantic-motion.py --markdown-only",
@@ -55,6 +61,8 @@
       "python3 scripts/verify-docs-sync.py",
       "python3 scripts/test-verify-docs-sync.py",
       "python3 scripts/verify-screenshot-freshness.py",
+      "python3 scripts/test-build-readme-thumbs.py",
+      "python3 scripts/build-readme-thumbs.py --check",
       "python3 scripts/test-self-check.py",
       "python3 scripts/verify-geometry.py --all",
       "python3 scripts/test-verify-geometry.py",
@@ -90,6 +98,7 @@
     "require_no_requested_changes": true,
     "post_merge_workflows": [
       "CI",
+      "Auto Version Bump",
       "Deploy gallery to GitHub Pages"
     ]
   },

@@ -500,6 +500,51 @@ def main() -> int:
             '"Malgun Gothic", sans-serif; }</style>\n' + kr_css_svg,
             directory,
         )
+        zh_name_svg = VALID_SVG.replace("fixture-title", "zh-name-stack-title").replace(
+            "fixture-desc", "zh-name-stack-desc"
+        )
+        require_pass(
+            "zh-name-stack",
+            zh_name_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Geist', 'PingFang SC', 'Noto Sans SC', "
+                "'Microsoft YaHei', sans-serif\">\u8ba4\u8bc1\u670d\u52a1</text>\n</svg>",
+            ),
+            directory,
+        )
+        zh_mono_svg = VALID_SVG.replace("fixture-title", "zh-mono-stack-title").replace(
+            "fixture-desc", "zh-mono-stack-desc"
+        )
+        require_pass(
+            "zh-mono-stack",
+            zh_mono_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Geist Mono', 'Noto Sans Mono CJK SC', "
+                "monospace\">\u7aef\u53e3 443</text>\n</svg>",
+            ),
+            directory,
+        )
+        zh_css_svg = VALID_SVG.replace("fixture-title", "zh-css-stack-title").replace(
+            "fixture-desc", "zh-css-stack-desc"
+        )
+        require_pass(
+            "zh-css-stack",
+            '<style>text { font-family: "Geist", "PingFang SC", "Noto Sans SC", '
+            '"Microsoft YaHei", sans-serif; }</style>\n' + zh_css_svg,
+            directory,
+        )
+        zh_tc_svg = VALID_SVG.replace("fixture-title", "zh-tc-stack-title").replace(
+            "fixture-desc", "zh-tc-stack-desc"
+        )
+        require_pass(
+            "zh-tc-stack",
+            zh_tc_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Geist', 'PingFang TC', 'Noto Sans TC', "
+                "'Microsoft JhengHei', sans-serif\">\u8a8d\u8b49\u670d\u52d9</text>\n</svg>",
+            ),
+            directory,
+        )
         malgun_semilight_svg = VALID_SVG.replace(
             "fixture-title", "malgun-semilight-title"
         ).replace("fixture-desc", "malgun-semilight-desc")

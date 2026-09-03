@@ -275,6 +275,50 @@ D:::danger --- E
     if thick["label"] != "critical" or thick["style"] != "thick":
         fail("labeled thick link did not retain its label and thick style")
 
+    quoted_file = tmp / "quoted-labeled-links.mmd"
+    quoted_file.write_text(
+        """flowchart LR
+A -- "plain quoted" --> B
+B -. "dotted quoted" .-> C
+C == "thick quoted" ==> D
+D <-- "bidirectional quoted" --> E
+E o-- "circle quoted" --o F
+F x-- "cross quoted" --x G
+G -- "pipe | comma , semicolon ;" --> H
+H -- "  padded  " --> I
+""",
+        encoding="utf-8",
+    )
+    quoted = json.loads(run_extract([str(quoted_file), "--json"]))["diagrams"][0]
+    quoted_ids = sorted(node["id"] for node in quoted["nodes"])
+    if quoted_ids != ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+        fail(f"quoted edge labels materialized phantom nodes: {quoted_ids}")
+    quoted_labels = [edge["label"] for edge in quoted["edges"]]
+    if quoted_labels != [
+        "plain quoted",
+        "dotted quoted",
+        "thick quoted",
+        "bidirectional quoted",
+        "circle quoted",
+        "cross quoted",
+        "pipe | comma , semicolon ;",
+        "padded",
+    ]:
+        fail(
+            "quoted labeled links lost their text — the mask blanks quoted "
+            f"spans, so the label must be read between the operators: {quoted_labels}"
+        )
+    if [edge["style"] for edge in quoted["edges"][:3]] != ["solid", "dashed", "thick"]:
+        fail("quoted labeled links lost their stroke styles")
+    if not all(edge["bidirectional"] for edge in quoted["edges"][3:6]):
+        fail("quoted labeled multidirectional links lost bidirectional semantics")
+    if [edge["arrowhead"] for edge in quoted["edges"][3:6]] != [
+        "arrow",
+        "circle",
+        "cross",
+    ]:
+        fail("quoted labeled multidirectional links lost their arrowheads")
+
     compact_file = tmp / "compact-labeled-links.mmd"
     compact_file.write_text(
         """flowchart LR

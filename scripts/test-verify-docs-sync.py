@@ -58,6 +58,20 @@ def load_verify_module():
 def main() -> int:
     verify = load_verify_module()
 
+    for length in (1024, 1025):
+        errors: list[str] = []
+        markdown = f"---\nname: fixture\ndescription: {'x' * length}\n---\n"
+        verify.check_description_length(errors, markdown)
+        if length == 1024 and errors:
+            raise AssertionError(f"1024-character description failed: {errors}")
+        if length == 1025:
+            expected = (
+                "SKILL.md frontmatter description exceeds the Agent Skills limit "
+                "(1025 > 1024 characters)"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"oversized description was not rejected: {errors}")
+
     errors: list[str] = []
     verify.check_onboarding_trust_boundary(
         errors,
@@ -90,6 +104,26 @@ def main() -> int:
         raise AssertionError(
             f"trust warning without a use limitation was not reported: {errors}"
         )
+
+    line_dark = (
+        ROOT / "skills/diagram-design/assets/example-line-dark.html"
+    ).read_text(encoding="utf-8")
+    errors = []
+    verify.check_line_dark_skin(errors, line_dark)
+    if errors:
+        raise AssertionError(f"canonical Line dark skin failed: {errors}")
+
+    errors = []
+    verify.check_line_dark_skin(
+        errors,
+        line_dark.replace("--color-paper:#2d3142", "--color-paper:#f5f5f5", 1),
+    )
+    expected = (
+        "example-line-dark.html lost canonical dark-skin token "
+        "'--color-paper:#2d3142'"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"light-skin regression was not reported: {errors}")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-") as temp_dir:
         skill = Path(temp_dir)
