@@ -61,6 +61,8 @@
       "python3 scripts/verify-docs-sync.py",
       "python3 scripts/test-verify-docs-sync.py",
       "python3 scripts/verify-screenshot-freshness.py",
+      "python3 scripts/test-build-readme-thumbs.py",
+      "python3 scripts/build-readme-thumbs.py --check",
       "python3 scripts/test-self-check.py",
       "python3 scripts/verify-geometry.py --all",
       "python3 scripts/test-verify-geometry.py",

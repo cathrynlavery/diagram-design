@@ -23,6 +23,7 @@ Ten drift classes, each of which has shipped before:
    hardcoding a count that becomes stale when a type is added.
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
+11. The canonical dark Line example must keep the dark-skin tokens and canvas.
 """
 
 from __future__ import annotations
@@ -40,8 +41,10 @@ ASSET_DIR = ROOT / "skills/diagram-design/assets"
 README = ROOT / "README.md"
 HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
 ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
+LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
 VARIANTS = ("", "-dark", "-full")
 VISUAL_TYPE_COUNT = 39
+AGENT_SKILLS_DESCRIPTION_MAX = 1024
 # Types whose selection-table name differs from its description vocabulary.
 DESCRIPTION_ALIASES = {
     "bar chart": "bar",
@@ -108,6 +111,20 @@ def check_onboarding_trust_boundary(errors: list[str], markdown: str) -> None:
         )
 
 
+def check_line_dark_skin(errors: list[str], source: str) -> None:
+    """The dark Line example must not silently drift back to the light skin."""
+    required = (
+        "--color-paper:#2d3142",
+        "--color-ink:#f5f5f5",
+        "--color-muted:#bfc0c0",
+        "--color-accent:#f08a59",
+        '<rect width="100%" height="100%" fill="#2d3142"',
+    )
+    for token in required:
+        if token not in source:
+            errors.append(f"example-line-dark.html lost canonical dark-skin token {token!r}")
+
+
 def frontmatter_description(markdown: str) -> str:
     parts = markdown.split("---")
     if len(parts) < 3:
@@ -125,8 +142,18 @@ def selection_table_types(markdown: str) -> list[str]:
     return [name.strip() for name in names]
 
 
+def check_description_length(errors: list[str], markdown: str) -> None:
+    description = frontmatter_description(markdown)
+    if len(description) > AGENT_SKILLS_DESCRIPTION_MAX:
+        errors.append(
+            "SKILL.md frontmatter description exceeds the Agent Skills limit "
+            f"({len(description)} > {AGENT_SKILLS_DESCRIPTION_MAX} characters)"
+        )
+
+
 def check_description(errors: list[str]) -> None:
     markdown = SKILL.read_text(encoding="utf-8")
+    check_description_length(errors, markdown)
     description = normalized(frontmatter_description(markdown))
     if not description:
         errors.append("SKILL.md frontmatter description is missing")
@@ -529,6 +556,7 @@ def main() -> int:
     check_onboarding_trust_boundary(
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
     )
+    check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
     check_routing_surfaces(errors, ROOT)
     if errors:
         print("FAIL docs sync")
@@ -539,7 +567,7 @@ def main() -> int:
         "OK docs sync: description hooks, gallery reachability, README tree, "
         "reference links, packaged support files, routing surfaces, manifest descriptions, "
         "Factory install contract, type-count routing, High-Level invariants, "
-        "onboarding trust boundary"
+        "onboarding trust boundary, Line dark-skin contract"
     )
     return 0
 
