@@ -1,6 +1,6 @@
-# ADR 0009 — Traceable block decomposition: a pattern, on Tree, with a metadata sidecar
+# ADR 0010 — Traceable block decomposition: a pattern, on Tree, with a metadata sidecar
 
-**Status:** accepted (v2.6.13)
+**Status:** accepted (v2.6.12)
 
 ## Context
 
