@@ -57,6 +57,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
+| Traceable block decomposition registries have unique IDs, resolving parents, names, and no cycles | `python3 scripts/verify-block-registry.py --all` |
+| Block registry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-block-registry.py` |
 | Treemap cells match the values they are labelled with, and labels fit | `python3 scripts/verify-treemap.py --all` |
 | Treemap checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-treemap.py` |
 | Dumbbell domain resolves finitely and its marks clear 3:1 | `python3 scripts/verify-dumbbell.py` |
@@ -112,6 +114,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-self-check.py \
   && python3 scripts/verify-geometry.py --all \
   && python3 scripts/test-verify-geometry.py \
+  && python3 scripts/verify-block-registry.py --all \
+  && python3 scripts/test-verify-block-registry.py \
   && python3 scripts/verify-treemap.py --all \
   && python3 scripts/test-verify-treemap.py \
   && python3 scripts/verify-dumbbell.py \
@@ -146,6 +150,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-beeswarm.py`:** a dot is drawn off the shared value scale its peers describe, two dots declaring one value sit at two positions, a pair overprints instead of dodging, a second radius or a second non-focal fill appears, a second dot wears the accent, two dots share a `data-name` (or one is empty), anything positions a mark from CSS (`transform`, `translate`/`rotate`/`scale`, a geometry property, a motion path) by any carrier — attribute, inline `style`, or `<style>` rule, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never move a dot along the value axis to open up space, because crowding is data and the dodge is the only honest resolution.
 - **`verify-skin-polarity.py`:** a legend key or caption names the ramp's direction by lightness (`darker is larger`) in a file whose ramp composites the other way. `ink` is a role, not a colour — it resolves near-black on light paper and near-white on dark — so one set of opacities runs darker as it strengthens in the light skin and lighter in the dark one. Name the direction by contrast against the paper (`stronger contrast is larger`), which survives the skin swap, and ship the same sentence in every variant; never invert the word for one file. The gate also fails closed on a claim it cannot substantiate — no resolvable paper colour, fewer than three rank-bearing ramp members, or a ramp that is not strictly ordered — and on wording it cannot parse: a tone word within six words of a magnitude word that no supported sentence form binds. Rephrase that as `<tone> <is|means|represents> <magnitude>` (`stronger contrast is larger`), because a claim the gate cannot read is a claim nothing checks.
 - **`verify-geometry.py`:** a label mask overlaps a node declared later in the document, so the node fill clips the label at render time. Move the label to a free segment of its connector — keep the 6–10px gap from the stroke required by SKILL.md §6, and do not shrink the mask to sneak under the check.
+- **`verify-block-registry.py`:** a Traceable block decomposition diagram (`semantic-patterns.md` § 8) has a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block's id in the same file, a blank `data-block-id`, a missing or blank `data-block-name`, or a cycle in the parent chain. Fix the diagram's attributes — the checker mirrors the source rather than validating semantics, so a passing file is only as correct as the IDs and parents actually authored on it.
 - **Icon assets:** you changed `scripts/vendor/icons/` or `scripts/build-icons.py` and the generated files went stale. Rerun `python3 scripts/build-icons.py` and commit the regenerated files.
 
 Do **not** add a file to `scripts/lint-skin-baseline.txt` to get your example through. The baseline exists only for legacy pre-2.0 examples that legitimately predate the current skin, and it still receives a11y checks.
