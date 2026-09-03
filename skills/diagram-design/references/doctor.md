@@ -38,8 +38,8 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
 2. Playwright availability for PNG export
 - Check whether Playwright import works in the active Python interpreter (`import playwright`).
 - Check whether Chromium is installed for Playwright (`playwright install --help` availability is sufficient for command presence; prefer also checking browser cache when practical).
-- If missing, mark `warn` and print exact setup hint:
-  - `pip install playwright && playwright install chromium`
+- If missing, mark `warn` and report that the host environment must provision
+  an approved Playwright installation and compatible browser.
 - Never auto-install dependencies.
 
 3. Expected script presence (maintainer-checkout mode only)
@@ -114,6 +114,6 @@ Doctor summary: WARN (6 pass, 2 warn, 0 fail)
 ...
 
 Next actions
-- Install PNG export dependencies: pip install playwright && playwright install chromium
+- Provision an approved PNG export renderer, then re-run the doctor check
 - Re-run: /diagram-design:doctor --strict
 ```

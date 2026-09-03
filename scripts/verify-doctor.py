@@ -152,7 +152,7 @@ def check_playwright(python_cmd: str | None) -> CheckResult:
             name="Playwright PNG export readiness",
             status=FAIL,
             message="Playwright check skipped because no Python command was available.",
-            fix="Resolve Python first; then install with: pip install playwright && playwright install chromium",
+            fix="Provision an approved Playwright renderer after resolving Python, then re-run this check.",
         )
 
     import_probe = run_command([python_cmd, "-c", "import playwright; print(playwright.__version__)"])
@@ -161,7 +161,7 @@ def check_playwright(python_cmd: str | None) -> CheckResult:
             name="Playwright PNG export readiness",
             status=WARN,
             message="Playwright package is not available in the active Python interpreter.",
-            fix="pip install playwright && playwright install chromium",
+            fix="Provision an approved Playwright renderer in the host environment, then re-run this check.",
         )
 
     chromium_probe = run_command(
@@ -190,7 +190,7 @@ def check_playwright(python_cmd: str | None) -> CheckResult:
         name="Playwright PNG export readiness",
         status=WARN,
         message=f"Playwright is installed but Chromium is not ready: {detail}",
-        fix="pip install playwright && playwright install chromium",
+        fix="Provision an approved browser for the existing Playwright installation, then re-run this check.",
     )
 
 

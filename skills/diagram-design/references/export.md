@@ -60,11 +60,9 @@ python -c "import playwright" 2>NUL || python -c "import playwright"
 
 If the import fails, surface this exact instruction to the user and stop:
 
-> Playwright isn't installed. To enable PNG export, run:
-> ```
-> pip install playwright
-> playwright install chromium
-> ```
+> Playwright is not available. PNG export requires an approved Playwright
+> installation and a compatible browser to be provisioned by the host
+> environment; the skill never installs runtime dependencies automatically.
 > Then ask me to export again.
 
 Don't auto-install. The user asked for one feature, not a system change.
