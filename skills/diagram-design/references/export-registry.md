@@ -45,7 +45,7 @@ Applies only to diagrams using the Traceable block decomposition pattern (Tree n
 ```
 
 - `source` — basename of the HTML file the registry was generated from.
-- `blocks` — one entry per node carrying `data-block-id`, in document order (depth-first, matching the tree's own root-to-leaf visual order).
+- `blocks` — one entry per node carrying `data-block-id`, in document order: the order the matched nodes appear in the source file, never re-sorted by parent. A tree authored row by row (every Tier 1 node, then every Tier 2 node) exports in that row order; only a tree authored depth-first exports depth-first.
 - `id`, `name` — always present; every block in the pattern requires both attributes.
 - `parent` — present only for non-root blocks, mirroring `data-block-parent`'s own absent-means-root convention. Omitted, never `null`, for a root block.
 - `input`, `output`, `constraint`, `assumption`, `impl` — present only when the matching `data-block-*` attribute is present on that node. Omit the key entirely rather than writing an empty string.
@@ -58,7 +58,7 @@ No other keys, and no generation timestamp: the registry is meant to be regenera
 2. Find every element carrying a `data-block-id` attribute. Nodes without it aren't part of the pattern — skip them silently, including in a diagram that mixes pattern and non-pattern Tree nodes.
 3. For each matched node, read `data-block-id`, `data-block-parent`, `data-block-name`, `data-block-input`, `data-block-output`, `data-block-constraint`, `data-block-assumption`, `data-block-impl` — whichever are present. Map `data-block-name` to the JSON key `name`; map the rest by dropping the `data-block-` prefix.
 4. Preserve attribute values verbatim — no trimming beyond surrounding whitespace, no case changes, no re-formatting of the `impl` path.
-5. Assemble the `blocks` array in document order.
+5. Assemble the `blocks` array in document order, as defined under *JSON schema* above.
 6. Write to `<basename>.registry.json` next to the source (e.g. `example-tree-block-decomposition.html` → `example-tree-block-decomposition.registry.json`). Honour an explicit `--output` path if the user provided one to the parent export command.
 
 ## Edge cases
