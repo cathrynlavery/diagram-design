@@ -216,6 +216,22 @@ jobs:
         id: screenshots
         run: python scripts/verify-screenshot-freshness.py
 
+      - name: Install Pillow for README thumbnail verification
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        env:
+          PILLOW_VERSION: "12.1.1"
+        shell: bash
+        run: |
+          pip install "Pillow==${PILLOW_VERSION}"
+          python -c "import PIL; print('Pillow', PIL.__version__)"
+
+      - name: Verify README thumbnails
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: readme_thumbs
+        run: |
+          python scripts/test-build-readme-thumbs.py
+          python scripts/build-readme-thumbs.py --check
+
       - name: Verify packaged self-check
         if: always()
         id: self_check
@@ -387,6 +403,7 @@ jobs:
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| README Thumbnail Freshness | ${{ steps.readme_thumbs.outcome == 'success' && '✅ Passed' || (steps.readme_thumbs.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

@@ -200,6 +200,36 @@ Use the installed-skill location exposed by the current agent when available. Ot
 1. `~/.claude/skills/<skill-name>/` (user install)
 2. `.claude/skills/<skill-name>/` (project install)
 
+**Kiro:**
+
+1. `.kiro/skills/<skill-name>/` (workspace install)
+2. `~/.kiro/skills/<skill-name>/` (global install)
+
+**OpenCode:**
+
+1. `.opencode/skills/<skill-name>/` (project install)
+2. `~/.config/opencode/skills/<skill-name>/` (global install)
+
+**Cursor:**
+
+1. `.cursor/skills/<skill-name>/` or `.agents/skills/<skill-name>/` (project install)
+2. `~/.cursor/skills/<skill-name>/` or `~/.agents/skills/<skill-name>/` (user install)
+
+**Cline (CLI or VS Code):**
+
+1. `.cline/skills/<skill-name>/` or `.agents/skills/<skill-name>/` (workspace install)
+2. `~/.cline/skills/<skill-name>/` or `~/.agents/skills/<skill-name>/` (user install)
+
+**Codex:**
+
+1. The skill root exposed by an active marketplace plugin
+2. `~/.agents/skills/<skill-name>/` (user install or editable-clone link)
+
+**GitHub Copilot:**
+
+1. `.github/skills/<skill-name>/`, `.agents/skills/<skill-name>/`, or `.claude/skills/<skill-name>/` (project install)
+2. `~/.copilot/skills/<skill-name>/`, `~/.agents/skills/<skill-name>/`, or `~/.claude/skills/<skill-name>/` (user install)
+
 **Factory Droid:**
 
 1. `~/.factory/skills/<skill-name>/` (personal install)

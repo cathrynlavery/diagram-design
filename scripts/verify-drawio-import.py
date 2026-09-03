@@ -495,6 +495,12 @@ def check_docs() -> None:
     example = EXAMPLE.read_text(encoding="utf-8")
     if 'viewBox="0 0 960 600"' not in example:
         fail("worked example does not use the doc-inline viewBox")
+    route = re.search(
+        r"<!-- API Gateway -> Orders Service -->\s*<path d=\"([^\"]+)\"",
+        example,
+    )
+    if route is None or route.group(1) != "M560,232 H640":
+        fail("worked example API Gateway-to-Orders route must be a direct horizontal connector")
     if example.count("#eb6c36") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
     proc = subprocess.run(
