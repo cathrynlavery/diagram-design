@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Verify a Traceable block decomposition diagram's data-block-* metadata.
 
-semantic-patterns.md § 8 requires every block to carry a stable, unique
-data-block-id, a data-block-name, and (when present) a data-block-parent that
-resolves to another block's id in the same file, with no cycles in the parent
-chain -- the same "no orphan blocks, no cycles" shape Tree's own layout
-already assumes. Nothing in the SVG grammar enforces that on its own: a
-copy-pasted node keeps its sibling's id, a renamed block leaves its children
-pointing at an id that no longer exists, and both render as an ordinary,
+semantic-patterns.md § 8 requires every block to carry a stable, unique,
+non-blank data-block-id, a non-blank data-block-name, and (when present) a
+data-block-parent that resolves to another block's id in the same file, with
+no cycles in the parent chain -- the same "no orphan blocks, no cycles" shape
+Tree's own layout already assumes. Nothing in the SVG grammar enforces that
+on its own: a copy-pasted node keeps its sibling's id, a renamed block leaves
+its children pointing at an id that no longer exists, an empty id="" passes
+as a real identifier, and all of them render as an ordinary,
 unremarkable-looking diagram.
 
 This does not correlate a block's metadata against its drawn position or
@@ -76,6 +77,16 @@ def parse_blocks(source: str) -> list[Block]:
     return blocks
 
 
+def find_blank_ids(path: Path, blocks: list[Block]) -> list[str]:
+    findings: list[str] = []
+    for block in blocks:
+        if not block.id.strip():
+            findings.append(
+                f"{path.name}:{block.line}: block has a blank data-block-id"
+            )
+    return findings
+
+
 def find_duplicates(path: Path, blocks: list[Block]) -> list[str]:
     by_id: dict[str, list[Block]] = {}
     for block in blocks:
@@ -105,9 +116,9 @@ def find_orphan_parents(path: Path, blocks: list[Block], known_ids: set[str]) ->
 def find_missing_names(path: Path, blocks: list[Block]) -> list[str]:
     findings: list[str] = []
     for block in blocks:
-        if not block.name:
+        if not block.name or not block.name.strip():
             findings.append(
-                f'{path.name}:{block.line}: block "{block.id}" has no data-block-name'
+                f'{path.name}:{block.line}: block "{block.id}" has a missing or blank data-block-name'
             )
     return findings
 
@@ -141,8 +152,11 @@ def check(path: Path) -> list[str]:
     if not blocks:
         return []  # not every diagram uses the pattern; that's legal
 
-    known_ids = {block.id for block in blocks}
+    # A blank id is never a resolvable target: a blank data-block-parent must
+    # report as unresolved, not quietly match a block whose id is also blank.
+    known_ids = {block.id for block in blocks if block.id.strip()}
     findings: list[str] = []
+    findings.extend(find_blank_ids(path, blocks))
     findings.extend(find_duplicates(path, blocks))
     findings.extend(find_orphan_parents(path, blocks, known_ids))
     findings.extend(find_missing_names(path, blocks))

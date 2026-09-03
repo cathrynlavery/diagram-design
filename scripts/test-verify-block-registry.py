@@ -137,6 +137,46 @@ def main() -> int:
         1,
     )
 
+    # data-block-name present but whitespace-only is the same defect as empty.
+    check(
+        "whitespace-only name attribute",
+        document(block("FC3-001", name="   ")),
+        1,
+    )
+
+    # data-block-id present but empty must not silently satisfy itself as a
+    # valid, resolvable identifier.
+    check(
+        "empty id attribute",
+        document(block("")),
+        1,
+    )
+
+    # data-block-id present but whitespace-only is the same defect as empty.
+    check(
+        "whitespace-only id attribute",
+        document(block("   ")),
+        1,
+    )
+
+    # A blank id must never act as a resolvable identifier. Two otherwise-valid
+    # blocks joined only by "" used to report 0 findings — a coherent tree
+    # built from an empty string. Now both broken attributes are reported: the
+    # blank id itself, and the child's blank data-block-parent as unresolved.
+    check(
+        "blank id never satisfies a blank parent",
+        document(block("") + block("FC3-001", parent="")),
+        2,
+    )
+
+    # data-block-parent present but empty is a dangling reference, not root;
+    # absent-means-root is the only root convention (export-registry.md).
+    check(
+        "blank parent attribute is unresolved",
+        document(block("FC3-001") + block("FC3-001-01", parent="")),
+        1,
+    )
+
     # A diagram that doesn't use the pattern at all has no data-block-id
     # anywhere — legal; most Tree diagrams will look like this.
     check(
