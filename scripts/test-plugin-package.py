@@ -182,6 +182,50 @@ def test_verifier() -> None:
         )
 
     with package_repo() as root:
+        errors = VERIFY.verify_package(root, "HEAD", mode="no-bump")
+        if errors:
+            raise AssertionError(f"unchanged versions failed no-bump mode: {errors}")
+        print("OK: no-bump mode accepts unchanged versions")
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        expect_failure(
+            "version bump inside a pull request",
+            VERIFY.verify_package(root, "HEAD", mode="no-bump"),
+            "must not change in a pull request",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.2", "1.2.2")
+        expect_failure(
+            "version rollback inside a pull request",
+            VERIFY.verify_package(root, "HEAD", mode="no-bump"),
+            "must not change in a pull request",
+        )
+
+    with package_repo() as root:
+        errors = VERIFY.verify_package(root, None, mode="current-only")
+        if errors:
+            raise AssertionError(f"current-only mode failed a valid tree: {errors}")
+        print("OK: current-only mode accepts a valid tree")
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.5")
+        expect_failure(
+            "current-only mode with desynchronized manifests",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "versions must match",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2", "1.2")
+        expect_failure(
+            "current-only mode with malformed versions",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "strict MAJOR.MINOR.PATCH",
+        )
+
+    with package_repo() as root:
         set_versions(root, "1.2.4", "1.2.5")
         expect_failure(
             "mismatched manifests",
@@ -444,7 +488,14 @@ def test_bumper() -> None:
                 raise AssertionError(
                     f"{part} bump: expected {expected}, got {actual} and {versions}"
                 )
-            print(f"OK: {part} bump produced {expected}")
+            skill_text = (root / BUMP.SKILL_PATH).read_text(encoding="utf-8")
+            expected_minor = ".".join(expected.split(".")[:2])
+            if f'version: "{expected_minor}"' not in skill_text:
+                raise AssertionError(
+                    f"{part} bump left SKILL.md metadata.version off "
+                    f"{expected_minor!r}: {skill_text!r}"
+                )
+            print(f"OK: {part} bump produced {expected} and synced SKILL.md")
 
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
@@ -458,6 +509,30 @@ def test_bumper() -> None:
         else:
             raise AssertionError("version bumper accepted mismatched manifests")
         print("OK: version bumper rejects mismatched manifests")
+
+    with tempfile.TemporaryDirectory() as scratch:
+        root = Path(scratch)
+        seed_package(root)
+        skill = root / BUMP.SKILL_PATH
+        skill.write_text(f"---\nname: {PLUGIN_NAME}\n---\n", encoding="utf-8")
+        before = {
+            relative: (root / relative).read_text(encoding="utf-8")
+            for relative in BUMP.MANIFEST_PATHS
+        }
+        try:
+            BUMP.bump(root)
+        except BUMP.PackageVersionError as exc:
+            if "metadata.version" not in str(exc):
+                raise AssertionError(f"unexpected SKILL.md error: {exc}") from exc
+        else:
+            raise AssertionError("version bumper accepted SKILL.md without metadata.version")
+        after = {
+            relative: (root / relative).read_text(encoding="utf-8")
+            for relative in BUMP.MANIFEST_PATHS
+        }
+        if before != after:
+            raise AssertionError("failed bump must leave every manifest untouched")
+        print("OK: version bumper fails closed on SKILL.md drift, manifests untouched")
 
 
 def main() -> int:

@@ -1,0 +1,356 @@
+name: Auto Version Bump
+
+# Post-merge release automation (ADR 0009): pull requests never touch the
+# plugin manifest versions; this workflow bumps them on main after each merge.
+# Rapid consecutive merges may coalesce into a single bump.
+
+on:
+  push:
+    branches: [ main ]
+
+permissions: {}
+
+# Serialize bump runs. A pending run superseded by a newer push simply lets
+# that newer run bump once for all changes since the previous bump.
+concurrency:
+  group: auto-bump-main
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: "1"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should_bump: ${{ steps.guard.outputs.should_bump }}
+      source_sha: ${{ steps.guard.outputs.source_sha }}
+      part: ${{ steps.part.outputs.part }}
+
+    steps:
+      # This job runs newly merged repository code, so it receives only the
+      # read-only GITHUB_TOKEN and never sees the protected-main PAT.
+      - name: Checkout latest main without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+
+      # Skip when the tip of main already carries a version change (a manual
+      # bump, or this workflow's own commit triggering another run).
+      - name: Check whether main already bumped
+        id: guard
+        shell: bash
+        run: |
+          source_sha=$(git rev-parse HEAD)
+          echo "source_sha=${source_sha}" >> "$GITHUB_OUTPUT"
+          if git rev-parse --verify --quiet HEAD^ >/dev/null \
+            && ! git diff --quiet HEAD^ HEAD -- \
+              .claude-plugin/plugin.json \
+              .codex-plugin/plugin.json \
+              .factory-plugin/plugin.json; then
+            echo "should_bump=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_bump=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Inspect every commit since the previous manifest bump. This preserves
+      # the strongest release label when multiple merges coalesce into one run.
+      - name: Determine bump size across all unversioned merges
+        if: steps.guard.outputs.should_bump == 'true'
+        id: part
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ steps.guard.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          last_bump=$(git log -1 --format=%H "$SOURCE_SHA" -- \
+            .claude-plugin/plugin.json \
+            .codex-plugin/plugin.json \
+            .factory-plugin/plugin.json)
+          if [ -z "$last_bump" ]; then
+            echo "No previous manifest bump found" >&2
+            exit 1
+          fi
+
+          part=patch
+          while IFS= read -r commit; do
+            labels=$(gh api \
+              "repos/${{ github.repository }}/commits/${commit}/pulls" \
+              --jq '[.[].labels[].name] | join(" ")')
+            case " $labels " in
+              *" release:major "*)
+                part=major
+                break
+                ;;
+              *" release:minor "*)
+                part=minor
+                ;;
+            esac
+          done < <(git rev-list --reverse "${last_bump}..${SOURCE_SHA}")
+          echo "part=${part}" >> "$GITHUB_OUTPUT"
+
+      - name: Bump plugin manifests
+        if: steps.guard.outputs.should_bump == 'true'
+        env:
+          BUMP_PART: ${{ steps.part.outputs.part }}
+        shell: bash
+        run: |
+          case "$BUMP_PART" in
+            major) flag=--major ;;
+            minor) flag=--minor ;;
+            patch) flag= ;;
+            *) echo "Invalid bump part: $BUMP_PART" >&2; exit 1 ;;
+          esac
+          python3 scripts/bump-plugin-version.py $flag
+
+      - name: Verify and package the exact bump
+        if: steps.guard.outputs.should_bump == 'true'
+        env:
+          SOURCE_SHA: ${{ steps.guard.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-plugin-package.py "$SOURCE_SHA"
+
+          expected=$(printf '%s\n' \
+            .claude-plugin/plugin.json \
+            .codex-plugin/plugin.json \
+            .factory-plugin/plugin.json \
+            skills/diagram-design/SKILL.md | LC_ALL=C sort)
+          actual=$(git diff --name-only | LC_ALL=C sort)
+          if [ "$actual" != "$expected" ]; then
+            echo "Bump changed files outside the release allowlist:" >&2
+            git diff --name-only >&2
+            exit 1
+          fi
+
+          git diff --binary -- \
+            .claude-plugin/plugin.json \
+            .codex-plugin/plugin.json \
+            .factory-plugin/plugin.json \
+            skills/diagram-design/SKILL.md > version-bump.patch
+          test -s version-bump.patch
+
+      - name: Upload version bump
+        if: steps.guard.outputs.should_bump == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: version-bump-${{ github.run_id }}-${{ github.run_attempt }}
+          path: version-bump.patch
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: prepare
+    if: needs.prepare.outputs.should_bump == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout latest main without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Confirm prepared tree is still current
+        id: current
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+        shell: bash
+        run: |
+          if [ "$(git rev-parse HEAD)" = "$SOURCE_SHA" ]; then
+            echo "matches=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "matches=false" >> "$GITHUB_OUTPUT"
+            echo "main advanced after preparation; a newer queued run will recompute the bump"
+          fi
+
+      - name: Download prepared version bump
+        if: steps.current.outputs.matches == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: version-bump-${{ github.run_id }}-${{ github.run_attempt }}
+          path: _version-bump
+
+      # Do not trust the artifact merely because the unprivileged job produced
+      # it. Revalidate its paths and exact semantic changes before committing.
+      - name: Apply and independently validate prepared bump
+        if: steps.current.outputs.matches == 'true'
+        env:
+          BUMP_PART: ${{ needs.prepare.outputs.part }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch=_version-bump/version-bump.patch
+          expected=$(printf '%s\n' \
+            .claude-plugin/plugin.json \
+            .codex-plugin/plugin.json \
+            .factory-plugin/plugin.json \
+            skills/diagram-design/SKILL.md | LC_ALL=C sort)
+          patch_paths=$(git apply --numstat "$patch" | cut -f3- | LC_ALL=C sort)
+          if [ "$patch_paths" != "$expected" ]; then
+            echo "Artifact contains paths outside the release allowlist" >&2
+            exit 1
+          fi
+
+          git apply --check --whitespace=error "$patch"
+          git apply --index --whitespace=error "$patch"
+          staged_paths=$(git diff --cached --name-only | LC_ALL=C sort)
+          if [ "$staged_paths" != "$expected" ] \
+            || [ -n "$(git diff --cached --summary)" ]; then
+            echo "Artifact changed unexpected paths or file modes" >&2
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          manifests = (
+              Path(".claude-plugin/plugin.json"),
+              Path(".codex-plugin/plugin.json"),
+              Path(".factory-plugin/plugin.json"),
+          )
+          semver = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+
+          def from_head(path: Path) -> str:
+              return subprocess.check_output(
+                  ["git", "show", f"HEAD:{path.as_posix()}"], text=True
+              )
+
+          base_payloads = [json.loads(from_head(path)) for path in manifests]
+          base_versions = {payload.get("version") for payload in base_payloads}
+          if len(base_versions) != 1:
+              raise SystemExit("base manifest versions are not synchronized")
+          base_version = base_versions.pop()
+          match = semver.fullmatch(base_version) if isinstance(base_version, str) else None
+          if match is None:
+              raise SystemExit(f"invalid base version: {base_version!r}")
+
+          major, minor, patch = (int(value) for value in match.groups())
+          part = os.environ["BUMP_PART"]
+          if part == "major":
+              expected_version = f"{major + 1}.0.0"
+          elif part == "minor":
+              expected_version = f"{major}.{minor + 1}.0"
+          elif part == "patch":
+              expected_version = f"{major}.{minor}.{patch + 1}"
+          else:
+              raise SystemExit(f"invalid bump part: {part!r}")
+
+          for path, base in zip(manifests, base_payloads):
+              expected_payload = dict(base)
+              expected_payload["version"] = expected_version
+              expected_text = json.dumps(
+                  expected_payload, indent=2, ensure_ascii=False
+              ) + "\n"
+              if path.read_text(encoding="utf-8") != expected_text:
+                  raise SystemExit(
+                      f"{path} changed beyond the exact {expected_version} version update"
+                  )
+
+          skill_path = Path("skills/diagram-design/SKILL.md")
+          base_skill = from_head(skill_path)
+          lines = base_skill.splitlines(keepends=True)
+          if not lines or lines[0].strip() != "---":
+              raise SystemExit("SKILL.md has no YAML frontmatter")
+          closing = next(
+              (index for index in range(1, len(lines)) if lines[index].strip() == "---"),
+              None,
+          )
+          if closing is None:
+              raise SystemExit("SKILL.md frontmatter is unterminated")
+
+          expected_minor = ".".join(expected_version.split(".")[:2])
+          in_metadata = False
+          replaced = 0
+          for index in range(1, closing):
+              line = lines[index]
+              body = line.rstrip("\r\n")
+              ending = line[len(body):]
+              if re.fullmatch(r"metadata:\s*(?:#.*)?", body):
+                  in_metadata = True
+                  continue
+              if in_metadata and body.strip() and not body[0].isspace():
+                  in_metadata = False
+              if not in_metadata:
+                  continue
+              version_match = re.fullmatch(
+                  r'(?P<head>\s+version:\s*)"[0-9][0-9.]*"(?P<tail>\s*(?:#.*)?)',
+                  body,
+              )
+              if version_match is not None:
+                  lines[index] = (
+                      f'{version_match.group("head")}"{expected_minor}"'
+                      f'{version_match.group("tail")}{ending}'
+                  )
+                  replaced += 1
+          if replaced != 1:
+              raise SystemExit(
+                  "SKILL.md must contain exactly one quoted metadata.version"
+              )
+          current_skill = skill_path.read_text(encoding="utf-8")
+          if current_skill != "".join(lines):
+              raise SystemExit("SKILL.md changed beyond the expected metadata.version")
+
+          PY
+
+          version=$(python3 -c \
+            "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(release): bump plugin manifests to ${version}"
+
+      - name: Recheck main before publishing
+        if: steps.current.outputs.matches == 'true'
+        id: fresh
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          if [ "$(git rev-parse FETCH_HEAD)" = "$SOURCE_SHA" ]; then
+            echo "matches=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "matches=false" >> "$GITHUB_OUTPUT"
+            echo "main advanced before publish; a newer queued run will recompute the bump"
+          fi
+
+      # AUTO_BUMP_TOKEN is introduced only for this final command. No merged
+      # repository script or third-party action runs with the token available.
+      - name: Push the validated bump to protected main
+        if: steps.fresh.outputs.matches == 'true'
+        env:
+          AUTO_BUMP_TOKEN: ${{ secrets.AUTO_BUMP_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$AUTO_BUMP_TOKEN" ]; then
+            echo "AUTO_BUMP_TOKEN is not configured" >&2
+            exit 1
+          fi
+          clean_remote="https://github.com/${GITHUB_REPOSITORY}.git"
+          trap 'git remote set-url origin "$clean_remote"' EXIT
+          git remote set-url origin \
+            "https://x-access-token:${AUTO_BUMP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:refs/heads/main

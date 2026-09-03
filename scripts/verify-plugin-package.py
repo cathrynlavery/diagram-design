@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
-"""Verify synchronized version bumps and native marketplace packaging."""
+"""Verify synchronized plugin versions and native marketplace packaging.
+
+Three modes cover the release flow (ADR 0009):
+
+- ``verify-plugin-package.py <base-ref>`` requires the synchronized version to
+  increase relative to the base. The post-merge auto-bump workflow runs this
+  before pushing its bump commit.
+- ``verify-plugin-package.py --require-no-bump <base-ref>`` requires the
+  versions to be unchanged relative to the base. CI runs this on pull
+  requests: contributors never touch the manifest versions.
+- ``verify-plugin-package.py --current-only`` skips the base comparison and
+  validates only the current tree (synchronization, identity, marketplace
+  paths, packaged skill). CI runs this on pushes to main.
+"""
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -142,15 +155,21 @@ def find_plugin_entry(
 
 def verify_versions(
     root: Path,
-    base_ref: str,
+    base_ref: str | None,
     manifests: dict[str, dict[str, Any]],
     errors: list[str],
+    mode: str = "increase",
 ) -> None:
     current_versions = {label: payload.get("version") for label, payload in manifests.items()}
     version_values = list(current_versions.values())
     if any(version != version_values[0] for version in version_values[1:]):
         rendered = ", ".join(f"{label}={value!r}" for label, value in current_versions.items())
         errors.append(f"plugin manifest versions must match: {rendered}")
+
+    if mode == "current-only":
+        for label in MANIFEST_PATHS:
+            parse_semver(current_versions.get(label), f"current {label}", errors)
+        return
 
     base_check = subprocess.run(
         ["git", "rev-parse", "--verify", f"{base_ref}^{{commit}}"],
@@ -174,15 +193,23 @@ def verify_versions(
         if base_manifest is None:
             continue
         base = parse_semver(base_manifest.get("version"), f"{label} at {base_ref}", errors)
-        if current is not None and base is not None and current <= base:
+        if current is None or base is None:
+            continue
+        if mode == "increase" and current <= base:
             errors.append(
                 f"{label} manifest version must increase relative to {base_ref}: "
+                f"{base_manifest.get('version')} -> {current_versions.get(label)}"
+            )
+        if mode == "no-bump" and current != base:
+            errors.append(
+                f"{label} manifest version must not change in a pull request "
+                f"(ADR 0009: versions are bumped on main after merge): "
                 f"{base_manifest.get('version')} -> {current_versions.get(label)}"
             )
     if base_manifest_count == 0:
         errors.append(
             f"no synchronized plugin manifest exists at {base_ref}; "
-            "cannot establish that the package version advanced"
+            "cannot compare the package version against the base"
         )
 
 
@@ -432,7 +459,7 @@ def verify_skill_metadata_version(root: Path, manifests: dict[str, dict[str, Any
         )
 
 
-def verify_package(root: Path, base_ref: str) -> list[str]:
+def verify_package(root: Path, base_ref: str | None, mode: str = "increase") -> list[str]:
     errors: list[str] = []
     manifests: dict[str, dict[str, Any]] = {}
     for label, relative in MANIFEST_PATHS.items():
@@ -441,7 +468,7 @@ def verify_package(root: Path, base_ref: str) -> list[str]:
             manifests[label] = payload
 
     if len(manifests) == len(MANIFEST_PATHS):
-        verify_versions(root, base_ref, manifests, errors)
+        verify_versions(root, base_ref, manifests, errors, mode)
         verify_manifest_identity(manifests, errors)
         verify_skill_metadata_version(root, manifests, errors)
         verify_codex_skill_path(root, manifests["Codex"], errors)
@@ -449,20 +476,52 @@ def verify_package(root: Path, base_ref: str) -> list[str]:
     return errors
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Verify synchronized plugin versions and marketplace packaging."
+    )
+    parser.add_argument("base_ref", nargs="?", help="base ref to compare versions against")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--require-no-bump",
+        action="store_true",
+        help="require manifest versions to be unchanged relative to the base (PR gate)",
+    )
+    group.add_argument(
+        "--current-only",
+        action="store_true",
+        help="validate the current tree without comparing versions to a base",
+    )
+    args = parser.parse_args()
+    if args.current_only:
+        if args.base_ref is not None:
+            parser.error("--current-only does not take a base ref")
+    elif args.base_ref is None:
+        parser.error("a base ref is required unless --current-only is given")
+    return args
+
+
 def main() -> int:
-    if len(sys.argv) != 2:
-        print(f"Usage: {Path(sys.argv[0]).name} <base-ref>", file=sys.stderr)
-        return 2
-    base_ref = sys.argv[1]
-    errors = verify_package(ROOT, base_ref)
+    args = parse_args()
+    mode = (
+        "current-only"
+        if args.current_only
+        else "no-bump" if args.require_no_bump else "increase"
+    )
+    errors = verify_package(ROOT, args.base_ref, mode)
     if errors:
         print("FAIL plugin package")
         for error in errors:
             print(f"  - {error}")
         return 1
     versions = load_json(ROOT / MANIFEST_PATHS["Claude"], [])["version"]
+    detail = {
+        "increase": "version advanced",
+        "no-bump": "version unchanged",
+        "current-only": "current tree",
+    }[mode]
     print(
-        f"OK plugin package: Claude, Codex, and Factory {versions}, "
+        f"OK plugin package ({detail}): Claude, Codex, and Factory {versions}, "
         f"marketplace paths, and packaged skill"
     )
     return 0

@@ -16,6 +16,7 @@ MANIFEST_PATHS = (
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
 )
+SKILL_PATH = Path("skills/diagram-design/SKILL.md")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
@@ -68,9 +69,58 @@ def bump(root: Path, part: str = "patch") -> str:
         rendered_manifests.append(
             (root / relative, json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
         )
+    skill_path, skill_contents = render_skill_metadata_version(root, version)
     for path, contents in rendered_manifests:
         path.write_text(contents, encoding="utf-8")
+    skill_path.write_text(skill_contents, encoding="utf-8")
     return version
+
+
+def render_skill_metadata_version(root: Path, version: str) -> tuple[Path, str]:
+    """Keep SKILL.md's hand-maintained metadata.version on the manifest MAJOR.MINOR.
+
+    The package verifier fails when the two drift, so the bump must update both
+    sides in one step. Returns the pending write (rendered before any manifest
+    is written, so a malformed SKILL.md aborts the whole bump); raises when the
+    frontmatter does not carry exactly one metadata.version to rewrite.
+    """
+    path = root / SKILL_PATH
+    if not path.is_file():
+        raise PackageVersionError(f"missing {SKILL_PATH}")
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        raise PackageVersionError(f"{SKILL_PATH} has no YAML frontmatter")
+    closing = next(
+        (index for index in range(1, len(lines)) if lines[index].strip() == "---"), None
+    )
+    if closing is None:
+        raise PackageVersionError(f"{SKILL_PATH} frontmatter is unterminated")
+
+    major_minor = ".".join(version.split(".")[:2])
+    in_metadata = False
+    replaced = 0
+    for index in range(1, closing):
+        line = lines[index]
+        if re.fullmatch(r"metadata:\s*(?:#.*)?", line.rstrip("\n")):
+            in_metadata = True
+            continue
+        if in_metadata and line.strip() and not line[0].isspace():
+            in_metadata = False
+        if not in_metadata:
+            continue
+        match = re.fullmatch(
+            r'(?P<head>\s+version:\s*)"[0-9][0-9.]*"(?P<tail>\s*(?:#.*)?)',
+            line.rstrip("\n"),
+        )
+        if match is not None:
+            lines[index] = f'{match.group("head")}"{major_minor}"{match.group("tail")}\n'
+            replaced += 1
+    if replaced != 1:
+        raise PackageVersionError(
+            f"{SKILL_PATH} frontmatter must contain exactly one quoted "
+            f"metadata.version; found {replaced}"
+        )
+    return path, "".join(lines)
 
 
 def parse_args() -> argparse.Namespace:
