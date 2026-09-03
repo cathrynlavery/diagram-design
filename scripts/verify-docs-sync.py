@@ -43,7 +43,7 @@ HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.
 ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
 LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
 VARIANTS = ("", "-dark", "-full")
-VISUAL_TYPE_COUNT = 39
+VISUAL_TYPE_COUNT = 40
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
 # Types whose selection-table name differs from its description vocabulary.
 DESCRIPTION_ALIASES = {

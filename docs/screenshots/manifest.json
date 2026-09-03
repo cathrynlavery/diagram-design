@@ -192,6 +192,15 @@
       "height": 1202
     },
     {
+      "slug": "heatmap",
+      "source": "skills/diagram-design/assets/example-heatmap.html",
+      "screenshot": "docs/screenshots/heatmap.png",
+      "source_sha256": "48b8a1fd7a6024a2d1cdf7747ec0a74f2ea3adc821ef2f58cf6a2780da399a42",
+      "screenshot_sha256": "893ea6edffc6caffd4192971e426b8499594984942338166efeee7c151a7bb69",
+      "width": 2400,
+      "height": 1202
+    },
+    {
       "slug": "line",
       "source": "skills/diagram-design/assets/example-line.html",
       "screenshot": "docs/screenshots/line.png",

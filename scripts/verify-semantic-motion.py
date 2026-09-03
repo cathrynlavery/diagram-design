@@ -21,7 +21,7 @@ PATTERNS = ROOT / "skills/diagram-design/references/semantic-patterns.md"
 ANIMATION = ROOT / "skills/diagram-design/references/animation.md"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
 MAX_SKILL_BYTES = 40_000
-VISUAL_TYPE_COUNT = 39
+VISUAL_TYPE_COUNT = 40
 
 PATTERN_NAMES = (
     "Fan-in queue / bottleneck",

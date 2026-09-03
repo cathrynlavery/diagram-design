@@ -41,6 +41,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
 | Rendered-layout checker and shipped examples/templates | `python3 scripts/lint-render.py --self-test && python3 scripts/lint-render.py --all` |
 | Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
+| Heatmap monotone opacity ramp, complete N×M grid, ≤1 focal cell | `python3 scripts/test-verify-heatmap.py && python3 scripts/verify-heatmap.py --all` |
 | A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
 | Sequence-doc consistency (ATL fragments, budgets) | `python3 scripts/verify-sequence-oauth.py` |
 | Semantic-motion verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-semantic-motion.py` |
@@ -95,6 +96,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/lint-render.py --all \
   && python3 scripts/test-verify-polar.py \
   && python3 scripts/verify-polar.py \
+  && python3 scripts/test-verify-heatmap.py \
+  && python3 scripts/verify-heatmap.py --all \
   && python3 scripts/verify-sequence-oauth.py \
   && python3 scripts/test-verify-semantic-motion.py \
   && python3 scripts/test-verify-sequence-oauth.py \

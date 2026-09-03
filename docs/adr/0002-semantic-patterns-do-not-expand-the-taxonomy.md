@@ -24,4 +24,6 @@ Behavior is a separate axis. The seven semantic patterns in `references/semantic
 
 **2026-08-20 — the count is 39.** Polar was admitted under the same escape clause: angle encodes ordered cyclic categories and linear radius encodes one quantitative series, a layout grammar no existing type provides. It shipped the full §10 set, and the counters named above moved 38 → 39 together with the prose.
 
+**2026-08-31 — the count is 40.** Heatmap was admitted under the same escape clause: a rectangular grid of cells where fill opacity encodes a quantitative value across two categorical axes is a layout grammar no existing type provides (bar encodes with length along one axis, scatter with position on two quantitative axes, treemap with area). It shipped the full §10 set (three example variants, type reference, verifier, adversarial tests, gallery tab), and the two counters named above moved 39 → 40 together with the prose.
+
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.

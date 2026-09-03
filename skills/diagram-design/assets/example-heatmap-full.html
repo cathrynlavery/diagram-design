@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CI failure rate by service and sprint · Heatmap</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 62ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-swatch { width: 14px; height: 14px; border-radius: 2px; }
+    .card-swatch.focal { background: rgba(235,108,54,0.85); border: 1px solid #eb6c36; }
+    .card-swatch.high { background: rgba(45,49,66,0.65); }
+    .card-swatch.low { background: rgba(45,49,66,0.07); border: 1px solid rgba(45,49,66,0.20); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Heatmap · Diagram Design</p>
+      <h1>The week payments went dark</h1>
+      <p class="subtitle">CI failure rate (%) by service and sprint, six sprints. payments spiked to 47% in S4 — a deploy regression that slipped through the gate — and had recovered to 4% by S6. billing carries the highest structural rate; notifications is the quietest service throughout.</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="heatmap-full-title heatmap-full-desc">
+        <title id="heatmap-full-title">The week payments went dark</title>
+        <desc id="heatmap-full-desc">Heatmap of CI failure rate by service and sprint; payments service spiked to 47% in sprint 4 due to a deploy regression, recovered to 4% by sprint 6; billing carries the highest baseline failure rate at 9% in sprint 3.</desc>
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <!-- Cell grid: 6 columns (x=160,280,400,520,640,760), 5 rows (y=64,124,184,244,304).
+             Cell size 116×56, gap 4px (col step=120, row step=60).
+             scripts/verify-heatmap.py enforces monotone opacity, complete grid, ≤1 focal. -->
+
+        <!-- SERVICE axis label (rotated) -->
+        <text transform="rotate(-90 24 212)" x="24" y="212" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SERVICE</text>
+
+        <!-- SPRINT axis label -->
+        <text x="518" y="36" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">SPRINT</text>
+
+        <!-- Column headers -->
+        <text data-axis="0" data-col="S1" x="218" y="52" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S1</text>
+        <text data-axis="1" data-col="S2" x="338" y="52" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S2</text>
+        <text data-axis="2" data-col="S3" x="458" y="52" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S3</text>
+        <text data-axis="3" data-col="S4" x="578" y="52" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S4</text>
+        <text data-axis="4" data-col="S5" x="698" y="52" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S5</text>
+        <text data-axis="5" data-col="S6" x="818" y="52" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">S6</text>
+
+        <!-- Row labels -->
+        <text data-row-label="auth" x="148" y="96" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">auth</text>
+        <text data-row-label="payments" x="148" y="156" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">payments</text>
+        <text data-row-label="api-gateway" x="148" y="216" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">api-gateway</text>
+        <text data-row-label="billing" x="148" y="276" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">billing</text>
+        <text data-row-label="notifications" x="148" y="336" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">notifications</text>
+
+        <!-- Row: auth (y=64) -->
+        <rect x="160" y="64" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="auth" data-col="S1" data-value="4" x="160" y="64" width="116" height="56" fill="rgba(45,49,66,0.29)"/>
+        <text x="218" y="96" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4%</text>
+
+        <rect x="280" y="64" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="auth" data-col="S2" data-value="5" x="280" y="64" width="116" height="56" fill="rgba(45,49,66,0.36)"/>
+        <text x="338" y="96" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">5%</text>
+
+        <rect x="400" y="64" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="auth" data-col="S3" data-value="6" x="400" y="64" width="116" height="56" fill="rgba(45,49,66,0.43)"/>
+        <text x="458" y="96" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">6%</text>
+
+        <rect x="520" y="64" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="auth" data-col="S4" data-value="3" x="520" y="64" width="116" height="56" fill="rgba(45,49,66,0.22)"/>
+        <text x="578" y="96" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3%</text>
+
+        <rect x="640" y="64" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="auth" data-col="S5" data-value="2" x="640" y="64" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="698" y="96" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <rect x="760" y="64" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="auth" data-col="S6" data-value="2" x="760" y="64" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="818" y="96" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <!-- Row: payments (y=124) -->
+        <rect x="160" y="124" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="payments" data-col="S1" data-value="3" x="160" y="124" width="116" height="56" fill="rgba(45,49,66,0.22)"/>
+        <text x="218" y="156" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3%</text>
+
+        <rect x="280" y="124" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="payments" data-col="S2" data-value="4" x="280" y="124" width="116" height="56" fill="rgba(45,49,66,0.29)"/>
+        <text x="338" y="156" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4%</text>
+
+        <rect x="400" y="124" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="payments" data-col="S3" data-value="5" x="400" y="124" width="116" height="56" fill="rgba(45,49,66,0.36)"/>
+        <text x="458" y="156" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">5%</text>
+
+        <!-- FOCAL CELL: payments·S4 = 47% deploy regression -->
+        <rect x="520" y="124" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="payments" data-col="S4" data-value="47" data-focal="true" x="520" y="124" width="116" height="56" fill="rgba(235,108,54,0.85)" stroke="#eb6c36" stroke-width="1.2"/>
+        <text x="578" y="149" fill="#f5f5f5" font-size="10" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">47%</text>
+        <text x="578" y="163" fill="rgba(245,245,245,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REGRESSION</text>
+
+        <rect x="640" y="124" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="payments" data-col="S5" data-value="6" x="640" y="124" width="116" height="56" fill="rgba(45,49,66,0.43)"/>
+        <text x="698" y="156" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">6%</text>
+
+        <rect x="760" y="124" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="payments" data-col="S6" data-value="4" x="760" y="124" width="116" height="56" fill="rgba(45,49,66,0.29)"/>
+        <text x="818" y="156" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4%</text>
+
+        <!-- Row: api-gateway (y=184) -->
+        <rect x="160" y="184" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="api-gateway" data-col="S1" data-value="2" x="160" y="184" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="218" y="216" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <rect x="280" y="184" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="api-gateway" data-col="S2" data-value="3" x="280" y="184" width="116" height="56" fill="rgba(45,49,66,0.22)"/>
+        <text x="338" y="216" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3%</text>
+
+        <rect x="400" y="184" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="api-gateway" data-col="S3" data-value="4" x="400" y="184" width="116" height="56" fill="rgba(45,49,66,0.29)"/>
+        <text x="458" y="216" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4%</text>
+
+        <rect x="520" y="184" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="api-gateway" data-col="S4" data-value="2" x="520" y="184" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="578" y="216" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <rect x="640" y="184" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="api-gateway" data-col="S5" data-value="1" x="640" y="184" width="116" height="56" fill="rgba(45,49,66,0.07)"/>
+        <text x="698" y="216" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1%</text>
+
+        <rect x="760" y="184" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="api-gateway" data-col="S6" data-value="1" x="760" y="184" width="116" height="56" fill="rgba(45,49,66,0.07)"/>
+        <text x="818" y="216" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1%</text>
+
+        <!-- Row: billing (y=244) -->
+        <rect x="160" y="244" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="billing" data-col="S1" data-value="5" x="160" y="244" width="116" height="56" fill="rgba(45,49,66,0.36)"/>
+        <text x="218" y="276" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">5%</text>
+
+        <rect x="280" y="244" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="billing" data-col="S2" data-value="7" x="280" y="244" width="116" height="56" fill="rgba(45,49,66,0.51)"/>
+        <text x="338" y="276" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">7%</text>
+
+        <rect x="400" y="244" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="billing" data-col="S3" data-value="9" x="400" y="244" width="116" height="56" fill="rgba(45,49,66,0.65)"/>
+        <text x="458" y="276" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">9%</text>
+
+        <rect x="520" y="244" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="billing" data-col="S4" data-value="6" x="520" y="244" width="116" height="56" fill="rgba(45,49,66,0.43)"/>
+        <text x="578" y="276" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">6%</text>
+
+        <rect x="640" y="244" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="billing" data-col="S5" data-value="4" x="640" y="244" width="116" height="56" fill="rgba(45,49,66,0.29)"/>
+        <text x="698" y="276" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4%</text>
+
+        <rect x="760" y="244" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="billing" data-col="S6" data-value="3" x="760" y="244" width="116" height="56" fill="rgba(45,49,66,0.22)"/>
+        <text x="818" y="276" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3%</text>
+
+        <!-- Row: notifications (y=304) -->
+        <rect x="160" y="304" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="notifications" data-col="S1" data-value="1" x="160" y="304" width="116" height="56" fill="rgba(45,49,66,0.07)"/>
+        <text x="218" y="336" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1%</text>
+
+        <rect x="280" y="304" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="notifications" data-col="S2" data-value="2" x="280" y="304" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="338" y="336" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <rect x="400" y="304" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="notifications" data-col="S3" data-value="2" x="400" y="304" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="458" y="336" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <rect x="520" y="304" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="notifications" data-col="S4" data-value="2" x="520" y="304" width="116" height="56" fill="rgba(45,49,66,0.14)"/>
+        <text x="578" y="336" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2%</text>
+
+        <rect x="640" y="304" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="notifications" data-col="S5" data-value="1" x="640" y="304" width="116" height="56" fill="rgba(45,49,66,0.07)"/>
+        <text x="698" y="336" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1%</text>
+
+        <rect x="760" y="304" width="116" height="56" fill="#f5f5f5"/>
+        <rect data-row="notifications" data-col="S6" data-value="1" x="760" y="304" width="116" height="56" fill="rgba(45,49,66,0.07)"/>
+        <text x="818" y="336" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">1%</text>
+
+        <!-- Annotation: callout for focal column -->
+        <line x1="520" y1="60" x2="636" y2="60" stroke="#eb6c36" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="578" y="58" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="middle">DEPLOY REGRESSION</text>
+
+        <!-- Annotation: callout for billing row high baseline -->
+        <line x1="880" y1="244" x2="880" y2="300" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="884" y="272" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.04em">HIGH BASELINE</text>
+
+        <!-- Legend -->
+        <line x1="40" y1="382" x2="960" y2="382" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="398" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <text x="960" y="398" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">ILLUSTRATIVE CI FAILURE RATES · NOT A MEASURED REGISTRY</text>
+
+        <rect x="120" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="120" y="386" width="20" height="12" fill="rgba(45,49,66,0.07)"/>
+        <rect x="142" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="142" y="386" width="20" height="12" fill="rgba(45,49,66,0.14)"/>
+        <rect x="164" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="164" y="386" width="20" height="12" fill="rgba(45,49,66,0.22)"/>
+        <rect x="186" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="186" y="386" width="20" height="12" fill="rgba(45,49,66,0.29)"/>
+        <rect x="208" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="208" y="386" width="20" height="12" fill="rgba(45,49,66,0.36)"/>
+        <rect x="230" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="230" y="386" width="20" height="12" fill="rgba(45,49,66,0.43)"/>
+        <rect x="252" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="252" y="386" width="20" height="12" fill="rgba(45,49,66,0.51)"/>
+        <rect x="274" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="274" y="386" width="20" height="12" fill="rgba(45,49,66,0.65)"/>
+        <text x="116" y="396" fill="#4f5d75" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="end">LOW</text>
+        <text x="298" y="396" fill="#4f5d75" font-size="7.5" font-family="'Geist Mono', monospace">HIGH</text>
+
+        <rect x="360" y="386" width="20" height="12" fill="#f5f5f5"/><rect x="360" y="386" width="20" height="12" fill="rgba(235,108,54,0.85)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="388" y="396" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">payments · S4 · 47% — deploy regression (now fixed)</text>
+
+        <text x="40" y="418" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">NON-FOCAL SCALE: 1–9% · SINGLE INK RAMP · ACCENT IS EDITORIAL, NOT A DATA RANGE</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">Focal · payments · S4</p>
+        <div class="card-header">
+          <div class="card-swatch focal"></div>
+          <h3>Deploy regression — 47%</h3>
+        </div>
+        <p>A CI gate misconfiguration during the payments S4 deploy let a breaking change through. The spike resolved by S6 after the rollback and a gate fix, returning to a 4% baseline.</p>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Structural issue · billing</p>
+        <div class="card-header">
+          <div class="card-swatch high"></div>
+          <h3>Highest baseline — peaks 9%</h3>
+        </div>
+        <p>billing shows the highest non-focal failure rates across all six sprints, peaking at 9% in S3. This is a persistent structural issue unrelated to the payments regression.</p>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Quietest service · notifications</p>
+        <div class="card-header">
+          <div class="card-swatch low"></div>
+          <h3>Most stable — never above 2%</h3>
+        </div>
+        <p>notifications stayed at or below 2% every sprint. This is the contrast the heatmap makes visible: same period, same team, dramatically different structural rates.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Heatmap · Diagram Design</span>
+      <span>Illustrative CI failure rates · not a measured registry</span>
+    </div>
+  </div>
+</body>
+</html>
