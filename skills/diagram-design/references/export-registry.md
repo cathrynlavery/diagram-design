@@ -21,21 +21,24 @@ Applies only to diagrams using the Traceable block decomposition pattern (Tree n
 
 ```json
 {
-  "source": "fc3-timeline-architecture.html",
+  "source": "example-tree-block-decomposition.html",
   "blocks": [
     {
-      "id": "FC3-001",
-      "name": "Timeline Engine",
-      "input": "Ordered clip list from the Assembly stage",
-      "output": "Rendered timeline state to the Playback surface",
-      "constraint": "Single writer; all mutation goes through the command queue",
-      "impl": "src/timeline/engine.ts"
+      "id": "PAY-001",
+      "name": "Payment Gateway",
+      "output": "Settled transaction record",
+      "constraint": "Every transaction reaches exactly one terminal state",
+      "impl": "src/payments/gateway/"
     },
     {
-      "id": "FC3-001-01",
-      "parent": "FC3-001",
-      "name": "Command Queue",
-      "impl": "src/timeline/command-queue.ts"
+      "id": "PAY-001-01",
+      "parent": "PAY-001",
+      "name": "Card Authorization",
+      "input": "Raw card details from checkout",
+      "output": "Authorization token or decline",
+      "constraint": "Never persists a raw card number",
+      "assumption": "Runs behind the PCI-scoped boundary",
+      "impl": "src/payments/authorization/"
     }
   ]
 }
@@ -56,7 +59,7 @@ No other keys, and no generation timestamp: the registry is meant to be regenera
 3. For each matched node, read `data-block-id`, `data-block-parent`, `data-block-name`, `data-block-input`, `data-block-output`, `data-block-constraint`, `data-block-assumption`, `data-block-impl` — whichever are present. Map `data-block-name` to the JSON key `name`; map the rest by dropping the `data-block-` prefix.
 4. Preserve attribute values verbatim — no trimming beyond surrounding whitespace, no case changes, no re-formatting of the `impl` path.
 5. Assemble the `blocks` array in document order.
-6. Write to `<basename>.registry.json` next to the source (e.g. `fc3-timeline-architecture.html` → `fc3-timeline-architecture.registry.json`). Honour an explicit `--output` path if the user provided one to the parent export command.
+6. Write to `<basename>.registry.json` next to the source (e.g. `example-tree-block-decomposition.html` → `example-tree-block-decomposition.registry.json`). Honour an explicit `--output` path if the user provided one to the parent export command.
 
 ## Edge cases
 

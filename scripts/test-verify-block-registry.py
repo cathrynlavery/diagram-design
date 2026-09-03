@@ -61,12 +61,12 @@ def main() -> int:
             print(f"OK: {label}")
 
     # A single root block, no parent attribute at all, is legal.
-    check("single root block", document(block("FC3-001")), 0)
+    check("single root block", document(block("BLK-001")), 0)
 
     # A valid parent-child pair, parent resolves to a real sibling id.
     check(
         "valid parent-child pair",
-        document(block("FC3-001") + block("FC3-001-01", parent="FC3-001")),
+        document(block("BLK-001") + block("BLK-001-01", parent="BLK-001")),
         0,
     )
 
@@ -74,9 +74,9 @@ def main() -> int:
     check(
         "valid three-level chain",
         document(
-            block("FC3-001")
-            + block("FC3-001-01", parent="FC3-001")
-            + block("FC3-001-01-01", parent="FC3-001-01")
+            block("BLK-001")
+            + block("BLK-001-01", parent="BLK-001")
+            + block("BLK-001-01-01", parent="BLK-001-01")
         ),
         0,
     )
@@ -85,9 +85,9 @@ def main() -> int:
     check(
         "shared parent, two children",
         document(
-            block("FC3-001")
-            + block("FC3-001-01", parent="FC3-001")
-            + block("FC3-001-02", parent="FC3-001")
+            block("BLK-001")
+            + block("BLK-001-01", parent="BLK-001")
+            + block("BLK-001-02", parent="BLK-001")
         ),
         0,
     )
@@ -95,7 +95,7 @@ def main() -> int:
     # Two blocks copy-pasted with the same id is the defect this exists to catch.
     check(
         "duplicate id",
-        document(block("FC3-001") + block("FC3-001", name="Renamed")),
+        document(block("BLK-001") + block("BLK-001", name="Renamed")),
         1,
     )
 
@@ -103,14 +103,14 @@ def main() -> int:
     # deleted parent left a dangling reference behind.
     check(
         "orphan parent reference",
-        document(block("FC3-001-01", parent="FC3-999")),
+        document(block("BLK-001-01", parent="BLK-999")),
         1,
     )
 
     # A block whose own id is its parent — the smallest possible cycle.
     check(
         "self-parent cycle",
-        document(block("FC3-001", parent="FC3-001")),
+        document(block("BLK-001", parent="BLK-001")),
         1,
     )
 
@@ -118,7 +118,7 @@ def main() -> int:
     check(
         "two-node cycle",
         document(
-            block("FC3-001", parent="FC3-002") + block("FC3-002", parent="FC3-001")
+            block("BLK-001", parent="BLK-002") + block("BLK-002", parent="BLK-001")
         ),
         1,
     )
@@ -126,21 +126,21 @@ def main() -> int:
     # An id with no data-block-name attribute at all.
     check(
         "missing name attribute",
-        document(block("FC3-001", name=None)),
+        document(block("BLK-001", name=None)),
         1,
     )
 
     # data-block-name present but empty is the same defect as absent.
     check(
         "empty name attribute",
-        document(block("FC3-001", name="")),
+        document(block("BLK-001", name="")),
         1,
     )
 
     # data-block-name present but whitespace-only is the same defect as empty.
     check(
         "whitespace-only name attribute",
-        document(block("FC3-001", name="   ")),
+        document(block("BLK-001", name="   ")),
         1,
     )
 
@@ -165,7 +165,7 @@ def main() -> int:
     # blank id itself, and the child's blank data-block-parent as unresolved.
     check(
         "blank id never satisfies a blank parent",
-        document(block("") + block("FC3-001", parent="")),
+        document(block("") + block("BLK-001", parent="")),
         2,
     )
 
@@ -173,7 +173,7 @@ def main() -> int:
     # absent-means-root is the only root convention (export-registry.md).
     check(
         "blank parent attribute is unresolved",
-        document(block("FC3-001") + block("FC3-001-01", parent="")),
+        document(block("BLK-001") + block("BLK-001-01", parent="")),
         1,
     )
 
@@ -199,11 +199,11 @@ def main() -> int:
         "full optional metadata set present",
         document(
             block(
-                "FC3-001",
+                "BLK-001",
                 extra=(
-                    ' data-block-input="clip list" data-block-output="timeline state"'
-                    ' data-block-constraint="single writer" data-block-assumption="60fps"'
-                    ' data-block-impl="src/timeline/engine.ts"'
+                    ' data-block-input="card details" data-block-output="auth token"'
+                    ' data-block-constraint="single writer" data-block-assumption="PCI boundary"'
+                    ' data-block-impl="src/payments/authorization/"'
                 ),
             )
         ),
@@ -214,7 +214,7 @@ def main() -> int:
     # can legally show more than one top-level block.
     check(
         "multiple independent trees",
-        document(block("FC3-001") + block("FC3-002")),
+        document(block("BLK-001") + block("BLK-002")),
         0,
     )
 
@@ -226,7 +226,7 @@ def main() -> int:
     check(
         "literal greater-than before id does not truncate the tag",
         document(
-            '<rect data-block-constraint="output > input" data-block-id="FC3-001" '
+            '<rect data-block-constraint="output > input" data-block-id="BLK-001" '
             'data-block-name="X" x="0" y="0" width="160" height="48" rx="6"/>'
         ),
         0,
@@ -238,7 +238,7 @@ def main() -> int:
     check(
         "literal greater-than after id does not truncate the tag",
         document(
-            '<rect data-block-id="FC3-001" data-block-name="X" '
+            '<rect data-block-id="BLK-001" data-block-name="X" '
             'data-block-constraint="output > input" x="0" y="0" width="160" height="48" rx="6"/>'
         ),
         0,
@@ -249,7 +249,7 @@ def main() -> int:
     check(
         "single-quoted attribute values are recognized",
         document(
-            "<rect data-block-id='FC3-001' data-block-name='X' "
+            "<rect data-block-id='BLK-001' data-block-name='X' "
             "x='0' y='0' width='160' height='48' rx='6'/>"
         ),
         0,
@@ -261,10 +261,10 @@ def main() -> int:
     check(
         "mixed quoting styles in one tag",
         document(
-            '<rect data-block-id="FC3-001" data-block-name=\'X\' '
-            'data-block-parent="FC3-000" x="0" y="0" width="160" height="48" rx="6"/>'
+            '<rect data-block-id="BLK-001" data-block-name=\'X\' '
+            'data-block-parent="BLK-000" x="0" y="0" width="160" height="48" rx="6"/>'
         ),
-        1,  # data-block-parent references FC3-000, which this document never defines
+        1,  # data-block-parent references BLK-000, which this document never defines
     )
 
     if failures:
