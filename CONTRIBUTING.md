@@ -53,6 +53,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Every shipped motion template/example | `python3 scripts/verify-motion.py --shipped` |
 | Docs/routing sync (description hooks, gallery, README tree, reference links, strict-bundler support paths, command/prompt surfaces) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
+| Export snippet's stalled-webfont fallback (window.stop on timeout, warning, normal load) | `python3 scripts/test-export-wait.py` (requires Playwright; skips without it) |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
@@ -129,7 +130,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-beeswarm.py --all \
   && python3 scripts/test-verify-beeswarm.py \
   && python3 scripts/verify-skin-polarity.py --all \
-  && python3 scripts/test-verify-skin-polarity.py
+  && python3 scripts/test-verify-skin-polarity.py \
+  && python3 scripts/test-export-wait.py
 ```
 
 ### If a gate fails
