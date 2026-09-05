@@ -44,6 +44,46 @@ effective_w        = 1000 - right_strip_w - strip_margin
 ## 8. Anti-patterns
 """
 
+GRID_SKILL = """\
+### 4px grid
+
+**Structural geometry, divisible by 4:** node origins, widths, heights, gaps, padding. Off-grid by design: type sizes (role ramp in `references/output-spec.md`), stroke widths, opacity.
+
+| Category | Allowed values |
+|---|---|
+| Node width / height | 80, 96, 120 |
+| Gap between nodes | 20, 24, 32 |
+
+### Complexity budget
+
+<text x="10" y="20" font-size="12">Ingest</text>
+<text x="10" y="34" font-size="8.5">source: s3</text>
+"""
+
+TYPE_RAMP_SPEC = """\
+### Type ramp per size class
+
+| Role | standard | presentation | print |
+|---|---|---|---|
+| Title (Instrument Serif) | 28 | 40 | 32 |
+| Node name (Geist 600) | 12 | 16 | 12 |
+| Sublabel (Geist Mono) | 9 | 12 | 9 |
+| Arrow label (Geist Mono) | 8 | 12 | 8 |
+| Eyebrow / tag (Geist Mono) | 8 | 8 | 8 |
+| Node box min height | 48 | 64 | 48 |
+| Min gap between nodes | 24 | 40 | 24 |
+
+Every `font-size` is one of the role values above for the preset in use, or one of these named exceptions:
+
+| Exception | Sizes |
+|---|---|
+| Dense annotation: legend keys, axis ticks (Geist Mono) | 7 to 11, half steps allowed |
+| Group or entity heading (Geist 600) | 14 |
+| Decorative watermark numerals at or under 0.08 opacity | any |
+
+### Safe areas
+"""
+
 
 def load_verify_module():
     sys.dont_write_bytecode = True
@@ -169,6 +209,88 @@ def main() -> int:
     )
     if errors != [expected]:
         raise AssertionError(f"light-skin regression was not reported: {errors}")
+
+    # ── type-ramp contract tests ─────────────────────────────────────────────
+    errors = []
+    verify.check_type_ramp(errors, GRID_SKILL, TYPE_RAMP_SPEC)
+    if errors:
+        raise AssertionError(f"valid type-ramp contract failed: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="12"', 'font-size="13"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"off-ramp font size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="8.5"', 'font-size="8.25"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=8.25" not in errors[0]:
+        raise AssertionError(f"quarter-step font size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace("|---|---|\n", "|---|---|\n| Font sizes | 8, 12 |\n", 1),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "'Font sizes' row" not in errors[0]:
+        raise AssertionError(f"font-size row in the grid table was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace(" (role ramp in `references/output-spec.md`)", ""),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "does not link to references/output-spec.md" not in errors[0]:
+        raise AssertionError(f"unlinked grid section was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL,
+        TYPE_RAMP_SPEC.replace("| Sublabel (Geist Mono) | 9 | 12 | 9 |\n", ""),
+    )
+    if not any("'Sublabel'" in error for error in errors):
+        raise AssertionError(f"missing ramp role was not reported: {errors}")
+
+    heading_skill = GRID_SKILL.replace('font-size="12"', 'font-size="14"')
+    errors = []
+    verify.check_type_ramp(errors, heading_skill, TYPE_RAMP_SPEC)
+    if errors:
+        raise AssertionError(f"exempt heading size 14 was rejected: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        heading_skill,
+        TYPE_RAMP_SPEC.replace("| Group or entity heading (Geist 600) | 14 |\n", ""),
+    )
+    if len(errors) != 1 or "font-size=14" not in errors[0]:
+        raise AssertionError(
+            f"size 14 was accepted without its named exception: {errors}"
+        )
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL,
+        TYPE_RAMP_SPEC[: TYPE_RAMP_SPEC.index("Every `font-size`")] + "### Safe areas\n",
+    )
+    if not any("named font-size exceptions table" in error for error in errors):
+        raise AssertionError(f"missing exceptions table was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        verify.SKILL.read_text(encoding="utf-8"),
+        verify.OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"),
+    )
+    if errors:
+        raise AssertionError(f"shipped SKILL.md and output-spec.md disagree: {errors}")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-") as temp_dir:
         skill = Path(temp_dir)
@@ -686,7 +808,7 @@ diagram-design/
     print(
         "PASS: docs sync checks references, asset citations, strict-bundler packaging, "
         "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
-        "and gallery guards (parent/variant model)"
+        "the type-ramp contract, and gallery guards (parent/variant model)"
     )
     return 0
 

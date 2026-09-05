@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Ten drift classes, each of which has shipped before:
+Twelve drift classes, each of which has shipped before:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -23,6 +23,11 @@ Ten drift classes, each of which has shipped before:
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
+12. The SKILL.md 4px-grid section and the output-spec type ramp must agree: the
+   grid table carries no font-size row, the grid section links to
+   references/output-spec.md, the ramp table keeps its five type roles across all
+   three presets, and every font-size in SKILL.md's §6 patterns is a canonical
+   role size or falls inside a named exception.
 """
 
 from __future__ import annotations
@@ -41,6 +46,7 @@ README = ROOT / "README.md"
 HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
 ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
 LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
+OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design/references/output-spec.md"
 VARIANTS = ("", "-dark", "-full")
 VISUAL_TYPE_COUNT = 40
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
@@ -507,6 +513,113 @@ def check_high_level_reference(errors: list[str], markdown: str) -> None:
         )
 
 
+TYPE_RAMP_ROLES = ("Title", "Node name", "Sublabel", "Arrow label", "Eyebrow / tag")
+FONT_SIZE_RE = re.compile(r'font-size="(\d+(?:\.\d+)?)"')
+SIZE_RANGE_RE = re.compile(r"^(\d+(?:\.\d+)?)(?: to (\d+(?:\.\d+)?))?$")
+
+
+def section(markdown: str, heading: str) -> str:
+    """Text from *heading* to the next `### ` heading, heading excluded."""
+    start = markdown.find(heading)
+    if start < 0:
+        return ""
+    body = markdown[start + len(heading) :]
+    end = re.search(r"^### ", body, re.MULTILINE)
+    return body[: end.start()] if end else body
+
+
+def table_rows(text: str) -> list[list[str]]:
+    """Markdown table rows as cell lists, header and separator rows dropped."""
+    rows: list[list[str]] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if all(re.fullmatch(r":?-{2,}:?", cell) for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def format_size(value: float) -> str:
+    return f"{value:g}"
+
+
+def check_type_ramp(errors: list[str], skill_markdown: str, spec_markdown: str) -> None:
+    """The grid section and the output-spec role ramp are one contract."""
+    grid = section(skill_markdown, "### 4px grid")
+    if not grid:
+        errors.append("SKILL.md has no '### 4px grid' section")
+    else:
+        if re.search(r"^\|\s*Font sizes", grid, re.MULTILINE):
+            errors.append(
+                "SKILL.md 4px-grid table carries a 'Font sizes' row; type sizes "
+                "belong to the role ramp in references/output-spec.md, not the grid"
+            )
+        if "references/output-spec.md" not in grid:
+            errors.append(
+                "SKILL.md 4px-grid section does not link to references/output-spec.md "
+                "for the type ramp"
+            )
+
+    ramp = section(spec_markdown, "### Type ramp per size class")
+    if not ramp:
+        errors.append("output-spec.md has no '### Type ramp per size class' section")
+        return
+
+    rows = table_rows(ramp)
+    canonical: set[float] = set()
+    for role in TYPE_RAMP_ROLES:
+        row = next((cells for cells in rows if cells and cells[0].startswith(role)), None)
+        if row is None:
+            errors.append(f"output-spec.md type ramp is missing the {role!r} role row")
+            continue
+        sizes = [cell for cell in row[1:] if re.fullmatch(r"\d+(?:\.\d+)?", cell)]
+        if len(sizes) != 3:
+            errors.append(
+                f"output-spec.md type ramp row {role!r} has {len(sizes)} numeric "
+                "sizes; expected three (standard, presentation, print)"
+            )
+            continue
+        canonical.update(float(size) for size in sizes)
+
+    # Scope the size parsing to the exceptions table. The ramp rows above it end
+    # in a bare number too, and reading those as exceptions would let any ramp
+    # value stand in for a missing exceptions table.
+    header = re.search(r"^\|\s*Exception\s*\|", ramp, re.MULTILINE)
+    ranges: list[tuple[float, float]] = []
+    for cells in table_rows(ramp[header.start() :] if header else ""):
+        if len(cells) < 2:
+            continue
+        # A Sizes cell may qualify itself after a comma ("7 to 11, half steps
+        # allowed"); the size itself is the part before it.
+        match = SIZE_RANGE_RE.match(cells[-1].split(",", 1)[0].strip())
+        if match:
+            low = float(match.group(1))
+            high = float(match.group(2)) if match.group(2) else low
+            ranges.append((low, high))
+    if not ranges:
+        errors.append(
+            "output-spec.md type ramp has no named font-size exceptions table; "
+            "every off-ramp size needs a documented home"
+        )
+
+    for raw in sorted(set(FONT_SIZE_RE.findall(skill_markdown)), key=float):
+        value = float(raw)
+        if value in canonical:
+            continue
+        in_exception = any(
+            low <= value <= high and (value * 2) % 1 == 0 for low, high in ranges
+        )
+        if not in_exception:
+            errors.append(
+                f"SKILL.md uses font-size={format_size(value)}, which is neither a "
+                "canonical role size from the output-spec type ramp nor a half step "
+                "inside a named exception range"
+            )
+
+
 MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/plugin.json"), ("description",)),
     (Path(".claude-plugin/marketplace.json"), ("description",)),
@@ -636,6 +749,11 @@ def main() -> int:
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
     )
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
+    check_type_ramp(
+        errors,
+        SKILL.read_text(encoding="utf-8"),
+        OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"),
+    )
     check_routing_surfaces(errors, ROOT)
     check_export_font_parity(errors, ROOT)
     if errors:
@@ -648,7 +766,7 @@ def main() -> int:
         "reference links, asset citations, packaged support files, routing surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
-        "export font parity"
+        "export font parity, type-ramp contract"
     )
     return 0
 

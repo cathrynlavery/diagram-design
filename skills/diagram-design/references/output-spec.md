@@ -71,6 +71,16 @@ Node names shrink relative to the canvas as it grows — resist that. Scale the 
 | Node box min height | 48 | 64 | 48 |
 | Min gap between nodes | 24 | 40 | 24 |
 
+Every `font-size` is one of the role values above for the preset in use, or one of these named exceptions:
+
+| Exception | Sizes |
+|---|---|
+| Dense annotation: legend keys, axis ticks, chart data labels, source lines, in-box tags (Geist Mono) | 7 to 11, half steps allowed |
+| Group or entity heading (Geist 600) | 14 |
+| Decorative watermark numerals at or under 0.08 opacity | any |
+
+Anything else is a bug in the diagram, not a new size.
+
 Presentation ramp implies fewer nodes — 16px names in 64px boxes eat the canvas. If a `slide-16x9` layout won't fit, that's the size dial telling you the detail dial is set too high; drop a level rather than shrinking the type.
 
 ### Safe areas
