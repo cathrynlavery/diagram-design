@@ -353,7 +353,7 @@ Expand SVG `viewBox` height by ~60px.
 
 | Category | Allowed values |
 |---|---|
-| Font sizes | 7, 8, 9, 10, 11, 12, 14, 16, 24, 32, 40 |
+| Font sizes | 7, 8, 9, 10, 11, 12, 14, 16, 20, 24, 28, 32, 40 |
 | Node width / height | 80, 96, 112, 120, 128, 140, 144, 160, 180, 200, 240, 320 |
 | Gap between nodes | 20, 24, 32, 40, 48 |
 | Padding inside boxes | 8, 12, 16 |
