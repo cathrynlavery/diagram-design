@@ -83,8 +83,11 @@ scale = int(sys.argv[3]) if len(sys.argv) > 3 else 2
 with sync_playwright() as p:
     browser = p.chromium.launch()
     page = browser.new_page(device_scale_factor=scale)
-    page.goto(f"file://{pathlib.Path(src).resolve()}")
-    page.wait_for_load_state("networkidle")
+    page.goto(f"file://{pathlib.Path(src).resolve()}", wait_until="domcontentloaded")
+    try:
+        page.wait_for_load_state("networkidle", timeout=15000)
+    except Exception:
+        page.wait_for_timeout(4000)  # proxied networks may stall webfont subrequests; fallback keeps the local font stack
     page.locator("svg").first.screenshot(path=out, omit_background=True)
     browser.close()
 ```
