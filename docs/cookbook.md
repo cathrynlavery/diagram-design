@@ -1,16 +1,16 @@
-# Diagram Design cookbook
+﻿# Diagram Design cookbook
 
 Operator recipes for this repository. The design system still lives in [`skills/diagram-design/SKILL.md`](../skills/diagram-design/SKILL.md); this file is the runbook: what to say, which files to load, and which commands to run.
 
-Use it from an **editable clone** (this checkout). Managed marketplace installs can still follow the recipes, but do not edit `references/style-guide.md` inside a package that updates will replace — save a [client profile](../skills/diagram-design/references/profiles.md) instead.
+Use it from an **editable clone** (this checkout). Managed marketplace installs can still follow the recipes, but do not edit `references/style-guide.md` inside a package that updates will replace â€” save a [client profile](../skills/diagram-design/references/profiles.md) instead.
 
 ---
 
 ## Map
 
-| I want to… | Jump |
+| I want toâ€¦ | Jump |
 |---|---|
-| Wire this clone into Claude, Codex, Cursor, Cline, Kiro, OpenCode, or Copilot | [R0](#r0-editable-install) |
+| Wire this clone into Cursor, Cline, Claude, Codex, VS Code | [R0](#r0-editable-install) |
 | Confirm Python, Playwright, PNG export | [R1](#r1-doctor) |
 | Draw the first diagram in a real project | [R2](#r2-first-diagram-in-a-project) |
 | Match a brand | [R3](#r3-onboard-a-skin) |
@@ -25,21 +25,31 @@ Use it from an **editable clone** (this checkout). Managed marketplace installs 
 
 ## R0. Editable install
 
-The canonical skill root is `skills/diagram-design/` (`SKILL.md` + `references/` + `assets/`). Point skill hosts at that inner directory. Pi and the repository's native marketplace packages are the exceptions because they already resolve the `skills/` directory from the repository root.
+The canonical skill root is `skills/diagram-design/` (`SKILL.md` + `references/` + `assets/`). Do not point hosts at the repository root except Pi and marketplace plugins that already resolve `skills/`.
 
-This repository does not duplicate `SKILL.md` into host-specific loader stubs. For an editable install, symlink or junction the canonical inner directory into one discovery root used by your host.
+This checkout also ships **discovery stubs** (same `name` / `description`, body tells the agent to read the canonical root):
+
+| Path in this repo | Host |
+|---|---|
+| `.cline/skills/diagram-design/` | Cline CLI, Cline in VS Code, Cline in VS Code Insiders |
+| `.cursor/skills/diagram-design-playbook/` | Cursor (operator recipes; generation still uses `diagram-design`) |
+| `.github/skills/diagram-design/` | GitHub Copilot coding agent in VS Code / Insiders |
+| `AGENTS.md` | Codex, Cursor, Cline, and any host that loads `AGENTS.md` |
+
+OpenCode and Kiro follow the same skill-path conventions (see host matrix below).
 
 ### Host matrix
 
 | Host | How it finds the skill | What you do |
 |---|---|---|
-| **Claude Code** | Marketplace plugin, `~/.claude/skills/`, or project `.claude/skills/` | Use `/plugin install` for managed updates or link the inner skill for editable work. |
-| **Codex** | Marketplace plugin or `~/.agents/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
-| **Cursor** | `~/.cursor/skills/`, `~/.agents/skills/`, project `.cursor/skills/`, or project `.agents/skills/` | Link the inner skill, then ask in Agent chat. |
-| **Cline CLI / VS Code** | `~/.cline/skills/`, `~/.agents/skills/`, workspace `.cline/skills/`, or workspace `.agents/skills/` | Link the inner skill and enable it from the Skills view when needed. |
-| **Kiro** | Workspace `.kiro/skills/` or global `~/.kiro/skills/` | Link the inner skill, or import its GitHub subdirectory URL; imported skills are copied and must be re-imported to update. |
-| **OpenCode** | Project `.opencode/skills/` or global `~/.config/opencode/skills/` | Link or copy the inner skill; copied installs must be replaced to update. |
-| **GitHub Copilot** | Project `.github/skills/`, `.agents/skills/`, or `.claude/skills/`; user `~/.copilot/skills/`, `~/.agents/skills/`, or `~/.claude/skills/` | Link the inner skill into one applicable root. |
+| **Cursor** | `~/.cursor/skills/diagram-design` and/or project `.cursor/skills/` | Symlink/junction the **inner** skill. Ask in Agent chat. |
+| **Cline CLI** | `~/.cline/skills/`, `~/.agents/skills/`, workspace `.cline/skills/` | Same junction. In the TUI type `/` then the skill, or ask in natural language. `cline` and Hub share this user dir. |
+| **Cline in VS Code / Insiders** | Same as Cline CLI (one `%USERPROFILE%\.cline` profile) | Open the Cline panel â†’ scale icon â†’ **Skills** tab; enable `diagram-design`. Insiders uses the same user skills unless you overrode `cline` data dir. |
+| **Claude Code** | Marketplace plugin **or** `~/.claude/skills/diagram-design` | `/plugin install` **or** symlink the inner skill. Slash: `/diagram-design:doctor` etc. |
+| **Codex** | `codex plugin add diagram-design@diagram-design` **or** `~/.agents/skills/` | Marketplace for managed updates; symlink for an editable clone. `AGENTS.md` applies when this repo is cwd. |
+| **OpenCode** | `~/.opencode/skills/` | Symlink the inner skill into the user skills dir; see [open-issue #149](https://github.com/cathrynlavery/diagram-design/issues/149). |
+| **Kiro** | `~/.agents/skills/` (same agent-skills protocol as Codex) | Symlink the inner skill; follows the same path convention. See [open-issue #152](https://github.com/cathrynlavery/diagram-design/issues/152). |
+| **VS Code / Insiders without Cline** | Copilot: `.github/skills/` in this repo; or install Cline | Open this clone, or copy the stub. Generation still needs the canonical `skills/diagram-design/` files on disk. |
 
 Marketplace installs (Claude `/plugin`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead.
 
@@ -47,21 +57,16 @@ Marketplace installs (Claude `/plugin`, `codex plugin add`, `droid plugin instal
 
 ```bash
 git clone https://github.com/cathrynlavery/diagram-design.git ~/code/diagram-design
-DIAGRAM_SKILL=~/code/diagram-design/skills/diagram-design
-mkdir -p ~/.claude/skills ~/.cursor/skills ~/.agents/skills ~/.cline/skills \
-  ~/.kiro/skills ~/.config/opencode/skills ~/.copilot/skills
-ln -s "$DIAGRAM_SKILL" ~/.claude/skills/diagram-design
-ln -s "$DIAGRAM_SKILL" ~/.cursor/skills/diagram-design
-ln -s "$DIAGRAM_SKILL" ~/.agents/skills/diagram-design
-ln -s "$DIAGRAM_SKILL" ~/.cline/skills/diagram-design
-ln -s "$DIAGRAM_SKILL" ~/.kiro/skills/diagram-design
-ln -s "$DIAGRAM_SKILL" ~/.config/opencode/skills/diagram-design
-ln -s "$DIAGRAM_SKILL" ~/.copilot/skills/diagram-design
+SKILL=~/code/diagram-design/skills/diagram-design
+mkdir -p ~/.claude/skills ~/.cursor/skills ~/.agents/skills ~/.cline/skills ~/.opencode/skills
+ln -s "$SKILL" ~/.claude/skills/diagram-design
+ln -s "$SKILL" ~/.cursor/skills/diagram-design
+ln -s "$SKILL" ~/.agents/skills/diagram-design
+ln -s "$SKILL" ~/.cline/skills/diagram-design
+ln -s "$SKILL" ~/.opencode/skills/diagram-design
 ```
 
-Create only the destinations for the hosts you use. When a host scans both its native root and `.agents/skills/`, choose one so it does not discover the same skill twice.
-
-### Windows (directory junction — not a file symlink)
+### Windows (directory junction â€” not a file symlink)
 
 ```powershell
 $src = "E:\diagram-design\skills\diagram-design"
@@ -70,9 +75,7 @@ foreach ($t in @(
   "$env:USERPROFILE\.cursor\skills\diagram-design",
   "$env:USERPROFILE\.agents\skills\diagram-design",
   "$env:USERPROFILE\.cline\skills\diagram-design",
-  "$env:USERPROFILE\.kiro\skills\diagram-design",
-  "$env:USERPROFILE\.config\opencode\skills\diagram-design",
-  "$env:USERPROFILE\.copilot\skills\diagram-design"
+  "$env:USERPROFILE\.opencode\skills\diagram-design"
 )) {
   $parent = Split-Path $t -Parent
   if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
@@ -105,11 +108,11 @@ On Windows, `python` is the usual interpreter; the skill also accepts `python3` 
 
 Work in the **project that will own the HTML**, not inside `skills/diagram-design/assets/` unless you are contributing an example.
 
-1. **Style-guide gate** ([SKILL.md §0](../skills/diagram-design/SKILL.md)). If the working copy is still shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36`), the agent must pause and offer onboarding, a profile, or an explicit default. Skip the gate when a valid `.diagram-design` marker selects a profile (including `profile: default`).
-2. **Confirm before drawing** ([SKILL.md §3](../skills/diagram-design/SKILL.md)): visual type, optional semantic pattern, size preset, and what the complexity budget will cut.
+1. **Style-guide gate** ([SKILL.md Â§0](../skills/diagram-design/SKILL.md)). If the working copy is still shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36`), the agent must pause and offer onboarding, a profile, or an explicit default. Skip the gate when a valid `.diagram-design` marker selects a profile (including `profile: default`).
+2. **Confirm before drawing** ([SKILL.md Â§3](../skills/diagram-design/SKILL.md)): visual type, optional semantic pattern, size preset, and what the complexity budget will cut.
 3. **Load** the matching `references/type-*.md` before writing SVG. If a semantic pattern applies, load [`semantic-patterns.md`](../skills/diagram-design/references/semantic-patterns.md) first.
 4. **Write** a self-contained HTML file in the project (for example `docs/diagrams/<name>.html`). Do not silently overwrite gallery examples.
-5. **Run** the pre-output checklist ([SKILL.md §9](../skills/diagram-design/SKILL.md)). Orthogonal connectors, 4px grid, ≤9 nodes unless you split, accent on ≤2 focals.
+5. **Run** the pre-output checklist ([SKILL.md Â§9](../skills/diagram-design/SKILL.md)). Orthogonal connectors, 4px grid, â‰¤9 nodes unless you split, accent on â‰¤2 focals.
 
 Marker file at the project root, entire file:
 
@@ -129,7 +132,7 @@ Say one of:
 
 - `Onboard diagram-design to https://example.com`
 - `Extract diagram-design tokens from the local design-system folder <path>`
-- `Use these tokens: paper … ink … accent …` (manual)
+- `Use these tokens: paper â€¦ ink â€¦ accent â€¦` (manual)
 - `Proceed with the default skin` (optionally write `profile: default` with consent)
 
 Then: propose the style-guide diff, wait for approval, write `references/style-guide.md` **or** save a named profile and point the project marker at it. Prefer profiles when this clone is shared or when plugin updates would clobber a customized working copy.
@@ -138,19 +141,19 @@ Then: propose the style-guide diff, wait for approval, write `references/style-g
 
 ## R4. Selection cheat sheet
 
-Do not duplicate the 39-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
+Do not duplicate the 39-type table here. Open [SKILL.md Â§3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
 
 **Behavior first** (then nearest type):
 
-| If the story is… | Pattern → type |
+| If the story isâ€¦ | Pattern â†’ type |
 |---|---|
-| Fan-in, queues, bottlenecks | Fan-in queue → Data flow |
-| Repeated stage slots | Stage framework → Process |
-| Messy input becomes a durable artifact | Unstructured → structured → Data flow |
-| Two policy traces, first divergence | Paired traces → Flowchart |
-| Trust boundaries / paved road | Secure paved road → Architecture |
-| Controls by enforcement layer | Governance catalog → Layer stack |
-| Compensating defenses, residual risk | Compensating layers → Layer stack |
+| Fan-in, queues, bottlenecks | Fan-in queue â†’ Data flow |
+| Repeated stage slots | Stage framework â†’ Process |
+| Messy input becomes a durable artifact | Unstructured â†’ structured â†’ Data flow |
+| Two policy traces, first divergence | Paired traces â†’ Flowchart |
+| Trust boundaries / paved road | Secure paved road â†’ Architecture |
+| Controls by enforcement layer | Governance catalog â†’ Layer stack |
+| Compensating defenses, residual risk | Compensating layers â†’ Layer stack |
 
 **Hard stops:** if a table or paragraph is clearer, do not draw. If you are over the [complexity budget](../skills/diagram-design/SKILL.md) (9 nodes / 12 arrows as the default ceiling), split overview + detail.
 
@@ -191,10 +194,10 @@ Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md) 
 
 | Dial | Typical values |
 |---|---|
-| Format | `html` · `svg` · `png` · `html+png` |
-| Size | `doc-inline` · `slide-16x9` · `social-og` · `fit` · … |
-| Detail | `faithful` · `balanced` · `simplified` |
-| Audience | `engineer` · `mixed` · `executive` |
+| Format | `html` Â· `svg` Â· `png` Â· `html+png` |
+| Size | `doc-inline` Â· `slide-16x9` Â· `social-og` Â· `fit` Â· â€¦ |
+| Detail | `faithful` Â· `balanced` Â· `simplified` |
+| Audience | `engineer` Â· `mixed` Â· `executive` |
 
 Slash forms (Claude): `/diagram-design:import-drawio <file>` and `/diagram-design:import-mermaid <file-or-md>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, and Mermaid auto-layout do not carry over.
 
@@ -236,7 +239,7 @@ Copy and fill. Keep one type, one size, one destination.
 
 **Architecture (docs):**
 
-> Draw an architecture diagram of [system]. Nodes: [list ≤9]. Focal: [1–2]. Size `doc-inline`, format HTML. Use the diagram-design skill. Confirm type and cuts before drawing. Save to `[path].html`.
+> Draw an architecture diagram of [system]. Nodes: [list â‰¤9]. Focal: [1â€“2]. Size `doc-inline`, format HTML. Use the diagram-design skill. Confirm type and cuts before drawing. Save to `[path].html`.
 
 **Deck:**
 
