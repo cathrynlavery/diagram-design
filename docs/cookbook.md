@@ -138,7 +138,7 @@ Then: propose the style-guide diff, wait for approval, write `references/style-g
 
 ## R4. Selection cheat sheet
 
-Do not duplicate the 39-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
+Do not duplicate the 40-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
 
 **Behavior first** (then nearest type):
 

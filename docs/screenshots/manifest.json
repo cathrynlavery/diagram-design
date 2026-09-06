@@ -183,6 +183,15 @@
       "height": 1202
     },
     {
+      "slug": "waterfall",
+      "source": "skills/diagram-design/assets/example-waterfall.html",
+      "screenshot": "docs/screenshots/waterfall.png",
+      "source_sha256": "f0bca6f0f53294668847a40c6e11e4e15b018e7c0ed6ba02e37fe9a5215557cf",
+      "screenshot_sha256": "b884d1ab063d1df28c0cb8922db1ab0ca8c3b9c80f3fe4cda7408da1c8c8ee53",
+      "width": 2400,
+      "height": 1202
+    },
+    {
       "slug": "treemap",
       "source": "skills/diagram-design/assets/example-treemap.html",
       "screenshot": "docs/screenshots/treemap.png",
