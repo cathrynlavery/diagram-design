@@ -24,4 +24,6 @@ Behavior is a separate axis. The seven semantic patterns in `references/semantic
 
 **2026-08-20 — the count is 39.** Polar was admitted under the same escape clause: angle encodes ordered cyclic categories and linear radius encodes one quantitative series, a layout grammar no existing type provides. It shipped the full §10 set, and the counters named above moved 38 → 39 together with the prose.
 
+**2026-09-06 — the count is 40.** Waterfall was admitted under the same escape clause: a running total anchored by start/end bars and bridged by signed floating deltas is a layout grammar no existing type provides (bar compares independent categories, the dumbbell states two endpoints without the path, pyramid ranks one funnel, Sankey splits and merges). The per-grammar argument is in [ADR 0010](0010-waterfall-is-a-running-total-grammar.md); it ships the full §10 set, and the counters named above move 39 → 40 together with the prose.
+
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.
