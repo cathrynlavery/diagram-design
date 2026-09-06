@@ -479,6 +479,11 @@ def test_bumper() -> None:
         with tempfile.TemporaryDirectory() as scratch:
             root = Path(scratch)
             seed_package(root)
+            version_paths = (*BUMP.MANIFEST_PATHS, BUMP.SKILL_PATH)
+            before = {
+                relative: (root / relative).read_text(encoding="utf-8")
+                for relative in version_paths
+            }
             actual = BUMP.bump(root, part)
             versions = {
                 json.loads((root / relative).read_text(encoding="utf-8"))["version"]
@@ -494,6 +499,19 @@ def test_bumper() -> None:
                 raise AssertionError(
                     f"{part} bump left SKILL.md metadata.version off "
                     f"{expected_minor!r}: {skill_text!r}"
+                )
+            changed = {
+                relative
+                for relative in version_paths
+                if (root / relative).read_text(encoding="utf-8") != before[relative]
+            }
+            expected_changed = set(BUMP.MANIFEST_PATHS)
+            if part != "patch":
+                expected_changed.add(BUMP.SKILL_PATH)
+            if changed != expected_changed:
+                raise AssertionError(
+                    f"{part} bump changed {sorted(map(str, changed))}; expected "
+                    f"{sorted(map(str, expected_changed))}"
                 )
             print(f"OK: {part} bump produced {expected} and synced SKILL.md")
 
