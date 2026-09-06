@@ -286,6 +286,28 @@ def check_skill_reference_links(
             errors.append(f"SKILL.md links to missing reference {target!r}")
 
 
+def check_reference_asset_links(
+    errors: list[str], skill_directory: Path
+) -> None:
+    """Require every asset cited across skill documentation to exist on disk."""
+    asset_dir = skill_directory / "assets"
+    ref_dir = skill_directory / "references"
+    md_paths = [skill_directory / "SKILL.md", *sorted(ref_dir.glob("*.md"))]
+    asset_pattern = re.compile(r"assets/([A-Za-z0-9_.-]+\.html)")
+
+    for path in md_paths:
+        if not path.is_file():
+            continue
+        content = path.read_text(encoding="utf-8")
+        for match in asset_pattern.finditer(content):
+            asset_name = match.group(1)
+            target = asset_dir / asset_name
+            if not target.is_file():
+                errors.append(
+                    f"{path.name} cites missing asset 'assets/{asset_name}'"
+                )
+
+
 def scanner_visible_support_references(markdown: str) -> list[str]:
     """Return the local support paths a strict skill bundler will request."""
     normalized_markdown = markdown.replace("\\", "/")
@@ -546,6 +568,7 @@ def main() -> int:
         SKILL.read_text(encoding="utf-8"),
         SKILL.parent,
     )
+    check_reference_asset_links(errors, SKILL.parent)
     check_packaged_support_references(
         errors,
         SKILL.read_text(encoding="utf-8"),
@@ -565,9 +588,9 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, packaged support files, routing surfaces, manifest descriptions, "
-        "Factory install contract, type-count routing, High-Level invariants, "
-        "onboarding trust boundary, Line dark-skin contract"
+        "reference links, asset citations, packaged support files, routing surfaces, "
+        "manifest descriptions, Factory install contract, type-count routing, "
+        "High-Level invariants, onboarding trust boundary, Line dark-skin contract"
     )
     return 0
 
