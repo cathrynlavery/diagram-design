@@ -200,6 +200,122 @@ def main() -> int:
             if python_cmd is not None:
                 raise AssertionError(f"expected no python command, got {python_cmd!r}")
         print("OK: an empty PATH fails without naming a command")
+        host, evidence = verify.detect_host(installed_root, environ={"CLAUDECODE": "1"})
+        if host != "claude-code" or "CLAUDECODE" not in evidence:
+            raise AssertionError(f"expected claude-code from env marker; got {host} ({evidence})")
+        host, _ = verify.detect_host(
+            installed_root, environ={"COWORK_SESSION_ID": "abc", "CLAUDECODE": "1"}
+        )
+        if host != "cowork":
+            raise AssertionError(f"cowork markers must outrank claude-code; got {host}")
+        host, evidence = verify.detect_host(
+            root / ".cursor" / "skills" / "diagram-design", environ={}
+        )
+        if host != "cursor":
+            raise AssertionError(f"expected cursor from path hint; got {host} ({evidence})")
+        host, _ = verify.detect_host(installed_root, environ={})
+        if host is not None:
+            raise AssertionError(f"expected unknown host without markers; got {host}")
+        print("OK: host detection honors env markers, precedence, and path hints")
+
+        channel, _ = verify.detect_install_channel(root)
+        if channel != verify.CHANNEL_MAINTAINER:
+            raise AssertionError(f"seeded repo should be maintainer-checkout; got {channel}")
+        git_root = root / "git-install"
+        touch(git_root / "SKILL.md", "# Installed skill\n")
+        (git_root / ".git").mkdir(parents=True)
+        channel, _ = verify.detect_install_channel(git_root)
+        if channel != verify.CHANNEL_GIT:
+            raise AssertionError(f"git metadata should classify as git channel; got {channel}")
+        marketplace_root = root / "plugins" / "diagram-design"
+        touch(marketplace_root / "SKILL.md", '# Skill\nmetadata:\n  version: "2.6"\n')
+        channel, _ = verify.detect_install_channel(marketplace_root)
+        if channel != verify.CHANNEL_MARKETPLACE:
+            raise AssertionError(f"plugin cache path should classify as marketplace; got {channel}")
+        channel, _ = verify.detect_install_channel(installed_root)
+        if channel != verify.CHANNEL_COPIED:
+            raise AssertionError(f"plain copy should classify as copied; got {channel}")
+        print("OK: install channel detection covers maintainer/git/marketplace/copied")
+
+        for host_name, channel_name, needle in (
+            ("pi", verify.CHANNEL_GIT, "pi update --extensions"),
+            ("cowork", verify.CHANNEL_MARKETPLACE, "mirror"),
+            ("codex", verify.CHANNEL_MARKETPLACE, "codex plugin marketplace upgrade"),
+            ("claude-code", verify.CHANNEL_MARKETPLACE, "/plugin install diagram-design@diagram-design"),
+            ("cursor", verify.CHANNEL_COPIED, "newer checkout"),
+        ):
+            recipe = verify.update_recipe(host_name, channel_name)
+            if needle not in recipe:
+                raise AssertionError(
+                    f"update recipe for ({host_name}, {channel_name}) missing {needle!r}: {recipe}"
+                )
+        print("OK: update recipes match each host/channel pair")
+
+        fix = verify.playwright_fix(None, None)
+        if fix != verify.PLAYWRIGHT_INSTALL_HINT:
+            raise AssertionError(f"bare playwright fix must stay copy-pastable: {fix}")
+        fix = verify.playwright_fix("claude-code", verify.CHANNEL_MARKETPLACE)
+        for needle in (verify.PLAYWRIGHT_INSTALL_HINT, "/reload-plugins", "restart the"):
+            if needle not in fix:
+                raise AssertionError(f"host-aware playwright fix missing {needle!r}: {fix}")
+        print("OK: playwright fix stays copy-pastable and gains host-specific one-shot hints")
+
+        check = verify.check_marketplace_version(marketplace_root, "claude-code", verify.CHANNEL_MARKETPLACE)
+        expect_status(check, verify.PASS, "metadata.version is 2.6")
+        versionless_root = root / "plugins" / "versionless"
+        touch(versionless_root / "SKILL.md", "# Skill without metadata\n")
+        check = verify.check_marketplace_version(
+            versionless_root, "claude-code", verify.CHANNEL_MARKETPLACE
+        )
+        expect_status(check, verify.WARN, "metadata.version")
+        check = verify.check_marketplace_version(root, None, verify.CHANNEL_MAINTAINER)
+        expect_status(check, verify.PASS, "not applicable")
+        print("OK: marketplace version alignment advises, warns on unreadable metadata, and skips non-marketplace")
+
+        touch(git_root / ".git" / "HEAD", "ref: refs/heads/main\n")
+        check = verify.check_pi_install_pinning(git_root, "pi", verify.CHANNEL_GIT)
+        expect_status(check, verify.WARN, "unpinned git branch")
+        touch(git_root / ".git" / "HEAD", "0123456789abcdef0123456789abcdef01234567\n")
+        check = verify.check_pi_install_pinning(git_root, "pi", verify.CHANNEL_GIT)
+        expect_status(check, verify.PASS, "pinned")
+        check = verify.check_pi_install_pinning(git_root, "claude-code", verify.CHANNEL_GIT)
+        expect_status(check, verify.PASS, "not pi")
+        check = verify.check_pi_install_pinning(marketplace_root, "pi", verify.CHANNEL_MARKETPLACE)
+        expect_status(check, verify.PASS, "not applicable")
+        print("OK: Pi pinning warns on branch refs and passes on pinned or non-git installs")
+
+        missing_skill_root = root / "cowork-broken"
+        missing_skill_root.mkdir()
+        check = verify.check_cowork_mirror(missing_skill_root, "cowork", verify.CHANNEL_COPIED)
+        expect_status(check, verify.FAIL, "private or internal mirror")
+        touch(
+            git_root / ".git" / "config",
+            "[remote \"origin\"]\n\turl = https://github.com/cathrynlavery/diagram-design\n",
+        )
+        check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
+        expect_status(check, verify.WARN, "public repository")
+        check = verify.check_cowork_mirror(marketplace_root, "cowork", verify.CHANNEL_MARKETPLACE)
+        expect_status(check, verify.PASS, "resolves under Cowork")
+        check = verify.check_cowork_mirror(missing_skill_root, None, verify.CHANNEL_COPIED)
+        expect_status(check, verify.PASS, "not cowork")
+        print("OK: Cowork mirror check fails without skill resolution and warns on public-repo remotes")
+
+        check = verify.check_common_path_mistakes(
+            missing_skill_root, unrelated_project, "claude-code", verify.CHANNEL_MARKETPLACE
+        )
+        if check.status != verify.WARN or "/plugin install diagram-design@diagram-design" not in (check.fix or ""):
+            raise AssertionError(
+                f"missing skill after marketplace install must print the reinstall recipe: {check}"
+            )
+        print("OK: missing skill after a marketplace install prints the one-shot reinstall recipe")
+
+        args = verify.parse_args(["--host", "pi", "--strict"])
+        if args.host != "pi" or not args.strict:
+            raise AssertionError(f"--host parsing failed: {args}")
+        args = verify.parse_args([])
+        if args.host != verify.AUTO_HOST:
+            raise AssertionError(f"default host must be auto; got {args.host}")
+        print("OK: --host flag parses and defaults to auto")
 
         summary_checks = [
             verify.CheckResult("a", verify.PASS, "ok"),
