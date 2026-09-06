@@ -55,10 +55,12 @@ ROUTING_SURFACES = {
     Path("commands/export-diagram.md"): "references/export.md",
     Path("commands/import-drawio.md"): "references/import-drawio.md",
     Path("commands/import-mermaid.md"): "references/import-mermaid.md",
+    Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("commands/profile.md"): "references/profiles.md",
     Path("commands/doctor.md"): "references/doctor.md",
     Path("prompts/export-diagram.md"): "references/export.md",
     Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
+    Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("prompts/profile.md"): "references/profiles.md",
     Path("prompts/doctor.md"): "references/doctor.md",
 }
@@ -80,6 +82,7 @@ REQUIRED_PACKAGED_RUNTIME_FILES = frozenset(
         "scripts/self_check.py",
         "scripts/drawio_extract.py",
         "scripts/mermaid_extract.py",
+        "scripts/excalidraw_extract.py",
         "assets/template.html",
         "assets/template-dark.html",
         "assets/template-full.html",
@@ -434,6 +437,7 @@ HARDCODED_COUNT_RE = re.compile(
 COUNT_SURFACES = (
     Path("commands/import-drawio.md"),
     Path("commands/import-mermaid.md"),
+    Path("commands/import-excalidraw.md"),
 )
 
 
