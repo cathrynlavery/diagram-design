@@ -188,6 +188,13 @@ jobs:
         id: mermaid
         run: python scripts/verify-mermaid-import.py
 
+      - name: Verify Excalidraw import script
+        if: always()
+        id: excalidraw
+        run: |
+          python scripts/verify-excalidraw-import.py
+          python scripts/test-verify-excalidraw-import.py
+
       - name: Verify optional motion contract
         if: always()
         id: motion
@@ -398,6 +405,7 @@ jobs:
           echo "| Sequence-OAuth Verifier Tests | ${{ steps.oauth_tests.outcome == 'success' && '✅ Passed' || (steps.oauth_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Draw.io Import Extractor | ${{ steps.drawio.outcome == 'success' && '✅ Passed' || (steps.drawio.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Excalidraw Import Extractor | ${{ steps.excalidraw.outcome == 'success' && '✅ Passed' || (steps.excalidraw.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Optional Motion Contract | ${{ steps.motion.outcome == 'success' && '✅ Passed' || (steps.motion.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Doctor Diagnostics Contract | ${{ steps.doctor.outcome == 'success' && '✅ Passed' || (steps.doctor.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
