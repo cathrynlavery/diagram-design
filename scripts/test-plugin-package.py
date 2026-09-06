@@ -16,6 +16,7 @@ from typing import Iterator, Optional
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY_SCRIPT = ROOT / "scripts/verify-plugin-package.py"
 BUMP_SCRIPT = ROOT / "scripts/bump-plugin-version.py"
+AUTO_BUMP_WORKFLOW = ROOT / ".github/workflows/auto-bump.yml"
 PLUGIN_NAME = "diagram-design"
 
 
@@ -553,9 +554,51 @@ def test_bumper() -> None:
         print("OK: version bumper fails closed on SKILL.md drift, manifests untouched")
 
 
+def test_auto_bump_workflow_allowlists() -> None:
+    workflow = AUTO_BUMP_WORKFLOW.read_text(encoding="utf-8")
+    expected = {
+        "expected_without_skill": tuple(
+            sorted(relative.as_posix() for relative in BUMP.MANIFEST_PATHS)
+        ),
+        "expected_with_skill": tuple(
+            sorted(
+                relative.as_posix()
+                for relative in (*BUMP.MANIFEST_PATHS, BUMP.SKILL_PATH)
+            )
+        ),
+    }
+
+    for variable, expected_paths in expected.items():
+        marker = f"{variable}=$(printf '%s" + "\\n' \\" + "\n"
+        chunks = workflow.split(marker)
+        if len(chunks) != 3:
+            raise AssertionError(
+                f"expected prepare and publish assignments for {variable}; "
+                f"found {len(chunks) - 1}"
+            )
+        for job, chunk in zip(("prepare", "publish"), chunks[1:]):
+            body, separator, _ = chunk.partition("| LC_ALL=C sort)")
+            if not separator:
+                raise AssertionError(f"could not parse {job} {variable} allowlist")
+            actual_paths = tuple(
+                sorted(
+                    line.strip().removesuffix("\\").strip()
+                    for line in body.splitlines()
+                    if line.strip()
+                )
+            )
+            if actual_paths != expected_paths:
+                raise AssertionError(
+                    f"{job} {variable} allowlist is {actual_paths}; "
+                    f"expected {expected_paths}"
+                )
+    print("OK: prepare and publish workflow allowlists match bumper paths")
+
+
 def main() -> int:
     test_verifier()
     test_bumper()
+    test_auto_bump_workflow_allowlists()
     print("All plugin package tests passed")
     return 0
 
