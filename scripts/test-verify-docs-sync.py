@@ -596,9 +596,35 @@ diagram-design/
             raise AssertionError(f"variant with missing parent not caught: {errs}")
         print("OK gallery: variant with missing parent caught")
 
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-assets-") as asset_tmp:
+        tmp_skill_dir = Path(asset_tmp)
+        tmp_asset_dir = tmp_skill_dir / "assets"
+        tmp_ref_dir = tmp_skill_dir / "references"
+        tmp_asset_dir.mkdir(parents=True)
+        tmp_ref_dir.mkdir(parents=True)
+
+        (tmp_asset_dir / "example-valid.html").write_text("", encoding="utf-8")
+        (tmp_ref_dir / "type-sample.md").write_text(
+            "- `assets/example-valid.html`\n- `assets/example-missing.html`\n",
+            encoding="utf-8",
+        )
+
+        errs: list[str] = []
+        verify.check_reference_asset_links(errs, tmp_skill_dir)
+        if not any("type-sample.md" in e and "example-missing.html" in e for e in errs):
+            raise AssertionError(f"missing asset citation was not caught: {errs}")
+        print("OK reference assets: missing asset citation caught")
+
+        (tmp_asset_dir / "example-missing.html").write_text("", encoding="utf-8")
+        errs = []
+        verify.check_reference_asset_links(errs, tmp_skill_dir)
+        if errs:
+            raise AssertionError(f"valid asset citations produced unexpected error: {errs}")
+        print("OK reference assets: valid asset citations produce no error")
+
     print(
-        "PASS: docs sync checks references, strict-bundler packaging, routing surfaces, "
-        "Factory install contract, type-count routing, High-Level invariants, "
+        "PASS: docs sync checks references, asset citations, strict-bundler packaging, "
+        "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "and gallery guards (parent/variant model)"
     )
     return 0
