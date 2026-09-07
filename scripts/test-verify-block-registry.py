@@ -267,6 +267,72 @@ def main() -> int:
         1,  # data-block-parent references BLK-000, which this document never defines
     )
 
+    # Unquoted attribute values are valid HTML; a browser reads them the same
+    # as quoted ones, and so must this parser.
+    check(
+        "unquoted attribute values are recognized",
+        document('<rect data-block-id=BLK-001 data-block-name=X x="0" y="0" width="160" height="48" rx="6"/>'),
+        0,
+    )
+
+    # Whitespace around the '=' is valid HTML; a naive attribute regex
+    # anchored on `name="value"` misses it entirely.
+    check(
+        "whitespace around the attribute equals sign is recognized",
+        document(
+            '<rect data-block-id = "BLK-001" data-block-name\t=\t"X" '
+            'x="0" y="0" width="160" height="48" rx="6"/>'
+        ),
+        0,
+    )
+
+    # data-block-* attribute names are case-insensitive in HTML, same as any
+    # other attribute name; a browser (and this parser) lowercases them.
+    check(
+        "case-insensitive data-block-* attribute names are recognized",
+        document(
+            '<rect DATA-BLOCK-ID="BLK-001" Data-Block-Name="X" '
+            'x="0" y="0" width="160" height="48" rx="6"/>'
+        ),
+        0,
+    )
+
+    # A boolean/valueless data-block-id (present, no '=' at all) is a real,
+    # present attribute with a blank value -- it must surface as a blank-id
+    # finding, not vanish the whole element from the scan the way "id" not
+    # in attrs used to when the attribute carried no value.
+    check(
+        "a boolean data-block-id attribute is a blank id, not an invisible block",
+        document('<rect data-block-id data-block-name="X" x="0" y="0" width="160" height="48" rx="6"/>'),
+        1,
+    )
+
+    # A commented-out block must never be scanned as live: pairing it with a
+    # real block sharing the same id proves it, since a parser that (wrongly)
+    # read tag-like text inside a comment would report a duplicate id here.
+    check(
+        "a commented-out block is not scanned as live",
+        document(
+            block("BLK-001")
+            + '<!-- <rect data-block-id="BLK-001" data-block-name="Ghost"/> -->'
+        ),
+        0,
+    )
+
+    # HTML gives precedence to an attribute's first occurrence within one
+    # tag; a duplicated data-block-id must resolve the same way a browser's
+    # DOM would, not to whichever value a scanner happened to see last.
+    # Proven the same way "mixed quoting" is: the resulting id collides with
+    # a real block's id only if the *first* value ("BLK-001") won.
+    check(
+        "a duplicated attribute name keeps its first value, matching a browser",
+        document(
+            block("BLK-001")
+            + '<rect data-block-id="BLK-001" data-block-id="BLK-002" data-block-name="X"/>'
+        ),
+        1,  # duplicate data-block-id "BLK-001", only if the first value was kept
+    )
+
     if failures:
         print("\nFAILURES:")
         for failure in failures:

@@ -18,13 +18,22 @@ independent of verify-geometry.py: that script catches a label mask clipped
 by a node painted after it, this one catches a block registry that does not
 cohere as a tree.
 
-The tag matcher treats a quoted attribute value (single or double) as one
-unit rather than stopping at the first literal `>`, and the attribute matcher
-accepts either quote style. A naive `[^>]*` tag match truncates silently on a
-value like `data-block-constraint="output > input"` -- valid HTML, and if
-that attribute happens to sit before data-block-id in the tag, the entire
-block vanishes from the scan with no error, which is worse than a crash: a
-file with a real block passes CI as if it had none.
+Parsing goes through the stdlib html.parser.HTMLParser rather than a regex,
+so a block is recognized exactly when a browser would recognize its
+data-block-* attributes: unquoted values, whitespace around `=`, and
+case-insensitive attribute names all parse the same as their canonical form,
+a comment's contents are never scanned as live markup (HTMLParser routes
+`<!-- ... -->` to handle_comment, never to handle_starttag), and a repeated
+attribute name keeps its first value, matching how a browser resolves a
+duplicate attribute in one tag. A blank or boolean attribute (data-block-id
+present with no value at all) still counts as the attribute being present --
+with an empty string -- so it is reported as a blank id or blank name
+finding rather than silently making the whole block invisible to the scan.
+The prior regex scanner's quoted-`>` fix is superseded by this: a real regex
+tag matcher cannot separate "not yet closed" from "attribute value contains
+a literal `>`" for every valid quoting and spacing HTML allows, and each
+such gap was the same failure shape -- a real block silently vanishing from
+the scan, CI green as if the file had none.
 
 Usage:
     python3 scripts/verify-block-registry.py --all
@@ -34,19 +43,15 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-TAG_RE = re.compile(
-    r"""<[a-zA-Z][\w:-]*\b((?:"[^"]*"|'[^']*'|[^>"'])*)>""",
-    re.DOTALL,
-)
-ATTR_RE = re.compile(r"""\bdata-block-([a-z-]+)=(?:"([^"]*)"|'([^']*)')""")
+DATA_BLOCK_PREFIX = "data-block-"
 
 
 @dataclass
@@ -57,24 +62,51 @@ class Block:
     line: int
 
 
-def parse_blocks(source: str) -> list[Block]:
-    blocks: list[Block] = []
-    for tag in TAG_RE.finditer(source):
-        attrs: dict[str, str] = {}
-        for attr in ATTR_RE.finditer(tag.group(1)):
-            name, double_quoted, single_quoted = attr.groups()
-            attrs[name] = double_quoted if double_quoted is not None else single_quoted
-        if "id" not in attrs:
-            continue
-        blocks.append(
+class _BlockScanner(HTMLParser):
+    """Collect one Block per start tag carrying a data-block-id attribute.
+
+    HTMLParser already lowercases tag/attribute names, tolerates unquoted
+    values and whitespace around `=`, and never invokes handle_starttag for
+    tag-like text inside a comment or inside <script>/<style> raw text --
+    each of those is exactly a case the previous regex scanner mishandled.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.blocks: list[Block] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        # A repeated attribute name keeps its first value, matching how a
+        # browser resolves a duplicate attribute within one start tag.
+        seen: dict[str, str | None] = {}
+        for name, value in attrs:
+            seen.setdefault(name, value)
+
+        block_attrs: dict[str, str] = {}
+        for name, value in seen.items():
+            if name.startswith(DATA_BLOCK_PREFIX):
+                # A present-but-valueless (boolean) attribute is a blank
+                # value, not an absent attribute -- data-block-id alone
+                # must still register as a block with a blank id.
+                block_attrs[name[len(DATA_BLOCK_PREFIX) :]] = value if value is not None else ""
+
+        if "id" not in block_attrs:
+            return
+        self.blocks.append(
             Block(
-                id=attrs["id"],
-                parent=attrs.get("parent"),
-                name=attrs.get("name"),
-                line=source.count("\n", 0, tag.start()) + 1,
+                id=block_attrs["id"],
+                parent=block_attrs.get("parent"),
+                name=block_attrs.get("name"),
+                line=self.getpos()[0],
             )
         )
-    return blocks
+
+
+def parse_blocks(source: str) -> list[Block]:
+    scanner = _BlockScanner()
+    scanner.feed(source)
+    scanner.close()
+    return scanner.blocks
 
 
 def find_blank_ids(path: Path, blocks: list[Block]) -> list[str]:
