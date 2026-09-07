@@ -556,6 +556,53 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     )
 
 
+def font_families(url: str) -> set[str]:
+    """The `family=` parameters a Google Fonts css2 URL actually requests."""
+    return {
+        part.split(":", 1)[0]
+        for part in url.replace("&amp;", "&").split("&")
+        if part.startswith("family=")
+    }
+
+
+def check_export_font_parity(errors: list[str], root: Path) -> None:
+    """The exported SVG must request every face the shipped HTML link does.
+
+    The two strings live in different files and drifted apart once already: the
+    CJK faces reached assets/template.html but never the @import in export.md,
+    so a Korean or Chinese diagram exported to .svg silently lost its type. That
+    failure only shows up on a machine other than the author's, which is exactly
+    the case the faces are in the link to prevent.
+    """
+    template = root / "skills/diagram-design/assets/template.html"
+    export = root / "skills/diagram-design/references/export.md"
+    for path in (template, export):
+        if not path.is_file():
+            errors.append(f"font-parity surface is missing: {path.name}")
+            return
+
+    link = re.search(r'href="([^"]*fonts\.googleapis\.com[^"]*)"',
+                     template.read_text(encoding="utf-8"))
+    imported = re.search(r"@import url\('([^']+)'\)",
+                         export.read_text(encoding="utf-8"))
+    if not link or not imported:
+        errors.append(
+            "could not locate the font link in assets/template.html or the "
+            "@import in references/export.md"
+        )
+        return
+
+    missing = sorted(font_families(link.group(1)) - font_families(imported.group(1)))
+    if missing:
+        names = ", ".join(name.removeprefix("family=").replace("+", " ")
+                          for name in missing)
+        errors.append(
+            f"references/export.md @import omits {names}, which "
+            f"assets/template.html requests; an exported .svg would resolve "
+            f"those scripts through whatever font the viewer happens to have"
+        )
+
+
 def main() -> int:
     errors: list[str] = []
     check_description(errors)
@@ -581,6 +628,7 @@ def main() -> int:
     )
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
     check_routing_surfaces(errors, ROOT)
+    check_export_font_parity(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -590,7 +638,8 @@ def main() -> int:
         "OK docs sync: description hooks, gallery reachability, README tree, "
         "reference links, asset citations, packaged support files, routing surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
-        "High-Level invariants, onboarding trust boundary, Line dark-skin contract"
+        "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
+        "export font parity"
     )
     return 0
 
