@@ -43,10 +43,21 @@ jobs:
       - name: Test plugin package tooling
         run: python3 scripts/test-plugin-package.py
 
-      - name: Require a synchronized plugin version bump
+      - name: Verify maintainer policy tracks package and CI truth
+        run: python3 scripts/test-maintainer-policy.py
+
+      # Versions are bumped on main by the Auto Version Bump workflow after
+      # each merge (ADR 0009); pull requests must leave them untouched.
+      - name: Forbid manifest version changes in pull requests
         env:
-          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-        run: python3 scripts/verify-plugin-package.py "$BASE_REF"
+          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python3 scripts/verify-plugin-package.py --require-no-bump "$BASE_REF"
+          else
+            python3 scripts/verify-plugin-package.py --current-only
+          fi
 
       - name: Validate Claude marketplace package without warnings
         run: npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict
@@ -155,6 +166,16 @@ jobs:
         id: oauth
         run: python scripts/verify-sequence-oauth.py
 
+      - name: Verify semantic-motion verifier
+        if: always()
+        id: semantic_motion_tests
+        run: python scripts/test-verify-semantic-motion.py
+
+      - name: Verify sequence-oauth verifier
+        if: always()
+        id: oauth_tests
+        run: python scripts/test-verify-sequence-oauth.py
+
       - name: Verify draw.io import script
         if: always()
         id: drawio
@@ -195,6 +216,22 @@ jobs:
         id: screenshots
         run: python scripts/verify-screenshot-freshness.py
 
+      - name: Install Pillow for README thumbnail verification
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        env:
+          PILLOW_VERSION: "12.1.1"
+        shell: bash
+        run: |
+          pip install "Pillow==${PILLOW_VERSION}"
+          python -c "import PIL; print('Pillow', PIL.__version__)"
+
+      - name: Verify README thumbnails
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: readme_thumbs
+        run: |
+          python scripts/test-build-readme-thumbs.py
+          python scripts/build-readme-thumbs.py --check
+
       - name: Verify packaged self-check
         if: always()
         id: self_check
@@ -209,6 +246,16 @@ jobs:
         if: always()
         id: geometry_tests
         run: python scripts/test-verify-geometry.py
+
+      - name: Verify block registry
+        if: always()
+        id: block_registry
+        run: python scripts/verify-block-registry.py --all
+
+      - name: Verify block registry checker
+        if: always()
+        id: block_registry_tests
+        run: python scripts/test-verify-block-registry.py
 
       - name: Verify treemap area fidelity and label fit
         if: always()
@@ -268,6 +315,36 @@ jobs:
         if: always()
         id: bubble_tests
         run: python scripts/test-verify-bubble.py
+
+      - name: Verify bump chart rank grid
+        if: always()
+        id: bump
+        run: python scripts/verify-bump.py --all
+
+      - name: Verify bump checker
+        if: always()
+        id: bump_tests
+        run: python scripts/test-verify-bump.py
+
+      - name: Verify beeswarm positions and packing
+        if: always()
+        id: beeswarm
+        run: python scripts/verify-beeswarm.py --all
+
+      - name: Verify beeswarm checker
+        if: always()
+        id: beeswarm_tests
+        run: python scripts/test-verify-beeswarm.py
+
+      - name: Verify tone claims against the ramps they describe
+        if: always()
+        id: skin_polarity
+        run: python scripts/verify-skin-polarity.py --all
+
+      - name: Verify skin-polarity checker
+        if: always()
+        id: skin_polarity_tests
+        run: python scripts/test-verify-skin-polarity.py
 
       # lint-render.py's oracle is pixels, so the browser is part of the contract:
       # pin Playwright exactly, and let that pin choose the Chromium build. Bump
@@ -337,6 +414,8 @@ jobs:
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semantic-Motion Verifier Tests | ${{ steps.semantic_motion_tests.outcome == 'success' && '✅ Passed' || (steps.semantic_motion_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sequence-OAuth Verifier Tests | ${{ steps.oauth_tests.outcome == 'success' && '✅ Passed' || (steps.oauth_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Draw.io Import Extractor | ${{ steps.drawio.outcome == 'success' && '✅ Passed' || (steps.drawio.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Optional Motion Contract | ${{ steps.motion.outcome == 'success' && '✅ Passed' || (steps.motion.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -344,9 +423,12 @@ jobs:
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| README Thumbnail Freshness | ${{ steps.readme_thumbs.outcome == 'success' && '✅ Passed' || (steps.readme_thumbs.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Block Registry | ${{ steps.block_registry.outcome == 'success' && '✅ Passed' || (steps.block_registry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Block Registry Checker | ${{ steps.block_registry_tests.outcome == 'success' && '✅ Passed' || (steps.block_registry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dumbbell Domain & Contrast | ${{ steps.dumbbell.outcome == 'success' && '✅ Passed' || (steps.dumbbell.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -362,6 +444,12 @@ jobs:
 
           echo "| Histogram Bins & Scale | ${{ steps.histogram.outcome == 'success' && '✅ Passed' || (steps.histogram.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Histogram Checker | ${{ steps.histogram_tests.outcome == 'success' && '✅ Passed' || (steps.histogram_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bump Chart Rank Grid | ${{ steps.bump.outcome == 'success' && '✅ Passed' || (steps.bump.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bump Checker | ${{ steps.bump_tests.outcome == 'success' && '✅ Passed' || (steps.bump_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Beeswarm Positions & Packing | ${{ steps.beeswarm.outcome == 'success' && '✅ Passed' || (steps.beeswarm.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Beeswarm Checker | ${{ steps.beeswarm_tests.outcome == 'success' && '✅ Passed' || (steps.beeswarm_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tone Claim vs Ramp Polarity | ${{ steps.skin_polarity.outcome == 'success' && '✅ Passed' || (steps.skin_polarity.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skin Polarity Checker | ${{ steps.skin_polarity_tests.outcome == 'success' && '✅ Passed' || (steps.skin_polarity_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

@@ -110,6 +110,13 @@ ATTR_RE = re.compile(
     re.DOTALL,
 )
 DECLARES_SERIES_RE = re.compile(r"\bdata-series\s*=", re.IGNORECASE)
+# Scope detection to the ELEMENT this contract binds. `data-series` alone is
+# shared vocabulary across the chart variants - a bump chart binds it to
+# <path>, and holding that file to the slopegraph contract rejects a figure
+# for lacking <line> elements it never claimed to have. A slopegraph whose
+# <line> is malformed still matches here, so the fail-closed case is kept.
+LINE_DECLARES_SERIES_RE = re.compile(
+    r"<line\b[^>]*?\bdata-series\s*=", re.IGNORECASE | re.DOTALL)
 
 # Coordinates ship rounded to one decimal, so a point can sit 0.05px from its
 # true position honestly; an author rounding to whole pixels can sit 0.5px off.
@@ -273,7 +280,7 @@ def looks_like_slopegraph(path: Path, source: str) -> bool:
     """
     if path.name.startswith("example-slopegraph"):
         return True
-    if DECLARES_SERIES_RE.search(source):
+    if LINE_DECLARES_SERIES_RE.search(source):
         return True
     described = named_text(source)
     return "slopegraph" in described or "slope graph" in described

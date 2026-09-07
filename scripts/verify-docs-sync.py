@@ -23,6 +23,7 @@ Ten drift classes, each of which has shipped before:
    hardcoding a count that becomes stale when a type is added.
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
+11. The canonical dark Line example must keep the dark-skin tokens and canvas.
 """
 
 from __future__ import annotations
@@ -39,8 +40,11 @@ GALLERY = ROOT / "skills/diagram-design/assets/index.html"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 README = ROOT / "README.md"
 HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
+ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
+LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
 VARIANTS = ("", "-dark", "-full")
 VISUAL_TYPE_COUNT = 39
+AGENT_SKILLS_DESCRIPTION_MAX = 1024
 # Types whose selection-table name differs from its description vocabulary.
 DESCRIPTION_ALIASES = {
     "bar chart": "bar",
@@ -91,6 +95,36 @@ def normalized(text: str) -> str:
     return re.sub(r"\s+", " ", text)
 
 
+def check_onboarding_trust_boundary(errors: list[str], markdown: str) -> None:
+    """Remote page ingestion must state its narrow, untrusted-data purpose."""
+    text = normalized(markdown)
+    has_boundary = "untrusted data" in text
+    names_instruction_risk = "instruction" in text
+    limits_use = (
+        "use it only as a source of color, type, and spacing signals" in text
+        and "never follow directive" in text
+    )
+    if not (has_boundary and names_instruction_risk and limits_use):
+        errors.append(
+            "onboarding.md fetches remote page content without an explicit "
+            "untrusted-data boundary"
+        )
+
+
+def check_line_dark_skin(errors: list[str], source: str) -> None:
+    """The dark Line example must not silently drift back to the light skin."""
+    required = (
+        "--color-paper:#2d3142",
+        "--color-ink:#f5f5f5",
+        "--color-muted:#bfc0c0",
+        "--color-accent:#f08a59",
+        '<rect width="100%" height="100%" fill="#2d3142"',
+    )
+    for token in required:
+        if token not in source:
+            errors.append(f"example-line-dark.html lost canonical dark-skin token {token!r}")
+
+
 def frontmatter_description(markdown: str) -> str:
     parts = markdown.split("---")
     if len(parts) < 3:
@@ -108,8 +142,18 @@ def selection_table_types(markdown: str) -> list[str]:
     return [name.strip() for name in names]
 
 
+def check_description_length(errors: list[str], markdown: str) -> None:
+    description = frontmatter_description(markdown)
+    if len(description) > AGENT_SKILLS_DESCRIPTION_MAX:
+        errors.append(
+            "SKILL.md frontmatter description exceeds the Agent Skills limit "
+            f"({len(description)} > {AGENT_SKILLS_DESCRIPTION_MAX} characters)"
+        )
+
+
 def check_description(errors: list[str]) -> None:
     markdown = SKILL.read_text(encoding="utf-8")
+    check_description_length(errors, markdown)
     description = normalized(frontmatter_description(markdown))
     if not description:
         errors.append("SKILL.md frontmatter description is missing")
@@ -146,6 +190,62 @@ def check_gallery(errors: list[str]) -> None:
     for name in sorted(types):
         if f"example-{name}.html" not in on_disk:
             errors.append(f"gallery tab {name!r} points at a missing example-{name}.html")
+    # Parse eyebrow numbers and parent-type bindings from tab buttons.
+    # Variants (data-parent-type) may share their declared parent's eyebrow
+    # number; uniqueness is enforced only among independent (non-variant) types.
+    tab_eyebrows: dict[str, str] = {}  # data-type → eyebrow number
+    tab_parents: dict[str, str] = {}   # data-type → data-parent-type
+    for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)</span>', source):
+        attrs, eyebrow = m.group(1), m.group(2)
+        tm = re.search(r'data-type="([^"]+)"', attrs)
+        pm = re.search(r'data-parent-type="([^"]+)"', attrs)
+        if tm:
+            tab_eyebrows[tm.group(1)] = eyebrow
+            if pm:
+                tab_parents[tm.group(1)] = pm.group(1)
+    # Enforce uniqueness among independent (non-variant) types.
+    seen_eyebrows: dict[str, str] = {}  # eyebrow → first independent type
+    for t, num in tab_eyebrows.items():
+        if t in tab_parents:
+            continue
+        if num in seen_eyebrows:
+            errors.append(
+                f"gallery has duplicate eyebrow number {num!r} on independent types "
+                f"{seen_eyebrows[num]!r} and {t!r}; check tab order in assets/index.html"
+            )
+        else:
+            seen_eyebrows[num] = t
+    # Enforce that each variant's eyebrow matches its declared parent's.
+    for t, parent in tab_parents.items():
+        if parent not in tab_eyebrows:
+            errors.append(
+                f"gallery tab {t!r} declares data-parent-type={parent!r} "
+                f"but no tab with data-type={parent!r} exists"
+            )
+        elif tab_eyebrows.get(t) != tab_eyebrows[parent]:
+            errors.append(
+                f"gallery tab {t!r} has eyebrow {tab_eyebrows.get(t)!r} but its "
+                f"parent {parent!r} uses {tab_eyebrows[parent]!r}; they must match"
+            )
+    # Detect data-single types so we can skip the three-variant check for them.
+    single_types: set[str] = set()
+    for btn in re.finditer(r"<button[^>]+>", source):
+        tag = btn.group(0)
+        if "data-single" in tag:
+            tm = re.search(r'data-type="([^"]+)"', tag)
+            if tm:
+                single_types.add(tm.group(1))
+    # Verify that every non-single gallery tab has dark and full variants on disk.
+    for name in sorted(types):
+        if name in single_types:
+            continue
+        for variant in ("-dark", "-full"):
+            fname = f"example-{name}{variant}.html"
+            if fname not in on_disk:
+                errors.append(
+                    f"gallery tab {name!r} is missing {fname}; "
+                    "add the variant or mark the tab data-single"
+                )
 
 
 def readme_tree_tokens(markdown: str) -> list[str]:
@@ -184,6 +284,28 @@ def check_skill_reference_links(
     for target in sorted(set(skill_reference_links(markdown))):
         if not (skill_directory / target).is_file():
             errors.append(f"SKILL.md links to missing reference {target!r}")
+
+
+def check_reference_asset_links(
+    errors: list[str], skill_directory: Path
+) -> None:
+    """Require every asset cited across skill documentation to exist on disk."""
+    asset_dir = skill_directory / "assets"
+    ref_dir = skill_directory / "references"
+    md_paths = [skill_directory / "SKILL.md", *sorted(ref_dir.glob("*.md"))]
+    asset_pattern = re.compile(r"assets/([A-Za-z0-9_.-]+\.html)")
+
+    for path in md_paths:
+        if not path.is_file():
+            continue
+        content = path.read_text(encoding="utf-8")
+        for match in asset_pattern.finditer(content):
+            asset_name = match.group(1)
+            target = asset_dir / asset_name
+            if not target.is_file():
+                errors.append(
+                    f"{path.name} cites missing asset 'assets/{asset_name}'"
+                )
 
 
 def scanner_visible_support_references(markdown: str) -> list[str]:
@@ -434,6 +556,53 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     )
 
 
+def font_families(url: str) -> set[str]:
+    """The `family=` parameters a Google Fonts css2 URL actually requests."""
+    return {
+        part.split(":", 1)[0]
+        for part in url.replace("&amp;", "&").split("&")
+        if part.startswith("family=")
+    }
+
+
+def check_export_font_parity(errors: list[str], root: Path) -> None:
+    """The exported SVG must request every face the shipped HTML link does.
+
+    The two strings live in different files and drifted apart once already: the
+    CJK faces reached assets/template.html but never the @import in export.md,
+    so a Korean or Chinese diagram exported to .svg silently lost its type. That
+    failure only shows up on a machine other than the author's, which is exactly
+    the case the faces are in the link to prevent.
+    """
+    template = root / "skills/diagram-design/assets/template.html"
+    export = root / "skills/diagram-design/references/export.md"
+    for path in (template, export):
+        if not path.is_file():
+            errors.append(f"font-parity surface is missing: {path.name}")
+            return
+
+    link = re.search(r'href="([^"]*fonts\.googleapis\.com[^"]*)"',
+                     template.read_text(encoding="utf-8"))
+    imported = re.search(r"@import url\('([^']+)'\)",
+                         export.read_text(encoding="utf-8"))
+    if not link or not imported:
+        errors.append(
+            "could not locate the font link in assets/template.html or the "
+            "@import in references/export.md"
+        )
+        return
+
+    missing = sorted(font_families(link.group(1)) - font_families(imported.group(1)))
+    if missing:
+        names = ", ".join(name.removeprefix("family=").replace("+", " ")
+                          for name in missing)
+        errors.append(
+            f"references/export.md @import omits {names}, which "
+            f"assets/template.html requests; an exported .svg would resolve "
+            f"those scripts through whatever font the viewer happens to have"
+        )
+
+
 def main() -> int:
     errors: list[str] = []
     check_description(errors)
@@ -446,6 +615,7 @@ def main() -> int:
         SKILL.read_text(encoding="utf-8"),
         SKILL.parent,
     )
+    check_reference_asset_links(errors, SKILL.parent)
     check_packaged_support_references(
         errors,
         SKILL.read_text(encoding="utf-8"),
@@ -453,7 +623,12 @@ def main() -> int:
     )
     check_type_counts(errors, ROOT)
     check_high_level_reference(errors, HIGH_LEVEL_REFERENCE.read_text(encoding="utf-8"))
+    check_onboarding_trust_boundary(
+        errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
+    )
+    check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
     check_routing_surfaces(errors, ROOT)
+    check_export_font_parity(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -461,8 +636,10 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, packaged support files, routing surfaces, manifest descriptions, "
-        "Factory install contract, type-count routing, High-Level invariants"
+        "reference links, asset citations, packaged support files, routing surfaces, "
+        "manifest descriptions, Factory install contract, type-count routing, "
+        "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
+        "export font parity"
     )
     return 0
 

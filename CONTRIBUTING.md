@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 39 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io and Mermaid sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 39 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io and Mermaid sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -27,20 +27,13 @@ See [README.md](README.md) for the full picture, including the design system and
 
 Every validation gate below must pass before a PR is ready. They also run automatically as GitHub Actions CI (`.github/workflows/ci.yml`).
 
-Every PR changes the distributed plugin package, including documentation- and CI-only PRs. Increment both native manifests together before opening or updating a PR:
-
-```bash
-python3 scripts/bump-plugin-version.py          # patch (default)
-python3 scripts/bump-plugin-version.py --minor  # minor release
-python3 scripts/bump-plugin-version.py --major  # major release
-```
-
-The helper refuses to run if the Claude and Codex versions already differ. If another release lands on `main` first, rebase and bump again so your version remains greater than the new base.
+**Do not bump the plugin version in your PR.** The Claude, Codex, and Factory manifest versions are bumped automatically on `main` after each merge by the Auto Version Bump workflow (`.github/workflows/auto-bump.yml`, ADR 0009), so pull requests must leave all three `plugin.json` versions untouched — CI rejects any change to them. This keeps open PRs from conflicting with each other on every merge. If your change warrants more than a patch release, say so in the PR description and the maintainer will apply the `release:minor` or `release:major` label before merging; the label selects the bump size. (`scripts/bump-plugin-version.py` still exists for the workflow and the maintainer — contributors never need to run it.)
 
 | What it checks | Command |
 |---|---|
 | Plugin bump helper and adversarial package cases | `python3 scripts/test-plugin-package.py` |
-| Synchronized, increasing versions; valid marketplace paths; packaged skill | `python3 scripts/verify-plugin-package.py origin/main` |
+| Maintainer policy matches native manifests and current CI gates | `python3 scripts/test-maintainer-policy.py` |
+| Manifest versions untouched and synchronized; valid marketplace paths; packaged skill | `python3 scripts/verify-plugin-package.py --require-no-bump origin/main` |
 | Claude marketplace and plugin schema, with warnings treated as errors | `claude plugin validate . --strict` |
 | Accessible SVG contract (unit tests for the a11y linter) | `python3 scripts/test-lint-a11y.py` |
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
@@ -50,6 +43,8 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
 | A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
 | Sequence-doc consistency (ATL fragments, budgets) | `python3 scripts/verify-sequence-oauth.py` |
+| Semantic-motion verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-semantic-motion.py` |
+| Sequence-oauth verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-sequence-oauth.py` |
 | draw.io import path (real extractor vs fixtures + docs sync) | `python3 scripts/verify-drawio-import.py && python3 scripts/test-verify-drawio-import.py` |
 | Mermaid import path (grammars, adversarial input, caps, docs sync) | `python3 scripts/verify-mermaid-import.py` |
 | Optional motion contract (fallbacks, controls, budgets, determinism) | `python3 scripts/test-verify-motion.py` |
@@ -58,9 +53,12 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Every shipped motion template/example | `python3 scripts/verify-motion.py --shipped` |
 | Docs/routing sync (description hooks, gallery, README tree, reference links, strict-bundler support paths, command/prompt surfaces) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
+| README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
+| Traceable block decomposition registries have unique IDs, resolving parents, names, and no cycles | `python3 scripts/verify-block-registry.py --all` |
+| Block registry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-block-registry.py` |
 | Treemap cells match the values they are labelled with, and labels fit | `python3 scripts/verify-treemap.py --all` |
 | Treemap checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-treemap.py` |
 | Dumbbell domain resolves finitely and its marks clear 3:1 | `python3 scripts/verify-dumbbell.py` |
@@ -75,6 +73,12 @@ The helper refuses to run if the Claude and Codex versions already differ. If an
 | Bubble checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bubble.py` |
 | Histogram bins are equal and contiguous on a zero-anchored linear scale, and every printed numeral matches its binding | `python3 scripts/verify-histogram.py --all` |
 | Histogram checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-histogram.py` |
+| Bump vertices sit exactly on one rank grid and every endpoint label is placed on both axes | `python3 scripts/verify-bump.py --all` |
+| Bump checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bump.py` |
+| Beeswarm dots sit exactly at their values on one shared scale with no overprint | `python3 scripts/verify-beeswarm.py --all` |
+| Beeswarm checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-beeswarm.py` |
+| Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
+| Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
@@ -83,7 +87,8 @@ Run them all at once before pushing:
 
 ```bash
 python3 scripts/test-plugin-package.py \
-  && python3 scripts/verify-plugin-package.py origin/main \
+  && python3 scripts/test-maintainer-policy.py \
+  && python3 scripts/verify-plugin-package.py --require-no-bump origin/main \
   && claude plugin validate . --strict \
   && python3 scripts/test-lint-a11y.py \
   && python3 scripts/verify-semantic-motion.py --markdown-only \
@@ -95,6 +100,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-polar.py \
   && python3 scripts/verify-polar.py \
   && python3 scripts/verify-sequence-oauth.py \
+  && python3 scripts/test-verify-semantic-motion.py \
+  && python3 scripts/test-verify-sequence-oauth.py \
   && python3 scripts/verify-drawio-import.py \
   && python3 scripts/test-verify-drawio-import.py \
   && python3 scripts/verify-mermaid-import.py \
@@ -104,9 +111,13 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-docs-sync.py \
   && python3 scripts/test-verify-docs-sync.py \
   && python3 scripts/verify-screenshot-freshness.py \
+  && python3 scripts/test-build-readme-thumbs.py \
+  && python3 scripts/build-readme-thumbs.py --check \
   && python3 scripts/test-self-check.py \
   && python3 scripts/verify-geometry.py --all \
   && python3 scripts/test-verify-geometry.py \
+  && python3 scripts/verify-block-registry.py --all \
+  && python3 scripts/test-verify-block-registry.py \
   && python3 scripts/verify-treemap.py --all \
   && python3 scripts/test-verify-treemap.py \
   && python3 scripts/verify-dumbbell.py \
@@ -120,20 +131,31 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-bubble.py --all \
   && python3 scripts/test-verify-bubble.py \
   && python3 scripts/verify-histogram.py --all \
-  && python3 scripts/test-verify-histogram.py
+  && python3 scripts/test-verify-histogram.py \
+  && python3 scripts/verify-bump.py --all \
+  && python3 scripts/test-verify-bump.py \
+  && python3 scripts/verify-beeswarm.py --all \
+  && python3 scripts/test-verify-beeswarm.py \
+  && python3 scripts/verify-skin-polarity.py --all \
+  && python3 scripts/test-verify-skin-polarity.py
 ```
 
 ### If a gate fails
 
-- **`verify-plugin-package.py`:** run the bump helper if the versions did not increase. If packaging validation fails, keep both marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
+- **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
 - **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
 - **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 39 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
+- **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
 - **`verify-ridgeline.py`:** a ridge is drawn on its own amplitude, a baseline sits off the stack's pitch or away from its drawn rule, a ridge is sampled on its own x positions, or a printed range is wider than the bins it claims. Fix the geometry or the declaration so they state one thing — never renormalise a single ridge to make it readable, and never move a baseline to buy one ridge headroom.
 - **`verify-bubble.py`:** a bubble is drawn off the shared axis scale its peers describe, its radius disagrees with the one area constant (`r = K·√size`), a second bubble wears the accent, an overlapping smaller bubble is painted under a larger one, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never nudge a bubble to open up space, because crowded bubbles mean the values really are close.
 - **`verify-histogram.py`:** a bin's width, position, or height disagrees with the interval and count it declares, the count axis is truncated or bent, n does not equal the sum of the bins, or a marker is not where its stated value belongs. Fix the geometry to match the data, never the declaration to match the drawing.
+- **`verify-bump.py`:** a vertex sits off the rank grid the figure itself declares, a snapshot's ranks are not a permutation of 1..N, a segment curves or arrives by a relative command, or an endpoint label is missing a coordinate, drawn inboard of the end it names, or off the gutter its peers share. Fix the geometry or the declaration, never the label — and never nudge a vertex off its row to dodge a label collision, because a rank between two ranks is not a rank.
+- **`verify-beeswarm.py`:** a dot is drawn off the shared value scale its peers describe, two dots declaring one value sit at two positions, a pair overprints instead of dodging, a second radius or a second non-focal fill appears, a second dot wears the accent, two dots share a `data-name` (or one is empty), anything positions a mark from CSS (`transform`, `translate`/`rotate`/`scale`, a geometry property, a motion path) by any carrier — attribute, inline `style`, or `<style>` rule, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never move a dot along the value axis to open up space, because crowding is data and the dodge is the only honest resolution.
+- **`verify-skin-polarity.py`:** a legend key or caption names the ramp's direction by lightness (`darker is larger`) in a file whose ramp composites the other way. `ink` is a role, not a colour — it resolves near-black on light paper and near-white on dark — so one set of opacities runs darker as it strengthens in the light skin and lighter in the dark one. Name the direction by contrast against the paper (`stronger contrast is larger`), which survives the skin swap, and ship the same sentence in every variant; never invert the word for one file. The gate also fails closed on a claim it cannot substantiate — no resolvable paper colour, fewer than three rank-bearing ramp members, or a ramp that is not strictly ordered — and on wording it cannot parse: a tone word within six words of a magnitude word that no supported sentence form binds. Rephrase that as `<tone> <is|means|represents> <magnitude>` (`stronger contrast is larger`), because a claim the gate cannot read is a claim nothing checks.
 - **`verify-geometry.py`:** a label mask overlaps a node declared later in the document, so the node fill clips the label at render time. Move the label to a free segment of its connector — keep the 6–10px gap from the stroke required by SKILL.md §6, and do not shrink the mask to sneak under the check.
+- **`verify-block-registry.py`:** a Traceable block decomposition diagram (`semantic-patterns.md` § 8) has a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block's id in the same file, a blank `data-block-id`, a missing or blank `data-block-name`, or a cycle in the parent chain. Fix the diagram's attributes — the checker mirrors the source rather than validating semantics, so a passing file is only as correct as the IDs and parents actually authored on it.
 - **Icon assets:** you changed `scripts/vendor/icons/` or `scripts/build-icons.py` and the generated files went stale. Rerun `python3 scripts/build-icons.py` and commit the regenerated files.
 
 Do **not** add a file to `scripts/lint-skin-baseline.txt` to get your example through. The baseline exists only for legacy pre-2.0 examples that legitimately predate the current skin, and it still receives a11y checks.
@@ -173,7 +195,7 @@ Motion is opt-in. Start from `skills/diagram-design/assets/template-motion.html`
 
 ## Design decisions (ADRs)
 
-Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the visual-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, and geometric label placement being verified rather than reviewed. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
+Settled policies live as short records in `docs/adr/` — one pinned motion controller, semantic patterns never expanding the visual-type taxonomy, the reveal-only autoplay rule, the SKILL.md byte cap with its trigger-rich description requirement, geometric label placement being verified rather than reviewed, and plugin versions being bumped on `main` after merge rather than in PRs. Read the relevant ADR before proposing a change that touches one; when a PR settles a new policy, add an ADR in the same PR.
 
 ## Adding a new diagram type
 

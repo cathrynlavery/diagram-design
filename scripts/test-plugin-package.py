@@ -16,6 +16,7 @@ from typing import Iterator, Optional
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY_SCRIPT = ROOT / "scripts/verify-plugin-package.py"
 BUMP_SCRIPT = ROOT / "scripts/bump-plugin-version.py"
+AUTO_BUMP_WORKFLOW = ROOT / ".github/workflows/auto-bump.yml"
 PLUGIN_NAME = "diagram-design"
 
 
@@ -179,6 +180,50 @@ def test_verifier() -> None:
             "missing bump",
             VERIFY.verify_package(root, "HEAD"),
             "must increase",
+        )
+
+    with package_repo() as root:
+        errors = VERIFY.verify_package(root, "HEAD", mode="no-bump")
+        if errors:
+            raise AssertionError(f"unchanged versions failed no-bump mode: {errors}")
+        print("OK: no-bump mode accepts unchanged versions")
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        expect_failure(
+            "version bump inside a pull request",
+            VERIFY.verify_package(root, "HEAD", mode="no-bump"),
+            "must not change in a pull request",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.2", "1.2.2")
+        expect_failure(
+            "version rollback inside a pull request",
+            VERIFY.verify_package(root, "HEAD", mode="no-bump"),
+            "must not change in a pull request",
+        )
+
+    with package_repo() as root:
+        errors = VERIFY.verify_package(root, None, mode="current-only")
+        if errors:
+            raise AssertionError(f"current-only mode failed a valid tree: {errors}")
+        print("OK: current-only mode accepts a valid tree")
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.5")
+        expect_failure(
+            "current-only mode with desynchronized manifests",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "versions must match",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2", "1.2")
+        expect_failure(
+            "current-only mode with malformed versions",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "strict MAJOR.MINOR.PATCH",
         )
 
     with package_repo() as root:
@@ -435,6 +480,11 @@ def test_bumper() -> None:
         with tempfile.TemporaryDirectory() as scratch:
             root = Path(scratch)
             seed_package(root)
+            version_paths = (*BUMP.MANIFEST_PATHS, BUMP.SKILL_PATH)
+            before = {
+                relative: (root / relative).read_text(encoding="utf-8")
+                for relative in version_paths
+            }
             actual = BUMP.bump(root, part)
             versions = {
                 json.loads((root / relative).read_text(encoding="utf-8"))["version"]
@@ -444,7 +494,27 @@ def test_bumper() -> None:
                 raise AssertionError(
                     f"{part} bump: expected {expected}, got {actual} and {versions}"
                 )
-            print(f"OK: {part} bump produced {expected}")
+            skill_text = (root / BUMP.SKILL_PATH).read_text(encoding="utf-8")
+            expected_minor = ".".join(expected.split(".")[:2])
+            if f'version: "{expected_minor}"' not in skill_text:
+                raise AssertionError(
+                    f"{part} bump left SKILL.md metadata.version off "
+                    f"{expected_minor!r}: {skill_text!r}"
+                )
+            changed = {
+                relative
+                for relative in version_paths
+                if (root / relative).read_text(encoding="utf-8") != before[relative]
+            }
+            expected_changed = set(BUMP.MANIFEST_PATHS)
+            if part != "patch":
+                expected_changed.add(BUMP.SKILL_PATH)
+            if changed != expected_changed:
+                raise AssertionError(
+                    f"{part} bump changed {sorted(map(str, changed))}; expected "
+                    f"{sorted(map(str, expected_changed))}"
+                )
+            print(f"OK: {part} bump produced {expected} and synced SKILL.md")
 
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
@@ -459,10 +529,76 @@ def test_bumper() -> None:
             raise AssertionError("version bumper accepted mismatched manifests")
         print("OK: version bumper rejects mismatched manifests")
 
+    with tempfile.TemporaryDirectory() as scratch:
+        root = Path(scratch)
+        seed_package(root)
+        skill = root / BUMP.SKILL_PATH
+        skill.write_text(f"---\nname: {PLUGIN_NAME}\n---\n", encoding="utf-8")
+        before = {
+            relative: (root / relative).read_text(encoding="utf-8")
+            for relative in BUMP.MANIFEST_PATHS
+        }
+        try:
+            BUMP.bump(root)
+        except BUMP.PackageVersionError as exc:
+            if "metadata.version" not in str(exc):
+                raise AssertionError(f"unexpected SKILL.md error: {exc}") from exc
+        else:
+            raise AssertionError("version bumper accepted SKILL.md without metadata.version")
+        after = {
+            relative: (root / relative).read_text(encoding="utf-8")
+            for relative in BUMP.MANIFEST_PATHS
+        }
+        if before != after:
+            raise AssertionError("failed bump must leave every manifest untouched")
+        print("OK: version bumper fails closed on SKILL.md drift, manifests untouched")
+
+
+def test_auto_bump_workflow_allowlists() -> None:
+    workflow = AUTO_BUMP_WORKFLOW.read_text(encoding="utf-8")
+    expected = {
+        "expected_without_skill": tuple(
+            sorted(relative.as_posix() for relative in BUMP.MANIFEST_PATHS)
+        ),
+        "expected_with_skill": tuple(
+            sorted(
+                relative.as_posix()
+                for relative in (*BUMP.MANIFEST_PATHS, BUMP.SKILL_PATH)
+            )
+        ),
+    }
+
+    for variable, expected_paths in expected.items():
+        marker = f"{variable}=$(printf '%s" + "\\n' \\" + "\n"
+        chunks = workflow.split(marker)
+        if len(chunks) != 3:
+            raise AssertionError(
+                f"expected prepare and publish assignments for {variable}; "
+                f"found {len(chunks) - 1}"
+            )
+        for job, chunk in zip(("prepare", "publish"), chunks[1:]):
+            body, separator, _ = chunk.partition("| LC_ALL=C sort)")
+            if not separator:
+                raise AssertionError(f"could not parse {job} {variable} allowlist")
+            actual_paths = tuple(
+                sorted(
+                    line.strip().removesuffix("\\").strip()
+                    for line in body.splitlines()
+                    if line.strip()
+                )
+            )
+            if actual_paths != expected_paths:
+                raise AssertionError(
+                    f"{job} {variable} allowlist is {actual_paths}; "
+                    f"expected {expected_paths}"
+                )
+    print("OK: prepare and publish workflow allowlists match bumper paths")
+
 
 def main() -> int:
     test_verifier()
     test_bumper()
+    test_auto_bump_workflow_allowlists()
     print("All plugin package tests passed")
     return 0
 

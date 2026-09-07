@@ -633,13 +633,17 @@ def _edge_operators(text: str) -> list[_Operator]:
                 operator_start += 1
                 opening = opening[1:]
         token = opening + match.group("closing")
-        label_group = "spaced" if match.group("spaced") is not None else "compact"
         style, arrowhead, bidirectional, undirected = _operator_style(token)
+        # Read the label from the whole span between the operators rather than
+        # from the matched group. The mask blanks quoted spans, so a quoted
+        # label — `A-- "text" -->B` — leaves the spaced group nothing but
+        # blanks to settle on, and slicing that group returns a stray quote
+        # instead of the text. `clean_label` strips the padding and quotes.
         operators.append(
             _Operator(
                 operator_start,
                 match.end(),
-                clean_label(text[match.start(label_group) : match.end(label_group)]),
+                clean_label(text[match.end("opening") : match.start("closing")]),
                 style,
                 arrowhead,
                 bidirectional,

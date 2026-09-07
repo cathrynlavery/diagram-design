@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Package rank by quarter · Bump chart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral { background: var(--color-accent); }
+    .card-dot.ink-strong { background: rgba(45,49,66,0.80); }
+    .card-dot.ink-light { background: rgba(45,49,66,0.62); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Bump chart · Diagram Design</p>
+      <h1>The default everyone stopped choosing</h1>
+      <p class="subtitle">Six internal packages ranked by weekly downloads, quarter by quarter. legacy-http entered the year in first place and left it in last; fetch-kit took the top rank in Q2 and never gave it back. Position is the only encoding — the vertical axis is rank, not volume.</p>
+    </div>
+    <div class="diagram-container">
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="bump-full-title bump-full-desc">
+        <title id="bump-full-title">The default everyone stopped choosing</title>
+        <desc id="bump-full-desc">Bump chart ranking six internal packages by weekly downloads across four quarters; legacy-http slides from first to sixth while fetch-kit takes the top rank in the second quarter and keeps it.</desc>
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <!-- Rank is ORDINAL: every vertex sits exactly on a rank row, y = 88 + 56 x
+             (rank - 1), and every snapshot's ranks are a permutation of 1..6.
+             scripts/verify-bump.py enforces both against the ranks each series
+             declares - there is no tolerance, because rank has no fractions. -->
+        <text transform="rotate(-90 24 228)" x="24" y="228" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">RANK BY WEEKLY DOWNLOADS · 1 = MOST</text>
+
+        <!-- One axis rule per snapshot. No gridlines: the dots are the readable
+             positions and each series prints its first and last rank. -->
+        <line x1="320" y1="64" x2="320" y2="392" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text data-axis="0" data-state="Q1" x="320" y="416" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">Q1</text>
+        <line x1="440" y1="64" x2="440" y2="392" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text data-axis="1" data-state="Q2" x="440" y="416" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">Q2</text>
+        <line x1="560" y1="64" x2="560" y2="392" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text data-axis="2" data-state="Q3" x="560" y="416" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">Q3</text>
+        <line x1="680" y1="64" x2="680" y2="392" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
+        <text data-axis="3" data-state="Q4" x="680" y="416" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">Q4</text>
+
+        <!-- Straight segments between adjacent snapshots - never splines, which
+             invent a trajectory between ranks that were only measured quarterly.
+             Ramp ordered by Q1 rank: opacity records the opening order. -->
+        <path data-series="authx" data-ranks="2,3,3,2" d="M320,144 L440,200 L560,200 L680,144" fill="none" stroke="rgba(45,49,66,0.80)" stroke-width="1.2"/>
+        <circle cx="320" cy="144" r="3" fill="rgba(45,49,66,0.80)"/>
+        <circle cx="440" cy="200" r="3" fill="rgba(45,49,66,0.80)"/>
+        <circle cx="560" cy="200" r="3" fill="rgba(45,49,66,0.80)"/>
+        <circle cx="680" cy="144" r="3" fill="rgba(45,49,66,0.80)"/>
+        <text data-series="authx" data-end="first" data-role="name" x="272" y="147.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">authx</text>
+        <text data-series="authx" data-end="first" data-role="rank" x="304" y="147.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">#2</text>
+        <text data-series="authx" data-end="last" data-role="rank" x="696" y="147.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">#2</text>
+        <text data-series="authx" data-end="last" data-role="name" x="728" y="147.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">authx</text>
+
+        <path data-series="fetch-kit" data-ranks="3,1,1,1" d="M320,200 L440,88 L560,88 L680,88" fill="none" stroke="rgba(45,49,66,0.75)" stroke-width="1.2"/>
+        <circle cx="320" cy="200" r="3" fill="rgba(45,49,66,0.75)"/>
+        <circle cx="440" cy="88" r="3" fill="rgba(45,49,66,0.75)"/>
+        <circle cx="560" cy="88" r="3" fill="rgba(45,49,66,0.75)"/>
+        <circle cx="680" cy="88" r="3" fill="rgba(45,49,66,0.75)"/>
+        <text data-series="fetch-kit" data-end="first" data-role="name" x="272" y="203.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">fetch-kit</text>
+        <text data-series="fetch-kit" data-end="first" data-role="rank" x="304" y="203.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">#3</text>
+        <text data-series="fetch-kit" data-end="last" data-role="rank" x="696" y="91.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">#1</text>
+        <text data-series="fetch-kit" data-end="last" data-role="name" x="728" y="91.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">fetch-kit</text>
+
+        <path data-series="queuelib" data-ranks="4,5,5,4" d="M320,256 L440,312 L560,312 L680,256" fill="none" stroke="rgba(45,49,66,0.70)" stroke-width="1.2"/>
+        <circle cx="320" cy="256" r="3" fill="rgba(45,49,66,0.70)"/>
+        <circle cx="440" cy="312" r="3" fill="rgba(45,49,66,0.70)"/>
+        <circle cx="560" cy="312" r="3" fill="rgba(45,49,66,0.70)"/>
+        <circle cx="680" cy="256" r="3" fill="rgba(45,49,66,0.70)"/>
+        <text data-series="queuelib" data-end="first" data-role="name" x="272" y="259.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">queuelib</text>
+        <text data-series="queuelib" data-end="first" data-role="rank" x="304" y="259.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">#4</text>
+        <text data-series="queuelib" data-end="last" data-role="rank" x="696" y="259.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">#4</text>
+        <text data-series="queuelib" data-end="last" data-role="name" x="728" y="259.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">queuelib</text>
+
+        <path data-series="logfmt" data-ranks="5,4,2,3" d="M320,312 L440,256 L560,144 L680,200" fill="none" stroke="rgba(45,49,66,0.66)" stroke-width="1.2"/>
+        <circle cx="320" cy="312" r="3" fill="rgba(45,49,66,0.66)"/>
+        <circle cx="440" cy="256" r="3" fill="rgba(45,49,66,0.66)"/>
+        <circle cx="560" cy="144" r="3" fill="rgba(45,49,66,0.66)"/>
+        <circle cx="680" cy="200" r="3" fill="rgba(45,49,66,0.66)"/>
+        <text data-series="logfmt" data-end="first" data-role="name" x="272" y="315.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">logfmt</text>
+        <text data-series="logfmt" data-end="first" data-role="rank" x="304" y="315.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">#5</text>
+        <text data-series="logfmt" data-end="last" data-role="rank" x="696" y="203.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">#3</text>
+        <text data-series="logfmt" data-end="last" data-role="name" x="728" y="203.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">logfmt</text>
+
+        <path data-series="schema-gen" data-ranks="6,6,6,5" d="M320,368 L440,368 L560,368 L680,312" fill="none" stroke="rgba(45,49,66,0.62)" stroke-width="1.2"/>
+        <circle cx="320" cy="368" r="3" fill="rgba(45,49,66,0.62)"/>
+        <circle cx="440" cy="368" r="3" fill="rgba(45,49,66,0.62)"/>
+        <circle cx="560" cy="368" r="3" fill="rgba(45,49,66,0.62)"/>
+        <circle cx="680" cy="312" r="3" fill="rgba(45,49,66,0.62)"/>
+        <text data-series="schema-gen" data-end="first" data-role="name" x="272" y="371.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif" text-anchor="end">schema-gen</text>
+        <text data-series="schema-gen" data-end="first" data-role="rank" x="304" y="371.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">#6</text>
+        <text data-series="schema-gen" data-end="last" data-role="rank" x="696" y="315.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">#5</text>
+        <text data-series="schema-gen" data-end="last" data-role="name" x="728" y="315.5" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist', sans-serif">schema-gen</text>
+
+        <!-- legacy-http FOCAL - and it is the series that FELL. The accent marks the
+             editorially focal line, never the winner. Focus is carried by stroke
+             weight, not tone, for the reason the slopegraph section gives: the
+             accent measures 2.86:1 on light paper. Drawn last so its descent
+             crosses over, not under, the lines it overtakes downward. -->
+        <path data-series="legacy-http" data-ranks="1,2,4,6" d="M320,88 L440,144 L560,256 L680,368" fill="none" stroke="#eb6c36" stroke-width="2.4"/>
+        <circle cx="320" cy="88" r="4" fill="#eb6c36"/>
+        <circle cx="440" cy="144" r="4" fill="#eb6c36"/>
+        <circle cx="560" cy="256" r="4" fill="#eb6c36"/>
+        <circle cx="680" cy="368" r="4" fill="#eb6c36"/>
+        <text data-series="legacy-http" data-end="first" data-role="name" x="272" y="91.5" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">legacy-http</text>
+        <text data-series="legacy-http" data-end="first" data-role="rank" x="304" y="91.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">#1</text>
+        <text data-series="legacy-http" data-end="last" data-role="rank" x="696" y="371.5" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">#6</text>
+        <text data-series="legacy-http" data-end="last" data-role="name" x="728" y="371.5" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif">legacy-http</text>
+
+        <!-- Legend -->
+        <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <text x="960" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">RANKED BY WEEKLY DOWNLOADS, TIES KEEP PRIOR ORDER · SAME MEASURE EVERY QUARTER · ILLUSTRATIVE FIGURES, NOT A MEASURED REGISTRY</text>
+
+        <line x1="40" y1="492" x2="64" y2="492" stroke="#eb6c36" stroke-width="2.4"/>
+        <circle cx="52" cy="492" r="4" fill="#eb6c36"/>
+        <text x="72" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">legacy-http · focal, first to sixth in a year</text>
+        <line x1="320" y1="492" x2="344" y2="492" stroke="rgba(45,49,66,0.80)" stroke-width="1.2"/>
+        <circle cx="332" cy="492" r="3" fill="rgba(45,49,66,0.80)"/>
+        <text x="352" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Other packages · opacity records the Q1 order</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">FOCAL · LEGACY-HTTP</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>First to sixth in four quarters, and never a sudden drop</h3></div>
+        <p>One rank, then two more, then two more. No single quarter looks alarming, which is exactly how a default dies — each straight segment joins two measured ranks and says nothing about the weeks between, so the chart claims the decline happened, not when in each quarter it happened.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink-strong"></span><h3>fetch-kit took first place in Q2 and the line goes flat</h3></div>
+        <p>A flat line at rank one is the strongest claim a bump chart makes: nothing displaced it for three consecutive snapshots. Note what it does not say — downloads could have doubled or halved in that time. Rank hides magnitude; that trade is the price of reading position at a glance.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink-light"></span><h3>schema-gen moved one rank and that is the whole story</h3></div>
+        <p>Three flat quarters, then a single step up — inherited from legacy-http falling past it, not from growth of its own. A bump chart cannot tell those apart, which is why the footnote names the ranking key: the reader who needs magnitude follows the measure, not the picture.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <span>rank by weekly internal downloads · quarterly snapshots · illustrative</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

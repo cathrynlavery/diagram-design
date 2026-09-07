@@ -67,6 +67,35 @@ def main() -> int:
         else:
             print(f"OK: {language} wide-glyph estimator contract is {expected:g}em")
 
+    # Mixed labels are where a per-script formula fails. Sizing a box from
+    # "Hangul syllables + Latin letters + spaces" drops digits and punctuation
+    # entirely, so `주문 v2.1` gets a box built for four of its seven
+    # characters. These pin the per-character contract against that regression.
+    for label, expected, note in (
+        ("주문 v2.1", 5.0, "Hangul with a version suffix (digits and a period)"),
+        ("API 게이트웨이 v2", 9.2, "leading Latin acronym, trailing digit"),
+        ("주문（원본）", 6.0, "full-width parentheses are wide, not narrow"),
+        ("한글e\u0301", 2.6, "a decomposed combining acute adds no advance (Mn)"),
+        ("한글e\u20dd", 2.6, "an enclosing circle adds no advance (Me)"),
+        ("", 0.0, "an empty label costs nothing"),
+    ):
+        actual = ESTIMATED_ADVANCE(label, False)
+        if abs(actual - expected) > 1e-9:
+            failures.append(
+                f"mixed-script contract moved for {label!r} ({note}): "
+                f"expected {expected:g}em, got {actual:g}em"
+            )
+        else:
+            print(f"OK: mixed-script estimate for {label!r} is {expected:g}em")
+
+    # The mono face keeps its own narrow advance; only the wide glyphs are
+    # script-dependent. Without this the two faces can silently converge.
+    mono_mixed = ESTIMATED_ADVANCE("주문 v2.1", True)
+    if abs(mono_mixed - 5.1) > 1e-9:
+        failures.append(f"mono mixed-script contract moved: expected 5.1em, got {mono_mixed:g}em")
+    else:
+        print("OK: mono mixed-script estimate keeps the 0.62em narrow advance")
+
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
 
