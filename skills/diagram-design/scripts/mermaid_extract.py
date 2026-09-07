@@ -51,6 +51,13 @@ MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkd"}
 MERMAID_SUFFIXES = {".mmd", ".mermaid"}
 
 
+def _configure_stdout_utf8() -> None:
+    """Emit digests as UTF-8 even when Windows selects a legacy codepage."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8", errors="strict")
+
+
 def _fail(message: str) -> NoReturn:
     print(f"mermaid_extract: {message}", file=sys.stderr)
     raise SystemExit(2)
@@ -597,25 +604,53 @@ def _edge_operators(text: str) -> list[_Operator]:
 
     # Labeled links carry the label between the opening and closing operator:
     # `A-- text -->B`, `A-. retry .-> B`, `A== critical ==> B`, and the
-    # undirected forms of each.
+    # undirected forms of each. The compact form drops the spaces —
+    # `B--yes-->C` — and may retain a left arrow/circle/cross marker, as in
+    # `A<--yes-->B` or `A o--yes--o B`. Its label may not contain whitespace,
+    # and the operator characters themselves may not open one (keeping
+    # `A----->B` unlabeled and `A --o B --> C` two separate links).
     text_edge = re.compile(
-        r"(?:--|-\.|==)\s+(.+?)\s+(\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+        r"(?P<opening>"
+        r"<(?:--|-\.|==)"
+        r"|(?<![\w.:-])[xo](?:--|-\.|==)"
+        r"|(?:--|-\.|==)"
+        r")"
+        r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
+        r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+    )
+    trailing_operator = re.compile(
+        r"(?:\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+        r"(?:\|[^|\n]*\|)?\s*$"
     )
     for match in text_edge.finditer(mask):
-        token = match.group(2)
+        opening = match.group("opening")
+        operator_start = match.start()
+        if opening.startswith(("x", "o")):
+            prefix = mask[:operator_start]
+            if not prefix.strip() or trailing_operator.search(prefix):
+                # Here x/o is the endpoint before a regular opening operator,
+                # not a left marker: `x--yes-->B` or `A-->x--go-->B`.
+                operator_start += 1
+                opening = opening[1:]
+        token = opening + match.group("closing")
         style, arrowhead, bidirectional, undirected = _operator_style(token)
+        # Read the label from the whole span between the operators rather than
+        # from the matched group. The mask blanks quoted spans, so a quoted
+        # label — `A-- "text" -->B` — leaves the spaced group nothing but
+        # blanks to settle on, and slicing that group returns a stray quote
+        # instead of the text. `clean_label` strips the padding and quotes.
         operators.append(
             _Operator(
-                match.start(),
+                operator_start,
                 match.end(),
-                clean_label(text[match.start(1) : match.end(1)]),
+                clean_label(text[match.end("opening") : match.start("closing")]),
                 style,
                 arrowhead,
                 bidirectional,
                 undirected,
             )
         )
-        occupied.append((match.start(), match.end()))
+        occupied.append((operator_start, match.end()))
 
     pattern = re.compile(
         r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}"
@@ -744,11 +779,18 @@ def _parse_sequence(
 ) -> None:
     fragment_stack: list[dict[str, Any]] = []
     participant_re = re.compile(
-        r"^(participant|actor)\s+([\w.:-]+)(?:\s+as\s+(.+))?$", re.I
+        r"^(?:create\s+)?(participant|actor)\s+"
+        r"(?:\"([^\"]+)\"|'([^']+)'|([\w.:-]+))"
+        r"(?:\s+as\s+(.+))?$",
+        re.I,
     )
+    # Endpoints may be bare ids or multi-word names introduced by a quoted
+    # `participant "Alice Smith"` declaration; the lazy id keeps `A-->>B`
+    # from swallowing dashes into the source.
     message_re = re.compile(
-        r"^([\w.:-]+?)(?:\(\))?\s*(--?>>|--?>|--?\)|--?x)"
-        r"\s*[+-]?\s*(?:\(\))?([\w.:-]+)\s*:\s*(.*)$"
+        r"^([\w.:-]+?(?: [\w.:-]+)*?)(?:\(\))?\s*"
+        r"(<<--?>>|--?>>|--?>|--?\)|--?x)"
+        r"\s*[+-]?\s*(?:\(\))?([\w.:-]+?(?: [\w.:-]+)*?)\s*:\s*(.*)$"
     )
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
@@ -759,11 +801,23 @@ def _parse_sequence(
             continue
         participant = participant_re.match(text)
         if participant:
-            node_id = participant.group(2)
+            kind = participant.group(1).casefold()
+            quoted = participant.group(2) or participant.group(3)
+            bare = participant.group(4)
+            alias = participant.group(5)
+            if quoted is not None:
+                # `participant "Alice Smith" as A` — messages use the alias,
+                # the quoted string is the display name.
+                node_id = alias or quoted
+                label = quoted
+            else:
+                # `participant A as Alice` — the bare token is the id.
+                node_id = bare
+                label = alias or bare
             diagram.add_node(
                 node_id,
-                clean_label(participant.group(3) or node_id),
-                "actor" if participant.group(1).casefold() == "actor" else "lifeline",
+                clean_label(label),
+                "actor" if kind == "actor" else "lifeline",
             )
             continue
         fragment = re.match(r"^(alt|opt|loop|par|critical|break)\b\s*(.*)$", text, re.I)
@@ -795,17 +849,32 @@ def _parse_sequence(
         message = message_re.match(text)
         if message:
             source, token, target, label = message.groups()
-            diagram.add_node(source, source, "lifeline")
-            diagram.add_node(target, target, "lifeline")
+            # Auto-add endpoints only when undeclared, so an earlier
+            # `actor`/`participant` declaration keeps its shape and label.
+            for endpoint in (source, target):
+                if endpoint not in diagram.node_map:
+                    diagram.add_node(endpoint, endpoint, "lifeline")
+            if token.endswith("x"):
+                arrowhead = "cross"
+            elif token.endswith(")"):
+                arrowhead = "async"
+            elif token.endswith(">>"):
+                arrowhead = "arrow"
+            else:  # `->` / `-->` are open arrows with no arrowhead
+                arrowhead = "none"
             diagram.add_edge(
                 source,
                 target,
                 clean_label(label),
-                "dashed" if token.startswith("--") else "solid",
-                "cross" if token.endswith("x") else "async" if token.endswith(")") else "arrow",
+                "dashed"
+                if token.startswith("--") or token.startswith("<<--")
+                else "solid",
+                arrowhead,
+                bidirectional=token.startswith("<<"),
+                undirected=arrowhead == "none",
             )
             continue
-        if re.search(r"--?>>|--?>|--?\)|--?x", text):
+        if re.search(r"<<--?>>|--?>>|--?>|--?\)|--?x", text):
             _fail(f"malformed edge at line {line_number}")
 
 
@@ -1282,4 +1351,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    _configure_stdout_utf8()
     raise SystemExit(main())

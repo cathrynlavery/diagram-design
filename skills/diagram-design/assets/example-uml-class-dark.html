@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments domain · UML class diagram</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #2d3142;
+      --color-ink:     #f5f5f5;
+      --color-muted:   #bfc0c0;
+      --color-accent:  #f08a59;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1240px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">UML class · Diagram Design</p>
+    <h1>Payments domain · class diagram</h1>
+
+    <svg viewBox="0 0 980 664" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="uml-class-dark-title uml-class-dark-desc">
+      <title id="uml-class-dark-title">Payments domain · UML class diagram</title>
+      <desc id="uml-class-dark-desc">Class diagram showing Card and BankTransfer realizing a PaymentMethod interface, PaymentService depending on PaymentMethod, and Order composed of OrderLine while associated with Customer.</desc>
+      <defs>
+        <marker id="uml-triangle" markerWidth="16" markerHeight="12" refX="15" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+          <polygon points="0 0, 16 6, 0 12" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+        </marker>
+        <marker id="uml-diamond-filled" markerWidth="18" markerHeight="10" refX="0" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+          <polygon points="0 5, 9 0, 18 5, 9 10" fill="#f5f5f5"/>
+        </marker>
+        <marker id="uml-diamond-hollow" markerWidth="18" markerHeight="10" refX="0" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+          <polygon points="0 5, 9 0, 18 5, 9 10" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+        </marker>
+        <marker id="uml-open" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+          <path d="M0,0 L9,4 L0,8" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+
+      <!-- Relationships (drawn before boxes) -->
+      <!-- Card realizes PaymentMethod -->
+      <line x1="480" y1="240" x2="480" y2="140" stroke="#f08a59" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
+      <!-- BankTransfer realizes PaymentMethod -->
+      <line x1="760" y1="240" x2="760" y2="140" stroke="#f08a59" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
+      <!-- PaymentService depends on PaymentMethod -->
+      <line x1="320" y1="100" x2="420" y2="100" stroke="#bfc0c0" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#uml-open)"/>
+      <!-- Order composed of OrderLine -->
+      <line x1="260" y1="480" x2="380" y2="480" stroke="#bfc0c0" stroke-width="1" marker-start="url(#uml-diamond-filled)"/>
+      <!-- Order associates Customer (routed below to clear OrderLine) -->
+      <path d="M 160,540 V 572 Q 160,580 168,580 H 752 Q 760,580 760,572 V 540" fill="none" stroke="#bfc0c0" stroke-width="1" marker-end="url(#uml-open)"/>
+
+      <!-- Dependency label -->
+      <rect x="352" y="80" width="32" height="12" rx="2" fill="#2d3142"/>
+      <text x="368" y="89" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">USES</text>
+
+      <!-- Composition multiplicities -->
+      <rect x="288" y="474" width="12" height="12" rx="2" fill="#2d3142"/>
+      <text x="294" y="484" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+      <rect x="348" y="474" width="24" height="12" rx="2" fill="#2d3142"/>
+      <text x="360" y="484" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1..*</text>
+
+      <!-- Association multiplicities -->
+      <rect x="164" y="548" width="28" height="12" rx="2" fill="#2d3142"/>
+      <text x="178" y="557" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">0..*</text>
+      <rect x="752" y="548" width="16" height="12" rx="2" fill="#2d3142"/>
+      <text x="760" y="557" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+
+      <!-- Class: PaymentMethod (interface, focal) -->
+      <rect x="420" y="40" width="360" height="100" rx="6" fill="rgba(240,138,89,0.04)" stroke="#f08a59" stroke-width="1"/>
+      <rect x="420" y="40" width="360" height="40" rx="6" fill="rgba(240,138,89,0.10)"/>
+      <rect x="420" y="72" width="360" height="8" fill="rgba(240,138,89,0.10)"/>
+      <line x1="420" y1="80" x2="780" y2="80" stroke="rgba(240,138,89,0.40)" stroke-width="1"/>
+      <text x="600" y="56" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">«interface»</text>
+      <text x="600" y="72" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PaymentMethod</text>
+      <text x="436" y="100" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">+ authorize(amount: Money): AuthResult</text>
+      <text x="436" y="120" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">+ capture(ref: String): void</text>
+
+      <!-- Class: Card -->
+      <rect x="380" y="240" width="200" height="120" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+      <line x1="380" y1="280" x2="580" y2="280" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+      <text x="480" y="264" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Card</text>
+      <text x="396" y="300" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- number: String</text>
+      <text x="396" y="320" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- expiry: Date</text>
+      <text x="396" y="340" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- cvv: String</text>
+
+      <!-- Class: BankTransfer -->
+      <rect x="660" y="240" width="200" height="100" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+      <line x1="660" y1="280" x2="860" y2="280" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+      <text x="760" y="264" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">BankTransfer</text>
+      <text x="676" y="300" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- iban: String</text>
+      <text x="676" y="320" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- accountHolder: String</text>
+
+      <!-- Class: PaymentService -->
+      <rect x="40" y="60" width="280" height="80" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+      <line x1="40" y1="100" x2="320" y2="100" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+      <text x="180" y="84" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PaymentService</text>
+      <text x="56" y="120" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">+ charge(order: Order): Receipt</text>
+
+      <!-- Class: Order -->
+      <rect x="60" y="420" width="200" height="120" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+      <line x1="60" y1="460" x2="260" y2="460" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+      <text x="160" y="444" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Order</text>
+      <text x="76" y="480" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- id: String</text>
+      <text x="76" y="500" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- placedAt: Date</text>
+      <text x="76" y="520" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- total: Money</text>
+
+      <!-- Class: OrderLine -->
+      <rect x="380" y="420" width="200" height="120" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+      <line x1="380" y1="460" x2="580" y2="460" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+      <text x="480" y="444" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">OrderLine</text>
+      <text x="396" y="480" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- sku: String</text>
+      <text x="396" y="500" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- qty: Int</text>
+      <text x="396" y="520" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- price: Money</text>
+
+      <!-- Class: Customer -->
+      <rect x="660" y="420" width="200" height="120" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+      <line x1="660" y1="460" x2="860" y2="460" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
+      <text x="760" y="444" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Customer</text>
+      <text x="676" y="480" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- id: String</text>
+      <text x="676" y="500" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- name: String</text>
+      <text x="676" y="520" fill="#f5f5f5" font-size="9" font-family="'Geist Mono', monospace">- email: String</text>
+
+      <!-- Legend: relationship vocabulary -->
+      <line x1="40" y1="604" x2="940" y2="604" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="620" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · RELATIONSHIPS</text>
+
+      <line x1="40" y1="636" x2="68" y2="636" stroke="#f5f5f5" stroke-width="1" marker-end="url(#uml-triangle)"/>
+      <text x="76" y="640" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Inheritance</text>
+
+      <line x1="188" y1="636" x2="216" y2="636" stroke="#f5f5f5" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
+      <text x="224" y="640" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Realization</text>
+
+      <line x1="336" y1="636" x2="364" y2="636" stroke="#f5f5f5" stroke-width="1" marker-start="url(#uml-diamond-filled)"/>
+      <text x="372" y="640" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Composition · owns</text>
+
+      <line x1="484" y1="636" x2="512" y2="636" stroke="#f5f5f5" stroke-width="1" marker-start="url(#uml-diamond-hollow)"/>
+      <text x="520" y="640" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Aggregation · has</text>
+
+      <line x1="632" y1="636" x2="660" y2="636" stroke="#bfc0c0" stroke-width="1" marker-end="url(#uml-open)"/>
+      <text x="668" y="640" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Association</text>
+
+      <line x1="780" y1="636" x2="808" y2="636" stroke="#bfc0c0" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#uml-open)"/>
+      <text x="816" y="640" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Dependency · uses</text>
+    </svg>
+  </div>
+</body>
+</html>

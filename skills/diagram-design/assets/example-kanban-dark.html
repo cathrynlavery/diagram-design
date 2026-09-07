@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform team board · Kanban</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #2d3142;
+      --color-ink:     #f5f5f5;
+      --color-muted:   #bfc0c0;
+      --color-accent:  #f08a59;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Kanban · Diagram Design</p>
+    <h1>Platform team board</h1>
+
+    <svg viewBox="0 0 1120 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="kanban-dark-title kanban-dark-desc">
+      <title id="kanban-dark-title">Platform team board · Kanban</title>
+      <desc id="kanban-dark-desc">Kanban board showing a platform team's work-in-progress across backlog, in-progress, review, and done columns, with the in-progress column over its WIP limit and one blocked card awaiting a vendor maintenance window.</desc>
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <!-- Column backgrounds -->
+        <rect x="32"  y="40" width="240" height="324" rx="8" fill="rgba(245,245,245,0.02)"/>
+        <rect x="304" y="40" width="240" height="324" rx="8" fill="rgba(245,245,245,0.02)"/>
+        <rect x="576" y="40" width="240" height="324" rx="8" fill="rgba(245,245,245,0.02)"/>
+        <rect x="848" y="40" width="240" height="324" rx="8" fill="rgba(245,245,245,0.02)"/>
+
+        <!-- Column headers -->
+        <text x="48"  y="60" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Backlog</text>
+        <text x="320" y="60" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">In progress</text>
+        <text x="592" y="60" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Review</text>
+        <text x="864" y="60" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Done</text>
+
+        <!-- WIP chips (rx=2, rectangular — never a pill) -->
+        <rect x="216" y="48" width="40" height="16" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
+        <text x="236" y="59" fill="rgba(245,245,245,0.8)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3</text>
+
+        <rect x="488" y="48" width="40" height="16" rx="2" fill="transparent" stroke="#f08a59" stroke-width="0.8"/>
+        <text x="508" y="59" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">4/3</text>
+
+        <rect x="760" y="48" width="40" height="16" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
+        <text x="780" y="59" fill="rgba(245,245,245,0.8)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2/3</text>
+
+        <rect x="1032" y="48" width="40" height="16" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
+        <text x="1052" y="59" fill="rgba(245,245,245,0.8)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2</text>
+
+        <!-- Header rules -->
+        <line x1="32"  y1="76" x2="272"  y2="76" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+        <line x1="304" y1="76" x2="544"  y2="76" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+        <line x1="576" y1="76" x2="816"  y2="76" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+        <line x1="848" y1="76" x2="1088" y2="76" stroke="rgba(245,245,245,0.20)" stroke-width="1"/>
+
+        <!-- Backlog: 3 default cards -->
+        <rect x="48" y="88"  width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="60" y="110" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">API rate limiting</text>
+        <text x="60" y="126" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-201 · priya</text>
+
+        <rect x="48" y="156" width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="60" y="178" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Terraform module cleanup</text>
+        <text x="60" y="194" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-205 · leo</text>
+
+        <rect x="48" y="224" width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="60" y="246" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Onboarding docs refresh</text>
+        <text x="60" y="262" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-209 · maya</text>
+
+        <!-- In progress: blocked + 3 default (over limit) -->
+        <rect x="320" y="88" width="208" height="56" rx="6" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1" stroke-dasharray="4,4"/>
+        <rect x="320" y="88" width="4" height="56" fill="#f08a59"/>
+        <text x="336" y="110" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Postgres 16 upgrade</text>
+        <text x="336" y="126" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-118 · sam</text>
+
+        <rect x="320" y="156" width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="332" y="178" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">K8s node pool migration</text>
+        <text x="332" y="194" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-142 · priya</text>
+
+        <rect x="320" y="224" width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="332" y="246" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Auth token rotation</text>
+        <text x="332" y="262" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-150 · leo</text>
+
+        <rect x="320" y="292" width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="332" y="314" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Observability dashboards</text>
+        <text x="332" y="330" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-161 · dara</text>
+
+        <!-- Review: default + waiting/external -->
+        <rect x="592" y="88" width="208" height="56" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="604" y="110" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Feature flag cleanup</text>
+        <text x="604" y="126" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-176 · nadia</text>
+
+        <rect x="592" y="156" width="208" height="56" rx="6" fill="rgba(245,245,245,0.02)" stroke="rgba(245,245,245,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="604" y="178" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Vendor SSO integration</text>
+        <text x="604" y="194" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-183 · sam</text>
+
+        <!-- Done: 2 done cards -->
+        <rect x="864" y="88" width="208" height="56" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="1"/>
+        <text x="876" y="110" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Log retention policy</text>
+        <text x="876" y="126" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-090 · leo</text>
+
+        <rect x="864" y="156" width="208" height="56" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="1"/>
+        <text x="876" y="178" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">CI cache warmup</text>
+        <text x="876" y="194" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">AVA-097 · maya</text>
+
+        <!-- Legend -->
+        <line x1="32" y1="388" x2="1088" y2="388" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+        <text x="32" y="404" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+        <rect x="32"  y="416" width="16" height="8" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
+        <text x="56"  y="424" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Default</text>
+
+        <rect x="232" y="416" width="16" height="8" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="256" y="424" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Blocked</text>
+
+        <rect x="432" y="416" width="16" height="8" fill="rgba(245,245,245,0.02)" stroke="rgba(245,245,245,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="456" y="424" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Waiting / external</text>
+
+        <rect x="632" y="416" width="16" height="8" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="1"/>
+        <text x="656" y="424" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Done</text>
+
+        <rect x="832" y="416" width="16" height="8" rx="2" fill="transparent" stroke="#f08a59" stroke-width="0.8"/>
+        <text x="856" y="424" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Over WIP limit</text>
+      </svg>
+  </div>
+</body>
+</html>

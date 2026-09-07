@@ -8,8 +8,11 @@ command wiring. Exit 0 only when every gate passes.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -38,6 +41,10 @@ def ok(message: str) -> None:
     print(f"OK: {message}")
 
 
+def normalize_newlines(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def invoke(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(EXTRACT), *args],
@@ -56,6 +63,67 @@ def run_extract(args: list[str]) -> str:
             f"{process.stderr.strip()}"
         )
     return process.stdout
+
+
+def check_legacy_stdout_encoding(tmp: Path) -> None:
+    source = tmp / "unicode-stdout.mmd"
+    source.write_text(
+        'flowchart TD\nA["登录<br/>続行 ⇒"] --> B["résumé"]\n',
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "cp1252"
+    env["PYTHONUTF8"] = "0"
+    process = subprocess.run(
+        [sys.executable, str(EXTRACT), str(source)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if process.returncode != 0:
+        fail(
+            "Mermaid extractor failed with legacy stdout encoding: "
+            + process.stderr.decode("utf-8", errors="replace").strip()
+        )
+    try:
+        output = process.stdout.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        fail(f"Mermaid extractor did not emit UTF-8 stdout: {error}")
+    for needle in ("登录", "続行 ⇒", "résumé", "⏎"):
+        if needle not in output:
+            fail(f"UTF-8 Mermaid digest lost {needle!r}: {output!r}")
+    if "�" in output:
+        fail("UTF-8 Mermaid digest contains a replacement character")
+    destination = tmp / "unicode-stdout.md"
+    file_process = subprocess.run(
+        [sys.executable, str(EXTRACT), str(source), "--out", str(destination)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if file_process.returncode != 0:
+        fail("Mermaid --out failed under a legacy Windows encoding")
+    file_output = destination.read_text(encoding="utf-8")
+    if normalize_newlines(file_output) != normalize_newlines(output):
+        fail("Mermaid --out no longer matches its UTF-8 stdout digest")
+
+    class CallerOwnedStdout(io.StringIO):
+        def __init__(self) -> None:
+            super().__init__()
+            self.reconfigured = False
+
+        def reconfigure(self, **_kwargs: object) -> None:
+            self.reconfigured = True
+
+    caller_stdout = CallerOwnedStdout()
+    extractor = load_extractor_module()
+    with contextlib.redirect_stdout(caller_stdout):
+        result = extractor.main([str(source)])
+    if result != 0 or caller_stdout.reconfigured:
+        fail("imported Mermaid main() reconfigured its caller-owned stdout")
+    if "登录" not in caller_stdout.getvalue():
+        fail("imported Mermaid main() did not write to its caller-owned stdout")
+    ok("Mermaid stdout stays lossless UTF-8 under a legacy Windows encoding")
 
 
 def expect_error(args: list[str], message: str) -> None:
@@ -206,6 +274,146 @@ D:::danger --- E
         fail("labeled dotted link did not retain its label and dashed style")
     if thick["label"] != "critical" or thick["style"] != "thick":
         fail("labeled thick link did not retain its label and thick style")
+
+    quoted_file = tmp / "quoted-labeled-links.mmd"
+    quoted_file.write_text(
+        """flowchart LR
+A -- "plain quoted" --> B
+B -. "dotted quoted" .-> C
+C == "thick quoted" ==> D
+D <-- "bidirectional quoted" --> E
+E o-- "circle quoted" --o F
+F x-- "cross quoted" --x G
+G -- "pipe | comma , semicolon ;" --> H
+H -- "  padded  " --> I
+""",
+        encoding="utf-8",
+    )
+    quoted = json.loads(run_extract([str(quoted_file), "--json"]))["diagrams"][0]
+    quoted_ids = sorted(node["id"] for node in quoted["nodes"])
+    if quoted_ids != ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+        fail(f"quoted edge labels materialized phantom nodes: {quoted_ids}")
+    quoted_labels = [edge["label"] for edge in quoted["edges"]]
+    if quoted_labels != [
+        "plain quoted",
+        "dotted quoted",
+        "thick quoted",
+        "bidirectional quoted",
+        "circle quoted",
+        "cross quoted",
+        "pipe | comma , semicolon ;",
+        "padded",
+    ]:
+        fail(
+            "quoted labeled links lost their text — the mask blanks quoted "
+            f"spans, so the label must be read between the operators: {quoted_labels}"
+        )
+    if [edge["style"] for edge in quoted["edges"][:3]] != ["solid", "dashed", "thick"]:
+        fail("quoted labeled links lost their stroke styles")
+    if not all(edge["bidirectional"] for edge in quoted["edges"][3:6]):
+        fail("quoted labeled multidirectional links lost bidirectional semantics")
+    if [edge["arrowhead"] for edge in quoted["edges"][3:6]] != [
+        "arrow",
+        "circle",
+        "cross",
+    ]:
+        fail("quoted labeled multidirectional links lost their arrowheads")
+
+    compact_file = tmp / "compact-labeled-links.mmd"
+    compact_file.write_text(
+        """flowchart LR
+A[Start]-->B{Gate}
+B--yes-->C[Done]
+B--no-->A
+C-.fast.->D
+D==crit==>E
+E--tie---A
+K<--both-->L
+M o--circle--o N
+O x--blocked--x P
+Box--yes-->C
+Echo--go-->D
+F --o G --> H
+I----->J
+""",
+        encoding="utf-8",
+    )
+    compact = json.loads(run_extract([str(compact_file), "--json"]))["diagrams"][0]
+    compact_ids = sorted(node["id"] for node in compact["nodes"])
+    if compact_ids != [
+        "A", "B", "Box", "C", "D", "E", "Echo", "F", "G", "H", "I", "J",
+        "K", "L", "M", "N", "O", "P",
+    ]:
+        fail(f"compact edge labels materialized phantom nodes: {compact_ids}")
+    compact_labels = [edge["label"] for edge in compact["edges"]]
+    if compact_labels[:11] != [
+        "", "yes", "no", "fast", "crit", "tie", "both", "circle", "blocked",
+        "yes", "go",
+    ]:
+        fail(f"compact edge labels were not retained: {compact_labels}")
+    if compact_labels[11:] != ["", "", ""]:
+        fail(
+            "operator characters or chained links were misread as compact "
+            f"labels: {compact_labels}"
+        )
+    if compact["edges"][3]["style"] != "dashed" or compact["edges"][4]["style"] != "thick":
+        fail("compact dotted/thick labeled links lost their styles")
+    arrow_bidir, circle_bidir, cross_bidir = compact["edges"][6:9]
+    if not arrow_bidir["bidirectional"] or arrow_bidir["arrowhead"] != "arrow":
+        fail("compact labeled `<-- -->` link lost bidirectional arrow semantics")
+    if not circle_bidir["bidirectional"] or circle_bidir["arrowhead"] != "circle":
+        fail("compact labeled `o-- --o` link lost bidirectional circle semantics")
+    if not cross_bidir["bidirectional"] or cross_bidir["arrowhead"] != "cross":
+        fail("compact labeled `x-- --x` link lost bidirectional cross semantics")
+    if compact["edges"][9]["source"] != "Box" or compact["edges"][10]["source"] != "Echo":
+        fail("source IDs ending in x/o were consumed as left edge markers")
+
+    single_marker_source_file = tmp / "single-marker-source-links.mmd"
+    single_marker_source_file.write_text(
+        """flowchart LR
+x--yes-->B
+o--go-->C
+""",
+        encoding="utf-8",
+    )
+    single_marker_source = json.loads(
+        run_extract([str(single_marker_source_file), "--json"])
+    )["diagrams"][0]
+    single_marker_edges = [
+        (edge["source"], edge["target"], edge["label"])
+        for edge in single_marker_source["edges"]
+    ]
+    if single_marker_edges != [
+        ("x", "B", "yes"),
+        ("o", "C", "go"),
+    ]:
+        fail("single-character x/o source IDs were consumed as left edge markers")
+
+    chained_marker_source_file = tmp / "chained-marker-source-links.mmd"
+    chained_marker_source_file.write_text(
+        """flowchart LR
+A--yes-->x--go-->B
+C--no--> o--wait-->D
+E-->|maybe|x--next-->F
+""",
+        encoding="utf-8",
+    )
+    chained_marker_source = json.loads(
+        run_extract([str(chained_marker_source_file), "--json"])
+    )["diagrams"][0]
+    chained_marker_edges = [
+        (edge["source"], edge["target"], edge["label"])
+        for edge in chained_marker_source["edges"]
+    ]
+    if chained_marker_edges != [
+        ("A", "x", "yes"),
+        ("x", "B", "go"),
+        ("C", "o", "no"),
+        ("o", "D", "wait"),
+        ("E", "x", "maybe"),
+        ("x", "F", "next"),
+    ]:
+        fail("chained x/o endpoint IDs were consumed as left edge markers")
 
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
@@ -455,6 +663,85 @@ def check_adversarial(tmp: Path) -> None:
     ok("adversarial labels stay inert; nesting, chains, fan-out, discards work")
 
 
+def check_sequence_grammar_forms(tmp: Path) -> None:
+    """Quoted participants, create directives, and full arrow vocabulary.
+
+    All constructs here are accepted by the real Mermaid parser (v11.x):
+    quoted participant/actor names with and without `as` aliases, `create`
+    directives, bidirectional `<<->>` / `<<-->>` arrows, and open arrows
+    `->` / `-->` that carry no arrowhead.
+    """
+    forms = tmp / "sequence-forms.mmd"
+    forms.write_text(
+        """sequenceDiagram
+participant "Alice Smith"
+participant "Bob Builder" as B
+actor "Carol Crane" as C
+create participant Dave
+Alice Smith->>B: hello
+B<<-->>Alice Smith: dotted bidir
+B<<->>C: solid bidir
+B->Dave: open arrow
+Dave-->C: dotted open
+C-)B: async
+C--xDave: cross
+""",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(forms), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if "Alice Smith" not in nodes:
+        fail("quoted participant without alias was dropped")
+    if nodes["B"]["label"] != "Bob Builder":
+        fail("quoted participant alias lost its display name")
+    if nodes["C"]["shape"] != "actor":
+        fail("quoted actor was not classified as an actor")
+    if "Dave" not in nodes:
+        fail("create participant was dropped")
+    if {node["label"] for node in payload["nodes"]} != {
+        "Alice Smith",
+        "Bob Builder",
+        "Carol Crane",
+        "Dave",
+    }:
+        fail("participant labels were mangled")
+
+    edges = payload["edges"]
+    dotted_bidir = next(e for e in edges if e["label"] == "dotted bidir")
+    if not dotted_bidir["bidirectional"] or dotted_bidir["style"] != "dashed":
+        fail("<<-->> was not retained as dashed and bidirectional")
+    solid_bidir = next(e for e in edges if e["label"] == "solid bidir")
+    if not solid_bidir["bidirectional"] or solid_bidir["style"] != "solid":
+        fail("<<->> was not retained as solid and bidirectional")
+    open_solid = next(e for e in edges if e["label"] == "open arrow")
+    if open_solid["arrowhead"] != "none" or not open_solid["undirected"]:
+        fail("`->` open arrow must carry no arrowhead and be undirected")
+    open_dotted = next(e for e in edges if e["label"] == "dotted open")
+    if open_dotted["style"] != "dashed" or open_dotted["arrowhead"] != "none":
+        fail("`-->` dotted open arrow was not retained as dashed with no arrowhead")
+    if next(e for e in edges if e["label"] == "async")["arrowhead"] != "async":
+        fail("`-)` async arrowhead was not retained")
+    if next(e for e in edges if e["label"] == "cross")["arrowhead"] != "cross":
+        fail("`--x` cross arrowhead was not retained")
+
+    compact = tmp / "compact-dotted.mmd"
+    compact.write_text(
+        "sequenceDiagram\nparticipant A\nparticipant B\nA-->>B: async reply\n",
+        encoding="utf-8",
+    )
+    compact_edges = json.loads(run_extract([str(compact), "--json"]))["diagrams"][0]["edges"]
+    if len(compact_edges) != 1 or compact_edges[0]["source"] != "A":
+        fail("`A-->>B` lost the source id or the edge itself")
+
+    broken = tmp / "malformed-bidir.mmd"
+    broken.write_text(
+        "sequenceDiagram\nparticipant A\nparticipant B\nA<<->>B\n",
+        encoding="utf-8",
+    )
+    expect_error([str(broken)], "malformed edge at line 4")
+    ok("quoted participants, create, and the full sequence arrow vocabulary parse")
+
+
 def check_errors_and_limits(tmp: Path) -> None:
     bad = tmp / "not-mermaid.txt"
     bad.write_text("flowchart TD\nA --> B\n", encoding="utf-8")
@@ -600,6 +887,8 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_legacy_stdout_encoding(tmp)
+        check_sequence_grammar_forms(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World population · Treemap</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2.5rem; }
+    .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
+    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+    .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
+    @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
+    .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .card-dot.coral { background: var(--color-accent); } .card-dot.ink { background: var(--color-ink); } .card-dot.muted { background: var(--color-muted); }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card p { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="header-eyebrow">Treemap · Diagram Design</p>
+      <h1>World population · six continents</h1>
+      <p class="subtitle">Population by continent, mid-2023. Asia holds 4.78 billion people — 59% of everyone alive, and more than the other five continents put together.</p>
+    </div>
+    <div class="diagram-container">
+        <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="treemap-full-title treemap-full-desc">
+          <title id="treemap-full-title">World population · six continents</title>
+          <desc id="treemap-full-desc">Treemap of world population by continent in mid-2023, where cell area is population; Asia holds about 59 percent of the world total and Oceania, at under one percent, is too small to label.</desc>
+          <defs>
+            <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+            </pattern>
+          </defs>
+
+          <rect width="100%" height="100%" fill="#f5f5f5"/>
+          <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+          <!-- ─── CELLS ─── Squarified layout on a 4px grid. Area is the only
+               encoding: every cell is within 2.7% of its true share, measured as
+               RELATIVE error, because a 0.1pp slip is nothing on Asia and a third
+               of Oceania. Verified by scripts/verify-treemap.py. The non-focal
+               cells run a rank-ordered ink ramp, so their order survives greyscale;
+               the focal cell is marked by its accent stroke, not by tone. ─── -->
+
+          <!-- Asia FOCAL: 532×380 -->
+          <rect x="40" y="40" width="532" height="380" rx="2" fill="#f5f5f5"/>
+          <rect x="40" y="40" width="532" height="380" rx="2" data-share="59.04" fill="rgba(235,108,54,0.16)" stroke="#eb6c36" stroke-width="1.5"/>
+          <text x="56" y="68" fill="#2d3142" font-size="14" font-weight="600" font-family="'Geist', sans-serif">Asia</text>
+          <text x="56" y="88" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">4.78B · 59% of world</text>
+
+          <!-- Africa: 252×252 -->
+          <rect x="576" y="40" width="252" height="252" rx="2" fill="#f5f5f5"/>
+          <rect x="576" y="40" width="252" height="252" rx="2" data-share="18.29" fill="rgba(45,49,66,0.16)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+          <text x="592" y="68" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', sans-serif">Africa</text>
+          <text x="592" y="88" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">1.48B · 18%</text>
+
+          <!-- Europe: 124×252 -->
+          <rect x="832" y="40" width="124" height="252" rx="2" fill="#f5f5f5"/>
+          <rect x="832" y="40" width="124" height="252" rx="2" data-share="9.23" fill="rgba(45,49,66,0.13)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+          <text x="848" y="68" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', sans-serif">Europe</text>
+          <text x="848" y="88" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">0.75B · 9%</text>
+
+          <!-- North America: 208×124 -->
+          <rect x="576" y="296" width="208" height="124" rx="2" fill="#f5f5f5"/>
+          <rect x="576" y="296" width="208" height="124" rx="2" data-share="7.52" fill="rgba(45,49,66,0.10)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+          <text x="592" y="324" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">North America</text>
+          <text x="592" y="344" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">0.61B · 8%</text>
+
+          <!-- South America: 148×124 -->
+          <rect x="788" y="296" width="148" height="124" rx="2" fill="#f5f5f5"/>
+          <rect x="788" y="296" width="148" height="124" rx="2" data-share="5.35" fill="rgba(45,49,66,0.07)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+          <text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">South America</text>
+          <text x="804" y="344" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">0.43B · 5%</text>
+
+          <!-- Oceania: 16×124. Too narrow for a label, so it carries the info mark
+               rather than sideways text — the only rotated glyph in the figure would
+               read as a mistake. The cell keeps its honest area and is named in the
+               legend: a treemap must not silently omit a part of the whole it claims
+               to show, but it need not label what it cannot label well. -->
+          <rect x="940" y="296" width="16" height="124" rx="2" fill="#f5f5f5"/>
+          <rect x="940" y="296" width="16" height="124" rx="2" data-share="0.56" fill="rgba(45,49,66,0.04)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+          <circle cx="948" cy="320" r="5" fill="#2d3142"/>
+          <text x="948" y="323" fill="#f5f5f5" font-size="7" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">i</text>
+
+          <!-- Legend -->
+          <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+          <text x="40" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+          <text x="960" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">AREA = POPULATION · OUR WORLD IN DATA CONTINENTS (UN WPP) · MID-2023 · 8.09B TOTAL · PARTS ROUNDED, MAY NOT SUM</text>
+
+          <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(235,108,54,0.16)" stroke="#eb6c36" stroke-width="1"/>
+          <text x="64" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Asia · the focal share</text>
+
+          <rect x="240" y="488" width="16" height="10" rx="2" fill="rgba(45,49,66,0.16)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+          <text x="264" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Other continents · stronger contrast is larger</text>
+
+          <circle cx="516" cy="493" r="5" fill="#2d3142"/>
+          <text x="516" y="496" fill="#f5f5f5" font-size="7" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">i</text>
+          <text x="532" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Oceania · 0.05B, 0.6% — too small to label</text>
+        </svg>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-header"><span class="card-dot coral"></span><h3>One cell carries the story</h3></div>
+        <p>Asia is the focal cell because it is the finding, not because it sorts first. Nearly six of every ten people alive are inside that rectangle.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot ink"></span><h3>How to read it</h3></div>
+        <p>Cells are laid out squarified, largest first, so aspect ratios stay near 1 and areas stay comparable by eye. Among the other five, stronger contrast means larger.</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-dot muted"></span><h3>What the chart doesn't show</h3></div>
+        <p>Population, not growth. Africa's cell is under a third of Asia's today, and it is the one adding people fastest — this is one moment, not a direction.</p>
+      </div>
+    </div>
+    <div class="footer">
+      <span>world population · six continents</span>
+      <span>example · diagram design</span>
+    </div>
+  </div>
+</body>
+</html>

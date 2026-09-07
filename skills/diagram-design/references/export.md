@@ -6,7 +6,7 @@ Convert a generated diagram HTML file into a portable `.svg` and/or `.png` next 
 
 Load this file when:
 
-- The user invokes `/diagram-design:export <html-file>` (the plugin's slash command — defined in `commands/export.md` at the repo root).
+- The user invokes `/diagram-design:export-diagram <html-file>` (the plugin's slash command — defined in `commands/export-diagram.md` at the repo root).
 - The user asks in natural language to export, save, rasterize, convert, or download a diagram in `.svg` or `.png` form. Typical phrasings:
   - "export this as PNG"
   - "save as SVG"
@@ -35,10 +35,10 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
    - Inject a Google Fonts `@import` so the SVG renders with correct typography in a browser. **Take the font URL from the source file's own `<link href>`** — that is the active skin's stack. A hardcoded one silently substitutes every label on a re-skinned project, and the substitution is invisible until someone opens the `.svg`. Then **XML-escape the `&` separators as `&amp;`** — a standalone `.svg` is parsed as strict XML, where a bare `&` starts an entity reference and makes the whole file fail to parse (which is why the URL can't be reused byte-for-byte from the HTML).
      ```svg
      <defs>
-       <style>@import url('<source font URL, & → &amp;>');</style>
+       <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');</style>
      </defs>
      ```
-     Under the default skin that resolves to `…css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap`; under a custom skin it will name that brand's families instead. If the SVG already contains a `<defs>` block, **merge** the `<style>` into it (don't add a second `<defs>`).
+     The example above is the default skin, including its Korean and Traditional Chinese families. Under a custom skin, substitute the source file's font URL so the export names that brand's families instead. If the SVG already contains a `<defs>` block, **merge** the `<style>` into it (don't add a second `<defs>`).
 4. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
 5. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
 

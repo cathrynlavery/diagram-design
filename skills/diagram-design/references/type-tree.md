@@ -1,6 +1,6 @@
 # Tree / Hierarchy
 
-**Best for:** org charts, dependency trees, taxonomy, file trees, decision breakdowns, skill trees.
+**Best for:** org charts, dependency trees, taxonomy, file trees, decision breakdowns, skill trees. For hierarchical, ID-addressable block decomposition with per-block I/O, constraints, and implementation traceability, load [`semantic-patterns.md`](semantic-patterns.md) § Traceable block decomposition first — it specializes this layout without changing it.
 
 ## Layout conventions
 - Root at top, children fan out below (or root at left, children to right).

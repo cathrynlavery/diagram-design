@@ -5,8 +5,11 @@ Pre-2.0 examples may legitimately fail because they were built against an older
 skin. Use ``--all --baseline`` to skip those documented legacy files.
 """
 
+from __future__ import annotations
+
 import argparse
 import hashlib
+import math
 import re
 import sys
 from dataclasses import dataclass, field
@@ -53,6 +56,24 @@ ALLOWED_FONTS = {
     "instrument serif",
     "geist",
     "geist mono",
+    "hiragino sans",
+    "noto sans jp",
+    "yu gothic",
+    "noto sans mono cjk jp",
+    "apple sd gothic neo",
+    "noto sans kr",
+    "noto serif kr",
+    "malgun gothic",
+    "noto sans mono cjk kr",
+    "pingfang sc",
+    "noto sans sc",
+    "microsoft yahei",
+    "noto sans mono cjk sc",
+    "pingfang tc",
+    "noto sans tc",
+    "noto serif tc",
+    "microsoft jhenghei",
+    "noto sans mono cjk tc",
     "system-ui",
     "sans-serif",
     "serif",
@@ -339,6 +360,30 @@ def lint_accessible_svgs(text, expected_slug, allow_template_placeholders=False)
         if (svg.attrs.get("role") or "").casefold() != "img":
             add(svg.line, svg.offset, 'diagram <svg> must carry role="img"')
 
+        viewbox = svg.attrs.get("viewbox")  # HTMLParser lowercases all attribute names
+        if not viewbox:
+            add(svg.line, svg.offset, "diagram <svg> must have a viewBox attribute")
+        else:
+            parts = re.split(r"[\s,]+", viewbox.strip())
+            valid = False
+            _svg_num_re = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
+            if len(parts) == 4 and all(_svg_num_re.match(p) for p in parts):
+                try:
+                    nums = [float(p) for p in parts]
+                    valid = (
+                        all(math.isfinite(n) for n in nums)
+                        and nums[2] > 0
+                        and nums[3] > 0
+                    )
+                except ValueError:
+                    pass
+            if not valid:
+                add(
+                    svg.line,
+                    svg.offset,
+                    f'viewBox "{viewbox}" is not valid (expected "min-x min-y width height" with positive size)',
+                )
+
         labelled_by = (svg.attrs.get("aria-labelledby") or "").split()
         accessible_name_ids = labelled_by + [
             element.element_id
@@ -392,8 +437,15 @@ def lint_accessible_svgs(text, expected_slug, allow_template_placeholders=False)
                     title.offset,
                     "<title> must be the first child element of <svg>",
                 )
-            if not "".join(title.text).strip():
+            title_text = "".join(title.text).strip()
+            if not title_text:
                 add(title.line, title.offset, "<title> must not be empty")
+            elif len(title_text) > 60:
+                add(
+                    title.line,
+                    title.offset,
+                    f"<title> must be 60 characters or fewer (got {len(title_text)})",
+                )
 
         if description is None:
             add(svg.line, svg.offset, "diagram <svg> must contain a <desc>")

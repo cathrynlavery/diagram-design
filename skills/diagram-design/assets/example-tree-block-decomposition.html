@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment gateway block decomposition · Tree</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1100px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Semantic pattern · Traceable block decomposition</p>
+    <h1>Payment gateway block decomposition</h1>
+
+    <svg viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-labelledby="tree-block-decomposition-title tree-block-decomposition-desc">
+      <title id="tree-block-decomposition-title">Payment gateway block decomposition</title>
+      <desc id="tree-block-decomposition-desc">Traceable block decomposition of a payment gateway
+        into card authorization, fraud screening, and settlement ledger, with a stable ID, inputs,
+        outputs, constraints, and an implementation path carried as metadata on each block.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Tier tags (left margin) -->
+      <text x="40" y="70" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">TIER 0 · ROOT</text>
+      <text x="40" y="210" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">TIER 1</text>
+
+      <!-- Connectors first (§5 paint order), orthogonal elbow, 1px muted stroke -->
+      <path d="M 500 92 V 130 H 280 V 180" fill="none" stroke="#4f5d75" stroke-width="1"/>
+      <path d="M 500 92 V 180" fill="none" stroke="#4f5d75" stroke-width="1"/>
+      <path d="M 500 92 V 130 H 720 V 180" fill="none" stroke="#4f5d75" stroke-width="1"/>
+
+      <!-- Root: PAY-001 Payment Gateway (coral focal) -->
+      <rect x="420" y="40" width="160" height="52" rx="6" fill="#f5f5f5"/>
+      <rect x="420" y="40" width="160" height="52" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"
+            data-block-id="PAY-001" data-block-name="Payment Gateway"
+            data-block-output="Settled transaction record"
+            data-block-constraint="Every transaction reaches exactly one terminal state"
+            data-block-impl="src/payments/gateway/"/>
+      <rect x="428" y="46" width="46" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
+      <text x="451" y="55" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001</text>
+      <text x="500" y="70" fill="#2d3142" font-size="12" font-weight="600"
+            font-family="'Geist', sans-serif" text-anchor="middle">Payment Gateway</text>
+      <text x="500" y="86" fill="#4f5d75" font-size="9"
+            font-family="'Geist Mono', monospace" text-anchor="middle">request → settlement</text>
+
+      <!-- Child: PAY-001-01 Card Authorization -->
+      <rect x="200" y="180" width="160" height="52" rx="6" fill="#f5f5f5"/>
+      <rect x="200" y="180" width="160" height="52" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+            data-block-id="PAY-001-01" data-block-parent="PAY-001" data-block-name="Card Authorization"
+            data-block-input="Raw card details from checkout"
+            data-block-output="Authorization token or decline"
+            data-block-constraint="Never persists a raw card number"
+            data-block-assumption="Runs behind the PCI-scoped boundary"
+            data-block-impl="src/payments/authorization/"/>
+      <rect x="208" y="186" width="62" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="239" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001-01</text>
+      <text x="280" y="210" fill="#2d3142" font-size="12" font-weight="600"
+            font-family="'Geist', sans-serif" text-anchor="middle">Card Authorization</text>
+      <text x="280" y="226" fill="#4f5d75" font-size="9"
+            font-family="'Geist Mono', monospace" text-anchor="middle">card → token</text>
+
+      <!-- Child: PAY-001-02 Fraud Screening -->
+      <rect x="420" y="180" width="160" height="52" rx="6" fill="#f5f5f5"/>
+      <rect x="420" y="180" width="160" height="52" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+            data-block-id="PAY-001-02" data-block-parent="PAY-001" data-block-name="Fraud Screening"
+            data-block-input="Authorization token"
+            data-block-output="Risk score and hold/release decision"
+            data-block-constraint="Blocks release above the configured risk threshold"
+            data-block-impl="src/payments/fraud/"/>
+      <rect x="428" y="186" width="62" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="459" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001-02</text>
+      <text x="500" y="210" fill="#2d3142" font-size="12" font-weight="600"
+            font-family="'Geist', sans-serif" text-anchor="middle">Fraud Screening</text>
+      <text x="500" y="226" fill="#4f5d75" font-size="9"
+            font-family="'Geist Mono', monospace" text-anchor="middle">token → score</text>
+
+      <!-- Child: PAY-001-03 Settlement Ledger -->
+      <rect x="640" y="180" width="160" height="52" rx="6" fill="#f5f5f5"/>
+      <rect x="640" y="180" width="160" height="52" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+            data-block-id="PAY-001-03" data-block-parent="PAY-001" data-block-name="Settlement Ledger"
+            data-block-input="Released authorization"
+            data-block-output="Settled transaction record"
+            data-block-constraint="Append-only, no ledger row is ever mutated after write"
+            data-block-impl="src/payments/ledger/"/>
+      <rect x="648" y="186" width="62" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="679" y="195" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace"
+            text-anchor="middle" letter-spacing="0.08em">PAY-001-03</text>
+      <text x="720" y="210" fill="#2d3142" font-size="12" font-weight="600"
+            font-family="'Geist', sans-serif" text-anchor="middle">Settlement Ledger</text>
+      <text x="720" y="226" fill="#4f5d75" font-size="9"
+            font-family="'Geist Mono', monospace" text-anchor="middle">release → ledger</text>
+    </svg>
+  </div>
+</body>
+</html>

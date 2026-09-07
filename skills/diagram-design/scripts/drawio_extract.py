@@ -43,6 +43,13 @@ MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_XML_BYTES = 64 * 1024 * 1024
 
 
+def _configure_stdout_utf8() -> None:
+    """Emit digests as UTF-8 even when Windows selects a legacy codepage."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8", errors="strict")
+
+
 class PayloadTooLarge(ValueError):
     """Raised when compressed metadata expands beyond the supported limit."""
 
@@ -674,6 +681,23 @@ def analyze(page: Page) -> dict[str, Any]:
 # --------------------------------------------------------------------------
 
 
+def _escape_markdown(text: str) -> str:
+    encoded = html.escape(text, quote=False)
+    return re.sub(r"([\\`*{}\[\]()#+\-.!_|>])", r"\\\1", encoded)
+
+
+def _fold_lines(text: str, replacement: str) -> str:
+    return replacement.join(text.splitlines())
+
+
+def _escape_inline(text: str) -> str:
+    return _escape_markdown(_fold_lines(text, " · "))
+
+
+def _escape_table(text: str) -> str:
+    return _escape_markdown(_fold_lines(text, " ⏎ "))
+
+
 def page_bounds(page: Page) -> tuple[float, float, float, float]:
     boxes = [(n.x, n.y, n.x + n.w, n.y + n.h) for n in page.nodes if n.w and n.h]
     if not boxes:
@@ -688,17 +712,20 @@ def page_bounds(page: Page) -> tuple[float, float, float, float]:
 
 def digest(path: Path, pages: list[Page], selected: list[Page], max_rows: int) -> str:
     out: list[str] = []
-    out.append(f"# draw.io IR — {path.name}")
+    out.append(f"# draw.io IR — {_escape_inline(path.name)}")
     out.append("")
     out.append(
         f"{len(pages)} page(s): "
-        + ", ".join(f"[{p.index}] {p.name} ({len(p.nodes)}n/{len(p.edges)}e)" for p in pages)
+        + ", ".join(
+            f"[{p.index}] {_escape_inline(p.name)} ({len(p.nodes)}n/{len(p.edges)}e)"
+            for p in pages
+        )
     )
     for page in selected:
         info = analyze(page)
         x0, y0, x1, y1 = page_bounds(page)
         out.append("")
-        out.append(f"## Page {page.index} — {page.name}")
+        out.append(f"## Page {page.index} — {_escape_inline(page.name)}")
         out.append("")
         out.append(
             f"- source canvas: {int(x1 - x0)}×{int(y1 - y0)} px "
@@ -721,19 +748,31 @@ def digest(path: Path, pages: list[Page], selected: list[Page], max_rows: int) -
             f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)"
         )
         if info["hubs"]:
-            hubs = ", ".join(f"{h['label'] or h['id']}({h['degree']})" for h in info["hubs"])
+            hubs = ", ".join(
+                f"{_escape_inline(h['label'] or h['id'])}({h['degree']})"
+                for h in info["hubs"]
+            )
             out.append(f"- hubs (focal candidates): {hubs}")
         if info["entry_points"]:
-            out.append(f"- entry points: {', '.join(info['entry_points'])}")
+            out.append(
+                f"- entry points: {', '.join(_escape_inline(label) for label in info['entry_points'])}"
+            )
         if info["terminals"]:
-            out.append(f"- terminals: {', '.join(info['terminals'])}")
+            out.append(
+                f"- terminals: {', '.join(_escape_inline(label) for label in info['terminals'])}"
+            )
         if info["orphans"]:
-            out.append(f"- unconnected: {', '.join(info['orphans'])}")
+            out.append(
+                f"- unconnected: {', '.join(_escape_inline(label) for label in info['orphans'])}"
+            )
         if info["collapsible_groups"]:
             out.append("- collapsible groups (simplify here first):")
             for group in info["collapsible_groups"]:
-                kids = ", ".join(group["child_labels"])
-                out.append(f"  - {group['label']} — {group['children']} children: {kids}")
+                kids = ", ".join(_escape_inline(label) for label in group["child_labels"])
+                out.append(
+                    f"  - {_escape_inline(group['label'])} — "
+                    f"{group['children']} children: {kids}"
+                )
 
         out.append("")
         out.append("### Nodes")
@@ -742,10 +781,10 @@ def digest(path: Path, pages: list[Page], selected: list[Page], max_rows: int) -
         out.append("|---|---|---|---|---|---|---|")
         listed = [n for n in page.nodes if n.label or n.children]
         for node in listed[:max_rows]:
-            label = node.label.replace("\n", " ⏎ ").replace("|", "\\|")
             out.append(
-                f"| {node.id} | {label} | {node.shape} | {node.depth} | "
-                f"{node.parent or '-'} | {node.in_degree}/{node.out_degree} | "
+                f"| {_escape_table(node.id)} | {_escape_table(node.label)} | "
+                f"{_escape_table(node.shape)} | {node.depth} | "
+                f"{_escape_table(node.parent or '-')} | {node.in_degree}/{node.out_degree} | "
                 f"{int(node.x)},{int(node.y)} {int(node.w)}×{int(node.h)} |"
             )
         if len(listed) > max_rows:
@@ -766,8 +805,9 @@ def digest(path: Path, pages: list[Page], selected: list[Page], max_rows: int) -
             if edge.undirected:
                 marks.append("undirected")
             out.append(
-                f"| {names.get(edge.source or '', '?')} | {names.get(edge.target or '', '?')} "
-                f"| {edge.label.replace('|', chr(92) + '|') or '-'} | {' '.join(marks) or '-'} |"
+                f"| {_escape_table(names.get(edge.source or '', '?'))} | "
+                f"{_escape_table(names.get(edge.target or '', '?'))} | "
+                f"{_escape_table(edge.label) or '-'} | {' '.join(marks) or '-'} |"
             )
         if len(page.edges) > max_rows:
             out.append(f"| … | +{len(page.edges) - max_rows} more (use --json) | | |")
@@ -853,4 +893,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    _configure_stdout_utf8()
     raise SystemExit(main())

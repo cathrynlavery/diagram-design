@@ -21,6 +21,7 @@ PATTERNS = ROOT / "skills/diagram-design/references/semantic-patterns.md"
 ANIMATION = ROOT / "skills/diagram-design/references/animation.md"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
 MAX_SKILL_BYTES = 40_000
+VISUAL_TYPE_COUNT = 39
 
 PATTERN_NAMES = (
     "Fan-in queue / bottleneck",
@@ -30,6 +31,7 @@ PATTERN_NAMES = (
     "Secure paved road",
     "Governance / control catalog",
     "Compensating security layers",
+    "Traceable block decomposition",
 )
 PATTERN_FIELDS = (
     "Selection triggers:",
@@ -191,18 +193,23 @@ def verify_markdown() -> list[str]:
     if "Selection: semantic pattern, then visual type" not in skill:
         errors.append("SKILL.md must choose semantic pattern before visual type")
     router_position = skill.find("semantic-patterns.md")
-    guide_position = skill.find("### Visual-type guide (27)")
+    guide_heading = f"### Visual-type guide ({VISUAL_TYPE_COUNT})"
+    guide_position = skill.find(guide_heading)
     if router_position < 0:
         errors.append("SKILL.md must link to semantic-patterns.md")
     if guide_position < 0:
-        errors.append("SKILL.md must contain the 27-row visual-type guide")
+        errors.append(
+            f"SKILL.md must contain the {VISUAL_TYPE_COUNT}-row visual-type guide"
+        )
     if router_position >= 0 and guide_position >= 0 and router_position > guide_position:
         errors.append("semantic-pattern router must precede the visual-type guide")
 
-    visual_guide = section(skill, "### Visual-type guide (27)", "Rules of thumb:")
+    visual_guide = section(skill, guide_heading, "Rules of thumb:")
     visual_rows = re.findall(r"^\|.*\[type-[^)]+\.md\]", visual_guide, re.MULTILINE)
-    if len(visual_rows) != 27:
-        errors.append(f"visual-type guide must preserve 27 rows; found {len(visual_rows)}")
+    if len(visual_rows) != VISUAL_TYPE_COUNT:
+        errors.append(
+            f"visual-type guide must preserve {VISUAL_TYPE_COUNT} rows; found {len(visual_rows)}"
+        )
 
     for index, name in enumerate(PATTERN_NAMES, 1):
         if name not in skill:
@@ -419,7 +426,10 @@ def main() -> int:
             print(f"- {error}")
         return 1
     if not args.example_only:
-        print("OK: 7 semantic patterns route independently to the preserved 27 visual types")
+        print(
+            f"OK: {len(PATTERN_NAMES)} semantic patterns route independently to the preserved "
+            f"{VISUAL_TYPE_COUNT} visual types"
+        )
         print("OK: animation modes, primitives, static fallback, and accessibility contract")
     if not args.markdown_only:
         print("OK: policy-trace example controls, structure, reduced motion, and unique IDs")

@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "repository": "cathrynlavery/diagram-design",
+  "base_branch": "main",
+  "default_merge_method": "squash",
+  "versioning": {
+    "enabled": true,
+    "strategy": "semver",
+    "increment": "patch",
+    "manifests": [
+      {
+        "path": ".claude-plugin/plugin.json",
+        "json_pointer": "/version"
+      },
+      {
+        "path": ".codex-plugin/plugin.json",
+        "json_pointer": "/version"
+      },
+      {
+        "path": ".factory-plugin/plugin.json",
+        "json_pointer": "/version"
+      }
+    ],
+    "require_synchronized": true,
+    "require_unique_across_open_prs": false,
+    "bump_command": "python3 scripts/bump-plugin-version.py",
+    "bumped_by": "auto-bump workflow on push to main (ADR 0009)",
+    "pr_manifest_version_changes": "forbidden",
+    "bump_size_labels": {
+      "minor": "release:minor",
+      "major": "release:major"
+    }
+  },
+  "gates": {
+    "local_commands": [
+      "python3 scripts/test-plugin-package.py",
+      "python3 scripts/test-maintainer-policy.py",
+      "python3 scripts/verify-plugin-package.py --require-no-bump origin/main",
+      "npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict",
+      "python3 scripts/test-lint-a11y.py",
+      "python3 scripts/verify-semantic-motion.py --markdown-only",
+      "python3 scripts/verify-semantic-motion.py --example-only",
+      "python3 scripts/test-verify-semantic-motion.py",
+      "python3 scripts/verify-motion.py --shipped",
+      "python3 scripts/test-build-icons-quoted-attributes.py",
+      "python3 scripts/test-build-icons-devicon.py",
+      "python3 scripts/test-fix-mojibake.py",
+      "python3 scripts/lint-skin.py --all --baseline",
+      "python3 scripts/lint-render.py --self-test",
+      "python3 scripts/lint-render.py --all",
+      "python3 scripts/test-verify-polar.py",
+      "python3 scripts/verify-polar.py",
+      "python3 scripts/verify-sequence-oauth.py",
+      "python3 scripts/test-verify-sequence-oauth.py",
+      "python3 scripts/verify-drawio-import.py",
+      "python3 scripts/test-verify-drawio-import.py",
+      "python3 scripts/verify-mermaid-import.py",
+      "python3 scripts/test-verify-motion.py",
+      "python3 scripts/verify-doctor.py",
+      "python3 scripts/test-verify-doctor.py",
+      "python3 scripts/verify-docs-sync.py",
+      "python3 scripts/test-verify-docs-sync.py",
+      "python3 scripts/verify-screenshot-freshness.py",
+      "python3 scripts/test-build-readme-thumbs.py",
+      "python3 scripts/build-readme-thumbs.py --check",
+      "python3 scripts/test-self-check.py",
+      "python3 scripts/verify-geometry.py --all",
+      "python3 scripts/test-verify-geometry.py",
+      "python3 scripts/verify-block-registry.py --all",
+      "python3 scripts/test-verify-block-registry.py",
+      "python3 scripts/verify-treemap.py --all",
+      "python3 scripts/test-verify-treemap.py",
+      "python3 scripts/verify-dumbbell.py",
+      "python3 scripts/test-verify-dumbbell.py",
+      "python3 scripts/verify-slopegraph.py --all",
+      "python3 scripts/test-verify-slopegraph.py",
+      "python3 scripts/verify-ridgeline.py --all",
+      "python3 scripts/test-verify-ridgeline.py",
+      "python3 scripts/verify-sankey.py --all",
+      "python3 scripts/test-verify-sankey.py",
+      "python3 scripts/verify-bubble.py --all",
+      "python3 scripts/test-verify-bubble.py",
+      "python3 scripts/verify-bump.py --all",
+      "python3 scripts/test-verify-bump.py",
+      "python3 scripts/verify-beeswarm.py --all",
+      "python3 scripts/test-verify-beeswarm.py",
+      "python3 scripts/verify-skin-polarity.py --all",
+      "python3 scripts/test-verify-skin-polarity.py",
+      "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-design/references/primitive-icons.md"
+    ],
+    "required_check_names": [],
+    "review": {
+      "provider": "none",
+      "minimum_score": "",
+      "require_same_head": true
+    },
+    "require_current_base": true,
+    "require_conflict_free": true,
+    "require_resolved_threads": true,
+    "require_no_requested_changes": true,
+    "post_merge_workflows": [
+      "CI",
+      "Auto Version Bump",
+      "Deploy gallery to GitHub Pages"
+    ]
+  },
+  "issue_policy": {
+    "read_complete_threads": true,
+    "search_competing_prs": true,
+    "reproduce_on_current_main": true,
+    "inspect_history_for_intent": true,
+    "max_maintainer_authored_prs_per_run": 1
+  },
+  "pr_policy": {
+    "process_versioned_prs_serially": true,
+    "inspect_first_time_fork_workflows": true,
+    "split_large_or_mixed_scope": true,
+    "run_complete_suite_on_exact_head": true,
+    "wait_for_post_merge_before_next": true
+  },
+  "human_gates": [
+    "product_priority",
+    "large_or_mixed_scope",
+    "first_time_workflow_approval",
+    "ambiguous_issue_closure",
+    "security_disclosure",
+    "merge_authorization"
+  ],
+  "report": {
+    "path": ".context/maintainer/{timestamp}/report.md",
+    "live_urls": [
+      "https://cathrynlavery.github.io/diagram-design/"
+    ],
+    "require_worklog": true
+  }
+}

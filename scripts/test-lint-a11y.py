@@ -18,7 +18,7 @@ BUILD_ICONS = ROOT / "scripts/build-icons.py"
 MOTION_TEMPLATE = ROOT / "skills/diagram-design/assets/template-motion.html"
 
 VALID_SVG = """\
-<svg xmlns="http://www.w3.org/2000/svg" role="img"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img"
      aria-labelledby="fixture-title fixture-desc">
   <title id="fixture-title">Fixture diagram</title>
   <desc id="fixture-desc">Diagram showing a fixture connected to a result.</desc>
@@ -154,6 +154,67 @@ def main() -> int:
             "duplicate-naming-ids",
             VALID_SVG + VALID_SVG,
             'duplicate accessible-name id="fixture-desc" is not allowed',
+            directory,
+        )
+        require_failure(
+            "missing-viewbox",
+            VALID_SVG.replace(' viewBox="0 0 800 600"', ""),
+            "diagram <svg> must have a viewBox attribute",
+            directory,
+        )
+        require_failure(
+            "invalid-viewbox",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0 0 -10 100"'),
+            'viewBox "0 0 -10 100" is not valid (expected "min-x min-y width height" with positive size)',
+            directory,
+        )
+        require_failure(
+            "viewbox-zero-height",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0 0 800 0"'),
+            'viewBox "0 0 800 0" is not valid (expected "min-x min-y width height" with positive size)',
+            directory,
+        )
+        require_failure(
+            "viewbox-malformed-token",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0 0 800px 600"'),
+            'viewBox "0 0 800px 600" is not valid (expected "min-x min-y width height" with positive size)',
+            directory,
+        )
+        require_failure(
+            "title-too-long",
+            VALID_SVG.replace("Fixture diagram", "A" * 61),
+            "<title> must be 60 characters or fewer (got 61)",
+            directory,
+        )
+        require_pass(
+            "viewbox-comma-separated",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0,0,800,600"').replace(
+                "fixture-title", "viewbox-comma-separated-title"
+            ).replace("fixture-desc", "viewbox-comma-separated-desc"),
+            directory,
+        )
+        require_failure(
+            "viewbox-nonfinite-width",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0 0 inf 600"').replace(
+                "fixture-title", "viewbox-nonfinite-width-title"
+            ).replace("fixture-desc", "viewbox-nonfinite-width-desc"),
+            'viewBox "0 0 inf 600" is not valid (expected "min-x min-y width height" with positive size)',
+            directory,
+        )
+        require_failure(
+            "viewbox-nonfinite-height",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0 0 800 inf"').replace(
+                "fixture-title", "viewbox-nonfinite-height-title"
+            ).replace("fixture-desc", "viewbox-nonfinite-height-desc"),
+            'viewBox "0 0 800 inf" is not valid (expected "min-x min-y width height" with positive size)',
+            directory,
+        )
+        require_failure(
+            "viewbox-underscore-width",
+            VALID_SVG.replace('viewBox="0 0 800 600"', 'viewBox="0 0 1_000 600"').replace(
+                "fixture-title", "viewbox-underscore-width-title"
+            ).replace("fixture-desc", "viewbox-underscore-width-desc"),
+            'viewBox "0 0 1_000 600" is not valid (expected "min-x min-y width height" with positive size)',
             directory,
         )
         require_pass(
@@ -361,6 +422,137 @@ def main() -> int:
             '<style>text { font-family: "Unapproved Sans", sans-serif; }</style>\n'
             + arbitrary_font_svg,
             "font-family: unsupported font family: Unapproved Sans",
+            directory,
+        )
+        cjk_name_svg = VALID_SVG.replace("fixture-title", "cjk-name-stack-title").replace(
+            "fixture-desc", "cjk-name-stack-desc"
+        )
+        require_pass(
+            "cjk-name-stack",
+            cjk_name_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist\', \'Hiragino Sans\', \'Noto Sans JP\', '
+                '\'Yu Gothic\', sans-serif">認証サービス</text>\n</svg>',
+            ),
+            directory,
+        )
+        cjk_mono_svg = VALID_SVG.replace("fixture-title", "cjk-mono-stack-title").replace(
+            "fixture-desc", "cjk-mono-stack-desc"
+        )
+        require_pass(
+            "cjk-mono-stack",
+            cjk_mono_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist Mono\', \'Noto Sans Mono CJK JP\', '
+                'monospace">포트 443</text>\n</svg>',
+            ),
+            directory,
+        )
+        cjk_css_svg = VALID_SVG.replace("fixture-title", "cjk-css-stack-title").replace(
+            "fixture-desc", "cjk-css-stack-desc"
+        )
+        require_pass(
+            "cjk-css-stack",
+            '<style>text { font-family: "Geist", "Hiragino Sans", "Noto Sans JP", '
+            '"Yu Gothic", sans-serif; }</style>\n' + cjk_css_svg,
+            directory,
+        )
+        yu_gothic_ui_svg = VALID_SVG.replace(
+            "fixture-title", "yu-gothic-ui-title"
+        ).replace("fixture-desc", "yu-gothic-ui-desc")
+        require_lint_finding(
+            "yu-gothic-ui",
+            '<style>text { font-family: "Yu Gothic UI", sans-serif; }</style>\n'
+            + yu_gothic_ui_svg,
+            "font-family: unsupported font family: Yu Gothic UI",
+            directory,
+        )
+        kr_name_svg = VALID_SVG.replace("fixture-title", "kr-name-stack-title").replace(
+            "fixture-desc", "kr-name-stack-desc"
+        )
+        require_pass(
+            "kr-name-stack",
+            kr_name_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist\', \'Noto Sans KR\', \'Apple SD Gothic Neo\', '
+                '\'Malgun Gothic\', sans-serif">인증 서비스</text>\n</svg>',
+            ),
+            directory,
+        )
+        kr_mono_svg = VALID_SVG.replace("fixture-title", "kr-mono-stack-title").replace(
+            "fixture-desc", "kr-mono-stack-desc"
+        )
+        require_pass(
+            "kr-mono-stack",
+            kr_mono_svg.replace(
+                "</svg>",
+                '<text font-family="\'Geist Mono\', \'Noto Sans Mono CJK KR\', '
+                'monospace">포트 443</text>\n</svg>',
+            ),
+            directory,
+        )
+        kr_css_svg = VALID_SVG.replace("fixture-title", "kr-css-stack-title").replace(
+            "fixture-desc", "kr-css-stack-desc"
+        )
+        require_pass(
+            "kr-css-stack",
+            '<style>text { font-family: "Geist", "Noto Sans KR", "Apple SD Gothic Neo", '
+            '"Malgun Gothic", sans-serif; }</style>\n' + kr_css_svg,
+            directory,
+        )
+        zh_name_svg = VALID_SVG.replace("fixture-title", "zh-name-stack-title").replace(
+            "fixture-desc", "zh-name-stack-desc"
+        )
+        require_pass(
+            "zh-name-stack",
+            zh_name_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Geist', 'PingFang SC', 'Noto Sans SC', "
+                "'Microsoft YaHei', sans-serif\">\u8ba4\u8bc1\u670d\u52a1</text>\n</svg>",
+            ),
+            directory,
+        )
+        zh_mono_svg = VALID_SVG.replace("fixture-title", "zh-mono-stack-title").replace(
+            "fixture-desc", "zh-mono-stack-desc"
+        )
+        require_pass(
+            "zh-mono-stack",
+            zh_mono_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Geist Mono', 'Noto Sans Mono CJK SC', "
+                "monospace\">\u7aef\u53e3 443</text>\n</svg>",
+            ),
+            directory,
+        )
+        zh_css_svg = VALID_SVG.replace("fixture-title", "zh-css-stack-title").replace(
+            "fixture-desc", "zh-css-stack-desc"
+        )
+        require_pass(
+            "zh-css-stack",
+            '<style>text { font-family: "Geist", "PingFang SC", "Noto Sans SC", '
+            '"Microsoft YaHei", sans-serif; }</style>\n' + zh_css_svg,
+            directory,
+        )
+        zh_tc_svg = VALID_SVG.replace("fixture-title", "zh-tc-stack-title").replace(
+            "fixture-desc", "zh-tc-stack-desc"
+        )
+        require_pass(
+            "zh-tc-stack",
+            zh_tc_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Geist', 'PingFang TC', 'Noto Sans TC', "
+                "'Microsoft JhengHei', sans-serif\">\u8a8d\u8b49\u670d\u52d9</text>\n</svg>",
+            ),
+            directory,
+        )
+        malgun_semilight_svg = VALID_SVG.replace(
+            "fixture-title", "malgun-semilight-title"
+        ).replace("fixture-desc", "malgun-semilight-desc")
+        require_lint_finding(
+            "malgun-gothic-semilight",
+            '<style>text { font-family: "Malgun Gothic Semilight", sans-serif; }</style>\n'
+            + malgun_semilight_svg,
+            "font-family: unsupported font family: Malgun Gothic Semilight",
             directory,
         )
 

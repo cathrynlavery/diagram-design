@@ -32,8 +32,13 @@ three variants at a time.
 - Geometric contracts in this repo are expressed as checkers with fixtures, in line with how
   the import extractors are verified. A rule that only lives in prose is a rule that ships
   broken examples.
-- The heuristics are shape-based (node ≥ 60×40, mask 20–120 × 8–14) and match the shipped
+- The heuristics are shape-based (node ≥ 60×40, mask 20–200 × 8–14) and match the shipped
   templates. A future type with markedly different proportions may need the thresholds
   revisited — widen them in the checker, and add the case to the adversarial tests.
+  (The width cap was originally 120; the long mono plates in example-sequence-oauth.html
+  are 128 wide and fell outside the window, so every mask past 120 — including the wider
+  plates CJK labels produce — went unverified. Widened to 200 with the height cap kept at
+  14: raising it to 18 would misclassify ~80 shipped rects — zone eyebrows, container
+  header bars, row stripes — as masks.)
 - The checker does not evaluate the 6–10px connector gap from rule 2, which needs stroke
   geometry rather than rectangles. That rule remains a checklist item.

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporting, first release · User story map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">User story map · Diagram Design</p>
+    <h1>Reporting, first release</h1>
+
+    <svg viewBox="0 0 1032 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="story-map-title story-map-desc">
+      <title id="story-map-title">Reporting, first release · User story map</title>
+      <desc id="story-map-desc">User story map for a reporting tool's first release: four narrative activities from finding data to trusting it, walking-skeleton steps beneath each, and three release slices sliced by an MVP release-cut line, with the row-level-permissions story flagged as the riskiest bet in Release 2.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Release slice bands (alternating fill) -->
+      <rect x="32" y="216" width="968" height="80" fill="rgba(45,49,66,0.02)"/>
+      <rect x="32" y="376" width="968" height="80" fill="rgba(45,49,66,0.02)"/>
+
+      <text x="48" y="260" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">MVP</text>
+      <text x="48" y="340" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">RELEASE 2</text>
+      <text x="48" y="420" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LATER</text>
+
+      <!-- Column separators: tie each card row to its activity column -->
+      <line x1="116" y1="108" x2="116" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <line x1="340" y1="108" x2="340" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <line x1="564" y1="108" x2="564" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <line x1="788" y1="108" x2="788" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <line x1="1012" y1="108" x2="1012" y2="456" stroke="rgba(45,49,66,0.10)" stroke-width="0.8" stroke-dasharray="4,4"/>
+
+      <!-- Backbone: 4 activities, narrative left-to-right order -->
+      <rect x="128" y="40" width="200" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="228" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Find the data</text>
+      <text x="228" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">ACTIVITY 1</text>
+
+      <rect x="352" y="40" width="200" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="452" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Build the report</text>
+      <text x="452" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">ACTIVITY 2</text>
+
+      <rect x="576" y="40" width="200" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="676" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Share it</text>
+      <text x="676" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">ACTIVITY 3</text>
+
+      <rect x="800" y="40" width="200" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="900" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Trust it</text>
+      <text x="900" y="88" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">ACTIVITY 4</text>
+
+      <!-- Walking skeleton: user steps under each activity -->
+      <rect x="144" y="120" width="168" height="32" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="156" y="140" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Search datasets</text>
+      <rect x="144" y="160" width="168" height="32" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="156" y="180" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Preview rows</text>
+
+      <rect x="368" y="120" width="168" height="32" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="380" y="140" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Pick columns</text>
+      <rect x="368" y="160" width="168" height="32" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="380" y="180" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Add a chart</text>
+
+      <rect x="592" y="120" width="168" height="32" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="604" y="140" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Send a link</text>
+
+      <rect x="816" y="120" width="168" height="32" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+      <text x="828" y="140" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">Check freshness</text>
+
+      <!-- MVP row story cards -->
+      <rect x="144" y="232" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="156" y="250" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Keyword search</text>
+      <text x="156" y="266" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-101 · 3pt</text>
+
+      <rect x="368" y="232" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="380" y="250" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Table + one chart</text>
+      <text x="380" y="266" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-102 · 5pt</text>
+
+      <rect x="592" y="232" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="604" y="250" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Public link</text>
+      <text x="604" y="266" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-103 · 2pt</text>
+
+      <rect x="816" y="232" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="828" y="250" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Last-updated stamp</text>
+      <text x="828" y="266" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-104 · 1pt</text>
+
+      <!-- Release cut line — accent element 1 -->
+      <line x1="32" y1="296" x2="1000" y2="296" stroke="#eb6c36" stroke-width="1.5"/>
+      <rect x="736" y="280" width="104" height="8" rx="2" fill="#f5f5f5"/>
+      <text x="788" y="285" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">RELEASE CUT</text>
+
+      <!-- Release 2 row story cards -->
+      <rect x="144" y="312" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="156" y="330" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Saved filters</text>
+      <text x="156" y="346" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-110 · 3pt</text>
+
+      <rect x="592" y="312" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="604" y="330" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Scheduled email</text>
+      <text x="604" y="346" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-112 · 5pt</text>
+
+      <!-- Riskiest story — accent element 2 -->
+      <rect x="816" y="312" width="168" height="48" rx="4" fill="rgba(235,108,54,0.05)" stroke="#eb6c36" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="828" y="330" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Row-level permissions</text>
+      <text x="828" y="346" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-114 · 3pt</text>
+      <rect x="936" y="336" width="40" height="12" rx="2" fill="transparent" stroke="#eb6c36" stroke-width="0.8"/>
+      <text x="956" y="345" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RISK</text>
+
+      <!-- Later row story cards -->
+      <rect x="144" y="392" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="156" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Natural-language query</text>
+      <text x="156" y="426" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-120 · 8pt</text>
+
+      <rect x="816" y="392" width="168" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="828" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Alerting on anomalies</text>
+      <text x="828" y="426" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">RPT-121 · 5pt</text>
+
+      <!-- Legend -->
+      <line x1="32" y1="480" x2="1000" y2="480" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="32" y="496" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="32" y="508" width="16" height="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="56" y="516" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Story card</text>
+
+      <rect x="232" y="508" width="16" height="8" fill="rgba(235,108,54,0.05)" stroke="#eb6c36" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="256" y="516" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Highest risk</text>
+
+      <line x1="432" y1="512" x2="464" y2="512" stroke="#eb6c36" stroke-width="1.5"/>
+      <text x="480" y="516" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Release cut</text>
+    </svg>
+  </div>
+</body>
+</html>
