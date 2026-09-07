@@ -23,6 +23,8 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-doctor.py",
     "python3 scripts/test-verify-polar.py",
     "python3 scripts/verify-polar.py",
+    "python3 scripts/test-verify-unit-grid.py",
+    "python3 scripts/verify-unit-grid.py --all",
     "python3 scripts/verify-sankey.py --all",
     "python3 scripts/test-verify-sankey.py",
     "python3 scripts/verify-bump.py --all",

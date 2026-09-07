@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Release readiness · Unit Grid</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--paper:#f5f5f5;--panel:#ececec;--ink:#2d3142;--muted:#4f5d75;--rule:rgba(45,49,66,.14);--accent:#eb6c36;--sans:'Geist',system-ui,sans-serif;--serif:'Instrument Serif',serif;--mono:'Geist Mono',ui-monospace,monospace}
+    body{min-height:100vh;padding:48px 32px;background:var(--paper);color:var(--ink);font-family:var(--sans)}
+    .frame{max-width:1080px;margin:0 auto}.eyebrow{margin-bottom:8px;color:var(--muted);font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase}h1{font:400 clamp(32px,4vw,48px)/1 var(--serif);letter-spacing:-.02em} .subtitle{max-width:620px;margin:12px 0 28px;color:var(--muted);font-size:16px;line-height:1.5}.chart{padding:20px;border:1px solid var(--rule);border-radius:8px;background:var(--panel);overflow-x:auto}svg{display:block;width:100%;min-width:760px}
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <p class="eyebrow">Unit Grid · Diagram Design</p>
+    <h1>Release readiness</h1>
+    <p class="subtitle">64 of 100 release checks are complete. Every cell is one check; the final coral cell directs attention but carries no extra value.</p>
+    <div class="chart">
+      <svg viewBox="0 0 1000 390" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="unit-grid-title unit-grid-desc" data-unit-grid="true" data-unit-total="100" data-unit-filled="64" data-unit-rows="10" data-unit-columns="10">
+        <title id="unit-grid-title">Release readiness, 64 percent complete</title>
+        <desc id="unit-grid-desc">A ten by ten unit grid showing 64 completed release checks and 36 remaining checks. Each square represents one check.</desc>
+        <rect width="100%" height="100%" fill="#ececec"/>
+        <text x="40" y="42" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.16em">RELEASE GATE · ILLUSTRATIVE CHECKLIST</text>
+        <text x="40" y="82" fill="#2d3142" font-size="32" font-weight="600" font-family="'Geist', sans-serif">64%</text>
+        <text x="40" y="104" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">64 complete · 36 remaining</text>
+        <rect data-unit-cell="filled" data-unit-index="0" x="382" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="1" x="406" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="2" x="430" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="3" x="454" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="4" x="478" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="5" x="502" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="6" x="526" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="7" x="550" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="8" x="574" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="9" x="598" y="86" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="10" x="382" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="11" x="406" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="12" x="430" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="13" x="454" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="14" x="478" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="15" x="502" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="16" x="526" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="17" x="550" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="18" x="574" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="19" x="598" y="110" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="20" x="382" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="21" x="406" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="22" x="430" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="23" x="454" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="24" x="478" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="25" x="502" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="26" x="526" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="27" x="550" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="28" x="574" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="29" x="598" y="134" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="30" x="382" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="31" x="406" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="32" x="430" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="33" x="454" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="34" x="478" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="35" x="502" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="36" x="526" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="37" x="550" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="38" x="574" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="39" x="598" y="158" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="40" x="382" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="41" x="406" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="42" x="430" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="43" x="454" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="44" x="478" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="45" x="502" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="46" x="526" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="47" x="550" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="48" x="574" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="49" x="598" y="182" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="50" x="382" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="51" x="406" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="52" x="430" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="53" x="454" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="54" x="478" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="55" x="502" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="56" x="526" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="57" x="550" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="58" x="574" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="59" x="598" y="206" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="60" x="382" y="230" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="61" x="406" y="230" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="62" x="430" y="230" width="20" height="20" rx="2" fill="#2d3142" stroke="#2d3142" stroke-width="0.8"/>
+      <rect data-unit-cell="filled" data-unit-index="63" x="454" y="230" width="20" height="20" rx="2" fill="#eb6c36" stroke="#eb6c36" stroke-width="1.2"/>
+      <rect data-unit-cell="empty" data-unit-index="64" x="478" y="230" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="65" x="502" y="230" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="66" x="526" y="230" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="67" x="550" y="230" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="68" x="574" y="230" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="69" x="598" y="230" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="70" x="382" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="71" x="406" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="72" x="430" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="73" x="454" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="74" x="478" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="75" x="502" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="76" x="526" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="77" x="550" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="78" x="574" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="79" x="598" y="254" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="80" x="382" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="81" x="406" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="82" x="430" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="83" x="454" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="84" x="478" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="85" x="502" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="86" x="526" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="87" x="550" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="88" x="574" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="89" x="598" y="278" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="90" x="382" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="91" x="406" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="92" x="430" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="93" x="454" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="94" x="478" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="95" x="502" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="96" x="526" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="97" x="550" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="98" x="574" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+      <rect data-unit-cell="empty" data-unit-index="99" x="598" y="302" width="20" height="20" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width="0.8"/>
+        <line x1="40" y1="344" x2="960" y2="344" stroke="rgba(45,49,66,.12)" stroke-width="1"/>
+        <rect x="40" y="360" width="14" height="10" rx="2" fill="#2d3142"/>
+        <text x="62" y="369" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Completed check</text>
+        <rect x="198" y="360" width="14" height="10" rx="2" fill="#ececec" stroke="#bfc0c0" stroke-width=".8"/>
+        <text x="220" y="369" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Remaining check</text>
+        <rect x="358" y="360" width="14" height="10" rx="2" fill="#eb6c36"/>
+        <text x="380" y="369" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Editorial focal cell</text>
+        <text x="960" y="369" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">COUNT = ONE CHECK · ILLUSTRATIVE</text>
+      </svg>
+    </div>
+    
+  </main>
+</body>
+</html>
