@@ -21,7 +21,7 @@ def main() -> int:
     errors: list[str] = []
     slugs = canonical_slugs()
     if len(slugs) != 40 or len(slugs) != len(set(slugs)):
-        errors.append(f"expected 39 unique canonical types; found {len(slugs)}")
+        errors.append(f"expected 40 unique canonical types; found {len(slugs)}")
 
     if not MANIFEST.is_file():
         errors.append("docs/screenshots/manifest.json is missing")
