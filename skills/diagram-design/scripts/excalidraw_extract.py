@@ -176,7 +176,12 @@ def load_scene_data(path: Path) -> dict[str, Any]:
             f"source exceeds the {MAX_INPUT_BYTES // (1024 * 1024)} MiB limit"
         )
     try:
-        document = json.loads(data.decode("utf-8"), parse_constant=lambda token: _fail(f"invalid geometry: {token} is not finite"))
+        document = json.loads(
+            data.decode("utf-8"),
+            parse_constant=lambda token: _fail(
+                f"invalid geometry: {token} is not finite"
+            ),
+        )
     except (UnicodeDecodeError, ValueError):
         _fail(f"{path.name}: not valid Excalidraw JSON")
     if not isinstance(document, dict) or document.get("type") != "excalidraw":
@@ -199,6 +204,8 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
 
     live: list[dict[str, Any]] = []
     for element in elements:
+        if not isinstance(element.get("type"), str):
+            _fail("invalid element type: expected a string")
         if element.get("isDeleted"):
             scene.discarded["deleted_elements"] += 1
             continue
@@ -312,13 +319,26 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         default_end = "arrow" if kind == "arrow" else None
         start_head = element.get("startArrowhead")
         end_head = element.get("endArrowhead", default_end)
+        if start_head is not None and not isinstance(start_head, str):
+            _fail("invalid startArrowhead: expected a string or null")
+        if end_head is not None and not isinstance(end_head, str):
+            _fail("invalid endArrowhead: expected a string or null")
+        start_bound = binding_id(element, "startBinding")
+        end_bound = binding_id(element, "endBinding")
+        # The semantic source is the tail, not necessarily startBinding: a
+        # start-only arrowhead points from the end binding back to the start.
+        source, target = (
+            (end_bound, start_bound)
+            if start_head and not end_head
+            else (start_bound, end_bound)
+        )
         points = element.get("points")
         waypoints = max(len(points) - 2, 0) if isinstance(points, list) else 0
         scene.edges.append(
             Edge(
                 id=element["id"],
-                source=binding_id(element, "startBinding"),
-                target=binding_id(element, "endBinding"),
+                source=source,
+                target=target,
                 label=label_for(element),
                 dashed=element.get("strokeStyle") in ("dashed", "dotted"),
                 bidirectional=bool(start_head) and bool(end_head),
@@ -331,10 +351,18 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         )
 
     for edge in scene.edges:
-        if edge.source and edge.source in node_map:
-            node_map[edge.source].out_degree += 1
-        if edge.target and edge.target in node_map:
-            node_map[edge.target].in_degree += 1
+        source = node_map.get(edge.source or "")
+        target = node_map.get(edge.target or "")
+        if edge.bidirectional or edge.undirected:
+            for endpoint in (source, target):
+                if endpoint is not None:
+                    endpoint.in_degree += 1
+                    endpoint.out_degree += 1
+        else:
+            if source is not None:
+                source.out_degree += 1
+            if target is not None:
+                target.in_degree += 1
 
     return scene
 
@@ -508,7 +536,8 @@ def scene_bounds(scene: Scene) -> tuple[float, float, float, float]:
         max(b[3] for b in boxes),
     )
     width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
-    if not all(math.isfinite(value) for value in (width, height, width / height if height > 0 else 0)):
+    ratio = width / height if height > 0 else 0
+    if not all(math.isfinite(value) for value in (width, height, ratio)):
         _fail("invalid geometry: canvas arithmetic overflow")
     return bounds
 

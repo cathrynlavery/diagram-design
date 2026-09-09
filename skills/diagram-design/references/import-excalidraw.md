@@ -105,7 +105,7 @@ The extractor reports 10 IR nodes (8 drawable including 2 frames) and 6 edges; t
 |---|---|
 | `.excalidraw.png` / `.excalidraw.svg` export | The extractor rejects it by design. Ask for the saved `.excalidraw` scene; don't scrape pixels. |
 | Extractor exits 2 | Report the message verbatim — it names the actual problem (not Excalidraw JSON / no elements / over limits). Don't fall back to reading the raw file. |
-| `edges_dangling > 0` | Arrows whose bindings were deleted or never attached. Drop them silently — they're sketch rot, not content. |
+| `edges_dangling > 0` | Arrows whose bindings were deleted or never attached. Omit them from the redraw, but record the count in the fidelity ledger and call out any labeled or otherwise meaningful loss. |
 | Unconnected nodes listed | Usually sticky notes, titles, or abandoned boxes. Drop unless the label says otherwise; mention in the ledger if it looked meaningful. |
 | Labels are empty across the board | The sketch carries meaning in position only. Ask the user what the boxes are — don't invent names. |
 | `unknown elements` in the discarded line | A newer element type this extractor doesn't map. Say so in the ledger; never guess its meaning from coordinates. |

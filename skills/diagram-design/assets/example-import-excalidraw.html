@@ -9,7 +9,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root { --paper:#f5f5f5; --ink:#2d3142; --muted:#4f5d75; --soft:#7a8399; --accent:#eb6c36; }
     body { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:48px 32px; background:var(--paper); color:var(--ink); font-family:'Geist',system-ui,sans-serif; }
-    .frame { width:100%; max-width:1200px; }
+    .frame { width:100%; max-width:1200px; min-width:0; }
+    .diagram-container { width:100%; overflow-x:auto; }
     .eyebrow { margin-bottom:8px; color:var(--muted); font:500 8px 'Geist Mono',monospace; letter-spacing:.14em; text-transform:uppercase; }
     h1 { margin-bottom:24px; font:400 28px/1.15 'Instrument Serif',serif; }
     svg { display:block; width:100%; min-width:900px; }
@@ -19,6 +20,7 @@
   <main class="frame">
     <p class="eyebrow">Flowchart · Imported from Excalidraw · doc-inline · balanced</p>
     <h1>Lead capture and CRM intake</h1>
+    <div class="diagram-container">
     <svg viewBox="0 0 960 600" role="img" aria-labelledby="import-excalidraw-title import-excalidraw-desc" xmlns="http://www.w3.org/2000/svg">
       <title id="import-excalidraw-title">Lead intake flow</title>
       <desc id="import-excalidraw-desc">Web form and CSV leads enter an intake API, pass a validity decision, and reach a CRM sync service and the CRM database.</desc>
@@ -62,6 +64,7 @@
       <rect x="472" y="516" width="16" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399"/><text x="496" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">INPUT</text>
       <rect x="568" y="516" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142"/><text x="592" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">SERVICE</text>
     </svg>
+    </div>
   </main>
 </body>
 </html>

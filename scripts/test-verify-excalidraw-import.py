@@ -79,6 +79,19 @@ def main() -> int:
             )
         example.write_text(example_text, encoding="utf-8")
 
+        example.write_text(
+            example_text.replace('<div class="diagram-container">', ""),
+            encoding="utf-8",
+        )
+        overflowing = run_verifier(clone)
+        if overflowing.returncode == 0:
+            raise AssertionError("worked example without its local scroller unexpectedly passed")
+        if "local horizontal scroller" not in overflowing.stderr:
+            raise AssertionError(
+                f"mobile overflow lacked a focused diagnostic:\n{overflowing.stderr}"
+            )
+        example.write_text(example_text, encoding="utf-8")
+
         fixture = clone / FIXTURE
         document = json.loads(fixture.read_text(encoding="utf-8"))
         for element in document["elements"]:
@@ -97,7 +110,7 @@ def main() -> int:
 
     print(
         "OK: Excalidraw verifier rejects stale command names, off-preset examples, "
-        "and drifted trust-boundary inventories"
+        "mobile overflow, and drifted trust-boundary inventories"
     )
     return 0
 

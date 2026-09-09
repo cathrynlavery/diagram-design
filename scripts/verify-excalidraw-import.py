@@ -257,6 +257,45 @@ def check_bindings_and_shapes(tmp: Path) -> None:
     ok("bindings, arrowheads, waypoints, dangling edges, unknown elements")
 
 
+def check_arrow_directions(tmp: Path) -> None:
+    cases = (
+        ("start-only", "arrow", None, "b", "a", False, False, ["b"], ["a"]),
+        ("end-only", None, "arrow", "a", "b", False, False, ["a"], ["b"]),
+        ("both", "arrow", "arrow", "a", "b", True, False, [], []),
+        ("neither", None, None, "a", "b", False, True, [], []),
+    )
+    for name, start_head, end_head, source, target, bidir, undirected, entries, terminals in cases:
+        board = tmp / f"arrow-{name}.excalidraw"
+        board.write_text(
+            scene(
+                name,
+                [
+                    {"id": "a", "type": "rectangle", "x": 0, "y": 0, "width": 10, "height": 10},
+                    {"id": "b", "type": "rectangle", "x": 20, "y": 0, "width": 10, "height": 10},
+                    {
+                        "id": "edge",
+                        "type": "arrow",
+                        "startArrowhead": start_head,
+                        "endArrowhead": end_head,
+                        "startBinding": {"elementId": "a"},
+                        "endBinding": {"elementId": "b"},
+                    },
+                ],
+            ),
+            encoding="utf-8",
+        )
+        payload = json.loads(run_extract([str(board), "--json"]))["scene"]
+        edge = payload["edges"][0]
+        if (edge["source"], edge["target"]) != (source, target):
+            fail(f"{name} arrow direction was {edge['source']} -> {edge['target']}")
+        if edge["bidirectional"] is not bidir or edge["undirected"] is not undirected:
+            fail(f"{name} arrow flags were not retained")
+        analysis = payload["analysis"]
+        if analysis["entry_points"] != entries or analysis["terminals"] != terminals:
+            fail(f"{name} arrow produced incorrect entry/terminal analysis")
+    ok("start-only, end-only, bidirectional, and undirected arrows keep their semantics")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload_text = run_extract([str(ADVERSARIAL), "--json"])
     payload = json.loads(payload_text)["scene"]
@@ -347,6 +386,45 @@ def check_errors_and_limits(tmp: Path) -> None:
     no_elements = tmp / "empty.excalidraw"
     no_elements.write_text('{"type": "excalidraw"}', encoding="utf-8")
     expect_error([str(no_elements)], "scene has no elements array")
+
+    malformed_type = tmp / "malformed-type.excalidraw"
+    malformed_type.write_text(
+        scene("malformed-type", [{"id": "bad", "type": []}]),
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_error(
+            [str(malformed_type), *output_args],
+            "invalid element type: expected a string",
+        )
+
+    invalid_geometry = (
+        ("nan", float("nan"), "not finite"),
+        ("infinity", float("inf"), "not finite"),
+        ("huge-integer", 10**400, "out of range"),
+    )
+    for name, value, diagnostic in invalid_geometry:
+        malformed = tmp / f"{name}.excalidraw"
+        malformed.write_text(
+            scene(
+                name,
+                [{"id": "bad", "type": "rectangle", "x": value, "y": 0, "width": 10, "height": 10}],
+            ),
+            encoding="utf-8",
+        )
+        for output_args in ([], ["--json"]):
+            expect_error([str(malformed), *output_args], diagnostic)
+
+    overflow = tmp / "derived-overflow.excalidraw"
+    overflow.write_text(
+        scene(
+            "derived-overflow",
+            [{"id": "bad", "type": "rectangle", "x": 1e308, "y": 0, "width": 1e308, "height": 10}],
+        ),
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_error([str(overflow), *output_args], "bounding box overflow")
 
     extractor = load_extractor_module()
     too_many_elements = tmp / "elements.excalidraw"
@@ -494,6 +572,8 @@ def check_docs_and_wiring() -> None:
     ):
         if needle not in import_text:
             fail(f"import-excalidraw.md missing {needle!r}")
+    if "Drop them silently" in import_text:
+        fail("dangling edges must be recorded in the fidelity ledger")
 
     skill_text = SKILL.read_text(encoding="utf-8")
     for needle in (
@@ -534,6 +614,8 @@ def check_docs_and_wiring() -> None:
         fail("worked example does not use the doc-inline viewBox")
     if example.count("#eb6c36") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
+    if '<div class="diagram-container">' not in example or "overflow-x:auto" not in example:
+        fail("worked example must contain its wide SVG in a local horizontal scroller")
     lint = subprocess.run(
         [sys.executable, str(ROOT / "scripts/lint-skin.py"), str(EXAMPLE)],
         capture_output=True,
@@ -544,16 +626,56 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_mobile_example() -> None:
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        fail("Playwright is required to verify the 390px worked example")
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 390, "height": 844})
+        context.route("http*", lambda route: route.abort())
+        page = context.new_page()
+        page.goto(EXAMPLE.resolve().as_uri(), wait_until="load")
+        facts = page.evaluate(
+            """
+            () => {
+              const documentElement = document.documentElement;
+              const svg = document.querySelector('svg');
+              const scroller = svg && svg.parentElement;
+              const overflow = scroller && getComputedStyle(scroller).overflowX;
+              return {
+                pageOverflow: documentElement.scrollWidth - documentElement.clientWidth,
+                svgWidth: svg ? svg.getBoundingClientRect().width : 0,
+                localScroller: Boolean(scroller &&
+                  (overflow === 'auto' || overflow === 'scroll') &&
+                  scroller.scrollWidth > scroller.clientWidth + 1),
+              };
+            }
+            """
+        )
+        browser.close()
+    if facts["pageOverflow"] > 1:
+        fail(f"worked example overflows the 390px page by {facts['pageOverflow']:.1f}px")
+    if facts["svgWidth"] < 900:
+        fail("worked example shrinks its labeled SVG below the 900px legibility floor")
+    if not facts["localScroller"]:
+        fail("worked example lacks a functioning local horizontal scroller at 390px")
+    ok("worked example is contained and locally scrollable at 390px")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-excalidraw-") as directory:
         tmp = Path(directory)
         check_files()
         check_whiteboard()
         check_bindings_and_shapes(tmp)
+        check_arrow_directions(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_legacy_stdout_encoding(tmp)
         check_docs_and_wiring()
+        check_mobile_example()
     print("\nAll Excalidraw import gates passed.")
     return 0
 
