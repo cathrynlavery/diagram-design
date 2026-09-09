@@ -142,6 +142,24 @@ def main() -> int:
             "decreases require hollow paper",
         ),
         (
+            "element transform: a translated bar no longer occupies its declared coordinates",
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
+            '<rect transform="translate(0 80)" x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
+            "waterfall bar carries transform",
+        ),
+        (
+            "ancestor transform: a group moves a bar away from its declared coordinates",
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="+64" data-name="Headcount"/>',
+            '<g transform="translate(0 80)"><rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="+64" data-name="Headcount"/></g>',
+            "ancestor transform",
+        ),
+        (
+            "CSS transform: a matching rule can move verified bars after parsing",
+            "  </style>",
+            '    [data-role="delta"] { transform: translateY(80px); }\n  </style>',
+            "CSS 'transform' declaration",
+        ),
+        (
             "second accent bar: the focal treatment repeats",
             '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
             '<rect x="256" y="131" width="96" height="61" fill="rgba(235,108,54,0.12)" stroke="#eb6c36"',

@@ -1,4 +1,4 @@
-# ADR 0010 — Waterfall is a running-total grammar, not a bar variant
+# ADR 0011 — Waterfall is a running-total grammar, not a bar variant
 
 **Status:** accepted
 

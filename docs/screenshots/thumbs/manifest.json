@@ -369,11 +369,11 @@
     {
       "thumb": "waterfall.webp",
       "source": "docs/screenshots/waterfall.png",
-      "source_sha256": "b884d1ab063d1df28c0cb8922db1ab0ca8c3b9c80f3fe4cda7408da1c8c8ee53",
+      "source_sha256": "41a9d0c428b86fd8d75a301ca91c9b69e05376e931c67f7821b4c561f4b12b7e",
       "width": 600,
       "height": 300,
       "quality": 82,
-      "thumb_sha256": "03a58bcc35a6864dd631ebbfb7e130ae1d5abecd3aa4fb7502e93874b1420d00"
+      "thumb_sha256": "b0c09eaec9b9ee1c8853f922e658d22d5c4dc033b86aa709fc49efb896d836fc"
     }
   ]
 }

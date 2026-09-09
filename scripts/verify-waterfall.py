@@ -61,6 +61,16 @@ LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
 ATTR_RE = re.compile(r'(?P<name>[\w:-]+)="(?P<value>[^"]*)"')
 TAG_RE = re.compile(r"<[^>]+>")
+COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
+STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
+CSS_MOVES_MARK_RE = re.compile(
+    r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
+    r"(?P<prop>transform|translate|rotate|scale|x|y"
+    r"|offset(?:-(?:path|distance|position|anchor|rotate))?)\s*:",
+    re.IGNORECASE,
+)
 
 # Integer-pixel rounding on a shared scale cannot miss by more than 0.5px per
 # edge; 0.75 leaves headroom for the fit itself while staying far below the
@@ -86,6 +96,80 @@ def parse_number(raw: str) -> float | None:
         return value if math.isfinite(value) else None
     except (TypeError, ValueError):
         return None
+
+
+def transform_carrier(attrs: dict[str, str]) -> str | None:
+    """Describe an attribute or inline style that can move verified geometry."""
+    if "transform" in attrs:
+        return f"transform={attrs['transform']!r}"
+    style = attrs.get("style")
+    if style is not None:
+        found = CSS_MOVES_MARK_RE.search(style)
+        if found is not None:
+            return f"style={style!r} (the {found.group('prop').lower()} property)"
+    return None
+
+
+def transformed_spans(source: str) -> list[tuple[int, int, str]]:
+    """Return source spans covered by transformed SVG/group ancestors."""
+    events: list[tuple[int, int, str | None]] = []
+    for match in GROUP_OPEN_RE.finditer(source):
+        if match.group("selfclose"):
+            continue
+        attrs = attrs_of(match.group("attrs"))
+        events.append((match.start(), 0, transform_carrier(attrs)))
+    for match in GROUP_CLOSE_RE.finditer(source):
+        events.append((match.start(), 1, None))
+    events.sort(key=lambda event: (event[0], event[1]))
+
+    spans: list[tuple[int, int, str]] = []
+    stack: list[tuple[int, str | None]] = []
+    for position, kind, how in events:
+        if kind == 0:
+            stack.append((position, how))
+        elif stack:
+            start, transformed_by = stack.pop()
+            if transformed_by is not None:
+                spans.append((start, position, transformed_by))
+    for start, transformed_by in stack:
+        if transformed_by is not None:
+            spans.append((start, len(source), transformed_by))
+    return spans
+
+
+def check_transforms(source: str, errors: list[str]) -> None:
+    """Reject transforms that make rendered bar/carry geometry differ from raw coordinates."""
+    source = COMMENT_RE.sub("", source)
+    spans = transformed_spans(source)
+
+    def enclosing(offset: int) -> str | None:
+        for start, end, how in spans:
+            if start <= offset <= end:
+                return f"ancestor {how}"
+        return None
+
+    for pattern, contract_attr, label in (
+        (RECT_RE, "data-role", "waterfall bar"),
+        (LINE_RE, "data-carry", "waterfall carry"),
+    ):
+        for match in pattern.finditer(source):
+            attrs = attrs_of(match.group("attrs"))
+            if contract_attr not in attrs:
+                continue
+            how = transform_carrier(attrs) or enclosing(match.start())
+            if how is not None:
+                errors.append(
+                    f"{label} carries {how}; bake the movement into its coordinates so "
+                    "the verifier checks what the browser draws"
+                )
+
+    for match in STYLE_RE.finditer(source):
+        found = CSS_MOVES_MARK_RE.search(match.group("body"))
+        if found is not None:
+            errors.append(
+                f"CSS {found.group('prop').lower()!r} declaration can move verified waterfall "
+                "geometry; bake the movement into the coordinates instead"
+            )
 
 
 class Bar:
@@ -397,6 +481,7 @@ def verify_file(path: Path) -> list[str]:
         return errors
     if not check_structure(bars, errors):
         return errors
+    check_transforms(source, errors)
     levels = running_levels(bars, errors)
     if levels is None:
         return errors
