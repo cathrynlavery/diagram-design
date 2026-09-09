@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import math
 import re
 import sys
 from dataclasses import asdict, dataclass, field
@@ -137,10 +138,23 @@ def clean_label(value: Any) -> str:
 
 
 def _num(element: dict[str, Any], key: str) -> float:
+    """A geometry field as a finite float; absent or non-numeric reads as 0.
+
+    A scene is untrusted input. An out-of-range int and the JSON tokens
+    ``Infinity``/``NaN`` both survive as floats that only blow up later, in the
+    digest's integer formatting, as an uncaught OverflowError or ValueError
+    rather than the promised exit-2 diagnostic. Reject them here instead.
+    """
     value = element.get(key, 0)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return 0.0
-    return float(value)
+    try:
+        value = float(value)
+    except OverflowError:
+        _fail(f"invalid geometry: {key} is out of range")
+    if not math.isfinite(value):
+        _fail(f"invalid geometry: {key} must be finite")
+    return value
 
 
 def load_scene_data(path: Path) -> dict[str, Any]:
@@ -162,8 +176,8 @@ def load_scene_data(path: Path) -> dict[str, Any]:
             f"source exceeds the {MAX_INPUT_BYTES // (1024 * 1024)} MiB limit"
         )
     try:
-        document = json.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+        document = json.loads(data.decode("utf-8"), parse_constant=lambda token: _fail(f"invalid geometry: {token} is not finite"))
+    except (UnicodeDecodeError, ValueError):
         _fail(f"{path.name}: not valid Excalidraw JSON")
     if not isinstance(document, dict) or document.get("type") != "excalidraw":
         _fail(f"{path.name}: not an Excalidraw scene (missing type: excalidraw)")
@@ -483,14 +497,20 @@ def _escape_table(text: str) -> str:
 
 def scene_bounds(scene: Scene) -> tuple[float, float, float, float]:
     boxes = [(n.x, n.y, n.x + n.w, n.y + n.h) for n in scene.nodes if n.w and n.h]
+    if any(not math.isfinite(value) for box in boxes for value in box):
+        _fail("invalid geometry: bounding box overflow")
     if not boxes:
         return (0.0, 0.0, 0.0, 0.0)
-    return (
+    bounds = (
         min(b[0] for b in boxes),
         min(b[1] for b in boxes),
         max(b[2] for b in boxes),
         max(b[3] for b in boxes),
     )
+    width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
+    if not all(math.isfinite(value) for value in (width, height, width / height if height > 0 else 0)):
+        _fail("invalid geometry: canvas arithmetic overflow")
+    return bounds
 
 
 def digest(path: Path, scene: Scene, max_rows: int) -> str:
