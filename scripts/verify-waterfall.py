@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
 from pathlib import Path
@@ -81,7 +82,8 @@ def attrs_of(tag_attrs: str) -> dict[str, str]:
 
 def parse_number(raw: str) -> float | None:
     try:
-        return float(raw)
+        value = float(raw)
+        return value if math.isfinite(value) else None
     except (TypeError, ValueError):
         return None
 
@@ -153,6 +155,9 @@ def parse_bars(source: str, errors: list[str]) -> list[Bar]:
             errors.append(f"{name!r}: bar rect is missing numeric x/y/width/height")
             continue
         x, y, w, h = geometry  # type: ignore[assignment]
+        if w <= 0 or h <= 0 or not all(map(math.isfinite, (x + w, y + h))):
+            errors.append(f"{name!r}: bar geometry must have finite edges and positive dimensions")
+            continue
         bars.append(
             Bar(len(bars), role, value, name, x, y, w, h,
                 attrs.get("fill", ""), attrs.get("stroke", ""))
@@ -207,6 +212,9 @@ def running_levels(bars: list[Bar], errors: list[str]) -> list[tuple[float, floa
         if bar.role == "delta":
             before = running
             running += bar.value
+            if not math.isfinite(running):
+                errors.append(f"{bar.label}: the running total must remain finite")
+                return None
             levels.append((before, running))
             if running < 0:
                 errors.append(
@@ -240,6 +248,9 @@ def check_geometry(bars: list[Bar], levels: list[tuple[float, float]], errors: l
             lo, hi = min(before, after), max(before, after)
         expected_top = baseline - scale * hi
         expected_bottom = baseline - scale * lo
+        if scale <= 0 or not all(map(math.isfinite, (scale, expected_top, expected_bottom))):
+            errors.append(f"{bar.label}: shared scale and derived geometry must be finite and nonzero")
+            return None
         if abs(bar.y - expected_top) > GEOMETRY_TOLERANCE:
             errors.append(
                 f"{bar.label}: top edge drawn at y={bar.y:g} but the shared scale puts "
@@ -298,9 +309,18 @@ def check_carries(source: str, bars: list[Bar], levels: list[tuple[float, float]
             )
 
 
-def printed_values(source: str) -> list[tuple[float, bool]]:
+def printed_values(source: str, bar: Bar) -> list[tuple[float, bool]]:
     values: list[tuple[float, bool]] = []
     for match in TEXT_RE.finditer(source):
+        attrs = attrs_of(match.group("attrs"))
+        x, y = (parse_number(attrs.get(key, "")) for key in ("x", "y"))
+        if any(key in attrs for key in ("style", "display", "visibility", "opacity", "fill-opacity")):
+            continue
+        expected_y = bar.bottom + 12 if bar.role == "delta" and bar.value < 0 else bar.y - 8
+        if x is None or y is None or attrs.get("text-anchor") != "middle":
+            continue
+        if abs(x - (bar.x + bar.w / 2)) > GEOMETRY_TOLERANCE or abs(y - expected_y) > GEOMETRY_TOLERANCE:
+            continue
         body = html.unescape(TAG_RE.sub("", match.group("body"))).strip()
         value, signed = parse_signed(body, signed_required=False)
         if value is not None:
@@ -309,8 +329,8 @@ def printed_values(source: str) -> list[tuple[float, bool]]:
 
 
 def check_printed(source: str, bars: list[Bar], errors: list[str]) -> None:
-    printed = printed_values(source)
     for bar in bars:
+        printed = printed_values(source, bar)
         needs_sign = bar.role == "delta"
         hit = any(
             abs(value - bar.value) <= VALUE_TOLERANCE and (signed or not needs_sign)
@@ -324,7 +344,7 @@ def check_printed(source: str, bars: list[Bar], errors: list[str]) -> None:
             )
 
 
-def check_sign_treatment(bars: list[Bar], errors: list[str]) -> None:
+def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str) -> None:
     focal = [bar for bar in bars if bar.stroke.lower() in ACCENT_STROKES]
     if len(focal) > 1:
         errors.append(
@@ -332,6 +352,27 @@ def check_sign_treatment(bars: list[Bar], errors: list[str]) -> None:
             + ", ".join(bar.label for bar in focal)
         )
     focal_set = set(id(bar) for bar in focal)
+    # Absolute check: the documented mapping is tint-for-increase and hollow
+    # paper-for-decrease, both over the muted stroke. Comparing the two polarity
+    # sets against each other cannot see a single-polarity walk, or one whose
+    # only bar of a polarity is focal, or a chart with the treatments swapped.
+    # Only the two shipped themes have a documented pair; an unrecognised paper
+    # falls through to the relative checks below rather than failing the file.
+    THEME_TREATMENTS = {
+        "#2d3142": ("rgba(191,192,192,0.15)", "#bfc0c0"),
+        "#f5f5f5": ("rgba(79,93,117,0.15)", "#4f5d75"),
+    }
+    if paper in THEME_TREATMENTS:
+        tint, stroke = THEME_TREATMENTS[paper]
+        for bar in bars:
+            if bar.role != "delta" or id(bar) in focal_set:
+                continue
+            expected_fill = tint if bar.value > 0 else paper
+            if re.sub(r"\s+", "", bar.fill.lower()) != expected_fill or bar.stroke.lower() != stroke:
+                errors.append(
+                    f"{bar.label}: increases require the muted tint and decreases require "
+                    f"hollow paper, both over the muted stroke"
+                )
     rises = {bar.fill for bar in bars if bar.role == "delta" and bar.value > 0 and id(bar) not in focal_set}
     falls = {bar.fill for bar in bars if bar.role == "delta" and bar.value < 0 and id(bar) not in focal_set}
     if len(rises) > 1:
@@ -348,6 +389,8 @@ def check_sign_treatment(bars: list[Bar], errors: list[str]) -> None:
 def verify_file(path: Path) -> list[str]:
     errors: list[str] = []
     source = path.read_text(encoding="utf-8")
+    paper_match = re.search(r'--color-paper\s*:\s*(#[0-9a-fA-F]{6})', source)
+    paper = paper_match[1].lower() if paper_match else None
     bars = parse_bars(source, errors)
     if not bars:
         errors.append("no bars declare data-role/data-value; the waterfall data contract is missing")
@@ -362,7 +405,7 @@ def verify_file(path: Path) -> list[str]:
         baseline, scale = fitted
         check_carries(source, bars, levels, baseline, scale, errors)
     check_printed(source, bars, errors)
-    check_sign_treatment(bars, errors)
+    check_sign_treatment(bars, errors, paper)
     return errors
 
 

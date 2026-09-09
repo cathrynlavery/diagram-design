@@ -121,6 +121,27 @@ def main() -> int:
             "share the same fill",
         ),
         (
+            "non-finite carry: a connector declares an unverifiable total",
+            'data-carry="240"',
+            'data-carry="nan"',
+            "non-numeric data-carry",
+        ),
+        (
+            "label stolen from elsewhere: the bar's own label is gone and a "
+            "decoy on the far side of the chart carries its number",
+            '<text x="448" y="179" fill="#4f5d75" font-size="8" '
+            'font-family="\'Geist Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
+            '<text x="5" y="5" fill="#4f5d75" font-size="8" '
+            'font-family="\'Geist Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
+            "no printed label states its value",
+        ),
+        (
+            "polarity swap on a lone decrease: the only fall wears the rise tint",
+            '<rect x="400" y="131" width="96" height="36" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="-38"',
+            '<rect x="400" y="131" width="96" height="36" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="-38"',
+            "decreases require hollow paper",
+        ),
+        (
             "second accent bar: the focal treatment repeats",
             '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
             '<rect x="256" y="131" width="96" height="61" fill="rgba(235,108,54,0.12)" stroke="#eb6c36"',
