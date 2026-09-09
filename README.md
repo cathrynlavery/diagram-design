@@ -100,6 +100,11 @@ All 39 visual types ship in three static variants: minimal light, minimal dark, 
   <td align="center"><a href="docs/screenshots/db-schema.png"><img src="docs/screenshots/thumbs/db-schema.webp" alt="Database schema"></a><br><b>Database schema</b><br><sub>Physical tables + column FKs</sub></td>
   <td align="center"><a href="docs/screenshots/polar.png"><img src="docs/screenshots/thumbs/polar.webp" alt="Polar chart"></a><br><b>Polar chart</b><br><sub>Cyclic magnitude · linear radius</sub></td>
 </tr>
+<tr>
+  <td align="center" width="33%"><a href="docs/screenshots/waterfall.png"><img src="docs/screenshots/thumbs/waterfall.webp" alt="Waterfall"></a><br><b>Waterfall</b><br><sub>Running total + signed bridges</sub></td>
+  <td align="center" width="33%"></td>
+  <td align="center" width="33%"></td>
+</tr>
 </table>
 
 The v2.5.10 release added the final ten types above. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
@@ -464,6 +469,8 @@ diagram-design/
 │   ├── test-verify-polar.py         — polar gate adversarial tests
 │   ├── verify-sankey.py             — Sankey conservation + geometry gate
 │   ├── test-verify-sankey.py        — Sankey gate adversarial tests
+│   ├── verify-waterfall.py          — waterfall running-total + bridge gate
+│   ├── test-verify-waterfall.py     — waterfall gate adversarial tests
 │   ├── test-verify-docs-sync.py     — docs/routing-surface gate tests
 │   └── fixtures/
 │       ├── sample-flowchart.mmd
@@ -499,6 +506,7 @@ trust-boundary behavior, resource caps, named failures, and reference/command wi
 Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
 Diagrams using the traceable block decomposition pattern get a structural gate on top of that: `python3 scripts/verify-block-registry.py --all` fails CI on a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block in the same file, a cycle in the parent chain, a blank `data-block-id`, or a missing or blank `data-block-name` — the same defects that would make `--registry`'s exported JSON (see [`export-registry.md`](skills/diagram-design/references/export-registry.md)) misrepresent the tree it claims to describe. `python3 scripts/test-verify-block-registry.py` keeps that checker honest in both directions.
 Treemaps get a second geometric gate, because their whole claim is that area *is* the encoding: `python3 scripts/verify-treemap.py --all` fails CI when a cell's share of the drawn area doesn't match the value printed inside it, or when a label overruns the cell it names. It measures area error as a *relative* figure — an absolute one passes exactly the small cells most likely to be wrong. `python3 scripts/test-verify-treemap.py` keeps it honest in both directions.
+Waterfalls get the same treatment, because their whole claim is that the running total is conserved: `python3 scripts/verify-waterfall.py --all` fails CI when the declared start, deltas, and end don't reconcile, when a bridge bar is drawn anywhere other than its two running levels on the shared scale, when a carry connector is missing or sits at the wrong level, when a delta prints without an explicit sign, or when the two directions collapse into one fill. `python3 scripts/test-verify-waterfall.py` keeps it honest in both directions.
 Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a scanner-visible support path is not shipped inside the skill package, or any command/prompt surface drifts from its routed reference. `python3 scripts/test-verify-docs-sync.py` exercises those newer checks adversarially, including the strict-bundler behavior used by Hermes Agent. The skill also ships `skills/diagram-design/scripts/self_check.py` — a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. Settled design decisions (why one pinned controller, why patterns never add types, the autoplay policy, the SKILL.md byte cap, why label placement is verified geometrically, and why client profiles use marker-first resolution) live as short ADRs in `docs/adr/` — read them before relitigating one, add one when you settle a new policy.
 
 All pull requests and pushes are automatically validated across Linux, Windows, and macOS runners via GitHub Actions CI (`.github/workflows/ci.yml`).
