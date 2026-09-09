@@ -29,6 +29,7 @@ MANIFEST_PATHS = {
     "Claude": Path(".claude-plugin/plugin.json"),
     "Codex": Path(".codex-plugin/plugin.json"),
     "Factory": Path(".factory-plugin/plugin.json"),
+    "OMP": Path("package.json"),
 }
 CLAUDE_MARKETPLACE = Path(".claude-plugin/marketplace.json")
 CODEX_MARKETPLACE = Path(".agents/plugins/marketplace.json")
@@ -521,7 +522,7 @@ def main() -> int:
         "current-only": "current tree",
     }[mode]
     print(
-        f"OK plugin package ({detail}): Claude, Codex, and Factory {versions}, "
+        f"OK plugin package ({detail}): Claude, Codex, Factory, and OMP {versions}, "
         f"marketplace paths, and packaged skill"
     )
     return 0

@@ -14,7 +14,7 @@ Ten drift classes, each of which has shipped before:
 6. The plugin manifests repeat the SKILL.md description verbatim. They are the
    text a user reads *before installing*, so by ADR 0004's own argument they
    need every type's lexical hook too - and nothing else notices when they
-   drift, because they are four separate copies of one sentence.
+   drift, because they are five separate copies of one sentence.
 7. Factory Droid's README install commands and native manifest path must agree
    with the package metadata instead of becoming a second hand-maintained API.
 8. Every support path a strict skill bundler can extract from SKILL.md must be
@@ -508,6 +508,7 @@ MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/marketplace.json"), ("description",)),
     (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
     (FACTORY_MANIFEST, ("description",)),
+    (Path("package.json"), ("description",)),
 )
 
 

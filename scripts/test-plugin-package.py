@@ -67,6 +67,10 @@ def seed_package(
 ) -> None:
     write_json(root / ".claude-plugin/plugin.json", manifest(version))
     write_json(root / ".codex-plugin/plugin.json", manifest(version, codex=True))
+    omp_manifest = manifest(version)
+    omp_manifest["private"] = True
+    omp_manifest["omp"] = {}
+    write_json(root / "package.json", omp_manifest)
     if include_factory:
         seed_factory(root, version)
     write_json(
@@ -141,6 +145,7 @@ def set_versions(
         (Path(".claude-plugin/plugin.json"), claude),
         (Path(".codex-plugin/plugin.json"), codex),
         (Path(".factory-plugin/plugin.json"), factory),
+        (Path("package.json"), claude),
     ):
         payload = json.loads((root / relative).read_text(encoding="utf-8"))
         payload["version"] = version
