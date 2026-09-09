@@ -47,6 +47,8 @@ ROUTING_SURFACES = {
     Path("prompts/doctor.md"): "references/doctor.md",
 }
 
+VERSION_PROBE = "import sys; print('.'.join(str(p) for p in sys.version_info[:3]))"
+
 PASS = "pass"
 WARN = "warn"
 FAIL = "fail"
@@ -71,17 +73,48 @@ def run_command(command: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def probe_python_command() -> tuple[str | None, str | None]:
-    """Resolve python3 first, then python."""
+@dataclass
+class PythonProbe:
+    """What resolving an interpreter name actually turned up."""
+
+    command: str | None = None
+    executable: str | None = None
+    version: str | None = None
+    error: str | None = None
+
+
+def probe_python_command() -> PythonProbe:
+    """Resolve python3 first, then python, preferring a name that actually runs.
+
+    Presence on PATH is not evidence of an interpreter. On Windows the
+    ``python3`` App Execution Alias ships on PATH by default and exits
+    non-zero with a Microsoft Store prompt, so a machine with a working
+    ``python`` is otherwise reported as having no usable Python at all. Fall
+    through to the next candidate when the preferred name cannot report its
+    own version, and keep the first name found so a total failure still says
+    what was tried.
+    """
+    fallback = PythonProbe()
     for candidate in ("python3", "python"):
         executable = shutil.which(candidate)
-        if executable:
-            return candidate, executable
-    return None, None
+        if executable is None:
+            continue
+        probe = run_command([candidate, "-c", VERSION_PROBE])
+        version = probe.stdout.strip()
+        if probe.returncode == 0 and version:
+            return PythonProbe(command=candidate, executable=executable, version=version)
+        if fallback.command is None:
+            fallback = PythonProbe(
+                command=candidate,
+                executable=executable,
+                error=probe.stderr.strip() or "version probe failed",
+            )
+    return fallback
 
 
 def check_python_runtime() -> tuple[CheckResult, str | None]:
-    command_name, executable = probe_python_command()
+    probe = probe_python_command()
+    command_name, executable = probe.command, probe.executable
     if command_name is None or executable is None:
         return (
             CheckResult(
@@ -93,11 +126,8 @@ def check_python_runtime() -> tuple[CheckResult, str | None]:
             None,
         )
 
-    version_probe = run_command(
-        [command_name, "-c", "import sys; print('.'.join(str(p) for p in sys.version_info[:3]))"]
-    )
-    if version_probe.returncode != 0:
-        detail = version_probe.stderr.strip() or "version probe failed"
+    if probe.version is None:
+        detail = probe.error or "version probe failed"
         return (
             CheckResult(
                 name="Python runtime",
@@ -108,7 +138,7 @@ def check_python_runtime() -> tuple[CheckResult, str | None]:
             command_name,
         )
 
-    version_text = version_probe.stdout.strip()
+    version_text = probe.version
     try:
         major, minor, patch = (int(part) for part in version_text.split(".", 2))
     except ValueError:
