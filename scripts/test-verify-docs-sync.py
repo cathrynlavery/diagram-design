@@ -56,8 +56,10 @@ GRID_SKILL = """\
 
 ### Complexity budget
 
-<text x="10" y="20" font-size="12">Ingest</text>
-<text x="10" y="34" font-size="8.5">source: s3</text>
+<text x="10" y="20" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Ingest</text>
+<text x="10" y="34" font-size="8.5" font-family="'Geist', sans-serif">source: s3</text>
+<text x="10" y="48" font-size="7" font-family="'Geist Mono', monospace">API</text>
+<text x="10" y="90" fill="rgba(45,49,66,0.06)" font-size="72" font-family="'Geist Mono', monospace">2026</text>
 """
 
 TYPE_RAMP_SPEC = """\
@@ -75,11 +77,17 @@ TYPE_RAMP_SPEC = """\
 
 Every `font-size` is one of the role values above for the preset in use, or one of these named exceptions:
 
-| Exception | Sizes |
-|---|---|
-| Dense annotation: legend keys, axis ticks (Geist Mono) | 7 to 11, half steps allowed |
-| Group or entity heading (Geist 600) | 14 |
-| Decorative watermark numerals at or under 0.08 opacity | any |
+| Exception | Font | Sizes |
+|---|---|---|
+| Dense annotation: legend keys, axis ticks | Geist Mono or Geist regular | 7 to 11, half steps allowed |
+| Group or entity heading | Geist 600 | 14 |
+| Decorative watermark numerals at or under 0.08 opacity | any | any |
+
+### Registered legacy sizes
+
+| File | Sizes | What they are |
+|---|---|---|
+| `assets/example-legacy.html` | 13, 22 | node name and a counter |
 
 ### Safe areas
 """
@@ -267,7 +275,7 @@ def main() -> int:
     verify.check_type_ramp(
         errors,
         heading_skill,
-        TYPE_RAMP_SPEC.replace("| Group or entity heading (Geist 600) | 14 |\n", ""),
+        TYPE_RAMP_SPEC.replace("| Group or entity heading | Geist 600 | 14 |\n", ""),
     )
     if len(errors) != 1 or "font-size=14" not in errors[0]:
         raise AssertionError(
@@ -283,6 +291,60 @@ def main() -> int:
     if not any("named font-size exceptions table" in error for error in errors):
         raise AssertionError(f"missing exceptions table was not reported: {errors}")
 
+    # Both declared syntaxes, not just the double-quoted attribute.
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace('font-size="12"', "font-size='13'"),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"single-quoted off-ramp size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL + "\n<style>.axis { font-size:13px; }</style>\n",
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"CSS off-ramp size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace("font-size=\"8.5\" font-family=\"'Geist', sans-serif\"", 'font-size="8.5"'),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "declares no font" not in errors[0]:
+        raise AssertionError(f"fontless off-ramp size was not reported: {errors}")
+
+    # An exception belongs to a role, not to a number range. A node name is set
+    # in Geist 600 and cannot take a dense-annotation size just by being small.
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="12"', 'font-size="7.5"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=7.5 on sans-600 text" not in errors[0]:
+        raise AssertionError(
+            f"node name borrowing a dense-annotation size was not reported: {errors}"
+        )
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="7"', 'font-size="7.5"'), TYPE_RAMP_SPEC
+    )
+    if errors:
+        raise AssertionError(f"dense annotation at 7.5 in Geist Mono was rejected: {errors}")
+
+    # The 72px watermark is legal only while its opacity keeps it decorative.
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace("rgba(45,49,66,0.06)", "rgba(45,49,66,0.30)"), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=72" not in errors[0]:
+        raise AssertionError(f"opaque watermark size was not reported: {errors}")
+
     errors = []
     verify.check_type_ramp(
         errors,
@@ -291,6 +353,55 @@ def main() -> int:
     )
     if errors:
         raise AssertionError(f"shipped SKILL.md and output-spec.md disagree: {errors}")
+
+    # ── registered legacy sizes ──────────────────────────────────────────────
+    legacy_markup = (
+        '<svg viewBox="0 0 10 10">'
+        '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>'
+        '<text font-size="22" font-weight="600" font-family="\'Geist\', sans-serif">2/5</text>'
+        "</svg>"
+    )
+    with tempfile.TemporaryDirectory(prefix="legacy-type-sizes-") as temp_dir:
+        fake_root = Path(temp_dir)
+        assets = fake_root / "skills/diagram-design/assets"
+        references = fake_root / "skills/diagram-design/references"
+        assets.mkdir(parents=True)
+        references.mkdir(parents=True)
+        legacy = assets / "example-legacy.html"
+        legacy.write_text(legacy_markup, encoding="utf-8")
+
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(f"registered legacy sizes were rejected: {errors}")
+
+        legacy.write_text(
+            legacy_markup.replace("</svg>", '<text font-size="17">x</text></svg>'),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "registers 13, 22" not in errors[0]:
+            raise AssertionError(f"a grown legacy inventory was not reported: {errors}")
+
+        legacy.write_text(legacy_markup.replace('font-size="22"', 'font-size="16"'), encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "registers 13, 22" not in errors[0]:
+            raise AssertionError(f"a shrunk legacy inventory was not reported: {errors}")
+
+        legacy.unlink()
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "drop the row" not in errors[0]:
+            raise AssertionError(f"a stale legacy row was not reported: {errors}")
+
+    errors = []
+    verify.check_legacy_type_sizes(
+        errors, verify.OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), verify.ROOT
+    )
+    if errors:
+        raise AssertionError(f"shipped legacy type-size registry is stale: {errors}")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-") as temp_dir:
         skill = Path(temp_dir)

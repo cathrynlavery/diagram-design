@@ -514,8 +514,280 @@ def check_high_level_reference(errors: list[str], markdown: str) -> None:
 
 
 TYPE_RAMP_ROLES = ("Title", "Node name", "Sublabel", "Arrow label", "Eyebrow / tag")
-FONT_SIZE_RE = re.compile(r'font-size="(\d+(?:\.\d+)?)"')
+# Both syntaxes the type-ramp contract claims: an SVG/HTML attribute in either
+# quote style, and a CSS declaration in px. Relative CSS units are page chrome,
+# not diagram type, so rem/em deliberately do not match.
+FONT_SIZE_RE = re.compile(
+    r"""font-size\s*(?:=\s*(?P<quote>["'])(?P<attr>\d+(?:\.\d+)?)(?P=quote)"""
+    r"""|:\s*(?P<css>\d+(?:\.\d+)?)px)"""
+)
 SIZE_RANGE_RE = re.compile(r"^(\d+(?:\.\d+)?)(?: to (\d+(?:\.\d+)?))?$")
+WATERMARK_OPACITY_RE = re.compile(r"at or under (\d+(?:\.\d+)?) opacity")
+ALPHA_RE = re.compile(
+    r"""(?:\bfill-)?(?<![-\w])opacity=["'](\d*\.?\d+)["']"""
+    r"""|rgba\([^)]*?,\s*(\d*\.?\d+)\s*\)"""
+)
+LEGACY_SIZE_HEADING = "### Registered legacy sizes"
+TYPE_SIZE_SUFFIXES = (".html", ".svg", ".md")
+# Where diagram type lives. The gallery pages (index.html, icons.html) are site
+# chrome, not diagrams, so the type ramp does not govern them.
+TYPE_SIZE_SURFACES = (
+    ("skills/diagram-design/assets", ("example-", "template")),
+    ("skills/diagram-design/references", ("type-",)),
+)
+
+
+WEIGHT_RE = re.compile(r"""font-weight\s*[:=]\s*["']?(\d{3}|bold)""")
+
+
+def font_classes(text: str) -> set[str]:
+    """The ramp fonts a spec cell names. A cell may name more than one."""
+    named = set()
+    if "Instrument Serif" in text:
+        named.add("serif")
+    if "Mono" in text or "monospace" in text:
+        named.add("mono")
+    if "Geist 600" in text:
+        named.add("sans-600")
+    if "Geist regular" in text or "Geist sans" in text or "sans-serif" in text:
+        named.add("sans")
+    return named
+
+
+def element_class(tag: str) -> str | None:
+    """Which ramp font an element is set in, weight included.
+
+    Geist at 600 or heavier is the node-name voice; lighter Geist is annotation.
+    Keeping them apart is what stops a node name borrowing an annotation size.
+    """
+    if "Instrument Serif" in tag:
+        return "serif"
+    if "Mono" in tag or "monospace" in tag:
+        return "mono"
+    if "Geist" in tag or "sans-serif" in tag:
+        weight = WEIGHT_RE.search(tag)
+        declared = 700 if weight and weight.group(1) == "bold" else (
+            int(weight.group(1)) if weight else 400
+        )
+        return "sans-600" if declared >= 600 else "sans"
+    return None
+
+
+def enclosing_tag(markup: str, index: int) -> str:
+    """The open tag holding the character at *index*, plus its parent `<text>`.
+
+    A `<tspan>` inherits its font from the `<text>` around it, so the parent is
+    appended and the two are classified as one string.
+    """
+    start = markup.rfind("<", 0, index)
+    if start < 0:
+        return ""
+    end = markup.find(">", index)
+    if end < 0:
+        return ""
+    tag = markup[start : end + 1]
+    # A CSS declaration inside `<style>` is not on an element. Rejecting a span
+    # that swallows another `<` keeps the stylesheet from reading as one tag.
+    if "<" in tag[1:]:
+        return ""
+    if tag.startswith("<tspan") and element_class(tag) is None:
+        parent = markup.rfind("<text", 0, start)
+        if parent >= 0:
+            parent_end = markup.find(">", parent)
+            if parent_end >= 0:
+                tag += markup[parent : parent_end + 1]
+    return tag
+
+
+def tag_alpha(tag: str) -> float | None:
+    """Smallest alpha the tag declares, whether as an attribute or in `rgba()`."""
+    alphas = [
+        float(explicit or in_rgba) for explicit, in_rgba in ALPHA_RE.findall(tag)
+    ]
+    return min(alphas) if alphas else None
+
+
+class TypeContract:
+    """The role ramp and its named exceptions, read off output-spec.md."""
+
+    def __init__(self) -> None:
+        self.canonical: dict[str, set[float]] = {}
+        self.ranges: list[tuple[str, float, float]] = []
+        self.watermark_alpha: float | None = None
+
+    def allowed(self, klass: str | None) -> set[float]:
+        if klass is None:
+            return set().union(*self.canonical.values()) if self.canonical else set()
+        return self.canonical.get(klass, set())
+
+    def excepted(self, klass: str | None, value: float) -> bool:
+        # An exception belongs to the font beside it, so text with no declared
+        # font cannot claim one.
+        return klass is not None and any(
+            klass == exception_class and low <= value <= high and (value * 2) % 1 == 0
+            for exception_class, low, high in self.ranges
+        )
+
+    def off_ramp(self, tag: str, value: float) -> bool:
+        """Is *value* outside every role size and every exception range?
+
+        Size only, ignoring which role the text plays. Shipped examples set type
+        through CSS classes as well as attributes, so per-element role
+        attribution is not reliable across the asset tree; the size floor is.
+        """
+        alpha = tag_alpha(tag)
+        if (
+            self.watermark_alpha is not None
+            and alpha is not None
+            and alpha <= self.watermark_alpha
+        ):
+            return False
+        if any(value in sizes for sizes in self.canonical.values()):
+            return False
+        return not any(
+            low <= value <= high and (value * 2) % 1 == 0
+            for _, low, high in self.ranges
+        )
+
+    def violation(self, tag: str, value: float) -> str | None:
+        """Why *value* is off contract on this tag, or None if it is fine."""
+        klass = element_class(tag)
+        alpha = tag_alpha(tag)
+        if (
+            self.watermark_alpha is not None
+            and alpha is not None
+            and alpha <= self.watermark_alpha
+        ):
+            return None
+        if value in self.allowed(klass) or self.excepted(klass, value):
+            return None
+        if klass is None:
+            return (
+                f"font-size={format_size(value)} on text that declares no font; "
+                "a size off the role ramp needs one so its exception can be checked"
+            )
+        sizes = ", ".join(format_size(size) for size in sorted(self.allowed(klass)))
+        return (
+            f"font-size={format_size(value)} on {klass} text, where the role ramp "
+            f"allows {sizes or 'nothing'} and no named exception for that font "
+            "covers it"
+        )
+
+
+def font_sizes(markup: str) -> list[tuple[float, str]]:
+    """Every declared font size in *markup* with the tag it sits on."""
+    found = []
+    for match in FONT_SIZE_RE.finditer(markup):
+        raw = match.group("attr") or match.group("css")
+        found.append((float(raw), enclosing_tag(markup, match.start())))
+    return found
+
+
+SVG_BLOCK_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
+CLASS_ATTR_RE = re.compile(r"""class=["']([^"']+)["']""")
+SELECTOR_CLASS_RE = re.compile(r"\.([A-Za-z0-9_-]+)")
+
+
+def diagram_font_sizes(markup: str) -> list[tuple[float, str]]:
+    """Font sizes that govern diagram type, chrome around the diagram excluded.
+
+    An example page is a diagram wrapped in prose. Attributes inside the `<svg>`
+    count, and so does a CSS rule whose class is worn by an element in there; a
+    rule for the page's own lede or heading does not.
+    """
+    if "<svg" not in markup:
+        return font_sizes(markup)
+
+    spans = [match.span() for match in SVG_BLOCK_RE.finditer(markup)]
+    drawn = set()
+    for start, end in spans:
+        for value in CLASS_ATTR_RE.findall(markup[start:end]):
+            drawn.update(value.split())
+
+    sizes = []
+    for match in FONT_SIZE_RE.finditer(markup):
+        raw = match.group("attr") or match.group("css")
+        inside = any(start <= match.start() < end for start, end in spans)
+        if not inside:
+            if match.group("attr"):
+                continue
+            brace = markup.rfind("{", 0, match.start())
+            if brace < 0:
+                continue
+            selector = markup[max(markup.rfind("}", 0, brace), 0) : brace]
+            if not drawn.intersection(SELECTOR_CLASS_RE.findall(selector)):
+                continue
+        sizes.append((float(raw), enclosing_tag(markup, match.start())))
+    return sizes
+
+
+def read_type_contract(errors: list[str], spec_markdown: str) -> TypeContract | None:
+    """Parse the role ramp and exceptions table; None if the section is missing."""
+    ramp = section(spec_markdown, "### Type ramp per size class")
+    if not ramp:
+        errors.append("output-spec.md has no '### Type ramp per size class' section")
+        return None
+
+    contract = TypeContract()
+    rows = table_rows(ramp)
+    for role in TYPE_RAMP_ROLES:
+        row = next((cells for cells in rows if cells and cells[0].startswith(role)), None)
+        if row is None:
+            errors.append(f"output-spec.md type ramp is missing the {role!r} role row")
+            continue
+        named = font_classes(row[0])
+        if not named:
+            errors.append(
+                f"output-spec.md type ramp row {role!r} does not name its font; "
+                "the role sizes cannot be bound without one"
+            )
+            continue
+        sizes = [cell for cell in row[1:] if re.fullmatch(r"\d+(?:\.\d+)?", cell)]
+        if len(sizes) != 3:
+            errors.append(
+                f"output-spec.md type ramp row {role!r} has {len(sizes)} numeric "
+                "sizes; expected three (standard, presentation, print)"
+            )
+            continue
+        for klass in named:
+            contract.canonical.setdefault(klass, set()).update(float(s) for s in sizes)
+
+    # Scope the size parsing to the exceptions table. The ramp rows above it end
+    # in a bare number too, and reading those as exceptions would let any ramp
+    # value stand in for a missing exceptions table.
+    header = re.search(r"^\|\s*Exception\s*\|", ramp, re.MULTILINE)
+    for cells in table_rows(ramp[header.start() :] if header else ""):
+        if len(cells) < 3:
+            continue
+        label, font_cell, sizes_cell = cells[0], cells[1], cells[-1]
+        if label == "Exception":
+            continue
+        if font_cell.lower() == "any":
+            opacity = WATERMARK_OPACITY_RE.search(label)
+            if opacity:
+                contract.watermark_alpha = float(opacity.group(1))
+            continue
+        named = font_classes(font_cell)
+        if not named:
+            errors.append(
+                f"output-spec.md exception {label!r} names font {font_cell!r}, "
+                "which is not one of the ramp fonts"
+            )
+            continue
+        # A Sizes cell may qualify itself after a comma ("7 to 11, half steps
+        # allowed"); the size itself is the part before it.
+        match = SIZE_RANGE_RE.match(sizes_cell.split(",", 1)[0].strip())
+        if match:
+            low = float(match.group(1))
+            high = float(match.group(2)) if match.group(2) else low
+            for klass in named:
+                contract.ranges.append((klass, low, high))
+    if not contract.ranges:
+        errors.append(
+            "output-spec.md type ramp has no named font-size exceptions table; "
+            "every off-ramp size needs a documented home"
+        )
+    return contract
 
 
 def section(markdown: str, heading: str) -> str:
@@ -563,61 +835,76 @@ def check_type_ramp(errors: list[str], skill_markdown: str, spec_markdown: str) 
                 "for the type ramp"
             )
 
-    ramp = section(spec_markdown, "### Type ramp per size class")
-    if not ramp:
-        errors.append("output-spec.md has no '### Type ramp per size class' section")
+    contract = read_type_contract(errors, spec_markdown)
+    if contract is None:
         return
 
-    rows = table_rows(ramp)
-    canonical: set[float] = set()
-    for role in TYPE_RAMP_ROLES:
-        row = next((cells for cells in rows if cells and cells[0].startswith(role)), None)
-        if row is None:
-            errors.append(f"output-spec.md type ramp is missing the {role!r} role row")
-            continue
-        sizes = [cell for cell in row[1:] if re.fullmatch(r"\d+(?:\.\d+)?", cell)]
-        if len(sizes) != 3:
-            errors.append(
-                f"output-spec.md type ramp row {role!r} has {len(sizes)} numeric "
-                "sizes; expected three (standard, presentation, print)"
-            )
-            continue
-        canonical.update(float(size) for size in sizes)
+    for value, tag in font_sizes(skill_markdown):
+        violation = contract.violation(tag, value)
+        if violation:
+            errors.append(f"SKILL.md uses {violation}")
 
-    # Scope the size parsing to the exceptions table. The ramp rows above it end
-    # in a bare number too, and reading those as exceptions would let any ramp
-    # value stand in for a missing exceptions table.
-    header = re.search(r"^\|\s*Exception\s*\|", ramp, re.MULTILINE)
-    ranges: list[tuple[float, float]] = []
-    for cells in table_rows(ramp[header.start() :] if header else ""):
-        if len(cells) < 2:
+
+def check_legacy_type_sizes(errors: list[str], spec_markdown: str, root: Path) -> None:
+    """The registered legacy sizes match what the shipped files actually carry."""
+    contract = read_type_contract(errors, spec_markdown)
+    if contract is None:
+        return
+
+    registry: dict[str, list[float]] = {}
+    for cells in table_rows(section(spec_markdown, LEGACY_SIZE_HEADING)):
+        if len(cells) < 2 or not cells[0].startswith("`"):
             continue
-        # A Sizes cell may qualify itself after a comma ("7 to 11, half steps
-        # allowed"); the size itself is the part before it.
-        match = SIZE_RANGE_RE.match(cells[-1].split(",", 1)[0].strip())
-        if match:
-            low = float(match.group(1))
-            high = float(match.group(2)) if match.group(2) else low
-            ranges.append((low, high))
-    if not ranges:
+        name = cells[0].strip("`")
+        registry[name] = sorted(float(size) for size in cells[1].split(","))
+    if not registry:
         errors.append(
-            "output-spec.md type ramp has no named font-size exceptions table; "
-            "every off-ramp size needs a documented home"
+            f"output-spec.md has no '{LEGACY_SIZE_HEADING}' table; the shipped "
+            "off-contract sizes need a written home"
         )
+        return
 
-    for raw in sorted(set(FONT_SIZE_RE.findall(skill_markdown)), key=float):
-        value = float(raw)
-        if value in canonical:
+    measured: dict[str, list[float]] = {}
+    for directory, prefixes in TYPE_SIZE_SURFACES:
+        for path in sorted((root / directory).iterdir()):
+            if path.suffix.lower() not in TYPE_SIZE_SUFFIXES:
+                continue
+            if not path.name.startswith(prefixes):
+                continue
+            markup = path.read_text(encoding="utf-8")
+            off = [
+                value
+                for value, tag in diagram_font_sizes(markup)
+                if contract.off_ramp(tag, value)
+            ]
+            if off:
+                measured[f"{path.parent.name}/{path.name}"] = sorted(off)
+
+    for name in sorted(set(registry) | set(measured)):
+        want = registry.get(name)
+        got = measured.get(name)
+        if want == got:
             continue
-        in_exception = any(
-            low <= value <= high and (value * 2) % 1 == 0 for low, high in ranges
-        )
-        if not in_exception:
+        if want is None:
             errors.append(
-                f"SKILL.md uses font-size={format_size(value)}, which is neither a "
-                "canonical role size from the output-spec type ramp nor a half step "
-                "inside a named exception range"
+                f"{name} carries off-contract font sizes "
+                f"{format_sizes(got)} that the registered legacy list in "
+                "output-spec.md does not cover"
             )
+        elif got is None:
+            errors.append(
+                f"output-spec.md registers legacy font sizes {format_sizes(want)} "
+                f"for {name}, which no longer carries any; drop the row"
+            )
+        else:
+            errors.append(
+                f"{name} carries off-contract font sizes {format_sizes(got)} but "
+                f"output-spec.md registers {format_sizes(want)}"
+            )
+
+
+def format_sizes(values: list[float]) -> str:
+    return ", ".join(format_size(value) for value in values)
 
 
 MANIFEST_DESCRIPTIONS = (
@@ -754,6 +1041,9 @@ def main() -> int:
         SKILL.read_text(encoding="utf-8"),
         OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"),
     )
+    check_legacy_type_sizes(
+        errors, OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), ROOT
+    )
     check_routing_surfaces(errors, ROOT)
     check_export_font_parity(errors, ROOT)
     if errors:
@@ -766,7 +1056,7 @@ def main() -> int:
         "reference links, asset citations, packaged support files, routing surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
-        "export font parity, type-ramp contract"
+        "export font parity, type-ramp contract, registered legacy type sizes"
     )
     return 0
 

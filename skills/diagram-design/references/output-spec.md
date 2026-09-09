@@ -73,13 +73,39 @@ Node names shrink relative to the canvas as it grows — resist that. Scale the 
 
 Every `font-size` is one of the role values above for the preset in use, or one of these named exceptions:
 
-| Exception | Sizes |
-|---|---|
-| Dense annotation: legend keys, axis ticks, chart data labels, source lines, in-box tags (Geist Mono) | 7 to 11, half steps allowed |
-| Group or entity heading (Geist 600) | 14 |
-| Decorative watermark numerals at or under 0.08 opacity | any |
+| Exception | Font | Sizes |
+|---|---|---|
+| Dense annotation: legend keys, axis ticks, chart data labels, source lines, in-box tags | Geist Mono or Geist regular | 7 to 11, half steps allowed |
+| Group or entity heading | Geist 600 | 14 |
+| Decorative watermark numerals at or under 0.08 opacity | any | any |
 
-Anything else is a bug in the diagram, not a new size.
+An exception is bound to the font beside it, weight included: Geist at 600 or heavier is the node-name voice, lighter Geist is annotation. So a Geist 600 node name cannot borrow the dense-annotation range, and a Geist Mono tick cannot borrow the 14 reserved for headings.
+
+Anything else is a bug in the diagram, not a new size. The one standing carve-out is the closed inventory below.
+
+### Registered legacy sizes
+
+Twenty-one declared sizes across thirteen files predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
+
+That sweep matches on size alone, not on role. Shipped examples set type through CSS classes as well as attributes, so attributing every element to a role across the whole tree is not reliable; the size floor is. It reads the `<svg>` and any CSS rule worn by an element inside it, so the prose around a diagram does not count as diagram type.
+
+| File | Sizes | What they are |
+|---|---|---|
+| `assets/example-data-flow.html` | 5, 6 | chip text and role label, both set in CSS |
+| `assets/example-data-flow-dark.html` | 5, 6 | chip text and role label, both set in CSS |
+| `assets/example-data-flow-full.html` | 5, 6 | chip text and role label, both set in CSS |
+| `assets/example-paved-road-animated.html` | 13 | boundary node name |
+| `assets/example-process.html` | 6 | role chip |
+| `assets/example-process-dark.html` | 6 | role chip |
+| `assets/example-process-full.html` | 6 | role chip |
+| `assets/example-quadrant-consultant.html` | 13 | inline dot glyph in a `tspan` |
+| `assets/example-queue-animated.html` | 13, 22, 24 | state caption and two fill counters |
+| `assets/example-treemap.html` | 13, 13 | cell names |
+| `assets/example-treemap-dark.html` | 13, 13 | cell names |
+| `assets/example-treemap-full.html` | 13, 13 | cell names |
+| `references/type-treemap.md` | 13 | the cell-name line of the documented pattern |
+
+New diagrams get no rows here. Bringing one of these onto the ramp is a visual change to a shipped example and belongs in its own PR.
 
 Presentation ramp implies fewer nodes — 16px names in 64px boxes eat the canvas. If a `slide-16x9` layout won't fit, that's the size dial telling you the detail dial is set too high; drop a level rather than shrinking the type.
 
