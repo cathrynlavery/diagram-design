@@ -63,14 +63,25 @@ class CheckResult:
 
 
 def run_command(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    """Run a command, reporting a failure to launch the way a bad exit is reported.
+
+    A name on PATH is not always a runnable program: an App Execution Alias for
+    an uninstalled app, a dangling symlink, or a file without the exec bit raise
+    instead of exiting. Every caller here only asks whether the command answered,
+    so surface that as a non-zero result carrying the OS error rather than letting
+    it unwind the whole doctor.
+    """
+    try:
+        return subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except OSError as exc:
+        return subprocess.CompletedProcess(command, 1, "", str(exc))
 
 
 @dataclass

@@ -155,11 +155,43 @@ def main() -> int:
             {"python3": alias_path, "python": alias_path},
             {"python3": store_alias, "python": store_alias},
         ):
-            check, _ = verify.check_python_runtime()
+            check, python_cmd = verify.check_python_runtime()
             expect_status(check, verify.FAIL, "Could not query version via python3")
             if "Microsoft Store" not in check.message:
                 raise AssertionError("probe failure dropped the interpreter's own stderr")
+            # That FAIL still hands a command name downstream, so the Playwright
+            # check runs against an interpreter already known not to answer.
+            expect_status(
+                verify.check_playwright(python_cmd),
+                verify.WARN,
+                "Playwright package is not available",
+            )
         print("OK: no runnable interpreter still fails, naming the first candidate")
+
+        # Some names on PATH cannot be launched at all rather than exiting
+        # non-zero. A directory stands in for the broken alias or dangling
+        # symlink: spawning it raises OSError on every platform we support.
+        launch_failure = verify.run_command([str(root), "-c", verify.VERSION_PROBE])
+        if launch_failure.returncode == 0 or not launch_failure.stderr:
+            raise AssertionError(
+                f"unlaunchable command did not report a failure: {launch_failure}"
+            )
+        print("OK: a command that cannot be launched is reported, not raised")
+
+        # And that reported shape has to fall through like any other dud, or the
+        # doctor dies on the candidate this fallback exists to survive.
+        with fake_python_path(
+            verify,
+            {"python3": alias_path, "python": real_path},
+            {
+                "python3": FakeCompletedProcess(1, stderr=str(launch_failure.stderr)),
+                "python": working_python,
+            },
+        ):
+            probe = verify.probe_python_command()
+            if (probe.command, probe.version) != ("python", "3.12.9"):
+                raise AssertionError(f"a python3 that cannot be launched did not fall through: {probe}")
+        print("OK: a python3 that cannot be launched falls through to python")
 
         # No interpreter on PATH at all remains a hard failure.
         with fake_python_path(verify, {}, {}):
