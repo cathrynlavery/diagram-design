@@ -231,9 +231,12 @@ def reference_error(tag: str, rel: str, value: str) -> str | None:
 
 
 def normalize_css_escapes(source: str) -> str:
+    source = source.replace("\r\n", "\n").replace("\r", "\n").replace("\f", "\n")
+
     def replace(match: re.Match[str]) -> str:
         if match.group(1) is None:
-            return match.group(2)
+            escaped = match.group(2)
+            return "" if escaped == "\n" else escaped
         codepoint = int(match.group(1), 16)
         if codepoint == 0 or codepoint > 0x10FFFF:
             return "\N{REPLACEMENT CHARACTER}"

@@ -100,6 +100,32 @@ def main() -> int:
         ),
         "non-fragment CSS url()",
     )
+    continuation = chr(92) + "\n"
+    check_fail(
+        "CSS continuation URL",
+        static.replace(
+            "</style>",
+            ".tracked { background: "
+            f'\\75rl("https:{continuation}/{continuation}/tracker.example/p.gif"); '
+            "}</style>",
+            1,
+        ),
+        "non-fragment CSS url()",
+    )
+    for label, newline in (
+        ("LF", "\n"),
+        ("CRLF", "\r\n"),
+        ("CR", "\r"),
+        ("form feed", "\f"),
+    ):
+        continuation = chr(92) + newline
+        normalized = module.normalize_css_escapes(
+            f'url("https:{continuation}/{continuation}/tracker.example/p.gif")'
+        )
+        if normalized != 'url("https://tracker.example/p.gif")':
+            failures.append(f"CSS {label} continuation was not removed: {normalized!r}")
+        else:
+            print(f"OK: CSS {label} continuation normalized")
     check_fail(
         "CSS image set",
         static.replace(
