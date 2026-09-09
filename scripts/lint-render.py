@@ -769,6 +769,56 @@ def waterfall_mobile_failures(context, waterfall_paths=None):
     return failures
 
 
+def excalidraw_mobile_failures(context, example_path=None):
+    """Keep the Excalidraw worked example readable without widening the page."""
+    path = example_path or ASSET_DIR / "example-import-excalidraw.html"
+    page = context.new_page()
+    page.set_viewport_size({"width": 390, "height": 844})
+    try:
+        page.goto(path.as_uri(), wait_until="load")
+        facts = page.evaluate(
+            """
+            () => {
+              const doc = document.documentElement;
+              const svg = document.querySelector('svg');
+              if (!svg) return { missingSvg: true };
+              const scroller = svg.parentElement;
+              const overflow = scroller && getComputedStyle(scroller).overflowX;
+              return {
+                missingSvg: false,
+                pageOverflow: doc.scrollWidth - doc.clientWidth,
+                svgWidth: svg.getBoundingClientRect().width,
+                localScroller: Boolean(scroller &&
+                  (overflow === 'auto' || overflow === 'scroll') &&
+                  scroller.scrollWidth > scroller.clientWidth + 1),
+              };
+            }
+            """
+        )
+    finally:
+        page.close()
+
+    shown_path = display_path(path)
+    failures = []
+    if facts["missingSvg"]:
+        return [f"{shown_path}: excalidraw-mobile-svg: no SVG found"]
+    if facts["pageOverflow"] > TOLERANCE:
+        failures.append(
+            f"{shown_path}: excalidraw-mobile-page-overflow: page extends "
+            f"{facts['pageOverflow']:.1f}px past the 390px viewport"
+        )
+    if facts["svgWidth"] < 900:
+        failures.append(
+            f"{shown_path}: excalidraw-mobile-legibility: SVG shrinks to "
+            f"{facts['svgWidth']:.1f}px; preserve its 900px labeled canvas"
+        )
+    if not facts["localScroller"]:
+        failures.append(
+            f"{shown_path}: excalidraw-mobile-containment: wide SVG needs a local horizontal scroller"
+        )
+    return failures
+
+
 def self_test(context):
     page = context.new_page()
     failures = []
@@ -870,6 +920,32 @@ def self_test(context):
                 + "; ".join(contained_failures)
             )
 
+    checks += 2
+    with tempfile.TemporaryDirectory() as directory:
+        directory_path = Path(directory)
+        broken = directory_path / "example-import-excalidraw.html"
+        broken.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}svg{width:100%;min-width:900px;display:block}</style>'
+            '<body><svg viewBox="0 0 960 600"></svg></body></html>',
+            encoding="utf-8",
+        )
+        if not excalidraw_mobile_failures(context, broken):
+            failures.append("excalidraw-mobile-broken-fixture: page overflow was not reported")
+
+        contained = directory_path / "example-import-excalidraw-contained.html"
+        contained.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.wrap{width:100%;overflow-x:auto}'
+            'svg{width:100%;min-width:900px;display:block}</style><body><div class="wrap">'
+            '<svg viewBox="0 0 960 600"></svg></div></body></html>',
+            encoding="utf-8",
+        )
+        contained_failures = excalidraw_mobile_failures(context, contained)
+        if contained_failures:
+            failures.append(
+                "excalidraw-mobile-contained-fixture: false finding: "
+                + "; ".join(contained_failures)
+            )
+
     # A broken route should be a targeted failure, not a delayed Playwright
     # timeout or traceback that escapes the self-test report.
     checks += 1
@@ -956,6 +1032,7 @@ def main():
                     print(f"{shown_path}: {category}: {message}")
         if args.all:
             mobile_failures = waterfall_mobile_failures(context)
+            mobile_failures += excalidraw_mobile_failures(context)
             total_findings += len(mobile_failures)
             if not args.quiet:
                 for failure in mobile_failures:
