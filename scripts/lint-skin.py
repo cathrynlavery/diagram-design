@@ -71,6 +71,7 @@ ALLOWED_FONTS = {
     "noto sans mono cjk sc",
     "pingfang tc",
     "noto sans tc",
+    "noto serif tc",
     "microsoft jhenghei",
     "noto sans mono cjk tc",
     "system-ui",

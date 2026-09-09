@@ -66,6 +66,8 @@
       "python3 scripts/test-self-check.py",
       "python3 scripts/verify-geometry.py --all",
       "python3 scripts/test-verify-geometry.py",
+      "python3 scripts/verify-block-registry.py --all",
+      "python3 scripts/test-verify-block-registry.py",
       "python3 scripts/verify-treemap.py --all",
       "python3 scripts/test-verify-treemap.py",
       "python3 scripts/verify-dumbbell.py",
