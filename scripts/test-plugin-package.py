@@ -643,6 +643,16 @@ def test_version_history() -> None:
             pass
         else:
             raise AssertionError("malformed history was treated as a normal comparison")
+
+        payload["version"] = "1.2.4"
+        write_json(path, payload)
+        desynchronized = commit_all(root, "desynchronize valid manifest versions")
+        try:
+            VERSION_HISTORY.versions_changed(root, next_release, desynchronized)
+        except VERSION_HISTORY.VersionHistoryError:
+            pass
+        else:
+            raise AssertionError("valid but unequal versions were treated as synchronized")
         print("OK: version history ignores manifest metadata-only commits")
 
 
