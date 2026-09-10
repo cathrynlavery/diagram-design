@@ -58,6 +58,51 @@ def load_verify_module():
 def main() -> int:
     verify = load_verify_module()
 
+    # Keep real routing vocabulary in the fixtures so the size check cannot
+    # accidentally replace the existing lexical-hook validation.
+    short = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["description"]
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            document = json.loads((ROOT / relative).read_text(encoding="utf-8"))
+            path.write_text(json.dumps(document), encoding="utf-8")
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            original = path.read_text(encoding="utf-8")
+            for length in (500, 501):
+                document = json.loads(original)
+                container = document["metadata"] if "metadata" in document else document
+                # Count the original value, including trailing whitespace.
+                container["description"] = short.ljust(length)
+                path.write_text(json.dumps(document), encoding="utf-8")
+                errors: list[str] = []
+                verify.check_manifest_descriptions(errors, root)
+                expected = [] if length == 500 else [
+                    f"{relative.as_posix()} description exceeds the Cowork limit "
+                    "(501 > 500 characters)"
+                ]
+                if errors != expected:
+                    raise AssertionError(f"manifest size boundary failed: {errors}")
+            path.write_text(original, encoding="utf-8")
+
+        codex = root / ".codex-plugin/plugin.json"
+        document = json.loads(codex.read_text(encoding="utf-8"))
+        document["interface"]["longDescription"] = short + " More detail." * 50
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        if errors:
+            raise AssertionError(f"longDescription incorrectly limited: {errors}")
+
+        document["description"] = short.replace("Wardley map", "map")
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        if len(errors) != 1 or "lost the lexical hook" not in errors[0]:
+            raise AssertionError(f"missing routing hook was not rejected: {errors}")
+
     for length in (1024, 1025):
         errors: list[str] = []
         markdown = f"---\nname: fixture\ndescription: {'x' * length}\n---\n"

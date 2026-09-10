@@ -11,10 +11,9 @@ Ten drift classes, each of which has shipped before:
 3. Every concrete file named in README.md's architecture tree must exist.
 4. Every relative references/*.md link in SKILL.md must resolve.
 5. Claude and Pi command/prompt surfaces must route to the matching reference.
-6. The plugin manifests repeat the SKILL.md description verbatim. They are the
-   text a user reads *before installing*, so by ADR 0004's own argument they
-   need every type's lexical hook too - and nothing else notices when they
-   drift, because they are four separate copies of one sentence.
+6. Plugin descriptions must fit Cowork's installation limit while retaining
+   every type's lexical hook. The skill and Codex longDescription keep the
+   fuller feature summary without inheriting the short-description limit.
 7. Factory Droid's README install commands and native manifest path must agree
    with the package metadata instead of becoming a second hand-maintained API.
 8. Every support path a strict skill bundler can extract from SKILL.md must be
@@ -45,6 +44,7 @@ LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
 VARIANTS = ("", "-dark", "-full")
 VISUAL_TYPE_COUNT = 40
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
+PLUGIN_DESCRIPTION_MAX = 500
 # Types whose selection-table name differs from its description vocabulary.
 DESCRIPTION_ALIASES = {
     "bar chart": "bar",
@@ -549,6 +549,11 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
             if value is None:
                 errors.append(f"{relative.as_posix()} has no {key!r}")
                 continue
+            if key == "description" and len(value) > PLUGIN_DESCRIPTION_MAX:
+                errors.append(
+                    f"{relative.as_posix()} description exceeds the Cowork limit "
+                    f"({len(value)} > {PLUGIN_DESCRIPTION_MAX} characters)"
+                )
             text = normalized(value)
             for name in types:
                 hook = DESCRIPTION_ALIASES.get(normalized(name), normalized(name))

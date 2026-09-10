@@ -84,6 +84,12 @@ Every validation gate below must pass before a PR is ready. They also run automa
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
 
+Keep native plugin and marketplace `description` fields within 500 characters
+for Cowork installation compatibility ([#208](https://github.com/cathrynlavery/diagram-design/issues/208)).
+They must still name every visual type; keep fuller feature details in the skill
+frontmatter and Codex `longDescription`. The docs-sync gate checks both length
+and routing vocabulary, and the package gate keeps native descriptions aligned.
+
 Run them all at once before pushing:
 
 ```bash
