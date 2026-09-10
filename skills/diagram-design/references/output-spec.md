@@ -63,11 +63,11 @@ Node names shrink relative to the canvas as it grows — resist that. Scale the 
 
 | Role | standard | presentation | print |
 |---|---|---|---|
-| Title (Instrument Serif) | 28 | 40 | 32 |
-| Node name (Geist 600) | 12 | 16 | 12 |
-| Sublabel (Geist Mono) | 9 | 12 | 9 |
-| Arrow label (Geist Mono) | 8 | 12 | 8 |
-| Eyebrow / tag (Geist Mono) | 8 | 8 | 8 |
+| Title (`title`) | 28 | 40 | 32 |
+| Node name (`node-name`, 600) | 12 | 16 | 12 |
+| Sublabel (`sublabel`) | 9 | 12 | 9 |
+| Arrow label (`arrow-label`) | 8 | 12 | 8 |
+| Eyebrow / tag (`eyebrow`) | 8 | 8 | 8 |
 | Node box min height | 48 | 64 | 48 |
 | Min gap between nodes | 24 | 40 | 24 |
 

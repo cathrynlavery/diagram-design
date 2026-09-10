@@ -39,6 +39,8 @@ GALLERY = ROOT / "skills/diagram-design/assets/index.html"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 README = ROOT / "README.md"
 HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
+OUTPUT_SPEC = ROOT / "skills/diagram-design/references/output-spec.md"
+EXPORT_REFERENCE = ROOT / "skills/diagram-design/references/export.md"
 ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
 LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
 VARIANTS = ("", "-dark", "-full")
@@ -126,6 +128,76 @@ def check_line_dark_skin(errors: list[str], source: str) -> None:
     for token in required:
         if token not in source:
             errors.append(f"example-line-dark.html lost canonical dark-skin token {token!r}")
+
+
+def check_export_font_handoff(errors: list[str], markdown: str) -> None:
+    """The HTML-to-XML font URL handoff must be scoped and idempotent."""
+    text = normalized(markdown)
+    required = (
+        "google fonts stylesheet link",
+        "html-decode",
+        "html.unescape",
+        "xml-escape",
+        "html.escape",
+    )
+    if any(fragment not in text for fragment in required):
+        errors.append(
+            "export.md must HTML-decode the Google Fonts href once, restrict the source "
+            "endpoint, and XML-escape it once"
+        )
+
+
+def _relative_luminance(hex_color: str) -> float:
+    channels = [int(hex_color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [
+        channel / 12.92 if channel <= 0.04045
+        else ((channel + 0.055) / 1.055) ** 2.4
+        for channel in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def check_high_level_phase_contract(errors: list[str], markdown: str) -> None:
+    """Fixed phase-band labels must remain readable in both skin modes."""
+    if "Phase labels always use `band-label`" not in markdown:
+        errors.append(
+            "High-Level phase labels must use the fixed band-label token, not skin paper"
+        )
+        return
+
+    tokens = {}
+    for name in ("band-1", "band-2", "band-3", "band-label"):
+        match = re.search(
+            rf"\|\s*`{re.escape(name)}`\s*\|\s*`(#[0-9a-fA-F]{{6}})`\s*\|",
+            markdown,
+        )
+        if not match:
+            errors.append(f"High-Level phase-band palette is missing {name}")
+            return
+        tokens[name] = match.group(1)
+
+    label_luminance = _relative_luminance(tokens["band-label"])
+    for name in ("band-1", "band-2", "band-3"):
+        band_luminance = _relative_luminance(tokens[name])
+        ratio = (max(label_luminance, band_luminance) + 0.05) / (
+            min(label_luminance, band_luminance) + 0.05
+        )
+        if ratio < 4.5:
+            errors.append(
+                f"High-Level {name}/band-label contrast is {ratio:.2f}:1; expected >= 4.5:1"
+            )
+
+
+def check_output_cjk_contract(errors: list[str], markdown: str) -> None:
+    """Keep concrete default-family plus language-specific CJK fallback stacks."""
+    required = (
+        "'Geist', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif",
+        "'Geist', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+        "'Geist', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif",
+        "'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
+    )
+    if any(stack not in markdown for stack in required):
+        errors.append("output-spec.md must preserve the concrete CJK fallback stacks")
 
 
 def frontmatter_description(markdown: str) -> str:
@@ -632,6 +704,11 @@ def main() -> int:
     )
     check_type_counts(errors, ROOT)
     check_high_level_reference(errors, HIGH_LEVEL_REFERENCE.read_text(encoding="utf-8"))
+    check_high_level_phase_contract(
+        errors, HIGH_LEVEL_REFERENCE.read_text(encoding="utf-8")
+    )
+    check_output_cjk_contract(errors, OUTPUT_SPEC.read_text(encoding="utf-8"))
+    check_export_font_handoff(errors, EXPORT_REFERENCE.read_text(encoding="utf-8"))
     check_onboarding_trust_boundary(
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
     )
@@ -647,8 +724,8 @@ def main() -> int:
         "OK docs sync: description hooks, gallery reachability, README tree, "
         "reference links, asset citations, packaged support files, routing surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
-        "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
-        "export font parity"
+        "High-Level invariants and phase contrast, CJK fallbacks, onboarding trust "
+        "boundary, Line dark-skin contract, export font handoff and parity"
     )
     return 0
 

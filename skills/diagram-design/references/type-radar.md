@@ -7,8 +7,8 @@
 - **N axes (3–5).** Equally spaced on a regular polygon-N. First axis at the top (`-90°`), going clockwise. **Above 5 → split or use a comparison table.**
 - **Five concentric grid rings** at fractions `0.2 / 0.4 / 0.6 / 0.8 / 1.0` of the radius. Drawn as closed polygons connecting the axis vertices at that fraction. Inner four at `rule` 0.10 opacity, outer ring at `rule-solid` 0.20 (a hint stronger to anchor the chart).
 - **Axis spokes** from center to each outer vertex. `rule-solid` 0.20 opacity. **No arrowheads.**
-- **Axis labels:** one word per spoke (Jobs-minimal). Geist sans 11px weight 600. Place 16px outside the outer ring along the axis vector. Top/bottom = `text-anchor="middle"`; right side = `start`; left side = `end`.
-- **Scale ticks** (e.g. `2 4 6 8 10`) only on the **first (top) axis** — putting numbers on every spoke clutters the chart fast. Geist Mono 8px, `muted`, anchored end at `cx − 6`.
+- **Axis labels:** one word per spoke (Jobs-minimal). `node-name` role 11px weight 600. Place 16px outside the outer ring along the axis vector. Top/bottom = `text-anchor="middle"`; right side = `start`; left side = `end`.
+- **Scale ticks** (e.g. `2 4 6 8 10`) only on the **first (top) axis** — putting numbers on every spoke clutters the chart fast. `arrow-label` role 8px, `muted`, anchored end at `cx − 6`.
 - **Series polygon:** stroke 1.5px at the series color, fill the same color at `0.18` opacity (`0.22` in dark). Stroke 1.8px on the focal series — a subtle weight bump.
 - **Vertex dots:** **only on the focal series**, `r=4` filled with the series color. Non-focal series are stroke-and-fill only. This is the load-bearing rule that keeps the chart readable at 4–5 series.
 - **Drawing order:** dots-pattern bg → grid rings → axis spokes → axis labels → scale ticks → non-focal series (smallest area first) → focal series → focal vertex dots → legend.
@@ -44,7 +44,7 @@ Series `[9, 8, 9, 9, 9]` on a 0–10 scale becomes:
 
 ```svg
 <polygon points="500,96 622,201 585,356 415,356 363,196"
-         fill="rgba(235,108,54,0.18)" stroke="#eb6c36" stroke-width="1.8"/>
+         fill="{accent @ 0.18}" stroke="{accent}" stroke-width="1.8"/>
 ```
 
 Each vertex: `center + (v/10) · (outer_i − center)`, rounded to the nearest pixel.
@@ -55,7 +55,7 @@ The skill's "1-focal" rule still holds: `accent` is reserved for the focal serie
 
 | Slot | Token | Light | Dark |
 |---|---|---|---|
-| Focal | `accent` | `#eb6c36` | `#f08a59` |
+| Focal | `accent` | look up in `style-guide.md` | look up in `style-guide.md` |
 | 1 | `series-1` (sage) | `#7c8f6f` | `#9caf8f` |
 | 2 | `series-2` (dusty-blue) | `#5e7a9b` | `#82a0c0` |
 | 3 | `series-3` (mustard) | `#b8915a` | `#d3ad7a` |
@@ -70,7 +70,7 @@ The skill's "1-focal" rule still holds: `accent` is reserved for the focal serie
 - **Dots on every series.** Only the focal carries dots. Adding them to all 4–5 series turns the chart into a bead curtain.
 - **Radar with 2 series** — a comparison bar chart or a 2-row table is clearer.
 - **Non-quantitative axes.** All axes must be measurable on the same normalized scale. "Speed" + "color" + "year" mixes don't belong on a radar.
-- **Mono-font axis labels.** Names go in Geist sans (the global rule). Mono is for technical sublabels only.
+- **Mono-font axis labels.** Names go in the `node-name` sans family (the global rule). Mono is for technical sublabels only.
 - **Rainbow palette.** Even with the new `series-*` tokens, you don't need all 5 in one chart — use only as many as you have non-focal entities.
 
 ## Examples

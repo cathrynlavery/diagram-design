@@ -55,17 +55,18 @@ Group 2+ nodes that serve the same tier or trust boundary with a zone rect — d
 
 ```svg
 <rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8"
-      fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      fill="{ink @ 0.02}" stroke="{ink @ 0.10}" stroke-width="0.8"/>
 <rect x="{label_x}" y="{y+4}" width="{label_w}" height="12" rx="2" fill="{paper}"/>
-<text x="{label_cx}" y="{y+13}" fill="rgba(45,49,66,0.40)" font-size="7"
-      font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">LAYER</text>
+<text x="{label_cx}" y="{y+13}" fill="{soft}" font-size="7"
+      font-family="{eyebrow}" text-anchor="middle" letter-spacing="0.14em">LAYER</text>
 ```
 
 Rules:
 - Leave 12–16px above the first enclosed node — the eyebrow label sits in this margin.
-- Zone fill: `rgba(45,49,66,0.02)` (2% ink wash). Any stronger competes with node fills.
+- Zone fill: `ink @ 0.02` (2% ink wash). Any stronger competes with node fills.
+- **Zone label uses the `soft` token, not ink-at-opacity.** `soft` is defined as the role for sublabels and *boundary labels*, which is exactly what a zone eyebrow is. An earlier revision of this snippet hardcoded `ink @ 0.40`; against a light warm `paper` that composites to roughly `#a9a9a9` — about 2.2:1, fainter than `soft` itself and barely readable at 7px. Using the role keeps it legible under any skin and removes a magic number.
 - Max 3 zones per diagram. More and it reads like a swimlane (use that type instead).
-- Dark mode: swap `rgba(45,49,66,…)` → `rgba(245,245,245,…)` same opacities; label mask fill = `paper` (dark).
+- Dark mode: the roles invert with the skin, so no manual swap is needed — look up `ink`, `soft`, and `paper` for the dark column in [`style-guide.md`](style-guide.md). Opacities stay the same.
 
 ## Anti-patterns
 - Every box in coral ("this is important too") — hierarchy collapses.

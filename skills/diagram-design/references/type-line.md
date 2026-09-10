@@ -6,7 +6,7 @@
 
 - **Plot area margins:** left 80px, bottom 60px, top 40px, right 40px — inside `0 0 1000 500` viewBox.
 - **Points:** 4–12 data points. Fewer → consider a summary stat; more → aggregate into periods.
-- **X-axis:** evenly spaced time/index labels below the plot. Use Geist Mono 8px, centered on each point x.
+- **X-axis:** evenly spaced time/index labels below the plot. Use the `arrow-label` role at 8px, centered on each point x.
 - **Y-axis gridlines:** 4–6 horizontals at regular intervals. Same faint treatment as bar chart.
 - **Lines:** `<polyline>` with `fill="none"`. Focal series `stroke-width="1.8"`, others `"1.2"`.
 - **Vertex dots:** only on the focal series (`r=4`, filled). Other series: line only.
@@ -19,9 +19,9 @@
 ```svg
 <!-- Focal series -->
 <polyline points="x0,y0 x1,y1 x2,y2 ..."
-          fill="none" stroke="#eb6c36" stroke-width="1.8" stroke-linejoin="round"/>
+          fill="none" stroke="{accent}" stroke-width="1.8" stroke-linejoin="round"/>
 <!-- Dots at each point (focal only) -->
-<circle cx="x0" cy="y0" r="4" fill="#eb6c36"/>
+<circle cx="x0" cy="y0" r="4" fill="{accent}"/>
 
 <!-- Non-focal series -->
 <polyline points="x0,y0 x1,y1 ..."

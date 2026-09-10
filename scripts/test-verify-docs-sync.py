@@ -58,6 +58,70 @@ def load_verify_module():
 def main() -> int:
     verify = load_verify_module()
 
+    safe_export = (
+        "Restrict the lookup to the source document's Google Fonts stylesheet link. "
+        "HTML-decode the href once with html.unescape, then XML-escape it once with "
+        "html.escape(..., quote=False) before inserting it into the SVG."
+    )
+    errors: list[str] = []
+    verify.check_export_font_handoff(errors, safe_export)
+    if errors:
+        raise AssertionError(f"safe export font handoff failed: {errors}")
+
+    errors = []
+    verify.check_export_font_handoff(
+        errors,
+        "Copy the Google Fonts href and XML-escape every ampersand before insertion.",
+    )
+    if errors != [
+        "export.md must HTML-decode the Google Fonts href once, restrict the source "
+        "endpoint, and XML-escape it once"
+    ]:
+        raise AssertionError(f"double-escape-prone export guidance passed: {errors}")
+
+    safe_phase_contract = """\
+| `band-1` | `#2d3142` |
+| `band-2` | `#3d4460` |
+| `band-3` | `#4a5270` |
+| `band-label` | `#f5f5f5` |
+Phase labels always use `band-label`; it maintains at least 4.5:1 against every band.
+"""
+    errors = []
+    verify.check_high_level_phase_contract(errors, safe_phase_contract)
+    if errors:
+        raise AssertionError(f"AA-safe phase contract failed: {errors}")
+
+    errors = []
+    verify.check_high_level_phase_contract(
+        errors,
+        safe_phase_contract.replace(
+            "Phase labels always use `band-label`",
+            "Phase labels always use `paper`",
+        ),
+    )
+    if errors != [
+        "High-Level phase labels must use the fixed band-label token, not skin paper"
+    ]:
+        raise AssertionError(f"skin-paper phase label passed: {errors}")
+
+    cjk_contract = """\
+<text font-family="'Geist', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif">日本語</text>
+<text font-family="'Geist', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif">한국어</text>
+<text font-family="'Geist', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif">简体中文</text>
+<text font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">繁體中文</text>
+"""
+    errors = []
+    verify.check_output_cjk_contract(errors, cjk_contract)
+    if errors:
+        raise AssertionError(f"current CJK guidance failed: {errors}")
+
+    errors = []
+    verify.check_output_cjk_contract(
+        errors,
+        cjk_contract.replace("'Geist', 'Noto Sans KR'", "{node-name}, 'Noto Sans KR'"),
+    )
+    if errors != ["output-spec.md must preserve the concrete CJK fallback stacks"]:
+        raise AssertionError(f"placeholder CJK stack passed: {errors}")
     # Keep real routing vocabulary in the fixtures so the size check cannot
     # accidentally replace the existing lexical-hook validation.
     short = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["description"]

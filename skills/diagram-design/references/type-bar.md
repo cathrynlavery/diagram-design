@@ -8,10 +8,10 @@
 - **Plot area margins:** left 80px (y-axis labels), bottom 60px (x-axis labels), top 40px, right 40px — inside a `0 0 1000 500` viewBox.
 - **Bar count cap:** 4–8 bars. More than 8 → group into periods or split into two charts.
 - **Bar width:** ≥ 50% of the column pitch (the gap should never exceed the bar). Typical: pitch=110px, bar=72px.
-- **Y-axis gridlines:** 4–6 horizontal lines at regular intervals. Stroke `rgba(45,49,66,0.08)` (very faint), 0.8px. X-axis baseline at `rgba(45,49,66,0.25)`, 1px.
-- **Y-axis labels:** right-aligned Geist Mono 8px muted, at x=72 (8px left of the plot area).
-- **X-axis labels:** centered below each bar, Geist sans 11px 600 for category names.
-- **Value labels:** Geist Mono 8px above each bar. Focal bar label in accent; others in muted.
+- **Y-axis gridlines:** 4–6 horizontal lines at regular intervals. Stroke `ink @ 0.08` (very faint), 0.8px. X-axis baseline at `ink @ 0.25`, 1px.
+- **Y-axis labels:** right-aligned `arrow-label` role 8px in `muted`, at x=72 (8px left of the plot area).
+- **X-axis labels:** centered below each bar, `node-name` role 11px 600 for category names.
+- **Value labels:** `arrow-label` role 8px above each bar. Focal bar label in `accent`; others in `muted`.
 - **Focal bar:** 1 bar max in accent fill/stroke. All others in `muted @ 0.15` fill + `muted` stroke.
 - **Y-axis line:** thin vertical `<line>` at x=80 from y=40 to y=420.
 
@@ -19,14 +19,14 @@
 
 ```svg
 <!-- Opaque paper mask prevents bleed from background -->
-<rect x="X" y="Y" width="W" height="H" fill="#f5f5f5"/>
+<rect x="X" y="Y" width="W" height="H" fill="{paper}"/>
 <!-- Bar body -->
-<rect x="X" y="Y" width="W" height="H" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+<rect x="X" y="Y" width="W" height="H" fill="{muted @ 0.15}" stroke="{muted}" stroke-width="1"/>
 <!-- Value label above bar -->
-<text x="X+W/2" y="Y-8" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">VALUE</text>
+<text x="X+W/2" y="Y-8" fill="{muted}" font-size="8" font-family="{arrow-label}" text-anchor="middle">VALUE</text>
 ```
 
-Focal bar: replace fill with `rgba(235,108,54,0.12)`, stroke with `#eb6c36`, label fill with `#eb6c36`.
+Focal bar: replace fill with `accent @ 0.12`, stroke with `accent`, label fill with `accent`.
 
 ## Anti-patterns
 

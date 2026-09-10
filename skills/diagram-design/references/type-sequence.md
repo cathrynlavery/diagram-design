@@ -27,37 +27,37 @@ Define once in `<defs>` and use for fire-and-forget only:
 
 ```svg
 <marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-  <polyline points="0 0, 8 3, 0 6" fill="none" stroke="#4f5d75" stroke-width="1.2"/>
+  <polyline points="0 0, 8 3, 0 6" fill="none" stroke="{muted}" stroke-width="1.2"/>
 </marker>
 ```
 
-Dark mode: stroke `#bfc0c0` (muted on dark paper). Do not fill the open marker — the hollow head is the async signal. Return messages keep the **filled** marker even when dashed.
+Dark mode: `muted` inverts with the skin, so the stroke needs no change. Do not fill the open marker — the hollow head is the async signal. Return messages keep the **filled** marker even when dashed.
 
 ## Combined fragments (`alt` / `opt` / `loop`)
 
-Use a rectangular **frame** that spans only the lifelines participating in the branch. Operator label is Geist Mono, uppercase, in a small tab at the top-left of the frame. Time still flows top→down inside the frame.
+Use a rectangular **frame** that spans only the lifelines participating in the branch. Operator label uses the `eyebrow` role, uppercase, in a small tab at the top-left of the frame. Time still flows top→down inside the frame.
 
 ### Frame primitive (shared)
 
 ```svg
 <!-- Frame: light ink wash + hairline. Label tab top-left. -->
 <rect x="X" y="Y" width="W" height="H" rx="4"
-      fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
+      fill="{ink @ 0.02}" stroke="{ink @ 0.22}" stroke-width="1"/>
 <!-- Operator tab -->
 <rect x="X" y="Y" width="40" height="16" rx="2"
-      fill="#f5f5f5" stroke="rgba(45,49,66,0.22)" stroke-width="1"/>
-<text x="X+20" y="Y+12" fill="#4f5d75" font-size="8"
-      font-family="'Geist Mono', monospace" text-anchor="middle"
+      fill="{paper}" stroke="{ink @ 0.22}" stroke-width="1"/>
+<text x="X+20" y="Y+12" fill="{muted}" font-size="8"
+      font-family="{eyebrow}" text-anchor="middle"
       letter-spacing="0.12em">ALT</text>
 ```
 
-Dark mode: frame fill `rgba(245,245,245,0.04)`, stroke `rgba(245,245,245,0.22)`, tab fill = dark `paper` (`#2d3142`), tab text = dark `muted` (`#bfc0c0`).
+Dark mode: the roles invert with the skin, so only the frame fill changes — `ink @ 0.04` instead of `ink @ 0.02`. Stroke stays `ink @ 0.22`, tab fill stays `paper`, tab text stays `muted`.
 
 ### Operators
 
 | Operator | Regions | Divider | Guard label |
 |---|---|---|---|
-| `opt` | 1 | none | `[if condition]` under the tab (Geist Mono 8px) |
+| `opt` | 1 | none | `[if condition]` under the tab (`arrow-label` role, 8px) |
 | `alt` | **2 max** | dashed horizontal hairline across the frame | `[guard]` on region 1; `[else]` (or a second guard) on region 2 |
 | `loop` | 1 | none | `[for each item]` or `[retry ≤ 3]` under the tab |
 
@@ -65,12 +65,12 @@ Dark mode: frame fill `rgba(245,245,245,0.04)`, stroke `rgba(245,245,245,0.22)`,
 
 ```svg
 <!-- Guard: left-aligned inside the frame, mono -->
-<text x="X+12" y="GUARD_Y" fill="#4f5d75" font-size="8"
-      font-family="'Geist Mono', monospace" letter-spacing="0.04em">[token valid]</text>
+<text x="X+12" y="GUARD_Y" fill="{muted}" font-size="8"
+      font-family="{arrow-label}" letter-spacing="0.04em">[token valid]</text>
 
 <!-- alt region divider -->
 <line x1="X+8" y1="DIV_Y" x2="X+W-8" y2="DIV_Y"
-      stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      stroke="{ink @ 0.20}" stroke-width="1" stroke-dasharray="4,3"/>
 ```
 
 ### Fragment layout rules
@@ -99,13 +99,13 @@ If you exceed, split: overview (happy path) + detail (failure / refresh path).
 ## Lifeline primitive
 ```svg
 <line x1="CX" y1="TOP" x2="CX" y2="BOTTOM"
-      stroke="rgba(45,49,66,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      stroke="{ink @ 0.20}" stroke-width="1" stroke-dasharray="3,3"/>
 ```
 
 ## Activation bar primitive
 ```svg
 <rect x="CX-4" y="TOP" width="8" height="H"
-      fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="0.8"/>
+      fill="{ink @ 0.06}" stroke="{muted}" stroke-width="0.8"/>
 ```
 
 ## Anti-patterns
@@ -115,7 +115,7 @@ If you exceed, split: overview (happy path) + detail (failure / refresh path).
 - Swimlane-style lanes instead of lifelines (different grammar).
 - Drawing `if/else` as two free-floating arrow clusters with **no** fragment frame.
 - Nested `alt` inside `alt` (split into two diagrams).
-- Fragment operator label in Geist sans — must be mono: `ALT` / `OPT` / `LOOP`.
+- Fragment operator label in the `node-name` sans family — must be mono (`eyebrow`): `ALT` / `OPT` / `LOOP`.
 - Coral on both `alt` branches.
 - Frame that covers actors with no messages inside the fragment.
 - Filled arrowhead on async fire-and-forget (use open marker).
