@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sparse-attention encoder&ndash;decoder &middot; Model architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #f5f5f5;
+      --color-ink:    #2d3142;
+      --color-muted:  #4f5d75;
+      --color-accent: #eb6c36;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1280px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1040px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Model architecture &middot; Diagram Design</p>
+    <h1>Sparse-attention encoder&ndash;decoder &middot; 40 layers</h1>
+
+    <div class="diagram-container">
+    <svg viewBox="0 0 1320 744" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="model-arch-title model-arch-desc">
+      <title id="model-arch-title">Sparse-attention encoder–decoder · 40 layers</title>
+      <desc id="model-arch-desc">Model architecture diagram of a 40-layer causal encoder-decoder language model drawn as seventeen blocks. The encoder is two sliding-window layers, then three repeats of one full sparse-attention layer followed by five reuse layers; the decoder is one full layer, three reuse layers, then four repeats of a reindex layer followed by three reuse layers. Every layer ends in a mixture-of-experts feed-forward block, an n-gram memory module feeds two encoder layers, and the encoder output projects the global key-value cache that every decoder layer reads.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ─── STAGE PANELS (painted first, then groups, then connectors, then blocks) ─── -->
+      <rect x="216" y="88" width="384" height="552" rx="8" fill="rgba(45,49,66,0.04)" data-stack="encoder" data-depth="20" data-layer-range="0-19"/>
+      <text x="584" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Causal encoder</text>
+      <rect x="696" y="88" width="384" height="552" rx="8" fill="rgba(45,49,66,0.04)" data-stack="decoder" data-depth="20" data-layer-range="20-39"/>
+      <text x="1064" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Decoder</text>
+      
+      <!-- REPEAT GROUPS. 2 + 3x(1+5) = 20 encoder layers; 1 + 3 + 4x(1+3) = 20 decoder layers -->
+      <rect x="240" y="128" width="272" height="248" rx="8" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="5,4" data-group-id="enc-outer" data-repeat="3" data-group-parent=""/>
+      <rect x="256" y="140" width="200" height="116" rx="8" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="5,4" data-group-id="enc-inner" data-repeat="5" data-group-parent="enc-outer"/>
+      <rect x="256" y="392" width="200" height="116" rx="8" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="5,4" data-group-id="enc-local" data-repeat="2" data-group-parent=""/>
+      <rect x="720" y="128" width="272" height="248" rx="8" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="5,4" data-group-id="dec-outer" data-repeat="4" data-group-parent=""/>
+      <rect x="736" y="140" width="200" height="116" rx="8" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="5,4" data-group-id="dec-inner" data-repeat="3" data-group-parent="dec-outer"/>
+      <rect x="736" y="392" width="200" height="116" rx="8" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="5,4" data-group-id="dec-lower" data-repeat="3" data-group-parent=""/>
+      <text x="484" y="198" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="middle" dominant-baseline="central" data-repeat-for="enc-inner">×5</text>
+      <text x="548" y="252" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="middle" dominant-baseline="central" data-repeat-for="enc-outer">×3</text>
+      <text x="484" y="450" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="middle" dominant-baseline="central" data-repeat-for="enc-local">×2</text>
+      <text x="964" y="198" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="middle" dominant-baseline="central" data-repeat-for="dec-inner">×3</text>
+      <text x="1028" y="252" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="middle" dominant-baseline="central" data-repeat-for="dec-outer">×4</text>
+      <text x="964" y="450" fill="#2d3142" font-size="11" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="middle" dominant-baseline="central" data-repeat-for="dec-lower">×3</text>
+      
+      <!-- SPINE (drawn before blocks; every segment shares an x, so no elbows) -->
+      <path d="M356,580 V496" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M356,460 V440" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M356,404 V364" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M356,328 V308" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M356,272 V244" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M356,208 V188" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M356,152 V68" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,580 V560" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,524 V496" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,460 V440" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,404 V364" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,328 V308" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,272 V244" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,208 V188" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M836,152 V68" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      
+      <!-- The one accent: every decoder layer projects its global KV from this hidden state -->
+      <path d="M440,50 H640 a8,8 0 0 1 8,8 V590 a8,8 0 0 0 8,8 H752" fill="none" stroke="#eb6c36" stroke-width="1" marker-end="url(#arrow-accent)"/>
+      <rect x="510" y="33" width="76" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="548" y="42" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GLOBAL KV</text>
+      
+      <!-- Side module feeding two encoder layers: one connector per attach point -->
+      <path d="M208,478 H272" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M124,460 V354 a8,8 0 0 1 8,-8 H272" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      
+      <!-- The pool is built once by the decoder Full layer and searched by every Reindex layer -->
+      <path d="M920,598 H1112" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M1196,580 V354 a8,8 0 0 0 -8,-8 H920" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <rect x="1090" y="325" width="92" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="1136" y="334" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SEARCH SCOPE</text>
+      
+      <!-- ENCODER BLOCKS (bottom to top) -->
+      <rect x="280" y="572" width="168" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.10)" stroke-width="1"/>
+      <rect x="276" y="576" width="168" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.10)" stroke-width="1"/>
+      <rect x="272" y="580" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="580" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1" data-layer-kind="io" data-layer-stack="encoder" data-layer-group=""/>
+      <text x="356" y="595" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Embedding</text>
+      <text x="356" y="608" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">d = 4,096</text>
+      <rect x="272" y="460" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="460" width="168" height="36" rx="4" fill="rgba(110,100,121,0.16)" stroke="#6e6479" stroke-width="1" data-layer-kind="local" data-layer-stack="encoder" data-layer-group="enc-local"/>
+      <text x="356" y="475" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sliding window</text>
+      <text x="356" y="488" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">w = 128</text>
+      <rect x="272" y="404" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="404" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="encoder" data-layer-group="enc-local"/>
+      <text x="356" y="426" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="272" y="328" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="328" width="168" height="36" rx="4" fill="rgba(124,143,111,0.16)" stroke="#7c8f6f" stroke-width="1" data-layer-kind="full" data-layer-stack="encoder" data-layer-group="enc-outer"/>
+      <text x="356" y="343" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sparse attn</text>
+      <text x="356" y="356" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">full · r=2</text>
+      <rect x="272" y="272" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="272" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="encoder" data-layer-group="enc-outer"/>
+      <text x="356" y="294" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="272" y="208" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="208" width="168" height="36" rx="4" fill="rgba(184,145,90,0.16)" stroke="#b8915a" stroke-width="1" data-layer-kind="reuse" data-layer-stack="encoder" data-layer-group="enc-inner"/>
+      <text x="356" y="223" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sparse attn</text>
+      <text x="356" y="236" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reuse · r=2</text>
+      <rect x="272" y="152" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="152" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="encoder" data-layer-group="enc-inner"/>
+      <text x="356" y="174" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="280" y="24" width="168" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.10)" stroke-width="1"/>
+      <rect x="276" y="28" width="168" height="36" rx="4" fill="#f5f5f5" stroke="rgba(45,49,66,0.10)" stroke-width="1"/>
+      <rect x="272" y="32" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="272" y="32" width="168" height="36" rx="4" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1.2" data-layer-kind="io" data-layer-stack="encoder" data-layer-group=""/>
+      <text x="356" y="47" fill="#eb6c36" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Encoder output</text>
+      <text x="356" y="60" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">h · layer 20</text>
+      
+      <!-- DECODER BLOCKS (bottom to top) -->
+      <rect x="752" y="580" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="580" width="168" height="36" rx="4" fill="rgba(124,143,111,0.16)" stroke="#7c8f6f" stroke-width="1" data-layer-kind="full" data-layer-stack="decoder" data-layer-group=""/>
+      <text x="836" y="595" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sparse attn</text>
+      <text x="836" y="608" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">full · r=1</text>
+      <rect x="752" y="524" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="524" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="decoder" data-layer-group=""/>
+      <text x="836" y="546" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="752" y="460" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="460" width="168" height="36" rx="4" fill="rgba(184,145,90,0.16)" stroke="#b8915a" stroke-width="1" data-layer-kind="reuse" data-layer-stack="decoder" data-layer-group="dec-lower"/>
+      <text x="836" y="475" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sparse attn</text>
+      <text x="836" y="488" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reuse · r=1</text>
+      <rect x="752" y="404" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="404" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="decoder" data-layer-group="dec-lower"/>
+      <text x="836" y="426" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="752" y="328" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="328" width="168" height="36" rx="4" fill="rgba(94,122,155,0.16)" stroke="#5e7a9b" stroke-width="1" data-layer-kind="reindex" data-layer-stack="decoder" data-layer-group="dec-outer"/>
+      <text x="836" y="343" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sparse attn</text>
+      <text x="836" y="356" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reindex · r=1</text>
+      <rect x="752" y="272" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="272" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="decoder" data-layer-group="dec-outer"/>
+      <text x="836" y="294" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="752" y="208" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="208" width="168" height="36" rx="4" fill="rgba(184,145,90,0.16)" stroke="#b8915a" stroke-width="1" data-layer-kind="reuse" data-layer-stack="decoder" data-layer-group="dec-inner"/>
+      <text x="836" y="223" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sparse attn</text>
+      <text x="836" y="236" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reuse · r=1</text>
+      <rect x="752" y="152" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="152" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1" data-layer-kind="ffn" data-layer-stack="decoder" data-layer-group="dec-inner"/>
+      <text x="836" y="174" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MoE</text>
+      <rect x="752" y="32" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="752" y="32" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1" data-layer-kind="io" data-layer-stack="decoder" data-layer-group=""/>
+      <text x="836" y="47" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Draft head</text>
+      <text x="836" y="60" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">5 tokens</text>
+      
+      <!-- SIDE MODULES (outside the stage panels) -->
+      <rect x="40" y="460" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="40" y="460" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1"/>
+      <text x="124" y="475" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">N-gram memory</text>
+      <text x="124" y="488" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">hashed lookup</text>
+      <rect x="1112" y="580" width="168" height="36" rx="4" fill="#f5f5f5"/>
+      <rect x="1112" y="580" width="168" height="36" rx="4" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1"/>
+      <text x="1196" y="595" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Candidate pool</text>
+      <text x="1196" y="608" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">16,384 slots</text>
+      
+      <!-- LEGEND -->
+      <line x1="40" y1="676" x2="1280" y2="676" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="692" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="700" width="16" height="10" rx="2" fill="rgba(124,143,111,0.16)" stroke="#7c8f6f" stroke-width="1"/>
+      <text x="64" y="709" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Full · computes and stores KV</text>
+      <rect x="350" y="700" width="16" height="10" rx="2" fill="rgba(94,122,155,0.16)" stroke="#5e7a9b" stroke-width="1"/>
+      <text x="374" y="709" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Reindex · shared KV, own top-k</text>
+      <rect x="660" y="700" width="16" height="10" rx="2" fill="rgba(184,145,90,0.16)" stroke="#b8915a" stroke-width="1"/>
+      <text x="684" y="709" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Reuse · inherits both</text>
+      <rect x="970" y="700" width="16" height="10" rx="2" fill="rgba(110,100,121,0.16)" stroke="#6e6479" stroke-width="1"/>
+      <text x="994" y="709" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Sliding window · no global KV</text>
+      <rect x="40" y="724" width="16" height="10" rx="2" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="1"/>
+      <text x="64" y="733" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">MoE · identical in every layer</text>
+      <rect x="350" y="724" width="16" height="10" rx="2" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1"/>
+      <text x="374" y="733" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">I/O and side module</text>
+      <rect x="660" y="724" width="16" height="10" rx="2" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="3,2"/>
+      <text x="684" y="733" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">×N · dashed group repeats N times</text>
+    </svg>
+    </div>
+  </div>
+</body>
+</html>

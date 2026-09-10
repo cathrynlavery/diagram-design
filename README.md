@@ -14,7 +14,7 @@
 
 *New in 2.5.10: ten more layout grammars — Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, and database schema.*
 
-39 editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
+41 editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
@@ -32,7 +32,7 @@ So I built a Claude Code skill for it. Thirty-nine visual types, editorial quali
 
 ## What it makes
 
-All 39 visual types ship in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+All 41 visual types ship in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -102,14 +102,14 @@ All 39 visual types ship in three static variants: minimal light, minimal dark, 
 </tr>
 <tr>
   <td align="center" width="33%"><a href="docs/screenshots/waterfall.png"><img src="docs/screenshots/thumbs/waterfall.webp" alt="Waterfall"></a><br><b>Waterfall</b><br><sub>Running total + signed bridges</sub></td>
-  <td align="center" width="33%"></td>
+  <td align="center" width="33%"><a href="docs/screenshots/model-arch.png"><img src="docs/screenshots/thumbs/model-arch.webp" alt="Model architecture"></a><br><b>Model architecture</b><br><sub>Layer stack + ×N repeat groups</sub></td>
   <td align="center" width="33%"></td>
 </tr>
 </table>
 
 The v2.5.10 release added the final ten types above. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through all 39 diagrams with light / dark / full-editorial tabs.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through all 41 diagrams with light / dark / full-editorial tabs.
 
 ---
 
@@ -246,7 +246,7 @@ Every diagram template gives the inline SVG an accessible name and description: 
 
 ### Manual override
 
-Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there — all 39 diagrams, the annotation primitive, and the gallery all inherit semantic role names (`accent`, not `#eb6c36`).
+Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there — all 41 diagrams, the annotation primitive, and the gallery all inherit semantic role names (`accent`, not `#eb6c36`).
 
 ### First-run gate
 
@@ -267,7 +267,7 @@ The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. 
 ## Quickstart
 
 ```bash
-# From a cloned checkout, open the gallery to see all 39 diagrams
+# From a cloned checkout, open the gallery to see all 41 diagrams
 open skills/diagram-design/assets/index.html       # macOS
 xdg-open skills/diagram-design/assets/index.html  # Linux
 
@@ -446,6 +446,7 @@ diagram-design/
 │       │   ├── type-uml-class.md
 │       │   ├── type-story-map.md
 │       │   ├── type-db-schema.md
+│       │   ├── type-model-arch.md
 │       │   ├── primitive-annotation.md
 │       │   ├── primitive-sketchy.md
 │       │   └── primitive-terminal.md
@@ -457,7 +458,7 @@ diagram-design/
 │       └── assets/
 │           ├── index.html           — live gallery, tabbed
 │           ├── template*.html       — scaffolds for new diagrams
-│           ├── example-<type>.html  — 3 variants × 39 types
+│           ├── example-<type>.html  — 3 variants × 41 types
 │           ├── example-loop-terminal.html
 │           ├── example-quadrant-consultant.html
 │           ├── example-import-drawio.html
@@ -468,7 +469,7 @@ diagram-design/
 ├── scripts/
 │   ├── build-readme-thumbs.py       — regenerates docs/screenshots/thumbs/
 │   ├── bump-plugin-version.py       — synchronized Claude/Codex/Factory version bump
-│   ├── render-canonical-screenshots.py — deterministic 39-type PNG catalog renderer
+│   ├── render-canonical-screenshots.py — deterministic 41-type PNG catalog renderer
 │   ├── verify-screenshot-freshness.py — source + screenshot digest gate
 │   ├── verify-plugin-package.py     — version + marketplace package gate
 │   ├── test-plugin-package.py       — adversarial package-gate tests
@@ -481,6 +482,8 @@ diagram-design/
 │   ├── test-verify-sankey.py        — Sankey gate adversarial tests
 │   ├── verify-waterfall.py          — waterfall running-total + bridge gate
 │   ├── test-verify-waterfall.py     — waterfall gate adversarial tests
+│   ├── verify-model-arch.py         — model-architecture layer-census gate
+│   ├── test-verify-model-arch.py    — model-architecture gate adversarial tests
 │   ├── test-verify-docs-sync.py     — docs/routing-surface gate tests
 │   └── fixtures/
 │       ├── sample-flowchart.mmd
@@ -518,6 +521,8 @@ Diagrams using the traceable block decomposition pattern get a structural gate o
 Treemaps get a second geometric gate, because their whole claim is that area *is* the encoding: `python3 scripts/verify-treemap.py --all` fails CI when a cell's share of the drawn area doesn't match the value printed inside it, or when a label overruns the cell it names. It measures area error as a *relative* figure — an absolute one passes exactly the small cells most likely to be wrong. `python3 scripts/test-verify-treemap.py` keeps it honest in both directions.
 Waterfalls get the same treatment, because their whole claim is that the running total is conserved: `python3 scripts/verify-waterfall.py --all` fails CI when the declared start, deltas, and end don't reconcile, when a bridge bar is drawn anywhere other than its two running levels on the shared scale, when a carry connector is missing or sits at the wrong level, when a delta prints without an explicit sign, or when the two directions collapse into one fill. `python3 scripts/test-verify-waterfall.py` keeps it honest in both directions.
 Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a scanner-visible support path is not shipped inside the skill package, or any command/prompt surface drifts from its routed reference. `python3 scripts/test-verify-docs-sync.py` exercises those newer checks adversarially, including the strict-bundler behavior used by Hermes Agent. The skill also ships `skills/diagram-design/scripts/self_check.py` — a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. Settled design decisions (why one pinned controller, why patterns never add types, the autoplay policy, the SKILL.md byte cap, why label placement is verified geometrically, and why client profiles use marker-first resolution) live as short ADRs in `docs/adr/` — read them before relitigating one, add one when you settle a new policy.
+
+Model-architecture figures get it too, because a `×5` chip is arithmetic wearing a decoration's clothes: `python3 scripts/verify-model-arch.py --all` expands every repeat group, multiplies it out along its nesting, and fails CI when a stack does not reach its declared depth, when the declared depth disagrees with the printed layer range, when a `×N` chip disagrees with the group it labels, or when a group carries no chip at all. `python3 scripts/test-verify-model-arch.py` mutates a sound plan twenty-two ways and requires each one to be caught.
 
 All pull requests and pushes are automatically validated across Linux, Windows, and macOS runners via GitHub Actions CI (`.github/workflows/ci.yml`).
 
@@ -576,7 +581,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
-| Routine static diagram-making (any of the 39 visual types) | Only `SKILL.md` + that one type's reference |
+| Routine static diagram-making (any of the 41 visual types) | Only `SKILL.md` + that one type's reference |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
 

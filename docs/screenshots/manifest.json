@@ -370,6 +370,15 @@
       "screenshot_sha256": "939061c701f7bb70aa1b5f7ee1fe2da3a68b3b8edc4822cd9dcb7586acd7a2d6",
       "width": 2480,
       "height": 1288
+    },
+    {
+      "slug": "model-arch",
+      "source": "skills/diagram-design/assets/example-model-arch.html",
+      "screenshot": "docs/screenshots/model-arch.png",
+      "source_sha256": "6a36a627a40f6e0617bdc8cc5b14888bbd92f5a50f6072be477dbd4b8b0f17e8",
+      "screenshot_sha256": "ca558ef686467203c42524bab5d3f86add61d36213d28e9602693d5536e0bd83",
+      "width": 2560,
+      "height": 1446
     }
   ]
 }

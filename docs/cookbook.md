@@ -138,7 +138,7 @@ Then: propose the style-guide diff, wait for approval, write `references/style-g
 
 ## R4. Selection cheat sheet
 
-Do not duplicate the 40-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
+Do not duplicate the 41-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
 
 **Behavior first** (then nearest type):
 
@@ -253,6 +253,27 @@ Copy and fill. Keep one type, one size, one destination.
 **Do not:**
 
 > Make it look like Mermaid / add shadows / coral every box / diagonal connectors / more than nine nodes in one figure.
+
+---
+
+## R10. Draw a neural network from a description
+
+Model architecture (`type-model-arch.md`) is the type that takes a spoken layer plan and returns a figure. Say the network, not the boxes:
+
+> Draw the model architecture: encoder is 2 sliding-window layers then 3 repeats of one full sparse-attention layer plus 5 reuse layers; decoder is one full layer plus 3 reuse, then 4 repeats of reindex plus 3 reuse. Every layer ends in MoE. 40 layers total.
+
+Or name the paper and the figure:
+
+> Redraw figure 3 of [paper] as a model architecture diagram, `slide-16x9`, minimal light.
+
+What comes back before any drawing is the **layer plan** — the multipliers written out and expanded. Check it there, not in the picture:
+
+```
+stack encoder depth 20   2 × [ local + moe ] · 3 × [ full + moe , 5 × [ reuse + moe ] ]     → 2 + 3×6 = 20
+stack decoder depth 20   1 × [ full + moe ] · 3 × [ reuse + moe ] · 4 × [ reindex + moe , 3 × [ reuse + moe ] ]  → 1 + 3 + 16 = 20
+```
+
+The plan is written into the SVG as `data-repeat` / `data-depth` metadata, so `python3 scripts/verify-model-arch.py <file>` re-expands it and fails when a `×N` and the declared depth stop agreeing. Ask for that check whenever the numbers came from a source you care about being right.
 
 ---
 

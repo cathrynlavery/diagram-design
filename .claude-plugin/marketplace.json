@@ -1,7 +1,7 @@
 {
   "name": "diagram-design",
   "metadata": {
-    "description": "Create architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart, loop, nested, tree, org chart, layer stack, Venn, pyramid/funnel, bar, waterfall, treemap, line, Gantt, scatter, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, database schema diagrams as HTML/SVG/PNG."
+    "description": "Create architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart, loop, nested, tree, org chart, layer stack, model architecture, Venn, pyramid/funnel, bar, waterfall, treemap, line, Gantt, scatter, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, database schema as HTML/SVG/PNG."
   },
   "owner": {
     "name": "Cathryn Lavery"

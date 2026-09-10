@@ -313,6 +313,16 @@ jobs:
         id: waterfall_tests
         run: python scripts/test-verify-waterfall.py
 
+      - name: Verify model architecture layer census
+        if: always()
+        id: model_arch
+        run: python scripts/verify-model-arch.py --all
+
+      - name: Verify model architecture checker
+        if: always()
+        id: model_arch_tests
+        run: python scripts/test-verify-model-arch.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline
