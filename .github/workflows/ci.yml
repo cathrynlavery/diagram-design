@@ -393,6 +393,16 @@ jobs:
         id: render
         run: python scripts/lint-render.py --all
 
+      - name: Verify histogram bins, scale and declared values
+        if: always()
+        id: histogram
+        run: python scripts/verify-histogram.py --all
+
+      - name: Verify histogram checker
+        if: always()
+        id: histogram_tests
+        run: python scripts/test-verify-histogram.py
+
       - name: Verify generated icon assets
         if: always()
         id: icons
@@ -451,6 +461,9 @@ jobs:
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bubble Checker | ${{ steps.bubble_tests.outcome == 'success' && '✅ Passed' || (steps.bubble_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+
+          echo "| Histogram Bins & Scale | ${{ steps.histogram.outcome == 'success' && '✅ Passed' || (steps.histogram.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Histogram Checker | ${{ steps.histogram_tests.outcome == 'success' && '✅ Passed' || (steps.histogram_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bump Chart Rank Grid | ${{ steps.bump.outcome == 'success' && '✅ Passed' || (steps.bump.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bump Checker | ${{ steps.bump_tests.outcome == 'success' && '✅ Passed' || (steps.bump_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Beeswarm Positions & Packing | ${{ steps.beeswarm.outcome == 'success' && '✅ Passed' || (steps.beeswarm.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
