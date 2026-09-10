@@ -503,14 +503,18 @@ diagram-design/
         # are the shapes those phrasings would overmatch without their
         # single-digit floor: `2-type` and `all 3 diagrams` are ordinary prose
         # in a repository that ships 40 types, and this gate blocks a pull
-        # request, so rejecting them is worse than missing a stale count.
+        # request, so rejecting them is worse than missing a stale count. The
+        # two-digit cases prove the guard is contextual rather than relying on
+        # a numeral-length heuristic.
         for benign in (
             "Renders all 3 variants from one source.\n",
             "The gallery lists 2 file types.\n",
             "Allows 24 nodes per diagram.\n",
             "Runs on Python 3.11 and 3.12.\n",
             "A 2-type system is enough here.\n",
+            "A 10-type taxonomy is enough here.\n",
             "See all 3 diagrams in the appendix.\n",
+            "See all 12 diagrams in the appendix.\n",
             "The 4-type taxonomy of joins.\n",
             "All 5 diagrams are inlined.\n",
         ):

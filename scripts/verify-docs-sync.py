@@ -423,10 +423,10 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # a hyphenated modifier (`39-type catalog`), and a count quantifying the whole
 # set (`all 39 diagrams`). The first three insist on that noun so an unrelated
 # quantity — `accepts 2 file types` — is not rejected by a gate about the
-# visual taxonomy. The last two carry no such noun, so they instead require a
-# numeral of more than one digit: a taxonomy that ships 40 types was never 2 or
-# 3, while `a 2-type system` and `all 3 diagrams in the appendix` are ordinary
-# prose. Without that floor this blocking gate rejects both.
+# visual taxonomy. The last two are checked only in a sentence with a nearby
+# visual-taxonomy cue (`catalog`, `gallery`, `render`, `shipped`, and so on),
+# so ordinary prose such as `a 10-type taxonomy` and `all 12 diagrams in the
+# appendix` remains valid while the README's stale phrases stay covered.
 #
 # Every gap is whitespace-tolerant because both commands already wrap the
 # sentence that carried the stale count, so a count can land just after the
@@ -437,12 +437,14 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # the docstring say "numeral" so the gate does not claim more than it checks.
 # README carried one of those (`Thirty-nine visual types`); it is count-free now
 # but nothing here would catch it coming back in words.
+_COUNT_CONTEXT = r"visual|catalog|gallery|render(?:er|ing)?|example|shipped|static|variant"
+_COUNT_SENTENCE = rf"[^.!?\n]*\b(?:{_COUNT_CONTEXT})\b"
 HARDCODED_COUNT_RE = re.compile(
     r"one\s+of\s+(?:the\s+)?\d+\b"
     r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
     r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b"
-    r"|\b\d{2,}-type\b"
-    r"|\ball\s+\d{2,}\s+diagrams?\b",
+    rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\b\d+-type\b"
+    rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\ball\s+\d+\s+diagrams?\b",
     re.IGNORECASE,
 )
 COUNT_SURFACES = (
