@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imported from Excalidraw — Lead intake</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --paper:#f5f5f5; --ink:#2d3142; --muted:#4f5d75; --soft:#7a8399; --accent:#eb6c36; }
+    body { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:48px 32px; background:var(--paper); color:var(--ink); font-family:'Geist',system-ui,sans-serif; }
+    .frame { width:100%; max-width:1200px; min-width:0; }
+    .diagram-container { width:100%; overflow-x:auto; }
+    .eyebrow { margin-bottom:8px; color:var(--muted); font:500 8px 'Geist Mono',monospace; letter-spacing:.14em; text-transform:uppercase; }
+    h1 { margin-bottom:24px; font:400 28px/1.15 'Instrument Serif',serif; }
+    svg { display:block; width:100%; min-width:900px; }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <p class="eyebrow">Flowchart · Imported from Excalidraw · doc-inline · balanced</p>
+    <h1>Lead capture and CRM intake</h1>
+    <div class="diagram-container">
+    <svg viewBox="0 0 960 600" role="img" aria-labelledby="import-excalidraw-title import-excalidraw-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="import-excalidraw-title">Lead intake flow</title>
+      <desc id="import-excalidraw-desc">Web form and CSV leads enter an intake API, pass a validity decision, and reach a CRM sync service and the CRM database.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#4f5d75"/></marker>
+      </defs>
+      <rect width="960" height="600" fill="#f5f5f5"/>
+
+      <rect x="40" y="80" width="200" height="336" rx="8" fill="none" stroke="rgba(45,49,66,0.12)"/>
+      <text x="56" y="104" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" letter-spacing=".14em">CAPTURE</text>
+      <rect x="288" y="80" width="632" height="336" rx="8" fill="none" stroke="rgba(45,49,66,0.12)"/>
+      <text x="304" y="104" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" letter-spacing=".14em">PIPELINE</text>
+
+      <!-- Connectors precede nodes. -->
+      <path d="M208,168 H328" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M208,296 H264 A8,8 0 0 0 272,288 V200 A8,8 0 0 1 280,192 H328" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M488,192 H568" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M696,192 H744 A8,8 0 0 1 752,200 V272" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M632,256 V336 A8,8 0 0 1 624,344 H488 A8,8 0 0 1 480,336 V232" fill="none" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow)"/>
+      <path d="M752,336 V352 A8,8 0 0 1 744,360 H696 A8,8 0 0 0 688,368 V384" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <rect x="240" y="148" width="56" height="12" rx="2" fill="#f5f5f5"/><text x="268" y="156" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">SUBMIT</text>
+      <rect x="220" y="276" width="56" height="12" rx="2" fill="#f5f5f5"/><text x="248" y="284" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">ROWS</text>
+      <rect x="504" y="172" width="48" height="12" rx="2" fill="#f5f5f5"/><text x="528" y="180" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">CHECK</text>
+      <rect x="708" y="172" width="32" height="12" rx="2" fill="#f5f5f5"/><text x="724" y="180" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">YES</text>
+      <rect x="532" y="324" width="56" height="12" rx="2" fill="#f5f5f5"/><text x="560" y="332" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">NO · FIX</text>
+      <rect x="696" y="340" width="48" height="12" rx="2" fill="#f5f5f5"/><text x="720" y="348" fill="#7a8399" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">WRITE</text>
+
+      <rect x="64" y="140" width="144" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399"/><text x="136" y="172" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">Web Form</text>
+      <rect x="64" y="268" width="144" height="56" rx="8" fill="rgba(79,93,117,0.10)" stroke="#7a8399"/><text x="136" y="300" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">CSV Import</text>
+      <rect x="328" y="160" width="160" height="64" rx="8" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/><text x="408" y="188" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">Intake API</text><text x="408" y="204" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">lead intake</text>
+      <polygon points="632,128 696,192 632,256 568,192" fill="#ffffff" stroke="#2d3142"/><text x="632" y="188" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">Valid</text><text x="632" y="204" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">record?</text>
+      <rect x="744" y="272" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142"/><text x="824" y="300" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">CRM Sync</text><text x="824" y="316" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">dedupe + upsert</text>
+      <rect x="608" y="384" width="160" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/><text x="688" y="408" fill="#2d3142" font-size="12" font-family="'Geist',sans-serif" font-weight="600" text-anchor="middle">CRM DB</text><text x="688" y="424" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" text-anchor="middle">leads</text>
+
+      <line x1="40" y1="504" x2="920" y2="504" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace" letter-spacing=".14em">LEGEND</text>
+      <rect x="128" y="516" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/><text x="152" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">FOCAL</text>
+      <polygon points="248,516 256,522 248,528 240,522" fill="#ffffff" stroke="#2d3142"/><text x="268" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">DECISION</text>
+      <rect x="376" y="516" width="16" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/><text x="400" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">STORE</text>
+      <rect x="472" y="516" width="16" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399"/><text x="496" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">INPUT</text>
+      <rect x="568" y="516" width="16" height="12" rx="2" fill="#ffffff" stroke="#2d3142"/><text x="592" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono',monospace">SERVICE</text>
+    </svg>
+    </div>
+  </main>
+</body>
+</html>
