@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 40 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io and Mermaid sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 41 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -48,6 +48,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Sequence-oauth verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-sequence-oauth.py` |
 | draw.io import path (real extractor vs fixtures + docs sync) | `python3 scripts/verify-drawio-import.py && python3 scripts/test-verify-drawio-import.py` |
 | Mermaid import path (grammars, adversarial input, caps, docs sync) | `python3 scripts/verify-mermaid-import.py` |
+| Excalidraw import path (scenes, adversarial input, caps, docs sync) | `python3 scripts/verify-excalidraw-import.py && python3 scripts/test-verify-excalidraw-import.py` |
 | Optional motion contract (fallbacks, controls, budgets, determinism) | `python3 scripts/test-verify-motion.py` |
 | Doctor diagnostics contract (env checks, script presence, routing wiring) | `python3 scripts/verify-doctor.py` |
 | Doctor diagnostics adversarial tests | `python3 scripts/test-verify-doctor.py` |
@@ -70,6 +71,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Ridgeline checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-ridgeline.py` |
 | Sankey flow conservation and ribbon geometry | `python3 scripts/verify-sankey.py --all` |
 | Sankey checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-sankey.py` |
+| Waterfall running-total conservation and signed-bridge geometry | `python3 scripts/verify-waterfall.py --all` |
+| Waterfall checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-waterfall.py` |
 | Bubble positions sit on shared axis scales and area encodes every declared size | `python3 scripts/verify-bubble.py --all` |
 | Bubble checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bubble.py` |
 | Bump vertices sit exactly on one rank grid and every endpoint label is placed on both axes | `python3 scripts/verify-bump.py --all` |
@@ -81,6 +84,12 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
 The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
+
+Keep native plugin and marketplace `description` fields within 500 characters
+for Cowork installation compatibility ([#208](https://github.com/cathrynlavery/diagram-design/issues/208)).
+They must still name every visual type; keep fuller feature details in the skill
+frontmatter and Codex `longDescription`. The docs-sync gate checks both length
+and routing vocabulary, and the package gate keeps native descriptions aligned.
 
 Run them all at once before pushing:
 
@@ -106,6 +115,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-drawio-import.py \
   && python3 scripts/test-verify-drawio-import.py \
   && python3 scripts/verify-mermaid-import.py \
+  && python3 scripts/verify-excalidraw-import.py \
+  && python3 scripts/test-verify-excalidraw-import.py \
   && python3 scripts/test-verify-motion.py \
   && python3 scripts/verify-doctor.py \
   && python3 scripts/test-verify-doctor.py \
@@ -129,6 +140,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-ridgeline.py \
   && python3 scripts/verify-sankey.py --all \
   && python3 scripts/test-verify-sankey.py \
+  && python3 scripts/verify-waterfall.py --all \
+  && python3 scripts/test-verify-waterfall.py \
   && python3 scripts/verify-bubble.py --all \
   && python3 scripts/test-verify-bubble.py \
   && python3 scripts/verify-bump.py --all \
@@ -144,7 +157,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
 - **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
-- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 40 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
+- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 41 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
 - **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
 - **`verify-ridgeline.py`:** a ridge is drawn on its own amplitude, a baseline sits off the stack's pitch or away from its drawn rule, a ridge is sampled on its own x positions, or a printed range is wider than the bins it claims. Fix the geometry or the declaration so they state one thing — never renormalise a single ridge to make it readable, and never move a baseline to buy one ridge headroom.
@@ -218,8 +231,9 @@ git diff --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-d
 
 - draw.io: `skills/diagram-design/scripts/drawio_extract.py` — must pass `scripts/verify-drawio-import.py`, which drives the extractor against `scripts/fixtures/sample-architecture.drawio` in all four container formats (raw XML, deflate+base64, PNG-embedded, SVG-embedded).
 - Mermaid: `skills/diagram-design/scripts/mermaid_extract.py` — must pass `scripts/verify-mermaid-import.py`, which covers every supported grammar, multi-block Markdown, adversarial labels, trust-boundary behavior, resource caps, and named failures.
+- Excalidraw: `skills/diagram-design/scripts/excalidraw_extract.py` — must pass `scripts/verify-excalidraw-import.py`, which covers scene parsing, bound labels, groups and frames, adversarial labels, trust-boundary behavior, resource caps, and named failures.
 
-Both scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
+All three scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
 
 Documentation and wiring must stay in sync: the import references, `SKILL.md` §11, the slash commands in `commands/`, and the Pi prompt templates in `prompts/` each describe the same flows. The verifiers check this — keep both sides updated in one PR.
 

@@ -55,6 +55,7 @@ def check(path: Path) -> list[str]:
     indices: set[int] = set()
     positions: set[tuple[float, float]] = set()
     sizes: set[tuple[float, float]] = set()
+    geometry: list[tuple[int, float, float, float, float, str | None]] = []
     rendered_filled = 0
     for mark in marks:
         state = mark.get("data-unit-cell")
@@ -75,18 +76,44 @@ def check(path: Path) -> list[str]:
         indices.add(index)
         positions.add((x, y))
         sizes.add((width, height))
+        geometry.append((index, x, y, width, height, state))
     if indices != set(range(total)):
         findings.append(f"{path.name}: unit indices must cover 0 through {total - 1} exactly once")
     if len(positions) != total:
-        findings.append(f"{path.name}: unit cells must not overlap at one position")
+        findings.append(f"{path.name}: unit cells must occupy unique positions")
     if len(sizes) != 1:
         findings.append(f"{path.name}: every unit cell must have identical dimensions")
     if rendered_filled != filled:
         findings.append(f"{path.name}: declares {filled} filled units but renders {rendered_filled}")
-    xs = {x for x, _ in positions}
-    ys = {y for _, y in positions}
+    xs = sorted({x for x, _ in positions})
+    ys = sorted({y for _, y in positions})
     if len(xs) != columns or len(ys) != rows:
         findings.append(f"{path.name}: unit positions must form a {columns} by {rows} grid")
+    elif len(sizes) == 1:
+        width, height = next(iter(sizes))
+        x_gutters = [right - left - width for left, right in zip(xs, xs[1:])]
+        y_gutters = [lower - upper - height for upper, lower in zip(ys, ys[1:])]
+        if any(not math.isclose(gutter, 4.0, abs_tol=1e-6) for gutter in x_gutters + y_gutters):
+            findings.append(f"{path.name}: rows and columns must use a 4px gutter")
+
+    overlap = False
+    for offset, (_, x1, y1, width1, height1, _) in enumerate(geometry):
+        for _, x2, y2, width2, height2, _ in geometry[offset + 1:]:
+            if x1 < x2 + width2 and x2 < x1 + width1 and y1 < y2 + height2 and y2 < y1 + height1:
+                overlap = True
+                break
+        if overlap:
+            break
+    if overlap:
+        findings.append(f"{path.name}: unit cells must not overlap")
+
+    if len(geometry) == total and indices == set(range(total)):
+        reading_order = [mark[0] for mark in sorted(geometry, key=lambda mark: (mark[2], mark[1]))]
+        if reading_order != list(range(total)):
+            findings.append(f"{path.name}: unit indices must follow left-to-right, top-to-bottom reading order")
+        filled_indices = {index for index, *_, state in geometry if state == "filled"}
+        if filled_indices != set(range(filled)):
+            findings.append(f"{path.name}: filled cells must occupy the first indices in reading order")
     return findings
 
 

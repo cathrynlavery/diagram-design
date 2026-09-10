@@ -47,25 +47,27 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Skip when the tip of main already carries a version change (a manual
-      # bump, or this workflow's own commit triggering another run).
+      # Skip only when the tip of main changes the synchronized version fields
+      # (a manual bump, or this workflow's own commit triggering another run).
+      # Feature merges may legitimately update other manifest metadata.
       - name: Check whether main already bumped
         id: guard
         shell: bash
         run: |
+          set -euo pipefail
           source_sha=$(git rev-parse HEAD)
           echo "source_sha=${source_sha}" >> "$GITHUB_OUTPUT"
-          if git rev-parse --verify --quiet HEAD^ >/dev/null \
-            && ! git diff --quiet HEAD^ HEAD -- \
-              .claude-plugin/plugin.json \
-              .codex-plugin/plugin.json \
-              .factory-plugin/plugin.json; then
+          version_changed=false
+          if git rev-parse --verify --quiet HEAD^ >/dev/null; then
+            version_changed=$(python3 scripts/plugin_version_history.py changed HEAD^ HEAD)
+          fi
+          if [ "$version_changed" = "true" ]; then
             echo "should_bump=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_bump=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Inspect every commit since the previous manifest bump. This preserves
+      # Inspect every commit since the previous version bump. This preserves
       # the strongest release label when multiple merges coalesce into one run.
       - name: Determine bump size across all unversioned merges
         if: steps.guard.outputs.should_bump == 'true'
@@ -76,14 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          last_bump=$(git log -1 --format=%H "$SOURCE_SHA" -- \
-            .claude-plugin/plugin.json \
-            .codex-plugin/plugin.json \
-            .factory-plugin/plugin.json)
-          if [ -z "$last_bump" ]; then
-            echo "No previous manifest bump found" >&2
-            exit 1
-          fi
+          last_bump=$(python3 scripts/plugin_version_history.py last-bump "$SOURCE_SHA")
 
           part=patch
           while IFS= read -r commit; do

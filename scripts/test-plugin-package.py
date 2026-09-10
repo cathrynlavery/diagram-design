@@ -16,6 +16,7 @@ from typing import Iterator, Optional
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY_SCRIPT = ROOT / "scripts/verify-plugin-package.py"
 BUMP_SCRIPT = ROOT / "scripts/bump-plugin-version.py"
+VERSION_HISTORY_SCRIPT = ROOT / "scripts/plugin_version_history.py"
 AUTO_BUMP_WORKFLOW = ROOT / ".github/workflows/auto-bump.yml"
 PLUGIN_NAME = "diagram-design"
 
@@ -32,6 +33,7 @@ def load_module(name: str, path: Path) -> ModuleType:
 
 VERIFY = load_module("verify_plugin_package", VERIFY_SCRIPT)
 BUMP = load_module("bump_plugin_version", BUMP_SCRIPT)
+VERSION_HISTORY = load_module("plugin_version_history", VERSION_HISTORY_SCRIPT)
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -595,10 +597,70 @@ def test_auto_bump_workflow_allowlists() -> None:
     print("OK: prepare and publish workflow allowlists match bumper paths")
 
 
+def commit_all(root: Path, message: str) -> str:
+    subprocess.run(["git", "add", "."], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-qm", message], cwd=root, check=True)
+    return subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=root, text=True
+    ).strip()
+
+
+def test_version_history() -> None:
+    with package_repo() as root:
+        base = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True
+        ).strip()
+        BUMP.bump(root)
+        release = commit_all(root, "release 1.2.4")
+
+        for relative in BUMP.MANIFEST_PATHS:
+            path = root / relative
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["description"] = "Create editorial diagrams from imported sources."
+            write_json(path, payload)
+        metadata_only = commit_all(root, "update manifest descriptions")
+
+        if not VERSION_HISTORY.versions_changed(root, base, release):
+            raise AssertionError("release version change was not detected")
+        if VERSION_HISTORY.versions_changed(root, release, metadata_only):
+            raise AssertionError("description-only manifest change was treated as a release")
+        if VERSION_HISTORY.last_version_bump(root, metadata_only) != release:
+            raise AssertionError("description-only commit hid the previous real release")
+
+        BUMP.bump(root)
+        next_release = commit_all(root, "release 1.2.5")
+        if VERSION_HISTORY.last_version_bump(root, next_release) != next_release:
+            raise AssertionError("newest real release was not selected")
+
+        path = root / BUMP.MANIFEST_PATHS[0]
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["version"] = "not-semver"
+        write_json(path, payload)
+        malformed = commit_all(root, "break one manifest version")
+        try:
+            VERSION_HISTORY.versions_changed(root, next_release, malformed)
+        except VERSION_HISTORY.VersionHistoryError:
+            pass
+        else:
+            raise AssertionError("malformed history was treated as a normal comparison")
+
+        payload["version"] = "1.2.4"
+        write_json(path, payload)
+        desynchronized = commit_all(root, "desynchronize valid manifest versions")
+        try:
+            VERSION_HISTORY.versions_changed(root, next_release, desynchronized)
+        except VERSION_HISTORY.VersionHistoryError:
+            pass
+        else:
+            raise AssertionError("valid but unequal versions were treated as synchronized")
+        print("OK: version history ignores manifest metadata-only commits")
+
+
 def main() -> int:
     test_verifier()
     test_bumper()
     test_auto_bump_workflow_allowlists()
+    test_version_history()
     print("All plugin package tests passed")
     return 0
 

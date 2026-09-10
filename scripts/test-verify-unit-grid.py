@@ -36,12 +36,26 @@ def cell(index: int, state: str = "empty", width: int = 20) -> str:
 def main() -> int:
     verifier = load_verifier()
     valid_cells = "".join(cell(index, "filled" if index < 2 else "empty") for index in range(100))
+    swapped_indices = (
+        valid_cells.replace('data-unit-index="0"', 'data-unit-index="swap"', 1)
+        .replace('data-unit-index="1"', 'data-unit-index="0"', 1)
+        .replace('data-unit-index="swap"', 'data-unit-index="1"', 1)
+    )
+    out_of_order_fill = (
+        valid_cells.replace('data-unit-cell="filled"', 'data-unit-cell="swap"', 1)
+        .replace('data-unit-cell="empty"', 'data-unit-cell="filled"', 1)
+        .replace('data-unit-cell="swap"', 'data-unit-cell="empty"', 1)
+    )
     cases = [
         ("valid chart", chart(valid_cells), None),
         ("wrong filled count", chart(valid_cells, 3), "declares 3 filled units"),
         ("nonuniform cell", chart(valid_cells.replace('width="20"', 'width="24"', 1)), "identical dimensions"),
         ("duplicate index", chart(valid_cells.replace('data-unit-index="99"', 'data-unit-index="98"')), "indices"),
         ("missing cell", chart(valid_cells.rsplit("<rect", 1)[0]), "has 99 data-unit-cell"),
+        ("overlapping cells", chart(valid_cells.replace(' x="24"', ' x="19"')), "must not overlap"),
+        ("irregular gutter", chart(valid_cells.replace(' x="24"', ' x="25"')), "4px gutter"),
+        ("indices out of reading order", chart(swapped_indices), "reading order"),
+        ("filled cells out of reading order", chart(out_of_order_fill), "filled cells must occupy"),
     ]
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as directory:
@@ -63,4 +77,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

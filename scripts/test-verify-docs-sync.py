@@ -58,6 +58,51 @@ def load_verify_module():
 def main() -> int:
     verify = load_verify_module()
 
+    # Keep real routing vocabulary in the fixtures so the size check cannot
+    # accidentally replace the existing lexical-hook validation.
+    short = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["description"]
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            document = json.loads((ROOT / relative).read_text(encoding="utf-8"))
+            path.write_text(json.dumps(document), encoding="utf-8")
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            original = path.read_text(encoding="utf-8")
+            for length in (500, 501):
+                document = json.loads(original)
+                container = document["metadata"] if "metadata" in document else document
+                # Count the original value, including trailing whitespace.
+                container["description"] = short.ljust(length)
+                path.write_text(json.dumps(document), encoding="utf-8")
+                errors: list[str] = []
+                verify.check_manifest_descriptions(errors, root)
+                expected = [] if length == 500 else [
+                    f"{relative.as_posix()} description exceeds the Cowork limit "
+                    "(501 > 500 characters)"
+                ]
+                if errors != expected:
+                    raise AssertionError(f"manifest size boundary failed: {errors}")
+            path.write_text(original, encoding="utf-8")
+
+        codex = root / ".codex-plugin/plugin.json"
+        document = json.loads(codex.read_text(encoding="utf-8"))
+        document["interface"]["longDescription"] = short + " More detail." * 50
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        if errors:
+            raise AssertionError(f"longDescription incorrectly limited: {errors}")
+
+        document["description"] = short.replace("Wardley map", "map")
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        if len(errors) != 1 or "lost the lexical hook" not in errors[0]:
+            raise AssertionError(f"missing routing hook was not rejected: {errors}")
+
     for length in (1024, 1025):
         errors: list[str] = []
         markdown = f"---\nname: fixture\ndescription: {'x' * length}\n---\n"
@@ -247,13 +292,18 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         export_reference = root / "skills/diagram-design/references/export.md"
         drawio_reference = root / "skills/diagram-design/references/import-drawio.md"
         mermaid_reference = root / "skills/diagram-design/references/import-mermaid.md"
+        excalidraw_reference = (
+            root / "skills/diagram-design/references/import-excalidraw.md"
+        )
         export_command = root / "commands/export-diagram.md"
         drawio_command = root / "commands/import-drawio.md"
         mermaid_command = root / "commands/import-mermaid.md"
+        excalidraw_command = root / "commands/import-excalidraw.md"
         profile_command = root / "commands/profile.md"
         doctor_command = root / "commands/doctor.md"
         export_prompt = root / "prompts/export-diagram.md"
         mermaid_prompt = root / "prompts/import-mermaid.md"
+        excalidraw_prompt = root / "prompts/import-excalidraw.md"
         profile_prompt = root / "prompts/profile.md"
         doctor_prompt = root / "prompts/doctor.md"
         for path in (
@@ -262,13 +312,16 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
             export_reference,
             drawio_reference,
             mermaid_reference,
+            excalidraw_reference,
             export_command,
             drawio_command,
             mermaid_command,
+            excalidraw_command,
             profile_command,
             doctor_command,
             export_prompt,
             mermaid_prompt,
+            excalidraw_prompt,
             profile_prompt,
             doctor_prompt,
         ):
@@ -278,13 +331,20 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         export_reference.write_text("# Export\n", encoding="utf-8")
         drawio_reference.write_text("# Draw.io\n", encoding="utf-8")
         mermaid_reference.write_text("# Mermaid\n", encoding="utf-8")
+        excalidraw_reference.write_text("# Excalidraw\n", encoding="utf-8")
         export_command.write_text("Follow references/export.md.\n", encoding="utf-8")
         drawio_command.write_text("Follow references/import-drawio.md.\n", encoding="utf-8")
         mermaid_command.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
+        excalidraw_command.write_text(
+            "Follow references/import-excalidraw.md.\n", encoding="utf-8"
+        )
         profile_command.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_command.write_text("Follow references/doctor.md.\n", encoding="utf-8")
         export_prompt.write_text("Follow references/export.md.\n", encoding="utf-8")
         mermaid_prompt.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
+        excalidraw_prompt.write_text(
+            "Follow references/import-excalidraw.md.\n", encoding="utf-8"
+        )
         profile_prompt.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_prompt.write_text("Follow references/doctor.md.\n", encoding="utf-8")
 
@@ -402,8 +462,9 @@ diagram-design/
         counted.mkdir(parents=True, exist_ok=True)
         drawio = counted / "import-drawio.md"
         mermaid = counted / "import-mermaid.md"
+        excalidraw = counted / "import-excalidraw.md"
         routed = "`--type` forces one of the visual types in SKILL.md \u00a73.\n"
-        for path in (drawio, mermaid):
+        for path in (drawio, mermaid, excalidraw):
             path.write_text(routed, encoding="utf-8")
 
         errors = []

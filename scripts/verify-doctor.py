@@ -30,6 +30,7 @@ MAINTAINER_MARKERS = (
 EXPECTED_SCRIPTS = (
     Path("scripts/verify-drawio-import.py"),
     Path("scripts/verify-mermaid-import.py"),
+    Path("scripts/verify-excalidraw-import.py"),
     Path("scripts/verify-motion.py"),
     Path("scripts/lint-skin.py"),
     Path("scripts/verify-docs-sync.py"),
@@ -39,13 +40,17 @@ ROUTING_SURFACES = {
     Path("commands/export-diagram.md"): "references/export.md",
     Path("commands/import-drawio.md"): "references/import-drawio.md",
     Path("commands/import-mermaid.md"): "references/import-mermaid.md",
+    Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("commands/profile.md"): "references/profiles.md",
     Path("commands/doctor.md"): "references/doctor.md",
     Path("prompts/export-diagram.md"): "references/export.md",
     Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
+    Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("prompts/profile.md"): "references/profiles.md",
     Path("prompts/doctor.md"): "references/doctor.md",
 }
+
+VERSION_PROBE = "import sys; print('.'.join(str(p) for p in sys.version_info[:3]))"
 
 PASS = "pass"
 WARN = "warn"
@@ -61,27 +66,69 @@ class CheckResult:
 
 
 def run_command(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
+    """Run a command, reporting a failure to launch the way a bad exit is reported.
+
+    A name on PATH is not always a runnable program: an App Execution Alias for
+    an uninstalled app, a dangling symlink, or a file without the exec bit raise
+    instead of exiting. Every caller here only asks whether the command answered,
+    so surface that as a non-zero result carrying the OS error rather than letting
+    it unwind the whole doctor.
+    """
+    try:
+        return subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except OSError as exc:
+        return subprocess.CompletedProcess(command, 1, "", str(exc))
 
 
-def probe_python_command() -> tuple[str | None, str | None]:
-    """Resolve python3 first, then python."""
+@dataclass
+class PythonProbe:
+    """What resolving an interpreter name actually turned up."""
+
+    command: str | None = None
+    executable: str | None = None
+    version: str | None = None
+    error: str | None = None
+
+
+def probe_python_command() -> PythonProbe:
+    """Resolve python3 first, then python, preferring a name that actually runs.
+
+    Presence on PATH is not evidence of an interpreter. On Windows the
+    ``python3`` App Execution Alias ships on PATH by default and exits
+    non-zero with a Microsoft Store prompt, so a machine with a working
+    ``python`` is otherwise reported as having no usable Python at all. Fall
+    through to the next candidate when the preferred name cannot report its
+    own version, and keep the first name found so a total failure still says
+    what was tried.
+    """
+    fallback = PythonProbe()
     for candidate in ("python3", "python"):
         executable = shutil.which(candidate)
-        if executable:
-            return candidate, executable
-    return None, None
+        if executable is None:
+            continue
+        probe = run_command([candidate, "-c", VERSION_PROBE])
+        version = probe.stdout.strip()
+        if probe.returncode == 0 and version:
+            return PythonProbe(command=candidate, executable=executable, version=version)
+        if fallback.command is None:
+            fallback = PythonProbe(
+                command=candidate,
+                executable=executable,
+                error=probe.stderr.strip() or "version probe failed",
+            )
+    return fallback
 
 
 def check_python_runtime() -> tuple[CheckResult, str | None]:
-    command_name, executable = probe_python_command()
+    probe = probe_python_command()
+    command_name, executable = probe.command, probe.executable
     if command_name is None or executable is None:
         return (
             CheckResult(
@@ -93,11 +140,8 @@ def check_python_runtime() -> tuple[CheckResult, str | None]:
             None,
         )
 
-    version_probe = run_command(
-        [command_name, "-c", "import sys; print('.'.join(str(p) for p in sys.version_info[:3]))"]
-    )
-    if version_probe.returncode != 0:
-        detail = version_probe.stderr.strip() or "version probe failed"
+    if probe.version is None:
+        detail = probe.error or "version probe failed"
         return (
             CheckResult(
                 name="Python runtime",
@@ -108,7 +152,7 @@ def check_python_runtime() -> tuple[CheckResult, str | None]:
             command_name,
         )
 
-    version_text = version_probe.stdout.strip()
+    version_text = probe.version
     try:
         major, minor, patch = (int(part) for part in version_text.split(".", 2))
     except ValueError:
