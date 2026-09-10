@@ -231,6 +231,12 @@ def verify_manifest_identity(manifests: dict[str, dict[str, Any]], errors: list[
                     f"{label} manifest {field!r} must match {reference_label}; "
                     f"got {payload.get(field)!r}"
                 )
+    omp_manifest = manifests.get("OMP")
+    if omp_manifest is not None:
+        if omp_manifest.get("private") is not True:
+            errors.append("OMP manifest 'private' must be true")
+        if not isinstance(omp_manifest.get("omp"), dict):
+            errors.append("OMP manifest 'omp' must be a JSON object")
 
 
 def verify_marketplaces(root: Path, errors: list[str]) -> None:

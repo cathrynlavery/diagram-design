@@ -39,9 +39,9 @@ This repository does not duplicate `SKILL.md` into host-specific loader stubs. F
 | **Cline CLI / VS Code** | `~/.cline/skills/`, `~/.agents/skills/`, workspace `.cline/skills/`, or workspace `.agents/skills/` | Link the inner skill and enable it from the Skills view when needed. |
 | **Kiro** | Workspace `.kiro/skills/` or global `~/.kiro/skills/` | Link the inner skill, or import its GitHub subdirectory URL; imported skills are copied and must be re-imported to update. |
 | **OpenCode** | Project `.opencode/skills/` or global `~/.config/opencode/skills/` | Link or copy the inner skill; copied installs must be replaced to update. |
-| **GitHub Copilot** | Project `.github/skills/`, `.agents/skills/`, or `.claude/skills/`; user `~/.copilot/skills/`, `~/.agents/skills/`, or `~/.claude/skills/` | Link the inner skill into one applicable root. |
+| **GitHub Copilot** | Marketplace plugin; project `.github/skills/`, `.agents/skills/`, or `.claude/skills/`; user `~/.copilot/skills/`, `~/.agents/skills/`, or `~/.claude/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
 
-Marketplace installs (Claude `/plugin`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead.
+Marketplace installs (Claude `/plugin`, `copilot plugin install`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead.
 
 ### Unix (user-global inner skill)
 
@@ -138,7 +138,7 @@ Then: propose the style-guide diff, wait for approval, write `references/style-g
 
 ## R4. Selection cheat sheet
 
-Do not duplicate the 39-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
+Do not duplicate the 40-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
 
 **Behavior first** (then nearest type):
 
@@ -187,7 +187,7 @@ Shipped examples are `assets/example-<type>.html` plus `-dark` and `-full` varia
 
 ## R6. Import
 
-Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md) or [`import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md) and set the four dials **before** redrawing ([output-spec.md](../skills/diagram-design/references/output-spec.md)):
+Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md), [`import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md), or [`import-excalidraw.md`](../skills/diagram-design/references/import-excalidraw.md) and set the four dials **before** redrawing ([output-spec.md](../skills/diagram-design/references/output-spec.md)):
 
 | Dial | Typical values |
 |---|---|
@@ -196,9 +196,9 @@ Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md) 
 | Detail | `faithful` · `balanced` · `simplified` |
 | Audience | `engineer` · `mixed` · `executive` |
 
-Slash forms (Claude): `/diagram-design:import-drawio <file>` and `/diagram-design:import-mermaid <file-or-md>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, and Mermaid auto-layout do not carry over.
+Slash forms (Claude): `/diagram-design:import-drawio <file>`, `/diagram-design:import-mermaid <file-or-md>`, and `/diagram-design:import-excalidraw <file>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, Mermaid auto-layout, and Excalidraw hand-drawn geometry do not carry over.
 
-Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, `mermaid_extract.py`.
+Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, `mermaid_extract.py`, `excalidraw_extract.py`.
 
 ---
 
