@@ -84,6 +84,20 @@ def sound() -> str:
     )
 
 
+# Two stacks, each repeating a group of its own: 2x[local] and 2x[full].
+def two_stacks() -> str:
+    return (
+        panel("encoder", "2", "0-1")
+        + panel("decoder", "2", "2-3")
+        + group("g-enc", "2")
+        + chip("g-enc", "×2")
+        + layer("local", stack="encoder", grp="g-enc")
+        + group("g-dec", "2")
+        + chip("g-dec", "×2")
+        + layer("full", stack="decoder", grp="g-dec")
+    )
+
+
 def main() -> int:
     module = load_verifier()
     failures: list[str] = []
@@ -254,6 +268,59 @@ def main() -> int:
         "a blank data-layer-stack is caught",
         document(sound().replace('data-layer-stack="encoder"', 'data-layer-stack=""', 1)),
         2,  # blank stack, and the census that block no longer feeds
+    )
+
+    # Group ownership. `by_gid` is one flat namespace across every stack, so
+    # each of these mutations reconciles perfectly against both panels'
+    # data-depth while the repeat group it leans on belongs to the other one.
+    check(
+        "two stacks each repeating their own group pass",
+        document(two_stacks()),
+        0,
+    )
+
+    check(
+        "a stack borrowing another stack's repeat group is caught",
+        document(
+            panel("encoder", "2", "0-1")
+            + panel("decoder", "4", "2-5")
+            + group("g-enc", "2")
+            + chip("g-enc", "×2")
+            + layer("local", stack="encoder", grp="g-enc")
+            + group("g-dec", "2")
+            + chip("g-dec", "×2")
+            + layer("full", stack="decoder", grp="g-dec")
+            + layer("full", stack="decoder", grp="g-enc")
+        ),
+        1,  # both censuses still reconcile: 2 = 2 and 2 + 2 = 4
+    )
+
+    check(
+        "a group nested under another stack's group is caught",
+        document(
+            panel("encoder", "2", "0-1")
+            + panel("decoder", "4", "2-5")
+            + group("g-enc", "2")
+            + chip("g-enc", "×2")
+            + layer("local", stack="encoder", grp="g-enc")
+            + group("g-dec", "2", parent="g-enc")
+            + chip("g-dec", "×2")
+            + layer("full", stack="decoder", grp="g-dec")
+        ),
+        1,  # encoder 2 = 2 and decoder 2 × 2 = 4 both reconcile
+    )
+
+    check(
+        "a group nested inside its own stack's parent is not an ownership error",
+        document(
+            panel("encoder", "6", "0-5")
+            + group("g-outer", "3")
+            + chip("g-outer", "×3")
+            + group("g-inner", "2", parent="g-outer")
+            + chip("g-inner", "×2")
+            + layer("full", stack="encoder", grp="g-inner")
+        ),
+        0,
     )
 
     for path in SHIPPED:

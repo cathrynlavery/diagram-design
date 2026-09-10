@@ -89,7 +89,7 @@ Every block that is part of a stack carries its role and its group:
 
 > Σ over counted blocks of ∏ `data-repeat` along the block's group ancestry
 
-and it must equal the panel's `data-depth`, which must equal the span of `data-layer-range`, and each `×N` chip's text must equal its group's `data-repeat`. From a repository checkout, `python3 <repo-root>/scripts/verify-model-arch.py <file>` recomputes all four. This is the type's characteristic failure: a `×4` that should read `×5`, or a group moved during layout, produces a diagram that looks right and adds up to 36 layers.
+and it must equal the panel's `data-depth`, which must equal the span of `data-layer-range`, and each `×N` chip's text must equal its group's `data-repeat`. A repeat group also belongs to exactly one stack: the blocks claiming a group must all name the same `data-layer-stack`, and a nested group must be claimed by the same stack as its parent — otherwise two stacks reconcile against a group only one of them draws. From a repository checkout, `python3 <repo-root>/scripts/verify-model-arch.py <file>` recomputes all five. This is the type's characteristic failure: a `×4` that should read `×5`, or a group moved during layout, produces a diagram that looks right and adds up to 36 layers.
 
 ## Complexity budget
 

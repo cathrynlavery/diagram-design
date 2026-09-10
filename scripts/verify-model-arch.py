@@ -15,7 +15,10 @@ So the plan is recorded in the markup and recomputed here:
     group ancestry;
   * that sum must equal the stack panel's `data-depth`;
   * `data-depth` must equal the span of `data-layer-range` ("0-19" -> 20);
-  * every `x N` chip's text must equal its group's `data-repeat`.
+  * every `x N` chip's text must equal its group's `data-repeat`;
+  * every repeat group is claimed by blocks of exactly one stack, and a
+    nested group is claimed by the same stack as its parent -- otherwise
+    two stacks reconcile against a group only one of them draws.
 
 What this never does: it does not look at where anything is drawn. A group
 whose rect does not visually enclose the blocks claiming it is a layout bug
@@ -306,6 +309,53 @@ def check(path: Path) -> list[str]:
             findings.append(
                 f'{name}:{by_stack[sname].line}: stack "{sname}" expands to {total} layers '
                 f"but declares data-depth={declared[sname]}; check the ×N multipliers"
+            )
+
+    # ── group ownership ─────────────────────────────────────────────────
+    # `by_gid` is one flat namespace, so nothing above stops a decoder block
+    # from multiplying itself by a group the encoder draws. Both stacks then
+    # reconcile against their own data-depth and the census certifies a
+    # network whose repeat groups sit in the wrong panel.
+    #
+    # Ownership is derived from the blocks that claim a group rather than
+    # declared in a `data-group-stack` attribute: that attribute would
+    # restate `data-layer-stack` and could drift from it, which is the
+    # second source of truth ADR 0010 rejects. What stays out of scope is
+    # a group whose rect is drawn in the wrong panel while every block
+    # claiming it agrees -- that is geometry, and this script never looks
+    # at where anything is drawn.
+    claimed: dict[str, dict[str, int]] = {}  # gid → stack → first claiming line
+    for layer in doc.layers:
+        gid, sname = layer.group.strip(), layer.stack.strip()
+        if not gid or gid not in by_gid or sname not in by_stack:
+            continue  # already reported by the census
+        claimed.setdefault(gid, {}).setdefault(sname, layer.line)
+
+    owner: dict[str, str] = {}
+    for gid, group in by_gid.items():
+        stacks = claimed.get(gid)
+        if not stacks:
+            continue
+        if len(stacks) == 1:
+            owner[gid] = next(iter(stacks))
+            continue
+        (first, first_line), (second, second_line) = sorted(
+            stacks.items(), key=lambda item: item[1]
+        )[:2]
+        findings.append(
+            f'{name}:{group.line}: group "{gid}" is claimed by stack "{first}" '
+            f'(line {first_line}) and stack "{second}" (line {second_line}); '
+            "a repeat group belongs to exactly one stack"
+        )
+
+    for gid, group in by_gid.items():
+        parent = group.parent.strip()
+        if gid in owner and parent in owner and owner[gid] != owner[parent]:
+            findings.append(
+                f'{name}:{group.line}: group "{gid}" is claimed by stack '
+                f'"{owner[gid]}" but its data-group-parent "{parent}" is claimed '
+                f'by stack "{owner[parent]}"; a nested group repeats inside its '
+                "own stack"
             )
 
     # ── chips ───────────────────────────────────────────────────────────

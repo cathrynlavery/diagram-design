@@ -36,9 +36,10 @@ So the type carries a metadata contract in the same spirit as ADR 0010's block r
 - each counted block contributes the product of `data-repeat` along its group ancestry;
 - the sum must equal the stage panel's `data-depth`;
 - `data-depth` must equal the span of `data-layer-range`;
-- every `×N` chip's text must equal the `data-repeat` of the group it labels.
+- every `×N` chip's text must equal the `data-repeat` of the group it labels;
+- every repeat group is claimed by blocks of exactly one stack, and a nested group by the same stack as its parent. Ownership is derived from the claiming blocks rather than declared in a `data-group-stack` attribute, which would restate `data-layer-stack` and could drift from it — the second source of truth ADR 0010 rejects.
 
-Following ADR 0010's split, the verifier never inspects geometry: a group rect that does not visually enclose the blocks claiming it is a layout bug for `verify-geometry.py` and for the eye. `scripts/test-verify-model-arch.py` mutates a sound plan twenty-two ways — each mutation still renders correctly — and requires every one to be caught.
+Following ADR 0010's split, the verifier never inspects geometry: a group rect that does not visually enclose the blocks claiming it is a layout bug for `verify-geometry.py` and for the eye. `scripts/test-verify-model-arch.py` mutates a sound plan twenty-six ways — each mutation still renders correctly — and requires every one to be caught.
 
 ## Consequences
 

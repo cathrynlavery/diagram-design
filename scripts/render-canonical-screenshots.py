@@ -56,7 +56,7 @@ def main() -> int:
                     "height": height,
                 }
             )
-            print(f"[{index:02d}/40] {slug}: {width}x{height}")
+            print(f"[{index:02d}/{len(slugs)}] {slug}: {width}x{height}")
         browser.close()
 
     payload = {
