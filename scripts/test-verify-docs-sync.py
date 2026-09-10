@@ -464,6 +464,66 @@ diagram-design/
                     f"a count unrelated to the taxonomy was rejected for {benign!r}: {errors}"
                 )
 
+        # README is the same surface by another route: it carries the count in
+        # prose a user reads before installing, and it went stale there — it
+        # said 39 while the selection table shipped 40 — because nothing checked
+        # it. It points at SKILL.md §3 instead, and the two phrasings the real
+        # file used are covered so the wording cannot come back.
+        readme_routed = (
+            "# Diagram Design\n\n"
+            "Every visual type ships in three static variants; see `SKILL.md` §3.\n"
+        )
+        readme.write_text(readme_routed, encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"a count-free README failed: {errors}")
+
+        for stale in (
+            "39 editorial diagram types for Claude Code.\n",
+            "All 39 visual types ship in three static variants.\n",
+            "Open the gallery to see all 39 diagrams.\n",
+            "deterministic 39-type PNG catalog renderer\n",
+            "any of the 39 visual types\n",
+        ):
+            readme.write_text(readme_routed + stale, encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if (
+                len(errors) != 1
+                or "README.md" not in errors[0]
+                or "hardcodes the visual-type count" not in errors[0]
+            ):
+                raise AssertionError(
+                    f"a hardcoded README count was not reported for {stale!r}: {errors}"
+                )
+
+        # README carries ordinary numbers that are not the taxonomy count, and
+        # the two added phrasings must not start rejecting them.
+        for benign in (
+            "Renders all 3 variants from one source.\n",
+            "The gallery lists 2 file types.\n",
+            "Allows 24 nodes per diagram.\n",
+            "Runs on Python 3.11 and 3.12.\n",
+        ):
+            readme.write_text(readme_routed + benign, encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if errors:
+                raise AssertionError(
+                    f"a README count unrelated to the taxonomy was rejected for {benign!r}: "
+                    f"{errors}"
+                )
+
+        # A missing README is named rather than skipped, the way a missing
+        # command is.
+        readme.unlink()
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors != ["type-count surface is missing: README.md"]:
+            raise AssertionError(f"a missing README surface was not reported: {errors}")
+        readme.write_text(readme_routed, encoding="utf-8")
+
         # Restore the routed wording first: leaving a stale count behind lets
         # this case pass on the wrong error and never names the missing surface.
         mermaid.write_text(routed, encoding="utf-8")
