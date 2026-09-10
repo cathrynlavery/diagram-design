@@ -133,6 +133,15 @@ codex plugin add diagram-design@diagram-design
 
 Codex refreshes configured Git marketplaces at startup. To fetch immediately, run `codex plugin marketplace upgrade diagram-design` and start a new session.
 
+**GitHub Copilot:**
+
+```bash
+copilot plugin marketplace add cathrynlavery/diagram-design
+copilot plugin install diagram-design@diagram-design
+```
+
+Copilot installs the shared Diagram Design skill plus its doctor, export, import, and profile capabilities from the existing repository marketplace. Confirm discovery with `copilot skill list` (or `/skills` in an interactive session), then ask for a diagram in natural language. To fetch a merged update, run `copilot plugin marketplace update diagram-design`, then `copilot plugin update diagram-design@diagram-design`.
+
 **Factory Droid:**
 
 ```bash
@@ -178,15 +187,16 @@ pi install ~/code/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.claude/skills/diagram-design
 
 # Other Agent Skills hosts: create only the roots you use
-mkdir -p ~/.agents/skills ~/.cursor/skills ~/.cline/skills ~/.kiro/skills ~/.config/opencode/skills
+mkdir -p ~/.agents/skills ~/.cursor/skills ~/.cline/skills ~/.kiro/skills ~/.config/opencode/skills ~/.copilot/skills
 ln -s ~/code/diagram-design/skills/diagram-design ~/.agents/skills/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.cursor/skills/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.cline/skills/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.kiro/skills/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.config/opencode/skills/diagram-design
+ln -s ~/code/diagram-design/skills/diagram-design ~/.copilot/skills/diagram-design
 ```
 
-The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, Codex, Factory Droid, and other Agent Skills-compatible tools use the same files.
+The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, and other Agent Skills-compatible tools use the same files.
 
 ---
 
