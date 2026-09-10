@@ -139,3 +139,6 @@ Then verify in a browser:
 - Pass/fail, queue fullness, or outcome encoded only by hue.
 - Remote scripts, general application logic, runtime geometry, or duplicated semantic text.
 - Capturing at wall-clock delay instead of the explicit static override.
+- Disclosure that hides semantic content until hover or `:target`. Motion explains an ordered change; on-demand detail is a second diagram (overview + detail, SKILL.md §7), not a hidden panel. Hidden content is absent from PNG export, print, and touch, which breaks the static-first contract above.
+
+One allowance: a nested `<title>` inside a node group — the native tooltip — may carry a short elaboration of something the diagram already labels. It degrades to nothing rather than to missing meaning.
