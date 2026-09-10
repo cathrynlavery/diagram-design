@@ -423,8 +423,10 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # a hyphenated modifier (`39-type catalog`), and a count quantifying the whole
 # set (`all 39 diagrams`). The first three insist on that noun so an unrelated
 # quantity — `accepts 2 file types` — is not rejected by a gate about the
-# visual taxonomy; the last two are specific enough phrases that they only
-# describe the shipped set.
+# visual taxonomy. The last two carry no such noun, so they instead require a
+# numeral of more than one digit: a taxonomy that ships 40 types was never 2 or
+# 3, while `a 2-type system` and `all 3 diagrams in the appendix` are ordinary
+# prose. Without that floor this blocking gate rejects both.
 #
 # Every gap is whitespace-tolerant because both commands already wrap the
 # sentence that carried the stale count, so a count can land just after the
@@ -439,8 +441,8 @@ HARDCODED_COUNT_RE = re.compile(
     r"one\s+of\s+(?:the\s+)?\d+\b"
     r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
     r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b"
-    r"|\b\d+-type\b"
-    r"|\ball\s+\d+\s+diagrams?\b",
+    r"|\b\d{2,}-type\b"
+    r"|\ball\s+\d{2,}\s+diagrams?\b",
     re.IGNORECASE,
 )
 COUNT_SURFACES = (

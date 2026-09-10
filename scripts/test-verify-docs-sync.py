@@ -499,12 +499,20 @@ diagram-design/
                 )
 
         # README carries ordinary numbers that are not the taxonomy count, and
-        # the two added phrasings must not start rejecting them.
+        # the two added phrasings must not start rejecting them. The last four
+        # are the shapes those phrasings would overmatch without their
+        # single-digit floor: `2-type` and `all 3 diagrams` are ordinary prose
+        # in a repository that ships 40 types, and this gate blocks a pull
+        # request, so rejecting them is worse than missing a stale count.
         for benign in (
             "Renders all 3 variants from one source.\n",
             "The gallery lists 2 file types.\n",
             "Allows 24 nodes per diagram.\n",
             "Runs on Python 3.11 and 3.12.\n",
+            "A 2-type system is enough here.\n",
+            "See all 3 diagrams in the appendix.\n",
+            "The 4-type taxonomy of joins.\n",
+            "All 5 diagrams are inlined.\n",
         ):
             readme.write_text(readme_routed + benign, encoding="utf-8")
             errors = []
