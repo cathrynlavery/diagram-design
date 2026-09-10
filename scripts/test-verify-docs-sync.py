@@ -247,13 +247,18 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         export_reference = root / "skills/diagram-design/references/export.md"
         drawio_reference = root / "skills/diagram-design/references/import-drawio.md"
         mermaid_reference = root / "skills/diagram-design/references/import-mermaid.md"
+        excalidraw_reference = (
+            root / "skills/diagram-design/references/import-excalidraw.md"
+        )
         export_command = root / "commands/export-diagram.md"
         drawio_command = root / "commands/import-drawio.md"
         mermaid_command = root / "commands/import-mermaid.md"
+        excalidraw_command = root / "commands/import-excalidraw.md"
         profile_command = root / "commands/profile.md"
         doctor_command = root / "commands/doctor.md"
         export_prompt = root / "prompts/export-diagram.md"
         mermaid_prompt = root / "prompts/import-mermaid.md"
+        excalidraw_prompt = root / "prompts/import-excalidraw.md"
         profile_prompt = root / "prompts/profile.md"
         doctor_prompt = root / "prompts/doctor.md"
         for path in (
@@ -262,13 +267,16 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
             export_reference,
             drawio_reference,
             mermaid_reference,
+            excalidraw_reference,
             export_command,
             drawio_command,
             mermaid_command,
+            excalidraw_command,
             profile_command,
             doctor_command,
             export_prompt,
             mermaid_prompt,
+            excalidraw_prompt,
             profile_prompt,
             doctor_prompt,
         ):
@@ -278,13 +286,20 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         export_reference.write_text("# Export\n", encoding="utf-8")
         drawio_reference.write_text("# Draw.io\n", encoding="utf-8")
         mermaid_reference.write_text("# Mermaid\n", encoding="utf-8")
+        excalidraw_reference.write_text("# Excalidraw\n", encoding="utf-8")
         export_command.write_text("Follow references/export.md.\n", encoding="utf-8")
         drawio_command.write_text("Follow references/import-drawio.md.\n", encoding="utf-8")
         mermaid_command.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
+        excalidraw_command.write_text(
+            "Follow references/import-excalidraw.md.\n", encoding="utf-8"
+        )
         profile_command.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_command.write_text("Follow references/doctor.md.\n", encoding="utf-8")
         export_prompt.write_text("Follow references/export.md.\n", encoding="utf-8")
         mermaid_prompt.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
+        excalidraw_prompt.write_text(
+            "Follow references/import-excalidraw.md.\n", encoding="utf-8"
+        )
         profile_prompt.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_prompt.write_text("Follow references/doctor.md.\n", encoding="utf-8")
 
@@ -402,8 +417,9 @@ diagram-design/
         counted.mkdir(parents=True, exist_ok=True)
         drawio = counted / "import-drawio.md"
         mermaid = counted / "import-mermaid.md"
+        excalidraw = counted / "import-excalidraw.md"
         routed = "`--type` forces one of the visual types in SKILL.md \u00a73.\n"
-        for path in (drawio, mermaid):
+        for path in (drawio, mermaid, excalidraw):
             path.write_text(routed, encoding="utf-8")
 
         errors = []

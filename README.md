@@ -14,7 +14,7 @@
 
 *New in 2.5.10: ten more layout grammars — Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, and database schema.*
 
-39 editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io or Mermaid sources at a chosen format, size, and detail level.
+39 editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
@@ -100,6 +100,11 @@ All 39 visual types ship in three static variants: minimal light, minimal dark, 
   <td align="center"><a href="docs/screenshots/db-schema.png"><img src="docs/screenshots/thumbs/db-schema.webp" alt="Database schema"></a><br><b>Database schema</b><br><sub>Physical tables + column FKs</sub></td>
   <td align="center"><a href="docs/screenshots/polar.png"><img src="docs/screenshots/thumbs/polar.webp" alt="Polar chart"></a><br><b>Polar chart</b><br><sub>Cyclic magnitude · linear radius</sub></td>
 </tr>
+<tr>
+  <td align="center" width="33%"><a href="docs/screenshots/waterfall.png"><img src="docs/screenshots/thumbs/waterfall.webp" alt="Waterfall"></a><br><b>Waterfall</b><br><sub>Running total + signed bridges</sub></td>
+  <td align="center" width="33%"></td>
+  <td align="center" width="33%"></td>
+</tr>
 </table>
 
 The v2.5.10 release added the final ten types above. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
@@ -145,7 +150,7 @@ Droid tracks Git plugins by commit rather than the manifest's display version. T
 pi install https://github.com/cathrynlavery/diagram-design
 ```
 
-Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
+Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/import-excalidraw`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
 
 **Kiro:** Import the Agent Skill from the repository subdirectory URL:
 
@@ -282,9 +287,9 @@ Motion is optional and does not create another visual type. [`animation.md`](ski
 
 ---
 
-## Import from draw.io or Mermaid
+## Import from draw.io, Mermaid, or Excalidraw
 
-Already have diagrams in draw.io / diagrams.net or Mermaid? Point the skill at the source and it **redraws** them — same content, this design system, at whatever the destination needs.
+Already have diagrams in draw.io / diagrams.net, Mermaid, or Excalidraw? Point the skill at the source and it **redraws** them — same content, this design system, at whatever the destination needs.
 
 [![Redrawn from a .drawio file](docs/screenshots/thumbs/import-drawio.webp)](docs/screenshots/import-drawio.png)
 
@@ -296,12 +301,14 @@ Already have diagrams in draw.io / diagrams.net or Mermaid? Point the skill at t
 /diagram-design:import-drawio platform.drawio --detail=faithful --format=png --page=all
 /diagram-design:import-mermaid README.md --diagram=all
 /diagram-design:import-mermaid architecture.mmd --size=slide-16x9 --detail=simplified
+/diagram-design:import-excalidraw whiteboard.excalidraw --size=slide-16x9 --detail=simplified
 ```
 
-Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, or *"この Mermaid をスライド用にきれいにして"*.
+Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, *"make this whiteboard sketch presentable"*, or *"この Mermaid をスライド用にきれいにして"*.
 
 Reads the common containers draw.io writes — `.drawio`, `.drawio.xml`, `.drawio.png` (embedded diagram), and `.drawio.svg` — including compressed payloads that look like base64 garbage in an editor.
-For Mermaid, it accepts `.mmd`, `.mermaid`, and one or more fenced `mermaid` blocks in Markdown. It parses text only: no rendering, JavaScript, browser, network, or followed click targets.
+For Mermaid, it accepts `.mmd`, `.mermaid`, and one or more fenced `mermaid` blocks in Markdown.
+For Excalidraw, it accepts `.excalidraw` and `.excalidraw.json` scene files (not `.excalidraw.png`/`.excalidraw.svg` exports). It parses text only: no rendering, JavaScript, browser, network, or followed click targets.
 
 ### The four dials
 
@@ -323,7 +330,7 @@ Dropped:   1 sticky note ("legacy path, to be retired") — unconnected in sourc
 Kept in full: the request path (Web/Mobile → Gateway → Orders → Postgres)
 ```
 
-What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, or Mermaid's automatic layout. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
+What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, or Excalidraw's hand-drawn geometry. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagram-design/references/import-excalidraw.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
 
 ---
 
@@ -381,11 +388,13 @@ diagram-design/
 │   ├── export-diagram.md            — plugin export command
 │   ├── import-drawio.md             — plugin draw.io import command
 │   ├── import-mermaid.md            — plugin Mermaid import command
+│   ├── import-excalidraw.md         — plugin Excalidraw import command
 │   ├── profile.md                   — plugin client-profile command
 │   └── doctor.md                    — plugin environment diagnostics command
 ├── prompts/
 │   ├── export-diagram.md            — Pi `/export-diagram` prompt template
 │   ├── import-mermaid.md            — Pi Mermaid import prompt template
+│   ├── import-excalidraw.md         — Pi Excalidraw import prompt template
 │   ├── profile.md                   — Pi `/profile` prompt template
 │   └── doctor.md                    — Pi `/doctor` diagnostics prompt template
 ├── skills/
@@ -399,6 +408,7 @@ diagram-design/
 │       │   ├── profiles.md          — named client profiles + project markers
 │       │   ├── import-drawio.md     — draw.io redraw procedure
 │       │   ├── import-mermaid.md    — Mermaid redraw procedure
+│       │   ├── import-excalidraw.md — Excalidraw redraw procedure
 │       │   ├── output-spec.md       — format × size × detail level
 │       │   ├── export.md            — SVG / PNG export + sizing
 │       │   ├── export-registry.md   — block-metadata JSON sidecar export
@@ -432,6 +442,7 @@ diagram-design/
 │       ├── scripts/
 │       │   ├── drawio_extract.py    — draw.io → structured IR
 │       │   ├── mermaid_extract.py   — Mermaid → structured IR
+│       │   ├── excalidraw_extract.py — Excalidraw → structured IR
 │       │   └── self_check.py        — packaged output self-check (runs installed)
 │       └── assets/
 │           ├── index.html           — live gallery, tabbed
@@ -441,6 +452,7 @@ diagram-design/
 │           ├── example-quadrant-consultant.html
 │           ├── example-import-drawio.html
 │           ├── example-import-mermaid.html
+│           ├── example-import-excalidraw.html
 │           ├── example-policy-trace-animated.html
 │           └── example-sequence-oauth*.html
 ├── scripts/
@@ -457,11 +469,15 @@ diagram-design/
 │   ├── test-verify-polar.py         — polar gate adversarial tests
 │   ├── verify-sankey.py             — Sankey conservation + geometry gate
 │   ├── test-verify-sankey.py        — Sankey gate adversarial tests
+│   ├── verify-waterfall.py          — waterfall running-total + bridge gate
+│   ├── test-verify-waterfall.py     — waterfall gate adversarial tests
 │   ├── test-verify-docs-sync.py     — docs/routing-surface gate tests
 │   └── fixtures/
 │       ├── sample-flowchart.mmd
 │       ├── sample-readme-with-mermaid.md
-│       └── sample-adversarial.mmd
+│       ├── sample-adversarial.mmd
+│       ├── sample-whiteboard.excalidraw
+│       └── sample-adversarial.excalidraw
 ├── docs/cookbook.md                 — operator recipes for editable installs and common tasks
 ├── docs/adr/                        — short records of settled design decisions
 ├── docs/screenshots/                — full-resolution images + source-digest manifest.json
@@ -483,10 +499,14 @@ container formats and checks the references stay in sync.
 If you touch the Mermaid import path, `python3 scripts/verify-mermaid-import.py` must also pass —
 it covers all supported grammars, multi-block Markdown, adversarial labels, trust-boundary
 behavior, resource caps, named failures, and reference/command wiring.
+If you touch the Excalidraw import path, `python3 scripts/verify-excalidraw-import.py` must also
+pass — it covers scene parsing, bound labels, groups and frames, adversarial labels,
+trust-boundary behavior, resource caps, named failures, and reference/command wiring.
 
 Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
 Diagrams using the traceable block decomposition pattern get a structural gate on top of that: `python3 scripts/verify-block-registry.py --all` fails CI on a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block in the same file, a cycle in the parent chain, a blank `data-block-id`, or a missing or blank `data-block-name` — the same defects that would make `--registry`'s exported JSON (see [`export-registry.md`](skills/diagram-design/references/export-registry.md)) misrepresent the tree it claims to describe. `python3 scripts/test-verify-block-registry.py` keeps that checker honest in both directions.
 Treemaps get a second geometric gate, because their whole claim is that area *is* the encoding: `python3 scripts/verify-treemap.py --all` fails CI when a cell's share of the drawn area doesn't match the value printed inside it, or when a label overruns the cell it names. It measures area error as a *relative* figure — an absolute one passes exactly the small cells most likely to be wrong. `python3 scripts/test-verify-treemap.py` keeps it honest in both directions.
+Waterfalls get the same treatment, because their whole claim is that the running total is conserved: `python3 scripts/verify-waterfall.py --all` fails CI when the declared start, deltas, and end don't reconcile, when a bridge bar is drawn anywhere other than its two running levels on the shared scale, when a carry connector is missing or sits at the wrong level, when a delta prints without an explicit sign, or when the two directions collapse into one fill. `python3 scripts/test-verify-waterfall.py` keeps it honest in both directions.
 Docs and routing surfaces are themselves gated: `python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a scanner-visible support path is not shipped inside the skill package, or any command/prompt surface drifts from its routed reference. `python3 scripts/test-verify-docs-sync.py` exercises those newer checks adversarially, including the strict-bundler behavior used by Hermes Agent. The skill also ships `skills/diagram-design/scripts/self_check.py` — a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. Settled design decisions (why one pinned controller, why patterns never add types, the autoplay policy, the SKILL.md byte cap, why label placement is verified geometrically, and why client profiles use marker-first resolution) live as short ADRs in `docs/adr/` — read them before relitigating one, add one when you settle a new policy.
 
 All pull requests and pushes are automatically validated across Linux, Windows, and macOS runners via GitHub Actions CI (`.github/workflows/ci.yml`).
@@ -545,6 +565,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Give me a terminal / CLI-window version" | `SKILL.md` + `references/primitive-terminal.md` |
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
+| "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
 | Routine static diagram-making (any of the 39 visual types) | Only `SKILL.md` + that one type's reference |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
