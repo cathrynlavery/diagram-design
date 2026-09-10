@@ -28,7 +28,35 @@ MOTION_TEMPLATE = SKILL_DIR / "assets" / "template-motion.html"
 MODES = {"none", "reveal", "step", "loop"}
 ACTIONS = {"play", "pause", "replay", "prev", "next"}
 ASCII_DECIMAL_RE = re.compile(r"^[0-9]+$")
-REFERENCE_ATTRS = {"src", "href", "xlink:href", "poster", "srcset", "action", "formaction"}
+CSS_ESCAPE_RE = re.compile(
+    r"\\(?:([0-9a-fA-F]{1,6})[ \t\r\n\f]?|(.))", re.DOTALL
+)
+CSS_IMPORT_RE = re.compile(r"@import\b", re.IGNORECASE)
+CSS_URL_RE = re.compile(r"url\(\s*([^)]+?)\s*\)", re.IGNORECASE)
+CSS_IMAGE_SET_RE = re.compile(r"(?:-webkit-)?image-set\s*\(", re.IGNORECASE)
+CSS_REMOTE_RE = re.compile(r"(?:https?:)?//", re.IGNORECASE)
+CSS_REFERENCE_ATTRS = {
+    "style",
+    "fill",
+    "stroke",
+    "filter",
+    "clip-path",
+    "mask",
+    "marker",
+    "marker-start",
+    "marker-mid",
+    "marker-end",
+    "cursor",
+}
+REFERENCE_ATTRS = {
+    "src",
+    "href",
+    "xlink:href",
+    "poster",
+    "srcset",
+    "action",
+    "formaction",
+}
 
 
 class DiagramParser(HTMLParser):
@@ -42,6 +70,7 @@ class DiagramParser(HTMLParser):
         self.statuses_in_controls = 0
         self.scripts: list[dict[str, object]] = []
         self.styles: list[str] = []
+        self.css_attributes: list[str] = []
         self.svgs: list[dict[str, object]] = []
         self.unsafe: list[str] = []
         self.references: list[tuple[str, str, str]] = []
@@ -57,7 +86,9 @@ class DiagramParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.casefold()
         normalized_attrs = [(key.casefold(), value or "") for key, value in attrs]
-        data = {key: value for key, value in normalized_attrs}
+        data: dict[str, str] = {}
+        for key, value in normalized_attrs:
+            data.setdefault(key, value)
         if tag in {"base", "embed", "object", "iframe"}:
             self.unsafe.append(f"<{tag}> is not allowed in a diagram file")
         for key, value in normalized_attrs:
@@ -67,6 +98,8 @@ class DiagramParser(HTMLParser):
                 self.unsafe.append(f"srcdoc attribute on <{tag}>")
             if key in REFERENCE_ATTRS:
                 self.references.append((tag, data.get("rel", ""), value))
+            if key in CSS_REFERENCE_ATTRS:
+                self.css_attributes.append(value)
         if "data-motion-root" in data:
             self.roots.append(data)
             if self._motion_root_depth is None:
@@ -195,6 +228,40 @@ def reference_error(tag: str, rel: str, value: str) -> str | None:
             return None
         return f"remote stylesheet is not the approved Google Fonts /css2 URL: {stripped[:80]}"
     return f"remote reference on <{tag}>: {stripped[:80]}"
+
+
+def normalize_css_escapes(source: str) -> str:
+    source = source.replace("\r\n", "\n").replace("\r", "\n").replace("\f", "\n")
+
+    def replace(match: re.Match[str]) -> str:
+        if match.group(1) is None:
+            escaped = match.group(2)
+            return "" if escaped == "\n" else escaped
+        codepoint = int(match.group(1), 16)
+        if codepoint == 0 or codepoint > 0x10FFFF:
+            return "\N{REPLACEMENT CHARACTER}"
+        return chr(codepoint)
+
+    return CSS_ESCAPE_RE.sub(replace, source)
+
+
+def check_css_references(parser: DiagramParser, errors: list[str]) -> None:
+    # Match the repository linter's fail-closed treatment of CSS loader syntax.
+    source = normalize_css_escapes("\n".join(parser.styles + parser.css_attributes))
+    found_loader = False
+    if CSS_IMPORT_RE.search(source):
+        errors.append("CSS @import is not allowed")
+        found_loader = True
+    for match in CSS_URL_RE.finditer(source):
+        value = match.group(1).strip().strip("'\"").strip()
+        if not value.startswith("#"):
+            errors.append("non-fragment CSS url() is not allowed")
+            found_loader = True
+    if CSS_IMAGE_SET_RE.search(source):
+        errors.append("CSS image-set() is not allowed")
+        found_loader = True
+    if CSS_REMOTE_RE.search(source) and not found_loader:
+        errors.append("remote reference in CSS is not allowed")
 
 
 def canonical_controller() -> str:
@@ -355,6 +422,7 @@ def verify(path: Path) -> list[str]:
     parser = parsed_document(source)
     errors: list[str] = []
     errors.extend(parser.unsafe)
+    check_css_references(parser, errors)
     for tag, rel, value in parser.references:
         finding = reference_error(tag, rel, value)
         if finding:

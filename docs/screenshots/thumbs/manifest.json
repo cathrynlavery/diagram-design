@@ -365,6 +365,15 @@
       "height": 276,
       "quality": 82,
       "thumb_sha256": "1071b9c9ef8d4b25ab1d59192e2f913530649765584f1a6474c78f61d4ebb9ef"
+    },
+    {
+      "thumb": "waterfall.webp",
+      "source": "docs/screenshots/waterfall.png",
+      "source_sha256": "41a9d0c428b86fd8d75a301ca91c9b69e05376e931c67f7821b4c561f4b12b7e",
+      "width": 600,
+      "height": 300,
+      "quality": 82,
+      "thumb_sha256": "b0c09eaec9b9ee1c8853f922e658d22d5c4dc033b86aa709fc49efb896d836fc"
     }
   ]
 }

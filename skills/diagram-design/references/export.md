@@ -32,15 +32,31 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
    - Ensure the opening tag has `xmlns="http://www.w3.org/2000/svg"`. Add it if missing.
    - Ensure a `viewBox` is present. The skill's templates always include one; warn the user if absent rather than guessing.
    - Preserve `role="img"`, `aria-labelledby`, and the first-child `<title>` / `<desc>` exactly as authored.
-   - Inject a Google Fonts `@import` so the SVG renders with correct typography in a browser. **Take the font URL from the source file's own `<link href>`** — that is the active skin's stack. A hardcoded one silently substitutes every label on a re-skinned project, and the substitution is invisible until someone opens the `.svg`. Then **XML-escape the `&` separators as `&amp;`** — a standalone `.svg` is parsed as strict XML, where a bare `&` starts an entity reference and makes the whole file fail to parse (which is why the URL can't be reused byte-for-byte from the HTML).
+   - Inject a Google Fonts `@import` so the SVG renders with correct typography in a browser. Restrict the lookup to the source document's Google Fonts stylesheet link (`https://fonts.googleapis.com/css2...`); do not reuse an arbitrary `<link>`. Take that link's `href`, **HTML-decode it once** with `html.unescape`, then **XML-escape it once** with `html.escape(..., quote=False)` before inserting it into the SVG. This makes bare `&` and already encoded `&amp;` inputs converge on one valid `&amp;` without producing `&amp;amp;`. The source link is the active skin's stack, while a hardcoded URL silently substitutes every label on a re-skinned project.
      ```svg
      <defs>
        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');</style>
      </defs>
      ```
-     The example above is the default skin, including its Korean and Traditional Chinese families. Under a custom skin, substitute the source file's font URL so the export names that brand's families instead. If the SVG already contains a `<defs>` block, **merge** the `<style>` into it (don't add a second `<defs>`).
-4. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
-5. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
+     The example above is the default skin, including its Korean and Traditional Chinese families. Under a custom skin, use the normalized source URL so the export names that brand's families instead. If the SVG already contains a `<defs>` block, **merge** the `<style>` into it (don't add a second `<defs>`).
+4. Normalize colors for strict SVG 1.1 consumers. This design system's tokens are authored as `rgba(...)` (see `style-guide.md`) and render correctly wherever colors are read as CSS — browsers, Figma, Illustrator. PowerPoint's SVG importer does not: it treats `rgba(...)` and `transparent` as unrecognized and paints them **opaque black**, turning a barely-there tint into a solid block that swallows the label inside it. The transform is lossless (every replacement renders identically to the original in a browser), so apply it to the SVG string extracted in step 2, before writing the file:
+
+   ```python
+   import re
+
+   svg = re.sub(
+       r'(fill|stroke)="rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)"',
+       lambda m: '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
+           m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), m.group(5)
+       ),
+       svg,
+   )
+   svg = re.sub(r'(fill|stroke)="transparent"', r'\1="none"', svg)
+   ```
+
+   The `\s*` around each channel tolerates a spaced `rgba(45, 49, 66, 0.03)` as well as the compact `rgba(45,49,66,0.03)` the templates normally use; `\d*\.?\d+` accepts an alpha value with or without a leading zero (both `0.03` and `.03` appear in shipped tokens). Matching is scoped to the `fill="..."` / `stroke="..."` presentation attribute, not the bare `rgba(` string, so nothing else is touched — the shipped templates and examples only ever express color through these two attributes on SVG elements, never a `style="..."` attribute or a `<style>` block. (A brand's onboarded palette in `style-guide.md` could in principle add a third notation such as `hsl()`; none exists in any shipped token today, so this pass doesn't handle it — extend the regex if one is ever introduced.)
+5. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
+6. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
 
 ### Caveat to surface to the user
 

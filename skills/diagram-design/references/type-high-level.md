@@ -109,13 +109,13 @@ chevron_cx(C)      = (x_boundaries[index(C)] + x_boundaries[index(C)+1]) / 2
 - Middle: `(x0,4) (x1-12,4) (x1,18) (x1-12,32) (x0,32) (x0+12,18)`
 - Last (rightmost): `(x0,4) (effective_w,4) (effective_w,32) (x0,32) (x0+12,18)`
 
-Fills alternate between two steps of the **phase-band palette** (§6.1) — `band-1` / `band-2` in light mode, `band-2` / `band-3` in dark. Labels: `paper`-colored mono at the `eyebrow` role, `font-size=7`, `letter-spacing=0.14em`, `text-anchor=middle`, centered at `chevron_cx, 21`.
+Fills alternate between two steps of the **phase-band palette** (§6.1) — `band-1` / `band-2` in light mode, `band-2` / `band-3` in dark. Labels: fixed `band-label` mono at the `eyebrow` role, `font-size=7`, `letter-spacing=0.14em`, `text-anchor=middle`, centered at `chevron_cx, 21`.
 
 **Color override** (per chevron, both horizontal and vertical): a chevron may declare an optional `color: "#hex"` that replaces the alternation fill for that one chevron. Use it to flag a phase that pairs with a custom-colored component (e.g., `Security` chevron in red when the Identity bar uses `color: "#b85450"`). Rules:
 
-- Override applies to the polygon fill only. The label stays paper-colored — never recolor chevron labels.
+- Override applies to the polygon fill only. The label stays `band-label` — never inherit the active skin's `paper` token.
 - The alternation index doesn't shift; neighboring chevrons keep their natural fill, even if it produces two adjacent same-fill chevrons. Don't try to "fix" this — overrides should be rare (≤ 2 per diagram).
-- In dark mode, use the same hex unless contrast against paper labels suffers; if it does, pick a darker shade for dark mode and document it as a `color_dark` field on that chevron.
+- In dark mode, use the same hex unless contrast against `band-label` falls below 4.5:1; if it does, pick a darker shade for dark mode and document it as a `color_dark` field on that chevron.
 - A chevron color override is independent of any paired component's color, but pairing them (same hex on chevron + bar) is the conventional way to make the column "read" as one concern.
 
 ### 2.3 Source zone (dashed, external)
@@ -232,9 +232,9 @@ Adjacent edges share the same y (no gap), like horizontal chevrons share x at th
 - Middle: notch on top, point on bottom — `(strip_x, y0) (strip_x+strip_w/2, y0+12) (strip_x+strip_w, y0) (strip_x+strip_w, y1-12) (strip_x+strip_w/2, y1) (strip_x, y1-12)`
 - Last (bottommost): notch on top, flat bottom — `(strip_x, y0) (strip_x+strip_w/2, y0+12) (strip_x+strip_w, y0) (strip_x+strip_w, y1) (strip_x, y1)`
 
-Fills alternate `band-1` / `band-2` (same phase-band palette as the horizontals, §6.1). Labels: `paper`-colored mono at the `eyebrow` role, `font-size=7`, `letter-spacing=0.14em`, **rotated −90°**, anchored at `(strip_x + strip_w/2, (y0+y1)/2)`.
+Fills alternate `band-1` / `band-2` (same phase-band palette as the horizontals, §6.1). Labels: fixed `band-label` mono at the `eyebrow` role, `font-size=7`, `letter-spacing=0.14em`, **rotated −90°**, anchored at `(strip_x + strip_w/2, (y0+y1)/2)`.
 
-Vertical chevrons honor the per-chevron `color` override documented in §2.2 — apply the hex to the polygon fill, leave the rotated label paper-colored. Pair the override with the same hex on the chevron's paired bar/crosscut to bind them visually as one concern.
+Vertical chevrons honor the per-chevron `color` override documented in §2.2 — apply the hex to the polygon fill, leave the rotated label `band-label`. Pair the override with the same hex on the chevron's paired bar/crosscut to bind them visually as one concern.
 
 ---
 
@@ -406,19 +406,20 @@ Only these differ between modes:
 | Focal fill | `accent @ 0.08` | `accent @ 0.12` | ditto |
 | Phase bands | `band-1` / `band-2` | `band-2` / `band-3` | The alternation shifts one step lighter (§6.1) |
 
-Unchanged across modes: cluster border `ink @ 0.18`, dot pattern `ink @ 0.10`, focal stroke `accent`, accent connector `accent`, and the chevron label, which is always `paper`.
+Unchanged across modes: cluster border `ink @ 0.18`, dot pattern `ink @ 0.10`, focal stroke `accent`, accent connector `accent`, and the chevron label, which is always `band-label`.
 
 ### 6.1 Phase-band palette
 
-The chevron banner needs a **dark band with paper-colored labels in both modes**, so it can't be built from `ink` alone — in dark mode `ink` *is* the light color. It therefore uses three fixed steps, independent of the light/dark flip:
+The chevron banner needs a **dark band with a light label in both modes**, so it can't be built from `ink` and `paper` alone — those roles invert with the skin. It therefore uses four fixed tokens, independent of the light/dark flip:
 
 | Token | Value | Use |
 |---|---|---|
 | `band-1` | `#2d3142` | Darkest step — odd chevrons, light mode |
 | `band-2` | `#3d4460` | Middle step — even chevrons light, odd chevrons dark |
 | `band-3` | `#4a5270` | Lightest step — even chevrons, dark mode |
+| `band-label` | `#f5f5f5` | Fixed label color — 7.05:1 or better against every band |
 
-**These are not semantic roles and they do not follow the active skin.** They are the one place this type steps outside [`style-guide.md`](style-guide.md), and `scripts/lint-skin.py` rejects `band-2` and `band-3` as off-palette — the shipped high-level examples are listed in `scripts/lint-skin-baseline.txt` for exactly this reason. When you re-skin, derive three analogous steps from the new brand's darkest neutral (equal lightness steps, each holding ≥ 4.5:1 against `paper` for the label text) and keep the label `paper`.
+**These are type-scoped tokens, not skin roles, and they do not invert.** They are the one deliberate exception to [`style-guide.md`](style-guide.md); `scripts/lint-skin.py` rejects `band-2` and `band-3` as off-palette, and the shipped high-level examples are explicitly listed in `scripts/lint-skin-baseline.txt`. Phase labels always use `band-label`; it maintains at least 4.5:1 against every band and is the AA-safe contract for these 7px boundary labels in either mode. When you re-skin, derive three analogous steps from the new brand's darkest neutral and a fixed label color that maintains ≥ 4.5:1 against all three.
 
 ---
 

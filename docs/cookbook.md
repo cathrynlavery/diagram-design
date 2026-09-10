@@ -138,7 +138,7 @@ Then: propose the style-guide diff, wait for approval, write `references/style-g
 
 ## R4. Selection cheat sheet
 
-Do not duplicate the 39-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
+Do not duplicate the 40-type table here. Open [SKILL.md §3](../skills/diagram-design/SKILL.md) and pick one layout grammar.
 
 **Behavior first** (then nearest type):
 
@@ -187,7 +187,7 @@ Shipped examples are `assets/example-<type>.html` plus `-dark` and `-full` varia
 
 ## R6. Import
 
-Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md) or [`import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md) and set the four dials **before** redrawing ([output-spec.md](../skills/diagram-design/references/output-spec.md)):
+Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md), [`import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md), or [`import-excalidraw.md`](../skills/diagram-design/references/import-excalidraw.md) and set the four dials **before** redrawing ([output-spec.md](../skills/diagram-design/references/output-spec.md)):
 
 | Dial | Typical values |
 |---|---|
@@ -196,9 +196,9 @@ Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md) 
 | Detail | `faithful` · `balanced` · `simplified` |
 | Audience | `engineer` · `mixed` · `executive` |
 
-Slash forms (Claude): `/diagram-design:import-drawio <file>` and `/diagram-design:import-mermaid <file-or-md>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, and Mermaid auto-layout do not carry over.
+Slash forms (Claude): `/diagram-design:import-drawio <file>`, `/diagram-design:import-mermaid <file-or-md>`, and `/diagram-design:import-excalidraw <file>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, Mermaid auto-layout, and Excalidraw hand-drawn geometry do not carry over.
 
-Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, `mermaid_extract.py`.
+Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, `mermaid_extract.py`, `excalidraw_extract.py`.
 
 ---
 
