@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build minutes by pipeline, twelve weeks · Streamgraph · dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #2d3142;
+      --color-ink:    #f5f5f5;
+      --color-muted:  #bfc0c0;
+      --color-accent: #f08a59;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 760px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Streamgraph · Diagram Design</p>
+    <h1>Where the extra build minutes went</h1>
+
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="streamgraph-dark-title streamgraph-dark-desc">
+      <title id="streamgraph-dark-title">Where the extra build minutes went</title>
+      <desc id="streamgraph-dark-desc">Streamgraph of weekly CI build minutes by pipeline across twelve weeks, stacked on a symmetric baseline so the envelope height reads as the total; the end-to-end suite grows from 12 to 118 minutes a week and passes the unit suite in week eight, while the docs pipeline pauses to zero in weeks five and six.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- Symmetric baseline: every period is centred on y=230, so the top and
+           bottom of the envelope always average to the midline and the envelope
+           height IS the weekly total at 1.25px per minute. Boundaries are
+           Catmull-Rom smoothed (control points at 1/6 chord) with every vertex
+           on its true stacked value; scripts/verify-streamgraph.py enforces
+           both against the values each layer declares. -->
+      <text transform="rotate(-90 24 230)" x="24" y="230" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">BUILD MINUTES PER WEEK</text>
+
+      <!-- No y-axis ticks: the form is about the shape of the envelope and the
+           layers inside it; per-pipeline totals are printed in the legend. -->
+      <path data-layer="Docs" data-values="8,9,7,6,0,0,5,7,8,8,9,9" d="M 80 297.5 C 93.3 298.1, 133.3 299.4, 160 301.2 C 186.7 303, 213.3 305.9, 240 308.1 C 266.7 310.3, 293.3 311.3, 320 314.4 C 346.7 317.5, 373.3 323, 400 326.9 C 426.7 330.8, 453.3 334.9, 480 337.5 C 506.7 340.1, 533.3 339.7, 560 342.5 C 586.7 345.3, 613.3 350.8, 640 354.4 C 666.7 358, 693.3 361.4, 720 364.4 C 746.7 367.4, 773.3 369.4, 800 372.5 C 826.7 375.6, 853.3 379.8, 880 383.1 C 906.7 386.4, 946.7 390.9, 960 392.5 L 960 403.8 C 946.7 402.2, 906.7 397.9, 880 394.4 C 853.3 390.8, 826.7 385.8, 800 382.5 C 773.3 379.2, 746.7 377.6, 720 374.4 C 693.3 371.2, 666.7 367.4, 640 363.1 C 613.3 358.8, 586.7 353.1, 560 348.8 C 533.3 344.5, 506.7 341.1, 480 337.5 C 453.3 333.9, 426.7 329.5, 400 326.9 C 373.3 324.3, 346.7 323.6, 320 321.9 C 293.3 320.2, 266.7 318.5, 240 316.9 C 213.3 315.3, 186.7 314.1, 160 312.5 C 133.3 310.9, 93.3 308.3, 80 307.5 Z" fill="rgba(245,245,245,0.30)" stroke="#2d3142" stroke-width="1"/>
+      <path data-layer="Integration" data-values="34,36,38,42,44,47,49,52,54,56,59,61" d="M 80 255 C 93.3 255.2, 133.3 255.3, 160 256.2 C 186.7 257.1, 213.3 259.7, 240 260.6 C 266.7 261.6, 293.3 260, 320 261.9 C 346.7 263.8, 373.3 269.1, 400 271.9 C 426.7 274.7, 453.3 277.2, 480 278.8 C 506.7 280.4, 533.3 279.4, 560 281.2 C 586.7 283, 613.3 286.8, 640 289.4 C 666.7 292, 693.3 294.7, 720 296.9 C 746.7 299.1, 773.3 300.4, 800 302.5 C 826.7 304.6, 853.3 307.1, 880 309.4 C 906.7 311.7, 946.7 315.1, 960 316.2 L 960 392.5 C 946.7 390.9, 906.7 386.4, 880 383.1 C 853.3 379.8, 826.7 375.6, 800 372.5 C 773.3 369.4, 746.7 367.4, 720 364.4 C 693.3 361.4, 666.7 358, 640 354.4 C 613.3 350.8, 586.7 345.3, 560 342.5 C 533.3 339.7, 506.7 340.1, 480 337.5 C 453.3 334.9, 426.7 330.8, 400 326.9 C 373.3 323, 346.7 317.5, 320 314.4 C 293.3 311.3, 266.7 310.3, 240 308.1 C 213.3 305.9, 186.7 303, 160 301.2 C 133.3 299.4, 93.3 298.1, 80 297.5 Z" fill="rgba(245,245,245,0.62)" stroke="#2d3142" stroke-width="1"/>
+      <path data-layer="Unit" data-values="58,60,62,61,64,66,65,68,70,69,72,74" d="M 80 182.5 C 93.3 182.3, 133.3 181.1, 160 181.2 C 186.7 181.3, 213.3 182.4, 240 183.1 C 266.7 183.8, 293.3 184.1, 320 185.6 C 346.7 187.1, 373.3 190.1, 400 191.9 C 426.7 193.7, 453.3 194.8, 480 196.2 C 506.7 197.5, 533.3 198.6, 560 200 C 586.7 201.4, 613.3 202.8, 640 204.4 C 666.7 206, 693.3 207.4, 720 209.4 C 746.7 211.4, 773.3 214.5, 800 216.2 C 826.7 217.9, 853.3 218.1, 880 219.4 C 906.7 220.7, 946.7 223.1, 960 223.8 L 960 316.2 C 946.7 315.1, 906.7 311.7, 880 309.4 C 853.3 307.1, 826.7 304.6, 800 302.5 C 773.3 300.4, 746.7 299.1, 720 296.9 C 693.3 294.7, 666.7 292, 640 289.4 C 613.3 286.8, 586.7 283, 560 281.2 C 533.3 279.4, 506.7 280.4, 480 278.8 C 453.3 277.2, 426.7 274.7, 400 271.9 C 373.3 269.1, 346.7 263.8, 320 261.9 C 293.3 260, 266.7 261.6, 240 260.6 C 213.3 259.7, 186.7 257.1, 160 256.2 C 133.3 255.3, 93.3 255.2, 80 255 Z" fill="rgba(245,245,245,0.78)" stroke="#2d3142" stroke-width="1"/>
+      <!-- End-to-end FOCAL: the accent marks the editorially focal layer --
+           the pipeline whose growth is the story -- and it is also the one
+           eating the budget. Every other layer rides the ink-opacity ramp,
+           strongest tone on the largest pipeline. -->
+      <path data-layer="End-to-end" data-values="12,15,19,26,34,45,58,72,85,96,108,118" d="M 80 167.5 C 93.3 166.7, 133.3 163.8, 160 162.5 C 186.7 161.2, 213.3 161, 240 159.4 C 266.7 157.8, 293.3 154.8, 320 153.1 C 346.7 151.4, 373.3 151.6, 400 149.4 C 426.7 147.2, 453.3 143.7, 480 140 C 506.7 136.3, 533.3 131.8, 560 127.5 C 586.7 123.2, 613.3 118.5, 640 114.4 C 666.7 110.3, 693.3 106.1, 720 103.1 C 746.7 100.1, 773.3 99.3, 800 96.2 C 826.7 93.1, 853.3 87.7, 880 84.4 C 906.7 81.1, 946.7 77.6, 960 76.2 L 960 223.8 C 946.7 223.1, 906.7 220.7, 880 219.4 C 853.3 218.1, 826.7 217.9, 800 216.2 C 773.3 214.5, 746.7 211.4, 720 209.4 C 693.3 207.4, 666.7 206, 640 204.4 C 613.3 202.8, 586.7 201.4, 560 200 C 533.3 198.6, 506.7 197.5, 480 196.2 C 453.3 194.8, 426.7 193.7, 400 191.9 C 373.3 190.1, 346.7 187.1, 320 185.6 C 293.3 184.1, 266.7 183.8, 240 183.1 C 213.3 182.4, 186.7 181.3, 160 181.2 C 133.3 181.1, 93.3 182.3, 80 182.5 Z" fill="#f08a59" stroke="#2d3142" stroke-width="1"/>
+      <path data-layer="Lint" data-values="12,12,13,12,13,14,13,14,14,15,15,16" d="M 80 152.5 C 93.3 151.7, 133.3 149.1, 160 147.5 C 186.7 145.9, 213.3 144.7, 240 143.1 C 266.7 141.5, 293.3 139.8, 320 138.1 C 346.7 136.4, 373.3 135.7, 400 133.1 C 426.7 130.5, 453.3 126.2, 480 122.5 C 506.7 118.8, 533.3 115.5, 560 111.2 C 586.7 106.9, 613.3 101.2, 640 96.9 C 666.7 92.6, 693.3 88.8, 720 85.6 C 746.7 82.4, 773.3 80.8, 800 77.5 C 826.7 74.2, 853.3 69.1, 880 65.6 C 906.7 62, 946.7 57.8, 960 56.2 L 960 76.2 C 946.7 77.6, 906.7 81.1, 880 84.4 C 853.3 87.7, 826.7 93.1, 800 96.2 C 773.3 99.3, 746.7 100.1, 720 103.1 C 693.3 106.1, 666.7 110.3, 640 114.4 C 613.3 118.5, 586.7 123.2, 560 127.5 C 533.3 131.8, 506.7 136.3, 480 140 C 453.3 143.7, 426.7 147.2, 400 149.4 C 373.3 151.6, 346.7 151.4, 320 153.1 C 293.3 154.8, 266.7 157.8, 240 159.4 C 213.3 161, 186.7 161.2, 160 162.5 C 133.3 163.8, 93.3 166.7, 80 167.5 Z" fill="rgba(245,245,245,0.46)" stroke="#2d3142" stroke-width="1"/>
+
+      <!-- One landmark, one hairline: the week the end-to-end suite becomes the
+           largest pipeline. Nothing else is annotated -- the shape is the story. -->
+      <line x1="640" y1="52" x2="640" y2="92" stroke="rgba(245,245,245,0.35)" stroke-width="1"/>
+      <text x="640" y="44" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">END-TO-END PASSES UNIT</text>
+
+      <text data-period="W01" data-index="0" x="80" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W01</text>
+      <text data-period="W02" data-index="1" x="160" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W02</text>
+      <text data-period="W03" data-index="2" x="240" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W03</text>
+      <text data-period="W04" data-index="3" x="320" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W04</text>
+      <text data-period="W05" data-index="4" x="400" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W05</text>
+      <text data-period="W06" data-index="5" x="480" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W06</text>
+      <text data-period="W07" data-index="6" x="560" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W07</text>
+      <text data-period="W08" data-index="7" x="640" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W08</text>
+      <text data-period="W09" data-index="8" x="720" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W09</text>
+      <text data-period="W10" data-index="9" x="800" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W10</text>
+      <text data-period="W11" data-index="10" x="880" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W11</text>
+      <text data-period="W12" data-index="11" x="960" y="440" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em" text-anchor="middle">W12</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <text x="960" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">BUILD MINUTES PER WEEK BY PIPELINE · WEEKLY BUCKETS · SYMMETRIC BASELINE, ENVELOPE HEIGHT = WEEKLY TOTAL · ILLUSTRATIVE FIGURES, NOT A MEASURED PROJECT</text>
+
+      <rect x="40" y="488" width="16" height="8" fill="#f08a59"/>
+      <text data-layer="End-to-end" data-total="688" x="64" y="496" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">End-to-end · 688 min · focal</text>
+      <rect x="264" y="488" width="16" height="8" fill="rgba(245,245,245,0.78)"/>
+      <text data-layer="Unit" data-total="789" x="288" y="496" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Unit · 789 min</text>
+      <rect x="424" y="488" width="16" height="8" fill="rgba(245,245,245,0.62)"/>
+      <text data-layer="Integration" data-total="572" x="448" y="496" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Integration · 572 min</text>
+      <rect x="624" y="488" width="16" height="8" fill="rgba(245,245,245,0.46)"/>
+      <text data-layer="Lint" data-total="163" x="648" y="496" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Lint · 163 min</text>
+      <rect x="784" y="488" width="16" height="8" fill="rgba(245,245,245,0.30)"/>
+      <text data-layer="Docs" data-total="76" x="808" y="496" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Docs · 76 min · paused</text>
+    </svg>
+  </div>
+</body>
+</html>

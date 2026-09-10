@@ -66,6 +66,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Dumbbell checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-dumbbell.py` |
 | Slopegraph axes share one scale and every endpoint matches its printed value | `python3 scripts/verify-slopegraph.py --all` |
 | Slopegraph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-slopegraph.py` |
+| Streamgraph layers tile one shared scale on a symmetric baseline and every total is a sum | `python3 scripts/verify-streamgraph.py --all` |
+| Streamgraph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-streamgraph.py` |
 | Ridgeline ridges share one amplitude and every printed range matches its bins | `python3 scripts/verify-ridgeline.py --all` |
 | Ridgeline checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-ridgeline.py` |
 | Sankey flow conservation and ribbon geometry | `python3 scripts/verify-sankey.py --all` |
@@ -133,6 +135,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-dumbbell.py \
   && python3 scripts/verify-slopegraph.py --all \
   && python3 scripts/test-verify-slopegraph.py \
+  && python3 scripts/verify-streamgraph.py --all \
+  && python3 scripts/test-verify-streamgraph.py \
   && python3 scripts/verify-ridgeline.py --all \
   && python3 scripts/test-verify-ridgeline.py \
   && python3 scripts/verify-sankey.py --all \
@@ -157,6 +161,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 40 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
 - **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
+- **`verify-streamgraph.py`:** a layer's drawn thickness disagrees with its declared values, the stack has a gap or overlap, the envelope drifts off its midline, a boundary curve bends away from where its vertices put it, or a legend entry prints a name other than the layer it binds. Fix the geometry or the declaration so they state one thing — never bridge a zero period, float a band to open room, or reshape a curve between vertices to smooth the story.
 - **`verify-ridgeline.py`:** a ridge is drawn on its own amplitude, a baseline sits off the stack's pitch or away from its drawn rule, a ridge is sampled on its own x positions, or a printed range is wider than the bins it claims. Fix the geometry or the declaration so they state one thing — never renormalise a single ridge to make it readable, and never move a baseline to buy one ridge headroom.
 - **`verify-bubble.py`:** a bubble is drawn off the shared axis scale its peers describe, its radius disagrees with the one area constant (`r = K·√size`), a second bubble wears the accent, an overlapping smaller bubble is painted under a larger one, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never nudge a bubble to open up space, because crowded bubbles mean the values really are close.
 - **`verify-bump.py`:** a vertex sits off the rank grid the figure itself declares, a snapshot's ranks are not a permutation of 1..N, a segment curves or arrives by a relative command, or an endpoint label is missing a coordinate, drawn inboard of the end it names, or off the gutter its peers share. Fix the geometry or the declaration, never the label — and never nudge a vertex off its row to dodge a label collision, because a rank between two ranks is not a rank.
