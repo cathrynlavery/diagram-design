@@ -201,6 +201,15 @@
       "height": 1202
     },
     {
+      "slug": "unit-grid",
+      "source": "skills/diagram-design/assets/example-unit-grid.html",
+      "screenshot": "docs/screenshots/unit-grid.png",
+      "source_sha256": "23197e7ba0028da272c880de35f0f890a8260e4d13167aa8ff4887ac7a4afce5",
+      "screenshot_sha256": "2ea8885cb2fc4bc16dacfd72b2799789124b18be567c60bbe035587b9cc0a996",
+      "width": 2076,
+      "height": 810
+    },
+    {
       "slug": "line",
       "source": "skills/diagram-design/assets/example-line.html",
       "screenshot": "docs/screenshots/line.png",
