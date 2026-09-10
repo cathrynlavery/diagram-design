@@ -177,6 +177,23 @@ bound_transform = mutate("bound-transform",
 case("a transform on verified geometry is a finding",
      any("transform on verified geometry" in f for f in findings_of(bound_transform)))
 
+# Browser HTML parsing is quote-aware and keeps the first duplicate attribute.
+quoted_gt = mutate(
+    "quoted-gt",
+    '<rect data-bin-start="0" data-bin-end="100" data-count="18"',
+    '<rect aria-label="count > zero" data-bin-start="0" data-bin-end="100" data-count="18"',
+)
+case("a quoted > inside an attribute does not truncate the element",
+     findings_of(quoted_gt) == [], "; ".join(findings_of(quoted_gt)[:2]))
+
+duplicate_attr = mutate(
+    "duplicate-attr-first-wins",
+    'data-bin-start="0" data-bin-end="100" data-count="18"',
+    'data-bin-start="0" data-bin-end="100" data-count="18" data-count="999"',
+)
+case("duplicate attributes use browser first-wins behavior",
+     findings_of(duplicate_attr) == [], "; ".join(findings_of(duplicate_attr)[:2]))
+
 # ── repeated n declarations (single-slot reading kept only the last one) ─────
 
 n_twice_disagree = mutate("n-twice-disagree",
@@ -210,6 +227,33 @@ css_chrome = mutate("css-chrome",
 case("a CSS transform scoped to page chrome the SVG never uses is allowed",
      findings_of(css_chrome) == [],
      "; ".join(findings_of(css_chrome)[:2]))
+
+css_static_ancestor = mutate(
+    "css-static-ancestor",
+    "svg { width: 100%; min-width: 760px; display: block; }",
+    "svg { width: 100%; min-width: 760px; display: block; }\n"
+    "    .frame { transform: scaleY(0.55) skewX(12deg); }",
+)
+case("a static CSS transform on an SVG ancestor is a finding",
+     any("can reach verified geometry" in f
+         for f in findings_of(css_static_ancestor)))
+
+css_non_data_attr = mutate(
+    "css-non-data-attr",
+    '<rect data-bin-start="0" data-bin-end="100" data-count="18"',
+    '<rect aria-label="first bin" data-bin-start="0" data-bin-end="100" data-count="18"',
+)
+css_non_data_attr.write_text(
+    css_non_data_attr.read_text(encoding="utf-8").replace(
+        "svg { width: 100%; min-width: 760px; display: block; }",
+        "svg { width: 100%; min-width: 760px; display: block; }\n"
+        "    [aria-label] { transform: translateY(-4px); }",
+    ),
+    encoding="utf-8",
+)
+case("a CSS transform on a matching non-data attribute is a finding",
+     any("can reach verified geometry" in f
+         for f in findings_of(css_non_data_attr)))
 
 css_element = mutate("css-element",
                      "svg { width: 100%; min-width: 760px; display: block; }",

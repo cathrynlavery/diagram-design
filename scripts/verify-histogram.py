@@ -79,6 +79,7 @@ import html
 import math
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -93,14 +94,25 @@ REQUIRED_SHIPPED = (
     "example-histogram-full.html",
 )
 
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
-GROUP_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
+TAG_ATTRS = r'''(?:[^>"']|"[^"]*"|'[^']*')*'''
+RECT_RE = re.compile(r"<rect\b(?P<attrs>" + TAG_ATTRS + r")/?>", re.IGNORECASE)
+LINE_RE = re.compile(r"<line\b(?P<attrs>" + TAG_ATTRS + r")/?>", re.IGNORECASE)
+TEXT_RE = re.compile(
+    r"<text\b(?P<attrs>" + TAG_ATTRS + r")>(?P<body>.*?)</text\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+GROUP_RE = re.compile(
+    r"<(?:g|svg)\b(?P<attrs>" + TAG_ATTRS + r")/?>", re.IGNORECASE
+)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
-                      re.IGNORECASE | re.DOTALL)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
+NAMED_RE = re.compile(
+    r"<(?P<tag>title|desc)\b" + TAG_ATTRS + r">(?P<body>.*?)</(?P=tag)\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
+STYLE_RE = re.compile(
+    r"<style\b" + TAG_ATTRS + r">(?P<body>.*?)</style\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
 # `transform:` but not `text-transform:` - the editorial template uses the latter.
 CSS_TRANSFORM_RE = re.compile(r"(?<![\w-])transform\s*:", re.IGNORECASE)
 TAG_RE = re.compile(r"<[^>]+>")
@@ -148,7 +160,12 @@ def blank_comments(source: str) -> str:
 
 
 def attrs_of(raw: str) -> dict:
-    return {m.group("name"): m.group("value") for m in ATTR_RE.finditer(raw)}
+    attrs = {}
+    for match in ATTR_RE.finditer(raw):
+        name = match.group("name").casefold()
+        if name not in attrs:
+            attrs[name] = html.unescape(match.group("value"))
+    return attrs
 
 
 def plain(body: str) -> str:
@@ -284,14 +301,74 @@ def check_transforms(source: str, findings: list, name: str) -> None:
 
 
 CSS_RULE_RE = re.compile(r"(?P<sel>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
-SVG_SPAN_RE = re.compile(r"<svg\b.*?</svg\s*>", re.IGNORECASE | re.DOTALL)
 SVG_ELEMENT_TOKEN_RE = re.compile(
     r"(?<![\w.#-])(?:svg|g|rect|line|text|circle|path|polygon|polyline|ellipse|tspan)(?![\w-])"
 )
 SEL_CLASS_RE = re.compile(r"\.([-\w]+)")
 SEL_ID_RE = re.compile(r"#([-\w]+)")
-CLASS_ATTR_RE = re.compile(r"""\bclass\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
-ID_ATTR_RE = re.compile(r"""\bid\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+SEL_ATTR_RE = re.compile(r"\[\s*([-\w:]+)", re.IGNORECASE)
+INTERACTIVE_PSEUDO_RE = re.compile(r":(?:hover|focus|focus-visible|focus-within)\b", re.IGNORECASE)
+NEGATED_PSEUDO_RE = re.compile(r":not\([^)]*\)", re.IGNORECASE)
+
+
+class ReachabilityParser(HTMLParser):
+    """Collect selectors that can match an SVG or one of its ancestors."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[tuple[str, dict[str, str]]] = []
+        self.svg_depth = 0
+        self.tags: set[str] = set()
+        self.classes: set[str] = set()
+        self.ids: set[str] = set()
+        self.attrs: set[str] = set()
+
+    @staticmethod
+    def first_attrs(items) -> dict[str, str]:
+        result = {}
+        for name, value in items:
+            key = name.casefold()
+            if key not in result:
+                result[key] = value or ""
+        return result
+
+    def record(self, tag: str, attrs: dict[str, str]) -> None:
+        self.tags.add(tag)
+        self.attrs.update(attrs)
+        self.classes.update(attrs.get("class", "").split())
+        if attrs.get("id"):
+            self.ids.add(attrs["id"])
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        tag = tag.casefold()
+        parsed = self.first_attrs(attrs)
+        self.stack.append((tag, parsed))
+        if tag == "svg":
+            self.svg_depth += 1
+            for ancestor_tag, ancestor_attrs in self.stack:
+                self.record(ancestor_tag, ancestor_attrs)
+        elif self.svg_depth:
+            self.record(tag, parsed)
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        tag = tag.casefold()
+        parsed = self.first_attrs(attrs)
+        if self.svg_depth or tag == "svg":
+            self.record(tag, parsed)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.casefold()
+        while self.stack:
+            open_tag, _ = self.stack.pop()
+            if open_tag == "svg":
+                self.svg_depth = max(0, self.svg_depth - 1)
+            if open_tag == tag:
+                break
+
+
+def selector_requires_interaction(selector: str) -> bool:
+    without_negations = NEGATED_PSEUDO_RE.sub("", selector)
+    return INTERACTIVE_PSEUDO_RE.search(without_negations) is not None
 
 
 def check_css_transforms(source: str, findings: list, name: str) -> None:
@@ -306,13 +383,8 @@ def check_css_transforms(source: str, findings: list, name: str) -> None:
     to classes/ids that never appear inside the SVG cannot move a verified
     mark and is allowed. A transform this parse cannot attribute to any rule
     is still a finding - unparseable style is never a pass."""
-    svg_classes: set = set()
-    svg_ids: set = set()
-    for span in SVG_SPAN_RE.finditer(source):
-        for m in CLASS_ATTR_RE.finditer(span.group(0)):
-            svg_classes.update(m.group(1).split())
-        for m in ID_ATTR_RE.finditer(span.group(0)):
-            svg_ids.add(m.group(1))
+    reach = ReachabilityParser()
+    reach.feed(source)
     for style in STYLE_RE.finditer(source):
         body = style.group("body")
         if not CSS_TRANSFORM_RE.search(body):
@@ -325,18 +397,32 @@ def check_css_transforms(source: str, findings: list, name: str) -> None:
             selector = rule.group("sel")
             where = "%s:%d" % (name, line_of(source,
                                              style.start() + rule.start()))
-            if SVG_ELEMENT_TOKEN_RE.search(selector) or "*" in selector \
-                    or "[data-" in selector:
-                findings.append("%s: CSS transform on %r can reach verified "
-                                "geometry; bake offsets into coordinates"
-                                % (where, selector.strip()))
-                continue
-            classes = set(SEL_CLASS_RE.findall(selector))
-            ids = set(SEL_ID_RE.findall(selector))
-            if classes & svg_classes or ids & svg_ids:
-                findings.append("%s: CSS transform on %r targets a class or id "
-                                "the SVG uses; it can move a verified mark"
-                                % (where, selector.strip()))
+            for component in selector.split(","):
+                component = component.strip()
+                if selector_requires_interaction(component):
+                    continue
+                classes = set(SEL_CLASS_RE.findall(component))
+                ids = set(SEL_ID_RE.findall(component))
+                attrs = {value.casefold() for value in SEL_ATTR_RE.findall(component)}
+                tags = {
+                    token.casefold()
+                    for token in SVG_ELEMENT_TOKEN_RE.findall(component)
+                }
+                if classes & reach.classes or ids & reach.ids:
+                    findings.append(
+                        "%s: CSS transform on %r targets a class or id the SVG uses, "
+                        "or that an ancestor uses; it can reach verified geometry"
+                        % (where, component)
+                    )
+                elif (
+                    "*" in component
+                    or tags & reach.tags
+                    or attrs & reach.attrs
+                ):
+                    findings.append(
+                        "%s: CSS transform on %r can reach verified geometry; "
+                        "bake offsets into coordinates" % (where, component)
+                    )
         if attributed == 0:
             findings.append("%s:%d: a CSS transform this checker cannot "
                             "attribute to any rule - unparseable style is a "

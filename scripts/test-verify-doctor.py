@@ -40,6 +40,27 @@ def seed_repo(module, root: Path) -> None:
         touch(root / relative, f"Routes to {reference}.\n")
 
 
+class FakeCompletedProcess:
+    """Just enough of subprocess.CompletedProcess for the probe to read."""
+
+    def __init__(self, returncode: int, stdout: str = "", stderr: str = "") -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+@contextlib.contextmanager
+def fake_python_path(module, resolved: dict[str, str], responses: dict[str, object]):
+    """Pretend PATH resolves `resolved` and each interpreter answers `responses`."""
+    real_which, real_run = module.shutil.which, module.run_command
+    module.shutil.which = lambda name: resolved.get(name)
+    module.run_command = lambda command: responses[command[0]]
+    try:
+        yield
+    finally:
+        module.shutil.which, module.run_command = real_which, real_run
+
+
 def expect_status(check, status: str, needle: str) -> None:
     if check.status != status or needle not in check.message:
         raise AssertionError(
@@ -97,6 +118,88 @@ def main() -> int:
                     f"{installed_check}"
                 )
         print("OK: installed skill in an arbitrary user project does not require maintainer files")
+
+        # A name on PATH is not an interpreter. Windows ships a `python3` App
+        # Execution Alias that exits non-zero with a Microsoft Store prompt, so
+        # the probe has to fall through to `python` rather than report that a
+        # perfectly healthy machine has no usable Python.
+        alias_path = r"C:\Users\dev\AppData\Local\Microsoft\WindowsApps\python3.exe"
+        real_path = r"C:\Program Files\Python312\python.exe"
+        store_alias = FakeCompletedProcess(
+            9009,
+            stderr=(
+                "Python was not found; run without arguments to install from the "
+                "Microsoft Store, or disable this shortcut from Settings"
+            ),
+        )
+        working_python = FakeCompletedProcess(0, stdout="3.12.9\n")
+
+        with fake_python_path(
+            verify,
+            {"python3": alias_path, "python": real_path},
+            {"python3": store_alias, "python": working_python},
+        ):
+            check, python_cmd = verify.check_python_runtime()
+            expect_status(check, verify.PASS, "Python 3.12.9 found via python")
+            if python_cmd != "python":
+                raise AssertionError(f"expected downstream checks to use python, got {python_cmd!r}")
+            probe = verify.probe_python_command()
+            if (probe.command, probe.version) != ("python", "3.12.9"):
+                raise AssertionError(f"probe did not fall through a non-running python3: {probe}")
+        print("OK: a python3 that cannot report its version falls through to python")
+
+        # When nothing on PATH runs, the failure still names the first candidate
+        # tried and carries that interpreter's own stderr.
+        with fake_python_path(
+            verify,
+            {"python3": alias_path, "python": alias_path},
+            {"python3": store_alias, "python": store_alias},
+        ):
+            check, python_cmd = verify.check_python_runtime()
+            expect_status(check, verify.FAIL, "Could not query version via python3")
+            if "Microsoft Store" not in check.message:
+                raise AssertionError("probe failure dropped the interpreter's own stderr")
+            # That FAIL still hands a command name downstream, so the Playwright
+            # check runs against an interpreter already known not to answer.
+            expect_status(
+                verify.check_playwright(python_cmd),
+                verify.WARN,
+                "Playwright package is not available",
+            )
+        print("OK: no runnable interpreter still fails, naming the first candidate")
+
+        # Some names on PATH cannot be launched at all rather than exiting
+        # non-zero. A directory stands in for the broken alias or dangling
+        # symlink: spawning it raises OSError on every platform we support.
+        launch_failure = verify.run_command([str(root), "-c", verify.VERSION_PROBE])
+        if launch_failure.returncode == 0 or not launch_failure.stderr:
+            raise AssertionError(
+                f"unlaunchable command did not report a failure: {launch_failure}"
+            )
+        print("OK: a command that cannot be launched is reported, not raised")
+
+        # And that reported shape has to fall through like any other dud, or the
+        # doctor dies on the candidate this fallback exists to survive.
+        with fake_python_path(
+            verify,
+            {"python3": alias_path, "python": real_path},
+            {
+                "python3": FakeCompletedProcess(1, stderr=str(launch_failure.stderr)),
+                "python": working_python,
+            },
+        ):
+            probe = verify.probe_python_command()
+            if (probe.command, probe.version) != ("python", "3.12.9"):
+                raise AssertionError(f"a python3 that cannot be launched did not fall through: {probe}")
+        print("OK: a python3 that cannot be launched falls through to python")
+
+        # No interpreter on PATH at all remains a hard failure.
+        with fake_python_path(verify, {}, {}):
+            check, python_cmd = verify.check_python_runtime()
+            expect_status(check, verify.FAIL, "No python3 or python command was found")
+            if python_cmd is not None:
+                raise AssertionError(f"expected no python command, got {python_cmd!r}")
+        print("OK: an empty PATH fails without naming a command")
 
         summary_checks = [
             verify.CheckResult("a", verify.PASS, "ok"),
