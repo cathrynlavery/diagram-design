@@ -19,6 +19,10 @@
       {
         "path": ".factory-plugin/plugin.json",
         "json_pointer": "/version"
+      },
+      {
+        "path": "package.json",
+        "json_pointer": "/version"
       }
     ],
     "require_synchronized": true,

@@ -16,6 +16,7 @@ MANIFEST_PATHS = (
     Path(".claude-plugin/plugin.json"),
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
+    Path("package.json"),
 )
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
@@ -38,9 +39,24 @@ def git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def path_exists_at(root: Path, ref: str, relative: Path) -> bool:
+    result = subprocess.run(
+        ["git", "cat-file", "-e", f"{ref}:{relative.as_posix()}"],
+        cwd=root,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0
+
+
 def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
     versions = []
     for relative in MANIFEST_PATHS:
+        if not path_exists_at(root, ref, relative):
+            prior = git(root, "rev-list", "-1", ref, "--", relative.as_posix())
+            if relative == Path("package.json") and not prior:
+                continue
+            raise VersionHistoryError(f"{relative} is missing at {ref}")
         raw = git(root, "show", f"{ref}:{relative.as_posix()}")
         try:
             payload = json.loads(raw)
@@ -67,7 +83,7 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
 
 
 def versions_changed(root: Path, before: str, after: str) -> bool:
-    return versions_at(root, before) != versions_at(root, after)
+    return versions_at(root, before)[0] != versions_at(root, after)[0]
 
 
 def first_parent(root: Path, commit: str) -> str | None:

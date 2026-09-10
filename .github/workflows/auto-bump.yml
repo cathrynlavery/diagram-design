@@ -123,11 +123,13 @@ jobs:
           expected_without_skill=$(printf '%s\n' \
             .claude-plugin/plugin.json \
             .codex-plugin/plugin.json \
-            .factory-plugin/plugin.json | LC_ALL=C sort)
+            .factory-plugin/plugin.json \
+            package.json | LC_ALL=C sort)
           expected_with_skill=$(printf '%s\n' \
             .claude-plugin/plugin.json \
             .codex-plugin/plugin.json \
             .factory-plugin/plugin.json \
+            package.json \
             skills/diagram-design/SKILL.md | LC_ALL=C sort)
           actual=$(git diff --name-only | LC_ALL=C sort)
           if [ "$actual" != "$expected_without_skill" ] \
@@ -141,6 +143,7 @@ jobs:
             .claude-plugin/plugin.json \
             .codex-plugin/plugin.json \
             .factory-plugin/plugin.json \
+            package.json \
             skills/diagram-design/SKILL.md > version-bump.patch
           test -s version-bump.patch
 
@@ -202,11 +205,13 @@ jobs:
           expected_without_skill=$(printf '%s\n' \
             .claude-plugin/plugin.json \
             .codex-plugin/plugin.json \
-            .factory-plugin/plugin.json | LC_ALL=C sort)
+            .factory-plugin/plugin.json \
+            package.json | LC_ALL=C sort)
           expected_with_skill=$(printf '%s\n' \
             .claude-plugin/plugin.json \
             .codex-plugin/plugin.json \
             .factory-plugin/plugin.json \
+            package.json \
             skills/diagram-design/SKILL.md | LC_ALL=C sort)
           patch_paths=$(git apply --numstat "$patch" | cut -f3- | LC_ALL=C sort)
           if [ "$patch_paths" != "$expected_without_skill" ] \
@@ -235,6 +240,7 @@ jobs:
               Path(".claude-plugin/plugin.json"),
               Path(".codex-plugin/plugin.json"),
               Path(".factory-plugin/plugin.json"),
+              Path("package.json"),
           )
           semver = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
