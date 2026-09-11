@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create branded architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, Venn, pyramid/funnel, treemap, bar, waterfall, line, Gantt and scatter charts, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, or database schema diagrams as standalone HTML/SVG/PNG. Redraw .drawio/.drawio.png/.drawio.svg, Mermaid .mmd, or Excalidraw .excalidraw sources at a chosen size/detail; onboard brand tokens from a website; add semantic patterns, callouts, accessible motion, or sketchy/hand-drawn styling.
+description: Create branded architecture, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, model architecture, Venn, pyramid/funnel, treemap, bar, waterfall, line, Gantt and scatter charts, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, or database schema diagrams as standalone HTML/SVG/PNG. Redraw .drawio/.drawio.png/.drawio.svg, Mermaid .mmd, or Excalidraw .excalidraw sources at a chosen size/detail; onboard brand tokens from a website; add semantic patterns, callouts, accessible motion, or sketchy/hand-drawn styling.
 license: MIT
 metadata:
   version: "2.6"
@@ -10,7 +10,7 @@ metadata:
 
 Create visual diagrams as self-contained HTML files with inline SVG and CSS, following an opinionated editorial design system.
 
-Forty visual types. Semantic patterns describe behavior independently; type references describe layout. Details load from `references/` only when selected.
+Forty-one visual types. Semantic patterns describe behavior independently; type references describe layout. Details load from `references/` only when selected.
 
 ---
 
@@ -49,7 +49,7 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 40 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 41 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
 
@@ -79,7 +79,7 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
-### Visual-type guide (40)
+### Visual-type guide (41)
 
 | If you're showing… | Use | Reference |
 |---|---|---|
@@ -123,10 +123,10 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Classes with operations, inheritance, composition (other UML routes elsewhere) | **UML class** | [type-uml-class.md](references/type-uml-class.md) |
 | Narrative backbone sliced into releases, with the cut line | **Story map** | [type-story-map.md](references/type-story-map.md) |
 | Physical tables: SQL types, constraints, indexes, column-level FKs | **Database schema** | [type-db-schema.md](references/type-db-schema.md) |
+| A neural network as a layer stack, where ×N repeat groups stand in for depth | **Model architecture** | [type-model-arch.md](references/type-model-arch.md) |
 
 Rules of thumb:
 
-- If a 3-column table communicates the same thing, pick the table.
 - If two types seem useful, pick the dominant axis; a semantic pattern may add behavior-specific primitives, not a second layout grammar.
 - If you're past the complexity budget (§7), split into an overview + detail.
 
@@ -163,7 +163,7 @@ Type-specific anti-patterns live in each type reference linked in the guide.
 
 ## 5. Design System
 
-**The design system is skinnable.** All colors, typography, and tokens live in a single source of truth — [`references/style-guide.md`](references/style-guide.md). This file describes semantic roles (`paper`, `ink`, `muted`, `accent`, `link`, …). The default skin is a cool editorial palette (white-smoke paper, jet-black ink, atomic-tangerine accent, blue-slate muted, silver hairlines); to apply your own brand, either edit `style-guide.md` directly or run the URL-based flow described in [`references/onboarding.md`](references/onboarding.md).
+**The design system is skinnable.** All colors, typography, and tokens live in a single source of truth — [`references/style-guide.md`](references/style-guide.md). This file describes semantic roles (`paper`, `ink`, `muted`, `accent`, `link`, …). To apply your own brand, either edit `style-guide.md` directly or run the URL-based flow described in [`references/onboarding.md`](references/onboarding.md).
 
 > When specs below or in type references mention "ink", "accent", "muted", etc., look up the current hex value in `style-guide.md`.
 
@@ -362,8 +362,6 @@ Expand SVG `viewBox` height by ~60px.
 
 Exempt: stroke widths (0.8, 1, 1.2), opacity values, and the 22×22 dot-pattern.
 
-Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
-
 ### Complexity budget (per diagram)
 
 | Limit | Rule |
@@ -407,6 +405,7 @@ Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
 | Max classes / relationships (UML class) | 7 / 8, 5 members per compartment |
 | Max activities / slices / cards (story map) | 5 / 3 / 12 |
 | Max tables / columns / FKs (db schema) | 5 / 8 shown / 6 |
+| Max stacks / blocks / groups (model architecture) | 2 / 10 per stack / 3 per stack, 1 nesting level |
 | Max annotation callouts | 2 |
 | Max motion (optional) | 8 steps, 12 marked items, 2 simultaneous items — see [animation.md](references/animation.md) |
 
@@ -455,7 +454,7 @@ Run before producing any diagram.
 - [ ] If behavior matters, did I choose one semantic pattern before the visual type and load `semantic-patterns.md`?
 - [ ] Right visual type for the layout? (§3 visual-type guide)
 - [ ] Stated type, pattern, size preset, and planned cuts before drawing — confirmed, or assumptions noted? (§3)
-- [ ] Would a table / paragraph do the same job? (If yes — don't draw.)
+- [ ] Would a table / paragraph do the same job?
 - [ ] Loaded the matching type reference linked in the visual-type guide?
 - [ ] If this is an import — format, size, detail level, and audience set? `viewBox` and type ramp match the size preset? (§11, [output-spec.md §6](references/output-spec.md))
 - [ ] If this is an import — fidelity ledger ready to report? (§11)

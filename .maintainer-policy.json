@@ -82,6 +82,8 @@
       "python3 scripts/test-verify-sankey.py",
       "python3 scripts/verify-waterfall.py --all",
       "python3 scripts/test-verify-waterfall.py",
+      "python3 scripts/verify-model-arch.py --all",
+      "python3 scripts/test-verify-model-arch.py",
       "python3 scripts/verify-bubble.py --all",
       "python3 scripts/test-verify-bubble.py",
       "python3 scripts/verify-bump.py --all",

@@ -196,6 +196,15 @@
       "thumb_sha256": "3c795c5903db551600d24571af1add4b1584a6a28ab3b041b6e9015e59a289d0"
     },
     {
+      "thumb": "model-arch.webp",
+      "source": "docs/screenshots/model-arch.png",
+      "source_sha256": "ca558ef686467203c42524bab5d3f86add61d36213d28e9602693d5536e0bd83",
+      "width": 600,
+      "height": 339,
+      "quality": 82,
+      "thumb_sha256": "021dfd2b4b2eee8bb39e6aa3fc63cefa0083c207860b2a8bc5735fc3257cb6c0"
+    },
+    {
       "thumb": "nested.webp",
       "source": "docs/screenshots/nested.png",
       "source_sha256": "7199d6871a0aab4377af0002a42c3dc9daee9e869f1131493ecf6e17a5a1cac0",
