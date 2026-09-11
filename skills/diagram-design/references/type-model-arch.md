@@ -39,6 +39,8 @@ Then **expand and check the census** before drawing: `2 + 3×(1 + 5) = 20` and `
 
 When the source is a paper or a report, every multiplier, ratio and window size is a claim about that source. Carry it across verbatim or leave it out; do not round a `5×` to a `4×` because it fits the canvas better.
 
+**Where the plan comes from.** A named model has one source that is not a description of it: its config. `config.json` on the Hub, or the class that builds the layer list in code, gives the depth, the layer schedule, the expert counts and the head dims as executed. The report and the model card give what a config cannot encode — a window size, an indexer's top-k, what a layer kind is *for*. Read the config first and the prose second; where they disagree the config decides the structure and the report decides the naming. Name the source in `<desc>` or the colophon: a layer plan nobody can trace back is an assertion. If neither is reachable, ask — this type has no honest default.
+
 ## Layout conventions
 
 - **Flow bottom → top**, the convention model papers use: input at the bottom, output above the stack. One vertical spine per stack at the block centre, so every spine segment is a plain vertical `<line>`/`V` path with no elbow.
@@ -47,6 +49,7 @@ When the source is a paper or a report, every multiplier, ratio and window size 
 - **Row ladder.** Both stacks use one shared list of row `y` values. When one stack has fewer rows than the other, leave the gap — do not re-space one column, or the encoder's third group stops lining up with the decoder's and the comparison is gone.
 - **I/O blocks sit outside the panel**: the embedding below, the output above. The multi-sheet treatment (2 extra rects offset `+4,-4` each, drawn first) marks a tensor carried as several residual streams; use it only where that is true.
 - **Side modules** live outside the panels entirely, at the height of the layer they feed, and reach in with orthogonal connectors — one attach point per connector, per §6 rule 4.
+- **An arrow label crossing the panel takes the panel's fill, not `paper`.** §6 rule 6 already permits a mask over a container, since containers are painted first — but an opaque `paper` rect on the panel's `ink @ 0.04` reads as a lighter patch cut out of it. Use the blended value (`#ededee` on the default skin). Deleting the label instead loses what the connector means.
 - **The `×N` chip** is Geist Mono 11px, `ink`, sitting in the margin to the **right of its own group rect and inside its parent's**. Nested groups therefore need asymmetric padding: outer `x` pad 16 left / 72 right, inner 16 / 16. A chip drawn inside its own group reads as a block label.
 
 ## Variant palette
