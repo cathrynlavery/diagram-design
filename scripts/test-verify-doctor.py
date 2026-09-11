@@ -9,6 +9,7 @@ import io
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY = ROOT / "scripts" / "verify-doctor.py"
@@ -66,6 +67,58 @@ def expect_status(check, status: str, needle: str) -> None:
         raise AssertionError(
             f"expected ({status}, contains {needle!r}); got ({check.status}, {check.message!r})"
         )
+
+
+def check_full_git_installs(verify, root: Path) -> None:
+    for name, host_arg, environ, expected_channel in (
+        ("pi-explicit", "pi", {}, verify.CHANNEL_GIT),
+        ("pi-env", verify.AUTO_HOST, {"PI_SESSION_ID": "test"}, verify.CHANNEL_GIT),
+        (".pi/agent/git/diagram-design", verify.AUTO_HOST, {}, verify.CHANNEL_GIT),
+        ("maintainer", verify.AUTO_HOST, {}, verify.CHANNEL_MAINTAINER),
+    ):
+        install_root = root / name
+        seed_repo(verify, install_root)
+        for head in ("ref: refs/heads/main", "0123456789abcdef0123456789abcdef01234567"):
+            touch(install_root / ".git/HEAD", head + "\n")
+            # Isolate machine readiness while exercising host resolution, channel
+            # detection, pinning, and reporting together on a full repository.
+            report = io.StringIO()
+            with (
+                patch.dict(verify.os.environ, environ, clear=True),
+                patch.object(
+                    verify, "check_python_runtime",
+                    return_value=(verify.CheckResult("Python", verify.PASS, "ready"), "python3"),
+                ),
+                patch.object(
+                    verify, "check_playwright",
+                    return_value=verify.CheckResult("Playwright", verify.PASS, "ready"),
+                ),
+                contextlib.redirect_stdout(report),
+            ):
+                exit_code = verify.run_doctor(
+                    install_root, install_root, strict=True, emit_json=True, host_arg=host_arg
+                )
+            output = report.getvalue()
+            is_pi = expected_channel == verify.CHANNEL_GIT
+            unpinned = head.startswith("ref:")
+            expected_exit = 1 if is_pi and unpinned else 0
+            if exit_code != expected_exit:
+                raise AssertionError(f"{name}: expected exit {expected_exit}; got {exit_code}: {output}")
+            needles = [f'"install_channel": "{expected_channel}"']
+            if is_pi:
+                needles.extend([
+                    '"host": "pi"',
+                    "pi update --extensions",
+                    "unpinned git branch" if unpinned else "pinned to a fixed git ref",
+                ])
+                if "git pull" in output or "unpinned-ref check is not applicable" in output:
+                    raise AssertionError(f"{name}: Pi install received maintainer guidance: {output}")
+            else:
+                needles.extend(["git pull", "Host profile is not pi"])
+            for needle in needles:
+                if needle not in output:
+                    raise AssertionError(f"{name}: report missing {needle!r}: {output}")
+    print("OK: full Pi Git installs honor explicit/env/path host context; maintainer checkouts stay distinct")
 
 
 def main() -> int:
@@ -236,6 +289,7 @@ def main() -> int:
         if channel != verify.CHANNEL_COPIED:
             raise AssertionError(f"plain copy should classify as copied; got {channel}")
         print("OK: install channel detection covers maintainer/git/marketplace/copied")
+        check_full_git_installs(verify, root)
 
         for host_name, channel_name, needle in (
             ("pi", verify.CHANNEL_GIT, "pi update --extensions"),

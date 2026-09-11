@@ -331,8 +331,11 @@ def detect_host(root: Path, environ: dict[str, str] | None = None) -> tuple[str 
     return None, "no host markers detected; pass --host to select a profile"
 
 
-def detect_install_channel(root: Path) -> tuple[str, str]:
+def detect_install_channel(root: Path, host: str | None = None) -> tuple[str, str]:
     """Classify how this installation arrived: maintainer checkout, git, marketplace, or copy."""
+    # Pi Git packages contain the full repository, including maintainer markers.
+    if host == "pi" and (root / ".git").exists():
+        return CHANNEL_GIT, "Pi host profile and .git metadata at the installation root"
     if is_maintainer_checkout(root):
         return CHANNEL_MAINTAINER, "maintainer repository markers are present"
     if (root / ".git").exists():
@@ -783,7 +786,7 @@ def run_doctor(
         host, host_evidence = detect_host(root)
     else:
         host, host_evidence = host_arg, "selected via --host"
-    channel, channel_evidence = detect_install_channel(root)
+    channel, channel_evidence = detect_install_channel(root, host)
 
     checks: list[CheckResult] = []
 
