@@ -168,8 +168,10 @@ def main() -> int:
             panel(depth="8", rng="0-7")
             + group("g-a", "2")
             + chip("g-a", "×2")
+            + layer("ffn", grp="g-a")
             + group("g-b", "2", parent="g-a")
             + chip("g-b", "×2")
+            + layer("ffn", grp="g-b")
             + group("g-c", "2", parent="g-b")
             + chip("g-c", "×2")
             + layer("full", grp="g-c")
@@ -185,6 +187,7 @@ def main() -> int:
             + chip("g-a", "×2")
             + group("g-b", "2", parent="g-a")
             + chip("g-b", "×2")
+            + layer("ffn", grp="g-b")
             + layer("full", grp="g-a")
         ),
         4,  # a cycle report per group, one per block, plus the broken census
@@ -279,6 +282,21 @@ def main() -> int:
         0,
     )
 
+    # A group nothing sits inside derives no owner at all. It renders as a
+    # dashed rect with an honest-looking ×5 beside it and contributes nothing
+    # to the census, so every other check in this file passes it.
+    check(
+        "a repeat group and matching chip that no block claims is caught",
+        document(sound() + group("g-ghost", "5") + chip("g-ghost", "×5")),
+        1,
+    )
+
+    check(
+        "a group left behind when its last block moved out is caught",
+        document(sound().replace(layer("full", grp="g-b") + layer("ffn", grp="g-b"), "")),
+        2,  # g-b now claimed by nobody, and the census it stopped feeding
+    )
+
     check(
         "a stack borrowing another stack's repeat group is caught",
         document(
@@ -316,6 +334,7 @@ def main() -> int:
             panel("encoder", "6", "0-5")
             + group("g-outer", "3")
             + chip("g-outer", "×3")
+            + layer("ffn", stack="encoder", grp="g-outer")
             + group("g-inner", "2", parent="g-outer")
             + chip("g-inner", "×2")
             + layer("full", stack="encoder", grp="g-inner")

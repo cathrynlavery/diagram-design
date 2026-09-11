@@ -127,7 +127,6 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 
 Rules of thumb:
 
-- If a 3-column table communicates the same thing, pick the table.
 - If two types seem useful, pick the dominant axis; a semantic pattern may add behavior-specific primitives, not a second layout grammar.
 - If you're past the complexity budget (§7), split into an overview + detail.
 
@@ -241,6 +240,8 @@ Universal building blocks. Type-specialized primitives (lifeline, activation bar
 <rect width="100%" height="100%" fill="#f5f5f5"/>
 <rect width="100%" height="100%" fill="url(#dots)" opacity="0.6"/>
 ```
+
+Don't use the dot pattern when the diagram sits inside a product page, slide, or card — the texture compounds with surrounding chrome and reads as noise.
 
 ### Arrow markers (define all three, always)
 
@@ -453,7 +454,7 @@ Run before producing any diagram.
 - [ ] If behavior matters, did I choose one semantic pattern before the visual type and load `semantic-patterns.md`?
 - [ ] Right visual type for the layout? (§3 visual-type guide)
 - [ ] Stated type, pattern, size preset, and planned cuts before drawing — confirmed, or assumptions noted? (§3)
-- [ ] Would a table / paragraph do the same job? (If yes — don't draw.)
+- [ ] Would a table / paragraph do the same job?
 - [ ] Loaded the matching type reference linked in the visual-type guide?
 - [ ] If this is an import — format, size, detail level, and audience set? `viewBox` and type ramp match the size preset? (§11, [output-spec.md §6](references/output-spec.md))
 - [ ] If this is an import — fidelity ledger ready to report? (§11)

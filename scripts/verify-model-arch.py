@@ -16,9 +16,11 @@ So the plan is recorded in the markup and recomputed here:
   * that sum must equal the stack panel's `data-depth`;
   * `data-depth` must equal the span of `data-layer-range` ("0-19" -> 20);
   * every `x N` chip's text must equal its group's `data-repeat`;
-  * every repeat group is claimed by blocks of exactly one stack, and a
-    nested group is claimed by the same stack as its parent -- otherwise
-    two stacks reconcile against a group only one of them draws.
+  * every repeat group derives exactly one stack owner from the blocks
+    claiming it -- no group without a claim, none claimed by two stacks,
+    and a nested group owned by the same stack as its parent. Otherwise
+    two stacks reconcile against a group only one of them draws, or a
+    `x N` stands over a group holding nothing at all.
 
 What this never does: it does not look at where anything is drawn. A group
 whose rect does not visually enclose the blocks claiming it is a layout bug
@@ -335,6 +337,11 @@ def check(path: Path) -> list[str]:
     for gid, group in by_gid.items():
         stacks = claimed.get(gid)
         if not stacks:
+            findings.append(
+                f'{name}:{group.line}: group "{gid}" is claimed by no block, so it '
+                "derives no stack owner; a ×N over an empty group is depth the "
+                "census never sees"
+            )
             continue
         if len(stacks) == 1:
             owner[gid] = next(iter(stacks))
