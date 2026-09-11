@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -26,6 +27,62 @@ MAINTAINER_MARKERS = (
     Path(".github/workflows/ci.yml"),
     Path("scripts/verify-plugin-package.py"),
 )
+
+HOST_PROFILES = ("claude-code", "cowork", "codex", "cursor", "pi")
+AUTO_HOST = "auto"
+
+PUBLIC_REPO_SLUG = "cathrynlavery/diagram-design"
+
+# Ordered: Cowork first because Cowork sessions can also carry Claude Code markers.
+HOST_ENV_MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("cowork", ("COWORK_SESSION_ID", "CLAUDE_COWORK_SESSION")),
+    ("claude-code", ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")),
+    ("cursor", ("CURSOR_AGENT", "CURSOR_TRACE_ID")),
+    ("codex", ("CODEX_HOME", "CODEX_SANDBOX")),
+    ("pi", ("PI_SESSION_ID", "PI_HOME")),
+)
+
+HOST_PATH_HINTS: tuple[tuple[str, str], ...] = (
+    ("cowork", "cowork"),
+    ("claude-code", ".claude"),
+    ("codex", ".codex"),
+    ("cursor", ".cursor"),
+    ("pi", ".pi"),
+)
+
+CHANNEL_MAINTAINER = "maintainer-checkout"
+CHANNEL_GIT = "git"
+CHANNEL_MARKETPLACE = "marketplace"
+CHANNEL_COPIED = "copied"
+
+MARKETPLACE_PATH_SEGMENTS = frozenset(
+    {"plugins", "plugin-cache", "marketplace", "marketplaces"}
+)
+
+SKILL_VERSION_PATTERN = re.compile(
+    r'^\s*version:\s*"?([0-9][0-9A-Za-z.\-]*)"?\s*$', re.MULTILINE
+)
+
+PLAYWRIGHT_INSTALL_HINT = "pip install playwright && playwright install chromium"
+
+HOST_PLAYWRIGHT_HINTS = {
+    "claude-code": (
+        "Run it in the same Python environment Claude Code invokes, then run "
+        "/reload-plugins so the session picks it up."
+    ),
+    "cowork": (
+        "Install inside the Cowork session environment; sandboxed sessions do not "
+        "see packages installed on the host machine."
+    ),
+    "codex": "Run it in the Codex workspace environment, then start a new session.",
+    "cursor": (
+        "Run it in the Cursor agent terminal so the interpreter matches the one "
+        "used for PNG export."
+    ),
+    "pi": (
+        "Run it in the interpreter Pi uses, then run /reload in the open session."
+    ),
+}
 
 EXPECTED_SCRIPTS = (
     Path("scripts/verify-drawio-import.py"),
@@ -190,13 +247,33 @@ def check_python_runtime() -> tuple[CheckResult, str | None]:
     )
 
 
-def check_playwright(python_cmd: str | None) -> CheckResult:
+def playwright_fix(host: str | None = None, channel: str | None = None) -> str:
+    """Compose the one-shot Playwright remediation for the resolved host/channel."""
+    hints: list[str] = []
+    host_hint = HOST_PLAYWRIGHT_HINTS.get(host or "")
+    if host_hint:
+        hints.append(host_hint)
+    if channel == CHANNEL_MARKETPLACE:
+        hints.append(
+            "If PNG export still fails after a marketplace install, restart the "
+            "session so the host reloads the plugin environment."
+        )
+    if not hints:
+        return PLAYWRIGHT_INSTALL_HINT
+    return f"{PLAYWRIGHT_INSTALL_HINT} ({' '.join(hints)})"
+
+
+def check_playwright(
+    python_cmd: str | None,
+    host: str | None = None,
+    channel: str | None = None,
+) -> CheckResult:
     if python_cmd is None:
         return CheckResult(
             name="Playwright PNG export readiness",
             status=FAIL,
             message="Playwright check skipped because no Python command was available.",
-            fix="Resolve Python first; then install with: pip install playwright && playwright install chromium",
+            fix="Resolve Python first; then install with: " + playwright_fix(host, channel),
         )
 
     import_probe = run_command([python_cmd, "-c", "import playwright; print(playwright.__version__)"])
@@ -205,7 +282,7 @@ def check_playwright(python_cmd: str | None) -> CheckResult:
             name="Playwright PNG export readiness",
             status=WARN,
             message="Playwright package is not available in the active Python interpreter.",
-            fix="pip install playwright && playwright install chromium",
+            fix=playwright_fix(host, channel),
         )
 
     chromium_probe = run_command(
@@ -234,7 +311,283 @@ def check_playwright(python_cmd: str | None) -> CheckResult:
         name="Playwright PNG export readiness",
         status=WARN,
         message=f"Playwright is installed but Chromium is not ready: {detail}",
-        fix="pip install playwright && playwright install chromium",
+        fix=playwright_fix(host, channel),
+    )
+
+
+def detect_host(root: Path, environ: dict[str, str] | None = None) -> tuple[str | None, str]:
+    """Best-effort host detection from environment markers, then install path."""
+    env = os.environ if environ is None else environ
+    for host, markers in HOST_ENV_MARKERS:
+        for marker in markers:
+            if env.get(marker):
+                return host, f"environment variable {marker} is set"
+
+    segments = [part.lower() for part in root.resolve().parts]
+    for host, hint in HOST_PATH_HINTS:
+        if any(hint in segment for segment in segments):
+            return host, f"installation path contains {hint!r}"
+
+    return None, "no host markers detected; pass --host to select a profile"
+
+
+def detect_install_channel(root: Path, host: str | None = None) -> tuple[str, str]:
+    """Classify how this installation arrived: maintainer checkout, git, marketplace, or copy."""
+    # Pi Git packages contain the full repository, including maintainer markers.
+    if host == "pi" and (root / ".git").exists():
+        return CHANNEL_GIT, "Pi host profile and .git metadata at the installation root"
+    if is_maintainer_checkout(root):
+        return CHANNEL_MAINTAINER, "maintainer repository markers are present"
+    if (root / ".git").exists():
+        return CHANNEL_GIT, ".git metadata is present at the installation root"
+    segments = {part.lower() for part in root.resolve().parts}
+    marketplace_hits = sorted(segments & MARKETPLACE_PATH_SEGMENTS)
+    if marketplace_hits:
+        return (
+            CHANNEL_MARKETPLACE,
+            f"installation path contains marketplace cache segment {marketplace_hits[0]!r}",
+        )
+    return CHANNEL_COPIED, "no git metadata or marketplace cache path detected"
+
+
+def update_recipe(host: str | None, channel: str | None) -> str:
+    """Return the copy-pastable update/reinstall recipe for the resolved host/channel."""
+    if channel == CHANNEL_MAINTAINER:
+        return (
+            "Maintainer checkout: update with `git pull` and re-run the "
+            "CONTRIBUTING validation gates."
+        )
+    if channel == CHANNEL_MARKETPLACE:
+        if host == "cowork":
+            return (
+                "Cowork updates flow through your organization's private mirror: "
+                "merge a plugin version-bump PR to the mirror's default branch to "
+                "trigger sync, then reinstall from the organization marketplace if "
+                "the plugin is missing (README: Install -> Claude Cowork)."
+            )
+        if host == "codex":
+            return (
+                "Update with: codex plugin marketplace upgrade diagram-design, "
+                "then start a new session."
+            )
+        return (
+            "Update via /plugin -> Marketplaces -> diagram-design -> Enable "
+            "auto-update, then run /reload-plugins when prompted. Reinstall with: "
+            "/plugin install diagram-design@diagram-design."
+        )
+    if channel == CHANNEL_GIT:
+        if host == "pi":
+            return (
+                "Update with: pi update --extensions, then run /reload in an open "
+                "Pi session."
+            )
+        return (
+            "Update with: git pull inside the installation checkout, then reload "
+            "the skill in your host."
+        )
+    if host == "cursor":
+        return (
+            "Agent-installed copy: ask the agent to reinstall, or replace the "
+            "copied skills/diagram-design directory from a newer checkout."
+        )
+    return (
+        "Copied install: replace the skills/diagram-design directory from a newer "
+        "checkout to update."
+    )
+
+
+def check_host_install_channel(
+    host: str | None,
+    host_evidence: str,
+    channel: str,
+    channel_evidence: str,
+) -> CheckResult:
+    host_label = host or "unknown"
+    return CheckResult(
+        name="Host profile and install channel",
+        status=PASS,
+        message=(
+            f"Host profile: {host_label} ({host_evidence}). Install channel: "
+            f"{channel} ({channel_evidence}). Update recipe: "
+            f"{update_recipe(host, channel)}"
+        ),
+    )
+
+
+def read_skill_metadata_version(root: Path) -> str | None:
+    skill = resolve_skill_file(root)
+    if skill is None:
+        return None
+    match = SKILL_VERSION_PATTERN.search(skill.read_text(encoding="utf-8"))
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def check_marketplace_version(
+    root: Path,
+    host: str | None,
+    channel: str,
+) -> CheckResult:
+    name = "Marketplace plugin version alignment"
+    if channel != CHANNEL_MARKETPLACE:
+        return CheckResult(
+            name=name,
+            status=PASS,
+            message=(
+                f"Install channel is {channel}; marketplace version alignment is "
+                "not applicable."
+            ),
+        )
+
+    version = read_skill_metadata_version(root)
+    if version is None:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            message=(
+                "Could not read metadata.version from the installed SKILL.md, so the "
+                "active plugin version cannot be compared."
+            ),
+            fix=update_recipe(host, channel),
+        )
+
+    return CheckResult(
+        name=name,
+        status=PASS,
+        message=(
+            f"Installed SKILL.md metadata.version is {version}. Confirm the active "
+            "plugin version your host reports (for example /plugin in Claude Code) "
+            "matches before debugging stale-behavior reports; marketplace "
+            "auto-update can lag until the session reloads."
+        ),
+    )
+
+
+def git_remote_urls(root: Path) -> list[str]:
+    config = root / ".git" / "config"
+    if not config.is_file():
+        return []
+    return re.findall(r"url\s*=\s*(\S+)", config.read_text(encoding="utf-8"))
+
+
+def git_head_ref(root: Path) -> str | None:
+    head = root / ".git" / "HEAD"
+    if not head.is_file():
+        return None
+    return head.read_text(encoding="utf-8").strip()
+
+
+def check_pi_install_pinning(root: Path, host: str | None, channel: str) -> CheckResult:
+    name = "Pi install pinning"
+    if host != "pi":
+        return CheckResult(
+            name=name,
+            status=PASS,
+            message=(
+                "Host profile is not pi; the unpinned-ref check only applies to Pi "
+                "git installs (run with --host pi to force it)."
+            ),
+        )
+    if channel != CHANNEL_GIT:
+        return CheckResult(
+            name=name,
+            status=PASS,
+            message=(
+                f"Install channel is {channel}, not a git checkout; the "
+                "unpinned-ref check is not applicable."
+            ),
+        )
+
+    head = git_head_ref(root)
+    if head is None:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            message="Could not read .git/HEAD to determine whether the Pi install is pinned.",
+            fix=(
+                "Reinstall from a readable git checkout, or pin a tag or commit "
+                "before pi install."
+            ),
+        )
+
+    if head.startswith("ref: refs/heads/"):
+        branch = head.removeprefix("ref: refs/heads/")
+        return CheckResult(
+            name=name,
+            status=WARN,
+            message=(
+                f"Pi install tracks the unpinned git branch {branch!r}; "
+                "pi update --extensions moves it to whatever that branch points at, "
+                "which can change behavior between sessions."
+            ),
+            fix=(
+                "Pin for reproducibility: check out a release tag or commit in the "
+                "package checkout before pi install, or review upstream changes "
+                "before running pi update --extensions."
+            ),
+        )
+
+    return CheckResult(
+        name=name,
+        status=PASS,
+        message="Pi install is pinned to a fixed git ref (detached tag or commit).",
+    )
+
+
+def check_cowork_mirror(root: Path, host: str | None, channel: str) -> CheckResult:
+    name = "Cowork organization mirror"
+    mirror_fix = (
+        "Mirror the public repository into a private or internal repository owned "
+        "by your organization, add it via Organization settings -> Plugins -> Add "
+        "plugin -> GitHub, enable Sync automatically, and install Diagram Design "
+        "from the resulting organization marketplace (README: Install -> Claude "
+        "Cowork)."
+    )
+    if host != "cowork":
+        return CheckResult(
+            name=name,
+            status=PASS,
+            message=(
+                "Host profile is not cowork; the organization-mirror check only "
+                "applies to Cowork (run with --host cowork to force it)."
+            ),
+        )
+
+    if resolve_skill_file(root) is None:
+        return CheckResult(
+            name=name,
+            status=FAIL,
+            message=(
+                "Cowork could not resolve the installed skill (no SKILL.md under "
+                "the installation root). Cowork organization marketplaces require "
+                "a private or internal mirror of this public repository; without "
+                "one, skill resolution fails after install."
+            ),
+            fix=mirror_fix,
+        )
+
+    public_remotes = [url for url in git_remote_urls(root) if PUBLIC_REPO_SLUG in url]
+    if public_remotes:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            message=(
+                "This Cowork install points directly at the public repository "
+                f"({public_remotes[0]}). Organization marketplaces require a "
+                "private or internal mirror, so updates will not sync through "
+                "Cowork from this remote."
+            ),
+            fix=mirror_fix,
+        )
+
+    return CheckResult(
+        name=name,
+        status=PASS,
+        message=(
+            "Skill resolves under Cowork and the install does not point directly "
+            "at the public repository."
+        ),
     )
 
 
@@ -317,7 +670,12 @@ def check_routing_surfaces(root: Path) -> CheckResult:
     )
 
 
-def check_common_path_mistakes(root: Path, cwd: Path) -> CheckResult:
+def check_common_path_mistakes(
+    root: Path,
+    cwd: Path,
+    host: str | None = None,
+    channel: str | None = None,
+) -> CheckResult:
     warnings: list[str] = []
     fixes: list[str] = []
 
@@ -325,7 +683,10 @@ def check_common_path_mistakes(root: Path, cwd: Path) -> CheckResult:
         warnings.append(
             "Diagram Design SKILL.md was not found under the resolved installation root."
         )
-        fixes.append("Reinstall or update Diagram Design, then run the doctor again.")
+        skill_fix = "Reinstall or update Diagram Design, then run the doctor again."
+        if channel is not None:
+            skill_fix += " " + update_recipe(host, channel)
+        fixes.append(skill_fix)
 
     if platform.system().lower().startswith("win") and " " in str(cwd):
         warnings.append(
@@ -369,7 +730,13 @@ def summarize(checks: list[CheckResult], strict: bool) -> tuple[str, dict[str, i
     return status, counts, exit_code
 
 
-def print_report(checks: list[CheckResult], strict: bool, emit_json: bool) -> int:
+def print_report(
+    checks: list[CheckResult],
+    strict: bool,
+    emit_json: bool,
+    host: str | None = None,
+    channel: str | None = None,
+) -> int:
     status, counts, exit_code = summarize(checks, strict)
     print(
         f"Doctor summary: {status} ({counts[PASS]} pass, {counts[WARN]} warn, {counts[FAIL]} fail)"
@@ -393,6 +760,8 @@ def print_report(checks: list[CheckResult], strict: bool, emit_json: bool) -> in
             "checks": [asdict(check) for check in checks],
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "strict": strict,
+            "host": host or "unknown",
+            "install_channel": channel or "unknown",
             "platform": {
                 "system": platform.system(),
                 "release": platform.release(),
@@ -406,17 +775,33 @@ def print_report(checks: list[CheckResult], strict: bool, emit_json: bool) -> in
     return exit_code
 
 
-def run_doctor(root: Path, cwd: Path, strict: bool, emit_json: bool) -> int:
+def run_doctor(
+    root: Path,
+    cwd: Path,
+    strict: bool,
+    emit_json: bool,
+    host_arg: str = AUTO_HOST,
+) -> int:
+    if host_arg == AUTO_HOST:
+        host, host_evidence = detect_host(root)
+    else:
+        host, host_evidence = host_arg, "selected via --host"
+    channel, channel_evidence = detect_install_channel(root, host)
+
     checks: list[CheckResult] = []
 
     python_check, python_cmd = check_python_runtime()
     checks.append(python_check)
-    checks.append(check_playwright(python_cmd))
+    checks.append(check_playwright(python_cmd, host, channel))
+    checks.append(check_host_install_channel(host, host_evidence, channel, channel_evidence))
     checks.append(check_expected_scripts(root))
     checks.append(check_routing_surfaces(root))
-    checks.append(check_common_path_mistakes(root, cwd))
+    checks.append(check_marketplace_version(root, host, channel))
+    checks.append(check_pi_install_pinning(root, host, channel))
+    checks.append(check_cowork_mirror(root, host, channel))
+    checks.append(check_common_path_mistakes(root, cwd, host, channel))
 
-    return print_report(checks, strict, emit_json)
+    return print_report(checks, strict, emit_json, host, channel)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -433,6 +818,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Emit machine-readable JSON report after the human summary.",
     )
+    parser.add_argument(
+        "--host",
+        choices=(AUTO_HOST, *HOST_PROFILES),
+        default=AUTO_HOST,
+        help=(
+            "Host profile to diagnose against (default: auto-detect from "
+            "environment markers and installation path)."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -440,7 +834,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     root = ROOT
     cwd = Path.cwd()
-    return run_doctor(root, cwd, args.strict, args.json)
+    return run_doctor(root, cwd, args.strict, args.json, args.host)
 
 
 if __name__ == "__main__":
