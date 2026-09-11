@@ -56,6 +56,7 @@ ALLOWED_FONTS = {
     "instrument serif",
     "geist",
     "geist mono",
+    "noto serif",
     "hiragino sans",
     "noto sans jp",
     "yu gothic",
