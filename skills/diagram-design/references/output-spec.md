@@ -133,7 +133,7 @@ Worked example — the same node through all three:
 
 Two rules that hold at every audience level:
 
-- **Never invent detail to fill a slot.** If the source says `svc-04`, `executive` output says what it does only if you can tell from context — otherwise ask, don't guess a business name.
+- **Never invent detail to fill a slot.** If an input names `svc-04` but provides no explanation, keep the identifier and ask rather than guessing a business name.
 - **Keep the source's vocabulary for proper nouns.** Renaming `Kafka` to `Message Bus` is fine at `executive`; renaming it to `Event Grid` (a different product) is a factual error.
 
 ### Non-Latin labels

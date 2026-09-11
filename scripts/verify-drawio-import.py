@@ -214,6 +214,16 @@ def check_parse_raw() -> dict:
     return payload
 
 
+def check_bom_prefixed_raw(tmp: Path) -> None:
+    source = tmp / "bom-prefixed.drawio"
+    source.write_bytes(b"\xef\xbb\xbf" + FIXTURE.read_bytes())
+    payload = json.loads(run_extract([str(source), "--json"]))
+    analysis = payload["pages"][0]["analysis"]
+    if analysis["nodes_total"] != 12 or analysis["edges_total"] != 8:
+        fail("UTF-8 BOM-prefixed raw draw.io graph differs from the source fixture")
+    ok("UTF-8 BOM-prefixed raw draw.io input parses")
+
+
 def check_containers(tmp: Path) -> None:
     model = re.search(
         r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
@@ -520,6 +530,7 @@ def main() -> int:
         tmp = Path(tmp_dir)
         check_files()
         check_parse_raw()
+        check_bom_prefixed_raw(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)
         check_digest_escaping(tmp)
