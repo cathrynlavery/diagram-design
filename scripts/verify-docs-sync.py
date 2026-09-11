@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Ten drift classes, each of which has shipped before:
+Thirteen drift classes, each of which has shipped before:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -9,7 +9,8 @@ Ten drift classes, each of which has shipped before:
 2. The gallery (assets/index.html) must reach every shipped example, and every
    gallery tab must point at a file that exists.
 3. Every concrete file named in README.md's architecture tree must exist.
-4. Every relative references/*.md link in SKILL.md must resolve.
+4. Every relative references/*.md link in SKILL.md must resolve, and a link
+   into a style-guide.md section must name one of its headings.
 5. Claude and Pi command/prompt surfaces must route to the matching reference.
 6. Plugin descriptions must fit Cowork's installation limit while retaining
    every type's lexical hook. The skill and Codex longDescription keep the
@@ -23,6 +24,11 @@ Ten drift classes, each of which has shipped before:
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
+12. Every copy of the Google Fonts css2 link must request the families
+   assets/template.html does, and the export @import must include them.
+13. Every --font-serif in a template must reach 'Noto Serif' before any CJK
+   serif face, which Google Fonts also slices Cyrillic into, and the
+   template's own font link must request it.
 """
 
 from __future__ import annotations
@@ -281,12 +287,58 @@ def skill_reference_links(markdown: str) -> list[str]:
     )
 
 
+CODE_FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})")
+
+
+def heading_anchors(markdown: str) -> set[str]:
+    """GitHub-style heading slugs: lower-case, punctuation dropped, spaces to -.
+
+    ATX closing hashes (`### Title ###`) are stripped and lines inside ``` or
+    ~~~ fences are skipped, since neither is a heading GitHub would slug.
+    Not modelled: setext headings, indented code, HTML blocks, duplicate -1 suffixes.
+    """
+    anchors: set[str] = set()
+    fence = ""
+    for line in markdown.splitlines():
+        marker = CODE_FENCE.match(line)
+        if fence:
+            # Only a bare run of the same character, at least as long, closes it.
+            if (
+                marker
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= len(fence)
+                and not line[marker.end():].strip()
+            ):
+                fence = ""
+            continue
+        # A backtick run followed by another backtick is a code span, not a fence.
+        if marker and not (marker.group(1)[0] == "`" and "`" in line[marker.end():]):
+            fence = marker.group(1)
+            continue
+        heading = re.match(r"#{1,6}[ \t]+(.+?)[ \t]*$", line)
+        if heading:
+            text = re.sub(r"(?:^|[ \t]+)#+$", "", heading.group(1))
+            anchors.add(re.sub(r"[^\w\- ]", "", text.strip().lower()).replace(" ", "-"))
+    return anchors
+
+
 def check_skill_reference_links(
     errors: list[str], markdown: str, skill_directory: Path
 ) -> None:
     for target in sorted(set(skill_reference_links(markdown))):
         if not (skill_directory / target).is_file():
             errors.append(f"SKILL.md links to missing reference {target!r}")
+    # The compact Non-Latin routing line sends agents to style-guide.md
+    # sections; a renamed heading still resolves the file and lands on its top.
+    style_guide = skill_directory / "references/style-guide.md"
+    anchors = set(re.findall(r"\]\(references/style-guide\.md#([^)\s]+)\)", markdown))
+    if anchors and style_guide.is_file():
+        headings = heading_anchors(style_guide.read_text(encoding="utf-8"))
+        for anchor in sorted(anchors - headings):
+            errors.append(
+                f"SKILL.md links to 'references/style-guide.md#{anchor}', "
+                "which matches no heading in references/style-guide.md"
+            )
 
 
 def check_reference_asset_links(
@@ -565,6 +617,35 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     )
 
 
+SKILL_PACKAGE = Path("skills/diagram-design")
+FONT_LINK = re.compile(r'href="([^"]*fonts\.googleapis\.com[^"]*)"')
+# Paths inside the skill package that carry the same css2 link as
+# assets/template.html. template-terminal.html is absent on purpose: the
+# terminal skin loads Geist Mono alone.
+FONT_LINK_SURFACES = (
+    Path("assets/template-dark.html"),
+    Path("assets/template-full.html"),
+    Path("assets/template-motion.html"),
+    Path("references/style-guide.md"),
+    Path("SKILL.md"),
+)
+TITLE_STACK_TEMPLATES = (
+    Path("assets/template.html"),
+    Path("assets/template-dark.html"),
+    Path("assets/template-full.html"),
+    Path("assets/template-motion.html"),
+)
+# Every Noto Serif CJK face Google Fonts serves also carries a cyrillic slice.
+CJK_SERIF_FACES = (
+    "Noto Serif KR",
+    "Noto Serif TC",
+    "Noto Serif SC",
+    "Noto Serif JP",
+    "Noto Serif HK",
+)
+SERIF_STACK = re.compile(r"--font-serif\s*:\s*([^;]+);")
+
+
 def font_families(url: str) -> set[str]:
     """The `family=` parameters a Google Fonts css2 URL actually requests."""
     return {
@@ -574,24 +655,31 @@ def font_families(url: str) -> set[str]:
     }
 
 
-def check_export_font_parity(errors: list[str], root: Path) -> None:
-    """The exported SVG must request every face the shipped HTML link does.
+def family_names(families: set[str]) -> str:
+    return ", ".join(name.removeprefix("family=").replace("+", " ")
+                     for name in sorted(families))
 
-    The two strings live in different files and drifted apart once already: the
-    CJK faces reached assets/template.html but never the @import in export.md,
-    so a Korean or Chinese diagram exported to .svg silently lost its type. That
-    failure only shows up on a machine other than the author's, which is exactly
-    the case the faces are in the link to prevent.
+
+def check_export_font_parity(errors: list[str], root: Path) -> None:
+    """Every copy of the Google Fonts link must request the same faces.
+
+    assets/template.html is the source. The other three templates, the style
+    guide's Font stack block, and SKILL.md carry the same css2 link and must
+    request exactly its families; the export @import must request at least
+    them. The strings live in different files and drifted apart once already:
+    the CJK faces reached assets/template.html but never the @import in
+    export.md, so a Korean or Chinese diagram exported to .svg silently lost its
+    type. That failure only shows up on a machine other than the author's,
+    which is exactly the case the faces are in the link to prevent.
     """
-    template = root / "skills/diagram-design/assets/template.html"
-    export = root / "skills/diagram-design/references/export.md"
+    template = root / SKILL_PACKAGE / "assets/template.html"
+    export = root / SKILL_PACKAGE / "references/export.md"
     for path in (template, export):
         if not path.is_file():
             errors.append(f"font-parity surface is missing: {path.name}")
             return
 
-    link = re.search(r'href="([^"]*fonts\.googleapis\.com[^"]*)"',
-                     template.read_text(encoding="utf-8"))
+    link = FONT_LINK.search(template.read_text(encoding="utf-8"))
     imported = re.search(r"@import url\('([^']+)'\)",
                          export.read_text(encoding="utf-8"))
     if not link or not imported:
@@ -601,15 +689,92 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
         )
         return
 
-    missing = sorted(font_families(link.group(1)) - font_families(imported.group(1)))
+    families = font_families(link.group(1))
+    missing = families - font_families(imported.group(1))
     if missing:
-        names = ", ".join(name.removeprefix("family=").replace("+", " ")
-                          for name in missing)
         errors.append(
-            f"references/export.md @import omits {names}, which "
+            f"references/export.md @import omits {family_names(missing)}, which "
             f"assets/template.html requests; an exported .svg would resolve "
             f"those scripts through whatever font the viewer happens to have"
         )
+
+    for relative in FONT_LINK_SURFACES:
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            errors.append(f"font-parity surface is missing: {relative.as_posix()}")
+            continue
+        surface_link = FONT_LINK.search(path.read_text(encoding="utf-8"))
+        if not surface_link:
+            errors.append(f"could not locate the font link in {relative.as_posix()}")
+            continue
+        requested = font_families(surface_link.group(1))
+        drift = [
+            f"{label} {family_names(names)}"
+            for label, names in (
+                ("missing", families - requested),
+                ("extra", requested - families),
+            )
+            if names
+        ]
+        if drift:
+            errors.append(
+                f"{relative.as_posix()} font link drifts from assets/template.html: "
+                + "; ".join(drift)
+            )
+
+
+def title_stack_error(name: str, stack: str) -> str | None:
+    """Why one --font-serif value fails the Cyrillic order, or None."""
+    cjk = {face.casefold(): face for face in CJK_SERIF_FACES}
+    faces = [face.strip().strip("'\"").casefold() for face in stack.split(",")]
+    if "noto serif" not in faces:
+        return (
+            f"{name} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
+            "no Cyrillic, so a Cyrillic title falls through to the next face"
+        )
+    ahead = [cjk[face] for face in faces[: faces.index("noto serif")] if face in cjk]
+    if ahead:
+        return (
+            f"{name} --font-serif lists {ahead[0]!r} before 'Noto Serif'; Google "
+            f"Fonts slices Cyrillic into {ahead[0]} as well, so a Cyrillic title "
+            "would draw from it"
+        )
+    return None
+
+
+def check_title_fallback_order(errors: list[str], root: Path) -> None:
+    """Every template --font-serif must reach 'Noto Serif' before a CJK serif.
+
+    Instrument Serif has no Cyrillic, so a Cyrillic page title draws from the
+    next face in the stack. Google Fonts slices Cyrillic into every Noto Serif
+    CJK face as well, so a stack that reaches one of them first renders the
+    title in a Korean, Chinese, or Japanese design's Cyrillic instead of the
+    face built for it. Every declaration counts, so an override such as a
+    dark-mode block cannot reorder the stack unseen. The template's own css2
+    link must also request Noto Serif: parity only compares the copies with
+    each other, so dropping the family from all of them at once passes it.
+    """
+    for relative in TITLE_STACK_TEMPLATES:
+        name = relative.as_posix()
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            errors.append(f"title-stack template is missing: {name}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        stacks = SERIF_STACK.findall(source)
+        if not stacks:
+            errors.append(f"{name} has no --font-serif stack")
+            continue
+        for problem in dict.fromkeys(title_stack_error(name, stack) for stack in stacks):
+            if problem:
+                errors.append(problem)
+        link = FONT_LINK.search(source)
+        if not link or "family=Noto+Serif" not in font_families(link.group(1)):
+            errors.append(
+                f"{name} font link does not request Noto Serif, which its "
+                "--font-serif names for Cyrillic titles; without it they resolve "
+                "through whatever serif the viewer has installed"
+            )
 
 
 def main() -> int:
@@ -638,6 +803,7 @@ def main() -> int:
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
     check_routing_surfaces(errors, ROOT)
     check_export_font_parity(errors, ROOT)
+    check_title_fallback_order(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -645,10 +811,10 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, asset citations, packaged support files, routing surfaces, "
-        "manifest descriptions, Factory install contract, type-count routing, "
-        "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
-        "export font parity"
+        "reference links and style-guide anchors, asset citations, packaged support "
+        "files, routing surfaces, manifest descriptions, Factory install contract, "
+        "type-count routing, High-Level invariants, onboarding trust boundary, "
+        "Line dark-skin contract, font-link parity, title fallback order"
     )
     return 0
 
