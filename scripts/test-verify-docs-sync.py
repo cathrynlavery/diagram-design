@@ -7,6 +7,7 @@ import importlib.util
 import json
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -67,6 +68,23 @@ FONT_SURFACES = (
     "references/export.md",
     "SKILL.md",
 )
+# Spelled out here rather than read from the verifier: a surface or template
+# dropped from the verifier's own lists must fail a test, not shrink it.
+LINK_SURFACES = (
+    "assets/template-dark.html",
+    "assets/template-full.html",
+    "assets/template-motion.html",
+    "references/style-guide.md",
+    "SKILL.md",
+)
+TEMPLATES = (
+    "assets/template.html",
+    "assets/template-dark.html",
+    "assets/template-full.html",
+    "assets/template-motion.html",
+)
+NOTO_SERIF_FAMILY = "&family=Noto+Serif:ital@0;1"
+TITLE_ORDER = "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'"
 
 
 def mutate(path: Path, old: str, new: str) -> bytes:
@@ -79,37 +97,64 @@ def mutate(path: Path, old: str, new: str) -> bytes:
     return original
 
 
-def check_font_wiring(verify) -> None:
-    """Font-link parity across surfaces and the Cyrillic title fallback order."""
+@contextmanager
+def font_fixture():
+    """Yield a temp root holding the shipped font surfaces, byte for byte."""
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-fonts-") as temp_dir:
         root = Path(temp_dir)
-        skill = root / "skills/diagram-design"
         for relative in FONT_SURFACES:
-            target = skill / relative
+            target = root / "skills/diagram-design" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+        yield root
 
-        errors: list[str] = []
-        verify.check_export_font_parity(errors, root)
+
+def run_checks(root: Path, *checks) -> list[str]:
+    errors: list[str] = []
+    for check in checks:
+        check(errors, root)
+    return errors
+
+
+def order_error(relative: str, face: str) -> str:
+    return (
+        f"{relative} --font-serif lists {face!r} before 'Noto Serif'; Google "
+        f"Fonts slices Cyrillic into {face} as well, so a Cyrillic title "
+        "would draw from it"
+    )
+
+
+def link_error(relative: str) -> str:
+    return (
+        f"{relative} font link does not request Noto Serif, which its "
+        "--font-serif names for Cyrillic titles; without it they resolve "
+        "through whatever serif the viewer has installed"
+    )
+
+
+def check_font_link_parity(verify) -> None:
+    """Every css2 surface requests the template's families, each one checked."""
+    with font_fixture() as root:
+        skill = root / "skills/diagram-design"
+        errors = run_checks(root, verify.check_export_font_parity)
         if errors:
             raise AssertionError(f"shipped font links failed parity: {errors}")
 
-        dark = skill / "assets/template-dark.html"
-        original = mutate(dark, "&family=Noto+Serif:ital@0;1", "")
-        errors = []
-        verify.check_export_font_parity(errors, root)
-        expected = (
-            "assets/template-dark.html font link drifts from assets/template.html: "
-            "missing Noto Serif"
-        )
-        if errors != [expected]:
-            raise AssertionError(f"a template dropping a family was not reported: {errors}")
-        dark.write_bytes(original)
+        for relative in LINK_SURFACES:
+            path = skill / relative
+            original = mutate(path, NOTO_SERIF_FAMILY, "")
+            errors = run_checks(root, verify.check_export_font_parity)
+            expected = (
+                f"{relative} font link drifts from assets/template.html: "
+                "missing Noto Serif"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{relative} dropping a family was not reported: {errors}")
+            path.write_bytes(original)
 
         export = skill / "references/export.md"
         original = mutate(export, "&amp;family=Noto+Serif:ital@0;1", "")
-        errors = []
-        verify.check_export_font_parity(errors, root)
+        errors = run_checks(root, verify.check_export_font_parity)
         expected = (
             "references/export.md @import omits Noto Serif, which "
             "assets/template.html requests; an exported .svg would resolve "
@@ -123,8 +168,7 @@ def check_font_wiring(verify) -> None:
         original = mutate(
             style_guide, "&display=swap", "&family=Roboto:wght@400&display=swap"
         )
-        errors = []
-        verify.check_export_font_parity(errors, root)
+        errors = run_checks(root, verify.check_export_font_parity)
         expected = (
             "references/style-guide.md font link drifts from assets/template.html: "
             "extra Roboto"
@@ -132,36 +176,54 @@ def check_font_wiring(verify) -> None:
         if errors != [expected]:
             raise AssertionError(f"an extra style-guide family was not reported: {errors}")
         style_guide.write_bytes(original)
-        print("OK font links: every css2 surface requests the template's families")
+    print("OK font links: every css2 surface requests the template's families")
 
-        errors = []
-        verify.check_title_fallback_order(errors, root)
+
+def check_title_stack_order(verify) -> None:
+    """Every --font-serif in every template reaches 'Noto Serif' first."""
+    with font_fixture() as root:
+        skill = root / "skills/diagram-design"
+        errors = run_checks(root, verify.check_title_fallback_order)
         if errors:
             raise AssertionError(f"shipped title stacks failed the fallback order: {errors}")
 
         # Google Fonts slices Cyrillic into Noto Serif KR too, so a stack that
         # reaches the Korean face first draws a Cyrillic title from it.
-        full = skill / "assets/template-full.html"
-        original = mutate(
-            full,
-            "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'",
-            "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'",
-        )
-        errors = []
-        verify.check_title_fallback_order(errors, root)
-        expected = (
-            "assets/template-full.html --font-serif lists 'Noto Serif KR' before "
-            "'Noto Serif'; Google Fonts slices Cyrillic into Noto Serif KR as well, "
-            "so a Cyrillic title would draw from it"
-        )
-        if errors != [expected]:
-            raise AssertionError(f"a CJK serif ahead of Noto Serif was not reported: {errors}")
-        full.write_bytes(original)
+        for relative in TEMPLATES:
+            path = skill / relative
+            original = mutate(
+                path, TITLE_ORDER, "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'"
+            )
+            errors = run_checks(root, verify.check_title_fallback_order)
+            if errors != [order_error(relative, "Noto Serif KR")]:
+                raise AssertionError(
+                    f"a CJK serif ahead of Noto Serif in {relative} was not reported: {errors}"
+                )
+            path.write_bytes(original)
+
+        # A dark-mode override is a second declaration, and the first one
+        # passing must not hide it. JP and HK carry a Cyrillic slice as well.
+        template = skill / "assets/template.html"
+        for face in ("Noto Serif JP", "Noto Serif HK"):
+            original = mutate(
+                template,
+                "</style>",
+                "@media (prefers-color-scheme: dark) {\n"
+                f"      :root {{ --font-serif: 'Instrument Serif', '{face}', "
+                "'Noto Serif', serif; }\n"
+                "    }\n"
+                "  </style>",
+            )
+            errors = run_checks(root, verify.check_title_fallback_order)
+            if errors != [order_error("assets/template.html", face)]:
+                raise AssertionError(
+                    f"a second --font-serif leading with {face} was not reported: {errors}"
+                )
+            template.write_bytes(original)
 
         motion = skill / "assets/template-motion.html"
         original = mutate(motion, "'Noto Serif', ", "")
-        errors = []
-        verify.check_title_fallback_order(errors, root)
+        errors = run_checks(root, verify.check_title_fallback_order)
         expected = (
             "assets/template-motion.html --font-serif lacks 'Noto Serif'; "
             "Instrument Serif carries no Cyrillic, so a Cyrillic title falls "
@@ -170,7 +232,46 @@ def check_font_wiring(verify) -> None:
         if errors != [expected]:
             raise AssertionError(f"a stack without Noto Serif was not reported: {errors}")
         motion.write_bytes(original)
-        print("OK title stacks: 'Noto Serif' leads every CJK serif face")
+    print("OK title stacks: 'Noto Serif' leads every CJK serif face")
+
+
+def check_title_font_link(verify) -> None:
+    """A stack naming Noto Serif is only as good as the link that loads it."""
+    with font_fixture() as root:
+        mutate(
+            root / "skills/diagram-design/assets/template-motion.html",
+            NOTO_SERIF_FAMILY,
+            "",
+        )
+        errors = run_checks(
+            root, verify.check_export_font_parity, verify.check_title_fallback_order
+        )
+        expected = [
+            "assets/template-motion.html font link drifts from assets/template.html: "
+            "missing Noto Serif",
+            link_error("assets/template-motion.html"),
+        ]
+        if errors != expected:
+            raise AssertionError(f"a template link without Noto Serif was not reported: {errors}")
+
+    # Dropping the family from every copy at once leaves parity nothing to
+    # disagree about; only the templates' own links can still catch it.
+    with font_fixture() as root:
+        for relative in FONT_SURFACES:
+            family = (
+                "&amp;family=Noto+Serif:ital@0;1"
+                if relative == "references/export.md"
+                else NOTO_SERIF_FAMILY
+            )
+            mutate(root / "skills/diagram-design" / relative, family, "")
+        errors = run_checks(root, verify.check_export_font_parity)
+        if errors:
+            raise AssertionError(f"a coordinated removal should pass parity: {errors}")
+        errors = run_checks(root, verify.check_title_fallback_order)
+        expected = [link_error(relative) for relative in TEMPLATES]
+        if errors != expected:
+            raise AssertionError(f"a coordinated Noto Serif removal was not reported: {errors}")
+    print("OK title links: every template loads the Noto Serif its stack names")
 
 
 def check_style_guide_anchors(verify) -> None:
@@ -205,6 +306,34 @@ def check_style_guide_anchors(verify) -> None:
     if errors != [expected]:
         raise AssertionError(f"a dangling style-guide anchor was not reported: {errors}")
     print("OK style-guide anchors: every SKILL.md link lands on a heading")
+
+
+def check_heading_syntax(verify) -> None:
+    """Closing hashes are not heading text, and fenced lines are not headings."""
+    dangling = [
+        "SKILL.md links to 'references/style-guide.md#cyrillic-labels', "
+        "which matches no heading in references/style-guide.md"
+    ]
+    cases = (
+        ("# Style Guide\n\n### Cyrillic labels ###\n", []),
+        ("```\n### Not a heading\n```\n\n### Cyrillic labels\n", []),
+        ("# Style Guide\n\n```markdown\n### Cyrillic labels\n```\n", dangling),
+        ("# Style Guide\n\n~~~\n### Cyrillic labels\n~~~\n", dangling),
+        ("# Style Guide\n\n````\n```\n### Cyrillic labels\n```\n````\n", dangling),
+    )
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-anchors-") as temp_dir:
+        skill = Path(temp_dir)
+        guide = skill / "references/style-guide.md"
+        guide.parent.mkdir()
+        for text, expected in cases:
+            guide.write_text(text, encoding="utf-8")
+            errors: list[str] = []
+            verify.check_skill_reference_links(
+                errors, "See [Cyrillic](references/style-guide.md#cyrillic-labels).", skill
+            )
+            if errors != expected:
+                raise AssertionError(f"heading syntax misread in {text!r}: {errors}")
+    print("OK heading syntax: closing hashes stripped, fenced lines skipped")
 
 
 def main() -> int:
@@ -835,8 +964,11 @@ diagram-design/
             raise AssertionError(f"valid asset citations produced unexpected error: {errs}")
         print("OK reference assets: valid asset citations produce no error")
 
-    check_font_wiring(verify)
+    check_font_link_parity(verify)
+    check_title_stack_order(verify)
+    check_title_font_link(verify)
     check_style_guide_anchors(verify)
+    check_heading_syntax(verify)
 
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "

@@ -26,8 +26,9 @@ Thirteen drift classes, each of which has shipped before:
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
 12. Every copy of the Google Fonts css2 link must request the families
    assets/template.html does, and the export @import must include them.
-13. Each template's title stack must reach 'Noto Serif' before any CJK serif
-   face, which Google Fonts also slices Cyrillic into.
+13. Every --font-serif in a template must reach 'Noto Serif' before any CJK
+   serif face, which Google Fonts also slices Cyrillic into, and the
+   template's own font link must request it.
 """
 
 from __future__ import annotations
@@ -286,12 +287,39 @@ def skill_reference_links(markdown: str) -> list[str]:
     )
 
 
+CODE_FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})")
+
+
 def heading_anchors(markdown: str) -> set[str]:
-    """GitHub-style heading slugs: lower-case, punctuation dropped, spaces to -."""
-    return {
-        re.sub(r"[^\w\- ]", "", heading.strip().lower()).replace(" ", "-")
-        for heading in re.findall(r"^#{1,6}[ \t]+(.+?)[ \t]*$", markdown, re.MULTILINE)
-    }
+    """GitHub-style heading slugs: lower-case, punctuation dropped, spaces to -.
+
+    ATX closing hashes (`### Title ###`) are stripped and lines inside ``` or
+    ~~~ fences are skipped, since neither is a heading GitHub would slug.
+    Not modelled: setext headings, indented code, HTML blocks, duplicate -1 suffixes.
+    """
+    anchors: set[str] = set()
+    fence = ""
+    for line in markdown.splitlines():
+        marker = CODE_FENCE.match(line)
+        if fence:
+            # Only a bare run of the same character, at least as long, closes it.
+            if (
+                marker
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= len(fence)
+                and not line[marker.end():].strip()
+            ):
+                fence = ""
+            continue
+        # A backtick run followed by another backtick is a code span, not a fence.
+        if marker and not (marker.group(1)[0] == "`" and "`" in line[marker.end():]):
+            fence = marker.group(1)
+            continue
+        heading = re.match(r"#{1,6}[ \t]+(.+?)[ \t]*$", line)
+        if heading:
+            text = re.sub(r"(?:^|[ \t]+)#+$", "", heading.group(1))
+            anchors.add(re.sub(r"[^\w\- ]", "", text.strip().lower()).replace(" ", "-"))
+    return anchors
 
 
 def check_skill_reference_links(
@@ -607,7 +635,15 @@ TITLE_STACK_TEMPLATES = (
     Path("assets/template-full.html"),
     Path("assets/template-motion.html"),
 )
-CJK_SERIF_FACES = ("Noto Serif KR", "Noto Serif TC", "Noto Serif SC")
+# Every Noto Serif CJK face Google Fonts serves also carries a cyrillic slice.
+CJK_SERIF_FACES = (
+    "Noto Serif KR",
+    "Noto Serif TC",
+    "Noto Serif SC",
+    "Noto Serif JP",
+    "Noto Serif HK",
+)
+SERIF_STACK = re.compile(r"--font-serif\s*:\s*([^;]+);")
 
 
 def font_families(url: str) -> set[str]:
@@ -687,38 +723,57 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
             )
 
 
+def title_stack_error(name: str, stack: str) -> str | None:
+    """Why one --font-serif value fails the Cyrillic order, or None."""
+    cjk = {face.casefold(): face for face in CJK_SERIF_FACES}
+    faces = [face.strip().strip("'\"").casefold() for face in stack.split(",")]
+    if "noto serif" not in faces:
+        return (
+            f"{name} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
+            "no Cyrillic, so a Cyrillic title falls through to the next face"
+        )
+    ahead = [cjk[face] for face in faces[: faces.index("noto serif")] if face in cjk]
+    if ahead:
+        return (
+            f"{name} --font-serif lists {ahead[0]!r} before 'Noto Serif'; Google "
+            f"Fonts slices Cyrillic into {ahead[0]} as well, so a Cyrillic title "
+            "would draw from it"
+        )
+    return None
+
+
 def check_title_fallback_order(errors: list[str], root: Path) -> None:
-    """Each template's --font-serif must reach 'Noto Serif' before a CJK serif.
+    """Every template --font-serif must reach 'Noto Serif' before a CJK serif.
 
     Instrument Serif has no Cyrillic, so a Cyrillic page title draws from the
-    next face in the stack. Google Fonts slices Cyrillic into Noto Serif KR and
-    TC as well, so a stack that reaches one of them first renders the title in
-    a Korean or Chinese design's Cyrillic instead of the face built for it.
+    next face in the stack. Google Fonts slices Cyrillic into every Noto Serif
+    CJK face as well, so a stack that reaches one of them first renders the
+    title in a Korean, Chinese, or Japanese design's Cyrillic instead of the
+    face built for it. Every declaration counts, so an override such as a
+    dark-mode block cannot reorder the stack unseen. The template's own css2
+    link must also request Noto Serif: parity only compares the copies with
+    each other, so dropping the family from all of them at once passes it.
     """
-    cjk = {face.casefold(): face for face in CJK_SERIF_FACES}
     for relative in TITLE_STACK_TEMPLATES:
         name = relative.as_posix()
         path = root / SKILL_PACKAGE / relative
         if not path.is_file():
             errors.append(f"title-stack template is missing: {name}")
             continue
-        stack = re.search(r"--font-serif\s*:\s*([^;]+);", path.read_text(encoding="utf-8"))
-        if not stack:
+        source = path.read_text(encoding="utf-8")
+        stacks = SERIF_STACK.findall(source)
+        if not stacks:
             errors.append(f"{name} has no --font-serif stack")
             continue
-        faces = [face.strip().strip("'\"").casefold() for face in stack.group(1).split(",")]
-        if "noto serif" not in faces:
+        for problem in dict.fromkeys(title_stack_error(name, stack) for stack in stacks):
+            if problem:
+                errors.append(problem)
+        link = FONT_LINK.search(source)
+        if not link or "family=Noto+Serif" not in font_families(link.group(1)):
             errors.append(
-                f"{name} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
-                "no Cyrillic, so a Cyrillic title falls through to the next face"
-            )
-            continue
-        ahead = [cjk[face] for face in faces[: faces.index("noto serif")] if face in cjk]
-        if ahead:
-            errors.append(
-                f"{name} --font-serif lists {ahead[0]!r} before 'Noto Serif'; Google "
-                f"Fonts slices Cyrillic into {ahead[0]} as well, so a Cyrillic title "
-                "would draw from it"
+                f"{name} font link does not request Noto Serif, which its "
+                "--font-serif names for Cyrillic titles; without it they resolve "
+                "through whatever serif the viewer has installed"
             )
 
 
