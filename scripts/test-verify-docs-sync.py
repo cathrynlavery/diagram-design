@@ -124,6 +124,13 @@ def order_error(relative: str, face: str) -> str:
     )
 
 
+def lacks_error(relative: str) -> str:
+    return (
+        f"{relative} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
+        "no Cyrillic, so a Cyrillic title falls through to the next face"
+    )
+
+
 def link_error(relative: str) -> str:
     return (
         f"{relative} font link does not request Noto Serif, which its "
@@ -221,15 +228,32 @@ def check_title_stack_order(verify) -> None:
                 )
             template.write_bytes(original)
 
+        # Each distinct problem is reported once, in declaration order: an
+        # override repeated is one defect, and it does not hide a different one.
+        original = mutate(
+            template, TITLE_ORDER, "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'"
+        )
+        override = (
+            "@media (prefers-color-scheme: dark) {\n"
+            "      :root { --font-serif: 'Instrument Serif', 'Noto Serif JP', "
+            "'Noto Serif', serif; }\n"
+            "    }\n"
+            "  "
+        )
+        mutate(template, "</style>", override * 2 + "</style>")
+        errors = run_checks(root, verify.check_title_fallback_order)
+        expected = [
+            order_error("assets/template.html", "Noto Serif KR"),
+            order_error("assets/template.html", "Noto Serif JP"),
+        ]
+        if errors != expected:
+            raise AssertionError(f"stack errors were not each reported once: {errors}")
+        template.write_bytes(original)
+
         motion = skill / "assets/template-motion.html"
         original = mutate(motion, "'Noto Serif', ", "")
         errors = run_checks(root, verify.check_title_fallback_order)
-        expected = (
-            "assets/template-motion.html --font-serif lacks 'Noto Serif'; "
-            "Instrument Serif carries no Cyrillic, so a Cyrillic title falls "
-            "through to the next face"
-        )
-        if errors != [expected]:
+        if errors != [lacks_error("assets/template-motion.html")]:
             raise AssertionError(f"a stack without Noto Serif was not reported: {errors}")
         motion.write_bytes(original)
     print("OK title stacks: 'Noto Serif' leads every CJK serif face")
@@ -253,6 +277,23 @@ def check_title_font_link(verify) -> None:
         ]
         if errors != expected:
             raise AssertionError(f"a template link without Noto Serif was not reported: {errors}")
+
+    # A failing stack must not hide the failing link beside it.
+    with font_fixture() as root:
+        motion = root / "skills/diagram-design/assets/template-motion.html"
+        mutate(motion, "'Noto Serif', ", "")
+        mutate(motion, NOTO_SERIF_FAMILY, "")
+        errors = run_checks(
+            root, verify.check_export_font_parity, verify.check_title_fallback_order
+        )
+        expected = [
+            "assets/template-motion.html font link drifts from assets/template.html: "
+            "missing Noto Serif",
+            lacks_error("assets/template-motion.html"),
+            link_error("assets/template-motion.html"),
+        ]
+        if errors != expected:
+            raise AssertionError(f"a failing stack hid the failing link beside it: {errors}")
 
     # Dropping the family from every copy at once leaves parity nothing to
     # disagree about; only the templates' own links can still catch it.
@@ -320,6 +361,10 @@ def check_heading_syntax(verify) -> None:
         ("# Style Guide\n\n```markdown\n### Cyrillic labels\n```\n", dangling),
         ("# Style Guide\n\n~~~\n### Cyrillic labels\n~~~\n", dangling),
         ("# Style Guide\n\n````\n```\n### Cyrillic labels\n```\n````\n", dangling),
+        # Only the opening character closes a fence, and a backtick run with
+        # another backtick after it on the line is a code span, not a fence.
+        ("# Style Guide\n\n```\n~~~\n### Cyrillic labels\n```\n", dangling),
+        ("```x``` inline\n\n### Cyrillic labels\n", []),
     )
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-anchors-") as temp_dir:
         skill = Path(temp_dir)
