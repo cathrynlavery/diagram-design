@@ -90,6 +90,8 @@
       "python3 scripts/test-verify-beeswarm.py",
       "python3 scripts/verify-skin-polarity.py --all",
       "python3 scripts/test-verify-skin-polarity.py",
+      "python3 scripts/test-verify-heatmap.py",
+      "python3 scripts/verify-heatmap.py --all",
       "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-design/references/primitive-icons.md"
     ],
     "required_check_names": [],
