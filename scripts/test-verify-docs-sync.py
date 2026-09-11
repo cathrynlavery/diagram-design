@@ -55,6 +55,158 @@ def load_verify_module():
     return module
 
 
+# Every file that carries the Google Fonts css2 link or the export @import.
+# The fixtures copy them from the real tree, so the passing case is the
+# shipped wiring and each mutation below is the only defect in the tree.
+FONT_SURFACES = (
+    "assets/template.html",
+    "assets/template-dark.html",
+    "assets/template-full.html",
+    "assets/template-motion.html",
+    "references/style-guide.md",
+    "references/export.md",
+    "SKILL.md",
+)
+
+
+def mutate(path: Path, old: str, new: str) -> bytes:
+    """Replace *old* once in *path* and return the original bytes."""
+    original = path.read_bytes()
+    text = original.decode("utf-8")
+    if old not in text:
+        raise AssertionError(f"{path.name} no longer contains {old!r}; update the fixture")
+    path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+    return original
+
+
+def check_font_wiring(verify) -> None:
+    """Font-link parity across surfaces and the Cyrillic title fallback order."""
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-fonts-") as temp_dir:
+        root = Path(temp_dir)
+        skill = root / "skills/diagram-design"
+        for relative in FONT_SURFACES:
+            target = skill / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+
+        errors: list[str] = []
+        verify.check_export_font_parity(errors, root)
+        if errors:
+            raise AssertionError(f"shipped font links failed parity: {errors}")
+
+        dark = skill / "assets/template-dark.html"
+        original = mutate(dark, "&family=Noto+Serif:ital@0;1", "")
+        errors = []
+        verify.check_export_font_parity(errors, root)
+        expected = (
+            "assets/template-dark.html font link drifts from assets/template.html: "
+            "missing Noto Serif"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"a template dropping a family was not reported: {errors}")
+        dark.write_bytes(original)
+
+        export = skill / "references/export.md"
+        original = mutate(export, "&amp;family=Noto+Serif:ital@0;1", "")
+        errors = []
+        verify.check_export_font_parity(errors, root)
+        expected = (
+            "references/export.md @import omits Noto Serif, which "
+            "assets/template.html requests; an exported .svg would resolve "
+            "those scripts through whatever font the viewer happens to have"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"export @import drift was not reported: {errors}")
+        export.write_bytes(original)
+
+        style_guide = skill / "references/style-guide.md"
+        original = mutate(
+            style_guide, "&display=swap", "&family=Roboto:wght@400&display=swap"
+        )
+        errors = []
+        verify.check_export_font_parity(errors, root)
+        expected = (
+            "references/style-guide.md font link drifts from assets/template.html: "
+            "extra Roboto"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"an extra style-guide family was not reported: {errors}")
+        style_guide.write_bytes(original)
+        print("OK font links: every css2 surface requests the template's families")
+
+        errors = []
+        verify.check_title_fallback_order(errors, root)
+        if errors:
+            raise AssertionError(f"shipped title stacks failed the fallback order: {errors}")
+
+        # Google Fonts slices Cyrillic into Noto Serif KR too, so a stack that
+        # reaches the Korean face first draws a Cyrillic title from it.
+        full = skill / "assets/template-full.html"
+        original = mutate(
+            full,
+            "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'",
+            "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'",
+        )
+        errors = []
+        verify.check_title_fallback_order(errors, root)
+        expected = (
+            "assets/template-full.html --font-serif lists 'Noto Serif KR' before "
+            "'Noto Serif'; Google Fonts slices Cyrillic into Noto Serif KR as well, "
+            "so a Cyrillic title would draw from it"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"a CJK serif ahead of Noto Serif was not reported: {errors}")
+        full.write_bytes(original)
+
+        motion = skill / "assets/template-motion.html"
+        original = mutate(motion, "'Noto Serif', ", "")
+        errors = []
+        verify.check_title_fallback_order(errors, root)
+        expected = (
+            "assets/template-motion.html --font-serif lacks 'Noto Serif'; "
+            "Instrument Serif carries no Cyrillic, so a Cyrillic title falls "
+            "through to the next face"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"a stack without Noto Serif was not reported: {errors}")
+        motion.write_bytes(original)
+        print("OK title stacks: 'Noto Serif' leads every CJK serif face")
+
+
+def check_style_guide_anchors(verify) -> None:
+    """SKILL.md's routing links must land on a heading, not only on the file."""
+    skill = verify.SKILL.read_text(encoding="utf-8")
+    errors: list[str] = []
+    verify.check_skill_reference_links(errors, skill, verify.SKILL.parent)
+    if errors:
+        raise AssertionError(f"shipped SKILL.md reference links failed: {errors}")
+
+    # Punctuation drops out of the slug and the spaces around it survive.
+    errors = []
+    verify.check_skill_reference_links(
+        errors,
+        "See [strokes](references/style-guide.md#stroke-radius-spacing) and "
+        "[inversion](references/style-guide.md#inversion-rule-light--dark).",
+        verify.SKILL.parent,
+    )
+    if errors:
+        raise AssertionError(f"punctuated style-guide headings failed: {errors}")
+
+    errors = []
+    verify.check_skill_reference_links(
+        errors,
+        skill + "\nSee [gone](references/style-guide.md#no-such-heading).\n",
+        verify.SKILL.parent,
+    )
+    expected = (
+        "SKILL.md links to 'references/style-guide.md#no-such-heading', "
+        "which matches no heading in references/style-guide.md"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"a dangling style-guide anchor was not reported: {errors}")
+    print("OK style-guide anchors: every SKILL.md link lands on a heading")
+
+
 def main() -> int:
     verify = load_verify_module()
 
@@ -683,10 +835,14 @@ diagram-design/
             raise AssertionError(f"valid asset citations produced unexpected error: {errs}")
         print("OK reference assets: valid asset citations produce no error")
 
+    check_font_wiring(verify)
+    check_style_guide_anchors(verify)
+
     print(
-        "PASS: docs sync checks references, asset citations, strict-bundler packaging, "
-        "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
-        "and gallery guards (parent/variant model)"
+        "PASS: docs sync checks references, style-guide anchors, asset citations, "
+        "strict-bundler packaging, routing surfaces, Factory install contract, "
+        "type-count routing, High-Level invariants, font-link parity, the Cyrillic "
+        "title fallback order, and gallery guards (parent/variant model)"
     )
     return 0
 
