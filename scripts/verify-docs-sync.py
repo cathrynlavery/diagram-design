@@ -218,6 +218,19 @@ def check_gallery(errors: list[str]) -> None:
             )
         else:
             seen_eyebrows[num] = t
+    # Enforce that independent eyebrows form one contiguous, ascending
+    # sequence matching document order. Uniqueness alone missed a tab
+    # inserted with the next available number instead of one matching its
+    # position — the tab_eyebrows dict preserves document order since it is
+    # built by a single left-to-right regex pass.
+    independent_order = [t for t in tab_eyebrows if t not in tab_parents]
+    for position, t in enumerate(independent_order, start=1):
+        if int(tab_eyebrows[t]) != position:
+            errors.append(
+                f"gallery independent tab {t!r} has eyebrow {tab_eyebrows[t]!r} "
+                f"at document position {position}; independent eyebrows must "
+                "be contiguous, ascending, and match document order"
+            )
     # Enforce that each variant's eyebrow matches its declared parent's.
     for t, parent in tab_parents.items():
         if parent not in tab_eyebrows:

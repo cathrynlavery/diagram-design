@@ -637,14 +637,14 @@ diagram-design/
         ridge_trio = ["example-ridgeline.html", "example-ridgeline-dark.html", "example-ridgeline-full.html"]
 
         # 7. Variant sharing its parent's eyebrow is allowed (no error).
-        html = make_gallery_html(make_tab("line", "20"), make_tab("ridgeline", "20", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if any("eyebrow" in e or "parent" in e for e in errs):
             raise AssertionError(f"valid parent/variant reuse raised error: {errs}")
         print("OK gallery: variant sharing parent eyebrow is allowed")
 
         # 8. Variant with wrong eyebrow number is caught.
-        html = make_gallery_html(make_tab("line", "20"), make_tab("ridgeline", "99", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "99", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if not any("ridgeline" in e and "eyebrow" in e for e in errs):
             raise AssertionError(f"variant with wrong eyebrow not caught: {errs}")
@@ -656,6 +656,31 @@ diagram-design/
         if not any("ridgeline" in e and "line" in e for e in errs):
             raise AssertionError(f"variant with missing parent not caught: {errs}")
         print("OK gallery: variant with missing parent caught")
+
+        # 10. An independent tab inserted with the next available number
+        # instead of one matching its document position is caught (#213: a
+        # tab like Waterfall landing at eyebrow 54 between 19 and 20).
+        html = make_gallery_html(make_tab("x", "01"), make_tab("y", "54"))
+        errs = run_gallery_check(html, full_trio + ["example-y.html", "example-y-dark.html", "example-y-full.html"])
+        if not any("'y'" in e and "position 2" in e for e in errs):
+            raise AssertionError(f"out-of-sequence eyebrow not caught: {errs}")
+        print("OK gallery: out-of-sequence eyebrow number caught")
+
+        # 11. A contiguous, ascending sequence — including a variant sharing
+        # its parent's number mid-sequence — produces no ordering error.
+        html = make_gallery_html(
+            make_tab("x", "01"),
+            make_tab("line", "02"),
+            make_tab("ridgeline", "02", parent="line"),
+            make_tab("z", "03"),
+        )
+        errs = run_gallery_check(
+            html,
+            full_trio + line_trio + ridge_trio + ["example-z.html", "example-z-dark.html", "example-z-full.html"],
+        )
+        if any("contiguous" in e for e in errs):
+            raise AssertionError(f"valid ascending sequence raised false positive: {errs}")
+        print("OK gallery: contiguous ascending sequence with a mid-sequence variant passes")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-assets-") as asset_tmp:
         tmp_skill_dir = Path(asset_tmp)
