@@ -349,20 +349,14 @@ Expand SVG `viewBox` height by ~60px.
 
 ### 4px grid
 
-**All values — font sizes, padding, node dimensions, gaps, x/y coords — divisible by 4.** Non-negotiable.
+**Structural geometry, divisible by 4:** node origins, widths, heights, gaps, padding. Off-grid by design: type sizes (role ramp in `references/output-spec.md`), radii, data-derived positions, text baselines, arrow markers, `.5` offsets that keep 1px strokes crisp, stroke widths, opacity, and the 22×22 dot-pattern.
 
 | Category | Allowed values |
 |---|---|
-| Font sizes | 8, 12, 16, 20, 24, 28, 32, 40 |
 | Node width / height | 80, 96, 112, 120, 128, 140, 144, 160, 180, 200, 240, 320 |
-| x / y coordinates | multiples of 4 |
 | Gap between nodes | 20, 24, 32, 40, 48 |
 | Padding inside boxes | 8, 12, 16 |
 | Border radius | 4, 6, 8 |
-
-Exempt: stroke widths (0.8, 1, 1.2), opacity values, and the 22×22 dot-pattern.
-
-Quick check: if a coordinate ends in 1, 2, 3, 5, 6, 7, 9 — fix it.
 
 ### Complexity budget (per diagram)
 
@@ -489,7 +483,7 @@ Run before producing any diagram.
 - [ ] Legend is a horizontal bottom strip, not floating?
 - [ ] No vertical `writing-mode` text?
 - [ ] `viewBox` expanded for the legend strip (~60px)?
-- [ ] Every font size, coord, width, height, gap divisible by 4?
+- [ ] Node origins, dimensions, gaps, padding on the 4px grid; type sizes on the role ramp?
 - [ ] From the installed skill directory, did `python3 scripts/self_check.py <file>` pass? (Accessible-SVG contract, single-file safety, motion basics.)
 - [ ] If animated, does the complete static/no-JS frame work, does reduced motion hide/disable playback, and is the controller copied verbatim from `assets/template-motion.html`? From a repository checkout, also run `python3 <repo-root>/scripts/verify-motion.py path/to/generated.html` plus the skin linter; from an installed skill, manually check print and static-query states on top of the self-check.
 

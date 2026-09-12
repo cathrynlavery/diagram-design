@@ -44,6 +44,54 @@ effective_w        = 1000 - right_strip_w - strip_margin
 ## 8. Anti-patterns
 """
 
+GRID_SKILL = """\
+### 4px grid
+
+**Structural geometry, divisible by 4:** node origins, widths, heights, gaps, padding. Off-grid by design: type sizes (role ramp in `references/output-spec.md`), stroke widths, opacity.
+
+| Category | Allowed values |
+|---|---|
+| Node width / height | 80, 96, 120 |
+| Gap between nodes | 20, 24, 32 |
+
+### Complexity budget
+
+<text x="10" y="20" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Ingest</text>
+<text x="10" y="34" font-size="8.5" font-family="'Geist', sans-serif">source: s3</text>
+<text x="10" y="48" font-size="7" font-family="'Geist Mono', monospace">API</text>
+<text x="10" y="90" fill="rgba(45,49,66,0.06)" font-size="72" font-family="'Geist Mono', monospace">2026</text>
+"""
+
+TYPE_RAMP_SPEC = """\
+### Type ramp per size class
+
+| Role | standard | presentation | print |
+|---|---|---|---|
+| Title (Instrument Serif) | 28 | 40 | 32 |
+| Node name (Geist 600) | 12 | 16 | 12 |
+| Sublabel (Geist Mono) | 9 | 12 | 9 |
+| Arrow label (Geist Mono) | 8 | 12 | 8 |
+| Eyebrow / tag (Geist Mono) | 8 | 8 | 8 |
+| Node box min height | 48 | 64 | 48 |
+| Min gap between nodes | 24 | 40 | 24 |
+
+Every `font-size` is one of the role values above for the preset in use, or one of these named exceptions:
+
+| Exception | Font | Sizes |
+|---|---|---|
+| Dense annotation: legend keys, axis ticks | Geist Mono or Geist regular | 7 to 11, half steps allowed |
+| Group or entity heading | Geist 600 | 14 |
+| Decorative watermark numerals at or under 0.08 opacity | any | any |
+
+### Registered legacy sizes
+
+| File | Sizes | What they are |
+|---|---|---|
+| `assets/example-legacy.html` | Geist 600 13, Geist 600 22 | node name and a counter |
+
+### Safe areas
+"""
+
 
 def load_verify_module():
     sys.dont_write_bytecode = True
@@ -169,6 +217,303 @@ def main() -> int:
     )
     if errors != [expected]:
         raise AssertionError(f"light-skin regression was not reported: {errors}")
+
+    # ── type-ramp contract tests ─────────────────────────────────────────────
+    errors = []
+    verify.check_type_ramp(errors, GRID_SKILL, TYPE_RAMP_SPEC)
+    if errors:
+        raise AssertionError(f"valid type-ramp contract failed: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="12"', 'font-size="13"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"off-ramp font size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="8.5"', 'font-size="8.25"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=8.25" not in errors[0]:
+        raise AssertionError(f"quarter-step font size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace("|---|---|\n", "|---|---|\n| Font sizes | 8, 12 |\n", 1),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "'Font sizes' row" not in errors[0]:
+        raise AssertionError(f"font-size row in the grid table was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace(" (role ramp in `references/output-spec.md`)", ""),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "does not link to references/output-spec.md" not in errors[0]:
+        raise AssertionError(f"unlinked grid section was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL,
+        TYPE_RAMP_SPEC.replace("| Sublabel (Geist Mono) | 9 | 12 | 9 |\n", ""),
+    )
+    if not any("'Sublabel'" in error for error in errors):
+        raise AssertionError(f"missing ramp role was not reported: {errors}")
+
+    heading_skill = GRID_SKILL.replace('font-size="12"', 'font-size="14"')
+    errors = []
+    verify.check_type_ramp(errors, heading_skill, TYPE_RAMP_SPEC)
+    if errors:
+        raise AssertionError(f"exempt heading size 14 was rejected: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        heading_skill,
+        TYPE_RAMP_SPEC.replace("| Group or entity heading | Geist 600 | 14 |\n", ""),
+    )
+    if len(errors) != 1 or "font-size=14" not in errors[0]:
+        raise AssertionError(
+            f"size 14 was accepted without its named exception: {errors}"
+        )
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL,
+        TYPE_RAMP_SPEC[: TYPE_RAMP_SPEC.index("Every `font-size`")] + "### Safe areas\n",
+    )
+    if not any("named font-size exceptions table" in error for error in errors):
+        raise AssertionError(f"missing exceptions table was not reported: {errors}")
+
+    # Both declared syntaxes, not just the double-quoted attribute.
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace('font-size="12"', "font-size='13'"),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"single-quoted off-ramp size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL + "\n<style>.axis { font-size:13px; }</style>\n",
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"CSS off-ramp size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace("font-size=\"8.5\" font-family=\"'Geist', sans-serif\"", 'font-size="8.5"'),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "declares no font" not in errors[0]:
+        raise AssertionError(f"fontless off-ramp size was not reported: {errors}")
+
+    # An exception belongs to a role, not to a number range. A node name is set
+    # in Geist 600 and cannot take a dense-annotation size just by being small.
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="12"', 'font-size="7.5"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=7.5 on sans-600 text" not in errors[0]:
+        raise AssertionError(
+            f"node name borrowing a dense-annotation size was not reported: {errors}"
+        )
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="7"', 'font-size="7.5"'), TYPE_RAMP_SPEC
+    )
+    if errors:
+        raise AssertionError(f"dense annotation at 7.5 in Geist Mono was rejected: {errors}")
+
+    # The 72px watermark is legal only while its opacity keeps it decorative.
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace("rgba(45,49,66,0.06)", "rgba(45,49,66,0.30)"), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=72" not in errors[0]:
+        raise AssertionError(f"opaque watermark size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        verify.SKILL.read_text(encoding="utf-8"),
+        verify.OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"),
+    )
+    if errors:
+        raise AssertionError(f"shipped SKILL.md and output-spec.md disagree: {errors}")
+
+    # ── registered legacy sizes ──────────────────────────────────────────────
+    legacy_markup = (
+        '<svg viewBox="0 0 10 10">'
+        '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>'
+        '<text font-size="22" font-weight="600" font-family="\'Geist\', sans-serif">2/5</text>'
+        "</svg>"
+    )
+    with tempfile.TemporaryDirectory(prefix="legacy-type-sizes-") as temp_dir:
+        fake_root = Path(temp_dir)
+        assets = fake_root / "skills/diagram-design/assets"
+        references = fake_root / "skills/diagram-design/references"
+        assets.mkdir(parents=True)
+        references.mkdir(parents=True)
+        legacy = assets / "example-legacy.html"
+        legacy.write_text(legacy_markup, encoding="utf-8")
+
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(f"registered legacy sizes were rejected: {errors}")
+
+        legacy.write_text(
+            legacy_markup.replace("</svg>", '<text font-size="17">x</text></svg>'),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
+            raise AssertionError(f"a grown legacy inventory was not reported: {errors}")
+
+        legacy.write_text(legacy_markup.replace('font-size="22"', 'font-size="16"'), encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
+            raise AssertionError(f"a shrunk legacy inventory was not reported: {errors}")
+
+        # An exception belongs to one font, so the same size under another font
+        # is a different use and has to be reported even though the size list is
+        # unchanged. Swap the registered 13px Geist 600 name for a serif one.
+        legacy.write_text(
+            legacy_markup.replace(
+                "font-size=\"13\" font-weight=\"600\" font-family='Geist', sans-serif",
+                "font-size=\"13\" font-family='Instrument Serif', serif",
+            ).replace(
+                '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>',
+                '<text font-size="13" font-family="\'Instrument Serif\', serif">A</text>',
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "Instrument Serif 13" not in errors[0]:
+            raise AssertionError(
+                f"a legacy size moved to another font was not reported: {errors}"
+            )
+
+        legacy.write_text(legacy_markup, encoding="utf-8")
+
+        # A dense-annotation size is legal in Geist Mono and illegal in the
+        # serif, at the same size, in the same shipped file. 7 is on no role
+        # ramp, so only the exception can carry it.
+        annotation = (
+            '<svg viewBox="0 0 10 10">'
+            '<text font-size="7" font-family="\'Geist Mono\', monospace">40 ms</text>'
+            "</svg>"
+        )
+        extra = assets / "example-annotation.html"
+        extra.write_text(annotation, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(
+                f"a Geist Mono annotation at 7 was not accepted: {errors}"
+            )
+
+        extra.write_text(
+            annotation.replace("'Geist Mono', monospace", "'Instrument Serif', serif"),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 7" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"an annotation size under the wrong font was not reported: {errors}"
+            )
+
+        # Same size, same file, set through a CSS class and a custom property:
+        # the sweep has to resolve the family before it can judge the size.
+        styled = (
+            "<style>:root{--font-mono:'Geist Mono',ui-monospace,monospace;"
+            "--font-serif:'Instrument Serif',serif}"
+            ".tick{font-family:var(--font-mono);font-size:7px}</style>"
+            '<svg viewBox="0 0 10 10"><text class="tick">40 ms</text></svg>'
+        )
+        extra.write_text(styled, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(
+                f"a CSS-set Geist Mono annotation at 7 was not accepted: {errors}"
+            )
+
+        extra.write_text(
+            styled.replace("var(--font-mono)", "var(--font-serif)"), encoding="utf-8"
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 7" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"a CSS-set annotation under the wrong font was not reported: {errors}"
+            )
+        # The heading exception is Geist 600 at 14, and the same reading applies
+        # to it: the size is not a licence the serif can pick up.
+        heading = (
+            '<svg viewBox="0 0 10 10">'
+            '<text font-size="14" font-weight="600" font-family="\'Geist\', sans-serif">'
+            "Ingest</text></svg>"
+        )
+        extra.write_text(heading, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(f"a Geist 600 heading at 14 was not accepted: {errors}")
+
+        extra.write_text(
+            heading.replace(
+                "font-weight=\"600\" font-family=\"'Geist', sans-serif\"",
+                "font-family=\"'Instrument Serif', serif\"",
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 14" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"a heading size under the wrong font was not reported: {errors}"
+            )
+        extra.unlink()
+
+        legacy.unlink()
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "drop the row" not in errors[0]:
+            raise AssertionError(f"a stale legacy row was not reported: {errors}")
+
+    errors = []
+    verify.check_legacy_type_sizes(
+        errors, verify.OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), verify.ROOT
+    )
+    if errors:
+        raise AssertionError(f"shipped legacy type-size registry is stale: {errors}")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-") as temp_dir:
         skill = Path(temp_dir)
@@ -686,7 +1031,7 @@ diagram-design/
     print(
         "PASS: docs sync checks references, asset citations, strict-bundler packaging, "
         "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
-        "and gallery guards (parent/variant model)"
+        "the type-ramp contract, and gallery guards (parent/variant model)"
     )
     return 0
 
