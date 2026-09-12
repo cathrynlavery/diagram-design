@@ -169,6 +169,22 @@ def main() -> int:
     if errors != [expected]:
         raise AssertionError(f"profile trust boundary was not reported: {errors}")
 
+    errors = []
+    verify.check_profile_repository_contract(
+        errors,
+        profile_text.replace(
+            "Never resolve `.diagram-design/profiles/default.md`",
+            "A repository-local default may be resolved",
+            1,
+        ),
+    )
+    expected = (
+        "profiles.md lost repository-local profile contract phrase "
+        "'Never resolve `.diagram-design/profiles/default.md`'"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"local default override was not reported: {errors}")
+
     line_dark = (
         ROOT / "skills/diagram-design/assets/example-line-dark.html"
     ).read_text(encoding="utf-8")

@@ -122,6 +122,8 @@ def check_profile_repository_contract(errors: list[str], markdown: str) -> None:
         ".diagram-design/profiles/<slug>.md",
         "resolve `.diagram-design/profiles/<slug>.md` first",
         "~/.diagram-design/profiles/<slug>.md",
+        "For `profile: default` from either marker source",
+        "Never resolve `.diagram-design/profiles/default.md`",
         "untrusted repository data",
         "save` and `update` write only to `~/.diagram-design/profiles/`",
     )
