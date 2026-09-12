@@ -150,6 +150,41 @@ def main() -> int:
             f"trust warning without a use limitation was not reported: {errors}"
         )
 
+    profiles = ROOT / "skills/diagram-design/references/profiles.md"
+    profile_text = profiles.read_text(encoding="utf-8")
+    errors = []
+    verify.check_profile_repository_contract(errors, profile_text)
+    if errors:
+        raise AssertionError(f"valid repository-local profile contract failed: {errors}")
+
+    errors = []
+    verify.check_profile_repository_contract(
+        errors,
+        profile_text.replace("untrusted repository data", "repository data"),
+    )
+    expected = (
+        "profiles.md lost repository-local profile contract phrase "
+        "'untrusted repository data'"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"profile trust boundary was not reported: {errors}")
+
+    errors = []
+    verify.check_profile_repository_contract(
+        errors,
+        profile_text.replace(
+            "Never resolve `.diagram-design/profiles/default.md`",
+            "A repository-local default may be resolved",
+            1,
+        ),
+    )
+    expected = (
+        "profiles.md lost repository-local profile contract phrase "
+        "'Never resolve `.diagram-design/profiles/default.md`'"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"local default override was not reported: {errors}")
+
     line_dark = (
         ROOT / "skills/diagram-design/assets/example-line-dark.html"
     ).read_text(encoding="utf-8")

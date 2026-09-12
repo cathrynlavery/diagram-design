@@ -20,7 +20,7 @@ Forty visual types. Semantic patterns describe behavior independently; type refe
 
 Don't silently ship default-skinned diagrams into a branded project.
 
-First check the project root for a `.diagram-design` marker and resolve it per [`references/profiles.md`](references/profiles.md). A valid marker whose profile exists selects that file directly and skips this gate; `profile: default` also skips it. A malformed or missing-profile marker follows the visible failure handling in that reference. Never copy a marker-selected profile over the installed working copy.
+Resolve a project `.diagram-design` marker per [`references/profiles.md`](references/profiles.md). It may be a file or directory with `current-profile` and local profiles. Valid markers skip this gate; `profile: default` uses the protected home default. Handle malformed or missing profiles per that reference. Do not copy a marker-selected profile over the working copy.
 
 Open [`references/style-guide.md`](references/style-guide.md) and check the default tokens. If they're still the shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36` atomic-tangerine), **pause and ask the user**:
 

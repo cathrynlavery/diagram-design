@@ -175,7 +175,7 @@ Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/ski
 
 ### Editable install
 
-Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Saved profiles in `~/.diagram-design/profiles/` survive updates, and projects with a `.diagram-design` marker are unaffected. Clone the repo and install the local path if you plan to customize the working style guide directly:
+Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Saved profiles in `~/.diagram-design/profiles/` survive updates, and projects with a `.diagram-design` marker are unaffected. A directory marker can also commit its own profiles with the project. Clone the repo and install the local path if you plan to customize the working style guide directly:
 
 ```bash
 git clone git@github.com:cathrynlavery/diagram-design.git ~/code/diagram-design
@@ -258,7 +258,7 @@ See [`skills/diagram-design/references/onboarding.md`](skills/diagram-design/ref
 
 ### Working with multiple clients
 
-Onboard a brand once, save the result as a named profile, then add a `.diagram-design` marker containing `profile: <slug>` to each client project. Marker projects read `~/.diagram-design/profiles/<slug>.md` directly, so parallel workspaces can use different brands without overwriting a shared installed `style-guide.md`.
+Onboard a brand once, save the result as a named profile, then add a `.diagram-design` marker containing `profile: <slug>` to each client project. A legacy marker file reads `~/.diagram-design/profiles/<slug>.md` directly. For reproducible repositories and CI, make `.diagram-design` a directory, put the same selector in `.diagram-design/current-profile`, and commit `.diagram-design/profiles/<slug>.md`; that repository-local profile takes precedence for non-default slugs, with the home library as fallback. `profile: default` always uses the protected home-library default and ignores a repository-local `default.md`. Marker projects never overwrite a shared installed `style-guide.md`.
 
 The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. Use `/diagram-design:profile` in Claude Code, `/profile` in Factory Droid or Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagram-design/references/profiles.md) for the storage, marker, and recovery contract.
 
