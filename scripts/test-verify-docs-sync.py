@@ -87,7 +87,7 @@ Every `font-size` is one of the role values above for the preset in use, or one 
 
 | File | Sizes | What they are |
 |---|---|---|
-| `assets/example-legacy.html` | 13, 22 | node name and a counter |
+| `assets/example-legacy.html` | Geist 600 13, Geist 600 22 | node name and a counter |
 
 ### Safe areas
 """
@@ -381,14 +381,126 @@ def main() -> int:
         )
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
-        if len(errors) != 1 or "registers 13, 22" not in errors[0]:
+        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
             raise AssertionError(f"a grown legacy inventory was not reported: {errors}")
 
         legacy.write_text(legacy_markup.replace('font-size="22"', 'font-size="16"'), encoding="utf-8")
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
-        if len(errors) != 1 or "registers 13, 22" not in errors[0]:
+        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
             raise AssertionError(f"a shrunk legacy inventory was not reported: {errors}")
+
+        # An exception belongs to one font, so the same size under another font
+        # is a different use and has to be reported even though the size list is
+        # unchanged. Swap the registered 13px Geist 600 name for a serif one.
+        legacy.write_text(
+            legacy_markup.replace(
+                "font-size=\"13\" font-weight=\"600\" font-family='Geist', sans-serif",
+                "font-size=\"13\" font-family='Instrument Serif', serif",
+            ).replace(
+                '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>',
+                '<text font-size="13" font-family="\'Instrument Serif\', serif">A</text>',
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "Instrument Serif 13" not in errors[0]:
+            raise AssertionError(
+                f"a legacy size moved to another font was not reported: {errors}"
+            )
+
+        legacy.write_text(legacy_markup, encoding="utf-8")
+
+        # A dense-annotation size is legal in Geist Mono and illegal in the
+        # serif, at the same size, in the same shipped file. 7 is on no role
+        # ramp, so only the exception can carry it.
+        annotation = (
+            '<svg viewBox="0 0 10 10">'
+            '<text font-size="7" font-family="\'Geist Mono\', monospace">40 ms</text>'
+            "</svg>"
+        )
+        extra = assets / "example-annotation.html"
+        extra.write_text(annotation, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(
+                f"a Geist Mono annotation at 7 was not accepted: {errors}"
+            )
+
+        extra.write_text(
+            annotation.replace("'Geist Mono', monospace", "'Instrument Serif', serif"),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 7" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"an annotation size under the wrong font was not reported: {errors}"
+            )
+
+        # Same size, same file, set through a CSS class and a custom property:
+        # the sweep has to resolve the family before it can judge the size.
+        styled = (
+            "<style>:root{--font-mono:'Geist Mono',ui-monospace,monospace;"
+            "--font-serif:'Instrument Serif',serif}"
+            ".tick{font-family:var(--font-mono);font-size:7px}</style>"
+            '<svg viewBox="0 0 10 10"><text class="tick">40 ms</text></svg>'
+        )
+        extra.write_text(styled, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(
+                f"a CSS-set Geist Mono annotation at 7 was not accepted: {errors}"
+            )
+
+        extra.write_text(
+            styled.replace("var(--font-mono)", "var(--font-serif)"), encoding="utf-8"
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 7" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"a CSS-set annotation under the wrong font was not reported: {errors}"
+            )
+        # The heading exception is Geist 600 at 14, and the same reading applies
+        # to it: the size is not a licence the serif can pick up.
+        heading = (
+            '<svg viewBox="0 0 10 10">'
+            '<text font-size="14" font-weight="600" font-family="\'Geist\', sans-serif">'
+            "Ingest</text></svg>"
+        )
+        extra.write_text(heading, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(f"a Geist 600 heading at 14 was not accepted: {errors}")
+
+        extra.write_text(
+            heading.replace(
+                "font-weight=\"600\" font-family=\"'Geist', sans-serif\"",
+                "font-family=\"'Instrument Serif', serif\"",
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 14" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"a heading size under the wrong font was not reported: {errors}"
+            )
+        extra.unlink()
 
         legacy.unlink()
         errors = []

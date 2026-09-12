@@ -76,34 +76,38 @@ Every `font-size` is one of the role values above for the preset in use, or one 
 | Exception | Font | Sizes |
 |---|---|---|
 | Dense annotation: legend keys, axis ticks, chart data labels, source lines, in-box tags | Geist Mono or Geist regular | 7 to 11, half steps allowed |
+| Chart series or row name: bar category, line or bump series, gantt row, matrix header | Geist 600 | 10 to 11 |
 | Group or entity heading | Geist 600 | 14 |
 | Decorative watermark numerals at or under 0.08 opacity | any | any |
 
-An exception is bound to the font beside it, weight included: Geist at 600 or heavier is the node-name voice, lighter Geist is annotation. So a Geist 600 node name cannot borrow the dense-annotation range, and a Geist Mono tick cannot borrow the 14 reserved for headings.
+An exception is bound to the font beside it, weight included: Geist at 600 or heavier is the node-name voice, lighter Geist is annotation. So a Geist 600 node name cannot borrow the dense-annotation range down to 7, and a Geist Mono tick cannot borrow the 14 reserved for headings. A chart row carries a name in the same Geist 600 voice at a rank the ramp has no row for, which is why it has an exception of its own rather than a licence to shrink: `type-bar.md`, `type-gantt.md` and `type-line.md` all set that name at 10 or 11.
 
 Anything else is a bug in the diagram, not a new size. The one standing carve-out is the closed inventory below.
 
 ### Registered legacy sizes
 
-Twenty-one declared sizes across thirteen files predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
+Thirty-three declared sizes across sixteen files predate this contract. They are recorded here so the rule above is exact rather than aspirational, and frozen so the list cannot quietly grow. `scripts/verify-docs-sync.py` reads these rows against the files and fails if one gains an off-ramp size, loses one, or drops off disk.
 
-That sweep matches on size alone, not on role. Shipped examples set type through CSS classes as well as attributes, so attributing every element to a role across the whole tree is not reliable; the size floor is. It reads the `<svg>` and any CSS rule worn by an element inside it, so the prose around a diagram does not count as diagram type.
+Each is registered against the font carrying it, because that is what the sweep checks. It classifies every element first, resolving `class` attributes through the stylesheet, `var(--font-mono)` back to the family it names, and a `{node-name}` token to the ramp row that owns it, then applies only the exceptions open to that font. The canonical role sizes stay one union, so a size on the ramp for any role is on contract wherever it appears. An element whose font it cannot read gets no exception at all. It reads the `<svg>` and any CSS rule worn by an element inside it, so the prose around a diagram does not count as diagram type.
 
 | File | Sizes | What they are |
 |---|---|---|
-| `assets/example-data-flow.html` | 5, 6 | chip text and role label, both set in CSS |
-| `assets/example-data-flow-dark.html` | 5, 6 | chip text and role label, both set in CSS |
-| `assets/example-data-flow-full.html` | 5, 6 | chip text and role label, both set in CSS |
-| `assets/example-paved-road-animated.html` | 13 | boundary node name |
-| `assets/example-process.html` | 6 | role chip |
-| `assets/example-process-dark.html` | 6 | role chip |
-| `assets/example-process-full.html` | 6 | role chip |
-| `assets/example-quadrant-consultant.html` | 13 | inline dot glyph in a `tspan` |
-| `assets/example-queue-animated.html` | 13, 22, 24 | state caption and two fill counters |
-| `assets/example-treemap.html` | 13, 13 | cell names |
-| `assets/example-treemap-dark.html` | 13, 13 | cell names |
-| `assets/example-treemap-full.html` | 13, 13 | cell names |
-| `references/type-treemap.md` | 13 | the cell-name line of the documented pattern |
+| `assets/example-data-flow.html` | Geist Mono 5, Geist Mono 6 | chip text and role label, both set in CSS |
+| `assets/example-data-flow-dark.html` | Geist Mono 5, Geist Mono 6 | chip text and role label, both set in CSS |
+| `assets/example-data-flow-full.html` | Geist Mono 5, Geist Mono 6 | chip text and role label, both set in CSS |
+| `assets/example-nested.html` | Instrument Serif 14, Instrument Serif 14 | two italic serif asides |
+| `assets/example-nested-dark.html` | Instrument Serif 14, Instrument Serif 14 | two italic serif asides |
+| `assets/example-nested-full.html` | Instrument Serif 14, Instrument Serif 14 | two italic serif asides |
+| `assets/example-paved-road-animated.html` | Geist 600 13 | boundary node name |
+| `assets/example-process.html` | Geist Mono 6 | role chip |
+| `assets/example-process-dark.html` | Geist Mono 6 | role chip |
+| `assets/example-process-full.html` | Geist Mono 6 | role chip |
+| `assets/example-quadrant-consultant.html` | Geist 600 13 | inline dot glyph in a `tspan` |
+| `assets/example-queue-animated.html` | Geist 600 13, Geist 600 22, Geist 600 24 | state caption and two fill counters |
+| `assets/example-treemap.html` | Geist 600 7, Geist 600 7, Geist 600 13, Geist 600 13 | two cell index glyphs and two cell names |
+| `assets/example-treemap-dark.html` | Geist 600 7, Geist 600 7, Geist 600 13, Geist 600 13 | two cell index glyphs and two cell names |
+| `assets/example-treemap-full.html` | Geist 600 7, Geist 600 7, Geist 600 13, Geist 600 13 | two cell index glyphs and two cell names |
+| `references/type-treemap.md` | Geist 600 13 | the cell-name line of the documented pattern |
 
 New diagrams get no rows here. Bringing one of these onto the ramp is a visual change to a shipped example and belongs in its own PR.
 
