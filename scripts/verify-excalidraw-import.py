@@ -293,7 +293,45 @@ def check_arrow_directions(tmp: Path) -> None:
         analysis = payload["analysis"]
         if analysis["entry_points"] != entries or analysis["terminals"] != terminals:
             fail(f"{name} arrow produced incorrect entry/terminal analysis")
+        if analysis["has_cycle"] is not bidir:
+            fail(f"{name} arrow produced incorrect cycle analysis")
     ok("start-only, end-only, bidirectional, and undirected arrows keep their semantics")
+
+
+def check_bidirectional_cycle(tmp: Path) -> None:
+    board = tmp / "bidirectional-cycle.excalidraw"
+    board.write_text(
+        scene(
+            "bidirectional-cycle",
+            [
+                {"id": node_id, "type": "rectangle"}
+                for node_id in ("root", "a", "b")
+            ]
+            + [
+                {
+                    "id": "entry",
+                    "type": "arrow",
+                    "startBinding": {"elementId": "root"},
+                    "endBinding": {"elementId": "a"},
+                },
+                {
+                    "id": "cycle",
+                    "type": "arrow",
+                    "startArrowhead": "arrow",
+                    "endArrowhead": "arrow",
+                    "startBinding": {"elementId": "a"},
+                    "endBinding": {"elementId": "b"},
+                },
+            ],
+        ),
+        encoding="utf-8",
+    )
+    analysis = json.loads(run_extract([str(board), "--json"]))["scene"]["analysis"]
+    if not analysis["has_cycle"] or "tree" in analysis["type_candidates"]:
+        fail("a rooted bidirectional cycle was offered as an acyclic tree")
+    if "cycle: True" not in run_extract([str(board)]):
+        fail("bidirectional cycle was not reported in the Markdown digest")
+    ok("bidirectional cycles are reported and excluded from tree candidates")
 
 
 def check_adversarial(tmp: Path) -> None:
@@ -672,6 +710,7 @@ def main() -> int:
         check_whiteboard()
         check_bindings_and_shapes(tmp)
         check_arrow_directions(tmp)
+        check_bidirectional_cycle(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_legacy_stdout_encoding(tmp)

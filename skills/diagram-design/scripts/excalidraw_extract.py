@@ -377,6 +377,8 @@ def _has_cycle(nodes: list[Node], edges: list[Edge]) -> bool:
     for edge in edges:
         if edge.source and edge.target and edge.source in adjacency:
             adjacency[edge.source].append(edge.target)
+            if edge.bidirectional and edge.target in adjacency:
+                adjacency[edge.target].append(edge.source)
     WHITE, GREY, BLACK = 0, 1, 2
     color = {node.id: WHITE for node in nodes}
 
