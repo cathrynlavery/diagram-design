@@ -32,6 +32,7 @@ PATTERN_NAMES = (
     "Governance / control catalog",
     "Compensating security layers",
     "Traceable block decomposition",
+    "Lifecycle phase map",
 )
 PATTERN_FIELDS = (
     "Selection triggers:",

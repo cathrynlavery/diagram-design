@@ -63,7 +63,7 @@ def main() -> int:
                 raise AssertionError(f"missing semantic router was accepted: {errors}")
             print("OK: missing semantic-pattern router link is rejected")
 
-            # Dropping one of the seven named patterns must be rejected.
+            # Dropping one of the nine named patterns must be rejected.
             missing_pattern = scratch / "missing-pattern.md"
             missing_pattern.write_text(
                 original_skill.read_text(encoding="utf-8").replace(
@@ -79,6 +79,24 @@ def main() -> int:
             ):
                 raise AssertionError(f"missing semantic pattern was accepted: {errors}")
             print("OK: missing semantic-pattern name is rejected")
+
+            # The new lifecycle route must remain discoverable from SKILL.md.
+            missing_lifecycle = scratch / "missing-lifecycle.md"
+            missing_lifecycle.write_text(
+                original_skill.read_text(encoding="utf-8").replace(
+                    "**Lifecycle phase map** → State Machine",
+                    "**Generic lifecycle** → State Machine",
+                ),
+                encoding="utf-8",
+            )
+            module.SKILL = missing_lifecycle
+            errors = module.verify_markdown()
+            if not any(
+                "does not route semantic pattern: Lifecycle phase map" in error
+                for error in errors
+            ):
+                raise AssertionError(f"missing lifecycle route was accepted: {errors}")
+            print("OK: missing lifecycle phase-map route is rejected")
     finally:
         module.SKILL = original_skill
 
