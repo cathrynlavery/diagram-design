@@ -1320,21 +1320,21 @@ diagram-design/
         ridge_trio = ["example-ridgeline.html", "example-ridgeline-dark.html", "example-ridgeline-full.html"]
 
         # 7. Variant sharing its parent's eyebrow is allowed (no error).
-        html = make_gallery_html(make_tab("line", "20"), make_tab("ridgeline", "20", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if any("eyebrow" in e or "parent" in e for e in errs):
             raise AssertionError(f"valid parent/variant reuse raised error: {errs}")
         print("OK gallery: variant sharing parent eyebrow is allowed")
 
         # 8. Variant with wrong eyebrow number is caught.
-        html = make_gallery_html(make_tab("line", "20"), make_tab("ridgeline", "99", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "99", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if not any("ridgeline" in e and "eyebrow" in e for e in errs):
             raise AssertionError(f"variant with wrong eyebrow not caught: {errs}")
         print("OK gallery: variant with wrong eyebrow number caught")
 
         # 9. Variant declaring a missing parent is caught.
-        html = make_gallery_html(make_tab("ridgeline", "20", parent="line"))
+        html = make_gallery_html(make_tab("ridgeline", "01", parent="line"))
         errs = run_gallery_check(html, ridge_trio)
         if not any("ridgeline" in e and "line" in e for e in errs):
             raise AssertionError(f"variant with missing parent not caught: {errs}")
@@ -1346,10 +1346,10 @@ diagram-design/
             "example-state-lifecycle-full.html",
         ]
 
-        # 10. Lifecycle is a complete State variant and reuses eyebrow 04.
+        # 10. Lifecycle is a complete State variant and reuses eyebrow 01.
         html = make_gallery_html(
-            make_tab("state", "04"),
-            make_tab("state-lifecycle", "04", parent="state"),
+            make_tab("state", "01"),
+            make_tab("state-lifecycle", "01", parent="state"),
         )
         errs = run_gallery_check(html, [
             "example-state.html",
@@ -1360,6 +1360,45 @@ diagram-design/
         if errs:
             raise AssertionError(f"valid lifecycle State variant failed: {errs}")
         print("OK gallery: lifecycle phase map is a complete State variant")
+
+        # 11. Out-of-order independent ordinals are caught (uniqueness alone is not enough).
+        html = make_gallery_html(
+            make_tab("bar", "01"),
+            make_tab("waterfall", "03"),
+            make_tab("line", "02"),
+        )
+        trio_files = (
+            ["example-bar.html", "example-bar-dark.html", "example-bar-full.html"]
+            + ["example-waterfall.html", "example-waterfall-dark.html", "example-waterfall-full.html"]
+            + line_trio
+        )
+        errs = run_gallery_check(html, trio_files)
+        if not any("contiguous ascending" in e for e in errs):
+            raise AssertionError(f"out-of-order independent ordinals not caught: {errs}")
+        print("OK gallery: out-of-order independent ordinals caught")
+
+        # 12. Gapped independent ordinals are caught (e.g. missing 02).
+        html = make_gallery_html(
+            make_tab("bar", "01"),
+            make_tab("waterfall", "02"),
+            make_tab("line", "04"),
+        )
+        errs = run_gallery_check(html, trio_files)
+        if not any("contiguous ascending" in e for e in errs):
+            raise AssertionError(f"gapped independent ordinals not caught: {errs}")
+        print("OK gallery: gapped independent ordinals caught")
+
+        # 13. Contiguous ascending independent ordinals with mid-gallery variants pass.
+        html = make_gallery_html(
+            make_tab("bar", "01"),
+            make_tab("waterfall", "02"),
+            make_tab("line", "03"),
+            make_tab("ridgeline", "03", parent="line"),
+        )
+        errs = run_gallery_check(html, trio_files + ridge_trio)
+        if any("contiguous ascending" in e or "duplicate eyebrow" in e for e in errs):
+            raise AssertionError(f"contiguous sequence with variants raised error: {errs}")
+        print("OK gallery: contiguous ascending independent ordinals pass")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-assets-") as asset_tmp:
         tmp_skill_dir = Path(asset_tmp)
@@ -1398,7 +1437,7 @@ diagram-design/
         "strict-bundler packaging, "
         "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
-        "and gallery guards (parent/variant model)"
+        "and gallery guards (parent/variant model, contiguous ordinals)"
     )
     return 0
 

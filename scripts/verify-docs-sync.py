@@ -213,7 +213,8 @@ def check_gallery(errors: list[str]) -> None:
             errors.append(f"gallery tab {name!r} points at a missing example-{name}.html")
     # Parse eyebrow numbers and parent-type bindings from tab buttons.
     # Variants (data-parent-type) may share their declared parent's eyebrow
-    # number; uniqueness is enforced only among independent (non-variant) types.
+    # number; independent (non-variant) types must be unique and form a
+    # contiguous ascending 01..N sequence in document order.
     tab_eyebrows: dict[str, str] = {}  # data-type → eyebrow number
     tab_parents: dict[str, str] = {}   # data-type → data-parent-type
     for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)</span>', source):
@@ -226,9 +227,11 @@ def check_gallery(errors: list[str]) -> None:
                 tab_parents[tm.group(1)] = pm.group(1)
     # Enforce uniqueness among independent (non-variant) types.
     seen_eyebrows: dict[str, str] = {}  # eyebrow → first independent type
+    independent_order: list[tuple[str, str]] = []  # (type, eyebrow) in document order
     for t, num in tab_eyebrows.items():
         if t in tab_parents:
             continue
+        independent_order.append((t, num))
         if num in seen_eyebrows:
             errors.append(
                 f"gallery has duplicate eyebrow number {num!r} on independent types "
@@ -236,6 +239,18 @@ def check_gallery(errors: list[str]) -> None:
             )
         else:
             seen_eyebrows[num] = t
+    # Enforce that independent ordinals are contiguous and ascending 01..N
+    # in document order. Uniqueness alone misses insertions that take the next
+    # free number while landing mid-gallery (see #213).
+    if independent_order:
+        expected = [f"{i:02d}" for i in range(1, len(independent_order) + 1)]
+        actual = [num for _, num in independent_order]
+        if actual != expected:
+            found = ", ".join(f"{t}={num}" for t, num in independent_order)
+            errors.append(
+                f"gallery independent eyebrow sequence must be contiguous ascending "
+                f"01..{len(independent_order):02d} in document order; found {found}"
+            )
     # Enforce that each variant's eyebrow matches its declared parent's.
     for t, parent in tab_parents.items():
         if parent not in tab_eyebrows:
