@@ -368,6 +368,49 @@ I----->J
     if compact["edges"][9]["source"] != "Box" or compact["edges"][10]["source"] != "Echo":
         fail("source IDs ending in x/o were consumed as left edge markers")
 
+    # Dot-delimited compact labels may contain whitespace (#209). The spaced
+    # form and single-word compact form must keep working alongside it, and
+    # dash-delimited ambiguity (`A --o B --> C`) must stay two links.
+    dotted_space_file = tmp / "compact-dotted-label-whitespace.mmd"
+    dotted_space_file.write_text(
+        """flowchart LR
+A[Start] --> B[End]
+A -.next candidate.-> B
+A -. retry path .-> B
+A -.retry.-> B
+A -.v1.2 ready.-> B
+F --o G --> H
+""",
+        encoding="utf-8",
+    )
+    dotted_space = json.loads(
+        run_extract([str(dotted_space_file), "--json"])
+    )["diagrams"][0]
+    dotted_space_labels = [edge["label"] for edge in dotted_space["edges"]]
+    if dotted_space_labels != [
+        "",
+        "next candidate",
+        "retry path",
+        "retry",
+        "v1.2 ready",
+        "",
+        "",
+    ]:
+        fail(
+            "compact dotted labels with whitespace were not retained: "
+            f"{dotted_space_labels}"
+        )
+    if any(edge["style"] != "dashed" for edge in dotted_space["edges"][1:5]):
+        fail("compact dotted labels with whitespace lost dashed style")
+    if [
+        (edge["source"], edge["target"], edge["arrowhead"])
+        for edge in dotted_space["edges"][5:]
+    ] != [("F", "G", "circle"), ("G", "H", "arrow")]:
+        fail(
+            "dash-delimited chained links were misread after allowing "
+            f"whitespace in compact dotted labels: {dotted_space['edges'][5:]}"
+        )
+
     single_marker_source_file = tmp / "single-marker-source-links.mmd"
     single_marker_source_file.write_text(
         """flowchart LR

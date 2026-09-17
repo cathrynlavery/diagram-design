@@ -606,16 +606,22 @@ def _edge_operators(text: str) -> list[_Operator]:
     # `A-- text -->B`, `A-. retry .-> B`, `A== critical ==> B`, and the
     # undirected forms of each. The compact form drops the spaces —
     # `B--yes-->C` — and may retain a left arrow/circle/cross marker, as in
-    # `A<--yes-->B` or `A o--yes--o B`. Its label may not contain whitespace,
-    # and the operator characters themselves may not open one (keeping
-    # `A----->B` unlabeled and `A --o B --> C` two separate links).
+    # `A<--yes-->B` or `A o--yes--o B`. Dash- and equals-delimited compact
+    # labels may not contain whitespace (keeping `A----->B` unlabeled and
+    # `A --o B --> C` two separate links). Dot-delimited compact labels may:
+    # the dots bound the label, so `-.next candidate.->` is unambiguous and
+    # must be accepted the same way the spaced form already is.
     text_edge = re.compile(
         r"(?P<opening>"
         r"<(?:--|-\.|==)"
         r"|(?<![\w.:-])[xo](?:--|-\.|==)"
         r"|(?:--|-\.|==)"
         r")"
-        r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
+        r"(?:"
+        r"\s+(?P<spaced>.+?)\s+"
+        r"|(?![-=.\s])(?P<compact_dotted>[^|<>]+?)(?=\.-)"
+        r"|(?![-=.\s])(?P<compact>[^\s|<>]+?)"
+        r")"
         r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
     )
     trailing_operator = re.compile(
