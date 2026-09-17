@@ -252,6 +252,11 @@ jobs:
         id: self_check
         run: python scripts/test-self-check.py
 
+      - name: Verify standalone SVG export (CSS carry + defs IDs)
+        if: always()
+        id: export_svg
+        run: python scripts/test-export-svg-standalone.py
+
       - name: Verify label geometry
         if: always()
         id: geometry
