@@ -56,6 +56,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
+| Standalone SVG export carries CSS and namespaces defs IDs | `python3 scripts/test-export-svg-standalone.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
 | Traceable block decomposition registries have unique IDs, resolving parents, names, and no cycles | `python3 scripts/verify-block-registry.py --all` |
