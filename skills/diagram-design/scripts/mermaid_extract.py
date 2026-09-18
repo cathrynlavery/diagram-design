@@ -610,7 +610,9 @@ def _edge_operators(text: str) -> list[_Operator]:
     # labels may not contain whitespace (keeping `A----->B` unlabeled and
     # `A --o B --> C` two separate links). Dot-delimited compact labels may:
     # the dots bound the label, so `-.next candidate.->` is unambiguous and
-    # must be accepted the same way the spaced form already is.
+    # must be accepted the same way the spaced form already is. Restrict that
+    # whitespace-capable branch to dotted openings (`-.`) so a mixed chain
+    # like `F --o G -.-> H` cannot greedily span `--` … `-.->` as one edge.
     text_edge = re.compile(
         r"(?P<opening>"
         r"<(?:--|-\.|==)"
@@ -619,7 +621,7 @@ def _edge_operators(text: str) -> list[_Operator]:
         r")"
         r"(?:"
         r"\s+(?P<spaced>.+?)\s+"
-        r"|(?![-=.\s])(?P<compact_dotted>[^|<>]+?)(?=\.-)"
+        r"|(?<=-\.)(?![-=.\s])(?P<compact_dotted>[^|<>]+?)(?=\.-)"
         r"|(?![-=.\s])(?P<compact>[^\s|<>]+?)"
         r")"
         r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"

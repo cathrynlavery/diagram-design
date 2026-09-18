@@ -370,7 +370,10 @@ I----->J
 
     # Dot-delimited compact labels may contain whitespace (#209). The spaced
     # form and single-word compact form must keep working alongside it, and
-    # dash-delimited ambiguity (`A --o B --> C`) must stay two links.
+    # dash-delimited ambiguity (`A --o B --> C`) must stay two links. A mixed
+    # chain that opens on dashes and closes on dots (`F --o G -.-> H`) must
+    # also stay two links — the whitespace-capable branch is dotted-opening
+    # only, so it cannot greedily span `--` … `-.->`.
     dotted_space_file = tmp / "compact-dotted-label-whitespace.mmd"
     dotted_space_file.write_text(
         """flowchart LR
@@ -380,6 +383,7 @@ A -. retry path .-> B
 A -.retry.-> B
 A -.v1.2 ready.-> B
 F --o G --> H
+F --o G -.-> H
 """,
         encoding="utf-8",
     )
@@ -395,6 +399,8 @@ F --o G --> H
         "v1.2 ready",
         "",
         "",
+        "",
+        "",
     ]:
         fail(
             "compact dotted labels with whitespace were not retained: "
@@ -403,12 +409,18 @@ F --o G --> H
     if any(edge["style"] != "dashed" for edge in dotted_space["edges"][1:5]):
         fail("compact dotted labels with whitespace lost dashed style")
     if [
-        (edge["source"], edge["target"], edge["arrowhead"])
+        (edge["source"], edge["target"], edge["arrowhead"], edge["style"])
         for edge in dotted_space["edges"][5:]
-    ] != [("F", "G", "circle"), ("G", "H", "arrow")]:
+    ] != [
+        ("F", "G", "circle", "solid"),
+        ("G", "H", "arrow", "solid"),
+        ("F", "G", "circle", "solid"),
+        ("G", "H", "arrow", "dashed"),
+    ]:
         fail(
-            "dash-delimited chained links were misread after allowing "
-            f"whitespace in compact dotted labels: {dotted_space['edges'][5:]}"
+            "chained links spanning dash and dotted closings were misread "
+            f"after allowing whitespace in compact dotted labels: "
+            f"{dotted_space['edges'][5:]}"
         )
 
     single_marker_source_file = tmp / "single-marker-source-links.mmd"
