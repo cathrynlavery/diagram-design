@@ -41,7 +41,7 @@ This repository does not duplicate `SKILL.md` into host-specific loader stubs. F
 | **OpenCode** | Project `.opencode/skills/` or global `~/.config/opencode/skills/` | Link or copy the inner skill; copied installs must be replaced to update. |
 | **GitHub Copilot** | Marketplace plugin; project `.github/skills/`, `.agents/skills/`, or `.claude/skills/`; user `~/.copilot/skills/`, `~/.agents/skills/`, or `~/.claude/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
 
-Marketplace installs (Claude `/plugin`, `copilot plugin install`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead.
+Marketplace installs (Claude `/plugin`, `copilot plugin install`, `codex plugin add`, `droid plugin install`) stay the right path if you do **not** need to edit `style-guide.md` in-tree. Use profiles instead. For the hosts in the matrix that have no marketplace package, `npx skills add cathrynlavery/diagram-design` does the same job in one command - it installs the inner skill into every root you select, symlinking them to one canonical copy by default and copying independently under `--copy`. That install is standalone: it belongs to the CLI rather than to your checkout or to any marketplace, so it does not follow marketplace updates automatically. Refresh it with `npx skills update diagram-design`.
 
 ### Unix (user-global inner skill)
 
