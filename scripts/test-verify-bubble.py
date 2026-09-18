@@ -456,11 +456,15 @@ def run_cases(h: Harness) -> int:
     )
 
     # ── Malformed markup: findings, never tracebacks, never silence ───────
+    # The browser reads an unquoted value up to the next whitespace or `>`,
+    # so this circle declares data-size="broken" and nothing else the contract
+    # needs. The checker reads exactly that and reports what it finds.
     h.expect_finding(
-        "a data-size circle whose attributes cannot be parsed is reported",
+        "an unquoted data-size circle is read as the browser reads it, and its "
+        "missing name is reported",
         document('  <circle data-size=broken cx="100" cy="100" r="10"/>\n',
                  honest_block(), TICKS),
-        r"could not be parsed",
+        r"declares data-size but no data-name",
     )
     h.expect_finding(
         "a bubble without data-name is reported",
@@ -479,6 +483,235 @@ def run_cases(h: Harness) -> int:
         document(honest_block(),
                  bubble("Nan", 250, 2.5, 300, drawn_cx="NaN"), TICKS),
         r"not a finite\s+number",
+    )
+
+    # ── Markup is read as the browser reads it ────────────────────────────
+    # A regex tag matcher stops at the first `>` it sees, so a quoted `>`
+    # before an attribute hid that attribute from the checker while Chromium
+    # honoured it. Every case here is a shape the browser parses one way; the
+    # checker must parse it the same way, in both polarities.
+    peers = honest_block(HONEST_PEERS, focal="none")
+    stream = bubble("Stream", 150, 1.5, 900)
+    stream_nudged = bubble("Stream", 150, 1.5, 900, drawn_cx=cx(150) + 8)
+
+    h.expect_finding(
+        "an ancestor <g> hiding its transform behind a quoted > is still reported",
+        document('  <g data-note=">" transform="translate(0 -80)">\n', honest_block(),
+                 "  </g>\n", TICKS),
+        r"bubble 'Stream' carries an ancestor <g>/<svg> transform",
+    )
+    h.expect_finding(
+        "an ancestor <g> hiding an inline style transform behind a quoted > is reported",
+        document('  <g data-note=">" style="translate: 0 80px">\n', honest_block(),
+                 "  </g>\n", TICKS),
+        r"bubble 'Stream' carries an ancestor <g>/<svg> style transform",
+    )
+    h.expect_clean(
+        "an honest bubble with a quoted > before its bindings is parsed and passes",
+        document(peers, stream.replace("  <circle ", '  <circle data-note=">" ', 1),
+                 TICKS),
+    )
+    h.expect_only_one(
+        "a dishonest bubble with a quoted > before its bindings is still reported",
+        document(peers, stream_nudged.replace("  <circle ", '  <circle data-note=">" ', 1),
+                 TICKS),
+        r"bubble 'Stream' declares x=150 .* never nudge",
+    )
+    h.expect_finding(
+        "a label with a quoted > before its bindings is still bound and checked",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34, text="QUEUE").replace(
+                     "  <text ", '  <text data-note=">" ', 1)),
+        r"the visible text and the binding must agree",
+    )
+    h.expect_finding(
+        "a tick hiding a transform behind a quoted > is reported",
+        document(honest_block(), tick("x", 0, extra='data-note=">" transform="translate(40 0)"'),
+                 tick("x", 500), tick("y", 0), tick("y", 4)),
+        r"bound label \(0\) carries transform",
+    )
+
+    # Three carriers reach the renderer; the `transform` attribute is only the
+    # most visible. Each is refused on the element and on an ancestor.
+    h.expect_finding(
+        "an inline style transform on a bubble is reported",
+        document(honest_block(),
+                 bubble("Slid", 250, 2.5, 300,
+                        extra='style="transform: translateY(80px)"'), TICKS),
+        r"bubble 'Slid' carries style=.*\(the transform property\)",
+    )
+    h.expect_finding(
+        "an inline CSS r property on a bubble replaces the verified radius and is reported",
+        document(honest_block(),
+                 bubble("Grown", 250, 2.5, 300, extra='style="r: 60px"'), TICKS),
+        r"bubble 'Grown' carries style=.*\(the r property\)",
+    )
+    h.expect_finding(
+        "an inline translate property on a bound label is reported",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34, extra='style="translate: 40px 0"')),
+        r"bound label .* carries style=.*\(the translate property\)",
+    )
+    h.expect_finding(
+        "a vendor-prefixed transform on an ancestor group's inline style is reported",
+        document('  <g style="-webkit-transform: translateY(80px)">\n', honest_block(),
+                 "  </g>\n", TICKS),
+        r"carries an ancestor <g>/<svg> style transform",
+    )
+    h.expect_clean(
+        "an inline text-transform on a bound label is not read as a transform",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34,
+                       extra='style="text-transform: uppercase; display: block"')),
+    )
+    h.expect_finding(
+        "a CSS translate declaration in a style block is reported",
+        "<style>circle { translate: 0 80px; }</style>"
+        + document(honest_block(), TICKS),
+        r"a CSS `translate` declaration",
+    )
+    h.expect_finding(
+        "a vendor-prefixed CSS transform declaration in a style block is reported",
+        "<style>.bubble {\n  -webkit-transform: translateY(80px);\n}</style>"
+        + document(honest_block(), TICKS),
+        r"a CSS `transform` declaration",
+    )
+
+    # First-wins, both polarities: the browser applies the FIRST of a repeated
+    # attribute and the rest are not in the document at all, so the checker
+    # must report exactly when that first one lies.
+    h.expect_clean(
+        "a duplicated style on an ancestor keeps the browser's first, honest value",
+        document('  <g style="opacity: 1" style="transform: translateY(80px)">\n',
+                 honest_block(), "  </g>\n", TICKS),
+    )
+    h.expect_finding(
+        "a duplicated style on an ancestor keeps the browser's first, dishonest value",
+        document('  <g style="transform: translateY(80px)" style="opacity: 1">\n',
+                 honest_block(), "  </g>\n", TICKS),
+        r"carries an ancestor <g>/<svg> style transform",
+    )
+    h.expect_finding(
+        "a duplicated r is read first-wins, so an inflated first r is reported",
+        document(peers, stream.replace(
+            ' r="%g"' % radius(900), ' r="%g" r="%g"' % (radius(900) + 6, radius(900)), 1),
+            TICKS),
+        r"bubble 'Stream' declares size 900",
+    )
+    h.expect_clean(
+        "a duplicated r whose first value is honest still passes",
+        document(peers, bubble("Stream", 150, 1.5, 900,
+                               extra='r="%g"' % (radius(900) + 6)), TICKS),
+    )
+
+    h.expect_clean(
+        "a self-closing <g/> with a transform encloses nothing and is not reported",
+        document('  <g transform="translate(0 80)"/>\n', honest_block(), TICKS),
+    )
+    h.expect_clean(
+        "a commented-out ancestor transform is not read as live markup",
+        document('  <!-- <g transform="translate(0 80)"> -->\n', honest_block(), TICKS),
+    )
+    h.expect_clean(
+        "an end tag inside a quoted attribute does not end a bound label's text",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34).replace(
+                     ">EDGE</text>", '><tspan data-note="</text>">EDGE</tspan></text>', 1)),
+    )
+    h.expect_only_one(
+        "upper-case tag and attribute names are read case-insensitively, as the browser does",
+        document(peers, stream_nudged.replace(
+            '  <circle data-name="Stream" data-x=', '  <CIRCLE DATA-NAME="Stream" DATA-X=', 1),
+            TICKS),
+        r"bubble 'Stream' declares x=150 .* never nudge",
+    )
+    h.expect_finding(
+        "a broken attribute quote never crashes the checker and never passes",
+        document(honest_block().replace('data-x="150"', 'data-x="150', 1), TICKS),
+        r".",
+    )
+
+    # ── CSS comments are whitespace to the browser ────────────────────────
+    # `/**/transform:` is a live declaration: the browser drops the comment
+    # before it tokenizes, while a regex anchored to a declaration boundary
+    # walked past it. Each carrier is held to that, and a comment that merely
+    # mentions the property is not a declaration - both polarities.
+    h.expect_finding(
+        "a comment-prefixed inline transform on a bubble is reported",
+        document(honest_block(),
+                 bubble("Slid", 250, 2.5, 300,
+                        extra='style="/**/transform: translateX(80px)"'), TICKS),
+        r"bubble 'Slid' carries style=.*\(the transform property\)",
+    )
+    h.expect_finding(
+        "a comment-prefixed inline transform on a bound label is reported",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34,
+                       extra='style="/**/transform: translateX(80px)"')),
+        r"bound label .* carries style=.*\(the transform property\)",
+    )
+    h.expect_finding(
+        "a comment-prefixed inline transform on an ancestor <g> is reported",
+        document('  <g style="/**/transform: translateX(80px)">\n', honest_block(),
+                 "  </g>\n", TICKS),
+        r"carries an ancestor <g>/<svg> style transform",
+    )
+    h.expect_finding(
+        "a <style> rule with a comment before the property is reported",
+        "<style>circle { /* nudge */ transform: translate(0, 40px); }</style>"
+        + document(honest_block(), TICKS),
+        r"a CSS `transform` declaration",
+    )
+    # The <style> opens on line 1 and the declaration sits on line 3 behind a
+    # two-line comment. The finding must say 3: a comment stripped to nothing
+    # would shift every later line up.
+    h.expect_finding(
+        "a <style> declaration behind a multi-line comment is reported on its own line",
+        "<style>/* header\n   comment */\ncircle { transform: translate(0, 40px); }"
+        "</style>" + document(honest_block(), TICKS),
+        r":3: a CSS `transform` declaration",
+    )
+    h.expect_clean(
+        "a <style> comment that merely mentions transform: is not read as a declaration",
+        "<style>/* no transforms here;\n   transform: none was the old rule */\n"
+        ".bubble { stroke: none; }</style>" + document(honest_block(), TICKS),
+    )
+    h.expect_clean(
+        "an inline style comment that merely mentions transform: is not read as a declaration",
+        document(honest_block(), TICKS,
+                 label("Edge", cx(100), cy(1.0) - 34,
+                       extra='style="stroke: none; /* was:\n transform: none */"')),
+    )
+
+    # ── Scope is read from the raw text as well as through the parser ────
+    # An unclosed quote turns the whole tag into character data for
+    # HTMLParser, so a file whose ONLY bubble signal is that tag emitted no
+    # <circle> and was skipped as out of scope - a fail-open. The raw text
+    # (HTML comments removed) claims it and the lost tag is reported. Neither
+    # the filename nor the description names the family in any of these.
+    plain_head = HEAD.replace("Bubble chart fixture.", "Services fixture.")
+    h.expect_finding(
+        "a broken-quoted <circle data-size> that is the file's only signal is "
+        "reported, not skipped",
+        plain_head + TICKS
+        + "  <circle data-name='A' data-x='1' data-y='2' data-size=\"9 cx='81.8' "
+          "cy='230' r='4.2'/>\n" + TAIL,
+        r"declares data-size but no complete <circle> could be parsed",
+        name="fixture.html",
+    )
+    h.expect_out_of_scope(
+        "a commented-out <circle data-size> as the file's only signal is out of scope",
+        plain_head + TICKS + "  <!-- %s -->\n" % bubble("Ghost", 100, 1.0, 400).strip()
+        + TAIL,
+        "fixture.html",
+    )
+    h.expect_finding(
+        "a live <circle data-size> behind a quoted > is still claimed and checked",
+        plain_head + peers
+        + stream_nudged.replace("  <circle ", '  <circle data-note=">" ', 1)
+        + TICKS + TAIL,
+        r"bubble 'Stream' declares x=150 .* never nudge",
+        name="fixture.html",
     )
 
     # ── Fail closed ───────────────────────────────────────────────────────

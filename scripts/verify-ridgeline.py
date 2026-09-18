@@ -52,6 +52,30 @@ Eight invariants, in the spirit of ADR 0005 and the slopegraph checker:
    cannot be read, a missing baseline rule, or a transform anywhere near
    verified geometry is a finding, never a skip.
 
+Markup is read through the stdlib html.parser.HTMLParser, never a regex, so a
+tag is recognized exactly when a browser would recognize it: a quoted `>`
+inside an attribute value does not end the tag, a repeated attribute keeps its
+FIRST value and the rest are not in the document at all, unquoted values and
+upper-case names parse as their canonical form, and a comment's contents are
+never live markup. The regex tag matcher this replaced stopped at the first
+`>` it saw, so `<g data-note=">" transform="translate(0 -80)">` hid its
+transform from the checker while Chromium applied it to every ridge inside -
+the same fail-open shape verify-block-registry.py retired for the same reason.
+
+No transform may move verified geometry or a bound label, and a transform
+reaches the renderer by three carriers: the `transform` attribute, an inline
+`style="..."`, and a rule in a <style> block. All three are refused, on the
+element and on any ancestor <g>/<svg>, following verify-beeswarm.py; the
+property set in CSS_MOVES_MARK_RE is the invariant, adapted to what moves an
+outline (`d`), a baseline rule (`x1`/`y1`/`x2`/`y2`) and a label (`x`/`y`).
+CSS comments are stripped before any carrier is read, as the browser strips
+them: `/**/transform:` is a live declaration, not a quirk.
+
+Scope is read from the raw text with HTML comments removed, BEFORE the parser,
+so a <path> whose broken quoting keeps the parser from emitting it still claims
+the file and is reported rather than skipped - the parser is exactly what an
+unclosed quote defeats.
+
 WHAT THIS DOES NOT CHECK, deliberately:
 
 - **What the values mean.** Share, density or count, and how the bins were cut -
@@ -75,33 +99,60 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
-import html
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-PATH_RE = re.compile(r"<path\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
-                      re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
-GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
-# `transform:` but not `text-transform:` - the editorial template uses the latter.
-CSS_TRANSFORM_RE = re.compile(r"(?<![\w-])transform\s*:", re.IGNORECASE)
-TAG_RE = re.compile(r"<[^>]+>")
-# Both quote styles, for the same reason verify-slopegraph gives: a
-# single-quoted attribute must be read, not silently dropped from the set.
-ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
-    re.DOTALL,
+# Every CSS property that can move or reshape a verified mark WITHOUT touching
+# the attributes this checker reads. The enumeration IS the invariant - it is
+# copied from verify-beeswarm.py, where it had already been wrong twice
+# (`transform:` alone missed `style="transform: ..."`, and once that was fixed
+# `style="translate: 80px 0"` walked past it because CSS Transforms Level 2
+# splits the transform into four properties). Three families reach a mark:
+#
+#   transform / translate / rotate / scale   the four transform properties;
+#       the individual three compose WITH `transform`, so each is its own door
+#   d / x / y                                SVG geometry properties. CSS wins
+#       over the presentation attribute, so `style="d: path(...)"` on a ridge
+#       replaces the very outline that was verified, and x/y do the same to a
+#       bound label - a more direct lie than any transform
+#   x1 / y1 / x2 / y2                        a baseline rule's coordinates. Not
+#       geometry properties in any shipping browser, so a declaration naming
+#       them is dead today; refused anyway because it costs nothing on honest
+#       markup and the alternative is a checker re-hardened the day it stops
+#       being dead
+#   offset and its path/distance/position/anchor/rotate longhands
+#       CSS motion path, which places the element somewhere else entirely
+#
+# Anchored to a declaration start, so `text-transform:` (the editorial skin
+# uses it), `display:` and `--custom:` never match, and the `rotate` inside
+# `transform: rotate(45deg)` is read once as the property and never as the
+# function in its value. A vendor prefix is optional so `-webkit-transform:`
+# is not a free pass.
+CSS_MOVES_MARK_RE = re.compile(
+    r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
+    r"(?P<prop>transform|translate|rotate|scale"
+    r"|d|x1|y1|x2|y2|x|y"
+    r"|offset(?:-(?:path|distance|position|anchor|rotate))?)"
+    r"\s*:",
+    re.IGNORECASE,
 )
+# A CSS comment is whitespace to the browser, so `/**/transform:` is a live
+# declaration. CSS_MOVES_MARK_RE allows only whitespace between a declaration
+# boundary and the property name, which let a comment sitting there hide the
+# property from it while Chromium applied it. Non-greedy and DOTALL: a comment
+# spans lines, and a stylesheet holds many. See css_moves_mark.
+CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+# Detection only - deliberately a text search over the raw bytes, HTML comments
+# removed, so a file that so much as mentions the binding in live markup is
+# held to the contract even when the parser cannot read the tag that binds it.
+# See declares_bins.
 DECLARES_BINS_RE = re.compile(r"\bdata-bins\s*=", re.IGNORECASE)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 NUM_RE = re.compile(r"[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?")
 # Path-data tokens, number branch FIRST so an exponent's `e` is consumed as part
 # of its number instead of being read as a command. See parse_d.
@@ -128,31 +179,228 @@ MIN_BINS, MAX_BINS = 8, 40
 FOCAL_WIDTH, PLAIN_WIDTH = 2.4, 1.2
 ACCENTS = {"#eb6c36", "#f08a59"}   # light and dark skin accent tokens
 
+GROUP_TAGS = ("g", "svg")                     # the only ancestors whose transform is inherited
+BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data is read
+MARK_TAGS = ("path", "line")                  # outlines and their baseline rules
+
+
+# === PARSING =================================================================
+
+
+class Element:
+    """One start tag this checker cares about, as the browser tokenized it."""
+
+    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+
+    def __init__(self, tag, attrs, offset, line, ancestor):
+        self.tag = tag
+        self.attrs = attrs          # first-wins dict, names lower-cased, values unescaped
+        self.offset = offset        # offset of `<` in the source, for ordering
+        self.line = line
+        self.body = ""              # character data up to the matching end tag
+        self.ancestor = ancestor    # how the nearest transformed <g>/<svg> moves it, or None
+
 
 class Ridge:
-    __slots__ = ("name", "values", "points", "baseline", "stroke", "width", "offset")
+    __slots__ = ("name", "values", "points", "baseline", "stroke", "width", "line")
 
-    def __init__(self, name, values, points, baseline, stroke, width, offset):
+    def __init__(self, name, values, points, baseline, stroke, width, line):
         self.name = name
         self.values = values
         self.points = points
         self.baseline = baseline
         self.stroke = stroke
         self.width = width
-        self.offset = offset
+        self.line = line
 
     @property
     def focal(self):
         return self.stroke in ACCENTS
 
 
+def first_wins(attrs) -> dict:
+    """Attributes as the browser keeps them: on a repeat, the FIRST wins.
+
+    HTML parsing drops a duplicate attribute rather than overwriting the one
+    already on the token, so a second `d` on a path is not merely ignored -
+    it is not in the document at all. A dict comprehension does the opposite,
+    and that gap is a fail-open every caller inherits: a path carrying a
+    dishonest first `d` and an honest second renders the dishonest outline
+    while a last-wins reader checks, and passes, bytes the browser threw away.
+    A present-but-valueless attribute is an empty string, not an absent one.
+    """
+    seen = {}
+    for name, value in attrs:
+        seen.setdefault(name, "" if value is None else value)
+    return seen
+
+
+class _Scanner(HTMLParser):
+    """Collect paths, lines, texts, title/desc and style elements with ancestry.
+
+    HTMLParser already lowercases tag and attribute names, tolerates unquoted
+    values and whitespace around `=`, unescapes entities, keeps a quoted `>`
+    inside the value it belongs to, and never invokes handle_starttag for
+    tag-like text inside a comment or inside <script>/<style> raw text - each
+    of those is exactly a case a regex tag matcher mishandles. Ancestry is
+    tracked for <g>/<svg> only, the elements whose transform a child inherits.
+    """
+
+    def __init__(self, source: str):
+        super().__init__(convert_charrefs=True)
+        self.paths: list = []
+        self.lines: list = []
+        self.texts: list = []
+        self.named: list = []      # <title> and <desc>
+        self.styles: list = []
+        self.error = None
+        self._groups: list = []    # (tag, how) per open <g>/<svg>
+        self._open: list = []      # (tag, Element) per open body element
+        self._line_starts = [0]
+        for index, char in enumerate(source):
+            if char == "\n":
+                self._line_starts.append(index + 1)
+        try:
+            self.feed(source)
+            self.close()
+        except Exception as exc:  # noqa: BLE001 - any parser failure fails closed
+            self.error = "%s: %s" % (type(exc).__name__, exc)
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self._line_starts[line - 1] + column
+
+    def _ancestor(self):
+        for _tag, how in reversed(self._groups):
+            if how is not None:
+                return how
+        return None
+
+    def handle_starttag(self, tag, attrs):
+        self._start(tag, first_wins(attrs), closes=False)
+
+    def handle_startendtag(self, tag, attrs):
+        self._start(tag, first_wins(attrs), closes=True)
+
+    def _start(self, tag, attrs, closes):
+        if tag in GROUP_TAGS:
+            if not closes:
+                how = None
+                if "transform" in attrs:
+                    how = "an ancestor <g>/<svg> transform"
+                elif transform_carrier(attrs) is not None:
+                    how = "an ancestor <g>/<svg> style transform"
+                self._groups.append((tag, how))
+            return
+        if tag not in MARK_TAGS and tag not in BODY_TAGS:
+            return
+        element = Element(tag, attrs, self._offset(), self.getpos()[0], self._ancestor())
+        if tag == "path":
+            self.paths.append(element)
+            return
+        if tag == "line":
+            self.lines.append(element)
+            return
+        if tag == "text":
+            self.texts.append(element)
+        elif tag == "style":
+            self.styles.append(element)
+        else:
+            self.named.append(element)
+        if not closes:
+            self._open.append((tag, element))
+
+    def handle_endtag(self, tag):
+        stack = self._groups if tag in GROUP_TAGS else self._open if tag in BODY_TAGS else None
+        if stack is None:
+            return
+        # Pop back to the matching open tag - an unclosed inner element ends
+        # with its parent, as it does in the browser's tree.
+        for index in range(len(stack) - 1, -1, -1):
+            if stack[index][0] == tag:
+                del stack[index:]
+                return
+
+    def handle_data(self, data):
+        if self._open:
+            # Innermost only: a <title> tooltip inside a <text> is not part of
+            # the rendered label, and the browser does not draw it either.
+            self._open[-1][1].body += data
+
+
+def parse_document(source: str) -> _Scanner:
+    return _Scanner(source)
+
+
 def attrs_of(raw: str) -> dict:
-    found = {}
-    for match in ATTR_RE.finditer(raw):
-        name = match.group("name").lower()
-        if name not in found:            # a browser keeps the FIRST of a repeat
-            found[name] = html.unescape(match.group("value"))
-    return found
+    """First-wins attributes of one tag's raw attribute text, via the parser."""
+
+    class _One(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.attrs = {}
+
+        def handle_starttag(self, tag, attrs):
+            self.attrs = first_wins(attrs)
+
+        handle_startendtag = handle_starttag
+
+    scanner = _One()
+    scanner.feed("<x " + raw + ">")
+    scanner.close()
+    return scanner.attrs
+
+
+def transform_carrier(attrs: dict):
+    """How this element carries a transform, phrased for the finding, or None.
+
+    A transform reaches the renderer by three carriers and the `transform`
+    ATTRIBUTE is only the most visible one. Reading the attribute alone lets
+    `style="transform: translateY(...)"` on a ridge, a bound label or an
+    ancestor group move the rendered mark after its raw coordinates were
+    validated. The third carrier, a rule in a <style> block, is reported
+    separately because nothing here can tell which marks such a rule selects.
+    """
+    if "transform" in attrs:
+        return "transform=%r" % attrs["transform"]
+    style = attrs.get("style")
+    if style is not None:
+        found = css_moves_mark(style)
+        if found is not None:
+            return "style=%r (the %s property)" % (style, found.group("prop").lower())
+    return None
+
+
+def css_moves_mark(css: str):
+    """The first mark-moving declaration in CSS text, read past comments, or None.
+
+    Every carrier goes through here - an inline style, an ancestor's inline
+    style, a <style> block - because the browser drops `/* ... */` before it
+    tokenizes, and CSS_MOVES_MARK_RE must see what the browser sees:
+    `style="/**/transform: translateY(8px)"` moved a ridge while the anchored
+    regex walked past the comment. Each comment is blanked to whitespace of
+    the SAME length, newlines kept, so the searched text is aligned with the
+    original character for character: every offset in the returned match is
+    an offset into `css` as written, and a <style> finding that counts
+    newlines up to the property names the right line.
+    """
+    stripped = CSS_COMMENT_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()), css)
+    return CSS_MOVES_MARK_RE.search(stripped)
+
+
+def declares_bins(source: str) -> bool:
+    """Does the raw text, HTML comments removed, declare data-bins anywhere?
+
+    Read BEFORE the parser, because the parser is exactly what a broken quote
+    defeats: `<path data-bins="0,1` with no closing quote is character data
+    to HTMLParser, no <path> is ever emitted, and a file whose only ridgeline
+    signal was that tag would otherwise be skipped as out of scope - a
+    fail-open. The raw signal claims the file and check_source then reports
+    the tag the parser could not read. Comments are stripped first so a
+    commented-out draft path does not claim an unrelated file.
+    """
+    return DECLARES_BINS_RE.search(HTML_COMMENT_RE.sub("", source)) is not None
 
 
 def number(value):
@@ -167,23 +415,12 @@ def number(value):
         return None
 
 
-def line_of(source: str, offset: int) -> int:
-    return source.count("\n", 0, offset) + 1
-
-
 def plain(body: str) -> str:
-    return TAG_RE.sub("", html.unescape(body)).strip()
+    return body.strip()
 
 
-def blank_comments(source: str) -> str:
-    """Comments replaced with spaces, offsets preserved."""
-    return COMMENT_RE.sub(lambda m: " " * len(m.group(0)), source)
-
-
-def named_text(source: str) -> str:
-    return " ".join(
-        plain(m.group("body")).lower() for m in NAMED_RE.finditer(source)
-    )
+def named_text(doc: _Scanner) -> str:
+    return " ".join(plain(element.body).lower() for element in doc.named)
 
 
 def median(values):
@@ -198,14 +435,16 @@ def looks_like_ridgeline(path: Path, source: str) -> bool:
     """Does this file present itself as a ridgeline?
 
     Generous on the vocabulary this contract binds: `data-bins` belongs to no
-    other chart in this repo, so any file declaring it is held to the contract
-    even if nothing else parses - that combination is the fail-closed case.
+    other chart in this repo, so any file declaring it in live markup is held
+    to the contract even if nothing else parses - that combination is the
+    fail-closed case. A declaration inside an HTML comment is not live markup
+    and claims nothing.
     """
     if path.name.startswith("example-ridgeline"):
         return True
-    if DECLARES_BINS_RE.search(source):
+    if declares_bins(source):
         return True
-    described = named_text(source)
+    described = named_text(parse_document(source))
     return any(word in described for word in ("ridgeline", "ridge line", "joyplot"))
 
 
@@ -238,30 +477,30 @@ def parse_d(d: str):
     return commands, points
 
 
-def parse_ridges(source: str, findings: list, name: str) -> list:
+def parse_ridges(doc: _Scanner, findings: list, name: str) -> list:
     ridges = []
     seen = set()
-    for match in PATH_RE.finditer(source):
-        raw = match.group("attrs")
-        attrs = attrs_of(raw)
+    for element in doc.paths:
+        attrs = element.attrs
+        line = element.line
         label = attrs.get("data-ridge")
         if label is None:
-            # A <path> with no data-ridge is scenery. One whose raw text DOES
-            # declare data-bins and still parsed to nothing is markup this
-            # checker could not read, which is a finding rather than scenery.
-            if DECLARES_BINS_RE.search(raw):
+            # A <path> with no data-ridge is scenery. One that DOES declare
+            # data-bins has claimed to be a distribution and must say whose,
+            # which is a finding rather than scenery.
+            if "data-bins" in attrs:
                 findings.append(
                     "%s:%d: a <path> declares data-bins but no data-ridge — a "
                     "distribution outline must say whose distribution it draws, or "
                     "its labels cannot be bound to it"
-                    % (name, line_of(source, match.start()))
+                    % (name, line)
                 )
             continue
         if label in seen:
             findings.append(
                 "%s:%d: a second path declares data-ridge=%r — one ridge, one "
                 "outline, or the reader has two shapes and no way to pick"
-                % (name, line_of(source, match.start()), label)
+                % (name, line, label)
             )
             continue
         seen.add(label)
@@ -271,21 +510,21 @@ def parse_ridges(source: str, findings: list, name: str) -> list:
                 "%s:%d: ridge %r declares data-ridge but no data-bins — the declared "
                 "bins are the basis every drawn vertex is verified against, so an "
                 "outline without them cannot be checked"
-                % (name, line_of(source, match.start()), label)
+                % (name, line, label)
             )
             continue
         values = [number(token) for token in bins_raw.split(",")]
         if not values or any(v is None for v in values):
             findings.append(
                 "%s:%d: ridge %r has data-bins=%r, which is not a comma list of "
-                "numbers" % (name, line_of(source, match.start()), label, bins_raw)
+                "numbers" % (name, line, label, bins_raw)
             )
             continue
         if any(v < 0 for v in values):
             findings.append(
                 "%s:%d: ridge %r declares a negative bin — a share of requests below "
                 "zero is not a share, and it would draw below the baseline"
-                % (name, line_of(source, match.start()), label)
+                % (name, line, label)
             )
             continue
         baseline = number(attrs.get("data-baseline"))
@@ -294,14 +533,14 @@ def parse_ridges(source: str, findings: list, name: str) -> list:
                 "%s:%d: ridge %r has no data-baseline — the baseline is the zero of "
                 "this ridge's amplitude, so an unstated one can be moved to give the "
                 "ridge headroom and nothing here would notice"
-                % (name, line_of(source, match.start()), label)
+                % (name, line, label)
             )
             continue
         commands, points = parse_d(attrs.get("d", ""))
         if commands is None or not points:
             findings.append(
                 "%s:%d: ridge %r has a path this checker cannot read — cannot verify "
-                "its outline" % (name, line_of(source, match.start()), label)
+                "its outline" % (name, line, label)
             )
             continue
         # Absolute M + L* + Z is the entire permitted grammar. A relative
@@ -317,7 +556,7 @@ def parse_ridges(source: str, findings: list, name: str) -> list:
                 "coordinate renders against the previous point, so the numbers this "
                 "checker reads are not where the outline lands. Write the path in "
                 "absolute M/L/Z commands"
-                % (name, line_of(source, match.start()), label, "/".join(commands))
+                % (name, line, label, "/".join(commands))
             )
             continue
         commands = ["Z" if c == "z" else c for c in commands]
@@ -330,7 +569,7 @@ def parse_ridges(source: str, findings: list, name: str) -> list:
                 "straight segments and closes with Z. A spline through binned counts "
                 "invents extrema the sample never had, and the source line states the "
                 "drawing is unsmoothed"
-                % (name, line_of(source, match.start()), label, "/".join(commands))
+                % (name, line, label, "/".join(commands))
             )
             continue
         # One command letter per point. SVG lets `L` take repeated coordinate
@@ -343,8 +582,7 @@ def parse_ridges(source: str, findings: list, name: str) -> list:
                 "contract needs one explicit command per vertex (implicit repetition "
                 "after an L is legal SVG but leaves the checker pairing commands with "
                 "the wrong coordinates). Write M, then one L per bin, then Z"
-                % (name, line_of(source, match.start()), label,
-                   len(commands), len(points))
+                % (name, line, label, len(commands), len(points))
             )
             continue
         expected = ["M"] + ["L"] * (len(points) - 1) + ["Z"]
@@ -353,102 +591,78 @@ def parse_ridges(source: str, findings: list, name: str) -> list:
                 "%s:%d: ridge %r draws %s — the outline opens with one M, walks the "
                 "bins with L, and closes with a single Z. A second subpath or a "
                 "mid-path M lifts the pen inside one distribution"
-                % (name, line_of(source, match.start()), label, "/".join(commands))
+                % (name, line, label, "/".join(commands))
             )
             continue
         if len(points) != len(values):
             findings.append(
                 "%s:%d: ridge %r declares %d bins but draws %d points — every declared "
                 "bin needs its vertex and every vertex its bin"
-                % (name, line_of(source, match.start()), label, len(values), len(points))
+                % (name, line, label, len(values), len(points))
             )
             continue
         width = number(attrs.get("stroke-width"))
         ridges.append(Ridge(label, values, points, baseline,
                             (attrs.get("stroke") or "").strip().lower(),
-                            width, match.start()))
+                            width, line))
     return ridges
 
 
-def transformed_spans(source: str) -> list:
-    events = []
-    for match in GROUP_OPEN_RE.finditer(source):
-        if match.group("selfclose"):
-            continue
-        attrs = attrs_of(match.group("attrs"))
-        events.append((match.start(), "open", "transform" in attrs))
-    for match in GROUP_CLOSE_RE.finditer(source):
-        events.append((match.start(), "close", False))
-    events.sort()
-    spans, stack = [], []
-    for position, kind, transformed in events:
-        if kind == "open":
-            stack.append((position, transformed))
-        elif stack:
-            start, was_transformed = stack.pop()
-            if was_transformed:
-                spans.append((start, position))
-    for start, was_transformed in stack:
-        if was_transformed:
-            spans.append((start, len(source)))
-    return spans
+# === CHECKS ==================================================================
 
 
-def check_transforms(source: str, findings: list, name: str) -> None:
-    """No transform may move verified geometry or a bound label."""
-    spans = transformed_spans(source)
+def check_transforms(doc: _Scanner, findings: list, name: str) -> None:
+    """No transform may move verified geometry or a bound label.
 
-    def enclosed(offset):
-        return any(start <= offset <= end for start, end in spans)
+    All three carriers are held to that rule - the `transform` attribute, an
+    inline `style="transform: ..."`, and a rule in a <style> block - on the
+    element and on every <g>/<svg> above it, because a gate that closes one of
+    three doorways guards nothing.
+    """
 
-    def report(offset, what, how):
+    def report(element, what, how):
         findings.append(
             "%s:%d: %s carries %s — this checker validates raw coordinates, so a "
             "transform moves the rendered mark away from the bin it was checked "
             "against. Bake the offset into the coordinates instead"
-            % (name, line_of(source, offset), what, how)
+            % (name, element.line, what, how)
         )
 
-    for pattern, key in ((PATH_RE, "data-ridge"), (LINE_RE, "data-ridge")):
-        for match in pattern.finditer(source):
-            attrs = attrs_of(match.group("attrs"))
-            if key not in attrs:
-                continue
-            what = "ridge %r" % attrs[key]
-            if "transform" in attrs:
-                report(match.start(), what, "transform=%r" % attrs["transform"])
-            elif enclosed(match.start()):
-                report(match.start(), what, "an ancestor <g>/<svg> transform")
+    def check_element(element, what):
+        how = transform_carrier(element.attrs)
+        if how is None:
+            how = element.ancestor
+        if how is not None:
+            report(element, what, how)
 
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
-        if "data-ridge" not in attrs and "data-tick" not in attrs:
-            continue
-        what = "a bound label (%s)" % plain(match.group("body"))[:20]
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+    for element in doc.paths + doc.lines:
+        if "data-ridge" in element.attrs:
+            check_element(element, "ridge %r" % element.attrs["data-ridge"])
 
-    for match in STYLE_RE.finditer(source):
-        found = CSS_TRANSFORM_RE.search(match.group("body"))
+    for element in doc.texts:
+        if "data-ridge" in element.attrs or "data-tick" in element.attrs:
+            check_element(element, "a bound label (%s)" % plain(element.body)[:20])
+
+    for element in doc.styles:
+        found = css_moves_mark(element.body)
         if found:
             findings.append(
-                "%s:%d: a CSS `transform` declaration — this checker cannot tell "
+                "%s:%d: a CSS `%s` declaration — this checker cannot tell "
                 "which marks it applies to, and a transform on verified geometry "
                 "invalidates every coordinate here"
-                % (name, line_of(source, match.start("body") + found.start()))
+                % (name, element.line + element.body.count("\n", 0, found.start("prop")),
+                   found.group("prop").lower())
             )
 
 
-def check_bins(ridges: list, findings: list, source: str, name: str) -> bool:
+def check_bins(ridges: list, findings: list, name: str) -> bool:
     """Every ridge samples the same x positions, in increasing order."""
     reference = [round(x, 3) for x, _ in ridges[0].points]
     if sorted(set(reference)) != reference:
         findings.append(
             "%s:%d: ridge %r samples x=%s, which is not strictly increasing — bins "
             "are ordered, and an x visited twice or out of order redraws the scale"
-            % (name, line_of(source, ridges[0].offset), ridges[0].name,
+            % (name, ridges[0].line, ridges[0].name,
                "/".join("%g" % x for x in reference[:6]) + "…")
         )
         return False
@@ -461,13 +675,13 @@ def check_bins(ridges: list, findings: list, source: str, name: str) -> bool:
             findings.append(
                 "%s:%d: ridge %r samples its own x positions — every ridge must share "
                 "one x-scale or a peak at one x stops meaning one latency"
-                % (name, line_of(source, r.offset), r.name)
+                % (name, r.line, r.name)
             )
             shared = False
     return shared
 
 
-def check_baselines(ridges: list, source: str, findings: list, name: str):
+def check_baselines(ridges: list, doc: _Scanner, findings: list, name: str):
     """Baselines strictly downward at one pitch, each with its drawn rule.
 
     Returns the derived pitch, or None when the rows could not be read.
@@ -495,8 +709,7 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
                 "puts row %d at y=%g — an unevenly pitched stack reads relative "
                 "amplitude wrong, and a row nudged for headroom is the same lie as a "
                 "private scale"
-                % (name, line_of(source, r.offset), r.name, r.baseline, pitch,
-                   index + 1, expected)
+                % (name, r.line, r.name, r.baseline, pitch, index + 1, expected)
             )
 
     # Each ridge's outline must actually start and end on its own baseline.
@@ -508,14 +721,14 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
                     "y=%g, baseline y=%g) — the outline closes along the baseline, so "
                     "a distribution cut off mid-mass would be drawn as a cliff and "
                     "read as data"
-                    % (name, line_of(source, r.offset), r.name, end, y, r.baseline)
+                    % (name, r.line, r.name, end, y, r.baseline)
                 )
         for _, y in r.points:
             if y - r.baseline > AMPLITUDE_TOLERANCE:
                 findings.append(
                     "%s:%d: ridge %r draws a vertex at y=%g, below its own baseline "
                     "y=%g — a ridge rises from its baseline and never dips through it"
-                    % (name, line_of(source, r.offset), r.name, y, r.baseline)
+                    % (name, r.line, r.name, y, r.baseline)
                 )
                 break
 
@@ -523,8 +736,8 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
     x_first = min(x for x, _ in ridges[0].points)
     x_last = max(x for x, _ in ridges[0].points)
     rules = {}
-    for match in LINE_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.lines:
+        attrs = element.attrs
         if attrs.get("data-role") != "baseline":
             continue
         label = attrs.get("data-ridge")
@@ -532,18 +745,18 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
             findings.append(
                 "%s:%d: a baseline rule declares no data-ridge — an unbound rule can "
                 "be moved off the row it belongs to and nothing here would notice"
-                % (name, line_of(source, match.start()))
+                % (name, element.line)
             )
             continue
-        rules[label] = (attrs, match.start())
+        rules[label] = (attrs, element.offset, element.line)
 
     declared = {r.name: r for r in ridges}
-    for label, (attrs, offset) in sorted(rules.items(), key=lambda item: item[1][1]):
+    for label, (attrs, _offset, line) in sorted(rules.items(), key=lambda item: item[1][1]):
         if label not in declared:
             findings.append(
                 "%s:%d: a baseline rule names ridge %r, which no path declares — a "
                 "rule with no ridge reads as a row that is not there"
-                % (name, line_of(source, offset), label)
+                % (name, line, label)
             )
             continue
         r = declared[label]
@@ -553,14 +766,14 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
             findings.append(
                 "%s:%d: the baseline rule for ridge %r is not horizontal — a sloped "
                 "baseline makes every amplitude on that row a different number"
-                % (name, line_of(source, offset), label)
+                % (name, line, label)
             )
             continue
         if abs(y1 - r.baseline) > RULE_TOLERANCE:
             findings.append(
                 "%s:%d: the baseline rule for ridge %r is drawn at y=%g but the ridge "
                 "declares its baseline at y=%g — the drawn zero and the measured zero "
-                "must be one line" % (name, line_of(source, offset), label, y1, r.baseline)
+                "must be one line" % (name, line, label, y1, r.baseline)
             )
         if rx1 is None or rx2 is None \
                 or abs(min(rx1, rx2) - x_first) > RULE_TOLERANCE \
@@ -569,7 +782,7 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
                 "%s:%d: the baseline rule for ridge %r does not span the bin run "
                 "(x=%g to x=%g) — a short rule reads as a narrower support than the "
                 "ridge was sampled over"
-                % (name, line_of(source, offset), label, x_first, x_last))
+                % (name, line, label, x_first, x_last))
 
     for r in ridges:
         if r.name not in rules:
@@ -577,12 +790,12 @@ def check_baselines(ridges: list, source: str, findings: list, name: str):
                 "%s:%d: ridge %r has no baseline rule (a <line> with data-ridge and "
                 "data-role=\"baseline\") — the baseline is where a zero bin sits, and "
                 "an undrawn one leaves the reader estimating the zero of every "
-                "amplitude" % (name, line_of(source, r.offset), r.name)
+                "amplitude" % (name, r.line, r.name)
             )
     return pitch
 
 
-def check_amplitude(ridges: list, findings: list, source: str, name: str) -> None:
+def check_amplitude(ridges: list, findings: list, name: str) -> None:
     """One figure-wide amplitude, derived robustly then enforced exactly."""
     # Median of PER-RIDGE medians, not of every vertex pooled. Pooling would let
     # one ridge with many nonzero bins outvote several honest ridges with few,
@@ -618,13 +831,12 @@ def check_amplitude(ridges: list, findings: list, source: str, name: str) -> Non
                     "one amplitude (%.4gpx per unit) puts it at y=%g — a ridge on its "
                     "own scale wears a silhouette it did not earn, which is the one "
                     "lie this type is built to tell"
-                    % (name, line_of(source, r.offset), r.name, value, x, y,
-                       amplitude, expected)
+                    % (name, r.line, r.name, value, x, y, amplitude, expected)
                 )
                 break
 
 
-def check_overlap(ridges: list, pitch, findings: list, source: str, name: str) -> None:
+def check_overlap(ridges: list, pitch, findings: list, name: str) -> None:
     """Overlap is a feature; a peak hidden behind a peak is not."""
     if pitch is None:      # the stack could not be read; check_baselines said so
         return
@@ -636,11 +848,11 @@ def check_overlap(ridges: list, pitch, findings: list, source: str, name: str) -
                 "it (pitch %gpx) — overlap is how a ridgeline reads as depth, but a "
                 "peak reaching that far is occluded by the peaks it passes. Increase "
                 "the pitch; never shrink one ridge's amplitude to fit"
-                % (name, line_of(source, r.offset), r.name, intrusion, pitch)
+                % (name, r.line, r.name, intrusion, pitch)
             )
 
 
-def check_focus(ridges: list, findings: list, source: str, name: str) -> None:
+def check_focus(ridges: list, findings: list, name: str) -> None:
     """Exactly one accent ridge, with stroke weight agreeing with stroke colour."""
     focal = [r for r in ridges if r.focal]
     if len(focal) != 1:
@@ -656,13 +868,13 @@ def check_focus(ridges: list, findings: list, source: str, name: str) -> None:
                 "%s:%d: ridge %r has stroke-width=%s but a %s ridge takes %g — weight "
                 "is the focus cue that survives greyscale, so a mismatch between "
                 "colour and weight sends the two cues to different ridges"
-                % (name, line_of(source, r.offset), r.name,
+                % (name, r.line, r.name,
                    "%g" % r.width if r.width is not None else "?",
                    "focal" if r.focal else "non-focal", want)
             )
 
 
-def check_ticks(ridges: list, source: str, findings: list, name: str):
+def check_ticks(ridges: list, doc: _Scanner, findings: list, name: str):
     """Bin ticks bound to their printed value, on bin positions, one linear scale.
 
     Returns a callable mapping x to an axis value, or None when the scale could
@@ -671,23 +883,24 @@ def check_ticks(ridges: list, source: str, findings: list, name: str):
     """
     bin_xs = [x for x, _ in ridges[0].points]
     seen = {}
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.texts:
+        attrs = element.attrs
         index = attrs.get("data-tick")
         if index is None:
             continue
-        body = plain(match.group("body"))
+        line = element.line
+        body = plain(element.body)
         if not index.isdigit():
             findings.append(
                 "%s:%d: a bin tick has data-tick=%r, which is not a tick index"
-                % (name, line_of(source, match.start()), index)
+                % (name, line, index)
             )
             continue
         position = int(index)
         if position in seen:
             findings.append(
                 "%s:%d: a second tick with data-tick=%r — one tick, one caption"
-                % (name, line_of(source, match.start()), index)
+                % (name, line, index)
             )
             continue
         declared = number(attrs.get("data-bin"))
@@ -695,7 +908,7 @@ def check_ticks(ridges: list, source: str, findings: list, name: str):
             findings.append(
                 "%s:%d: the tick reading %r has no data-bin — its visible text is "
                 "unbound, so it can be exchanged with another tick and nothing here "
-                "would notice" % (name, line_of(source, match.start()), body[:20])
+                "would notice" % (name, line, body[:20])
             )
             continue
         printed = number(body)
@@ -703,7 +916,7 @@ def check_ticks(ridges: list, source: str, findings: list, name: str):
             findings.append(
                 "%s:%d: the tick at data-bin=%g prints %r — the visible caption and "
                 "its binding must state one number"
-                % (name, line_of(source, match.start()), declared, body[:20])
+                % (name, line, declared, body[:20])
             )
             continue
         x = number(attrs.get("x"))
@@ -711,11 +924,11 @@ def check_ticks(ridges: list, source: str, findings: list, name: str):
             findings.append(
                 "%s:%d: the tick reading %r is drawn at x=%s, which is not a bin "
                 "position — a tick off the bins labels a latency the figure never "
-                "sampled" % (name, line_of(source, match.start()), body[:20],
+                "sampled" % (name, line, body[:20],
                              "%g" % x if x is not None else "?")
             )
             continue
-        seen[position] = (x, declared, match.start())
+        seen[position] = (x, declared, line)
 
     if len(seen) < 2:
         findings.append(
@@ -733,22 +946,22 @@ def check_ticks(ridges: list, source: str, findings: list, name: str):
         )
         return None
     slope = (vn - v0) / (xn - x0)
-    for x, value, offset in ordered:
+    for x, value, line in ordered:
         if abs((v0 + slope * (x - x0)) - value) > SCALE_TOLERANCE:
             findings.append(
                 "%s:%d: the tick at x=%g reads %g, off the straight line the other "
                 "ticks set — a non-linear x-axis makes every printed range a "
-                "different distance" % (name, line_of(source, offset), x, value)
+                "different distance" % (name, line, x, value)
             )
             return None
     return lambda x: v0 + slope * (x - x0)
 
 
-def check_labels(ridges: list, source: str, findings: list, name: str, scale) -> None:
+def check_labels(ridges: list, doc: _Scanner, findings: list, name: str, scale) -> None:
     """Name and range printed per ridge, bound, agreeing, and on its own row."""
     bound = {}
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.texts:
+        attrs = element.attrs
         label = attrs.get("data-ridge")
         if label is None:
             continue
@@ -758,25 +971,26 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
             findings.append(
                 "%s:%d: a second %s label for ridge %r — one label per binding, or a "
                 "reader has two statements and no way to pick"
-                % (name, line_of(source, match.start()), role, label)
+                % (name, element.line, role, label)
             )
             continue
-        bound[key] = (plain(match.group("body")), number(attrs.get("y")), match.start())
+        bound[key] = (plain(element.body), number(attrs.get("y")),
+                      element.offset, element.line)
 
     declared = {r.name: r for r in ridges}
-    for (label, role), (body, y, offset) in sorted(bound.items(),
-                                                   key=lambda item: item[1][2]):
+    for (label, role), (body, y, _offset, line) in sorted(bound.items(),
+                                                          key=lambda item: item[1][2]):
         if label not in declared:
             findings.append(
                 "%s:%d: a %s label names ridge %r, which no path declares — a label "
                 "with no mark is not verifiable and reads as data"
-                % (name, line_of(source, offset), role, label)
+                % (name, line, role, label)
             )
             continue
         if role not in ("name", "range"):
             findings.append(
                 "%s:%d: a label for ridge %r has data-role=%r, which is neither "
-                "'name' nor 'range'" % (name, line_of(source, offset), label, role)
+                "'name' nor 'range'" % (name, line, label, role)
             )
             continue
         r = declared[label]
@@ -792,7 +1006,7 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
                         "%s:%d: the %s label for ridge %r is drawn at y=%g, nearer "
                         "%r's baseline than its own — a label on the wrong row renames "
                         "the distribution"
-                        % (name, line_of(source, offset), role, label, y, other.name)
+                        % (name, line, role, label, y, other.name)
                     )
                     break
         if role == "name":
@@ -800,7 +1014,7 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
                 findings.append(
                     "%s:%d: a name label bound to ridge %r reads %r — the visible name "
                     "and its binding must agree"
-                    % (name, line_of(source, offset), label, body)
+                    % (name, line, label, body)
                 )
             continue
 
@@ -809,14 +1023,14 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
             findings.append(
                 "%s:%d: ridge %r prints its range as %r — a range label is two numbers "
                 "on the x-axis scale, low to high, so the reader can place the mass "
-                "without a gridline" % (name, line_of(source, offset), label, body)
+                "without a gridline" % (name, line, label, body)
             )
             continue
         if scale is None:
             findings.append(
                 "%s:%d: ridge %r prints the range %r, which this checker cannot verify "
                 "because the figure's bin ticks did not read as one scale"
-                % (name, line_of(source, offset), label, body)
+                % (name, line, label, body)
             )
             continue
         live = [i for i, v in enumerate(r.values) if v > 0]
@@ -824,7 +1038,7 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
             findings.append(
                 "%s:%d: ridge %r prints a range but declares no nonzero bin — an "
                 "empty distribution has no range"
-                % (name, line_of(source, offset), label)
+                % (name, line, label)
             )
             continue
         want_low = scale(r.points[live[0]][0])
@@ -833,7 +1047,7 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
         if low > high:
             findings.append(
                 "%s:%d: ridge %r prints the range %r low end first — %g is above %g"
-                % (name, line_of(source, offset), label, body, low, high)
+                % (name, line, label, body, low, high)
             )
             continue
         if abs(low - want_low) > SCALE_TOLERANCE or abs(high - want_high) > SCALE_TOLERANCE:
@@ -842,7 +1056,7 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
                 "on the figure's own tick scale — a stated range wider than the mass "
                 "claims support the bins do not show, and a narrower one hides the "
                 "tail this chart exists to make visible"
-                % (name, line_of(source, offset), label, body, want_low, want_high)
+                % (name, line, label, body, want_low, want_high)
             )
 
     for r in ridges:
@@ -852,14 +1066,35 @@ def check_labels(ridges: list, source: str, findings: list, name: str, scale) ->
                     "%s:%d: ridge %r prints no %s label — a ridgeline names each ridge "
                     "beside its baseline and states the span of its mass, or the "
                     "reader has a silhouette and no numbers"
-                    % (name, line_of(source, r.offset), r.name, role)
+                    % (name, r.line, r.name, role)
                 )
 
 
+# === DRIVER ==================================================================
+
+
 def check_source(path: Path, raw: str) -> list:
-    source = blank_comments(raw)
     findings: list = []
-    ridges = parse_ridges(source, findings, path.name)
+    doc = parse_document(raw)
+    if doc.error is not None:
+        findings.append(
+            "%s: presents as a ridgeline but could not be parsed as HTML (%s) — "
+            "refusing to report OK on a file this checker could not read"
+            % (path.name, doc.error)
+        )
+        return findings
+    # The raw text claimed a bound <path> the parser never emitted: an unclosed
+    # quote turned the tag into character data. Nothing downstream can verify
+    # an outline that does not exist, so say which tag was lost rather than
+    # count zero ridges and leave the author hunting for a path plainly there.
+    if declares_bins(raw) and not any("data-bins" in e.attrs for e in doc.paths):
+        findings.append(
+            "%s: declares data-bins but no complete <path> could be parsed — an "
+            "unclosed attribute quote swallows the tag; fix the markup. Refusing "
+            "to report OK on a file this checker could not read" % path.name
+        )
+        return findings
+    ridges = parse_ridges(doc, findings, path.name)
 
     if len(ridges) < 2:
         findings.append(
@@ -891,14 +1126,14 @@ def check_source(path: Path, raw: str) -> list:
             % (path.name, bins, MIN_BINS, MAX_BINS, MIN_BINS, MAX_BINS)
         )
 
-    check_transforms(source, findings, path.name)
-    shared = check_bins(ridges, findings, source, path.name)
-    pitch = check_baselines(ridges, source, findings, path.name)
-    check_amplitude(ridges, findings, source, path.name)
-    check_overlap(ridges, pitch, findings, source, path.name)
-    check_focus(ridges, findings, source, path.name)
-    scale = check_ticks(ridges, source, findings, path.name) if shared else None
-    check_labels(ridges, source, findings, path.name, scale)
+    check_transforms(doc, findings, path.name)
+    shared = check_bins(ridges, findings, path.name)
+    pitch = check_baselines(ridges, doc, findings, path.name)
+    check_amplitude(ridges, findings, path.name)
+    check_overlap(ridges, pitch, findings, path.name)
+    check_focus(ridges, findings, path.name)
+    scale = check_ticks(ridges, doc, findings, path.name) if shared else None
+    check_labels(ridges, doc, findings, path.name, scale)
     return findings
 
 
