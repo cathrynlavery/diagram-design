@@ -1,6 +1,6 @@
 # Bar / Column Chart
 
-**Best for:** comparing discrete quantities across categories or time intervals — sprint velocity, monthly revenue, feature adoption, cohort counts. Use when each category has a single numeric value and the comparison between bars is the primary message — or, in the dumbbell variant below, exactly two values whose difference is the message.
+**Best for:** comparing discrete quantities across categories or time intervals — sprint velocity, monthly revenue, feature adoption, cohort counts. Use when each category has a single numeric value and the comparison between bars is the primary message — or, in the dumbbell variant below, exactly two values whose difference is the message — or, in the histogram variant, the distribution of one continuous variable, where the *shape* is the message.
 
 ## Layout conventions
 
@@ -41,6 +41,7 @@ Focal bar: replace fill with `rgba(235,108,54,0.12)`, stroke with `#eb6c36`, lab
 - **Grouped bars:** two bars per category, side by side. Use `accent` for the primary series and `series-1` for the secondary. Max 2 groups.
 - **Stacked bars:** segments stacked to total. Use `accent` for the focal segment; muted tints for others. Document the total at the top of each stack.
 - **Dumbbell:** one row per category, two dots on a single shared horizontal scale joined by a hairline. Use it for a two-state comparison where the *distance* between the ends is the message — before/after, two cohorts, target vs actual. Two series only; a third dot makes the connector meaningless and the figure is a dot plot.
+- **Histogram:** one continuous variable cut into equal contiguous bins, bar height = count per bin. Use it when the claim is about a distribution's shape — where the mass sits, how far the tail runs, whether one summary number can stand for the data at all. Full spec below.
 
 ### Dumbbell layout
 
@@ -99,8 +100,79 @@ Values 34 and 71 on a 0–100 domain compute to 458.4 and 739.6, rounded to 458 
 
 Two of these rules live in a formula rather than a drawing, so they are executable: `scripts/verify-dumbbell.py` resolves the domain over every sign case and asserts finite coordinates and 3:1 marks, and `scripts/test-verify-dumbbell.py` exercises both polarities — including all-zero and zero-touching data, and the sub-3:1 treatments this replaced. The checker reads the tokens out of this file, so prose and thresholds cannot drift apart. A shipped dumbbell example would additionally owe a check of drawn positions against the values printed at them.
 
+### Histogram
+
+**Best for:** the distribution of one continuous variable — response times, order values, session lengths, sensor readings. The reading is the *shape*: where the mass sits (mode), how far the tail runs (skew), and whether the mean a report would quote actually describes a typical value. It answers the question the SKILL.md router had no row for: scatter needs two variables, and the parent chart needs categories.
+
+Not for: discrete categories (the parent chart — its gaps are the point there); two variables (**scatter plot**); change over time (**line chart**); comparing two distributions (small multiples of this figure, never two interleaved histograms — interleaving breaks the contiguity that makes the type readable); or fewer than ~30 underlying values, where the sentence "n=12, ranging 80–410ms" says more than any binning of 12 points can. Note the boundary with the scatter reference's overplotting advice ("more → bin into a density contour"): that is binning applied to *two* variables to rescue a relationship plot. Binning one variable is not a rescue — it is this figure, and it answers a different question (shape, not relationship).
+
+#### Layout conventions
+
+- **Same frame as the parent chart:** `0 0 1000 500` viewBox, plot `x` 80 → 960, baseline `y` 420, top `y` 40, rotated count-axis caption at `x=24`, legend rhythm at `y=462/478/488`. A reader of bar, line, or treemap finds everything where they expect it.
+- **Bins: 6–12, equal width, contiguous.** Adjacent bars share an edge — gap exactly 0. The missing gap is the entire visual grammar: contiguous bars say "one continuous axis, intervals", gapped bars say "separate categories". At 10 bins each bar is 88px across the 880px plot; below 6 bins the shape disappears, above 12 the counts get too thin to label.
+- **6–12 is deliberately more than the parent chart's 4–8 cap.** That cap exists because categorical bars are read one at a time — each wants a name, a value, and a comparison against every other. Histogram bars are not read individually; the *silhouette* is read, and a shape needs more segments than a comparison needs bars. What sets the ceiling here is the count labels thinning out, not the bar count. The floor is higher too: 4 bins cannot show a tail.
+- **Paint every paper mask before any bar body.** The parent chart interleaves mask and body per bar, which is safe with gaps. With shared edges it is not: a neighbour's opaque mask painted *after* this bar's body erases the outer half of the shared 1px stroke, thinning the one boundary this variant exists to keep. All masks first, then all bodies.
+- **Label edges, not centres.** X-axis tick numerals sit at the bin *boundaries* (Geist Mono 8px muted, centred on the edge), because the numbers name interval boundaries, not category names. There are `bins + 1` of them. The parent chart's 11px category labels have no equivalent here.
+- **Count axis starts at 0, always.** The parent chart forbids truncation as an anti-pattern; here it is structural — a histogram reads mass by area, and a truncated count axis subtracts the same lie from every bin. Print the `0` tick.
+- **Count labels** above each bar, Geist Mono 8px — muted on ordinary bins, accent 600 on the focal bin. Bars near zero height still get their number; the label is what separates "3" from "none".
+- **Focal bin: 1 max**, in accent fill/stroke, same treatment as the parent's focal bar. The natural focal is the modal bin or the bin a threshold cuts through — a bin chosen because it flatters is an accent spent on nothing.
+- **One optional reference marker:** a vertical dashed line (1px, dasharray `4 3`, ink at 55% on light / 40% on dark — the same weights the dumbbell connector uses, for the same 3:1 reason) at a stated statistic, labelled in Geist Mono 8px 600 ink. One marker; a second (mean *and* median *and* p95) turns the figure into a annotated argument the cards should be making instead.
+- **4px grid** applies to the designed constants — plot edges, gridlines, legend rhythm. Bar heights, the marker's x, and the bin edges are data-scaled and exempt for the dumbbell's reason: snapping them moves the data. Bin edges land where the range division puts them — at 10 bins over 880px they happen to be 4px multiples, at 6 or 12 they are not, and rounding an edge to the grid would silently move a bin boundary.
+- **Dark theme:** background and masks `#2d3142`, bars `rgba(191,192,192,0.15)` stroked `#bfc0c0`, focal `rgba(240,138,89,0.14)` stroked `#f08a59`, hairlines inverted to `rgba(245,245,245,…)` — `rgba(45,49,66,…)` *is* the dark paper at every alpha, so any hairline carried over from light composites to 1.000:1 and vanishes.
+
+#### Histogram honesty rules
+
+Every one of these renders perfectly when broken, which is why `scripts/verify-histogram.py` exists and gates all of them.
+
+- **Equal bin widths, no exceptions.** Height is proportional to count only while every bin spans the same interval; widen one bin and its bar rises without a single observation moving. This is the histogram's signature lie — the density-normalized unequal-bin variant is a real statistical tool, but its heights stop being counts, and a figure whose y-axis says "requests" while its bars encode "requests per unit" is exactly the ambiguity this skill exists to remove. Equal bins or a different figure.
+- **Bins tile the range.** Bin k's end is bin k+1's start, in the declared values and in the pixels. An omitted interior bin doesn't read as "empty" — it reads as a narrower distribution than the data has. An empty bin ships as height 0 with its count label.
+- **The baseline is zero and the count scale is linear.** One px-per-count factor for every bin and every tick. A log count axis makes the shape unreadable as mass; if the tail needs a log axis, the figure wants a table or a percentile list instead.
+- **`n` is printed and equals the sum of the bins.** A histogram whose bins sum to less than its stated n has silently dropped data — usually the outliers, which are usually the story. Values beyond the last edge get a final bin or an explicit disclosure, never a quiet trim.
+- **A stated statistic must be computed from what is shown.** The marker's value is checked two ways: its x must sit where the scale puts its printed value, and a marker claiming to be the mean must lie within half a bin of the mean of the binned data — a "mean" placed by eye where it looks balanced is the annotated version of the jitter the slopegraph gate exists for.
+- **No smoothing.** A density curve over the bars answers a different question with a bandwidth parameter that is a second lie surface. If the shape needs smoothing to be visible, the binning is wrong or the data is too thin for the figure.
+- **Round once, then draw from the rounded number** — the declared count, the printed label, and the drawn height are three statements of one number, not three chances to disagree.
+
+#### Declaring the values
+
+Same contract as the slopegraph: **every visible string that carries meaning is bound to an attribute stating the same thing**, and the geometry is verified from the declarations, never from the rendered text.
+
+```svg
+<!-- A bin: the stroked rect declares its interval and count; the paper mask
+     beneath it stays unbound. The count label re-states the count and names
+     its bin, so the two can be cross-checked. -->
+<rect x="256" y="49.5" width="88" height="370.5" fill="#f5f5f5"/>
+<rect data-bin-start="200" data-bin-end="300" data-count="156" x="256" y="49.5" width="88" height="370.5" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+<text data-bin-start="200" data-role="count" x="300" y="41.5" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">156</text>
+
+<!-- Edge ticks and count ticks bind the numeral they print -->
+<text data-edge="300" x="344" y="436" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">300</text>
+<text data-count-tick="0" x="72" y="424" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">0</text>
+
+<!-- The marker declares its statistic and value; n declares the total -->
+<line data-marker="mean" data-value="319" x1="360.72" y1="56" x2="360.72" y2="420" stroke="rgba(45,49,66,0.55)" stroke-width="1" stroke-dasharray="4 3"/>
+<text data-marker-label="mean" data-value="319" x="366.72" y="50" fill="#2d3142" font-size="8" font-weight="600" font-family="'Geist Mono', monospace">MEAN 319ms</text>
+<text data-role="n" data-value="550" x="960" y="497" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="end">n = 550</text>
+```
+
+**No `transform` on any verified geometry or bound label, including ancestors** — the checker reads raw attributes, so a transform moves the rendered mark away from the number that was verified. Bake offsets into coordinates. The rotated axis caption is fine; it is neither verified geometry nor a bound label. CSS transforms are judged by reach: a rule whose selector can touch the SVG's marks is rejected, while one scoped to page chrome the SVG never uses (a card hover) is allowed. State `n` once; if it is repeated, every declaration is validated and they must agree.
+
+`scripts/verify-histogram.py --all` gates the shipped examples: equal declared and drawn widths, tiled edges, a shared baseline that the `0` tick sits on, one linear count scale across bars *and* ticks, every printed numeral matching its binding, n equal to the sum, and the marker at its declared value — within half a bin of the binned mean when it claims to be one. `scripts/test-verify-histogram.py` holds the checker itself to both polarities.
+
+#### Anti-patterns
+
+- Unequal bin widths, or a gap between adjacent bars — the first lies, the second claims the axis is categorical.
+- A count axis that starts above zero, or a log count axis.
+- Bin counts that don't sum to the printed n.
+- A smoothed density curve over the bars.
+- Two interleaved histograms — small multiples, one distribution each.
+- More than one reference marker, or a marker whose statistic is not stated.
+- Rotated edge labels; if the numerals collide, print every second edge.
+
 ## Examples
 
 - `assets/example-bar.html` — minimal light
 - `assets/example-bar-dark.html` — minimal dark
 - `assets/example-bar-full.html` — full editorial
+- `assets/example-histogram.html` — histogram variant, minimal light
+- `assets/example-histogram-dark.html` — histogram variant, minimal dark
+- `assets/example-histogram-full.html` — histogram variant, full editorial
