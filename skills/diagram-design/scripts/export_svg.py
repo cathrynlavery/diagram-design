@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 GOOGLE_FONTS_IMPORT = (
@@ -134,6 +135,12 @@ def scope_selector(selector: str, root_id: str) -> str:
     return ", ".join(scoped)
 
 
+def escape_css_for_xml(css: str) -> str:
+    """Escape XML-sensitive characters in CSS embedded inside an SVG <style>."""
+    # Order matters: amp first so we do not re-escape entities we just wrote.
+    return css.replace("&", "&amp;").replace("<", "&lt;")
+
+
 def diagram_css_from_html(html: str, root_id: str) -> str:
     """Filter page <style> rules down to diagram rules, scoped under root_id."""
     kept: list[str] = []
@@ -145,7 +152,10 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
                 continue
             if is_chrome_selector(selector):
                 continue
-            kept.append(f"{scope_selector(selector, root_id)} {{ {body} }}")
+            # Escape rule text before it lands in SVG XML (e.g. content:"R&D").
+            kept.append(
+                escape_css_for_xml(f"{scope_selector(selector, root_id)} {{ {body} }}")
+            )
     return "\n      ".join(kept)
 
 
@@ -235,12 +245,26 @@ def normalize_rgba_presentation_attrs(svg: str) -> str:
     return svg
 
 
+def has_diagram_stylesheet(svg: str) -> bool:
+    """True when a <style> block contains CSS rules beyond the fonts @import."""
+    for block in STYLE_BLOCK_RE.findall(svg):
+        stripped = re.sub(r"@import\b[^;]*;", "", block, flags=re.IGNORECASE)
+        stripped = re.sub(r"/\*.*?\*/", "", stripped, flags=re.DOTALL)
+        if RULE_RE.search(stripped):
+            return True
+    return False
+
+
 def assert_export_gate(svg: str) -> None:
-    """Refuse a class-styled fragment that shipped without any <style>."""
-    if re.search(r"\bclass\s*=", svg) and not re.search(r"<style\b", svg, re.IGNORECASE):
+    """Refuse a class-styled fragment that shipped without diagram CSS.
+
+    A fonts-only <style> (Google Fonts @import with no rules) does not count —
+    class-based fills would still render as black boxes.
+    """
+    if re.search(r"\bclass\s*=", svg) and not has_diagram_stylesheet(svg):
         raise ValueError(
-            "exported SVG uses class= but has no <style>; class-based fills "
-            "would render as black boxes. Carry the page CSS into the SVG."
+            "exported SVG uses class= but has no diagram CSS rules; class-based "
+            "fills would render as black boxes. Carry the page CSS into the SVG."
         )
 
 
@@ -257,7 +281,13 @@ def export_svg_document(html: str, source_path: Path) -> str:
     svg = namespace_defs_ids(svg, slug)
     svg = normalize_rgba_presentation_attrs(svg)
     assert_export_gate(svg)
-    return '<?xml version="1.0" encoding="UTF-8"?>\n' + svg + "\n"
+    document = '<?xml version="1.0" encoding="UTF-8"?>\n' + svg + "\n"
+    # Catch any remaining XML-breaking characters in carried content.
+    try:
+        ET.fromstring(document)
+    except ET.ParseError as exc:
+        raise ValueError(f"exported SVG is not well-formed XML: {exc}") from exc
+    return document
 
 
 def main(argv: list[str] | None = None) -> int:
