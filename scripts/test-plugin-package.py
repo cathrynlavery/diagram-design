@@ -69,6 +69,10 @@ def seed_package(
 ) -> None:
     write_json(root / ".claude-plugin/plugin.json", manifest(version))
     write_json(root / ".codex-plugin/plugin.json", manifest(version, codex=True))
+    omp_manifest = manifest(version)
+    omp_manifest["private"] = True
+    omp_manifest["omp"] = {}
+    write_json(root / "package.json", omp_manifest)
     if include_factory:
         seed_factory(root, version)
     write_json(
@@ -143,6 +147,7 @@ def set_versions(
         (Path(".claude-plugin/plugin.json"), claude),
         (Path(".codex-plugin/plugin.json"), codex),
         (Path(".factory-plugin/plugin.json"), factory),
+        (Path("package.json"), claude),
     ):
         payload = json.loads((root / relative).read_text(encoding="utf-8"))
         payload["version"] = version
@@ -211,6 +216,39 @@ def test_verifier() -> None:
         if errors:
             raise AssertionError(f"current-only mode failed a valid tree: {errors}")
         print("OK: current-only mode accepts a valid tree")
+
+    with package_repo() as root:
+        package_path = root / "package.json"
+        package = json.loads(package_path.read_text(encoding="utf-8"))
+        package["private"] = False
+        write_json(package_path, package)
+        expect_failure(
+            "public OMP package",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "OMP manifest 'private' must be true",
+        )
+
+    with package_repo() as root:
+        package_path = root / "package.json"
+        package = json.loads(package_path.read_text(encoding="utf-8"))
+        package.pop("omp")
+        write_json(package_path, package)
+        expect_failure(
+            "missing OMP marker",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "OMP manifest 'omp' must be a JSON object",
+        )
+
+    with package_repo() as root:
+        package_path = root / "package.json"
+        package = json.loads(package_path.read_text(encoding="utf-8"))
+        package["omp"] = []
+        write_json(package_path, package)
+        expect_failure(
+            "non-object OMP marker",
+            VERIFY.verify_package(root, None, mode="current-only"),
+            "OMP manifest 'omp' must be a JSON object",
+        )
 
     with package_repo() as root:
         set_versions(root, "1.2.4", "1.2.5")
@@ -654,6 +692,48 @@ def test_version_history() -> None:
         else:
             raise AssertionError("valid but unequal versions were treated as synchronized")
         print("OK: version history ignores manifest metadata-only commits")
+
+    with tempfile.TemporaryDirectory() as scratch:
+        root = Path(scratch)
+        seed_package(root)
+        (root / "package.json").unlink()
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.name", "Package Test"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "package-test@example.invalid"],
+            cwd=root,
+            check=True,
+        )
+        base = commit_all(root, "legacy package 1.2.3")
+        for relative in BUMP.MANIFEST_PATHS[:-1]:
+            path = root / relative
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["version"] = "1.2.4"
+            write_json(path, payload)
+        write_skill(root, "1.2.4")
+        release = commit_all(root, "release 1.2.4")
+
+        package = json.loads((root / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))
+        package["private"] = True
+        package["omp"] = {}
+        write_json(root / "package.json", package)
+        bootstrap = commit_all(root, "add OMP manifest")
+        if VERSION_HISTORY.versions_changed(root, release, bootstrap):
+            raise AssertionError("same-version OMP bootstrap was treated as a release")
+        if VERSION_HISTORY.last_version_bump(root, bootstrap) != release:
+            raise AssertionError("OMP bootstrap hid the previous real release")
+
+        (root / "package.json").unlink()
+        deleted = commit_all(root, "remove OMP manifest")
+        try:
+            VERSION_HISTORY.versions_changed(root, bootstrap, deleted)
+        except VERSION_HISTORY.VersionHistoryError:
+            pass
+        else:
+            raise AssertionError("post-bootstrap OMP manifest deletion did not fail closed")
+        if not VERSION_HISTORY.versions_changed(root, base, release):
+            raise AssertionError("legacy release version change was not detected")
+        print("OK: version history permits OMP bootstrap and rejects later deletion")
 
 
 def main() -> int:
