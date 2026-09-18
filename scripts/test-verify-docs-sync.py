@@ -1245,6 +1245,11 @@ diagram-design/
             "See all 12 diagrams in the appendix.\n",
             "The 4-type taxonomy of joins.\n",
             "All 5 diagrams are inlined.\n",
+            # Mixed-context: broad words in the same sentence as N-type /
+            # all-N-diagrams must not trip the taxonomy cue.
+            "The static renderer accepts all 12 diagrams in the appendix.\n",
+            "This example shows a 10-type enum for variants.\n",
+            "A static example of a 2-type render variant.\n",
         ):
             readme.write_text(readme_routed + benign, encoding="utf-8")
             errors = []
