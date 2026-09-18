@@ -46,6 +46,8 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn("longest-id-first", text)
         self.assertIn("class=", text)
         self.assertIn("black boxes", text)
+        self.assertIn("fonts-only", text)
+        self.assertIn("R&D", text)
         self.assertIn("accessible-name guarantee alone is not enough", text)
 
     def test_loop_export_carries_scoped_css(self) -> None:
@@ -106,16 +108,48 @@ class ExportSvgStandaloneTests(unittest.TestCase):
           <title id="t">t</title><desc id="d">d</desc>
           <rect class="station" width="10" height="10"/>
         </svg></body></html>"""
-        # No page <style> → helper still injects fonts <style>, so class= + style pass.
-        # Force the gate by stripping style after a minimal transform.
+        # No diagram rules: bare class SVG must be refused (fonts-only does not count).
         with self.assertRaises(ValueError) as ctx:
             self.mod.assert_export_gate(
-                '<svg viewBox="0 0 1 1"><rect class="x" width="1" height="1"/></svg>'
+                '<svg viewBox="0 0 1 1"><defs><style>@import url("x");</style></defs>'
+                '<rect class="x" width="1" height="1"/></svg>'
             )
         self.assertIn("black boxes", str(ctx.exception))
-        # Sanity: real export of the class-only fragment gets a fonts style and passes.
-        svg = self.mod.export_svg_document(html, Path("orphan-station.html"))
-        self.assertIn("<style>", svg)
+        self.assertIn("diagram CSS", str(ctx.exception))
+        with self.assertRaises(ValueError) as ctx2:
+            self.mod.export_svg_document(html, Path("orphan-station.html"))
+        self.assertIn("black boxes", str(ctx2.exception))
+        # With real diagram rules, the gate passes.
+        ok = """<!DOCTYPE html><html><head><style>
+        .station { fill: #f00; }
+        </style></head><body>
+        <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-labelledby="t d">
+          <title id="t">t</title><desc id="d">d</desc>
+          <rect class="station" width="10" height="10"/>
+        </svg></body></html>"""
+        svg = self.mod.export_svg_document(ok, Path("styled-station.html"))
+        self.assertIn("#styled-station-root .station", svg)
+        self.assertTrue(self.mod.has_diagram_stylesheet(svg))
+
+    def test_carried_css_escapes_xml_specials(self) -> None:
+        html = """<!DOCTYPE html><html><head><style>
+        .label::after { content: "R&D"; }
+        .station { fill: #111; }
+        </style></head><body>
+        <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-labelledby="t d">
+          <title id="t">t</title><desc id="d">d</desc>
+          <rect class="station" width="10" height="10"/>
+          <text class="label">x</text>
+        </svg></body></html>"""
+        svg = self.mod.export_svg_document(html, Path("rd-label.html"))
+        # Raw & would break XML; escaped form must appear in the stylesheet.
+        self.assertIn('content: "R&amp;D"', svg)
+        self.assertNotRegex(svg, r'content:\s*"R&D"')
+        # Document must parse as XML (export already validates; assert explicitly).
+        import xml.etree.ElementTree as ET
+        ET.fromstring(svg)
 
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
