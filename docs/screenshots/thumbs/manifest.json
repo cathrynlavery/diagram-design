@@ -99,11 +99,11 @@
     {
       "thumb": "flowchart.webp",
       "source": "docs/screenshots/flowchart.png",
-      "source_sha256": "47c84d9f89a4e60ad131b05b0619e356894052d0477a8b3b024d56e5bd91b517",
+      "source_sha256": "74729889a792981f49bd652b337e9eb3087001c14bc28dd7fd5ea9cfc6814b57",
       "width": 600,
       "height": 360,
       "quality": 82,
-      "thumb_sha256": "7232caea4a42ea2a8368fccea295bed4ff86b941c83247cce7b7d7a70172705c"
+      "thumb_sha256": "44224cd3f8b0e6fa0b8fad43371659be08d3eeded256d2b895736acd9076fcb1"
     },
     {
       "thumb": "gantt.webp",
@@ -198,11 +198,11 @@
     {
       "thumb": "nested.webp",
       "source": "docs/screenshots/nested.png",
-      "source_sha256": "7199d6871a0aab4377af0002a42c3dc9daee9e869f1131493ecf6e17a5a1cac0",
+      "source_sha256": "16fa6c5fad38160cc70ad64a4d8642cb22b2c74c2f583407245e9183f3fc9994",
       "width": 600,
       "height": 300,
       "quality": 82,
-      "thumb_sha256": "c12d8e15f30e382987b05d22d1e930cfd801a7d76792348b2a22ce107785f979"
+      "thumb_sha256": "a20e8f99a4962d88fe2b451a9aeba871c0c7319d17d570026e1f225632405aa0"
     },
     {
       "thumb": "org-chart.webp",
