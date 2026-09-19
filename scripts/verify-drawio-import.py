@@ -482,6 +482,12 @@ def check_docs() -> None:
     ):
         if preset not in output_text:
             fail(f"output-spec.md missing size preset {preset}")
+    a3_preset = "`print-a3-landscape` | `0 0 1584 1120` | ~1.41:1 | @3 → 4752×3360"
+    if a3_preset not in output_text:
+        fail(
+            "output-spec.md print-a3-landscape preset must use viewBox "
+            "0 0 1584 1120 and PNG @3 → 4752×3360"
+        )
     for level in ("faithful", "balanced", "simplified"):
         if level not in output_text:
             fail(f"output-spec.md missing detail level {level}")

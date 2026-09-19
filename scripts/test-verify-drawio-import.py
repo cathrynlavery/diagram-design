@@ -49,6 +49,24 @@ def main() -> int:
                 f"valid slash command failed verification:\n{valid.stdout}\n{valid.stderr}"
             )
 
+        output_spec = clone / "skills/diagram-design/references/output-spec.md"
+        output_text = output_spec.read_text(encoding="utf-8")
+        a3_viewbox = "`print-a3-landscape` | `0 0 1584 1120`"
+        if a3_viewbox not in output_text:
+            raise AssertionError("output-spec fixture lacks the A3 preset viewBox")
+        output_spec.write_text(
+            output_text.replace(a3_viewbox, "`print-a3-landscape` | `0 0 1588 1120`"),
+            encoding="utf-8",
+        )
+        bad_a3 = run_verifier(clone)
+        if bad_a3.returncode == 0:
+            raise AssertionError("incorrect A3 preset viewBox unexpectedly passed verification")
+        if "print-a3-landscape preset" not in bad_a3.stderr:
+            raise AssertionError(
+                f"incorrect A3 viewBox lacked a focused diagnostic:\n{bad_a3.stderr}"
+            )
+        output_spec.write_text(output_text, encoding="utf-8")
+
         reference.write_text(text.replace(valid_name, stale_name), encoding="utf-8")
         stale = run_verifier(clone)
         if stale.returncode == 0:
@@ -74,7 +92,7 @@ def main() -> int:
                 f"elbowed connector lacked a focused diagnostic:\n{elbow.stderr}"
             )
 
-    print("OK: draw.io verifier rejects stale command names and elbowed worked-example routes")
+    print("OK: draw.io verifier rejects incorrect A3 viewBoxes, stale command names, and elbowed worked-example routes")
     return 0
 
 
