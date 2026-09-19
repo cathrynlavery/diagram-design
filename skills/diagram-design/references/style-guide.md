@@ -19,6 +19,7 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 | `paper` | Page background, default node fill | `#f5f5f5` (white-smoke) | `#2d3142` (jet-black) |
 | `paper-2` | Diagram container bg, secondary fill | `#ececec` | `#393e53` |
 | `ink` | Primary text, primary stroke | `#2d3142` (jet-black) | `#f5f5f5` (white-smoke) |
+| `ink-strong` | High-contrast text on warm accent fills | `#111111` | `#111111` |
 | `muted` | Secondary text, default arrow stroke | `#4f5d75` (blue-slate) | `#bfc0c0` (silver) |
 | `soft` | Sublabels, boundary labels | `#7a8399` | `#8e98ac` |
 | `rule` | Hairline borders | `rgba(45,49,66,0.12)` | `rgba(245,245,245,0.12)` |
