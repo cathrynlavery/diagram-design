@@ -71,10 +71,10 @@ def expect_status(check, status: str, needle: str) -> None:
 
 def check_full_git_installs(verify, root: Path) -> None:
     for name, host_arg, environ, expected_channel in (
-        ("pi-explicit", "pi", {}, verify.CHANNEL_GIT),
         ("pi-env", verify.AUTO_HOST, {"PI_SESSION_ID": "test"}, verify.CHANNEL_GIT),
         (".pi/agent/git/diagram-design", verify.AUTO_HOST, {}, verify.CHANNEL_GIT),
         ("maintainer", verify.AUTO_HOST, {}, verify.CHANNEL_MAINTAINER),
+        ("maintainer-host-pi", "pi", {}, verify.CHANNEL_MAINTAINER),
     ):
         install_root = root / name
         seed_repo(verify, install_root)
@@ -114,11 +114,19 @@ def check_full_git_installs(verify, root: Path) -> None:
                 if "git pull" in output or "unpinned-ref check is not applicable" in output:
                     raise AssertionError(f"{name}: Pi install received maintainer guidance: {output}")
             else:
-                needles.extend(["git pull", "Host profile is not pi"])
+                needles.append("git pull")
+                if host_arg == "pi":
+                    needles.extend(['"host": "pi"', "unpinned-ref check is not applicable"])
+                    if "pi update --extensions" in output or "unpinned git branch" in output:
+                        raise AssertionError(
+                            f"{name}: maintainer checkout with --host pi received Pi install guidance: {output}"
+                        )
+                else:
+                    needles.append("Host profile is not pi")
             for needle in needles:
                 if needle not in output:
                     raise AssertionError(f"{name}: report missing {needle!r}: {output}")
-    print("OK: full Pi Git installs honor explicit/env/path host context; maintainer checkouts stay distinct")
+    print("OK: full Pi Git installs honor env/path context; maintainer checkouts stay distinct including --host pi")
 
 
 def main() -> int:

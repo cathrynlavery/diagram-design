@@ -334,10 +334,18 @@ def detect_host(root: Path, environ: dict[str, str] | None = None) -> tuple[str 
 def detect_install_channel(root: Path, host: str | None = None) -> tuple[str, str]:
     """Classify how this installation arrived: maintainer checkout, git, marketplace, or copy."""
     # Pi Git packages contain the full repository, including maintainer markers.
-    if host == "pi" and (root / ".git").exists():
-        return CHANNEL_GIT, "Pi host profile and .git metadata at the installation root"
-    if is_maintainer_checkout(root):
+    # Identify that managed shape from install env/path, not from --host pi, so a
+    # genuine maintainer checkout with an explicit override stays maintainer-checkout.
+    pi_markers = next(markers for name, markers in HOST_ENV_MARKERS if name == "pi")
+    pi_hint = next(hint for name, hint in HOST_PATH_HINTS if name == "pi")
+    pi_context = any(os.environ.get(marker) for marker in pi_markers) or any(
+        pi_hint in part.lower() for part in root.resolve().parts
+    )
+    pi_managed_git = pi_context and (root / ".git").exists()
+    if is_maintainer_checkout(root) and not pi_managed_git:
         return CHANNEL_MAINTAINER, "maintainer repository markers are present"
+    if pi_managed_git:
+        return CHANNEL_GIT, "Pi host profile and .git metadata at the installation root"
     if (root / ".git").exists():
         return CHANNEL_GIT, ".git metadata is present at the installation root"
     segments = {part.lower() for part in root.resolve().parts}
