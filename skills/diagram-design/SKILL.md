@@ -102,7 +102,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Stacked abstraction levels | **Layer stack** | [type-layers.md](references/type-layers.md) |
 | Overlap between sets | **Venn** | [type-venn.md](references/type-venn.md) |
 | Ranked hierarchy or conversion drop-off | **Pyramid / funnel** | [type-pyramid.md](references/type-pyramid.md) |
-| Quantitative comparison across categories | **Bar chart** | [type-bar.md](references/type-bar.md) |
+| Category comparison or distribution of one continuous variable (histogram) | **Bar chart** | [type-bar.md](references/type-bar.md) |
 | A start total bridged to an end total by signed contributions (budget bridge, headcount deltas) | **Waterfall** | [type-waterfall.md](references/type-waterfall.md) |
 | Part-of-whole where the relative sizes are the story | **Treemap** | [type-treemap.md](references/type-treemap.md) |
 | Cross-tabulated data; fill encodes value per cell | **Heatmap** | [type-heatmap.md](references/type-heatmap.md) |
