@@ -32,7 +32,7 @@ Pick by destination:
 | Keynote / PowerPoint / Google Slides | `png` @2 | `slide-16x9` |
 | Figma / Illustrator / further editing | `svg` | `fit` |
 | X / LinkedIn / OG link card | `png` @2 | `social-og` |
-| Printed handout, PDF deck | `png` @3 | `print-a4-landscape` |
+| Printed handout, PDF deck | `png` @3 | `print-a4-landscape` / `print-a3-landscape` |
 | Confluence / Notion / internal wiki | `png` @2 | `doc-wide` |
 
 ---
@@ -50,6 +50,7 @@ The preset sets the SVG `viewBox`. Every value below is divisible by 4, so the g
 | `social-og` | `0 0 1200 632` | ~1.9:1 | 2400×1264 | presentation | Link preview card |
 | `social-square` | `0 0 1080 1080` | 1:1 | 2160×2160 | presentation | Feed post, carousel |
 | `print-a4-landscape` | `0 0 1120 792` | ~1.41:1 | @3 → 3360×2376 | print | A4 landscape, ~10mm margins at 96dpi |
+| `print-a3-landscape` | `0 0 1584 1120` | ~1.41:1 | @3 → 4752×3360 | print | A3 landscape, ~10mm margins at 96dpi |
 | `print-letter-landscape` | `0 0 1056 816` | ~1.29:1 | @3 → 3168×2448 | print | US Letter landscape |
 | `fit` | derived from content | any | @2 | standard | Vector hand-off; no fixed frame |
 
