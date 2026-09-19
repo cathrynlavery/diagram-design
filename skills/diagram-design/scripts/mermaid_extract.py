@@ -606,51 +606,67 @@ def _edge_operators(text: str) -> list[_Operator]:
     # `A-- text -->B`, `A-. retry .-> B`, `A== critical ==> B`, and the
     # undirected forms of each. The compact form drops the spaces —
     # `B--yes-->C` — and may retain a left arrow/circle/cross marker, as in
-    # `A<--yes-->B` or `A o--yes--o B`. Its label may not contain whitespace,
-    # and the operator characters themselves may not open one (keeping
-    # `A----->B` unlabeled and `A --o B --> C` two separate links).
+    # `A<--yes-->B` or `A o--yes--o B`. For the dash and equals forms, the
+    # compact label may not contain whitespace, and the operator characters
+    # themselves may not open one (keeping `A----->B` unlabeled and
+    # `A --o B --> C` two separate links). The dotted form's closing operator
+    # always opens with a literal `.`, which a dash/equals label can't
+    # produce, so its compact label may contain internal whitespace —
+    # `A-.next candidate.->B` — without that ambiguity.
     text_edge = re.compile(
         r"(?P<opening>"
-        r"<(?:--|-\.|==)"
-        r"|(?<![\w.:-])[xo](?:--|-\.|==)"
-        r"|(?:--|-\.|==)"
+        r"<(?:--|==)"
+        r"|(?<![\w.:-])[xo](?:--|==)"
+        r"|(?:--|==)"
         r")"
         r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
-        r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+        r"(?P<closing>-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+    )
+    dotted_edge = re.compile(
+        r"(?P<opening>"
+        r"<-\."
+        r"|(?<![\w.:-])[xo]-\."
+        r"|-\."
+        r")"
+        r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\n|<>]+?))"
+        r"(?P<closing>\.-+[>xo]|\.-+)"
     )
     trailing_operator = re.compile(
         r"(?:\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
         r"(?:\|[^|\n]*\|)?\s*$"
     )
-    for match in text_edge.finditer(mask):
-        opening = match.group("opening")
-        operator_start = match.start()
-        if opening.startswith(("x", "o")):
-            prefix = mask[:operator_start]
-            if not prefix.strip() or trailing_operator.search(prefix):
-                # Here x/o is the endpoint before a regular opening operator,
-                # not a left marker: `x--yes-->B` or `A-->x--go-->B`.
-                operator_start += 1
-                opening = opening[1:]
-        token = opening + match.group("closing")
-        style, arrowhead, bidirectional, undirected = _operator_style(token)
-        # Read the label from the whole span between the operators rather than
-        # from the matched group. The mask blanks quoted spans, so a quoted
-        # label — `A-- "text" -->B` — leaves the spaced group nothing but
-        # blanks to settle on, and slicing that group returns a stray quote
-        # instead of the text. `clean_label` strips the padding and quotes.
-        operators.append(
-            _Operator(
-                operator_start,
-                match.end(),
-                clean_label(text[match.end("opening") : match.start("closing")]),
-                style,
-                arrowhead,
-                bidirectional,
-                undirected,
+    for edge_pattern in (text_edge, dotted_edge):
+        for match in edge_pattern.finditer(mask):
+            opening = match.group("opening")
+            operator_start = match.start()
+            if opening.startswith(("x", "o")):
+                prefix = mask[:operator_start]
+                if not prefix.strip() or trailing_operator.search(prefix):
+                    # Here x/o is the endpoint before a regular opening
+                    # operator, not a left marker: `x--yes-->B` or
+                    # `A-->x--go-->B`.
+                    operator_start += 1
+                    opening = opening[1:]
+            token = opening + match.group("closing")
+            style, arrowhead, bidirectional, undirected = _operator_style(token)
+            # Read the label from the whole span between the operators rather
+            # than from the matched group. The mask blanks quoted spans, so a
+            # quoted label — `A-- "text" -->B` — leaves the spaced group
+            # nothing but blanks to settle on, and slicing that group returns
+            # a stray quote instead of the text. `clean_label` strips the
+            # padding and quotes.
+            operators.append(
+                _Operator(
+                    operator_start,
+                    match.end(),
+                    clean_label(text[match.end("opening") : match.start("closing")]),
+                    style,
+                    arrowhead,
+                    bidirectional,
+                    undirected,
+                )
             )
-        )
-        occupied.append((operator_start, match.end()))
+            occupied.append((operator_start, match.end()))
 
     pattern = re.compile(
         r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}"

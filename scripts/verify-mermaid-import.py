@@ -415,6 +415,40 @@ E-->|maybe|x--next-->F
     ]:
         fail("chained x/o endpoint IDs were consumed as left edge markers")
 
+    compact_dotted_space_file = tmp / "compact-dotted-space-labels.mmd"
+    compact_dotted_space_file.write_text(
+        """flowchart LR
+Q-.next candidate.->R
+S<-.both ways.->T
+U o-.circle marker.-o V
+W----->X
+""",
+        encoding="utf-8",
+    )
+    compact_dotted_space = json.loads(
+        run_extract([str(compact_dotted_space_file), "--json"])
+    )["diagrams"][0]
+    compact_dotted_space_ids = sorted(node["id"] for node in compact_dotted_space["nodes"])
+    if compact_dotted_space_ids != ["Q", "R", "S", "T", "U", "V", "W", "X"]:
+        fail(
+            "a whitespace-bearing compact dotted label materialized phantom "
+            f"nodes: {compact_dotted_space_ids}"
+        )
+    compact_dotted_space_edges = [
+        (edge["label"], edge["style"], edge["bidirectional"])
+        for edge in compact_dotted_space["edges"]
+    ]
+    if compact_dotted_space_edges != [
+        ("next candidate", "dashed", False),
+        ("both ways", "dashed", True),
+        ("circle marker", "dashed", True),
+        ("", "solid", False),
+    ]:
+        fail(
+            "a compact dotted link's label lost internal whitespace or its "
+            f"style/bidirectional semantics: {compact_dotted_space_edges}"
+        )
+
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
         '''flowchart LR
