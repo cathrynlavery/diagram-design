@@ -252,6 +252,11 @@ jobs:
         id: self_check
         run: python scripts/test-self-check.py
 
+      - name: Verify offline local-agent runner
+        if: always()
+        id: local_agent
+        run: python scripts/test-local-agent.py
+
       - name: Verify label geometry
         if: always()
         id: geometry

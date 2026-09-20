@@ -6,8 +6,9 @@ Ships inside the skill so an installed agent can verify its own output:
     python3 <skill-dir>/scripts/self_check.py my-diagram.html
 
 Checks the accessible-SVG contract, the single-file safety rules (no remote
-assets beyond the approved Google Fonts stylesheet, no executable attributes,
-no scripts other than the one canonical motion controller), and — when motion
+assets beyond the approved Google Fonts stylesheet or fonts embedded as
+base64 ``data:font/`` URLs, no executable attributes, no scripts other than
+the one canonical motion controller), and — when motion
 markup is present — the structural motion contract. This is a distilled
 subset of the repository gates (`lint-skin.py`, `verify-motion.py`), which
 remain the authority for contributions to the repository itself.
@@ -33,6 +34,11 @@ CSS_ESCAPE_RE = re.compile(
 )
 CSS_IMPORT_RE = re.compile(r"@import\b", re.IGNORECASE)
 CSS_URL_RE = re.compile(r"url\(\s*([^)]+?)\s*\)", re.IGNORECASE)
+# A font embedded by local-agent/fonts.py so the file renders offline. Only a
+# base64 font payload qualifies: no other data type, no query, no fragment.
+EMBEDDED_FONT_URL_RE = re.compile(
+    r"^data:font/(?:woff2?|ttf|otf);base64,[A-Za-z0-9+/=]+$", re.IGNORECASE
+)
 CSS_IMAGE_SET_RE = re.compile(r"(?:-webkit-)?image-set\s*\(", re.IGNORECASE)
 CSS_REMOTE_RE = re.compile(r"(?:https?:)?//", re.IGNORECASE)
 CSS_REFERENCE_ATTRS = {
@@ -245,9 +251,26 @@ def normalize_css_escapes(source: str) -> str:
     return CSS_ESCAPE_RE.sub(replace, source)
 
 
+def mask_embedded_fonts(source: str) -> str:
+    """Hide embedded font payloads from the loader checks below.
+
+    The payload is base64, which may legitimately contain ``//`` — the remote
+    signature the last check looks for — so it is replaced by a fragment url.
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        value = match.group(1).strip().strip("'\"").strip()
+        if EMBEDDED_FONT_URL_RE.match(value):
+            return "url(#embedded-font)"
+        return match.group(0)
+
+    return CSS_URL_RE.sub(replace, source)
+
+
 def check_css_references(parser: DiagramParser, errors: list[str]) -> None:
     # Match the repository linter's fail-closed treatment of CSS loader syntax.
     source = normalize_css_escapes("\n".join(parser.styles + parser.css_attributes))
+    source = mask_embedded_fonts(source)
     found_loader = False
     if CSS_IMPORT_RE.search(source):
         errors.append("CSS @import is not allowed")

@@ -84,6 +84,36 @@ def main() -> int:
         ),
         "non-fragment CSS url()",
     )
+    # local-agent/fonts.py embeds vendored fonts so the file renders offline.
+    # The base64 payload deliberately contains "//" to prove the remote check
+    # no longer trips on it.
+    embedded_font = (
+        "@font-face{font-family:'Geist';font-style:normal;font-weight:400;"
+        "src:url(data:font/woff2;base64,d29mZjI//AAAA==) format('woff2');"
+        "unicode-range:U+0000-00FF;}"
+    )
+    check_source_pass(
+        "embedded font data URL",
+        static.replace("</style>", embedded_font + "</style>", 1),
+    )
+    check_fail(
+        "embedded non-font data URL",
+        static.replace(
+            "</style>",
+            ".tracked { background: url(data:image/png;base64,iVBORw0KGgo=); }</style>",
+            1,
+        ),
+        "non-fragment CSS url()",
+    )
+    check_fail(
+        "embedded font with query",
+        static.replace(
+            "</style>",
+            "@font-face{font-family:'Geist';src:url(data:font/woff2;base64,AAAA?x=https://tracker.example);}</style>",
+            1,
+        ),
+        "non-fragment CSS url()",
+    )
     check_fail(
         "escaped CSS import",
         static.replace(

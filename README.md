@@ -384,6 +384,19 @@ For motion-enabled HTML, export the explicit final state: open `?motion=static`,
 
 ---
 
+## Run it offline with a local model
+
+The skill is host-agnostic, so it can also run with no hosted agent at all. `local-agent/` is a small Python runner that drives a model served by [LM Studio](https://lmstudio.ai) on `localhost` — no API key, no `ANTHROPIC_*` variables, and after a one-time bootstrap, no network.
+
+```bash
+python local-agent/bootstrap.py --playwright        # once, online: vendor fonts + Chromium
+python local-agent/agent.py --model qwen/qwen3.8-27b "Flowchart of an order: validate payment, check stock, ship or refund."
+```
+
+The runner sends the model the same `SKILL.md` rules, type reference, template and example a hosted agent loads, runs `self_check.py` and `verify-geometry.py` on the reply, sends failures back for repair, then writes `diagrams/<slug>.html` with the fonts embedded and exports `.svg` and `.png` next to it. See [`local-agent/README.md`](local-agent/README.md) for flags, what stays offline, and what to expect from a 27B model.
+
+---
+
 ## Architecture
 
 Progressive disclosure. `SKILL.md` routes behavior first when needed, then layout. Semantic, type, and animation references load only when relevant.
@@ -482,12 +495,22 @@ diagram-design/
 │   ├── verify-waterfall.py          — waterfall running-total + bridge gate
 │   ├── test-verify-waterfall.py     — waterfall gate adversarial tests
 │   ├── test-verify-docs-sync.py     — docs/routing-surface gate tests
+│   ├── test-local-agent.py          — offline runner tests (fake LM Studio)
 │   └── fixtures/
 │       ├── sample-flowchart.mmd
 │       ├── sample-readme-with-mermaid.md
 │       ├── sample-adversarial.mmd
 │       ├── sample-whiteboard.excalidraw
 │       └── sample-adversarial.excalidraw
+├── local-agent/                     — offline runner for LM Studio models
+│   ├── README.md                    — setup, flags, offline guarantees
+│   ├── bootstrap.py                 — one-time font + Chromium download, `--check`
+│   ├── agent.py                     — plan → draw → verify → repair → export loop
+│   ├── lmstudio.py                  — stdlib client for the local OpenAI-compatible server
+│   ├── prompt.py                    — assembles prompts from the skill's own files
+│   ├── verify.py                    — runs the repository gates on one generated file
+│   ├── export.py                    — offline .svg (fonts embedded) + .png export
+│   └── fonts.py                     — vendored-font selection and embedding
 ├── docs/cookbook.md                 — operator recipes for editable installs and common tasks
 ├── docs/adr/                        — short records of settled design decisions
 ├── docs/screenshots/                — full-resolution images + source-digest manifest.json
