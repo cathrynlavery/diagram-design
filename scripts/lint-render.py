@@ -961,6 +961,17 @@ def template_mobile_failures(context, template_paths=None):
             failures.append(
                 f"{shown_path}: template-mobile-containment: wide SVG needs a local horizontal scroller"
             )
+        if facts["minWidth"] <= TOLERANCE and facts["viewBoxWidth"] > TOLERANCE:
+            # An absent min-width is not a pass: the SVG then shrinks into the
+            # phone and the type ramp shrinks with it, which is the same defect
+            # the type-ramp check below reports - it just reads as 0 instead of
+            # a wrong number, and would otherwise skip both checks silently.
+            drawn = facts["svgWidth"]
+            failures.append(
+                f"{shown_path}: template-mobile-type-ramp: no min-width, so the SVG shrinks to "
+                f"{drawn:.0f}px against a {facts['viewBoxWidth']:.0f} viewBox and a 12px node name "
+                f"lands at {12 * drawn / facts['viewBoxWidth']:.1f}px; pin min-width to the viewBox width"
+            )
         if (
             facts["minWidth"] > TOLERANCE
             and facts["viewBoxWidth"] > TOLERANCE
@@ -1136,7 +1147,7 @@ def self_test(context):
     # Templates: three polarities, because the clipped case is the one a
     # page-overflow check cannot see - it reports clean precisely because the
     # content was destroyed instead of overflowing.
-    checks += 4
+    checks += 5
     with tempfile.TemporaryDirectory() as directory:
         directory_path = Path(directory)
 
@@ -1188,6 +1199,17 @@ def self_test(context):
         )
         if not any("template-mobile-type-ramp" in f for f in template_mobile_failures(context, [ramp])):
             failures.append("template-ramp-fixture: min-width below the viewBox width was not reported")
+
+        absent = directory_path / "template-no-min-width.html"
+        absent.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1280 720"></svg></div>'
+            '</div></body></html>',
+            encoding="utf-8",
+        )
+        if not any("template-mobile-type-ramp" in f for f in template_mobile_failures(context, [absent])):
+            failures.append("template-no-min-width-fixture: absent min-width was treated as a pass")
 
     # A broken route should be a targeted failure, not a delayed Playwright
     # timeout or traceback that escapes the self-test report.

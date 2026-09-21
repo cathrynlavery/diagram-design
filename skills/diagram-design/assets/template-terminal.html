@@ -120,6 +120,11 @@
         width: 100%;
         overflow-x: auto;
       }
+
+      @media print {
+        .diagram-container { overflow-x: visible; }
+        svg { min-width: 0; }
+      }
     </style>
   </head>
   <body>

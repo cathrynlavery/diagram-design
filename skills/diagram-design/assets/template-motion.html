@@ -167,6 +167,11 @@
       [data-motion-controls] { display: none !important; }
     }
     @media print {
+      /* Paper has no scrollbar, so the local scroller would clip instead of
+         scroll. Let the diagram scale down to the sheet: smaller but whole
+         beats sharp but cut off. */
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
       [data-motion-controls], [data-motion-decorative] { display: none !important; }
       [data-motion-item] {
         opacity: 1 !important;

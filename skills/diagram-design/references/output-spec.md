@@ -84,9 +84,22 @@ SVG is cut off instead of scrolled: no scrollbar, no page overflow, and a
 page-overflow check reports the file clean because the content was destroyed
 rather than spilled. The wrapper has to sit **inside** that ancestor.
 
+Paper has no scrollbar, so on a sheet the same wrapper clips instead of
+scrolls. Release both in print and let the drawing scale to fit — smaller but
+whole beats sharp but cut off. The rule has to come **after** the `svg` rule,
+because a media query adds no specificity and a later plain rule would win:
+
+```css
+@media print {
+  .diagram-container { overflow-x: visible; }
+  svg { min-width: 0; }
+}
+```
+
 `scripts/lint-render.py --all` renders every template at 390px and fails on
 page overflow, an unreachable clipped SVG, a missing local scroller, or a
-`min-width` that disagrees with the viewBox.
+`min-width` that disagrees with the viewBox — including an absent one, which
+lets the SVG shrink into the phone and takes the type ramp with it.
 
 ### Deriving `fit`
 
@@ -249,6 +262,7 @@ Run alongside the SKILL.md §9 taste gate.
 - [ ] All four dials set — explicitly requested, inferred from the destination, or defaulted and stated?
 - [ ] `viewBox` matches the size preset exactly, values divisible by 4?
 - [ ] `min-width` equals the preset's viewBox width, and the SVG sits in a local `overflow-x: auto` wrapper (inside any `overflow: hidden` ancestor)?
+- [ ] `@media print` releases `min-width` and `overflow-x`, placed after the `svg` rule?
 - [ ] Type ramp matches the size class — not the standard ramp on a slide?
 - [ ] 40px outer margin honoured (64px for `social-og`)?
 - [ ] Node count inside the detail level's ceiling?
