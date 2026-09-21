@@ -109,8 +109,16 @@
 
       svg {
         width: 100%;
-        min-width: 900px;
+        min-width: 1000px;
         display: block;
+      }
+
+      /* .terminal is overflow:hidden for the window chrome, so without this
+         wrapper a narrow screen clips the diagram with no way to reach it:
+         no scrollbar, no page overflow, nothing for a linter to see. */
+      .diagram-container {
+        width: 100%;
+        overflow-x: auto;
       }
     </style>
   </head>
@@ -129,44 +137,46 @@
         <h1>[Diagram title]</h1>
 
         <!-- Replace [diagram-slug] with a unique slug for this diagram before export. -->
-        <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="[diagram-slug]-title [diagram-slug]-desc">
-          <title id="[diagram-slug]-title">[Diagram title]</title>
-          <desc id="[diagram-slug]-desc">[One sentence describing what the diagram shows]</desc>
-          <defs>
-            <marker
-              id="arrow"
-              markerWidth="8"
-              markerHeight="6"
-              refX="7"
-              refY="3"
-              orient="auto"
-            >
-              <polygon points="0 0, 8 3, 0 6" fill="#9a9a9a" />
-            </marker>
-            <marker
-              id="arrow-accent"
-              markerWidth="8"
-              markerHeight="6"
-              refX="7"
-              refY="3"
-              orient="auto"
-            >
-              <polygon points="0 0, 8 3, 0 6" fill="#ff5a36" />
-            </marker>
+        <div class="diagram-container">
+          <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="[diagram-slug]-title [diagram-slug]-desc">
+            <title id="[diagram-slug]-title">[Diagram title]</title>
+            <desc id="[diagram-slug]-desc">[One sentence describing what the diagram shows]</desc>
+            <defs>
+              <marker
+                id="arrow"
+                markerWidth="8"
+                markerHeight="6"
+                refX="7"
+                refY="3"
+                orient="auto"
+              >
+                <polygon points="0 0, 8 3, 0 6" fill="#9a9a9a" />
+              </marker>
+              <marker
+                id="arrow-accent"
+                markerWidth="8"
+                markerHeight="6"
+                refX="7"
+                refY="3"
+                orient="auto"
+              >
+                <polygon points="0 0, 8 3, 0 6" fill="#ff5a36" />
+              </marker>
 
-            <!-- OPTIONAL: dot-pattern background. Uncomment and add <rect fill="url(#dots)"/> after the paper rect to enable. -->
-            <!--
-          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.08)"/>
-          </pattern>
-          --></defs>
+              <!-- OPTIONAL: dot-pattern background. Uncomment and add <rect fill="url(#dots)"/> after the paper rect to enable. -->
+              <!--
+            <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.08)"/>
+            </pattern>
+            --></defs>
 
-          <rect width="100%" height="100%" fill="#141414" />
+            <rect width="100%" height="100%" fill="#141414" />
 
-          <!-- Draw arrows first, then nodes. Replace with your content.
-             Text sizes run ~1-2px above the default scale: node-name 14px,
-             sublabel/arrow-label 9-10px, hub label 18px. See primitive-terminal.md. -->
-        </svg>
+            <!-- Draw arrows first, then nodes. Replace with your content.
+               Text sizes run ~1-2px above the default scale: node-name 14px,
+               sublabel/arrow-label 9-10px, hub label 18px. See primitive-terminal.md. -->
+          </svg>
+        </div>
       </main>
     </div>
   </body>

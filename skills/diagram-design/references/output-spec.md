@@ -53,6 +53,41 @@ The preset sets the SVG `viewBox`. Every value below is divisible by 4, so the g
 | `print-letter-landscape` | `0 0 1056 816` | ~1.29:1 | @3 → 3168×2448 | print | US Letter landscape |
 | `fit` | derived from content | any | @2 | standard | Vector hand-off; no fixed frame |
 
+### Holding the canvas on a narrow screen
+
+The SVG keeps its readable width on a phone instead of shrinking into it, so
+`min-width` is **the viewBox width of the preset in use** — not a fixed number.
+Pin it lower and the whole drawing scales down and takes the type ramp with it:
+a 12px node name on a `doc-wide` 1280 viewBox pinned at 900 draws at 8.4px,
+under every floor this spec sets, and nothing on screen says so.
+
+A canvas that wide has to scroll somewhere. Put it in a wrapper that scrolls on
+its own, or the document scrolls sideways and the right-hand nodes are gone
+unless the reader thinks to look for them:
+
+```html
+<div class="diagram-container">
+  <svg viewBox="0 0 960 600" …> … </svg>
+</div>
+```
+
+```css
+.diagram-container { width: 100%; overflow-x: auto; }
+svg { width: 100%; min-width: 960px; display: block; }
+```
+
+Two shapes need extra care. A centred grid or flex item sizes itself to the
+SVG's max-content width, so the wrapper's `width: 100%` resolves against the
+wide item and never scrolls — give that item `max-width: 100%; min-width: 0`.
+And when an ancestor is `overflow: hidden` (window chrome, a clipped card), the
+SVG is cut off instead of scrolled: no scrollbar, no page overflow, and a
+page-overflow check reports the file clean because the content was destroyed
+rather than spilled. The wrapper has to sit **inside** that ancestor.
+
+`scripts/lint-render.py --all` renders every template at 390px and fails on
+page overflow, an unreachable clipped SVG, a missing local scroller, or a
+`min-width` that disagrees with the viewBox.
+
 ### Deriving `fit`
 
 Round the content bounding box **up** to the next multiple of 4, then add the fixed chrome: 40px outer margin on every side, plus 60px at the bottom for the legend strip. Never let the content touch the viewBox edge.
@@ -213,6 +248,7 @@ Run alongside the SKILL.md §9 taste gate.
 
 - [ ] All four dials set — explicitly requested, inferred from the destination, or defaulted and stated?
 - [ ] `viewBox` matches the size preset exactly, values divisible by 4?
+- [ ] `min-width` equals the preset's viewBox width, and the SVG sits in a local `overflow-x: auto` wrapper (inside any `overflow: hidden` ancestor)?
 - [ ] Type ramp matches the size class — not the standard ramp on a slide?
 - [ ] 40px outer margin honoured (64px for `social-og`)?
 - [ ] Node count inside the detail level's ceiling?

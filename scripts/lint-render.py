@@ -884,6 +884,97 @@ def marimekko_mobile_failures(context, marimekko_paths=None):
     return failures
 
 
+def template_mobile_failures(context, template_paths=None):
+    """Every template must survive a phone, because every diagram starts as one.
+
+    Two defects, both invisible on a desktop:
+
+    * An SVG whose ``min-width`` exceeds the viewport with no local scroller
+      drags the whole document sideways, and the nodes on the right are simply
+      gone unless the reader thinks to scroll the page.
+    * When an ancestor is ``overflow: hidden`` (the terminal template's window
+      chrome), the same SVG is clipped instead: no scrollbar, no page overflow,
+      nothing for a page-overflow check to see. The content is unreachable and
+      the linter reports the file clean.
+
+    ``min-width`` must also equal the viewBox width. Anything smaller scales the
+    whole drawing down and silently takes the type ramp with it - a 12px node
+    name on a 1280 viewBox pinned at 900 draws at 8.4px, under every floor the
+    style guide sets.
+    """
+    paths = template_paths or sorted(ASSET_DIR.glob("template*.html"))
+    failures = []
+    for path in paths:
+        page = context.new_page()
+        page.set_viewport_size({"width": 390, "height": 844})
+        try:
+            page.goto(path.as_uri(), wait_until="load")
+            facts = page.evaluate(
+                """
+                () => {
+                  const doc = document.documentElement;
+                  const svg = document.querySelector('svg');
+                  if (!svg) return { missingSvg: true };
+                  let ancestor = svg.parentElement;
+                  let localScroller = false, clipped = false;
+                  while (ancestor && ancestor !== document.body) {
+                    const overflow = getComputedStyle(ancestor).overflowX;
+                    const overflows = ancestor.scrollWidth > ancestor.clientWidth + 1;
+                    if ((overflow === 'auto' || overflow === 'scroll') && overflows) {
+                      localScroller = true;
+                      break;
+                    }
+                    if (overflow === 'hidden' && overflows) clipped = true;
+                    ancestor = ancestor.parentElement;
+                  }
+                  const viewBox = (svg.getAttribute('viewBox') || '').trim().split(/[ ,]+/);
+                  return {
+                    missingSvg: false,
+                    pageOverflow: doc.scrollWidth - doc.clientWidth,
+                    svgWidth: svg.getBoundingClientRect().width,
+                    minWidth: parseFloat(getComputedStyle(svg).minWidth) || 0,
+                    viewBoxWidth: viewBox.length === 4 ? parseFloat(viewBox[2]) : 0,
+                    localScroller,
+                    clipped,
+                  };
+                }
+                """
+            )
+        finally:
+            page.close()
+
+        shown_path = display_path(path)
+        if facts["missingSvg"]:
+            failures.append(f"{shown_path}: template-mobile-svg: no SVG found")
+            continue
+        if facts["pageOverflow"] > TOLERANCE:
+            failures.append(
+                f"{shown_path}: template-mobile-page-overflow: page extends "
+                f"{facts['pageOverflow']:.1f}px past the 390px viewport"
+            )
+        if facts["clipped"] and not facts["localScroller"]:
+            failures.append(
+                f"{shown_path}: template-mobile-clipped: an overflow:hidden ancestor cuts the "
+                f"{facts['svgWidth']:.0f}px SVG off with no scroller - the content is unreachable"
+            )
+        if facts["minWidth"] > TOLERANCE and not facts["localScroller"]:
+            failures.append(
+                f"{shown_path}: template-mobile-containment: wide SVG needs a local horizontal scroller"
+            )
+        if (
+            facts["minWidth"] > TOLERANCE
+            and facts["viewBoxWidth"] > TOLERANCE
+            and abs(facts["minWidth"] - facts["viewBoxWidth"]) > TOLERANCE
+        ):
+            ratio = facts["minWidth"] / facts["viewBoxWidth"]
+            failures.append(
+                f"{shown_path}: template-mobile-type-ramp: min-width {facts['minWidth']:.0f}px "
+                f"!= viewBox width {facts['viewBoxWidth']:.0f}px, so everything draws at "
+                f"{ratio:.3f} scale and a 12px node name lands at {12 * ratio:.1f}px"
+            )
+    return failures
+
+
 def self_test(context):
     page = context.new_page()
     failures = []
@@ -1042,6 +1133,62 @@ def self_test(context):
                 + "; ".join(contained_failures)
             )
 
+    # Templates: three polarities, because the clipped case is the one a
+    # page-overflow check cannot see - it reports clean precisely because the
+    # content was destroyed instead of overflowing.
+    checks += 4
+    with tempfile.TemporaryDirectory() as directory:
+        directory_path = Path(directory)
+
+        overflowing = directory_path / "template-overflow.html"
+        overflowing.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}'
+            'svg{width:100%;min-width:1000px;display:block}</style>'
+            '<body><div class="frame"><svg viewBox="0 0 1000 600"></svg></div></body></html>',
+            encoding="utf-8",
+        )
+        overflow_failures = template_mobile_failures(context, [overflowing])
+        if not any("template-mobile-page-overflow" in f for f in overflow_failures):
+            failures.append("template-overflow-fixture: page overflow was not reported")
+        if not any("template-mobile-containment" in f for f in overflow_failures):
+            failures.append("template-overflow-fixture: missing local scroller was not reported")
+
+        clipped = directory_path / "template-clipped.html"
+        clipped.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.chrome{overflow:hidden}'
+            'svg{width:100%;min-width:1000px;display:block}</style>'
+            '<body><div class="chrome"><svg viewBox="0 0 1000 600"></svg></div></body></html>',
+            encoding="utf-8",
+        )
+        clipped_failures = template_mobile_failures(context, [clipped])
+        if not any("template-mobile-clipped" in f for f in clipped_failures):
+            failures.append("template-clipped-fixture: unreachable clipped SVG was not reported")
+
+        contained = directory_path / "template-contained.html"
+        contained.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;min-width:1000px;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1000 600"></svg></div>'
+            '</div></body></html>',
+            encoding="utf-8",
+        )
+        contained_failures = template_mobile_failures(context, [contained])
+        if contained_failures:
+            failures.append(
+                "template-contained-fixture: false finding: " + "; ".join(contained_failures)
+            )
+
+        ramp = directory_path / "template-ramp.html"
+        ramp.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;min-width:900px;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1280 720"></svg></div>'
+            '</div></body></html>',
+            encoding="utf-8",
+        )
+        if not any("template-mobile-type-ramp" in f for f in template_mobile_failures(context, [ramp])):
+            failures.append("template-ramp-fixture: min-width below the viewBox width was not reported")
+
     # A broken route should be a targeted failure, not a delayed Playwright
     # timeout or traceback that escapes the self-test report.
     checks += 1
@@ -1130,6 +1277,7 @@ def main():
             mobile_failures = waterfall_mobile_failures(context)
             mobile_failures += excalidraw_mobile_failures(context)
             mobile_failures += marimekko_mobile_failures(context)
+            mobile_failures += template_mobile_failures(context)
             total_findings += len(mobile_failures)
             if not args.quiet:
                 for failure in mobile_failures:
