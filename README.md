@@ -102,12 +102,14 @@ Every visual type ships in three static variants: minimal light, minimal dark, a
 </tr>
 <tr>
   <td align="center" width="33%"><a href="docs/screenshots/waterfall.png"><img src="docs/screenshots/thumbs/waterfall.webp" alt="Waterfall"></a><br><b>Waterfall</b><br><sub>Running total + signed bridges</sub></td>
-  <td align="center" width="33%"></td>
+  <td align="center" width="33%"><a href="docs/screenshots/architecture-delta.png"><img src="docs/screenshots/thumbs/architecture-delta.webp" alt="Architecture delta"></a><br><b>Architecture delta</b><br><sub>Before · Changes · After topology</sub></td>
   <td align="center" width="33%"></td>
 </tr>
 </table>
 
-The v2.5.10 release added the final ten types above. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
+Architecture delta compares synchronized topologies through a Before · Changes · After ledger of added, removed, changed, moved, and rewired objects. See its [reference](skills/diagram-design/references/type-architecture-delta.md) and [order-fulfilment example](skills/diagram-design/assets/example-architecture-delta.html). Attribute-only comparisons remain tables; a single snapshot uses Architecture.
+
+The v2.5.10 release added ten layout grammars. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
 
 **Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs.
 
@@ -423,6 +425,7 @@ diagram-design/
 │       │   ├── export.md            — SVG / PNG export + sizing
 │       │   ├── export-registry.md   — block-metadata JSON sidecar export
 │       │   ├── type-architecture.md
+│       │   ├── type-architecture-delta.md
 │       │   ├── type-flowchart.md
 │       │   ├── type-sequence.md
 │       │   ├── type-state.md
@@ -566,6 +569,7 @@ At startup, the agent sees only the skill name and description. When a request m
 |---|---|
 | "Make me a flowchart" | `SKILL.md` + `references/type-flowchart.md` |
 | "Build an architecture diagram" | `SKILL.md` + `references/type-architecture.md` |
+| "Show what was added, removed, changed, moved, or rewired in this migration" | `SKILL.md` + `references/type-architecture-delta.md` |
 | "Compare why these two policy requests differ" | `SKILL.md` + `references/semantic-patterns.md` + `references/type-flowchart.md` |
 | "Animate that policy trace" | Prior selection + `references/animation.md` |
 | "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |

@@ -429,8 +429,40 @@ def check_heading_syntax(verify) -> None:
     print("OK heading syntax: closing hashes stripped, fenced lines skipped")
 
 
+def check_architecture_delta_discovery(verify) -> None:
+    """A topology comparison must remain discoverable apart from Architecture."""
+    shipped = verify.SKILL.read_text(encoding="utf-8")
+    description = verify.frontmatter_description(shipped)
+    if "architecture delta" not in description.casefold():
+        raise AssertionError("the shipped skill lacks Architecture delta discovery")
+    if "Architecture delta" not in verify.selection_table_types(shipped):
+        raise AssertionError("Architecture delta must be a canonical selection-table row")
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-delta-") as temporary:
+        skill = Path(temporary) / "SKILL.md"
+        original_skill = verify.SKILL
+        try:
+            verify.SKILL = skill
+            skill.write_text(shipped, encoding="utf-8")
+            errors: list[str] = []
+            verify.check_description(errors)
+            if errors:
+                raise AssertionError(f"shipped discovery vocabulary failed: {errors}")
+            skill.write_text(
+                shipped.replace(description, description.replace("architecture delta, ", ""), 1),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_description(errors)
+            if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
+                raise AssertionError(f"missing Architecture delta hook was not rejected: {errors}")
+        finally:
+            verify.SKILL = original_skill
+    print("OK Architecture delta: canonical routing requires its own discovery hook")
+
+
 def main() -> int:
     verify = load_verify_module()
+    check_architecture_delta_discovery(verify)
 
     # Keep real routing vocabulary in the fixtures so the size check cannot
     # accidentally replace the existing lexical-hook validation.
@@ -459,6 +491,30 @@ def main() -> int:
                 ]
                 if errors != expected:
                     raise AssertionError(f"manifest size boundary failed: {errors}")
+            path.write_text(original, encoding="utf-8")
+
+        # Architecture alone must not accidentally satisfy Architecture delta.
+        # Mutate each native discovery surface independently, including Codex's
+        # long description; a correct hook elsewhere cannot hide this omission.
+        for relative, keys in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            original = path.read_text(encoding="utf-8")
+            for key in keys:
+                document = json.loads(original)
+                container = (
+                    document["interface"] if key == "longDescription"
+                    else document["metadata"] if "metadata" in document
+                    else document
+                )
+                before = container[key]
+                container[key] = before.replace("architecture delta, ", "")
+                if container[key] == before:
+                    raise AssertionError(f"{relative} {key} lacks Architecture delta")
+                path.write_text(json.dumps(document), encoding="utf-8")
+                errors = []
+                verify.check_manifest_descriptions(errors, root)
+                if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
+                    raise AssertionError(f"missing delta hook was not rejected: {errors}")
             path.write_text(original, encoding="utf-8")
 
         codex = root / ".codex-plugin/plugin.json"
@@ -1230,7 +1286,7 @@ diagram-design/
         # the two added phrasings must not start rejecting them. The last four
         # are the shapes those phrasings would overmatch without their
         # single-digit floor: `2-type` and `all 3 diagrams` are ordinary prose
-        # in a repository that ships 40 types, and this gate blocks a pull
+        # in a repository that ships 42 types, and this gate blocks a pull
         # request, so rejecting them is worse than missing a stale count. The
         # two-digit cases prove the guard is contextual rather than relying on
         # a numeral-length heuristic.

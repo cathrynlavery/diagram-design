@@ -21,6 +21,15 @@
       "height": 1154
     },
     {
+      "slug": "architecture-delta",
+      "source": "skills/diagram-design/assets/example-architecture-delta.html",
+      "screenshot": "docs/screenshots/architecture-delta.png",
+      "source_sha256": "a8b9b1e1f27caba825f5335e1026dec2f32deb60c7e3a83730bc2183aaf56b52",
+      "screenshot_sha256": "f7c4dbfd20d85cd426a32a368664416d6260f7878c6f7920e6a2724271bbf185",
+      "width": 2400,
+      "height": 1362
+    },
+    {
       "slug": "it-state",
       "source": "skills/diagram-design/assets/example-it-state.html",
       "screenshot": "docs/screenshots/it-state.png",

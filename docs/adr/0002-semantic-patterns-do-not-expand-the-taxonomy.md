@@ -32,4 +32,6 @@ Behavior is a separate axis. The semantic patterns in `references/semantic-patte
 
 **2026-09-15 — the pattern count is nine.** Lifecycle phase map was added for one subject's progress through primary phases, waits, retries, cancellation, and terminal outcomes. It routes to the existing State Machine type and adds banding plus a tighter nine-state/ten-transition budget, not a new layout grammar. Request and message lifecycles remain Sequence diagrams under ADR 0007. See [issue #226](https://github.com/cathrynlavery/diagram-design/issues/226).
 
+**2026-09-19 — Architecture delta.** Synchronized Before · Changes · After topologies with stable identities and an exact change ledger constitute a new layout grammar under the same escape clause. It ships the full §10 set and updates the canonical counters together; see [ADR 0012](0012-architecture-delta.md).
+
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.

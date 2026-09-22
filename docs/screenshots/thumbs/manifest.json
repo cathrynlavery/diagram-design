@@ -7,6 +7,15 @@
   },
   "entries": [
     {
+      "thumb": "architecture-delta.webp",
+      "source": "docs/screenshots/architecture-delta.png",
+      "source_sha256": "f7c4dbfd20d85cd426a32a368664416d6260f7878c6f7920e6a2724271bbf185",
+      "width": 600,
+      "height": 340,
+      "quality": 82,
+      "thumb_sha256": "d72f3048c14d0d23c99a5a18daab4dbe2aa5367c6c468124889160151c182d71"
+    },
+    {
       "thumb": "architecture.webp",
       "source": "docs/screenshots/architecture.png",
       "source_sha256": "2258aef552e8e83aa9936ab4ca2b58fbee76fdb742cc4f68ce6499785b80f614",

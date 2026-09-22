@@ -35,6 +35,8 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-beeswarm.py",
     "python3 scripts/verify-skin-polarity.py --all",
     "python3 scripts/test-verify-skin-polarity.py",
+    "python3 scripts/verify-architecture-delta.py --all",
+    "python3 scripts/test-verify-architecture-delta.py",
     "python3 scripts/lint-render.py --self-test",
     "python3 scripts/lint-render.py --all",
 }
