@@ -28,7 +28,7 @@ Accepts `.drawio`, `.drawio.xml`, `.xml`, `.drawio.png`, and `.drawio.svg`.
 ## Flags
 
 - `--format` — `html` (default), `svg`, `png`, or `html+png`. Non-HTML formats are produced from the HTML via `references/export.md`, never hand-authored.
-- `--size` — any preset in `output-spec.md` §2: `doc-inline`, `doc-wide`, `slide-16x9`, `slide-4x3`, `social-og`, `social-square`, `print-a4-landscape`, `print-letter-landscape`, `fit`.
+- `--size` — any preset in `output-spec.md` §2: `doc-inline`, `doc-wide`, `slide-16x9`, `slide-4x3`, `social-og`, `social-square`, `print-a4-landscape`, `print-a3-landscape`, `print-letter-landscape`, `fit`.
 - `--detail` — `faithful` (≤24 nodes, zoned), `balanced` (≤12), `simplified` (≤7).
 - `--audience` — `engineer`, `mixed`, `executive`. Governs wording, not element count.
 - `--type` — force a diagram type instead of inferring it.
