@@ -429,6 +429,82 @@ def check_heading_syntax(verify) -> None:
     print("OK heading syntax: closing hashes stripped, fenced lines skipped")
 
 
+# Spelled out here rather than read from the verifier, with the separator each
+# surface puts between presets: a surface dropped from the verifier's own list
+# must fail a test, not shrink it.
+SIZE_SURFACES = {
+    "skills/diagram-design/SKILL.md": " · ",
+    "README.md": " · ",
+    "commands/import-drawio.md": ", ",
+    "commands/import-mermaid.md": ", ",
+    "commands/import-excalidraw.md": ", ",
+}
+OUTPUT_SPEC = "skills/diagram-design/references/output-spec.md"
+LETTER_ROW = "| `print-letter-landscape` | `0 0 1056 816` |"
+A2_ROW = "| `print-a2-landscape` | `0 0 2244 1584` | ~1.41:1 | @3 | print | A2 |\n"
+
+
+def size_drift(relative: str, drift: str) -> str:
+    return f"{relative} size presets drift from the output-spec.md size table: {drift}"
+
+
+def check_size_preset_surfaces(verify) -> None:
+    """Every size-selection surface names exactly the output-spec presets."""
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-sizes-") as temp_dir:
+        root = Path(temp_dir)
+        for relative in (OUTPUT_SPEC, *SIZE_SURFACES):
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / relative).read_bytes())
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        if errors:
+            raise AssertionError(f"shipped size-preset surfaces failed: {errors}")
+
+        for relative, separator in SIZE_SURFACES.items():
+            path = root / relative
+            original = mutate(path, f"{separator}`print-letter-landscape`", "")
+            errors = run_checks(root, verify.check_size_preset_surfaces)
+            expected = [size_drift(relative, "missing print-letter-landscape")]
+            if errors != expected:
+                raise AssertionError(f"{relative} dropping a preset was not reported: {errors}")
+            path.write_bytes(original)
+
+        spec = root / OUTPUT_SPEC
+        original = mutate(spec, LETTER_ROW, A2_ROW + LETTER_ROW)
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = [
+            size_drift(relative, "missing print-a2-landscape") for relative in SIZE_SURFACES
+        ]
+        if errors != expected:
+            raise AssertionError(f"a new output-spec preset was not propagated: {errors}")
+        spec.write_bytes(original)
+
+        command = root / "commands/import-mermaid.md"
+        original = mutate(command, "`fit`.", "`fit`, `print-a2-landscape`.")
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = [size_drift("commands/import-mermaid.md", "extra print-a2-landscape")]
+        if errors != expected:
+            raise AssertionError(f"an unknown preset on a surface was not reported: {errors}")
+        command.write_bytes(original)
+
+        readme = root / "README.md"
+        original = mutate(readme, "`doc-inline` · `doc-wide`", "`doc-wide` · `doc-inline`")
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = [size_drift("README.md", "presets out of output-spec.md order")]
+        if errors != expected:
+            raise AssertionError(f"reordered presets were not reported: {errors}")
+        readme.write_bytes(original)
+
+        skill = root / "skills/diagram-design/SKILL.md"
+        original = mutate(skill, "| **Size** |", "| **Canvas** |")
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = ["skills/diagram-design/SKILL.md has no size-preset list"]
+        if errors != expected:
+            raise AssertionError(f"a lost size-preset list was not reported: {errors}")
+        skill.write_bytes(original)
+    print("OK size presets: every size-selection surface names the output-spec presets")
+
+
 def main() -> int:
     verify = load_verify_module()
 
@@ -1503,11 +1579,12 @@ diagram-design/
     check_title_font_link(verify)
     check_style_guide_anchors(verify)
     check_heading_syntax(verify)
+    check_size_preset_surfaces(verify)
 
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "
         "strict-bundler packaging, "
-        "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
+        "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
         "and gallery guards (parent/variant model, contiguous ordinals)"
     )
