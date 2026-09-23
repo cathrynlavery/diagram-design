@@ -476,6 +476,7 @@ def check_docs() -> None:
         "social-og",
         "social-square",
         "print-a4-landscape",
+        "print-a3-landscape",
         "print-letter-landscape",
         "`fit`",
     ):
