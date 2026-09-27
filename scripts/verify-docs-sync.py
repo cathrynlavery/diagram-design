@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Fourteen drift classes, each of which has shipped before:
+Fifteen drift classes. The first fourteen have each shipped before; the
+fifteenth nearly did (#217):
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -36,6 +37,9 @@ Fourteen drift classes, each of which has shipped before:
 14. Every --font-serif in a template must reach 'Noto Serif' before any CJK
    serif face, which Google Fonts also slices Cyrillic into, and the
    template's own font link must request it.
+15. Every surface that lists the size presets for selection — the SKILL.md
+   and README output-dial tables and the three import commands — must name
+   exactly the presets in the output-spec.md size table, in its order.
 """
 
 from __future__ import annotations
@@ -78,6 +82,16 @@ ROUTING_SURFACES = {
     Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("prompts/profile.md"): "references/profiles.md",
     Path("prompts/doctor.md"): "references/doctor.md",
+}
+# Surfaces that enumerate every size preset for selection, and the marker of
+# the line that carries the list. The output-spec.md size table is the source.
+SIZE_PRESET_TABLE_HEADING = "## 2. Size"
+SIZE_PRESET_SURFACES = {
+    Path("skills/diagram-design/SKILL.md"): "| **Size** |",
+    Path("README.md"): "| **Size** |",
+    Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
+    Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
+    Path("commands/import-excalidraw.md"): "- `--size` — any preset in `output-spec.md` §2:",
 }
 FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
 FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
@@ -444,6 +458,54 @@ def check_routing_surfaces(errors: list[str], root: Path) -> None:
             errors.append(
                 f"routing surface does not route to {reference_link}: {relative.as_posix()}"
             )
+
+
+def spec_size_presets(spec_markdown: str) -> list[str]:
+    """Preset names from the output-spec.md size table, in table order."""
+    presets: list[str] = []
+    for cells in table_rows(section(spec_markdown, SIZE_PRESET_TABLE_HEADING)):
+        name = re.match(r"`([a-z0-9-]+)`", cells[0])
+        if name:
+            presets.append(name.group(1))
+    return presets
+
+
+def surface_size_presets(markdown: str, marker: str) -> list[str] | None:
+    """Presets named on the surface line that starts with *marker*."""
+    for line in markdown.splitlines():
+        if line.startswith(marker):
+            listed = line[len(marker) :].split("|")[0]
+            return re.findall(r"`([a-z0-9-]+)`", listed)
+    return None
+
+
+def check_size_preset_surfaces(errors: list[str], root: Path) -> None:
+    spec = root / "skills/diagram-design/references/output-spec.md"
+    presets = spec_size_presets(spec.read_text(encoding="utf-8"))
+    if not presets:
+        errors.append("output-spec.md size table names no presets")
+        return
+    for relative, marker in SIZE_PRESET_SURFACES.items():
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"size-preset surface is missing: {relative.as_posix()}")
+            continue
+        listed = surface_size_presets(path.read_text(encoding="utf-8"), marker)
+        if listed is None:
+            errors.append(f"{relative.as_posix()} has no size-preset list")
+            continue
+        if listed == presets:
+            continue
+        missing = [name for name in presets if name not in listed]
+        extra = [name for name in listed if name not in presets]
+        drift = [f"missing {name}" for name in missing]
+        drift += [f"extra {name}" for name in extra]
+        if not drift:
+            drift = ["presets out of output-spec.md order"]
+        errors.append(
+            f"{relative.as_posix()} size presets drift from the output-spec.md size table: "
+            + ", ".join(drift)
+        )
 
 
 def check_factory_install_surface(errors: list[str], root: Path) -> None:
@@ -1433,6 +1495,7 @@ def main() -> int:
         errors, OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), ROOT
     )
     check_routing_surfaces(errors, ROOT)
+    check_size_preset_surfaces(errors, ROOT)
     check_export_font_parity(errors, ROOT)
     check_title_fallback_order(errors, ROOT)
     if errors:
@@ -1443,7 +1506,7 @@ def main() -> int:
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
         "reference links and style-guide anchors, asset citations, packaged support "
-        "files, routing surfaces, "
+        "files, routing surfaces, size-preset surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
         "font-link parity, title fallback order, type-ramp contract, registered legacy "
