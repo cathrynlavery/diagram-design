@@ -131,6 +131,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-build-readme-thumbs.py \
   && python3 scripts/build-readme-thumbs.py --check \
   && python3 scripts/test-self-check.py \
+  && python3 scripts/test-export-svg-standalone.py \
   && python3 scripts/verify-geometry.py --all \
   && python3 scripts/test-verify-geometry.py \
   && python3 scripts/verify-block-registry.py --all \
