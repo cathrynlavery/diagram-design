@@ -218,37 +218,38 @@ def test_verifier() -> None:
         print("OK: current-only mode accepts a valid tree")
 
     with package_repo() as root:
-        package_path = root / "package.json"
-        package = json.loads(package_path.read_text(encoding="utf-8"))
-        package["private"] = False
-        write_json(package_path, package)
-        expect_failure(
-            "public OMP package",
-            VERIFY.verify_package(root, None, mode="current-only"),
-            "OMP manifest 'private' must be true",
-        )
+        package = json.loads((root / "package.json").read_text(encoding="utf-8"))
+        if package.get("private") is not True or package.get("omp") != {}:
+            raise AssertionError(f"OMP fixture lost its canonical fields: {package}")
+        errors = VERIFY.verify_package(root, None, mode="current-only")
+        if errors:
+            raise AssertionError(f"valid OMP manifest failed: {errors}")
+        print("OK: OMP manifest with private=true and an omp object accepted")
 
-    with package_repo() as root:
-        package_path = root / "package.json"
-        package = json.loads(package_path.read_text(encoding="utf-8"))
-        package.pop("omp")
-        write_json(package_path, package)
-        expect_failure(
-            "missing OMP marker",
-            VERIFY.verify_package(root, None, mode="current-only"),
-            "OMP manifest 'omp' must be a JSON object",
-        )
-
-    with package_repo() as root:
-        package_path = root / "package.json"
-        package = json.loads(package_path.read_text(encoding="utf-8"))
-        package["omp"] = []
-        write_json(package_path, package)
-        expect_failure(
-            "non-object OMP marker",
-            VERIFY.verify_package(root, None, mode="current-only"),
-            "OMP manifest 'omp' must be a JSON object",
-        )
+    # Each row pins a distinct regression: deletion and wrong JSON types, so a
+    # truthiness or `is False` check cannot silently replace the strict one.
+    missing = object()
+    for label, field, value, needle in (
+        ("public OMP package", "private", False, "'private' must be true"),
+        ("missing OMP private flag", "private", missing, "'private' must be true"),
+        ("string OMP private flag", "private", "true", "'private' must be true"),
+        ("missing OMP marker", "omp", missing, "'omp' must be a JSON object"),
+        ("non-object OMP marker", "omp", [], "'omp' must be a JSON object"),
+        ("null OMP marker", "omp", None, "'omp' must be a JSON object"),
+    ):
+        with package_repo() as root:
+            package_path = root / "package.json"
+            package = json.loads(package_path.read_text(encoding="utf-8"))
+            if value is missing:
+                package.pop(field)
+            else:
+                package[field] = value
+            write_json(package_path, package)
+            expect_failure(
+                label,
+                VERIFY.verify_package(root, None, mode="current-only"),
+                f"OMP manifest {needle}",
+            )
 
     with package_repo() as root:
         set_versions(root, "1.2.4", "1.2.5")
