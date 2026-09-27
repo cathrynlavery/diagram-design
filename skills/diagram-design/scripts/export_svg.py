@@ -7,13 +7,15 @@ re-deriving the transform:
     python3 <skill-dir>/scripts/export_svg.py my-diagram.html
     python3 <skill-dir>/scripts/export_svg.py my-diagram.html out.svg
 
-Fixes the two export gaps that make a fragment unsafe to open or inline:
+Fixes the export gaps that make a fragment unsafe to open or inline:
 
 1. Class-styled diagrams keep their page ``<style>`` rules by embedding a
    scoped copy inside the SVG (otherwise every shape falls back to black).
 2. Referenceable ``<defs>`` IDs (markers, patterns, gradients, …) are prefixed
    with the file slug so several exported figures can share one host document
    without ``url(#arrow)`` resolving to the wrong declaration.
+3. HTML-only attribute syntax (``<g data-motion-item>``, ``data-step=1``) is
+   rewritten as XML so the standalone file parses.
 
 The algorithm matches ``references/export.md``. No third-party deps.
 """
@@ -39,13 +41,33 @@ GOOGLE_FONTS_IMPORT = (
 )
 
 # Page chrome that must not follow a diagram fragment out of its host document.
+# The bare `svg { width; min-width }` rule is page layout too (see
+# is_chrome_selector); `svg .zone` and `svg text` are diagram rules.
 CHROME_SELECTOR_RE = re.compile(
     r"^(?:"
     r"\*|html|body|main|header|footer|h1|h2|h3|p"
-    r"|svg"  # bare `svg { min-width: … }` — layout for the HTML page only
     r"|\.frame|\.eyebrow|\.summary|\.cards?|\.card|\.footer|\.header"
     r")(?:\s|:|,|$)",
     re.IGNORECASE,
+)
+# A selector that starts at the <svg> element: `svg .zone`, `svg text`, `svg>g`.
+SVG_TYPE_PREFIX_RE = re.compile(r"^svg(?![\w-])", re.IGNORECASE)
+# Inherited properties the page sets on `body` that SVG content relies on:
+# `stroke="currentColor"` reads `color`, and text without its own font rule
+# reads `font-family`.
+BODY_INHERITED_RE = re.compile(r"(?:^|;)\s*(color|font-family)\s*:\s*([^;]+)", re.IGNORECASE)
+CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+
+# HTML-only attribute syntax that strict XML rejects: a valueless attribute
+# (`<g data-motion-item>`) or an unquoted value (`data-step=1`).
+XML_OPAQUE_OPEN_RE = re.compile(r"<!--|<!\[CDATA\[")
+START_TAG_RE = re.compile(
+    r"<([A-Za-z][\w:.-]*)"
+    r"((?:\s+[^\s\"'<>/=]+(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?)*)"
+    r"(\s*/?)>"
+)
+TAG_ATTR_RE = re.compile(
+    r"(\s+)([^\s\"'<>/=]+)(?:(\s*=\s*)(\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?"
 )
 
 DEFS_ID_TAGS = (
@@ -85,6 +107,42 @@ def extract_first_svg(html: str) -> str:
     return match.group(0)
 
 
+def _xml_start_tag(match: re.Match[str]) -> str:
+    def attr(m: re.Match[str]) -> str:
+        space, name, equals, value = m.groups()
+        if value is None:
+            return f'{space}{name}=""'
+        if value[0] in "\"'":
+            return m.group(0)
+        return f'{space}{name}{equals}"{value}"'
+
+    name, attrs, end = match.groups()
+    return f"<{name}{TAG_ATTR_RE.sub(attr, attrs)}{end}>"
+
+
+def xmlify_attributes(svg: str) -> str:
+    """Rewrite valueless and unquoted HTML attributes as XML (`attr=""`).
+
+    Comments and CDATA sections are copied unchanged.
+    """
+    out: list[str] = []
+    pos = 0
+    while True:
+        opener = XML_OPAQUE_OPEN_RE.search(svg, pos)
+        text_end = opener.start() if opener else len(svg)
+        out.append(START_TAG_RE.sub(_xml_start_tag, svg[pos:text_end]))
+        if opener is None:
+            break
+        closer = "-->" if opener.group(0) == "<!--" else "]]>"
+        close_at = svg.find(closer, opener.end())
+        stop = len(svg) if close_at == -1 else close_at + len(closer)
+        out.append(svg[opener.start() : stop])
+        pos = stop
+        if close_at == -1:
+            break
+    return "".join(out)
+
+
 def ensure_xmlns(svg: str) -> str:
     if re.search(r'\bxmlns\s*=\s*["\']http://www\.w3\.org/2000/svg["\']', svg):
         return svg
@@ -114,7 +172,9 @@ def is_chrome_selector(selector: str) -> bool:
     parts = [part.strip() for part in selector.split(",") if part.strip()]
     if not parts:
         return True
-    return all(CHROME_SELECTOR_RE.match(part) is not None for part in parts)
+    return all(
+        part.lower() == "svg" or CHROME_SELECTOR_RE.match(part) is not None for part in parts
+    )
 
 
 def scope_selector(selector: str, root_id: str) -> str:
@@ -130,9 +190,29 @@ def scope_selector(selector: str, root_id: str) -> str:
         elif part.startswith("#"):
             # Already an ID selector — leave alone (title/desc IDs stay global).
             scoped.append(part)
+        elif SVG_TYPE_PREFIX_RE.match(part):
+            # The exported root is the <svg> itself, so `svg .zone` becomes
+            # `#root .zone` (`#root svg .zone` would match nothing). A bare
+            # `svg` in a mixed list is page layout and is dropped.
+            rest = part[len("svg") :]
+            if rest:
+                scoped.append(f"#{root_id}{rest}")
         else:
             scoped.append(f"#{root_id} {part}")
     return ", ".join(scoped)
+
+
+def body_inherited_css(selector: str, body: str, root_id: str) -> str:
+    """Bind `color` / `font-family` from a dropped `body` rule to the SVG root."""
+    parts = [part.strip().lower() for part in selector.split(",")]
+    if "body" not in parts:
+        return ""
+    declarations = [
+        f"{name.lower()}: {value.strip()}" for name, value in BODY_INHERITED_RE.findall(body)
+    ]
+    if not declarations:
+        return ""
+    return f"#{root_id} {{ {'; '.join(declarations)}; }}"
 
 
 def escape_css_for_xml(css: str) -> str:
@@ -145,11 +225,17 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
     """Filter page <style> rules down to diagram rules, scoped under root_id."""
     kept: list[str] = []
     for block in STYLE_BLOCK_RE.findall(html):
+        # A comment before a rule would otherwise become part of its selector
+        # (`/* Tokens */ :root` is not recognised as `:root`).
+        block = CSS_COMMENT_RE.sub("", block)
         for match in RULE_RE.finditer(block):
             selector = " ".join(match.group(1).split())
             body = match.group(2).strip()
             if not selector or not body:
                 continue
+            inherited = body_inherited_css(selector, body, root_id)
+            if inherited:
+                kept.append(escape_css_for_xml(inherited))
             if is_chrome_selector(selector):
                 continue
             # Escape rule text before it lands in SVG XML (e.g. content:"R&D").
@@ -272,7 +358,7 @@ def export_svg_document(html: str, source_path: Path) -> str:
     """Transform source HTML into a standalone SVG document string."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
-    svg = extract_first_svg(html)
+    svg = xmlify_attributes(extract_first_svg(html))
     ensure_viewbox(svg)
     svg = ensure_xmlns(svg)
     svg = set_root_id(svg, root_id)
