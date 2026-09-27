@@ -16,6 +16,7 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 | Which controls apply at each enforcement surface | **Governance / control catalog** | Layer stack |
 | How defenses reduce risk and what risk remains | **Compensating security layers** | Layer stack |
 | Which sub-elements a system decomposes into, each independently citable and traced to its implementation | **Traceable block decomposition** | Tree |
+| How one subject progresses through phases, waits, retries, cancellation, and terminal outcomes | **Lifecycle phase map** | State Machine |
 
 ## 1. Fan-in queue / bottleneck
 
@@ -130,6 +131,20 @@ Use one primary pattern per figure. A second pattern may supply at most one supp
 **Nearest visual type:** **Tree** — Nested's single-chain containment cannot show two children of one parent; Dependency graph permits multi-parent nodes and cycles this pattern must forbid; Architecture's zones are flat, capped at 3, and explicitly route overflow to Swimlane, not to nested grouping.
 
 **A note on provenance, not a claim of compliance:** "block," noun-phrase naming, and "flow port" are SysML Block Definition Diagram vocabulary, used because this pattern documents structure, the thing SysML's naming convention is for (IDEF0's verb-phrase convention documents *functions* instead — the wrong fit here). This is SysML-*informed* vocabulary applied to Tree's existing layout grammar, not a claim of SysML compliance: no OCL constraints, no XMI interchange, no tool-certified conformance, and no IDEF0 compliance either.
+
+## 9. Lifecycle phase map
+
+**Selection triggers:** One subject advances through a small set of named phases, while waits, retries, cancellation, recovery, and terminal outcomes are as important as the happy path. Use this for the subject's lifecycle, not for messages exchanged between actors.
+
+**Required primitives:** A left-to-right primary phase rail; 4–5 ordered phase states; a separate interruption/recovery band for waits or retries; a separate terminal-outcome band; labeled transitions; distinct terminal state boxes for cancellation and failure when both can occur. Those labeled boxes are sufficient terminal outcomes; optional start/end pseudo-state markers follow the State Machine reference and count toward the transition budget.
+
+**Complexity budget:** 4–5 primary phases, ≤2 supporting wait/recovery states, ≤2 terminal states, ≤9 states, and ≤10 transitions. Split lifecycle overview from dense guard logic once either ceiling is reached.
+
+**Anti-patterns:** Actor lifelines or message arrows disguised as phases; a request/response exchange that belongs in Sequence; every guard and event from the underlying implementation; interruption states placed on the primary rail; cancellation and failure collapsed into one color-only state; a retry loop with no labeled re-entry point.
+
+**Static fallback:** Show the complete primary rail, every supporting state, both terminal outcomes, and all labeled transitions in one frame. Position and band labels must distinguish progress, interruption/recovery, and termination without relying on color.
+
+**Nearest visual type:** **State Machine**. Use **Sequence** when actor messages or request timing carry the story; use ordinary **State Machine** without this pattern when dense transition logic and guards matter more than one subject's progress.
 
 ## Composition rules
 

@@ -63,7 +63,7 @@ def main() -> int:
                 raise AssertionError(f"missing semantic router was accepted: {errors}")
             print("OK: missing semantic-pattern router link is rejected")
 
-            # Dropping one of the seven named patterns must be rejected.
+            # Dropping one of the nine named patterns must be rejected.
             missing_pattern = scratch / "missing-pattern.md"
             missing_pattern.write_text(
                 original_skill.read_text(encoding="utf-8").replace(
@@ -79,6 +79,46 @@ def main() -> int:
             ):
                 raise AssertionError(f"missing semantic pattern was accepted: {errors}")
             print("OK: missing semantic-pattern name is rejected")
+
+            # The new lifecycle route must remain discoverable from SKILL.md.
+            missing_lifecycle = scratch / "missing-lifecycle.md"
+            missing_lifecycle.write_text(
+                original_skill.read_text(encoding="utf-8").replace(
+                    "**Lifecycle phase map** → State Machine",
+                    "**Generic lifecycle** → State Machine",
+                ),
+                encoding="utf-8",
+            )
+            module.SKILL = missing_lifecycle
+            errors = module.verify_markdown()
+            if not any(
+                "does not route semantic pattern: Lifecycle phase map" in error
+                for error in errors
+            ):
+                raise AssertionError(f"missing lifecycle route was accepted: {errors}")
+            print("OK: missing lifecycle phase-map route is rejected")
+
+            # The byte cap is inclusive. Pad the real SKILL.md after its final
+            # newline so every other check still reads the shipped content.
+            skill_bytes = original_skill.read_bytes()
+            if len(skill_bytes) > 40_000:
+                raise AssertionError(
+                    f"shipped SKILL.md is already {len(skill_bytes)} bytes; "
+                    "the boundary cases need it at or under 40000"
+                )
+            for size, expected in (
+                (40_000, []),
+                (40_001, ["SKILL.md exceeds 40000 bytes: 40001 bytes"]),
+            ):
+                padded = scratch / f"skill-{size}.md"
+                padded.write_bytes(skill_bytes + b" " * (size - len(skill_bytes)))
+                module.SKILL = padded
+                errors = module.verify_markdown()
+                if errors != expected:
+                    raise AssertionError(
+                        f"SKILL.md byte cap at {size} bytes: expected {expected}, got {errors}"
+                    )
+            print("OK: SKILL.md passes at 40000 bytes and is rejected at 40001")
     finally:
         module.SKILL = original_skill
 

@@ -1,6 +1,12 @@
 # State Machine
 
-**Best for:** finite state logic — order status, auth state, connection lifecycle, form wizard, job queue status.
+**Best for:** finite state logic — order status, auth state, connection lifecycle, form wizard, job queue status — and the [`Lifecycle phase map`](semantic-patterns.md#9-lifecycle-phase-map) pattern when one subject's progress, waits, retries, cancellation, and outcomes are the story.
+
+## Routing distinctions
+
+- Use **Sequence** for time-ordered messages between actors, including request/message lifecycles.
+- Use ordinary **State Machine** for dense transition logic where events, guards, and legal transitions dominate.
+- Use the **Lifecycle phase map** semantic pattern for one subject moving through 4–5 primary phases with separate wait/recovery and terminal-outcome bands.
 
 ## Layout conventions
 - States are rounded rectangles (`rx=8`), labeled in Geist.
@@ -19,3 +25,6 @@
 - `assets/example-state.html` — minimal light
 - `assets/example-state-dark.html` — minimal dark
 - `assets/example-state-full.html` — full editorial
+- `assets/example-state-lifecycle.html` — lifecycle phase map, minimal light
+- `assets/example-state-lifecycle-dark.html` — lifecycle phase map, minimal dark
+- `assets/example-state-lifecycle-full.html` — lifecycle phase map, full editorial

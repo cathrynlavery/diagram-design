@@ -48,6 +48,30 @@ Seven invariants:
    so it would define the scale rather than be checked against it, and an
    unmeasurable mark is reported rather than skipped.
 
+Markup is read through the stdlib html.parser.HTMLParser, never a regex, so a
+tag is recognized exactly when a browser would recognize it: a quoted `>`
+inside an attribute value does not end the tag, a repeated attribute keeps its
+FIRST value and the rest are not in the document at all, unquoted values and
+upper-case names parse as their canonical form, and a comment's contents are
+never live markup. The regex tag matcher this replaced stopped at the first
+`>` it saw, so `<g data-note=">" transform="translate(0 -80)">` hid its
+transform from the checker while Chromium applied it to every bubble inside -
+the same fail-open shape verify-block-registry.py retired for the same reason.
+
+No transform may move verified geometry or a bound label, and a transform
+reaches the renderer by three carriers: the `transform` attribute, an inline
+`style="..."`, and a rule in a <style> block. All three are refused, on the
+element and on any ancestor <g>/<svg>, following verify-beeswarm.py; the
+property set in CSS_MOVES_MARK_RE is the invariant, covering what moves or
+resizes a circle (`cx`/`cy`/`r`) and what moves a label or tick (`x`/`y`).
+CSS comments are stripped before any carrier is read, as the browser strips
+them: `/**/transform:` is a live declaration, not a quirk.
+
+Scope is read from the raw text with HTML comments removed, BEFORE the parser,
+so a <circle> whose broken quoting keeps the parser from emitting it still
+claims the file and is reported rather than skipped - the parser is exactly
+what an unclosed quote defeats.
+
 The basis for geometry is the `data-x` / `data-y` / `data-size` triple each
 bubble circle declares, never the rendered text. The scales are derived from
 the set itself (Theil-Sen, leave-one-out), so one dishonest bubble cannot drag
@@ -78,27 +102,44 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
-import html
 import math
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
-                      re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
-GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
-# `transform:` but not `text-transform:`. The full-editorial template uses the
-# latter, so an unguarded pattern would report every editorial variant.
-CSS_TRANSFORM_RE = re.compile(r"(?<![\w-])transform\s*:", re.IGNORECASE)
-TAG_RE = re.compile(r"<[^>]+>")
+# Every CSS property that can move or reshape a verified mark WITHOUT touching
+# the attributes this checker reads. The enumeration IS the invariant - it is
+# copied from verify-beeswarm.py, where it had already been wrong twice
+# (`transform:` alone missed `style="transform: ..."`, and once that was fixed
+# `style="translate: 80px 0"` walked past it because CSS Transforms Level 2
+# splits the transform into four properties). Three families reach a mark:
+#
+#   transform / translate / rotate / scale   the four transform properties;
+#       the individual three compose WITH `transform`, so each is its own door
+#   cx / cy / r / x / y                      SVG geometry properties. CSS wins
+#       over the presentation attribute, so `style="r: 40px"` on a bubble
+#       replaces the very radius that was verified, and x/y do the same to a
+#       bound label or tick - a more direct lie than any transform
+#   offset and its path/distance/position/anchor/rotate longhands
+#       CSS motion path, which places the element somewhere else entirely
+#
+# Anchored to a declaration start, so `text-transform:` (the editorial skin
+# uses it), `display:` and `--custom:` never match, and the `rotate` inside
+# `transform: rotate(45deg)` is read once as the property and never as the
+# function in its value. A vendor prefix is optional so `-webkit-transform:`
+# is not a free pass.
+CSS_MOVES_MARK_RE = re.compile(
+    r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
+    r"(?P<prop>transform|translate|rotate|scale"
+    r"|cx|cy|r|x|y"
+    r"|offset(?:-(?:path|distance|position|anchor|rotate))?)"
+    r"\s*:",
+    re.IGNORECASE,
+)
 # The COMPLETE numeric token an author may print: sign, comma-grouped
 # thousands, decimals, leading-dot decimals, exponents. Matching only the
 # first fragment is how "512,000" once agreed with metadata that said 512.
@@ -106,14 +147,18 @@ NUMBER_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?"
 )
 DIGIT_RE = re.compile(r"\d")
-
-# Both quote styles: matching only double quotes drops a single-quoted circle
-# from the verified set without a word, which is exactly how a lie ships.
-ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
-    re.DOTALL,
-)
+# A CSS comment is whitespace to the browser, so `/**/transform:` is a live
+# declaration. CSS_MOVES_MARK_RE allows only whitespace between a declaration
+# boundary and the property name, which let a comment sitting there hide the
+# property from it while Chromium applied it. Non-greedy and DOTALL: a comment
+# spans lines, and a stylesheet holds many. See css_moves_mark.
+CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+# Detection only - deliberately a text search over the raw bytes, HTML comments
+# removed, so a file that so much as mentions the binding in live markup is
+# held to the contract even when the parser cannot read the tag that binds it.
+# See declares_bubble.
 DECLARES_BUBBLE_RE = re.compile(r"\bdata-size\s*=", re.IGNORECASE)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
 # The accent stroke on either skin, hex or rgba. The focal count keys on the
 # STROKE because the fill is a translucent tint the paper shows through; the
@@ -136,38 +181,222 @@ TICK_TOLERANCE = 6.0       # px, tick position vs the scale the bubbles set
 LABEL_TOLERANCE = 0.5      # px, slack before a label counts as another bubble's
 OVERLAP_SLACK = 0.5        # px, separation below which two bubbles overlap
 
+GROUP_TAGS = ("g", "svg")                     # the only ancestors whose transform is inherited
+BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data is read
+MARK_TAGS = ("circle",)                       # the element this contract binds
+
+
+# === PARSING =================================================================
+
+
+class Element:
+    """One start tag this checker cares about, as the browser tokenized it."""
+
+    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+
+    def __init__(self, tag, attrs, offset, line, ancestor):
+        self.tag = tag
+        self.attrs = attrs          # first-wins dict, names lower-cased, values unescaped
+        self.offset = offset        # offset of `<` in the source, for ordering
+        self.line = line
+        self.body = ""              # character data up to the matching end tag
+        self.ancestor = ancestor    # how the nearest transformed <g>/<svg> moves it, or None
+
 
 class Bubble:
-    __slots__ = ("name", "x", "y", "size", "cx", "cy", "r", "accent", "offset")
+    __slots__ = ("name", "x", "y", "size", "cx", "cy", "r", "accent", "line")
 
-    def __init__(self, name, x, y, size, cx, cy, r, accent, offset):
+    def __init__(self, name, x, y, size, cx, cy, r, accent, line):
         self.name = name
         self.x, self.y, self.size = x, y, size
         self.cx, self.cy, self.r = cx, cy, r
         self.accent = accent
-        self.offset = offset
+        self.line = line
 
 
-def line_of(source: str, offset: int) -> int:
-    return source.count("\n", 0, offset) + 1
+def first_wins(attrs) -> dict:
+    """Attributes as the browser keeps them: on a repeat, the FIRST wins.
 
-
-def blank_comments(source: str) -> str:
-    """Comments out, length and line numbers preserved.
-
-    Markup inside a comment is not rendered, so treating it as data reports a
-    commented-out old draft as a live defect. Replacing each comment with
-    spaces of the same length keeps every later offset and line number honest.
+    HTML parsing drops a duplicate attribute rather than overwriting the one
+    already on the token, so a second `r` on a circle is not merely ignored -
+    it is not in the document at all. A dict comprehension does the opposite,
+    and that gap is a fail-open every caller inherits: a circle carrying a
+    dishonest first `r` and an honest second renders the dishonest radius
+    while a last-wins reader checks, and passes, bytes the browser threw away.
+    A present-but-valueless attribute is an empty string, not an absent one.
     """
-    return COMMENT_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), source)
+    seen = {}
+    for name, value in attrs:
+        seen.setdefault(name, "" if value is None else value)
+    return seen
+
+
+class _Scanner(HTMLParser):
+    """Collect circles, texts, title/desc and style elements with ancestry.
+
+    HTMLParser already lowercases tag and attribute names, tolerates unquoted
+    values and whitespace around `=`, unescapes entities, keeps a quoted `>`
+    inside the value it belongs to, and never invokes handle_starttag for
+    tag-like text inside a comment or inside <script>/<style> raw text - each
+    of those is exactly a case a regex tag matcher mishandles. Ancestry is
+    tracked for <g>/<svg> only, the elements whose transform a child inherits.
+    """
+
+    def __init__(self, source: str):
+        super().__init__(convert_charrefs=True)
+        self.circles: list = []
+        self.texts: list = []
+        self.named: list = []      # <title> and <desc>
+        self.styles: list = []
+        self.error = None
+        self._groups: list = []    # (tag, how) per open <g>/<svg>
+        self._open: list = []      # (tag, Element) per open body element
+        self._line_starts = [0]
+        for index, char in enumerate(source):
+            if char == "\n":
+                self._line_starts.append(index + 1)
+        try:
+            self.feed(source)
+            self.close()
+        except Exception as exc:  # noqa: BLE001 - any parser failure fails closed
+            self.error = "%s: %s" % (type(exc).__name__, exc)
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self._line_starts[line - 1] + column
+
+    def _ancestor(self):
+        for _tag, how in reversed(self._groups):
+            if how is not None:
+                return how
+        return None
+
+    def handle_starttag(self, tag, attrs):
+        self._start(tag, first_wins(attrs), closes=False)
+
+    def handle_startendtag(self, tag, attrs):
+        self._start(tag, first_wins(attrs), closes=True)
+
+    def _start(self, tag, attrs, closes):
+        if tag in GROUP_TAGS:
+            if not closes:
+                how = None
+                if "transform" in attrs:
+                    how = "an ancestor <g>/<svg> transform"
+                elif transform_carrier(attrs) is not None:
+                    how = "an ancestor <g>/<svg> style transform"
+                self._groups.append((tag, how))
+            return
+        if tag not in MARK_TAGS and tag not in BODY_TAGS:
+            return
+        element = Element(tag, attrs, self._offset(), self.getpos()[0], self._ancestor())
+        if tag == "circle":
+            self.circles.append(element)
+            return
+        if tag == "text":
+            self.texts.append(element)
+        elif tag == "style":
+            self.styles.append(element)
+        else:
+            self.named.append(element)
+        if not closes:
+            self._open.append((tag, element))
+
+    def handle_endtag(self, tag):
+        stack = self._groups if tag in GROUP_TAGS else self._open if tag in BODY_TAGS else None
+        if stack is None:
+            return
+        # Pop back to the matching open tag - an unclosed inner element ends
+        # with its parent, as it does in the browser's tree.
+        for index in range(len(stack) - 1, -1, -1):
+            if stack[index][0] == tag:
+                del stack[index:]
+                return
+
+    def handle_data(self, data):
+        if self._open:
+            # Innermost only: a <title> tooltip inside a <text> is not part of
+            # the rendered label, and the browser does not draw it either.
+            self._open[-1][1].body += data
+
+
+def parse_document(source: str) -> _Scanner:
+    return _Scanner(source)
 
 
 def attrs_of(raw: str) -> dict:
-    return {m.group("name"): m.group("value") for m in ATTR_RE.finditer(raw)}
+    """First-wins attributes of one tag's raw attribute text, via the parser."""
+
+    class _One(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.attrs = {}
+
+        def handle_starttag(self, tag, attrs):
+            self.attrs = first_wins(attrs)
+
+        handle_startendtag = handle_starttag
+
+    scanner = _One()
+    scanner.feed("<x " + raw + ">")
+    scanner.close()
+    return scanner.attrs
+
+
+def transform_carrier(attrs: dict):
+    """How this element carries a transform, phrased for the finding, or None.
+
+    A transform reaches the renderer by three carriers and the `transform`
+    ATTRIBUTE is only the most visible one. Reading the attribute alone lets
+    `style="transform: translateY(...)"` on a bubble, a bound label, a tick or
+    an ancestor group move the rendered mark after its raw coordinates were
+    validated. The third carrier, a rule in a <style> block, is reported
+    separately because nothing here can tell which marks such a rule selects.
+    """
+    if "transform" in attrs:
+        return "transform=%r" % attrs["transform"]
+    style = attrs.get("style")
+    if style is not None:
+        found = css_moves_mark(style)
+        if found is not None:
+            return "style=%r (the %s property)" % (style, found.group("prop").lower())
+    return None
+
+
+def css_moves_mark(css: str):
+    """The first mark-moving declaration in CSS text, read past comments, or None.
+
+    Every carrier goes through here - an inline style, an ancestor's inline
+    style, a <style> block - because the browser drops `/* ... */` before it
+    tokenizes, and CSS_MOVES_MARK_RE must see what the browser sees:
+    `style="/**/transform: translateX(80px)"` moved a bubble while the
+    anchored regex walked past the comment. Each comment is blanked to
+    whitespace of the SAME length, newlines kept, so the searched text is
+    aligned with the original character for character: every offset in the
+    returned match is an offset into `css` as written, and a <style> finding
+    that counts newlines up to the property names the right line.
+    """
+    stripped = CSS_COMMENT_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()), css)
+    return CSS_MOVES_MARK_RE.search(stripped)
+
+
+def declares_bubble(source: str) -> bool:
+    """Does the raw text, HTML comments removed, declare data-size anywhere?
+
+    Read BEFORE the parser, because the parser is exactly what a broken quote
+    defeats: `<circle data-size="9` with no closing quote is character data
+    to HTMLParser, no <circle> is ever emitted, and a file whose only bubble
+    signal was that tag would otherwise be skipped as out of scope - a
+    fail-open. The raw signal claims the file and check_source then reports
+    the tag the parser could not read. Comments are stripped first so a
+    commented-out draft bubble does not claim an unrelated file.
+    """
+    return DECLARES_BUBBLE_RE.search(HTML_COMMENT_RE.sub("", source)) is not None
 
 
 def plain(body: str) -> str:
-    return html.unescape(TAG_RE.sub("", body)).strip()
+    return body.strip()
 
 
 def number(value):
@@ -257,9 +486,9 @@ def outliers(points: list, tolerance: float) -> list:
     return found
 
 
-def named_text(source: str) -> str:
+def named_text(doc: _Scanner) -> str:
     """The accessible name and description, where a figure says what it is."""
-    return " ".join(plain(m.group("body")) for m in NAMED_RE.finditer(source)).casefold()
+    return " ".join(plain(element.body) for element in doc.named).casefold()
 
 
 def looks_like_bubble(path: Path, source: str) -> bool:
@@ -270,72 +499,35 @@ def looks_like_bubble(path: Path, source: str) -> bool:
     that claims it while declaring nothing parseable is the fail-closed case,
     not a pass. Scoped to bubble-specific signals only: `data-size` rather
     than `data-series`, so this checker and `verify-slopegraph.py` never claim
-    one another's files.
+    one another's files. A declaration inside an HTML comment is not live
+    markup and claims nothing.
     """
     if path.name.startswith("example-bubble"):
         return True
-    if DECLARES_BUBBLE_RE.search(source):
+    if declares_bubble(source):
         return True
-    described = named_text(source)
+    described = named_text(parse_document(source))
     return "bubble chart" in described or "bubble plot" in described
 
 
-def transformed_spans(source: str) -> list:
-    """Offset ranges enclosed by a <g>/<svg> that carries a transform.
-
-    Element-level transforms are easy to see; an ancestor's is not, and shifts
-    everything inside it identically - exactly the change that leaves all
-    internal consistency intact while moving every mark on the page.
-    """
-    events = []
-    for match in GROUP_OPEN_RE.finditer(source):
-        if match.group("selfclose"):
-            continue
-        events.append((match.start(), 0, "transform" in attrs_of(match.group("attrs"))))
-    for match in GROUP_CLOSE_RE.finditer(source):
-        events.append((match.start(), 1, False))
-    events.sort()
-    stack, spans = [], []
-    for position, kind, transformed in events:
-        if kind == 0:
-            stack.append((position, transformed))
-        elif stack:
-            start, was_transformed = stack.pop()
-            if was_transformed:
-                spans.append((start, position))
-    # An unclosed transformed group covers everything after it.
-    for start, was_transformed in stack:
-        if was_transformed:
-            spans.append((start, len(source)))
-    return spans
-
-
-def parse_bubbles(source: str, findings: list, name: str) -> list:
+def parse_bubbles(doc: _Scanner, findings: list, name: str) -> list:
     """Bubble circles, with anything unparseable reported rather than dropped."""
     bubbles = []
-    for match in CIRCLE_RE.finditer(source):
-        raw = match.group("attrs")
-        attrs = attrs_of(raw)
+    for element in doc.circles:
+        attrs = element.attrs
+        line = element.line
         if "data-size" not in attrs:
             # A <circle> with no data-size is scenery - a paper underlay, a
-            # legend swatch, a dot-grid cell - and skipping it is correct. But
-            # one whose raw text DOES declare data-size and still parsed to
-            # nothing is markup this checker cannot read, and dropping it
-            # silently is how a lie ships.
-            if DECLARES_BUBBLE_RE.search(raw):
-                findings.append(
-                    "%s:%d: a <circle> declares data-size but its attributes could "
-                    "not be parsed — the checker will not silently skip markup it "
-                    "cannot read. Use plain quoted attributes"
-                    % (name, line_of(source, match.start()))
-                )
+            # legend swatch, a dot-grid cell - and skipping it is correct. The
+            # parser reads every tag the browser reads, so there is no
+            # "declared but unparseable" case left to report here.
             continue
         label = attrs.get("data-name")
         if label is None:
             findings.append(
                 "%s:%d: a bubble declares data-size but no data-name — an unnamed "
                 "bubble cannot be labelled or cross-checked"
-                % (name, line_of(source, match.start()))
+                % (name, line)
             )
             continue
         missing = [key for key in ("data-x", "data-y", "cx", "cy", "r")
@@ -344,7 +536,7 @@ def parse_bubbles(source: str, findings: list, name: str) -> list:
             findings.append(
                 "%s:%d: bubble %r is missing %s — a bubble must declare all three "
                 "values and all three drawn quantities or it cannot be verified"
-                % (name, line_of(source, match.start()), label, ", ".join(missing))
+                % (name, line, label, ", ".join(missing))
             )
             continue
         parsed = [number(attrs[key])
@@ -353,7 +545,7 @@ def parse_bubbles(source: str, findings: list, name: str) -> list:
             findings.append(
                 "%s:%d: bubble %r has a value or coordinate that is not a finite "
                 "number — cannot verify its position or area"
-                % (name, line_of(source, match.start()), label)
+                % (name, line, label)
             )
             continue
         if parsed[2] <= 0:
@@ -363,71 +555,70 @@ def parse_bubbles(source: str, findings: list, name: str) -> list:
             findings.append(
                 "%s:%d: bubble %r declares data-size=%g — area cannot encode a "
                 "non-positive value. Omit the item and note the omission in the "
-                "source line" % (name, line_of(source, match.start()), label,
-                                 parsed[2])
+                "source line" % (name, line, label, parsed[2])
             )
             continue
         if parsed[5] <= 0:
             findings.append(
                 "%s:%d: bubble %r has r=%g — a bubble with no area states no value"
-                % (name, line_of(source, match.start()), label, parsed[5])
+                % (name, line, label, parsed[5])
             )
             continue
         accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
         bubbles.append(Bubble(label, parsed[0], parsed[1], parsed[2], parsed[3],
-                              parsed[4], parsed[5], accent, match.start()))
+                              parsed[4], parsed[5], accent, line))
     return bubbles
 
 
-def check_transforms(source: str, findings: list, name: str) -> None:
-    """No transform may move verified geometry or a bound label."""
-    spans = transformed_spans(source)
+# === CHECKS ==================================================================
 
-    def enclosed(offset):
-        return any(start <= offset <= end for start, end in spans)
 
-    def report(offset, what, how):
+def check_transforms(doc: _Scanner, findings: list, name: str) -> None:
+    """No transform may move verified geometry or a bound label.
+
+    All three carriers are held to that rule - the `transform` attribute, an
+    inline `style="transform: ..."`, and a rule in a <style> block - on the
+    element and on every <g>/<svg> above it, because a gate that closes one of
+    three doorways guards nothing.
+    """
+
+    def report(element, what, how):
         findings.append(
             "%s:%d: %s carries %s — this checker validates raw cx/cy/r and x/y "
             "attributes, so a transform moves the rendered mark away from the "
             "number it was checked against. Bake the offset into the coordinates "
-            "instead" % (name, line_of(source, offset), what, how)
+            "instead" % (name, element.line, what, how)
         )
 
-    for match in CIRCLE_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
-        if "data-size" not in attrs:
-            continue
-        what = "bubble %r" % attrs.get("data-name", "?")
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+    def check_element(element, what):
+        how = transform_carrier(element.attrs)
+        if how is None:
+            how = element.ancestor
+        if how is not None:
+            report(element, what, how)
 
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
-        if "data-name" not in attrs and "data-tick" not in attrs:
-            continue
-        what = "a bound label (%s)" % plain(match.group("body"))[:20]
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+    for element in doc.circles:
+        if "data-size" in element.attrs:
+            check_element(element, "bubble %r" % element.attrs.get("data-name", "?"))
 
-    for match in STYLE_RE.finditer(source):
-        found = CSS_TRANSFORM_RE.search(match.group("body"))
+    for element in doc.texts:
+        if "data-name" in element.attrs or "data-tick" in element.attrs:
+            check_element(element, "a bound label (%s)" % plain(element.body)[:20])
+
+    for element in doc.styles:
+        found = css_moves_mark(element.body)
         if found:
             findings.append(
-                "%s:%d: a CSS `transform` declaration — this checker cannot tell "
+                "%s:%d: a CSS `%s` declaration — this checker cannot tell "
                 "which marks it applies to, and a transform on verified geometry "
                 "invalidates every coordinate here. Remove it, or bake the offset "
                 "into the coordinates"
-                % (name, line_of(source, match.start("body") + found.start()))
+                % (name, element.line + element.body.count("\n", 0, found.start("prop")),
+                   found.group("prop").lower())
             )
 
 
-def check_axis(bubbles: list, axis: str, findings: list, source: str,
-               name: str):
+def check_axis(bubbles: list, axis: str, findings: list, name: str):
     """One shared linear scale per axis, and no bubble may drift off it.
 
     Returns the (slope, intercept) fit for the axis so the tick check can
@@ -439,7 +630,7 @@ def check_axis(bubbles: list, axis: str, findings: list, source: str,
     else:
         points = [(b.y, b.cy) for b in bubbles]
         drawn_attr = "cy"
-    line = line_of(source, bubbles[0].offset)
+    line = bubbles[0].line
 
     slope, intercept = fit(points)
     if slope is None:
@@ -464,7 +655,7 @@ def check_axis(bubbles: list, axis: str, findings: list, source: str,
                 "peers cannot describe a scale to check it against, so its "
                 "position would define the axis instead of being verified by "
                 "it. An axis needs two distinct values among the other bubbles"
-                % (name, line_of(source, b.offset), b.name, axis, value)
+                % (name, b.line, b.name, axis, value)
             )
 
     for index, drawn, expected in outliers(points, RESIDUAL_TOLERANCE):
@@ -473,14 +664,14 @@ def check_axis(bubbles: list, axis: str, findings: list, source: str,
             "%s:%d: bubble %r declares %s=%g but draws %s=%g where the shared %s "
             "scale its peers describe puts it at %.1f — off by %.1f px. Crowded "
             "bubbles are data; never nudge one aside"
-            % (name, line_of(source, b.offset), b.name, axis,
+            % (name, b.line, b.name, axis,
                points[index][0], drawn_attr, drawn, axis, expected,
                abs(drawn - expected))
         )
     return slope, intercept
 
 
-def check_area(bubbles: list, findings: list, source: str, name: str) -> None:
+def check_area(bubbles: list, findings: list, name: str) -> None:
     """r must equal K*sqrt(size) for one K shared by the whole set.
 
     The ratio r^2/size is constant under honest area encoding and varies under
@@ -500,11 +691,11 @@ def check_area(bubbles: list, findings: list, source: str, name: str) -> None:
                 "scale its peers share puts %.1f — area must be proportional to "
                 "the value (r = K*sqrt(size)), and radius-proportional sizing "
                 "shows a 6x value as 36x the ink"
-                % (name, line_of(source, b.offset), b.name, b.size, b.r, expected)
+                % (name, b.line, b.name, b.size, b.r, expected)
             )
 
 
-def check_focal(bubbles: list, findings: list, source: str, name: str) -> None:
+def check_focal(bubbles: list, findings: list, name: str) -> None:
     """At most one bubble wears the accent."""
     accented = [b for b in bubbles if b.accent]
     for extra in accented[1:]:
@@ -513,11 +704,11 @@ def check_focal(bubbles: list, findings: list, source: str, name: str) -> None:
             "max (%r already has it). A second focal mark is a second editorial "
             "claim, and the ink ramp exists so everything else stays ranked "
             "without spending the accent"
-            % (name, line_of(source, extra.offset), extra.name, accented[0].name)
+            % (name, extra.line, extra.name, accented[0].name)
         )
 
 
-def check_paint_order(bubbles: list, findings: list, source: str, name: str) -> None:
+def check_paint_order(bubbles: list, findings: list, name: str) -> None:
     """Where two bubbles overlap, the larger must be painted first.
 
     Painted later means painted on top: a small bubble under a large one is
@@ -533,33 +724,33 @@ def check_paint_order(bubbles: list, findings: list, source: str, name: str) -> 
                     "%s:%d: bubble %r (r=%g) overlaps %r (r=%g) but is painted "
                     "first — draw overlapping bubbles largest-first so the small "
                     "one stays on top and both areas stay readable"
-                    % (name, line_of(source, a.offset), a.name, a.r, b.name, b.r)
+                    % (name, a.line, a.name, a.r, b.name, b.r)
                 )
 
 
-def check_labels(bubbles: list, source: str, findings: list, name: str) -> None:
+def check_labels(bubbles: list, doc: _Scanner, findings: list, name: str) -> None:
     """Bound labels must name a real bubble, match it, and sit on it."""
     centres = {b.name: (b.cx, b.cy) for b in bubbles}
     seen = set()
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.texts:
+        attrs = element.attrs
         label = attrs.get("data-name")
         if label is None:
             continue
-        offset = match.start()
-        body = plain(match.group("body"))
+        line = element.line
+        body = plain(element.body)
         if label not in centres:
             findings.append(
                 "%s:%d: a label names bubble %r, which no circle declares — a "
                 "label with no mark is not verifiable and reads as data"
-                % (name, line_of(source, offset), label)
+                % (name, line, label)
             )
             continue
         if label in seen:
             findings.append(
                 "%s:%d: a second label for bubble %r — one bubble, one label, or "
                 "the figure states two things about one mark"
-                % (name, line_of(source, offset), label)
+                % (name, line, label)
             )
             continue
         seen.add(label)
@@ -569,7 +760,7 @@ def check_labels(bubbles: list, source: str, findings: list, name: str) -> None:
             findings.append(
                 "%s:%d: a label bound to bubble %r reads %r — the visible text "
                 "and the binding must agree"
-                % (name, line_of(source, offset), label, body[:28])
+                % (name, line, label, body[:28])
             )
             continue
         x, y = number(attrs.get("x")), number(attrs.get("y"))
@@ -577,7 +768,7 @@ def check_labels(bubbles: list, source: str, findings: list, name: str) -> None:
             findings.append(
                 "%s:%d: the label for bubble %r has no readable x/y, so its "
                 "placement cannot be checked"
-                % (name, line_of(source, offset), label)
+                % (name, line, label)
             )
             continue
         own_cx, own_cy = centres[label]
@@ -595,23 +786,23 @@ def check_labels(bubbles: list, source: str, findings: list, name: str) -> None:
                     "%s:%d: the label for bubble %r is drawn at (%g, %g), nearer "
                     "%r's centre than its own — a label on the wrong bubble "
                     "renames the mark"
-                    % (name, line_of(source, offset), label, x, y, nearest)
+                    % (name, line, label, x, y, nearest)
                 )
 
 
-def check_ticks(x_fit, y_fit, source: str, findings: list, name: str) -> None:
+def check_ticks(x_fit, y_fit, doc: _Scanner, findings: list, name: str) -> None:
     """Bound axis ticks must print their value and sit on the bubbles' scale."""
     ticks = {"x": [], "y": []}
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.texts:
+        attrs = element.attrs
         axis = attrs.get("data-tick")
         if axis is None:
             continue
-        offset = match.start()
+        line = element.line
         if axis not in ("x", "y"):
             findings.append(
                 "%s:%d: a tick label has data-tick=%r, which is neither 'x' nor "
-                "'y'" % (name, line_of(source, offset), axis)
+                "'y'" % (name, line, axis)
             )
             continue
         declared = number(attrs.get("data-value"))
@@ -619,48 +810,47 @@ def check_ticks(x_fit, y_fit, source: str, findings: list, name: str) -> None:
             findings.append(
                 "%s:%d: a %s tick has no readable data-value — an unbound axis "
                 "number is the cheapest way to relabel a whole chart"
-                % (name, line_of(source, offset), axis)
+                % (name, line, axis)
             )
             continue
-        body = plain(match.group("body"))
+        body = plain(element.body)
         shown, reason = printed_number(body)
         if shown is None:
             findings.append(
                 "%s:%d: the %s tick for %g %s (%r) — print one complete number "
-                "per tick" % (name, line_of(source, offset), axis, declared,
-                              reason, body[:28])
+                "per tick" % (name, line, axis, declared, reason, body[:28])
             )
             continue
         if abs(shown - declared) > VALUE_TOLERANCE:
             findings.append(
                 "%s:%d: a %s tick prints %r but declares %g — the label and the "
                 "binding must state one number"
-                % (name, line_of(source, offset), axis, body[:28], declared)
+                % (name, line, axis, body[:28], declared)
             )
             continue
         position = number(attrs.get("x" if axis == "x" else "y"))
         if position is None:
             findings.append(
                 "%s:%d: the %s tick for %g has no readable position"
-                % (name, line_of(source, offset), axis, declared)
+                % (name, line, axis, declared)
             )
             continue
-        ticks[axis].append((declared, position, offset))
+        ticks[axis].append((declared, position, line))
 
     for axis, fit_pair in (("x", x_fit), ("y", y_fit)):
         entries = ticks[axis]
-        if len({value for value, _pos, _off in entries}) < 2:
+        if len({value for value, _pos, _line in entries}) < 2:
             findings.append(
                 "%s: the %s axis binds %d distinct tick value(s) — an axis needs "
                 "at least two bound ticks (data-tick/data-value) or its printed "
                 "scale is unverifiable against the drawn one"
-                % (name, axis, len({v for v, _p, _o in entries}))
+                % (name, axis, len({v for v, _p, _l in entries}))
             )
             continue
         slope, intercept = fit_pair
         if slope is None:
             continue  # already reported by check_axis
-        for value, position, offset in entries:
+        for value, position, line in entries:
             expected = slope * value + intercept
             if abs(position - expected) > TICK_TOLERANCE:
                 findings.append(
@@ -668,16 +858,37 @@ def check_ticks(x_fit, y_fit, source: str, findings: list, name: str) -> None:
                     "bubbles themselves describe puts that value at %.1f — the "
                     "printed axis and the drawn positions disagree, so every "
                     "reading off this axis is wrong"
-                    % (name, line_of(source, offset), axis, value, position,
-                       expected)
+                    % (name, line, axis, value, position, expected)
                 )
+
+
+# === DRIVER ==================================================================
 
 
 def check_source(path: Path, raw: str) -> list:
     """Findings for one already-read document."""
-    source = blank_comments(raw)
     findings: list = []
-    bubbles = parse_bubbles(source, findings, path.name)
+    doc = parse_document(raw)
+    if doc.error is not None:
+        findings.append(
+            "%s: presents as a bubble chart but could not be parsed as HTML (%s) — "
+            "refusing to report OK on a file this checker could not read"
+            % (path.name, doc.error)
+        )
+        return findings
+    # The raw text claimed a bound <circle> the parser never emitted: an
+    # unclosed quote turned the tag into character data. Nothing downstream
+    # can verify a mark that does not exist, so say which tag was lost rather
+    # than count zero bubbles and leave the author hunting for a circle that
+    # is plainly there.
+    if declares_bubble(raw) and not any("data-size" in e.attrs for e in doc.circles):
+        findings.append(
+            "%s: declares data-size but no complete <circle> could be parsed — an "
+            "unclosed attribute quote swallows the tag; fix the markup. Refusing "
+            "to report OK on a file this checker could not read" % path.name
+        )
+        return findings
+    bubbles = parse_bubbles(doc, findings, path.name)
 
     if len(bubbles) < 4:
         findings.append(
@@ -688,14 +899,14 @@ def check_source(path: Path, raw: str) -> list:
         )
         return findings
 
-    check_transforms(source, findings, path.name)
-    x_fit = check_axis(bubbles, "x", findings, source, path.name)
-    y_fit = check_axis(bubbles, "y", findings, source, path.name)
-    check_area(bubbles, findings, source, path.name)
-    check_focal(bubbles, findings, source, path.name)
-    check_paint_order(bubbles, findings, source, path.name)
-    check_labels(bubbles, source, findings, path.name)
-    check_ticks(x_fit, y_fit, source, findings, path.name)
+    check_transforms(doc, findings, path.name)
+    x_fit = check_axis(bubbles, "x", findings, path.name)
+    y_fit = check_axis(bubbles, "y", findings, path.name)
+    check_area(bubbles, findings, path.name)
+    check_focal(bubbles, findings, path.name)
+    check_paint_order(bubbles, findings, path.name)
+    check_labels(bubbles, doc, findings, path.name)
+    check_ticks(x_fit, y_fit, doc, findings, path.name)
     return findings
 
 

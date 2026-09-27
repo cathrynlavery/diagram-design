@@ -13,6 +13,7 @@ import base64
 import contextlib
 import importlib.util
 import io
+import itertools
 import json
 import os
 import re
@@ -212,6 +213,32 @@ def check_parse_raw() -> dict:
         fail("collapsible groups not reported")
     ok("raw XML fixture parses: geometry, labels, shapes, degrees, edges")
     return payload
+
+
+def check_nested_geometry(tmp: Path) -> None:
+    cells = (
+        '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
+        '<mxGeometry x="100" y="200" width="100" height="100" as="geometry"/></mxCell>',
+        '<mxCell id="inner" value="Inner" vertex="1" parent="outer">'
+        '<mxGeometry x="20" y="30" width="30" height="40" as="geometry"/></mxCell>',
+        '<mxCell id="leaf" value="Leaf" vertex="1" parent="inner">'
+        '<mxGeometry x="5" y="6" width="10" height="10" as="geometry"/></mxCell>',
+    )
+    expected = {"outer": (100, 200, 0), "inner": (120, 230, 1), "leaf": (125, 236, 2)}
+    source = tmp / "nested.drawio"
+    for order in itertools.permutations(cells):
+        source.write_text(
+            '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+            + "".join(order) + "</root></mxGraphModel>",
+            encoding="utf-8",
+        )
+        page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+        actual = {n["id"]: (n["x"], n["y"], n["depth"]) for n in page["nodes"]}
+        if actual != expected:
+            fail(f"nested geometry depends on cell order: {actual}")
+        if page["bounds"] != {"x0": 100, "y0": 200, "x1": 200, "y1": 300}:
+            fail(f"nested geometry changed canvas bounds: {page['bounds']}")
+    ok("nested geometry and bounds are independent of cell order")
 
 
 def check_containers(tmp: Path) -> None:
@@ -520,6 +547,7 @@ def main() -> int:
         tmp = Path(tmp_dir)
         check_files()
         check_parse_raw()
+        check_nested_geometry(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)
         check_digest_escaping(tmp)

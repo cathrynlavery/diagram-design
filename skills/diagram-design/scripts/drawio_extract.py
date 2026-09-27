@@ -465,8 +465,8 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         px, py, pdepth = resolve(parent, seen)
         return node.x + px, node.y + py, pdepth + 1
 
-    for node in page.nodes:
-        ax, ay, depth = resolve(node, set())
+    resolved = [resolve(node, set()) for node in page.nodes]
+    for node, (ax, ay, depth) in zip(page.nodes, resolved):
         node.x, node.y, node.depth = ax, ay, depth
         parent = node_map.get(node.parent or "")
         if parent is not None:

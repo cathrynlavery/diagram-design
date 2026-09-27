@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CI minutes by pipeline and runner · Marimekko · dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #2d3142;
+      --color-ink:    #f5f5f5;
+      --color-muted:  #bfc0c0;
+      --color-accent: #f08a59;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 760px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Marimekko · Diagram Design</p>
+    <h1>One pipeline on one runner is a fifth of all CI time</h1>
+
+    <div class="diagram-container">
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="marimekko-dark-title marimekko-dark-desc">
+      <title id="marimekko-dark-title">One pipeline on one runner is a fifth of all CI time</title>
+      <desc id="marimekko-dark-desc">Marimekko chart of 10,000 CI minutes over 30 days, split five pipelines wide and up to three runner operating systems tall; column width is each pipeline's share of all minutes, segment height is each runner's share within its pipeline, and the mobile pipeline's macOS runners alone account for about 20 percent of the total.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.09)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+      <!-- ─── COLUMNS ─── Five pipelines across 900px of column width (x 40 → 956
+           less four 4px gutters), each width the pipeline's share of all 10,000
+           minutes. Every column is the full 380px plot height (y 40 → 420) and its
+           segments tile it top to bottom in ONE fixed order - Linux, macOS, Windows -
+           each height the runner's share of that pipeline. Area is therefore the
+           joint share, and scripts/verify-marimekko.py recomputes width, height and
+           area from the data-amount every segment declares. Column edges sit on the
+           4px grid; segment boundaries are data and land on whole pixels. Non-focal
+           fills run one ink ramp per series, strongest on the largest series; the
+           focal segment is marked by its accent stroke, not by tone. ─── -->
+
+      <!-- web · 3,140 min · 31.4% · x 40 w 280 -->
+      <rect x="40" y="40" width="280" height="259" rx="2" fill="#2d3142"/>
+      <rect x="40" y="40" width="280" height="259" rx="2" data-column="web" data-segment="Linux" data-amount="2140" fill="rgba(245,245,245,0.14)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="web" data-segment="Linux" data-role="label" x="56" y="68" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Linux</text>
+      <text data-column="web" data-segment="Linux" data-role="label" x="56" y="86" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">2,140 min · 68%</text>
+
+      <rect x="40" y="299" width="280" height="46" rx="2" fill="#2d3142"/>
+      <rect x="40" y="299" width="280" height="46" rx="2" data-column="web" data-segment="macOS" data-amount="380" fill="rgba(245,245,245,0.09)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="web" data-segment="macOS" data-role="label" x="56" y="316" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif">macOS</text>
+      <text data-column="web" data-segment="macOS" data-role="label" x="56" y="331" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">380 min · 12%</text>
+
+      <rect x="40" y="345" width="280" height="75" rx="2" fill="#2d3142"/>
+      <rect x="40" y="345" width="280" height="75" rx="2" data-column="web" data-segment="Windows" data-amount="620" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="web" data-segment="Windows" data-role="label" x="56" y="373" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Windows</text>
+      <text data-column="web" data-segment="Windows" data-role="label" x="56" y="391" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">620 min · 20%</text>
+
+      <!-- api · 2,800 min · 28.0% · x 324 w 252 · no macOS runners, so no macOS
+           segment: a series absent from a column is omitted, never drawn at zero -->
+      <rect x="324" y="40" width="252" height="334" rx="2" fill="#2d3142"/>
+      <rect x="324" y="40" width="252" height="334" rx="2" data-column="api" data-segment="Linux" data-amount="2460" fill="rgba(245,245,245,0.14)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="api" data-segment="Linux" data-role="label" x="340" y="68" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Linux</text>
+      <text data-column="api" data-segment="Linux" data-role="label" x="340" y="86" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">2,460 min · 88%</text>
+
+      <rect x="324" y="374" width="252" height="46" rx="2" fill="#2d3142"/>
+      <rect x="324" y="374" width="252" height="46" rx="2" data-column="api" data-segment="Windows" data-amount="340" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="api" data-segment="Windows" data-role="label" x="340" y="391" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif">Windows</text>
+      <text data-column="api" data-segment="Windows" data-role="label" x="340" y="406" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">340 min · 12%</text>
+
+      <!-- mobile · 2,400 min · 24.0% · x 580 w 216 -->
+      <rect x="580" y="40" width="216" height="66" rx="2" fill="#2d3142"/>
+      <rect x="580" y="40" width="216" height="66" rx="2" data-column="mobile" data-segment="Linux" data-amount="420" fill="rgba(245,245,245,0.14)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="mobile" data-segment="Linux" data-role="label" x="596" y="68" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Linux</text>
+      <text data-column="mobile" data-segment="Linux" data-role="label" x="596" y="86" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">420 min · 18%</text>
+
+      <!-- mobile × macOS FOCAL: the one segment the figure is about -->
+      <rect x="580" y="106" width="216" height="314" rx="2" fill="#2d3142"/>
+      <rect x="580" y="106" width="216" height="314" rx="2" data-column="mobile" data-segment="macOS" data-amount="1980" fill="rgba(240,138,89,0.16)" stroke="#f08a59" stroke-width="1.5"/>
+      <text data-column="mobile" data-segment="macOS" data-role="label" x="596" y="134" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif">macOS</text>
+      <text data-column="mobile" data-segment="macOS" data-role="label" x="596" y="152" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">1,980 min · 83% of mobile</text>
+
+      <!-- infra · 1,400 min · 14.0% · x 800 w 128 -->
+      <rect x="800" y="40" width="128" height="304" rx="2" fill="#2d3142"/>
+      <rect x="800" y="40" width="128" height="304" rx="2" data-column="infra" data-segment="Linux" data-amount="1120" fill="rgba(245,245,245,0.14)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="infra" data-segment="Linux" data-role="label" x="816" y="68" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Linux</text>
+      <text data-column="infra" data-segment="Linux" data-role="label" x="816" y="86" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">1,120 min · 80%</text>
+
+      <rect x="800" y="344" width="128" height="76" rx="2" fill="#2d3142"/>
+      <rect x="800" y="344" width="128" height="76" rx="2" data-column="infra" data-segment="Windows" data-amount="280" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-column="infra" data-segment="Windows" data-role="label" x="816" y="372" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Windows</text>
+      <text data-column="infra" data-segment="Windows" data-role="label" x="816" y="390" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">280 min · 20%</text>
+
+      <!-- docs · 260 min · 2.6% · x 932 w 24. Too narrow for a label, so it carries
+           the info mark rather than sideways text and is named in the legend. The
+           column keeps its honest width: a marimekko shows a whole, and a dropped
+           pipeline makes every other share a lie. -->
+      <rect x="932" y="40" width="24" height="380" rx="2" fill="#2d3142"/>
+      <rect x="932" y="40" width="24" height="380" rx="2" data-column="docs" data-segment="Linux" data-amount="260" fill="rgba(245,245,245,0.14)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <circle cx="944" cy="64" r="5" fill="#f5f5f5"/>
+      <text x="944" y="67" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">i</text>
+
+      <!-- Column captions, centred under each column, each printing the column's
+           share of the whole so the width can be read as a number -->
+      <text data-column="web" data-role="caption" x="180" y="438" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="middle">web · 31%</text>
+      <text data-column="api" data-role="caption" x="450" y="438" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="middle">api · 28%</text>
+      <text data-column="mobile" data-role="caption" x="688" y="438" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="middle">mobile · 24%</text>
+      <text data-column="infra" data-role="caption" x="864" y="438" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="middle">infra · 14%</text>
+      <text data-column="docs" data-role="caption" x="944" y="438" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="middle">docs · 3%</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <text x="960" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">WIDTH = PIPELINE SHARE · HEIGHT = RUNNER SHARE WITHIN PIPELINE · AREA = SHARE OF ALL CI MINUTES · 30 DAYS · 10,000 MIN · ILLUSTRATIVE FIGURES</text>
+
+      <rect x="40" y="488" width="16" height="10" rx="2" fill="rgba(240,138,89,0.16)" stroke="#f08a59" stroke-width="1"/>
+      <text x="64" y="497" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">mobile × macOS · the focal segment</text>
+
+      <rect x="248" y="488" width="16" height="10" rx="2" fill="rgba(245,245,245,0.14)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-segment="Linux" data-role="key" x="272" y="497" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Linux</text>
+
+      <rect x="320" y="488" width="16" height="10" rx="2" fill="rgba(245,245,245,0.09)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-segment="macOS" data-role="key" x="344" y="497" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">macOS</text>
+
+      <rect x="396" y="488" width="16" height="10" rx="2" fill="rgba(245,245,245,0.04)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+      <text data-segment="Windows" data-role="key" x="420" y="497" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Windows</text>
+
+      <circle cx="500" cy="493" r="5" fill="#f5f5f5"/>
+      <text x="500" y="496" fill="#2d3142" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">i</text>
+      <text x="516" y="497" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">docs · 260 min on Linux, 2.6% — too narrow to label</text>
+    </svg>
+    </div>
+  </div>
+</body>
+</html>
