@@ -90,7 +90,7 @@ Pi still registers the **repo root**: `pi install <clone-path>`.
 
 Ask in any host: `run diagram-design doctor` or `/diagram-design:doctor` / `/doctor`.
 
-The procedure is [`references/doctor.md`](../skills/diagram-design/references/doctor.md). It must not install packages. Typical local setup for PNG export:
+The procedure is [`references/doctor.md`](../skills/diagram-design/references/doctor.md). It must not install packages. The doctor auto-detects the host profile and install channel; pass `--host claude-code|cowork|codex|cursor|pi` to force a profile when detection is ambiguous (for example, diagnosing a Cowork mirror or a Pi unpinned-ref install from outside that host). Typical local setup for PNG export:
 
 ```bash
 python -m pip install playwright
