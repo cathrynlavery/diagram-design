@@ -71,7 +71,20 @@ def expect_status(check, status: str, needle: str) -> None:
 
 def check_full_git_installs(verify, root: Path) -> None:
     for name, host_arg, environ, expected_channel in (
-        ("pi-env", verify.AUTO_HOST, {"PI_SESSION_ID": "test"}, verify.CHANNEL_GIT),
+        # Marker-complete checkout outside any .pi path. A Pi session marker
+        # selects the host profile only; the channel stays maintainer-checkout.
+        (
+            "maintainer-pi-session",
+            verify.AUTO_HOST,
+            {"PI_SESSION_ID": "test"},
+            verify.CHANNEL_MAINTAINER,
+        ),
+        (
+            "maintainer-pi-home",
+            verify.AUTO_HOST,
+            {"PI_HOME": "/tmp/pi-home"},
+            verify.CHANNEL_MAINTAINER,
+        ),
         (".pi/agent/git/diagram-design", verify.AUTO_HOST, {}, verify.CHANNEL_GIT),
         ("maintainer", verify.AUTO_HOST, {}, verify.CHANNEL_MAINTAINER),
         ("maintainer-host-pi", "pi", {}, verify.CHANNEL_MAINTAINER),
@@ -99,34 +112,38 @@ def check_full_git_installs(verify, root: Path) -> None:
                     install_root, install_root, strict=True, emit_json=True, host_arg=host_arg
                 )
             output = report.getvalue()
-            is_pi = expected_channel == verify.CHANNEL_GIT
+            pi_managed = expected_channel == verify.CHANNEL_GIT
+            session_pi = any(environ.get(marker) for marker in ("PI_SESSION_ID", "PI_HOME"))
             unpinned = head.startswith("ref:")
-            expected_exit = 1 if is_pi and unpinned else 0
+            expected_exit = 1 if pi_managed and unpinned else 0
             if exit_code != expected_exit:
                 raise AssertionError(f"{name}: expected exit {expected_exit}; got {exit_code}: {output}")
             needles = [f'"install_channel": "{expected_channel}"']
-            if is_pi:
+            if pi_managed:
                 needles.extend([
                     '"host": "pi"',
                     "pi update --extensions",
                     "unpinned git branch" if unpinned else "pinned to a fixed git ref",
                 ])
                 if "git pull" in output or "unpinned-ref check is not applicable" in output:
-                    raise AssertionError(f"{name}: Pi install received maintainer guidance: {output}")
+                    raise AssertionError(f"{name}: Pi-managed install received maintainer guidance: {output}")
             else:
                 needles.append("git pull")
-                if host_arg == "pi":
+                if host_arg == "pi" or session_pi:
                     needles.extend(['"host": "pi"', "unpinned-ref check is not applicable"])
                     if "pi update --extensions" in output or "unpinned git branch" in output:
                         raise AssertionError(
-                            f"{name}: maintainer checkout with --host pi received Pi install guidance: {output}"
+                            f"{name}: maintainer checkout received Pi install guidance: {output}"
                         )
                 else:
                     needles.append("Host profile is not pi")
             for needle in needles:
                 if needle not in output:
                     raise AssertionError(f"{name}: report missing {needle!r}: {output}")
-    print("OK: full Pi Git installs honor env/path context; maintainer checkouts stay distinct including --host pi")
+    print(
+        "OK: Pi-managed installs classify from the .pi path only; "
+        "marker-complete checkouts stay maintainer-checkout under PI_SESSION_ID, PI_HOME, and --host pi"
+    )
 
 
 def main() -> int:
