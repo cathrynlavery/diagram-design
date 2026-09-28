@@ -102,11 +102,9 @@ python -c "import playwright" 2>NUL || python -c "import playwright"
 
 If the import fails, surface this exact instruction to the user and stop:
 
-> Playwright isn't installed. To enable PNG export, run:
-> ```
-> pip install playwright
-> playwright install chromium
-> ```
+> Playwright is not available. PNG export requires an approved Playwright
+> installation and a compatible browser to be provisioned by the host
+> environment; the skill never installs runtime dependencies automatically.
 > Then ask me to export again.
 
 Don't auto-install. The user asked for one feature, not a system change.
@@ -127,11 +125,17 @@ with sync_playwright() as p:
     page = browser.new_page(device_scale_factor=scale)
     page.goto(f"file://{pathlib.Path(src).resolve()}")
     page.wait_for_load_state("networkidle")
-    page.locator("svg").first.screenshot(path=out, omit_background=True)
+    svg = page.locator("svg").first
+    # Release every clipping ancestor (local scroller, overflow:hidden chrome)
+    # so an SVG wider than its frame is captured whole.
+    svg.evaluate("el => { for (let a = el.parentElement; a; a = a.parentElement) a.style.setProperty('overflow', 'visible', 'important'); }")
+    svg.screenshot(path=out, omit_background=True)
     browser.close()
 ```
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg.
+
+The overflow release matters for the wide presets. `min-width` equals the viewBox width (see [`output-spec.md`](output-spec.md)), so a `doc-wide` or `slide-16x9` SVG is 1280px inside a 1200px frame, and its `.diagram-container` scroller clips the last 80px on screen. The screenshot covers the SVG's box but not what an ancestor clipped, so without the release the PNG comes out full size with a blank right edge. This is the screen-side counterpart of the templates' `@media print` rule.
 
 ### Output naming
 

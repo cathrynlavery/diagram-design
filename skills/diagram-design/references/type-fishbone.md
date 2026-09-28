@@ -4,7 +4,7 @@
 
 ## Layout conventions
 
-- **Spine.** A horizontal line (`ink`, 1.2px) runs left→right at the vertical centre `CY`, terminating with an arrowhead into an **effect box** at the right head — the node-box pattern from SKILL.md §6, the observed-effect statement inside.
+- **Spine.** A horizontal line (`ink`, 1.2px) runs left→right at the vertical centre `CY`, terminating with an arrowhead into an **effect box** at the right head — the node-box pattern from SKILL.md §6 ([primitives-core.md](primitives-core.md#node-box--full-pattern)), the observed-effect statement inside.
 - **Bones.** Category lines are straight diagonals at a fixed **60°** to the spine, alternating above and below, evenly spaced along it. Each bone carries its category name at the outer end in a small tag-style box (`rx=4`, not a pill) — Geist sans 12px weight 600.
 - **Sub-causes.** Short horizontal ticks (32px, `soft`) branch off each bone at fixed points along its length, each with a sub-cause label in Geist Mono 9px sitting past the open end of the tick.
 - **Diagonal exemption.** SKILL.md §6 rule 1 (mandatory rounded right-angle elbows) does not apply to the 60° bones — they are this type's defining grammar. The exemption covers **bones and sub-cause ticks only**; any other connector in a fishbone diagram (e.g. a callout leader, a cross-reference arrow) still uses rounded right-angle elbows.

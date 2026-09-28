@@ -46,6 +46,21 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_text(path: Path) -> str:
+    """Hash a text source in its canonical LF form.
+
+    Checkouts rewrite LF blobs to CRLF when `core.autocrlf=true`, so an
+    unchanged file has different raw bytes per platform. Hashing the
+    line-ending normalized bytes ties a digest to the committed content
+    instead of to the contributor's checkout. Use `sha256` for binary files
+    such as PNGs, where the bytes themselves are what is being verified.
+    """
+
+    data = path.read_bytes()
+    normalized = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(normalized).hexdigest()
+
+
 def png_dimensions(path: Path) -> tuple[int, int]:
     with path.open("rb") as handle:
         header = handle.read(24)

@@ -106,7 +106,7 @@ Markdown is the Mermaid analogue of multi-page draw.io. The header lists every f
 | `no fenced mermaid block found` | Report it verbatim; ask for a `.mmd`/`.mermaid` file or a fenced block. |
 | Unsupported kind such as `pie`, `mindmap`, `gitGraph`, `quadrantChart`, `timeline`, `C4Context`, or `sankey` | Report the supported-kinds message verbatim. Do not approximate it with a different type. |
 | `malformed edge at line N` | Report the line number and stop. Do not guess endpoints. |
-| Node/edge/source limit exceeded | Ask for a smaller source or split by subgraph. Never bypass the cap. |
+| Node/edge/source/statement limit exceeded | Ask for a smaller source or split by subgraph; a single statement over the character limit usually means a pasted blob, not a diagram. Never bypass the cap. |
 | Unconnected nodes listed | Usually legends or abandoned notes. Drop only with a fidelity-ledger entry. |
 | Click handlers present | They were discarded. Never open or reproduce their targets. |
 | Markdown labels or HTML entities | Use the normalized plain-text label from the digest. |
