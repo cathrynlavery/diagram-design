@@ -34,7 +34,7 @@ Kept out on purpose, so the next audit does not relitigate them.
 | Requested | Covered by |
 |---|---|
 | System context, component, API interaction | **Architecture** (a boundary or a zoom level, not a new grammar) |
-| UML sequence, request lifecycle, sequence/state combination | **Sequence** |
+| UML sequence, request lifecycle, message lifecycle, sequence/state combination | **Sequence** — actor messages and timing remain the grammar; one subject's phase progression may use the Lifecycle phase map semantic pattern routed to State Machine (ADR 0002) |
 | UML state machine | **State** |
 | UML activity, activity diagram | **Swimlane** + **flowchart** — the fork/join bar alone does not earn a type |
 | UML component, UML deployment | **Architecture**, **deployment** |

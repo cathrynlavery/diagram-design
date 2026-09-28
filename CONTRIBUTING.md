@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 40 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 41 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -41,6 +41,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
 | Rendered-layout checker and shipped examples/templates | `python3 scripts/lint-render.py --self-test && python3 scripts/lint-render.py --all` |
 | Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
+| Heatmap monotone opacity ramp, complete N×M grid, ≤1 focal cell | `python3 scripts/test-verify-heatmap.py && python3 scripts/verify-heatmap.py --all` |
 | A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
 | Sequence-doc consistency (ATL fragments, budgets) | `python3 scripts/verify-sequence-oauth.py` |
 | Semantic-motion verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-semantic-motion.py` |
@@ -52,8 +53,9 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Doctor diagnostics contract (env checks, script presence, routing wiring) | `python3 scripts/verify-doctor.py` |
 | Doctor diagnostics adversarial tests | `python3 scripts/test-verify-doctor.py` |
 | Every shipped motion template/example | `python3 scripts/verify-motion.py --shipped` |
-| Docs/routing sync (description hooks, gallery, README tree, reference links, strict-bundler support paths, command/prompt surfaces) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
+| Docs/routing sync (description hooks, gallery, README tree, reference links and style-guide anchors, strict-bundler support paths, command/prompt surfaces, font-link parity, template title fallback order, SKILL.md split routing) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
+| Screenshot freshness checker behaves (CRLF checkout, real source drift, raw PNG digests) | `python3 scripts/test-verify-screenshot-freshness.py` |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
@@ -62,10 +64,14 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Block registry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-block-registry.py` |
 | Treemap cells match the values they are labelled with, and labels fit | `python3 scripts/verify-treemap.py --all` |
 | Treemap checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-treemap.py` |
+| Marimekko columns, segments and areas match the amounts they declare, in one series order | `python3 scripts/verify-marimekko.py --all` |
+| Marimekko checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-marimekko.py` |
 | Dumbbell domain resolves finitely and its marks clear 3:1 | `python3 scripts/verify-dumbbell.py` |
 | Dumbbell checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-dumbbell.py` |
 | Slopegraph axes share one scale and every endpoint matches its printed value | `python3 scripts/verify-slopegraph.py --all` |
 | Slopegraph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-slopegraph.py` |
+| Streamgraph layers tile one shared scale on a symmetric baseline and every total is a sum | `python3 scripts/verify-streamgraph.py --all` |
+| Streamgraph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-streamgraph.py` |
 | Ridgeline ridges share one amplitude and every printed range matches its bins | `python3 scripts/verify-ridgeline.py --all` |
 | Ridgeline checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-ridgeline.py` |
 | Sankey flow conservation and ribbon geometry | `python3 scripts/verify-sankey.py --all` |
@@ -82,7 +88,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
-The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
+The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter. SKILL.md is a router: SVG markup and the long form of the connector rules live in `references/primitives-core.md`, and the 4px grid table, per-type complexity budget rows, page layout, and summary cards live in `references/layout-budget.md` (ADR 0004, 2026-09-27 amendment). A new type's budget row goes in `layout-budget.md`, not SKILL.md.
 
 Keep native plugin and marketplace `description` fields within 500 characters
 for Cowork installation compatibility ([#208](https://github.com/cathrynlavery/diagram-design/issues/208)).
@@ -106,6 +112,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/lint-render.py --all \
   && python3 scripts/test-verify-polar.py \
   && python3 scripts/verify-polar.py \
+  && python3 scripts/test-verify-heatmap.py \
+  && python3 scripts/verify-heatmap.py --all \
   && python3 scripts/verify-sequence-oauth.py \
   && python3 scripts/test-verify-semantic-motion.py \
   && python3 scripts/test-verify-sequence-oauth.py \
@@ -120,6 +128,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-docs-sync.py \
   && python3 scripts/test-verify-docs-sync.py \
   && python3 scripts/verify-screenshot-freshness.py \
+  && python3 scripts/test-verify-screenshot-freshness.py \
   && python3 scripts/test-build-readme-thumbs.py \
   && python3 scripts/build-readme-thumbs.py --check \
   && python3 scripts/test-self-check.py \
@@ -129,10 +138,14 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-block-registry.py \
   && python3 scripts/verify-treemap.py --all \
   && python3 scripts/test-verify-treemap.py \
+  && python3 scripts/verify-marimekko.py --all \
+  && python3 scripts/test-verify-marimekko.py \
   && python3 scripts/verify-dumbbell.py \
   && python3 scripts/test-verify-dumbbell.py \
   && python3 scripts/verify-slopegraph.py --all \
   && python3 scripts/test-verify-slopegraph.py \
+  && python3 scripts/verify-streamgraph.py --all \
+  && python3 scripts/test-verify-streamgraph.py \
   && python3 scripts/verify-ridgeline.py --all \
   && python3 scripts/test-verify-ridgeline.py \
   && python3 scripts/verify-sankey.py --all \
@@ -154,9 +167,11 @@ python3 scripts/test-plugin-package.py \
 - **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
 - **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
-- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 40 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
+- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 40 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`. The gate hashes example sources in their canonical LF form, so a checkout that converts LF to CRLF still passes; `scripts/test-verify-screenshot-freshness.py` covers that case, real source drift, and raw PNG digests.
 - **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
+- **`verify-marimekko.py`:** a column is drawn off its category's share of the width, a segment off its series' share of the column, the columns do not share one plot height or one gutter, segments leave a gap or overlap, a series changes order between columns, a second segment wears the accent, anything positions a segment or a bound label from a `transform` attribute, an inline `style`, or a `<style>` rule, or a label, caption or key disagrees with the rect it binds. Fix the geometry or the declaration so they state one thing — never widen a column or pad a segment to fit a label, and never drop a category or a series to tidy the grid.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
+- **`verify-streamgraph.py`:** a layer's drawn thickness disagrees with its declared values, the stack has a gap or overlap, the envelope drifts off its midline, a boundary curve bends away from where its vertices put it, or a legend entry prints a name other than the layer it binds. Fix the geometry or the declaration so they state one thing — never bridge a zero period, float a band to open room, or reshape a curve between vertices to smooth the story.
 - **`verify-ridgeline.py`:** a ridge is drawn on its own amplitude, a baseline sits off the stack's pitch or away from its drawn rule, a ridge is sampled on its own x positions, or a printed range is wider than the bins it claims. Fix the geometry or the declaration so they state one thing — never renormalise a single ridge to make it readable, and never move a baseline to buy one ridge headroom.
 - **`verify-bubble.py`:** a bubble is drawn off the shared axis scale its peers describe, its radius disagrees with the one area constant (`r = K·√size`), a second bubble wears the accent, an overlapping smaller bubble is painted under a larger one, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never nudge a bubble to open up space, because crowded bubbles mean the values really are close.
 - **`verify-bump.py`:** a vertex sits off the rank grid the figure itself declares, a snapshot's ranks are not a permutation of 1..N, a segment curves or arrives by a relative command, or an endpoint label is missing a coordinate, drawn inboard of the end it names, or off the gutter its peers share. Fix the geometry or the declaration, never the label — and never nudge a vertex off its row to dodge a label collision, because a rank between two ranks is not a rank.

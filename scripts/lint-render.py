@@ -819,6 +819,71 @@ def excalidraw_mobile_failures(context, example_path=None):
     return failures
 
 
+def marimekko_mobile_failures(context, marimekko_paths=None):
+    """Keep every marimekko at its readable 760px canvas, scrolled locally.
+
+    Segment labels are 9-11px on a 1000-unit viewBox, so letting the SVG shrink
+    to a phone width makes them unreadable, and letting its min-width widen the
+    document scrolls the whole page sideways. The wide SVG must sit inside an
+    ancestor that scrolls horizontally on its own.
+    """
+    paths = marimekko_paths or sorted(ASSET_DIR.glob("example-marimekko*.html"))
+    failures = []
+    for path in paths:
+        page = context.new_page()
+        page.set_viewport_size({"width": 390, "height": 844})
+        try:
+            page.goto(path.as_uri(), wait_until="load")
+            facts = page.evaluate(
+                """
+                () => {
+                  const doc = document.documentElement;
+                  const svg = document.querySelector('svg');
+                  if (!svg) return { missingSvg: true };
+                  let ancestor = svg.parentElement;
+                  let localScroller = false;
+                  while (ancestor && ancestor !== document.body) {
+                    const overflow = getComputedStyle(ancestor).overflowX;
+                    if ((overflow === 'auto' || overflow === 'scroll') &&
+                        ancestor.scrollWidth > ancestor.clientWidth + 1) {
+                      localScroller = true;
+                      break;
+                    }
+                    ancestor = ancestor.parentElement;
+                  }
+                  return {
+                    missingSvg: false,
+                    pageOverflow: doc.scrollWidth - doc.clientWidth,
+                    svgWidth: svg.getBoundingClientRect().width,
+                    localScroller,
+                  };
+                }
+                """
+            )
+        finally:
+            page.close()
+
+        shown_path = display_path(path)
+        if facts["missingSvg"]:
+            failures.append(f"{shown_path}: marimekko-mobile-svg: no SVG found")
+            continue
+        if facts["pageOverflow"] > TOLERANCE:
+            failures.append(
+                f"{shown_path}: marimekko-mobile-page-overflow: page extends "
+                f"{facts['pageOverflow']:.1f}px past the 390px viewport"
+            )
+        if facts["svgWidth"] < 760 - TOLERANCE:
+            failures.append(
+                f"{shown_path}: marimekko-mobile-legibility: SVG shrinks to "
+                f"{facts['svgWidth']:.1f}px; preserve its 760px canvas for the segment labels"
+            )
+        if not facts["localScroller"]:
+            failures.append(
+                f"{shown_path}: marimekko-mobile-containment: wide SVG needs a local horizontal scroller"
+            )
+    return failures
+
+
 def self_test(context):
     page = context.new_page()
     failures = []
@@ -946,6 +1011,37 @@ def self_test(context):
                 + "; ".join(contained_failures)
             )
 
+    # Marimekko: the same containment contract, pinned in both polarities -
+    # an uncontained min-width widens the page, a local scroller does not.
+    checks += 2
+    with tempfile.TemporaryDirectory() as directory:
+        directory_path = Path(directory)
+        broken = directory_path / "example-marimekko-broken.html"
+        broken.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}svg{width:100%;min-width:760px;display:block}</style>'
+            '<body><div class="frame"><svg viewBox="0 0 1000 500"></svg></div></body></html>',
+            encoding="utf-8",
+        )
+        broken_failures = marimekko_mobile_failures(context, [broken])
+        if not any("marimekko-mobile-page-overflow" in f for f in broken_failures):
+            failures.append("marimekko-mobile-broken-fixture: page overflow was not reported")
+        if not any("marimekko-mobile-containment" in f for f in broken_failures):
+            failures.append("marimekko-mobile-broken-fixture: missing local scroller was not reported")
+
+        contained = directory_path / "example-marimekko-contained.html"
+        contained.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;min-width:760px;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1000 500"></svg></div></div></body></html>',
+            encoding="utf-8",
+        )
+        contained_failures = marimekko_mobile_failures(context, [contained])
+        if contained_failures:
+            failures.append(
+                "marimekko-mobile-contained-fixture: false finding: "
+                + "; ".join(contained_failures)
+            )
+
     # A broken route should be a targeted failure, not a delayed Playwright
     # timeout or traceback that escapes the self-test report.
     checks += 1
@@ -1033,6 +1129,7 @@ def main():
         if args.all:
             mobile_failures = waterfall_mobile_failures(context)
             mobile_failures += excalidraw_mobile_failures(context)
+            mobile_failures += marimekko_mobile_failures(context)
             total_findings += len(mobile_failures)
             if not args.quiet:
                 for failure in mobile_failures:

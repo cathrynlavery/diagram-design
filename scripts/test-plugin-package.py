@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,6 +19,8 @@ VERIFY_SCRIPT = ROOT / "scripts/verify-plugin-package.py"
 BUMP_SCRIPT = ROOT / "scripts/bump-plugin-version.py"
 VERSION_HISTORY_SCRIPT = ROOT / "scripts/plugin_version_history.py"
 AUTO_BUMP_WORKFLOW = ROOT / ".github/workflows/auto-bump.yml"
+CI_WORKFLOW = ROOT / ".github/workflows/ci.yml"
+VERSION_GATE_STEP = "Forbid manifest version changes in pull requests"
 PLUGIN_NAME = "diagram-design"
 
 
@@ -605,6 +608,136 @@ def commit_all(root: Path, message: str) -> str:
     ).strip()
 
 
+def git(root: Path, *args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+
+
+def test_pull_request_merge_base() -> None:
+    # GitHub checks out refs/pull/N/merge: the PR head merged into the base
+    # tip as it is now. Main keeps moving after a PR opens because every merge
+    # triggers an auto-bump, so the PR's recorded base can be several versions
+    # behind that merge.
+    with package_repo() as root:
+        recorded_base = git(root, "rev-parse", "HEAD")
+        main_branch = git(root, "symbolic-ref", "--short", "HEAD")
+        git(root, "checkout", "-q", "-b", "contributor")
+        (root / "notes.md").write_text("contributor change\n", encoding="utf-8")
+        commit_all(root, "contributor change")
+        git(root, "checkout", "-q", main_branch)
+        set_versions(root, "1.2.4", "1.2.4")
+        commit_all(root, "auto-bump on main")
+        git(root, "merge", "-q", "--no-ff", "--no-edit", "contributor")
+
+        expect_failure(
+            "untouched PR judged against its recorded base after a main bump",
+            VERIFY.verify_package(root, recorded_base, mode="no-bump"),
+            "must not change in a pull request",
+        )
+        errors = VERIFY.verify_package(root, "HEAD^1", mode="no-bump")
+        if errors:
+            raise AssertionError(
+                f"untouched PR failed against the merge commit's first parent: {errors}"
+            )
+        print("OK: merge first parent accepts a PR opened before a main bump")
+
+    with package_repo() as root:
+        main_branch = git(root, "symbolic-ref", "--short", "HEAD")
+        git(root, "checkout", "-q", "-b", "contributor")
+        set_versions(root, "1.2.5", "1.2.5")
+        commit_all(root, "contributor bumps the manifests")
+        git(root, "checkout", "-q", main_branch)
+        (root / "notes.md").write_text("unrelated main change\n", encoding="utf-8")
+        commit_all(root, "unrelated main change")
+        git(root, "merge", "-q", "--no-ff", "--no-edit", "contributor")
+        expect_failure(
+            "PR version bump judged against the merge commit's first parent",
+            VERIFY.verify_package(root, "HEAD^1", mode="no-bump"),
+            "must not change in a pull request",
+        )
+
+
+def test_ci_version_gate_wiring() -> None:
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    _, found, rest = workflow.partition(f"- name: {VERSION_GATE_STEP}\n")
+    if not found:
+        raise AssertionError(f"ci.yml has no {VERSION_GATE_STEP!r} step")
+    step = rest.split("\n      - name:", 1)[0]
+    if "pull_request.base.sha" in step:
+        raise AssertionError(
+            "the pull-request version gate compares against "
+            "github.event.pull_request.base.sha, which can predate later bumps on "
+            "main; compare against the checked-out merge commit's first parent"
+        )
+    if "--require-no-bump HEAD^1" not in step:
+        raise AssertionError(
+            "the pull-request version gate must run "
+            "verify-plugin-package.py --require-no-bump HEAD^1"
+        )
+    if "HEAD^2" not in step:
+        raise AssertionError(
+            "the pull-request version gate must fail closed unless HEAD is the "
+            "two-parent merge commit GitHub checks out for a pull request"
+        )
+    print("OK: CI version gate compares the PR merge against its first parent")
+
+
+def ci_version_gate_script() -> str:
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    _, _, rest = workflow.partition(f"- name: {VERSION_GATE_STEP}\n")
+    step = rest.split("\n      - name:", 1)[0]
+    _, found, body = step.partition("run: |\n")
+    if not found:
+        raise AssertionError(f"ci.yml {VERSION_GATE_STEP!r} step has no run block")
+    lines = body.splitlines()
+    indent = len(lines[0]) - len(lines[0].lstrip())
+    script = "\n".join(line[indent:] for line in lines) + "\n"
+    return script.replace("${{ github.event_name }}", "pull_request")
+
+
+def test_ci_version_gate_executes() -> None:
+    # Run the workflow step itself, the way Actions does, against a merge
+    # HEAD and a plain HEAD. CI runs this test on ubuntu, where bash exists.
+    bash = shutil.which("bash")
+    if bash is None:
+        print("SKIP: bash not found; the CI version gate step was not executed")
+        return
+    with package_repo() as root:
+        step = root / "version-gate-step.sh"
+        step.write_text(ci_version_gate_script(), encoding="utf-8")
+        (root / "scripts").mkdir()
+        shutil.copy2(VERIFY_SCRIPT, root / "scripts" / VERIFY_SCRIPT.name)
+        commit_all(root, "add the verifier")
+        main_branch = git(root, "symbolic-ref", "--short", "HEAD")
+        git(root, "checkout", "-q", "-b", "contributor")
+        (root / "notes.md").write_text("contributor change\n", encoding="utf-8")
+        commit_all(root, "contributor change")
+        git(root, "checkout", "-q", main_branch)
+        set_versions(root, "1.2.4", "1.2.4")
+        commit_all(root, "auto-bump on main")
+
+        def run_step() -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
+                [bash, "--noprofile", "--norc", "-eo", "pipefail", str(step)],
+                cwd=root,
+                capture_output=True,
+                text=True,
+            )
+
+        plain = run_step()
+        if plain.returncode == 0 or "expected the pull request merge commit" not in plain.stderr:
+            raise AssertionError(
+                f"version gate step accepted a non-merge HEAD: {plain.returncode} {plain.stderr}"
+            )
+        git(root, "merge", "-q", "--no-ff", "--no-edit", "contributor")
+        merged = run_step()
+        if merged.returncode != 0:
+            raise AssertionError(
+                "version gate step rejected an untouched PR merged after a main bump: "
+                f"{merged.stdout}{merged.stderr}"
+            )
+    print("OK: CI version gate step fails a non-merge HEAD and passes the PR merge")
+
+
 def test_version_history() -> None:
     with package_repo() as root:
         base = subprocess.check_output(
@@ -660,6 +793,9 @@ def main() -> int:
     test_verifier()
     test_bumper()
     test_auto_bump_workflow_allowlists()
+    test_pull_request_merge_base()
+    test_ci_version_gate_wiring()
+    test_ci_version_gate_executes()
     test_version_history()
     print("All plugin package tests passed")
     return 0

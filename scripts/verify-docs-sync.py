@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Ten drift classes, each of which has shipped before:
+Sixteen drift classes. The first fourteen have each shipped before; the
+fifteenth nearly did (#217); the sixteenth guards the ADR 0004 split:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -9,7 +10,8 @@ Ten drift classes, each of which has shipped before:
 2. The gallery (assets/index.html) must reach every shipped example, and every
    gallery tab must point at a file that exists.
 3. Every concrete file named in README.md's architecture tree must exist.
-4. Every relative references/*.md link in SKILL.md must resolve.
+4. Every relative references/*.md link in SKILL.md must resolve, and a link
+   into a style-guide.md section must name one of its headings.
 5. Claude and Pi command/prompt surfaces must route to the matching reference.
 6. Plugin descriptions must fit Cowork's installation limit while retaining
    every type's lexical hook. The skill and Codex longDescription keep the
@@ -19,10 +21,30 @@ Ten drift classes, each of which has shipped before:
 8. Every support path a strict skill bundler can extract from SKILL.md must be
    a literal file shipped inside the skill package.
 9. Import command surfaces must route to the visual-type taxonomy instead of
-   hardcoding a count that becomes stale when a type is added.
+   hardcoding a count that becomes stale when a type is added. README is the
+   same surface by another route — it carries the count in prose a user reads
+   before installing — so it is held to the same rule.
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
+12. The 4px-grid section (references/layout-budget.md since the ADR 0004 split)
+   and the output-spec type ramp must agree: the grid table carries no font-size
+   row, the grid section links to references/output-spec.md, the ramp table
+   keeps its five type roles across all three presets, and every font-size in
+   SKILL.md, references/primitives-core.md (the §6 markup patterns), and the
+   grid owner is a canonical role size or falls inside a named exception.
+13. Every copy of the Google Fonts css2 link must request the families
+   assets/template.html does, and the export @import must include them. A copy
+   in SKILL.md or any reference is held to the same parity even where no copy
+   is required.
+14. Every --font-serif in a template must reach 'Noto Serif' before any CJK
+   serif face, which Google Fonts also slices Cyrillic into, and the
+   template's own font link must request it.
+15. Every surface that lists the size presets for selection — the SKILL.md
+   and README output-dial tables and the three import commands — must name
+   exactly the presets in the output-spec.md size table, in its order.
+16. Every SKILL.md section the ADR 0004 split thinned must keep the exact link
+   to each block it moved out, or that content ships unreachable.
 """
 
 from __future__ import annotations
@@ -41,8 +63,9 @@ README = ROOT / "README.md"
 HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
 ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
 LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
+OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design/references/output-spec.md"
 VARIANTS = ("", "-dark", "-full")
-VISUAL_TYPE_COUNT = 40
+VISUAL_TYPE_COUNT = 41
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
 PLUGIN_DESCRIPTION_MAX = 500
 # Types whose selection-table name differs from its description vocabulary.
@@ -51,6 +74,7 @@ DESCRIPTION_ALIASES = {
     "line chart": "line",
     "scatter plot": "scatter",
 }
+DISCOVERY_HOOKS = ("lifecycle phase",)
 ROUTING_SURFACES = {
     Path("commands/export-diagram.md"): "references/export.md",
     Path("commands/import-drawio.md"): "references/import-drawio.md",
@@ -63,6 +87,16 @@ ROUTING_SURFACES = {
     Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
     Path("prompts/profile.md"): "references/profiles.md",
     Path("prompts/doctor.md"): "references/doctor.md",
+}
+# Surfaces that enumerate every size preset for selection, and the marker of
+# the line that carries the list. The output-spec.md size table is the source.
+SIZE_PRESET_TABLE_HEADING = "## 2. Size"
+SIZE_PRESET_SURFACES = {
+    Path("skills/diagram-design/SKILL.md"): "| **Size** |",
+    Path("README.md"): "| **Size** |",
+    Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
+    Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
+    Path("commands/import-excalidraw.md"): "- `--size` — any preset in `output-spec.md` §2:",
 }
 FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
 FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
@@ -174,6 +208,11 @@ def check_description(errors: list[str]) -> None:
                 f"description lost the lexical hook for type {name!r} "
                 f"(expected {key!r} in the SKILL.md frontmatter description)"
             )
+    for hook in DISCOVERY_HOOKS:
+        if hook not in description:
+            errors.append(
+                f"SKILL.md frontmatter description lost discovery hook {hook!r}"
+            )
 
 
 def gallery_types(source: str) -> list[str]:
@@ -195,7 +234,8 @@ def check_gallery(errors: list[str]) -> None:
             errors.append(f"gallery tab {name!r} points at a missing example-{name}.html")
     # Parse eyebrow numbers and parent-type bindings from tab buttons.
     # Variants (data-parent-type) may share their declared parent's eyebrow
-    # number; uniqueness is enforced only among independent (non-variant) types.
+    # number; independent (non-variant) types must be unique and form a
+    # contiguous ascending 01..N sequence in document order.
     tab_eyebrows: dict[str, str] = {}  # data-type → eyebrow number
     tab_parents: dict[str, str] = {}   # data-type → data-parent-type
     for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)</span>', source):
@@ -208,9 +248,11 @@ def check_gallery(errors: list[str]) -> None:
                 tab_parents[tm.group(1)] = pm.group(1)
     # Enforce uniqueness among independent (non-variant) types.
     seen_eyebrows: dict[str, str] = {}  # eyebrow → first independent type
+    independent_order: list[tuple[str, str]] = []  # (type, eyebrow) in document order
     for t, num in tab_eyebrows.items():
         if t in tab_parents:
             continue
+        independent_order.append((t, num))
         if num in seen_eyebrows:
             errors.append(
                 f"gallery has duplicate eyebrow number {num!r} on independent types "
@@ -218,6 +260,18 @@ def check_gallery(errors: list[str]) -> None:
             )
         else:
             seen_eyebrows[num] = t
+    # Enforce that independent ordinals are contiguous and ascending 01..N
+    # in document order. Uniqueness alone misses insertions that take the next
+    # free number while landing mid-gallery (see #213).
+    if independent_order:
+        expected = [f"{i:02d}" for i in range(1, len(independent_order) + 1)]
+        actual = [num for _, num in independent_order]
+        if actual != expected:
+            found = ", ".join(f"{t}={num}" for t, num in independent_order)
+            errors.append(
+                f"gallery independent eyebrow sequence must be contiguous ascending "
+                f"01..{len(independent_order):02d} in document order; found {found}"
+            )
     # Enforce that each variant's eyebrow matches its declared parent's.
     for t, parent in tab_parents.items():
         if parent not in tab_eyebrows:
@@ -281,12 +335,58 @@ def skill_reference_links(markdown: str) -> list[str]:
     )
 
 
+CODE_FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})")
+
+
+def heading_anchors(markdown: str) -> set[str]:
+    """GitHub-style heading slugs: lower-case, punctuation dropped, spaces to -.
+
+    ATX closing hashes (`### Title ###`) are stripped and lines inside ``` or
+    ~~~ fences are skipped, since neither is a heading GitHub would slug.
+    Not modelled: setext headings, indented code, HTML blocks, duplicate -1 suffixes.
+    """
+    anchors: set[str] = set()
+    fence = ""
+    for line in markdown.splitlines():
+        marker = CODE_FENCE.match(line)
+        if fence:
+            # Only a bare run of the same character, at least as long, closes it.
+            if (
+                marker
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= len(fence)
+                and not line[marker.end():].strip()
+            ):
+                fence = ""
+            continue
+        # A backtick run followed by another backtick is a code span, not a fence.
+        if marker and not (marker.group(1)[0] == "`" and "`" in line[marker.end():]):
+            fence = marker.group(1)
+            continue
+        heading = re.match(r"#{1,6}[ \t]+(.+?)[ \t]*$", line)
+        if heading:
+            text = re.sub(r"(?:^|[ \t]+)#+$", "", heading.group(1))
+            anchors.add(re.sub(r"[^\w\- ]", "", text.strip().lower()).replace(" ", "-"))
+    return anchors
+
+
 def check_skill_reference_links(
     errors: list[str], markdown: str, skill_directory: Path
 ) -> None:
     for target in sorted(set(skill_reference_links(markdown))):
         if not (skill_directory / target).is_file():
             errors.append(f"SKILL.md links to missing reference {target!r}")
+    # The compact Non-Latin routing line sends agents to style-guide.md
+    # sections; a renamed heading still resolves the file and lands on its top.
+    style_guide = skill_directory / "references/style-guide.md"
+    anchors = set(re.findall(r"\]\(references/style-guide\.md#([^)\s]+)\)", markdown))
+    if anchors and style_guide.is_file():
+        headings = heading_anchors(style_guide.read_text(encoding="utf-8"))
+        for anchor in sorted(anchors - headings):
+            errors.append(
+                f"SKILL.md links to 'references/style-guide.md#{anchor}', "
+                "which matches no heading in references/style-guide.md"
+            )
 
 
 def check_reference_asset_links(
@@ -365,6 +465,54 @@ def check_routing_surfaces(errors: list[str], root: Path) -> None:
             )
 
 
+def spec_size_presets(spec_markdown: str) -> list[str]:
+    """Preset names from the output-spec.md size table, in table order."""
+    presets: list[str] = []
+    for cells in table_rows(section(spec_markdown, SIZE_PRESET_TABLE_HEADING)):
+        name = re.match(r"`([a-z0-9-]+)`", cells[0])
+        if name:
+            presets.append(name.group(1))
+    return presets
+
+
+def surface_size_presets(markdown: str, marker: str) -> list[str] | None:
+    """Presets named on the surface line that starts with *marker*."""
+    for line in markdown.splitlines():
+        if line.startswith(marker):
+            listed = line[len(marker) :].split("|")[0]
+            return re.findall(r"`([a-z0-9-]+)`", listed)
+    return None
+
+
+def check_size_preset_surfaces(errors: list[str], root: Path) -> None:
+    spec = root / "skills/diagram-design/references/output-spec.md"
+    presets = spec_size_presets(spec.read_text(encoding="utf-8"))
+    if not presets:
+        errors.append("output-spec.md size table names no presets")
+        return
+    for relative, marker in SIZE_PRESET_SURFACES.items():
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"size-preset surface is missing: {relative.as_posix()}")
+            continue
+        listed = surface_size_presets(path.read_text(encoding="utf-8"), marker)
+        if listed is None:
+            errors.append(f"{relative.as_posix()} has no size-preset list")
+            continue
+        if listed == presets:
+            continue
+        missing = [name for name in presets if name not in listed]
+        extra = [name for name in listed if name not in presets]
+        drift = [f"missing {name}" for name in missing]
+        drift += [f"extra {name}" for name in extra]
+        if not drift:
+            drift = ["presets out of output-spec.md order"]
+        errors.append(
+            f"{relative.as_posix()} size presets drift from the output-spec.md size table: "
+            + ", ".join(drift)
+        )
+
+
 def check_factory_install_surface(errors: list[str], root: Path) -> None:
     markdown = (root / "README.md").read_text(encoding="utf-8")
     manifest = json.loads((root / FACTORY_MANIFEST).read_text(encoding="utf-8"))
@@ -414,12 +562,17 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # adds a type, and is the one file such a PR has no reason to open. Both import
 # commands were left at 27 while the selection table moved on.
 # The phrasing varies, so match the count rather than the one sentence it went
-# stale in. Two forms carry it: the bare count standing in for the table
-# (`one of the 27`), and a count attached to the taxonomy noun with room for
+# stale in. Four forms carry it: the bare count standing in for the table
+# (`one of the 27`), a count attached to the taxonomy noun with room for
 # adjectives between, in either order (`28 visual types`, `28 supported visual
-# diagram types`, `28 types of visual diagrams`). Those clauses insist on that
-# noun so an unrelated quantity — `accepts 2 file types` — is not rejected by a
-# gate about the visual taxonomy.
+# diagram types`, `28 types of visual diagrams`), a count bound to the noun as
+# a hyphenated modifier (`39-type catalog`), and a count quantifying the whole
+# set (`all 39 diagrams`). The first three insist on that noun so an unrelated
+# quantity — `accepts 2 file types` — is not rejected by a gate about the
+# visual taxonomy. The last two are checked only in a sentence with a nearby
+# visual-taxonomy cue (`catalog`, `gallery`, `render`, `shipped`, and so on),
+# so ordinary prose such as `a 10-type taxonomy` and `all 12 diagrams in the
+# appendix` remains valid while the README's stale phrases stay covered.
 #
 # Every gap is whitespace-tolerant because both commands already wrap the
 # sentence that carried the stale count, so a count can land just after the
@@ -428,16 +581,23 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 #
 # Word-form numerals (`Twenty-eight visual types`) are out of scope; README and
 # the docstring say "numeral" so the gate does not claim more than it checks.
+# README carried one of those (`Thirty-nine visual types`); it is count-free now
+# but nothing here would catch it coming back in words.
+_COUNT_CONTEXT = r"visual|catalog|gallery|render(?:er|ing)?|example|shipped|static|variant"
+_COUNT_SENTENCE = rf"[^.!?\n]*\b(?:{_COUNT_CONTEXT})\b"
 HARDCODED_COUNT_RE = re.compile(
     r"one\s+of\s+(?:the\s+)?\d+\b"
     r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
-    r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b",
+    r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b"
+    rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\b\d+-type\b"
+    rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\ball\s+\d+\s+diagrams?\b",
     re.IGNORECASE,
 )
 COUNT_SURFACES = (
     Path("commands/import-drawio.md"),
     Path("commands/import-mermaid.md"),
     Path("commands/import-excalidraw.md"),
+    Path("README.md"),
 )
 
 
@@ -507,6 +667,670 @@ def check_high_level_reference(errors: list[str], markdown: str) -> None:
         )
 
 
+TYPE_RAMP_ROLES = ("Title", "Node name", "Sublabel", "Arrow label", "Eyebrow / tag")
+# Both syntaxes the type-ramp contract claims: an SVG/HTML attribute in either
+# quote style, and a CSS declaration in px. Relative CSS units are page chrome,
+# not diagram type, so rem/em deliberately do not match.
+FONT_SIZE_RE = re.compile(
+    r"""font-size\s*(?:=\s*(?P<quote>["'])(?P<attr>\d+(?:\.\d+)?)(?P=quote)"""
+    r"""|:\s*(?P<css>\d+(?:\.\d+)?)px)"""
+)
+SIZE_RANGE_RE = re.compile(r"^(\d+(?:\.\d+)?)(?: to (\d+(?:\.\d+)?))?$")
+WATERMARK_OPACITY_RE = re.compile(r"at or under (\d+(?:\.\d+)?) opacity")
+ALPHA_RE = re.compile(
+    r"""(?:\bfill-)?(?<![-\w])opacity=["'](\d*\.?\d+)["']"""
+    r"""|rgba\([^)]*?,\s*(\d*\.?\d+)\s*\)"""
+)
+LEGACY_SIZE_HEADING = "### Registered legacy sizes"
+TYPE_SIZE_SUFFIXES = (".html", ".svg", ".md")
+# Where diagram type lives. The gallery pages (index.html, icons.html) are site
+# chrome, not diagrams, so the type ramp does not govern them.
+TYPE_SIZE_SURFACES = (
+    ("skills/diagram-design/assets", ("example-", "template")),
+    ("skills/diagram-design/references", ("type-",)),
+)
+
+
+WEIGHT_RE = re.compile(r"""font-weight\s*[:=]\s*["']?(\d{3}|bold)""")
+
+
+# The family a `{node-name}` role token stands for, and the weight that has to
+# ride alongside it because a family value cannot carry one. Then how each class
+# is written in the spec tables. All of it is the spec's own wording.
+CLASS_TOKEN_FONT = {
+    "serif": ("Instrument Serif", ""),
+    "mono": ("Geist Mono", ""),
+    "sans": ("Geist", ""),
+    "sans-600": ("Geist", 'font-weight="600"'),
+}
+CLASS_NAMES = {
+    "serif": "Instrument Serif",
+    "mono": "Geist Mono",
+    "sans": "Geist regular",
+    "sans-600": "Geist 600",
+    None: "unattributed",
+}
+
+
+def role_token_names(role: str) -> set[str]:
+    """The `{token}` spellings a reference pattern may use for a ramp role."""
+    slug = re.sub(r"[^a-z0-9]+", "-", role.lower()).strip("-")
+    return {slug, slug.split("-")[0]}
+
+
+def font_classes(text: str) -> set[str]:
+    """The ramp fonts a spec cell names. A cell may name more than one."""
+    named = set()
+    if "Instrument Serif" in text:
+        named.add("serif")
+    if "Mono" in text or "monospace" in text:
+        named.add("mono")
+    if "Geist 600" in text:
+        named.add("sans-600")
+    if "Geist regular" in text or "Geist sans" in text or "sans-serif" in text:
+        named.add("sans")
+    return named
+
+
+FONT_FAMILY_RE = re.compile(
+    r"""font-family\s*[:=]\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)'|(?P<bare>[^;>\n]*))"""
+)
+
+
+def family_class(value: str) -> str | None:
+    """Which ramp family a single `font-family` value names, weight aside."""
+    if "Instrument Serif" in value:
+        return "serif"
+    if "Mono" in value or "monospace" in value:
+        return "mono"
+    if "Geist" in value or "sans-serif" in value:
+        return "sans"
+    return None
+
+
+def declared_families(context: str) -> set[str | None]:
+    """Every family named in *context*, whichever quoting each declaration uses."""
+    return {
+        family_class(
+            match.group("dq") or match.group("sq") or match.group("bare") or ""
+        )
+        for match in FONT_FAMILY_RE.finditer(context)
+    }
+
+
+def element_class(context: str) -> str | None:
+    """Which ramp font an element is set in, weight included.
+
+    Geist at 600 or heavier is the node-name voice; lighter Geist is annotation.
+    Keeping them apart is what stops a node name borrowing an annotation size.
+    *context* may merge an element's tag with the CSS rules that style it, so two
+    declarations naming different families read as unattributed rather than as
+    whichever family happens to be tested first.
+    """
+    families = declared_families(context)
+    families.discard(None)
+    if len(families) != 1:
+        return None
+    family = families.pop()
+    if family != "sans":
+        return family
+    # Family and weight can arrive from separate rules, and they can disagree.
+    # The heaviest wins, which is the stricter reading: it denies the dense
+    # annotation range rather than granting it.
+    weights = [700 if raw == "bold" else int(raw) for raw in WEIGHT_RE.findall(context)]
+    return "sans-600" if weights and max(weights) >= 600 else "sans"
+
+
+def enclosing_tag(markup: str, index: int) -> str:
+    """The open tag holding the character at *index*, plus its parent `<text>`.
+
+    A `<tspan>` inherits its font from the `<text>` around it, so the parent is
+    appended and the two are classified as one string.
+    """
+    start = markup.rfind("<", 0, index)
+    if start < 0:
+        return ""
+    end = markup.find(">", index)
+    if end < 0:
+        return ""
+    tag = markup[start : end + 1]
+    # A CSS declaration inside `<style>` is not on an element. Rejecting a span
+    # that swallows another `<` keeps the stylesheet from reading as one tag.
+    if "<" in tag[1:]:
+        return ""
+    if tag.startswith("<tspan") and element_class(tag) is None:
+        parent = markup.rfind("<text", 0, start)
+        if parent >= 0:
+            parent_end = markup.find(">", parent)
+            if parent_end >= 0:
+                tag += markup[parent : parent_end + 1]
+    return tag
+
+
+def tag_alpha(tag: str) -> float | None:
+    """Smallest alpha the tag declares, whether as an attribute or in `rgba()`."""
+    alphas = [
+        float(explicit or in_rgba) for explicit, in_rgba in ALPHA_RE.findall(tag)
+    ]
+    return min(alphas) if alphas else None
+
+
+class TypeContract:
+    """The role ramp and its named exceptions, read off output-spec.md."""
+
+    def __init__(self) -> None:
+        self.canonical: dict[str, set[float]] = {}
+        self.ranges: list[tuple[str, float, float]] = []
+        self.watermark_alpha: float | None = None
+        self.role_tokens: dict[str, str] = {}
+
+    def allowed(self, klass: str | None) -> set[float]:
+        if klass is None:
+            return set().union(*self.canonical.values()) if self.canonical else set()
+        return self.canonical.get(klass, set())
+
+    def excepted(self, klass: str | None, value: float) -> bool:
+        # An exception belongs to the font beside it, so text with no declared
+        # font cannot claim one.
+        return klass is not None and any(
+            klass == exception_class and low <= value <= high and (value * 2) % 1 == 0
+            for exception_class, low, high in self.ranges
+        )
+
+    def off_ramp(self, tag: str, context: str, value: float) -> bool:
+        """Is *value* off the ramp and outside every exception open to it?
+
+        The canonical role sizes stay one union: a size that is on the ramp for
+        any role is on contract wherever it appears. The exceptions do not. Each
+        belongs to the font beside it in the spec, so an element has to be
+        attributed to that font before it can claim one, and *context* carries
+        the CSS rules that attribution needs.
+        """
+        alpha = tag_alpha(tag)
+        if (
+            self.watermark_alpha is not None
+            and alpha is not None
+            and alpha <= self.watermark_alpha
+        ):
+            return False
+        if any(value in sizes for sizes in self.canonical.values()):
+            return False
+        return not self.excepted(element_class(context), value)
+
+    def violation(self, tag: str, context: str, value: float) -> str | None:
+        """Why *value* is off contract on this tag, or None if it is fine."""
+        klass = element_class(context)
+        alpha = tag_alpha(tag)
+        if (
+            self.watermark_alpha is not None
+            and alpha is not None
+            and alpha <= self.watermark_alpha
+        ):
+            return None
+        if value in self.allowed(klass) or self.excepted(klass, value):
+            return None
+        if klass is None:
+            return (
+                f"font-size={format_size(value)} on text that declares no font; "
+                "a size off the role ramp needs one so its exception can be checked"
+            )
+        sizes = ", ".join(format_size(size) for size in sorted(self.allowed(klass)))
+        return (
+            f"font-size={format_size(value)} on {klass} text, where the role ramp "
+            f"allows {sizes or 'nothing'} and no named exception for that font "
+            "covers it"
+        )
+
+
+SVG_BLOCK_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
+CLASS_ATTR_RE = re.compile(r"""class=["']([^"']+)["']""")
+SELECTOR_CLASS_RE = re.compile(r"\.([A-Za-z0-9_-]+)")
+STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.DOTALL)
+CSS_RULE_RE = re.compile(r"([^{}]*)\{([^{}]*)\}")
+CSS_VAR_DECL_RE = re.compile(r"(--[\w-]+)\s*:\s*([^;}]+)")
+CSS_VAR_USE_RE = re.compile(r"var\(\s*(--[\w-]+)\s*\)")
+ROLE_TOKEN_RE = re.compile(r"\{([a-z][a-z-]*)\}")
+
+
+class Styles:
+    """The stylesheet an element has to be read against.
+
+    Shipped examples set type through CSS classes and custom properties as often
+    as through attributes, so the font behind a size is usually not on the
+    element. This collects the rules, resolves `var(--font-mono)` back to the
+    family it names, and expands the `{node-name}` role tokens the reference
+    patterns write, so a size can be attributed to a ramp font either way.
+    """
+
+    def __init__(
+        self, markup: str, role_tokens: dict[str, tuple[str, str]] | None = None
+    ) -> None:
+        self.variables: dict[str, str] = {}
+        self.rules: list[tuple[set[str], str, int, int]] = []
+        self.role_tokens = role_tokens or {}
+        for block in STYLE_BLOCK_RE.finditer(markup):
+            body, base = block.group(1), block.start(1)
+            for name, value in CSS_VAR_DECL_RE.findall(body):
+                self.variables.setdefault(name, value.strip())
+            for rule in CSS_RULE_RE.finditer(body):
+                self.rules.append(
+                    (
+                        set(SELECTOR_CLASS_RE.findall(rule.group(1))),
+                        rule.group(2),
+                        base + rule.start(2),
+                        base + rule.end(2),
+                    )
+                )
+
+    def expand(self, text: str) -> str:
+        text = CSS_VAR_USE_RE.sub(
+            lambda match: self.variables.get(match.group(1), match.group(0)), text
+        )
+        # A role token stands where a family value goes, so the weight it implies
+        # cannot be written in its place; it is appended to the context instead.
+        weights: list[str] = []
+
+        def resolve(match: re.Match[str]) -> str:
+            font = self.role_tokens.get(match.group(1))
+            if font is None:
+                return match.group(0)
+            family, weight = font
+            if weight:
+                weights.append(weight)
+            return family
+
+        return " ".join([ROLE_TOKEN_RE.sub(resolve, text), *weights])
+
+    def declarations_for(self, classes: set[str]) -> str:
+        """Every rule body whose selector names one of *classes*."""
+        return " ".join(body for named, body, _, _ in self.rules if named & classes)
+
+    def rule_at(self, index: int) -> tuple[set[str], str]:
+        """The rule holding *index*, for a size declared in CSS rather than on a tag."""
+        for named, body, start, end in self.rules:
+            if start <= index < end:
+                return named, body
+        return set(), ""
+
+    def font_context(self, tag: str, index: int) -> str:
+        """*tag* plus every rule that could set its font, variables resolved."""
+        parts = [tag]
+        if tag:
+            for attribute in CLASS_ATTR_RE.findall(tag):
+                parts.append(self.declarations_for(set(attribute.split())))
+        else:
+            named, body = self.rule_at(index)
+            parts.extend([body, self.declarations_for(named)])
+        return self.expand(" ".join(parts))
+
+
+def font_sizes(markup: str, styles: Styles | None = None) -> list[tuple[float, str, str]]:
+    """Every declared font size in *markup*, with its tag and its font context."""
+    styles = Styles(markup) if styles is None else styles
+    found = []
+    for match in FONT_SIZE_RE.finditer(markup):
+        raw = match.group("attr") or match.group("css")
+        tag = enclosing_tag(markup, match.start())
+        found.append((float(raw), tag, styles.font_context(tag, match.start())))
+    return found
+
+
+def diagram_font_sizes(
+    markup: str, styles: Styles | None = None
+) -> list[tuple[float, str, str]]:
+    """Font sizes that govern diagram type, chrome around the diagram excluded.
+
+    An example page is a diagram wrapped in prose. Attributes inside the `<svg>`
+    count, and so does a CSS rule whose class is worn by an element in there; a
+    rule for the page's own lede or heading does not.
+    """
+    styles = Styles(markup) if styles is None else styles
+    if "<svg" not in markup:
+        return font_sizes(markup, styles)
+
+    spans = [match.span() for match in SVG_BLOCK_RE.finditer(markup)]
+    drawn = set()
+    for start, end in spans:
+        for value in CLASS_ATTR_RE.findall(markup[start:end]):
+            drawn.update(value.split())
+
+    sizes = []
+    for match in FONT_SIZE_RE.finditer(markup):
+        raw = match.group("attr") or match.group("css")
+        inside = any(start <= match.start() < end for start, end in spans)
+        if not inside:
+            if match.group("attr"):
+                continue
+            brace = markup.rfind("{", 0, match.start())
+            if brace < 0:
+                continue
+            selector = markup[max(markup.rfind("}", 0, brace), 0) : brace]
+            if not drawn.intersection(SELECTOR_CLASS_RE.findall(selector)):
+                continue
+        tag = enclosing_tag(markup, match.start())
+        sizes.append((float(raw), tag, styles.font_context(tag, match.start())))
+    return sizes
+
+
+def read_type_contract(errors: list[str], spec_markdown: str) -> TypeContract | None:
+    """Parse the role ramp and exceptions table; None if the section is missing."""
+    ramp = section(spec_markdown, "### Type ramp per size class")
+    if not ramp:
+        errors.append("output-spec.md has no '### Type ramp per size class' section")
+        return None
+
+    contract = TypeContract()
+    rows = table_rows(ramp)
+    for role in TYPE_RAMP_ROLES:
+        row = next((cells for cells in rows if cells and cells[0].startswith(role)), None)
+        if row is None:
+            errors.append(f"output-spec.md type ramp is missing the {role!r} role row")
+            continue
+        named = font_classes(row[0])
+        if not named:
+            errors.append(
+                f"output-spec.md type ramp row {role!r} does not name its font; "
+                "the role sizes cannot be bound without one"
+            )
+            continue
+        sizes = [cell for cell in row[1:] if re.fullmatch(r"\d+(?:\.\d+)?", cell)]
+        if len(sizes) != 3:
+            errors.append(
+                f"output-spec.md type ramp row {role!r} has {len(sizes)} numeric "
+                "sizes; expected three (standard, presentation, print)"
+            )
+            continue
+        for klass in named:
+            contract.canonical.setdefault(klass, set()).update(float(s) for s in sizes)
+        if len(named) == 1:
+            font = CLASS_TOKEN_FONT.get(next(iter(named)))
+            if font:
+                for token in role_token_names(role):
+                    contract.role_tokens[token] = font
+
+    # Scope the size parsing to the exceptions table. The ramp rows above it end
+    # in a bare number too, and reading those as exceptions would let any ramp
+    # value stand in for a missing exceptions table.
+    header = re.search(r"^\|\s*Exception\s*\|", ramp, re.MULTILINE)
+    for cells in table_rows(ramp[header.start() :] if header else ""):
+        if len(cells) < 3:
+            continue
+        label, font_cell, sizes_cell = cells[0], cells[1], cells[-1]
+        if label == "Exception":
+            continue
+        if font_cell.lower() == "any":
+            opacity = WATERMARK_OPACITY_RE.search(label)
+            if opacity:
+                contract.watermark_alpha = float(opacity.group(1))
+            continue
+        named = font_classes(font_cell)
+        if not named:
+            errors.append(
+                f"output-spec.md exception {label!r} names font {font_cell!r}, "
+                "which is not one of the ramp fonts"
+            )
+            continue
+        # A Sizes cell may qualify itself after a comma ("7 to 11, half steps
+        # allowed"); the size itself is the part before it.
+        match = SIZE_RANGE_RE.match(sizes_cell.split(",", 1)[0].strip())
+        if match:
+            low = float(match.group(1))
+            high = float(match.group(2)) if match.group(2) else low
+            for klass in named:
+                contract.ranges.append((klass, low, high))
+    if not contract.ranges:
+        errors.append(
+            "output-spec.md type ramp has no named font-size exceptions table; "
+            "every off-ramp size needs a documented home"
+        )
+    return contract
+
+
+def section(markdown: str, heading: str) -> str:
+    """Text from *heading* to the next `### ` heading, heading excluded."""
+    start = markdown.find(heading)
+    if start < 0:
+        return ""
+    body = markdown[start + len(heading) :]
+    end = re.search(r"^### ", body, re.MULTILINE)
+    return body[: end.start()] if end else body
+
+
+def table_rows(text: str) -> list[list[str]]:
+    """Markdown table rows as cell lists, header and separator rows dropped."""
+    rows: list[list[str]] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if all(re.fullmatch(r":?-{2,}:?", cell) for cell in cells):
+            continue
+        rows.append(cells)
+    return rows
+
+
+def format_size(value: float) -> str:
+    return f"{value:g}"
+
+
+# The ADR 0004 split moved the grid table out of SKILL.md §7 and the markup
+# patterns out of §6. The contract follows them: the grid owner must carry the
+# grid, and every file holding a pattern, SKILL.md included, answers to the ramp.
+GRID_OWNER = Path("references/layout-budget.md")
+TYPE_PATTERN_SURFACES = (Path("SKILL.md"), Path("references/primitives-core.md"))
+
+
+def check_type_ramp(
+    errors: list[str],
+    grid_markdown: str,
+    spec_markdown: str,
+    *,
+    grid_source: str = GRID_OWNER.as_posix(),
+    patterns: dict[str, str] | None = None,
+) -> None:
+    """The grid section and the output-spec role ramp are one contract.
+
+    *grid_markdown* must hold the `### 4px grid` section; its font sizes and
+    those in each of *patterns* (name to markdown) must sit on the role ramp.
+    """
+    grid = section(grid_markdown, "### 4px grid")
+    if not grid:
+        errors.append(f"{grid_source} has no '### 4px grid' section")
+    else:
+        if re.search(r"^\|\s*Font sizes", grid, re.MULTILINE):
+            errors.append(
+                f"{grid_source} 4px-grid table carries a 'Font sizes' row; type sizes "
+                "belong to the role ramp in references/output-spec.md, not the grid"
+            )
+        if "references/output-spec.md" not in grid:
+            errors.append(
+                f"{grid_source} 4px-grid section does not link to references/output-spec.md "
+                "for the type ramp"
+            )
+
+    contract = read_type_contract(errors, spec_markdown)
+    if contract is None:
+        return
+
+    for name, markdown in ((grid_source, grid_markdown), *(patterns or {}).items()):
+        styles = Styles(markdown, contract.role_tokens)
+        for value, tag, context in font_sizes(markdown, styles):
+            violation = contract.violation(tag, context, value)
+            if violation:
+                errors.append(f"{name} uses {violation}")
+
+
+def check_type_ramp_surfaces(errors: list[str], root: Path) -> None:
+    """Run the type-ramp contract over the grid owner and every pattern file."""
+    package = root / SKILL_PACKAGE
+    spec_path = package / "references/output-spec.md"
+    if not spec_path.is_file():
+        errors.append("type-ramp surface is missing: references/output-spec.md")
+        return
+    texts: dict[str, str] = {}
+    for relative in (GRID_OWNER, *TYPE_PATTERN_SURFACES):
+        path = package / relative
+        if not path.is_file():
+            errors.append(f"type-ramp surface is missing: {relative.as_posix()}")
+            continue
+        texts[relative.as_posix()] = path.read_text(encoding="utf-8")
+    grid_markdown = texts.pop(GRID_OWNER.as_posix(), None)
+    if grid_markdown is None:
+        return
+    check_type_ramp(
+        errors,
+        grid_markdown,
+        spec_path.read_text(encoding="utf-8"),
+        grid_source=GRID_OWNER.as_posix(),
+        patterns=texts,
+    )
+
+
+# What the ADR 0004 split (2026-09-27) moved out of SKILL.md, by the section
+# that used to hold it. Each moved block keeps its own link to the new home,
+# matched exactly: a surviving link to the same file under another anchor does
+# not stand in for it. The checks above follow the content there, and this
+# keeps agents following too.
+SPLIT_ROUTES = (
+    ("## 5.", "references/style-guide.md#node-type--treatment"),
+    ("## 5.", "references/style-guide.md#typography"),
+    ("## 6.", "references/primitives-core.md"),
+    ("## 6.", "references/primitives-core.md#mandatory-connector-rules"),
+    ("## 7.", "references/layout-budget.md"),
+    ("## 7.", "references/layout-budget.md#complexity-budget-per-diagram"),
+    ("## 8.", "references/layout-budget.md#summary-card-pattern"),
+    ("## 12.", "references/primitives-core.md#accessible-svg-contract"),
+)
+LINK_TARGET = re.compile(r"\]\(([^)\s]+)")
+
+
+def skill_section(markdown: str, number: str) -> tuple[str, str] | None:
+    """The `## N.` heading line and its body up to the next `## ` heading."""
+    match = re.search(rf"^{re.escape(number)} .*$", markdown, re.MULTILINE)
+    if match is None:
+        return None
+    rest = markdown[match.end() :]
+    end = re.search(r"^## ", rest, re.MULTILINE)
+    return match.group(0), rest[: end.start()] if end else rest
+
+
+def check_split_routes(errors: list[str], markdown: str) -> None:
+    for number, target in SPLIT_ROUTES:
+        found = skill_section(markdown, number)
+        if found is None:
+            errors.append(f"SKILL.md has no '{number}' section; it must route to {target}")
+            continue
+        heading, body = found
+        if target not in LINK_TARGET.findall(body):
+            errors.append(
+                f"SKILL.md {heading!r} no longer routes to {target}; the ADR 0004 split "
+                "moved that content there, so it would ship unreachable"
+            )
+
+
+def check_legacy_type_sizes(errors: list[str], spec_markdown: str, root: Path) -> None:
+    """The registered legacy sizes match what the shipped files actually carry."""
+    contract = read_type_contract(errors, spec_markdown)
+    if contract is None:
+        return
+
+    registry: dict[str, list[tuple[str | None, float]]] = {}
+    for cells in table_rows(section(spec_markdown, LEGACY_SIZE_HEADING)):
+        if len(cells) < 2 or not cells[0].startswith("`"):
+            continue
+        name = cells[0].strip("`")
+        uses = []
+        for cell in cells[1].split(","):
+            use = read_legacy_use(errors, name, cell)
+            if use is not None:
+                uses.append(use)
+        registry[name] = sorted(uses, key=use_order)
+    if not registry:
+        errors.append(
+            f"output-spec.md has no '{LEGACY_SIZE_HEADING}' table; the shipped "
+            "off-contract sizes need a written home"
+        )
+        return
+
+    measured: dict[str, list[tuple[str | None, float]]] = {}
+    for directory, prefixes in TYPE_SIZE_SURFACES:
+        for path in sorted((root / directory).iterdir()):
+            if path.suffix.lower() not in TYPE_SIZE_SUFFIXES:
+                continue
+            if not path.name.startswith(prefixes):
+                continue
+            markup = path.read_text(encoding="utf-8")
+            styles = Styles(markup, contract.role_tokens)
+            off = [
+                (element_class(context), value)
+                for value, tag, context in diagram_font_sizes(markup, styles)
+                if contract.off_ramp(tag, context, value)
+            ]
+            if off:
+                measured[f"{path.parent.name}/{path.name}"] = sorted(off, key=use_order)
+
+    for name in sorted(set(registry) | set(measured)):
+        want = registry.get(name)
+        got = measured.get(name)
+        if want == got:
+            continue
+        if want is None:
+            errors.append(
+                f"{name} carries off-contract font sizes "
+                f"{format_uses(got)} that the registered legacy list in "
+                "output-spec.md does not cover"
+            )
+        elif got is None:
+            errors.append(
+                f"output-spec.md registers legacy font sizes {format_uses(want)} "
+                f"for {name}, which no longer carries any; drop the row"
+            )
+        else:
+            errors.append(
+                f"{name} carries off-contract font sizes {format_uses(got)} but "
+                f"output-spec.md registers {format_uses(want)}"
+            )
+
+
+LEGACY_USE_RE = re.compile(r"^(?P<font>.*?)\s*(?P<size>\d+(?:\.\d+)?)$")
+
+
+def read_legacy_use(
+    errors: list[str], name: str, cell: str
+) -> tuple[str | None, float] | None:
+    """One `Geist 600 13` registry entry as the font class and size it names."""
+    match = LEGACY_USE_RE.match(cell.strip())
+    if not match:
+        errors.append(
+            f"output-spec.md registers {cell.strip()!r} for {name}, which is not "
+            "a font and a size; a legacy size is registered against the font "
+            "carrying it so the two cannot be swapped"
+        )
+        return None
+    font = match.group("font")
+    named = font_classes(font)
+    if len(named) != 1:
+        if font.strip() != CLASS_NAMES[None]:
+            errors.append(
+                f"output-spec.md registers {cell.strip()!r} for {name}, naming "
+                f"font {font.strip()!r}, which is not one of the ramp fonts"
+            )
+            return None
+        return (None, float(match.group("size")))
+    return (next(iter(named)), float(match.group("size")))
+
+
+def use_order(use: tuple[str | None, float]) -> tuple[str, float]:
+    return (CLASS_NAMES[use[0]], use[1])
+
+
+def format_uses(uses: list[tuple[str | None, float]]) -> str:
+    return ", ".join(
+        f"{CLASS_NAMES[klass]} {format_size(value)}" for klass, value in uses
+    )
+
+
 MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/plugin.json"), ("description",)),
     (Path(".claude-plugin/marketplace.json"), ("description",)),
@@ -563,6 +1387,56 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                         f"type {name!r} (expected {hook!r}) — it must name every "
                         f"type the SKILL.md description names"
                     )
+            for hook in DISCOVERY_HOOKS:
+                if hook not in text:
+                    errors.append(
+                        f"{relative.as_posix()} {key!r} lost discovery hook {hook!r}"
+                    )
+
+
+SKILL_PACKAGE = Path("skills/diagram-design")
+# Either quote style: the backreference ends the value at its own quote.
+FONT_LINK = re.compile(
+    r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com(?:(?!(?P=quote)).)*)(?P=quote)"""
+)
+# Paths inside the skill package that carry the same css2 link as
+# assets/template.html. template-terminal.html is absent on purpose: the
+# terminal skin loads Geist Mono alone. SKILL.md carried a copy until the
+# ADR 0004 split routed its typography to style-guide.md; a copy that comes
+# back is still checked, as an optional surface below.
+FONT_LINK_SURFACES = (
+    Path("assets/template-dark.html"),
+    Path("assets/template-full.html"),
+    Path("assets/template-motion.html"),
+    Path("references/style-guide.md"),
+)
+# A real css2 copy, as opposed to prose such as `<link href="...fonts.googleapis.com...">`.
+CSS2_LINK = re.compile(
+    r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com/css2\?(?:(?!(?P=quote)).)*)(?P=quote)"""
+)
+
+
+def optional_font_link_surfaces(root: Path) -> list[Path]:
+    """SKILL.md and every reference not already required to carry the link."""
+    package = root / SKILL_PACKAGE
+    references = sorted((package / "references").glob("*.md"))
+    candidates = [Path("SKILL.md"), *(path.relative_to(package) for path in references)]
+    return [path for path in candidates if path not in FONT_LINK_SURFACES]
+TITLE_STACK_TEMPLATES = (
+    Path("assets/template.html"),
+    Path("assets/template-dark.html"),
+    Path("assets/template-full.html"),
+    Path("assets/template-motion.html"),
+)
+# Every Noto Serif CJK face Google Fonts serves also carries a cyrillic slice.
+CJK_SERIF_FACES = (
+    "Noto Serif KR",
+    "Noto Serif TC",
+    "Noto Serif SC",
+    "Noto Serif JP",
+    "Noto Serif HK",
+)
+SERIF_STACK = re.compile(r"--font-serif\s*:\s*([^;]+);")
 
 
 def font_families(url: str) -> set[str]:
@@ -574,24 +1448,31 @@ def font_families(url: str) -> set[str]:
     }
 
 
-def check_export_font_parity(errors: list[str], root: Path) -> None:
-    """The exported SVG must request every face the shipped HTML link does.
+def family_names(families: set[str]) -> str:
+    return ", ".join(name.removeprefix("family=").replace("+", " ")
+                     for name in sorted(families))
 
-    The two strings live in different files and drifted apart once already: the
-    CJK faces reached assets/template.html but never the @import in export.md,
-    so a Korean or Chinese diagram exported to .svg silently lost its type. That
-    failure only shows up on a machine other than the author's, which is exactly
-    the case the faces are in the link to prevent.
+
+def check_export_font_parity(errors: list[str], root: Path) -> None:
+    """Every copy of the Google Fonts link must request the same faces.
+
+    assets/template.html is the source. The other three templates and the style
+    guide's Font stack block carry the same css2 link and must request exactly
+    its families, as must any copy in SKILL.md or another reference; the export
+    @import must request at least them. The strings live in different files and drifted apart once already:
+    the CJK faces reached assets/template.html but never the @import in
+    export.md, so a Korean or Chinese diagram exported to .svg silently lost its
+    type. That failure only shows up on a machine other than the author's,
+    which is exactly the case the faces are in the link to prevent.
     """
-    template = root / "skills/diagram-design/assets/template.html"
-    export = root / "skills/diagram-design/references/export.md"
+    template = root / SKILL_PACKAGE / "assets/template.html"
+    export = root / SKILL_PACKAGE / "references/export.md"
     for path in (template, export):
         if not path.is_file():
             errors.append(f"font-parity surface is missing: {path.name}")
             return
 
-    link = re.search(r'href="([^"]*fonts\.googleapis\.com[^"]*)"',
-                     template.read_text(encoding="utf-8"))
+    link = FONT_LINK.search(template.read_text(encoding="utf-8"))
     imported = re.search(r"@import url\('([^']+)'\)",
                          export.read_text(encoding="utf-8"))
     if not link or not imported:
@@ -601,15 +1482,102 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
         )
         return
 
-    missing = sorted(font_families(link.group(1)) - font_families(imported.group(1)))
+    families = font_families(link.group("url"))
+    missing = families - font_families(imported.group(1))
     if missing:
-        names = ", ".join(name.removeprefix("family=").replace("+", " ")
-                          for name in missing)
         errors.append(
-            f"references/export.md @import omits {names}, which "
+            f"references/export.md @import omits {family_names(missing)}, which "
             f"assets/template.html requests; an exported .svg would resolve "
             f"those scripts through whatever font the viewer happens to have"
         )
+
+    def report_drift(relative: Path, url: str) -> None:
+        requested = font_families(url)
+        drift = [
+            f"{label} {family_names(names)}"
+            for label, names in (
+                ("missing", families - requested),
+                ("extra", requested - families),
+            )
+            if names
+        ]
+        if drift:
+            errors.append(
+                f"{relative.as_posix()} font link drifts from assets/template.html: "
+                + "; ".join(drift)
+            )
+
+    for relative in FONT_LINK_SURFACES:
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            errors.append(f"font-parity surface is missing: {relative.as_posix()}")
+            continue
+        surface_link = FONT_LINK.search(path.read_text(encoding="utf-8"))
+        if not surface_link:
+            errors.append(f"could not locate the font link in {relative.as_posix()}")
+            continue
+        report_drift(relative, surface_link.group("url"))
+
+    for relative in optional_font_link_surfaces(root):
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            continue
+        for copy in CSS2_LINK.finditer(path.read_text(encoding="utf-8")):
+            report_drift(relative, copy.group("url"))
+
+
+def title_stack_error(name: str, stack: str) -> str | None:
+    """Why one --font-serif value fails the Cyrillic order, or None."""
+    cjk = {face.casefold(): face for face in CJK_SERIF_FACES}
+    faces = [face.strip().strip("'\"").casefold() for face in stack.split(",")]
+    if "noto serif" not in faces:
+        return (
+            f"{name} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
+            "no Cyrillic, so a Cyrillic title falls through to the next face"
+        )
+    ahead = [cjk[face] for face in faces[: faces.index("noto serif")] if face in cjk]
+    if ahead:
+        return (
+            f"{name} --font-serif lists {ahead[0]!r} before 'Noto Serif'; Google "
+            f"Fonts slices Cyrillic into {ahead[0]} as well, so a Cyrillic title "
+            "would draw from it"
+        )
+    return None
+
+
+def check_title_fallback_order(errors: list[str], root: Path) -> None:
+    """Every template --font-serif must reach 'Noto Serif' before a CJK serif.
+
+    Instrument Serif has no Cyrillic, so a Cyrillic page title draws from the
+    next face in the stack. Google Fonts slices Cyrillic into every Noto Serif
+    CJK face as well, so a stack that reaches one of them first renders the
+    title in a Korean, Chinese, or Japanese design's Cyrillic instead of the
+    face built for it. Every declaration counts, so an override such as a
+    dark-mode block cannot reorder the stack unseen. The template's own css2
+    link must also request Noto Serif: parity only compares the copies with
+    each other, so dropping the family from all of them at once passes it.
+    """
+    for relative in TITLE_STACK_TEMPLATES:
+        name = relative.as_posix()
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            errors.append(f"title-stack template is missing: {name}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        stacks = SERIF_STACK.findall(source)
+        if not stacks:
+            errors.append(f"{name} has no --font-serif stack")
+            continue
+        for problem in dict.fromkeys(title_stack_error(name, stack) for stack in stacks):
+            if problem:
+                errors.append(problem)
+        link = FONT_LINK.search(source)
+        if not link or "family=Noto+Serif" not in font_families(link.group("url")):
+            errors.append(
+                f"{name} font link does not request Noto Serif, which its "
+                "--font-serif names for Cyrillic titles; without it they resolve "
+                "through whatever serif the viewer has installed"
+            )
 
 
 def main() -> int:
@@ -636,8 +1604,15 @@ def main() -> int:
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
     )
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
+    check_type_ramp_surfaces(errors, ROOT)
+    check_split_routes(errors, SKILL.read_text(encoding="utf-8"))
+    check_legacy_type_sizes(
+        errors, OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), ROOT
+    )
     check_routing_surfaces(errors, ROOT)
+    check_size_preset_surfaces(errors, ROOT)
     check_export_font_parity(errors, ROOT)
+    check_title_fallback_order(errors, ROOT)
     if errors:
         print("FAIL docs sync")
         for error in errors:
@@ -645,10 +1620,12 @@ def main() -> int:
         return 1
     print(
         "OK docs sync: description hooks, gallery reachability, README tree, "
-        "reference links, asset citations, packaged support files, routing surfaces, "
+        "reference links and style-guide anchors, asset citations, packaged support "
+        "files, routing surfaces, size-preset surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
-        "export font parity"
+        "font-link parity, title fallback order, type-ramp contract, registered legacy "
+        "type sizes, split routing"
     )
     return 0
 
