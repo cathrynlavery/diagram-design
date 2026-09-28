@@ -48,13 +48,19 @@ jobs:
 
       # Versions are bumped on main by the Auto Version Bump workflow after
       # each merge (ADR 0009); pull requests must leave them untouched.
+      # A pull_request checkout is GitHub's merge of the PR into the current
+      # base tip, so the merge's first parent is the base to compare against.
+      # github.event.pull_request.base.sha can predate later auto-bumps and
+      # would report their versions as edits made by the PR.
       - name: Forbid manifest version changes in pull requests
-        env:
-          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            python3 scripts/verify-plugin-package.py --require-no-bump "$BASE_REF"
+            if ! git rev-parse -q --verify HEAD^2 >/dev/null; then
+              echo "expected the pull request merge commit at HEAD" >&2
+              exit 1
+            fi
+            python3 scripts/verify-plugin-package.py --require-no-bump HEAD^1
           else
             python3 scripts/verify-plugin-package.py --current-only
           fi
@@ -230,6 +236,11 @@ jobs:
         if: always()
         id: screenshots
         run: python scripts/verify-screenshot-freshness.py
+
+      - name: Verify screenshot freshness checker
+        if: always()
+        id: screenshots_tests
+        run: python scripts/test-verify-screenshot-freshness.py
 
       - name: Install Pillow for README thumbnail verification
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
@@ -461,6 +472,7 @@ jobs:
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Screenshot Freshness Checker | ${{ steps.screenshots_tests.outcome == 'success' && '✅ Passed' || (steps.screenshots_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| README Thumbnail Freshness | ${{ steps.readme_thumbs.outcome == 'success' && '✅ Passed' || (steps.readme_thumbs.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

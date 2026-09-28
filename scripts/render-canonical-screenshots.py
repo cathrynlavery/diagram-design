@@ -15,6 +15,7 @@ from screenshot_catalog import (
     png_dimensions,
     screenshot_path,
     sha256,
+    sha256_text,
     source_path,
 )
 
@@ -50,7 +51,7 @@ def main() -> int:
                     "slug": slug,
                     "source": source.relative_to(ROOT).as_posix(),
                     "screenshot": output.relative_to(ROOT).as_posix(),
-                    "source_sha256": sha256(source),
+                    "source_sha256": sha256_text(source),
                     "screenshot_sha256": sha256(output),
                     "width": width,
                     "height": height,

@@ -523,7 +523,8 @@ def check_docs() -> None:
         if needle not in output_text:
             fail(f"output-spec.md missing section {needle!r}")
 
-    # Every viewBox preset must respect the 4px grid rule (SKILL.md §7).
+    # Every viewBox preset must respect the 4px grid rule (SKILL.md §7; the
+    # table lives in references/layout-budget.md).
     for w, h in re.findall(r"`0 0 (\d+) (\d+)`", output_text):
         if int(w) % 4 or int(h) % 4:
             fail(f"viewBox preset {w}×{h} is off the 4px grid")

@@ -107,6 +107,8 @@ def load_verify_module():
 # Every file that carries the Google Fonts css2 link or the export @import.
 # The fixtures copy them from the real tree, so the passing case is the
 # shipped wiring and each mutation below is the only defect in the tree.
+# SKILL.md left both lists when the ADR 0004 split routed its typography to
+# style-guide.md; check_font_link_copies covers a copy that comes back.
 FONT_SURFACES = (
     "assets/template.html",
     "assets/template-dark.html",
@@ -114,7 +116,6 @@ FONT_SURFACES = (
     "assets/template-motion.html",
     "references/style-guide.md",
     "references/export.md",
-    "SKILL.md",
 )
 # Spelled out here rather than read from the verifier: a surface or template
 # dropped from the verifier's own lists must fail a test, not shrink it.
@@ -123,7 +124,14 @@ LINK_SURFACES = (
     "assets/template-full.html",
     "assets/template-motion.html",
     "references/style-guide.md",
+)
+# Files the ADR 0004 split made carriers of the type-ramp contract: the grid
+# owner, the two files holding markup patterns, and the spec they answer to.
+TYPE_RAMP_FILES = (
     "SKILL.md",
+    "references/primitives-core.md",
+    "references/layout-budget.md",
+    "references/output-spec.md",
 )
 TEMPLATES = (
     "assets/template.html",
@@ -361,6 +369,218 @@ def check_title_font_link(verify) -> None:
         if errors != expected:
             raise AssertionError(f"a coordinated Noto Serif removal was not reported: {errors}")
     print("OK title links: every template loads the Noto Serif its stack names")
+
+
+def check_font_link_copies(verify) -> None:
+    """A css2 link outside the required surfaces is still held to parity.
+
+    SKILL.md carried a required copy until the ADR 0004 split routed its
+    typography to style-guide.md. A copy that comes back, in SKILL.md or in any
+    reference, must match the template like every required one does.
+    """
+    style_guide = (ROOT / "skills/diagram-design/references/style-guide.md").read_text(
+        encoding="utf-8"
+    )
+    link = next(line for line in style_guide.splitlines() if "fonts.googleapis.com/css2" in line)
+    drifted = link.replace(NOTO_SERIF_FAMILY, "")
+    if drifted == link:
+        raise AssertionError("style-guide.md font link no longer requests Noto Serif")
+    for relative in ("SKILL.md", "references/primitives-core.md"):
+        shipped = (ROOT / "skills/diagram-design" / relative).read_text(encoding="utf-8")
+        with font_fixture() as root:
+            path = root / "skills/diagram-design" / relative
+            path.write_text(shipped, encoding="utf-8")
+            errors = run_checks(root, verify.check_export_font_parity)
+            if errors:
+                raise AssertionError(f"shipped {relative} failed font parity: {errors}")
+
+            path.write_text(shipped + f"\n```html\n{link}\n```\n", encoding="utf-8")
+            errors = run_checks(root, verify.check_export_font_parity)
+            if errors:
+                raise AssertionError(f"a matching css2 copy in {relative} was rejected: {errors}")
+
+            expected = [
+                f"{relative} font link drifts from assets/template.html: missing Noto Serif"
+            ]
+            for copy in (drifted, single_quoted(drifted)):
+                path.write_text(shipped + f"\n```html\n{copy}\n```\n", encoding="utf-8")
+                errors = run_checks(root, verify.check_export_font_parity)
+                if errors != expected:
+                    raise AssertionError(
+                        f"a drifted css2 copy in {relative} was not reported: {copy} {errors}"
+                    )
+
+            path.write_text(shipped + f"\n```html\n{single_quoted(link)}\n```\n", encoding="utf-8")
+            errors = run_checks(root, verify.check_export_font_parity)
+            if errors:
+                raise AssertionError(
+                    f"a matching single-quoted css2 copy in {relative} was rejected: {errors}"
+                )
+
+    # A required surface may quote its href either way; drift is still drift,
+    # not a missing link.
+    with font_fixture() as root:
+        path = root / "skills/diagram-design/references/style-guide.md"
+        path.write_text(style_guide.replace(link, single_quoted(link)), encoding="utf-8")
+        errors = run_checks(root, verify.check_export_font_parity)
+        if errors:
+            raise AssertionError(f"a single-quoted style-guide link was rejected: {errors}")
+
+        path.write_text(style_guide.replace(link, single_quoted(drifted)), encoding="utf-8")
+        errors = run_checks(root, verify.check_export_font_parity)
+        expected = [
+            "references/style-guide.md font link drifts from assets/template.html: "
+            "missing Noto Serif"
+        ]
+        if errors != expected:
+            raise AssertionError(f"a single-quoted drifted style-guide link was not reported: {errors}")
+    print("OK font links: a css2 copy in SKILL.md or any reference is held to parity")
+
+
+def single_quoted(link: str) -> str:
+    """*link* with its href value in single quotes instead of double."""
+    head, marker, rest = link.partition('href="')
+    value, closing, tail = rest.partition('"')
+    if not marker or not closing:
+        raise AssertionError(f"no double-quoted href to requote in {link!r}")
+    return f"{head}href='{value}'{tail}"
+
+
+@contextmanager
+def type_ramp_fixture():
+    """Yield a temp root holding the shipped type-ramp carriers, byte for byte."""
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-ramp-") as temp_dir:
+        root = Path(temp_dir)
+        for relative in TYPE_RAMP_FILES:
+            target = root / "skills/diagram-design" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+        yield root
+
+
+def check_split_type_ramp(verify) -> None:
+    """The type-ramp contract follows the grid and the patterns out of SKILL.md."""
+    errors: list[str] = []
+    verify.check_type_ramp_surfaces(errors, ROOT)
+    if errors:
+        raise AssertionError(f"shipped type-ramp surfaces disagree with output-spec.md: {errors}")
+
+    with type_ramp_fixture() as root:
+        package = root / "skills/diagram-design"
+        grid = package / "references/layout-budget.md"
+        primitives = package / "references/primitives-core.md"
+        skill = package / "SKILL.md"
+        if run_checks(root, verify.check_type_ramp_surfaces):
+            raise AssertionError("the shipped type-ramp fixture does not pass")
+
+        original = mutate(grid, "### 4px grid\n", "### Grid\n")
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if errors != ["references/layout-budget.md has no '### 4px grid' section"]:
+            raise AssertionError(f"a grid owner without the grid was not reported: {errors}")
+        grid.write_bytes(original)
+
+        original = mutate(
+            grid,
+            "| Border radius | 4, 6, 8 |\n",
+            "| Border radius | 4, 6, 8 |\n| Font sizes | 8, 12 |\n",
+        )
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if (
+            len(errors) != 1
+            or not errors[0].startswith("references/layout-budget.md 4px-grid table")
+            or "'Font sizes' row" not in errors[0]
+        ):
+            raise AssertionError(f"a font-size row in the moved grid was not reported: {errors}")
+        grid.write_bytes(original)
+
+        original = mutate(grid, " (role ramp in `references/output-spec.md`)", "")
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if len(errors) != 1 or not errors[0].startswith(
+            "references/layout-budget.md 4px-grid section does not link to references/output-spec.md"
+        ):
+            raise AssertionError(f"an unlinked moved grid was not reported: {errors}")
+        grid.write_bytes(original)
+
+        original = mutate(primitives, 'font-size="12"', 'font-size="13"')
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if len(errors) != 1 or not errors[0].startswith(
+            "references/primitives-core.md uses font-size=13 on sans-600 text"
+        ):
+            raise AssertionError(f"an off-ramp size in the moved patterns was not reported: {errors}")
+        primitives.write_bytes(original)
+
+        original = skill.read_bytes()
+        skill.write_text(
+            original.decode("utf-8")
+            + "\n<text font-size=\"13\" font-weight=\"600\" "
+            "font-family=\"'Geist', sans-serif\">X</text>\n",
+            encoding="utf-8",
+        )
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if len(errors) != 1 or not errors[0].startswith("SKILL.md uses font-size=13"):
+            raise AssertionError(f"an off-ramp size back in SKILL.md was not reported: {errors}")
+        skill.write_bytes(original)
+
+        original = grid.read_bytes()
+        grid.unlink()
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if errors != ["type-ramp surface is missing: references/layout-budget.md"]:
+            raise AssertionError(f"a missing grid owner was not reported: {errors}")
+        grid.write_bytes(original)
+    print("OK type ramp: the moved grid and patterns are held to the output-spec ramp")
+
+
+# Every link a section thinned by the ADR 0004 split must keep, one per moved
+# block. Spelled out here so a route dropped from the verifier fails a test.
+SPLIT_ROUTE_LINKS = (
+    ("## 5. Design System", "references/style-guide.md#node-type--treatment"),
+    ("## 5. Design System", "references/style-guide.md#typography"),
+    ("## 6. Core SVG Primitives", "references/primitives-core.md"),
+    ("## 6. Core SVG Primitives", "references/primitives-core.md#mandatory-connector-rules"),
+    ("## 7. Layout & Spacing", "references/layout-budget.md"),
+    ("## 7. Layout & Spacing", "references/layout-budget.md#complexity-budget-per-diagram"),
+    ("## 8. Summary Card Pattern", "references/layout-budget.md#summary-card-pattern"),
+    ("## 12. Output", "references/primitives-core.md#accessible-svg-contract"),
+)
+
+
+def split_route_error(heading: str, target: str) -> str:
+    return (
+        f"SKILL.md {heading!r} no longer routes to {target}; the ADR 0004 split "
+        "moved that content there, so it would ship unreachable"
+    )
+
+
+def check_split_routes(verify) -> None:
+    """Each SKILL.md section the ADR 0004 split thinned still routes to its content."""
+    skill = verify.SKILL.read_text(encoding="utf-8")
+    errors: list[str] = []
+    verify.check_split_routes(errors, skill)
+    if errors:
+        raise AssertionError(f"shipped SKILL.md split routes failed: {errors}")
+
+    # Each moved block keeps its own link, so dropping any one link alone must
+    # fail, even while a sibling link to the same file survives in the section.
+    for heading, target in SPLIT_ROUTE_LINKS:
+        link = f"]({target})"
+        if skill.count(link) != 1:
+            raise AssertionError(f"SKILL.md should carry {link!r} exactly once; update the fixture")
+        errors = []
+        verify.check_split_routes(errors, skill.replace(link, "](references/gone.md)"))
+        if errors != [split_route_error(heading, target)]:
+            raise AssertionError(f"dropping only the {target} link was not reported: {errors}")
+
+    errors = []
+    verify.check_split_routes(
+        errors, skill.replace("## 8. Summary Card Pattern", "## Summary cards", 1)
+    )
+    expected = [
+        "SKILL.md has no '## 8.' section; it must route to "
+        "references/layout-budget.md#summary-card-pattern"
+    ]
+    if errors != expected:
+        raise AssertionError(f"a renumbered split section was not reported: {errors}")
+    print("OK split routes: every section the split thinned still links its new home")
 
 
 def check_style_guide_anchors(verify) -> None:
@@ -759,14 +979,12 @@ def main() -> int:
     if len(errors) != 1 or "font-size=72" not in errors[0]:
         raise AssertionError(f"opaque watermark size was not reported: {errors}")
 
+    # The grid lives in layout-budget.md and the markup patterns in
+    # primitives-core.md since the ADR 0004 split; SKILL.md stays covered too.
     errors = []
-    verify.check_type_ramp(
-        errors,
-        verify.SKILL.read_text(encoding="utf-8"),
-        verify.OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"),
-    )
+    verify.check_type_ramp_surfaces(errors, ROOT)
     if errors:
-        raise AssertionError(f"shipped SKILL.md and output-spec.md disagree: {errors}")
+        raise AssertionError(f"shipped type-ramp surfaces and output-spec.md disagree: {errors}")
 
     # ── registered legacy sizes ──────────────────────────────────────────────
     legacy_markup = (
@@ -1575,18 +1793,21 @@ diagram-design/
         print("OK reference assets: valid asset citations produce no error")
 
     check_font_link_parity(verify)
+    check_font_link_copies(verify)
     check_title_stack_order(verify)
     check_title_font_link(verify)
     check_style_guide_anchors(verify)
     check_heading_syntax(verify)
     check_size_preset_surfaces(verify)
+    check_split_type_ramp(verify)
+    check_split_routes(verify)
 
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "
         "strict-bundler packaging, "
         "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
-        "and gallery guards (parent/variant model, contiguous ordinals)"
+        "split routing, and gallery guards (parent/variant model, contiguous ordinals)"
     )
     return 0
 

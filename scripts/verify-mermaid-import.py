@@ -319,6 +319,24 @@ H -- "  padded  " --> I
     ]:
         fail("quoted labeled multidirectional links lost their arrowheads")
 
+    chain_file = tmp / "quoted-label-chain.mmd"
+    chain_file.write_text(
+        'flowchart LR\nA -- "yes" --> B --> C\nD -- (maybe) --> E --> F\n',
+        encoding="utf-8",
+    )
+    chain = json.loads(run_extract([str(chain_file), "--json"]))["diagrams"][0]
+    chain_edges = [(edge["source"], edge["target"], edge["label"]) for edge in chain["edges"]]
+    if chain_edges != [
+        ("A", "B", "yes"),
+        ("B", "C", ""),
+        ("D", "E", "(maybe)"),
+        ("E", "F", ""),
+    ]:
+        fail(
+            "a quoted or bracketed spaced label followed by another link must end at "
+            f"its own closing operator: {chain_edges}"
+        )
+
     compact_file = tmp / "compact-labeled-links.mmd"
     compact_file.write_text(
         """flowchart LR
@@ -811,6 +829,63 @@ def check_errors_and_limits(tmp: Path) -> None:
     oversized = tmp / "oversized.mmd"
     oversized.write_bytes(b"flowchart TD\n" + b" " * extractor.MAX_SOURCE_BYTES)
     expect_error([str(oversized)], "source exceeds")
+
+    statement_cap = getattr(extractor, "MAX_STATEMENT_CHARS", 4096)
+    at_cap = tmp / "statement-at-cap.mmd"
+    stem = 'A[""] --> B'
+    at_cap.write_text(
+        'flowchart TD\nA["' + "x" * (statement_cap - len(stem)) + '"] --> B\n',
+        encoding="utf-8",
+    )
+    run_extract([str(at_cap)])
+    over_cap = tmp / "statement-over-cap.mmd"
+    over_cap.write_text(
+        'flowchart TD\nA["' + "x" * (statement_cap - len(stem) + 1) + '"] --> B\n',
+        encoding="utf-8",
+    )
+    expect_error(
+        [str(over_cap)],
+        f"statement at line 2 exceeds the {statement_cap}-character limit",
+    )
+    minified = tmp / "statement-minified.mmd"
+    minified.write_text(
+        "flowchart TD\n" + ";".join(f"N{index}-->N{index + 1}" for index in range(600)) + "\n",
+        encoding="utf-8",
+    )
+    if len(minified.read_text(encoding="utf-8")) <= statement_cap:
+        fail("the minified fixture must be longer than one statement's cap")
+    run_extract([str(minified)])
+    unterminated_long = tmp / "statement-unterminated-long.mmd"
+    unterminated_long.write_text(
+        'flowchart TD\nA["' + "\n".join("x" * 60 for _ in range(200)) + "\n",
+        encoding="utf-8",
+    )
+    expect_error(
+        [str(unterminated_long)],
+        f"statement at line 2 exceeds the {statement_cap}-character limit",
+    )
+    minified_then_multiline = tmp / "statement-minified-then-multiline.mmd"
+    minified_then_multiline.write_text(
+        "flowchart TD\n"
+        + ";".join(f"N{index}-->N{index + 1}" for index in range(600))
+        + ';M["label that\ncontinues"] --> N0\n',
+        encoding="utf-8",
+    )
+    minified_multiline = json.loads(run_extract([str(minified_then_multiline), "--json"]))["diagrams"][0]
+    if len(minified_multiline["edges"]) != 601:
+        fail(
+            "a minified line followed by a multiline label must parse every statement: "
+            f"{len(minified_multiline['edges'])} edges"
+        )
+    unterminated_one_line = tmp / "statement-unterminated-one-line.mmd"
+    unterminated_one_line.write_text(
+        'flowchart TD\nA["' + "x" * (statement_cap + 10) + "\n",
+        encoding="utf-8",
+    )
+    expect_error(
+        [str(unterminated_one_line)],
+        f"statement at line 2 exceeds the {statement_cap}-character limit",
+    )
     ok("all documented exit-2 paths and resource caps fire specifically")
 
 

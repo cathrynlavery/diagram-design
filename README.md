@@ -446,6 +446,8 @@ diagram-design/
 │       │   ├── type-uml-class.md
 │       │   ├── type-story-map.md
 │       │   ├── type-db-schema.md
+│       │   ├── primitives-core.md
+│       │   ├── layout-budget.md
 │       │   ├── primitive-annotation.md
 │       │   ├── primitive-sketchy.md
 │       │   └── primitive-terminal.md
@@ -576,7 +578,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
-| Routine static diagram-making (any visual type) | Only `SKILL.md` + that one type's reference |
+| Routine static diagram-making (any visual type) | `SKILL.md` + that one type's reference, plus `references/primitives-core.md` or `references/layout-budget.md` only when it needs exact markup or a per-type budget row |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
 
@@ -584,7 +586,7 @@ No matter how many types exist, the agent only reads the one you need. Add a new
 
 ## It's working if…
 
-- A routine request ("make me a flowchart") loads `SKILL.md` plus exactly one type reference — nothing else.
+- A routine request ("make me a flowchart") loads `SKILL.md`, exactly one type reference, and at most the two core references (`primitives-core.md`, `layout-budget.md`), and nothing else.
 - Before drawing, the agent states the chosen type, pattern, size, and planned cuts, then renders.
 - The output is one `.html` file that opens double-clicked, offline, with no network requests beyond Google Fonts.
 - Screen readers announce the diagram's title and description; `prefers-reduced-motion` shows the complete static frame.

@@ -87,7 +87,7 @@ Dark mode: frame fill `rgba(245,245,245,0.04)`, stroke `rgba(245,245,245,0.22)`,
 - Participant create/destroy, found/lost messages, duration timing bars.
 
 ## Complexity budget (sequence-specific)
-- Max lifelines: 5 (same as SKILL.md §7).
+- Max lifelines: 5 (same as the §7 budget table in [layout-budget.md](layout-budget.md#complexity-budget-per-diagram)).
 - Max messages (arrows): 12.
 - Max combined fragments: 1 (hard default); 2 only if each is a single-region `opt`/`loop`.
 - Max `alt` regions: 2.

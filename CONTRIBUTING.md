@@ -53,8 +53,9 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Doctor diagnostics contract (env checks, script presence, routing wiring) | `python3 scripts/verify-doctor.py` |
 | Doctor diagnostics adversarial tests | `python3 scripts/test-verify-doctor.py` |
 | Every shipped motion template/example | `python3 scripts/verify-motion.py --shipped` |
-| Docs/routing sync (description hooks, gallery, README tree, reference links and style-guide anchors, strict-bundler support paths, command/prompt surfaces, font-link parity, template title fallback order) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
+| Docs/routing sync (description hooks, gallery, README tree, reference links and style-guide anchors, strict-bundler support paths, command/prompt surfaces, font-link parity, template title fallback order, SKILL.md split routing) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
+| Screenshot freshness checker behaves (CRLF checkout, real source drift, raw PNG digests) | `python3 scripts/test-verify-screenshot-freshness.py` |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
 | Label masks are never clipped by a node painted after them | `python3 scripts/verify-geometry.py --all` |
@@ -87,7 +88,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
-The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter.
+The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter. SKILL.md is a router: SVG markup and the long form of the connector rules live in `references/primitives-core.md`, and the 4px grid table, per-type complexity budget rows, page layout, and summary cards live in `references/layout-budget.md` (ADR 0004, 2026-09-27 amendment). A new type's budget row goes in `layout-budget.md`, not SKILL.md.
 
 Keep native plugin and marketplace `description` fields within 500 characters
 for Cowork installation compatibility ([#208](https://github.com/cathrynlavery/diagram-design/issues/208)).
@@ -127,6 +128,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-docs-sync.py \
   && python3 scripts/test-verify-docs-sync.py \
   && python3 scripts/verify-screenshot-freshness.py \
+  && python3 scripts/test-verify-screenshot-freshness.py \
   && python3 scripts/test-build-readme-thumbs.py \
   && python3 scripts/build-readme-thumbs.py --check \
   && python3 scripts/test-self-check.py \
@@ -165,7 +167,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
 - **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
-- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 40 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`.
+- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 40 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`. The gate hashes example sources in their canonical LF form, so a checkout that converts LF to CRLF still passes; `scripts/test-verify-screenshot-freshness.py` covers that case, real source drift, and raw PNG digests.
 - **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
 - **`verify-marimekko.py`:** a column is drawn off its category's share of the width, a segment off its series' share of the column, the columns do not share one plot height or one gutter, segments leave a gap or overlap, a series changes order between columns, a second segment wears the accent, anything positions a segment or a bound label from a `transform` attribute, an inline `style`, or a `<style>` rule, or a label, caption or key disagrees with the rect it binds. Fix the geometry or the declaration so they state one thing — never widen a column or pad a segment to fit a label, and never drop a category or a series to tidy the grid.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.

@@ -13,6 +13,7 @@ from screenshot_catalog import (
     png_dimensions,
     screenshot_path,
     sha256,
+    sha256_text,
     source_path,
 )
 
@@ -79,7 +80,7 @@ def main() -> int:
             errors.append(f"{slug}: manifest source must be {expected_source}")
         if entry.get("screenshot") != expected_screenshot:
             errors.append(f"{slug}: manifest screenshot must be {expected_screenshot}")
-        if entry.get("source_sha256") != sha256(source):
+        if entry.get("source_sha256") != sha256_text(source):
             errors.append(f"{slug}: source changed; rerun scripts/render-canonical-screenshots.py")
         if entry.get("screenshot_sha256") != sha256(screenshot):
             errors.append(f"{slug}: screenshot changed without a matching manifest refresh")

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Fifteen drift classes. The first fourteen have each shipped before; the
-fifteenth nearly did (#217):
+Sixteen drift classes. The first fourteen have each shipped before; the
+fifteenth nearly did (#217); the sixteenth guards the ADR 0004 split:
 
 1. The SKILL.md frontmatter description is the only text an agent sees before
    deciding to load the skill — every visual type in the selection table must
@@ -27,19 +27,24 @@ fifteenth nearly did (#217):
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
-12. The SKILL.md 4px-grid section and the output-spec type ramp must agree: the
-   grid table carries no font-size row, the grid section links to
-   references/output-spec.md, the ramp table keeps its five type roles across all
-   three presets, and every font-size in SKILL.md's §6 patterns is a canonical
-   role size or falls inside a named exception.
+12. The 4px-grid section (references/layout-budget.md since the ADR 0004 split)
+   and the output-spec type ramp must agree: the grid table carries no font-size
+   row, the grid section links to references/output-spec.md, the ramp table
+   keeps its five type roles across all three presets, and every font-size in
+   SKILL.md, references/primitives-core.md (the §6 markup patterns), and the
+   grid owner is a canonical role size or falls inside a named exception.
 13. Every copy of the Google Fonts css2 link must request the families
-   assets/template.html does, and the export @import must include them.
+   assets/template.html does, and the export @import must include them. A copy
+   in SKILL.md or any reference is held to the same parity even where no copy
+   is required.
 14. Every --font-serif in a template must reach 'Noto Serif' before any CJK
    serif face, which Google Fonts also slices Cyrillic into, and the
    template's own font link must request it.
 15. Every surface that lists the size presets for selection — the SKILL.md
    and README output-dial tables and the three import commands — must name
    exactly the presets in the output-spec.md size table, in its order.
+16. Every SKILL.md section the ADR 0004 split thinned must keep the exact link
+   to each block it moved out, or that content ships unreachable.
 """
 
 from __future__ import annotations
@@ -1109,20 +1114,38 @@ def format_size(value: float) -> str:
     return f"{value:g}"
 
 
-def check_type_ramp(errors: list[str], skill_markdown: str, spec_markdown: str) -> None:
-    """The grid section and the output-spec role ramp are one contract."""
-    grid = section(skill_markdown, "### 4px grid")
+# The ADR 0004 split moved the grid table out of SKILL.md §7 and the markup
+# patterns out of §6. The contract follows them: the grid owner must carry the
+# grid, and every file holding a pattern, SKILL.md included, answers to the ramp.
+GRID_OWNER = Path("references/layout-budget.md")
+TYPE_PATTERN_SURFACES = (Path("SKILL.md"), Path("references/primitives-core.md"))
+
+
+def check_type_ramp(
+    errors: list[str],
+    grid_markdown: str,
+    spec_markdown: str,
+    *,
+    grid_source: str = GRID_OWNER.as_posix(),
+    patterns: dict[str, str] | None = None,
+) -> None:
+    """The grid section and the output-spec role ramp are one contract.
+
+    *grid_markdown* must hold the `### 4px grid` section; its font sizes and
+    those in each of *patterns* (name to markdown) must sit on the role ramp.
+    """
+    grid = section(grid_markdown, "### 4px grid")
     if not grid:
-        errors.append("SKILL.md has no '### 4px grid' section")
+        errors.append(f"{grid_source} has no '### 4px grid' section")
     else:
         if re.search(r"^\|\s*Font sizes", grid, re.MULTILINE):
             errors.append(
-                "SKILL.md 4px-grid table carries a 'Font sizes' row; type sizes "
+                f"{grid_source} 4px-grid table carries a 'Font sizes' row; type sizes "
                 "belong to the role ramp in references/output-spec.md, not the grid"
             )
         if "references/output-spec.md" not in grid:
             errors.append(
-                "SKILL.md 4px-grid section does not link to references/output-spec.md "
+                f"{grid_source} 4px-grid section does not link to references/output-spec.md "
                 "for the type ramp"
             )
 
@@ -1130,11 +1153,80 @@ def check_type_ramp(errors: list[str], skill_markdown: str, spec_markdown: str) 
     if contract is None:
         return
 
-    styles = Styles(skill_markdown, contract.role_tokens)
-    for value, tag, context in font_sizes(skill_markdown, styles):
-        violation = contract.violation(tag, context, value)
-        if violation:
-            errors.append(f"SKILL.md uses {violation}")
+    for name, markdown in ((grid_source, grid_markdown), *(patterns or {}).items()):
+        styles = Styles(markdown, contract.role_tokens)
+        for value, tag, context in font_sizes(markdown, styles):
+            violation = contract.violation(tag, context, value)
+            if violation:
+                errors.append(f"{name} uses {violation}")
+
+
+def check_type_ramp_surfaces(errors: list[str], root: Path) -> None:
+    """Run the type-ramp contract over the grid owner and every pattern file."""
+    package = root / SKILL_PACKAGE
+    spec_path = package / "references/output-spec.md"
+    if not spec_path.is_file():
+        errors.append("type-ramp surface is missing: references/output-spec.md")
+        return
+    texts: dict[str, str] = {}
+    for relative in (GRID_OWNER, *TYPE_PATTERN_SURFACES):
+        path = package / relative
+        if not path.is_file():
+            errors.append(f"type-ramp surface is missing: {relative.as_posix()}")
+            continue
+        texts[relative.as_posix()] = path.read_text(encoding="utf-8")
+    grid_markdown = texts.pop(GRID_OWNER.as_posix(), None)
+    if grid_markdown is None:
+        return
+    check_type_ramp(
+        errors,
+        grid_markdown,
+        spec_path.read_text(encoding="utf-8"),
+        grid_source=GRID_OWNER.as_posix(),
+        patterns=texts,
+    )
+
+
+# What the ADR 0004 split (2026-09-27) moved out of SKILL.md, by the section
+# that used to hold it. Each moved block keeps its own link to the new home,
+# matched exactly: a surviving link to the same file under another anchor does
+# not stand in for it. The checks above follow the content there, and this
+# keeps agents following too.
+SPLIT_ROUTES = (
+    ("## 5.", "references/style-guide.md#node-type--treatment"),
+    ("## 5.", "references/style-guide.md#typography"),
+    ("## 6.", "references/primitives-core.md"),
+    ("## 6.", "references/primitives-core.md#mandatory-connector-rules"),
+    ("## 7.", "references/layout-budget.md"),
+    ("## 7.", "references/layout-budget.md#complexity-budget-per-diagram"),
+    ("## 8.", "references/layout-budget.md#summary-card-pattern"),
+    ("## 12.", "references/primitives-core.md#accessible-svg-contract"),
+)
+LINK_TARGET = re.compile(r"\]\(([^)\s]+)")
+
+
+def skill_section(markdown: str, number: str) -> tuple[str, str] | None:
+    """The `## N.` heading line and its body up to the next `## ` heading."""
+    match = re.search(rf"^{re.escape(number)} .*$", markdown, re.MULTILINE)
+    if match is None:
+        return None
+    rest = markdown[match.end() :]
+    end = re.search(r"^## ", rest, re.MULTILINE)
+    return match.group(0), rest[: end.start()] if end else rest
+
+
+def check_split_routes(errors: list[str], markdown: str) -> None:
+    for number, target in SPLIT_ROUTES:
+        found = skill_section(markdown, number)
+        if found is None:
+            errors.append(f"SKILL.md has no '{number}' section; it must route to {target}")
+            continue
+        heading, body = found
+        if target not in LINK_TARGET.findall(body):
+            errors.append(
+                f"SKILL.md {heading!r} no longer routes to {target}; the ADR 0004 split "
+                "moved that content there, so it would ship unreachable"
+            )
 
 
 def check_legacy_type_sizes(errors: list[str], spec_markdown: str, root: Path) -> None:
@@ -1303,17 +1395,33 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
 
 
 SKILL_PACKAGE = Path("skills/diagram-design")
-FONT_LINK = re.compile(r'href="([^"]*fonts\.googleapis\.com[^"]*)"')
+# Either quote style: the backreference ends the value at its own quote.
+FONT_LINK = re.compile(
+    r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com(?:(?!(?P=quote)).)*)(?P=quote)"""
+)
 # Paths inside the skill package that carry the same css2 link as
 # assets/template.html. template-terminal.html is absent on purpose: the
-# terminal skin loads Geist Mono alone.
+# terminal skin loads Geist Mono alone. SKILL.md carried a copy until the
+# ADR 0004 split routed its typography to style-guide.md; a copy that comes
+# back is still checked, as an optional surface below.
 FONT_LINK_SURFACES = (
     Path("assets/template-dark.html"),
     Path("assets/template-full.html"),
     Path("assets/template-motion.html"),
     Path("references/style-guide.md"),
-    Path("SKILL.md"),
 )
+# A real css2 copy, as opposed to prose such as `<link href="...fonts.googleapis.com...">`.
+CSS2_LINK = re.compile(
+    r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com/css2\?(?:(?!(?P=quote)).)*)(?P=quote)"""
+)
+
+
+def optional_font_link_surfaces(root: Path) -> list[Path]:
+    """SKILL.md and every reference not already required to carry the link."""
+    package = root / SKILL_PACKAGE
+    references = sorted((package / "references").glob("*.md"))
+    candidates = [Path("SKILL.md"), *(path.relative_to(package) for path in references)]
+    return [path for path in candidates if path not in FONT_LINK_SURFACES]
 TITLE_STACK_TEMPLATES = (
     Path("assets/template.html"),
     Path("assets/template-dark.html"),
@@ -1348,10 +1456,10 @@ def family_names(families: set[str]) -> str:
 def check_export_font_parity(errors: list[str], root: Path) -> None:
     """Every copy of the Google Fonts link must request the same faces.
 
-    assets/template.html is the source. The other three templates, the style
-    guide's Font stack block, and SKILL.md carry the same css2 link and must
-    request exactly its families; the export @import must request at least
-    them. The strings live in different files and drifted apart once already:
+    assets/template.html is the source. The other three templates and the style
+    guide's Font stack block carry the same css2 link and must request exactly
+    its families, as must any copy in SKILL.md or another reference; the export
+    @import must request at least them. The strings live in different files and drifted apart once already:
     the CJK faces reached assets/template.html but never the @import in
     export.md, so a Korean or Chinese diagram exported to .svg silently lost its
     type. That failure only shows up on a machine other than the author's,
@@ -1374,7 +1482,7 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
         )
         return
 
-    families = font_families(link.group(1))
+    families = font_families(link.group("url"))
     missing = families - font_families(imported.group(1))
     if missing:
         errors.append(
@@ -1383,16 +1491,8 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
             f"those scripts through whatever font the viewer happens to have"
         )
 
-    for relative in FONT_LINK_SURFACES:
-        path = root / SKILL_PACKAGE / relative
-        if not path.is_file():
-            errors.append(f"font-parity surface is missing: {relative.as_posix()}")
-            continue
-        surface_link = FONT_LINK.search(path.read_text(encoding="utf-8"))
-        if not surface_link:
-            errors.append(f"could not locate the font link in {relative.as_posix()}")
-            continue
-        requested = font_families(surface_link.group(1))
+    def report_drift(relative: Path, url: str) -> None:
+        requested = font_families(url)
         drift = [
             f"{label} {family_names(names)}"
             for label, names in (
@@ -1406,6 +1506,24 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
                 f"{relative.as_posix()} font link drifts from assets/template.html: "
                 + "; ".join(drift)
             )
+
+    for relative in FONT_LINK_SURFACES:
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            errors.append(f"font-parity surface is missing: {relative.as_posix()}")
+            continue
+        surface_link = FONT_LINK.search(path.read_text(encoding="utf-8"))
+        if not surface_link:
+            errors.append(f"could not locate the font link in {relative.as_posix()}")
+            continue
+        report_drift(relative, surface_link.group("url"))
+
+    for relative in optional_font_link_surfaces(root):
+        path = root / SKILL_PACKAGE / relative
+        if not path.is_file():
+            continue
+        for copy in CSS2_LINK.finditer(path.read_text(encoding="utf-8")):
+            report_drift(relative, copy.group("url"))
 
 
 def title_stack_error(name: str, stack: str) -> str | None:
@@ -1454,7 +1572,7 @@ def check_title_fallback_order(errors: list[str], root: Path) -> None:
             if problem:
                 errors.append(problem)
         link = FONT_LINK.search(source)
-        if not link or "family=Noto+Serif" not in font_families(link.group(1)):
+        if not link or "family=Noto+Serif" not in font_families(link.group("url")):
             errors.append(
                 f"{name} font link does not request Noto Serif, which its "
                 "--font-serif names for Cyrillic titles; without it they resolve "
@@ -1486,11 +1604,8 @@ def main() -> int:
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
     )
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
-    check_type_ramp(
-        errors,
-        SKILL.read_text(encoding="utf-8"),
-        OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"),
-    )
+    check_type_ramp_surfaces(errors, ROOT)
+    check_split_routes(errors, SKILL.read_text(encoding="utf-8"))
     check_legacy_type_sizes(
         errors, OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), ROOT
     )
@@ -1510,7 +1625,7 @@ def main() -> int:
         "manifest descriptions, Factory install contract, type-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
         "font-link parity, title fallback order, type-ramp contract, registered legacy "
-        "type sizes"
+        "type sizes, split routing"
     )
     return 0
 
