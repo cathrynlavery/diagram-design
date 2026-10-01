@@ -48,6 +48,7 @@ EXPECTED_MANIFESTS = {
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
     ".factory-plugin/plugin.json",
+    "package.json",
 }
 
 REQUIRED_COMMANDS = {

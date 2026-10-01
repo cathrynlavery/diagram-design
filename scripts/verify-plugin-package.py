@@ -29,6 +29,7 @@ MANIFEST_PATHS = {
     "Claude": Path(".claude-plugin/plugin.json"),
     "Codex": Path(".codex-plugin/plugin.json"),
     "Factory": Path(".factory-plugin/plugin.json"),
+    "OMP": Path("package.json"),
 }
 CLAUDE_MARKETPLACE = Path(".claude-plugin/marketplace.json")
 CODEX_MARKETPLACE = Path(".agents/plugins/marketplace.json")
@@ -230,6 +231,12 @@ def verify_manifest_identity(manifests: dict[str, dict[str, Any]], errors: list[
                     f"{label} manifest {field!r} must match {reference_label}; "
                     f"got {payload.get(field)!r}"
                 )
+    omp_manifest = manifests.get("OMP")
+    if omp_manifest is not None:
+        if omp_manifest.get("private") is not True:
+            errors.append("OMP manifest 'private' must be true")
+        if not isinstance(omp_manifest.get("omp"), dict):
+            errors.append("OMP manifest 'omp' must be a JSON object")
 
 
 def verify_marketplaces(root: Path, errors: list[str]) -> None:
@@ -521,7 +528,7 @@ def main() -> int:
         "current-only": "current tree",
     }[mode]
     print(
-        f"OK plugin package ({detail}): Claude, Codex, and Factory {versions}, "
+        f"OK plugin package ({detail}): Claude, Codex, Factory, and OMP {versions}, "
         f"marketplace paths, and packaged skill"
     )
     return 0
