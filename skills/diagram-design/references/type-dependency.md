@@ -5,9 +5,9 @@
 ## Layout conventions
 
 - **Ranked layers.** Nodes sit in horizontal rank rows by dependency depth: rank 0 (entry points nothing depends on) at the top, deeper ranks below. Forward edges point downward across ranks, or run horizontal within a single rank row when a dependency compresses to the same depth as its dependent (e.g. a shallow sibling dependency) — never upward outside the one marked cycle. Rank rows are 120px apart.
-- Nodes are the standard node-box pattern (§6): `rx=6`, 160px wide, 56px tall.
+- Nodes are the standard node-box pattern (§6, [primitives-core.md](primitives-core.md#node-box--full-pattern)): `rx=6`, 160px wide, 56px tall.
 - **Fan-in badge.** Every node carries a Geist Mono 8px badge in its top-right corner, inside a small `rx=2` box, showing how many nodes depend on it (`4 in`). A mask fully inside a node is a badge chip, not a label — legitimate under §6 rule 6. The node with the highest fan-in is the diagram's structural story; size nothing else to compete with it.
-- **Node treatments** (§5 Node type → treatment):
+- **Node treatments** ([style-guide.md § Node type → treatment](style-guide.md#node-type--treatment)):
   - Internal package/service → white fill + `ink` stroke.
   - External / third-party → `ink @ 0.03` fill + `ink @ 0.30` stroke (the External/Cloud treatment).
   - Leaf with no outgoing edges → `ink @ 0.05` fill + `muted` stroke.

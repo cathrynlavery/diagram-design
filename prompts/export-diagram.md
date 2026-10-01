@@ -3,7 +3,7 @@ description: Export a diagram-design HTML file to SVG and PNG
 argument-hint: "<html-file> [--svg-only|--png-only] [--scale=N] [--output=<path>] [--registry]"
 ---
 
-Export diagram HTML at `$1` to `.svg` or `.png`. Locate available `diagram-design` skill using its `SKILL.md` path advertised by Pi. Read that `SKILL.md`, then read `references/export.md` relative to its directory. Treat that reference as source of truth. Do not assume the package lives under the current working directory. If `--registry` is present, also read `references/export-registry.md` relative to the same directory and follow it to emit the metadata sidecar — a separate procedure from the SVG/PNG rasterization above.
+Export diagram HTML at `$1` to `.svg` or `.png`. Locate available `diagram-design` skill using its `SKILL.md` path advertised by Pi. Read that `SKILL.md`, then read `references/export.md` relative to its directory. Treat that reference as source of truth. For SVG output, prefer `scripts/export_svg.py` relative to the skill directory when available. Do not assume the package lives under the current working directory. If `--registry` is present, also read `references/export-registry.md` relative to the same directory and follow it to emit the metadata sidecar — a separate procedure from the SVG/PNG rasterization above.
 
 Full argument string: `$ARGUMENTS`
 

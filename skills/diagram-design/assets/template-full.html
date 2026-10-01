@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>[PROJECT NAME] Architecture</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -21,7 +21,7 @@
       --color-accent-tint: rgba(235,108,54,0.08);
       --color-link:        #2e5aa8;
       --font-sans:   'Geist', system-ui, sans-serif;
-      --font-serif:  'Instrument Serif', 'Noto Serif KR', 'Times New Roman', serif;
+      --font-serif:  'Instrument Serif', 'Noto Serif', 'Noto Serif KR', 'Times New Roman', serif;
       --font-mono:   'Geist Mono', ui-monospace, Menlo, monospace;
     }
 
@@ -80,7 +80,15 @@
       /* padding: 1.5rem; */
     }
 
-    svg { width: 100%; min-width: 900px; display: block; }
+    svg { width: 100%; min-width: 1000px; display: block; }  /* == viewBox width: never scale the type ramp down */
+    /* Paper has no scrollbar, so the local scroller would clip instead of
+       scroll. Let the diagram scale down to the sheet: smaller but whole
+       beats sharp but cut off. Must come after the svg rule above - a media
+       query adds no specificity, so a later plain rule would win. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
 
     /* ── Info cards ───────────────────────────────────────────────── */
     .cards {

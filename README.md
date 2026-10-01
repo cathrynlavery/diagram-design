@@ -1,6 +1,9 @@
-# Diagram Design
-
-**Editorial diagrams your designer won't hate.**
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/hero/hero-dark.webp">
+    <img alt="Diagram Design. Editorial diagrams your designer won't hate." src="docs/hero/hero-light.webp">
+  </picture>
+</h1>
 
 <a href="https://trendshift.io/repositories/26141?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26141" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26141" alt="cathrynlavery%2Fdiagram-design | Trendshift" width="250" height="55"/></a>
 
@@ -14,7 +17,7 @@
 
 *New in 2.5.10: ten more layout grammars — Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, and database schema.*
 
-39 editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
+Editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
@@ -24,7 +27,7 @@ No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
 I write at [littlemight.com](https://littlemight.com?utm_source=diagram-design&utm_medium=readme&utm_campaign=github&utm_content=intro) (and run [BestSelf.co](https://bestself.co?utm_source=diagram-design&utm_medium=readme&utm_campaign=github&utm_content=intro) on the side). Every time I needed a diagram — an architecture sketch, a flowchart, a pyramid of what matters most — I'd ask Claude and get back a generic rounded-box thing that looked nothing like the rest of the site. I'd either fight with Figma for 30 minutes or just skip the diagram.
 
-So I built a Claude Code skill for it. Thirty-nine visual types, editorial quality, matches your brand in 60 seconds by reading your website.
+So I built a Claude Code skill for it. Editorial-quality visual types, matched to your brand in 60 seconds by reading your website.
 
 > *The highest-quality move is usually deletion.* Every node earns its place. The accent color is reserved for the 1–2 things the reader should look at first. Target density: 4/10.
 
@@ -32,7 +35,7 @@ So I built a Claude Code skill for it. Thirty-nine visual types, editorial quali
 
 ## What it makes
 
-All 39 visual types ship in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+Every visual type ships in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -109,7 +112,7 @@ All 39 visual types ship in three static variants: minimal light, minimal dark, 
 
 The v2.5.10 release added the final ten types above. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through all 39 diagrams with light / dark / full-editorial tabs.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs.
 
 ---
 
@@ -246,7 +249,7 @@ Every diagram template gives the inline SVG an accessible name and description: 
 
 ### Manual override
 
-Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there — all 39 diagrams, the annotation primitive, and the gallery all inherit semantic role names (`accent`, not `#eb6c36`).
+Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there — every diagram, the annotation primitive, and the gallery all inherit semantic role names (`accent`, not `#eb6c36`).
 
 ### First-run gate
 
@@ -267,7 +270,7 @@ The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. 
 ## Quickstart
 
 ```bash
-# From a cloned checkout, open the gallery to see all 39 diagrams
+# From a cloned checkout, open the gallery to see every diagram
 open skills/diagram-design/assets/index.html       # macOS
 xdg-open skills/diagram-design/assets/index.html  # Linux
 
@@ -291,7 +294,7 @@ cp skills/diagram-design/assets/template-motion.html my-diagram.html # optional 
 
 ### Semantic patterns and optional motion
 
-When behavior matters, the skill chooses a semantic pattern first and a visual type second. The eight routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, compensating security layers, and traceable block decomposition. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagram-design/references/semantic-patterns.md).
+When behavior matters, the skill chooses a semantic pattern first and a visual type second. The nine routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, compensating security layers, traceable block decomposition, and lifecycle phase maps. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagram-design/references/semantic-patterns.md).
 
 Motion is optional and does not create another visual type. [`animation.md`](skills/diagram-design/references/animation.md) defines `none`, `reveal`, `step`, and `loop` modes with a complete static first frame, deterministic timing, and controls when interaction is available. Reduced-motion output shows the complete static frame and hides/disables playback controls. Motion HTML uses the exact reviewed controller from `template-motion.html`; arbitrary or modified inline scripts, remote assets, CSS imports, and executable HTML attributes are rejected. The default is `none`: ordinary output remains static and script-free. [`example-policy-trace-animated.html`](skills/diagram-design/assets/example-policy-trace-animated.html) is the self-contained interactive example.
 
@@ -327,7 +330,7 @@ The point isn't conversion, it's **fitting the output to where it's going**. Sam
 | Dial | Options | What it changes |
 |---|---|---|
 | **Format** | `html` · `svg` · `png` · `html+png` | The deliverable. SVG for Figma, PNG for slides, HTML for the web. |
-| **Size** | `doc-inline` · `doc-wide` · `slide-16x9` · `slide-4x3` · `social-og` · `social-square` · `print-a4-landscape` · `print-letter-landscape` · `fit` | The `viewBox` **and the type ramp** — a projected slide gets 16px node names, not 12px. |
+| **Size** | `doc-inline` · `doc-wide` · `slide-16x9` · `slide-4x3` · `social-og` · `social-square` · `print-a4-landscape` · `print-a3-landscape` · `print-letter-landscape` · `fit` | The `viewBox` **and the type ramp** — a projected slide gets 16px node names, not 12px. |
 | **Detail** | `faithful` (≤24 nodes, zoned) · `balanced` (≤12) · `simplified` (≤7) | How much of the source survives, via a fixed degrade ladder — decorations, then duplicates, then leaf clusters, then infrastructure. |
 | **Audience** | `engineer` · `mixed` · `executive` | The *wording*, not the count. `Auth Service / JWT · RS256 · :8443` → `Auth Service / token check` → `Sign-in`. |
 
@@ -446,6 +449,8 @@ diagram-design/
 │       │   ├── type-uml-class.md
 │       │   ├── type-story-map.md
 │       │   ├── type-db-schema.md
+│       │   ├── primitives-core.md
+│       │   ├── layout-budget.md
 │       │   ├── primitive-annotation.md
 │       │   ├── primitive-sketchy.md
 │       │   └── primitive-terminal.md
@@ -457,7 +462,7 @@ diagram-design/
 │       └── assets/
 │           ├── index.html           — live gallery, tabbed
 │           ├── template*.html       — scaffolds for new diagrams
-│           ├── example-<type>.html  — 3 variants × 39 types
+│           ├── example-<type>.html  — 3 variants per type
 │           ├── example-loop-terminal.html
 │           ├── example-quadrant-consultant.html
 │           ├── example-import-drawio.html
@@ -468,7 +473,7 @@ diagram-design/
 ├── scripts/
 │   ├── build-readme-thumbs.py       — regenerates docs/screenshots/thumbs/
 │   ├── bump-plugin-version.py       — synchronized Claude/Codex/Factory version bump
-│   ├── render-canonical-screenshots.py — deterministic 39-type PNG catalog renderer
+│   ├── render-canonical-screenshots.py — deterministic per-type PNG catalog renderer
 │   ├── verify-screenshot-freshness.py — source + screenshot digest gate
 │   ├── verify-plugin-package.py     — version + marketplace package gate
 │   ├── test-plugin-package.py       — adversarial package-gate tests
@@ -576,7 +581,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
-| Routine static diagram-making (any of the 39 visual types) | Only `SKILL.md` + that one type's reference |
+| Routine static diagram-making (any visual type) | `SKILL.md` + that one type's reference, plus `references/primitives-core.md` or `references/layout-budget.md` only when it needs exact markup or a per-type budget row |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
 
@@ -584,7 +589,7 @@ No matter how many types exist, the agent only reads the one you need. Add a new
 
 ## It's working if…
 
-- A routine request ("make me a flowchart") loads `SKILL.md` plus exactly one type reference — nothing else.
+- A routine request ("make me a flowchart") loads `SKILL.md`, exactly one type reference, and at most the two core references (`primitives-core.md`, `layout-budget.md`), and nothing else.
 - Before drawing, the agent states the chosen type, pattern, size, and planned cuts, then renders.
 - The output is one `.html` file that opens double-clicked, offline, with no network requests beyond Google Fonts.
 - Screen readers announce the diagram's title and description; `prefers-reduced-motion` shows the complete static frame.

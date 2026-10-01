@@ -22,12 +22,17 @@ Six invariants, each of which has shipped broken in a draft of this type:
    numbers. Crowded endpoint labels are data, not a coordinate problem.
 
 3. UNTRANSFORMED GEOMETRY - the coordinates read here are raw attributes, so any
-   `transform` on verified geometry, on its labels, or on an ancestor moves the
+   transform on verified geometry, on its labels, or on an ancestor moves the
    rendered mark away from the number this checker validated. A single
    `transform="translate(0 80)"` on one series line slid its endpoint 80px and
-   every check still passed. Transforms are rejected rather than resolved: a
-   partial implementation of the SVG transform stack is worse than an honest
-   refusal, because it looks like coverage.
+   every check still passed. A transform reaches the renderer by three carriers
+   - the `transform` attribute, an inline `style="..."`, and a rule in a <style>
+   block - and all three are refused, on the element and on any ancestor
+   <g>/<svg>, following verify-beeswarm.py. Transforms are rejected rather than
+   resolved: a partial implementation of the SVG transform stack is worse than
+   an honest refusal, because it looks like coverage. CSS comments are stripped
+   before any carrier is read, as the browser strips them: `/**/transform:` is
+   a live declaration, not a quirk.
 
 4. COMPLETE PRINTED VALUES - the whole visible numeric token must match the
    declared one. Matching only the first fragment read the label "512,000" as
@@ -42,7 +47,19 @@ Six invariants, each of which has shipped broken in a draft of this type:
    parseable is a finding, never a pass. A checker that reports OK because it
    found nothing to compare is the bug, not the gate. `verify-treemap.py`
    returned early on `len(cells) < 3` and that is precisely how an undersized
-   cell went unverified.
+   cell went unverified. Scope is therefore read twice - from the raw text,
+   HTML comments removed, and through the parser - so a <line> whose broken
+   quoting the parser cannot emit still claims the file and is reported.
+
+Markup is read through the stdlib html.parser.HTMLParser, never a regex, so a
+tag is recognized exactly when a browser would recognize it: a quoted `>`
+inside an attribute value does not end the tag, a repeated attribute keeps its
+FIRST value and the rest are not in the document at all, unquoted values and
+upper-case names parse as their canonical form, and a comment's contents are
+never live markup. The regex tag matcher this replaced stopped at the first
+`>` it saw, so `<g data-note=">" transform="translate(0 -80)">` hid its
+transform from the checker while Chromium applied it to every line inside -
+the same fail-open shape verify-block-registry.py retired for the same reason.
 
 The basis for geometry is the `data-from` / `data-to` pair each series line
 declares, never the rendered text. Deriving the basis from text is what let a
@@ -72,27 +89,59 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
-import html
 import math
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
-                      re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
-GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
-# `transform:` but not `text-transform:`. The full-editorial template uses the
-# latter, so an unguarded pattern would report every editorial variant.
-CSS_TRANSFORM_RE = re.compile(r"(?<![\w-])transform\s*:", re.IGNORECASE)
-TAG_RE = re.compile(r"<[^>]+>")
+# Every CSS property that can move or reshape a verified mark WITHOUT touching
+# the attributes this checker reads. The enumeration IS the invariant - it is
+# copied from verify-beeswarm.py, where it had already been wrong twice
+# (`transform:` alone missed `style="transform: ..."`, and once that was fixed
+# `style="translate: 80px 0"` walked past it because CSS Transforms Level 2
+# splits the transform into four properties). Three families reach a mark:
+#
+#   transform / translate / rotate / scale   the four transform properties;
+#       the individual three compose WITH `transform`, so each is its own door
+#   x1 / y1 / x2 / y2 / x / y                the attributes this checker reads.
+#       x and y are SVG geometry properties, and CSS wins over the presentation
+#       attribute, so `style="y: 40px"` on a bound label moves it after its raw
+#       y was validated. A <line>'s x1/y1/x2/y2 are not geometry properties in
+#       any shipping browser, so a declaration naming them is dead today; it is
+#       refused anyway because it costs nothing on honest markup and the
+#       alternative is a checker that has to be re-hardened the day it stops
+#       being dead
+#   offset and its path/distance/position/anchor/rotate longhands
+#       CSS motion path, which places the element somewhere else entirely
+#
+# Anchored to a declaration start, so `text-transform:` (the editorial skin
+# uses it), `display:` and `--custom:` never match, and the `rotate` inside
+# `transform: rotate(45deg)` is read once as the property and never as the
+# function in its value. A vendor prefix is optional so `-webkit-transform:`
+# is not a free pass.
+CSS_MOVES_MARK_RE = re.compile(
+    r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
+    r"(?P<prop>transform|translate|rotate|scale"
+    r"|x1|y1|x2|y2|x|y"
+    r"|offset(?:-(?:path|distance|position|anchor|rotate))?)"
+    r"\s*:",
+    re.IGNORECASE,
+)
+# A CSS comment is whitespace to the browser, so `/**/transform:` is a live
+# declaration. CSS_MOVES_MARK_RE allows only whitespace between a declaration
+# boundary and the property name, which let a comment sitting there hide the
+# property from it while Chromium applied it. Non-greedy and DOTALL: a comment
+# spans lines, and a stylesheet holds many. See css_moves_mark.
+CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+# Detection only - a raw-text signal read BEFORE the parser, because the parser
+# is exactly what a broken quote defeats (see declares_series). Scoped to a
+# <line> start tag: `data-series` on a <path> is the bump chart's vocabulary.
+DECLARES_SERIES_RE = re.compile(r"<line\b[^>]*\bdata-series\s*=", re.IGNORECASE)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 # The COMPLETE numeric token an author may print: sign, comma-grouped thousands,
 # decimals, leading-dot decimals, exponents. Matching only `-?\d+(\.\d+)?` read
 # "1e3" as 1 and "512,000" as 512, so a mangled label agreed with its metadata.
@@ -100,23 +149,6 @@ NUMBER_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?"
 )
 DIGIT_RE = re.compile(r"\d")
-
-# Both quote styles. Matching only double quotes made a single-quoted series
-# line invisible: the detector below sees `data-series` in the raw source either
-# way, but the attribute parser returned nothing, so the line was dropped from
-# the verified set without a word - a file carrying a 400px lie reported clean.
-ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
-    re.DOTALL,
-)
-DECLARES_SERIES_RE = re.compile(r"\bdata-series\s*=", re.IGNORECASE)
-# Scope detection to the ELEMENT this contract binds. `data-series` alone is
-# shared vocabulary across the chart variants - a bump chart binds it to
-# <path>, and holding that file to the slopegraph contract rejects a figure
-# for lacking <line> elements it never claimed to have. A slopegraph whose
-# <line> is malformed still matches here, so the fail-closed case is kept.
-LINE_DECLARES_SERIES_RE = re.compile(
-    r"<line\b[^>]*?\bdata-series\s*=", re.IGNORECASE | re.DOTALL)
 
 # Coordinates ship rounded to one decimal, so a point can sit 0.05px from its
 # true position honestly; an author rounding to whole pixels can sit 0.5px off.
@@ -131,16 +163,37 @@ VALUE_TOLERANCE = 0.001    # printed label vs declared attribute
 CAPTION_TOLERANCE = 0.5    # px, state caption x vs the axis it names
 ROW_TOLERANCE = 0.5        # px, slack before a label counts as another row
 
+GROUP_TAGS = ("g", "svg")                     # the only ancestors whose transform is inherited
+BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data is read
+MARK_TAGS = ("line",)                         # the element this contract binds
+
+
+# === PARSING =================================================================
+
+
+class Element:
+    """One start tag this checker cares about, as the browser tokenized it."""
+
+    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+
+    def __init__(self, tag, attrs, offset, line, ancestor):
+        self.tag = tag
+        self.attrs = attrs          # first-wins dict, names lower-cased, values unescaped
+        self.offset = offset        # offset of `<` in the source, for ordering
+        self.line = line
+        self.body = ""              # character data up to the matching end tag
+        self.ancestor = ancestor    # how the nearest transformed <g>/<svg> moves it, or None
+
 
 class Series:
-    __slots__ = ("name", "frm", "to", "x1", "y1", "x2", "y2", "offset")
+    __slots__ = ("name", "frm", "to", "x1", "y1", "x2", "y2", "line")
 
-    def __init__(self, name, frm, to, x1, y1, x2, y2, offset):
+    def __init__(self, name, frm, to, x1, y1, x2, y2, line):
         self.name = name
         self.frm, self.to = frm, to
         self.x1, self.y1 = x1, y1
         self.x2, self.y2 = x2, y2
-        self.offset = offset
+        self.line = line
 
     def value(self, end):
         return self.frm if end == "from" else self.to
@@ -152,26 +205,189 @@ class Series:
         return self.x1 if end == "from" else self.x2
 
 
-def line_of(source: str, offset: int) -> int:
-    return source.count("\n", 0, offset) + 1
+def first_wins(attrs) -> dict:
+    """Attributes as the browser keeps them: on a repeat, the FIRST wins.
 
-
-def blank_comments(source: str) -> str:
-    """Comments out, length and line numbers preserved.
-
-    Markup inside a comment is not rendered, so treating it as data reports a
-    commented-out old draft as a live defect. Replacing each comment with spaces
-    of the same length keeps every later offset and line number honest.
+    HTML parsing drops a duplicate attribute rather than overwriting the one
+    already on the token, so a second `y2` on a line is not merely ignored -
+    it is not in the document at all. A dict comprehension does the opposite,
+    and that gap is a fail-open every caller inherits: a line carrying a
+    dishonest first `y2` and an honest second renders the dishonest endpoint
+    while a last-wins reader checks, and passes, bytes the browser threw away.
+    A present-but-valueless attribute is an empty string, not an absent one.
     """
-    return COMMENT_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), source)
+    seen = {}
+    for name, value in attrs:
+        seen.setdefault(name, "" if value is None else value)
+    return seen
+
+
+class _Scanner(HTMLParser):
+    """Collect lines, texts, title/desc and style elements with ancestry.
+
+    HTMLParser already lowercases tag and attribute names, tolerates unquoted
+    values and whitespace around `=`, unescapes entities, keeps a quoted `>`
+    inside the value it belongs to, and never invokes handle_starttag for
+    tag-like text inside a comment or inside <script>/<style> raw text - each
+    of those is exactly a case a regex tag matcher mishandles. Ancestry is
+    tracked for <g>/<svg> only, the elements whose transform a child inherits.
+    """
+
+    def __init__(self, source: str):
+        super().__init__(convert_charrefs=True)
+        self.lines: list = []
+        self.texts: list = []
+        self.named: list = []      # <title> and <desc>
+        self.styles: list = []
+        self.error = None
+        self._groups: list = []    # (tag, how) per open <g>/<svg>
+        self._open: list = []      # (tag, Element) per open body element
+        self._line_starts = [0]
+        for index, char in enumerate(source):
+            if char == "\n":
+                self._line_starts.append(index + 1)
+        try:
+            self.feed(source)
+            self.close()
+        except Exception as exc:  # noqa: BLE001 - any parser failure fails closed
+            self.error = "%s: %s" % (type(exc).__name__, exc)
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self._line_starts[line - 1] + column
+
+    def _ancestor(self):
+        for _tag, how in reversed(self._groups):
+            if how is not None:
+                return how
+        return None
+
+    def handle_starttag(self, tag, attrs):
+        self._start(tag, first_wins(attrs), closes=False)
+
+    def handle_startendtag(self, tag, attrs):
+        self._start(tag, first_wins(attrs), closes=True)
+
+    def _start(self, tag, attrs, closes):
+        if tag in GROUP_TAGS:
+            if not closes:
+                how = None
+                if "transform" in attrs:
+                    how = "an ancestor <g>/<svg> transform"
+                elif transform_carrier(attrs) is not None:
+                    how = "an ancestor <g>/<svg> style transform"
+                self._groups.append((tag, how))
+            return
+        if tag not in MARK_TAGS and tag not in BODY_TAGS:
+            return
+        element = Element(tag, attrs, self._offset(), self.getpos()[0], self._ancestor())
+        if tag == "line":
+            self.lines.append(element)
+            return
+        if tag == "text":
+            self.texts.append(element)
+        elif tag == "style":
+            self.styles.append(element)
+        else:
+            self.named.append(element)
+        if not closes:
+            self._open.append((tag, element))
+
+    def handle_endtag(self, tag):
+        stack = self._groups if tag in GROUP_TAGS else self._open if tag in BODY_TAGS else None
+        if stack is None:
+            return
+        # Pop back to the matching open tag - an unclosed inner element ends
+        # with its parent, as it does in the browser's tree.
+        for index in range(len(stack) - 1, -1, -1):
+            if stack[index][0] == tag:
+                del stack[index:]
+                return
+
+    def handle_data(self, data):
+        if self._open:
+            # Innermost only: a <title> tooltip inside a <text> is not part of
+            # the rendered label, and the browser does not draw it either.
+            self._open[-1][1].body += data
+
+
+def parse_document(source: str) -> _Scanner:
+    return _Scanner(source)
 
 
 def attrs_of(raw: str) -> dict:
-    return {m.group("name"): m.group("value") for m in ATTR_RE.finditer(raw)}
+    """First-wins attributes of one tag's raw attribute text, via the parser."""
+
+    class _One(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.attrs = {}
+
+        def handle_starttag(self, tag, attrs):
+            self.attrs = first_wins(attrs)
+
+        handle_startendtag = handle_starttag
+
+    scanner = _One()
+    scanner.feed("<x " + raw + ">")
+    scanner.close()
+    return scanner.attrs
+
+
+def transform_carrier(attrs: dict):
+    """How this element carries a transform, phrased for the finding, or None.
+
+    A transform reaches the renderer by three carriers and the `transform`
+    ATTRIBUTE is only the most visible one. Reading the attribute alone lets
+    `style="transform: translateY(...)"` on a series line, a bound label or an
+    ancestor group move the rendered mark after its raw coordinates were
+    validated. The third carrier, a rule in a <style> block, is reported
+    separately because nothing here can tell which marks such a rule selects.
+    """
+    if "transform" in attrs:
+        return "transform=%r" % attrs["transform"]
+    style = attrs.get("style")
+    if style is not None:
+        found = css_moves_mark(style)
+        if found is not None:
+            return "style=%r (the %s property)" % (style, found.group("prop").lower())
+    return None
+
+
+def css_moves_mark(css: str):
+    """The first mark-moving declaration in CSS text, read past comments, or None.
+
+    Every carrier goes through here - an inline style, an ancestor's inline
+    style, a <style> block - because the browser drops `/* ... */` before it
+    tokenizes, and CSS_MOVES_MARK_RE must see what the browser sees:
+    `style="/**/transform: translateX(80px)"` moved a mark while the anchored
+    regex walked past the comment. Each comment is blanked to whitespace of
+    the SAME length, newlines kept, so the searched text is aligned with the
+    original character for character: every offset in the returned match is
+    an offset into `css` as written, and a <style> finding that counts
+    newlines up to the property names the right line.
+    """
+    stripped = CSS_COMMENT_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()), css)
+    return CSS_MOVES_MARK_RE.search(stripped)
+
+
+def declares_series(source: str) -> bool:
+    """Does the raw text, HTML comments removed, put data-series on a <line>?
+
+    Read BEFORE the parser, because the parser is exactly what a broken quote
+    defeats: `<line data-series="Search` with no closing quote is character
+    data to HTMLParser, no <line> is ever emitted, and a file whose only
+    slopegraph signal was that tag would be skipped as out of scope - a
+    fail-open. The raw signal claims the file and check_source then reports
+    the tag the parser could not read. Comments are stripped first so a
+    commented-out draft line does not claim an unrelated file.
+    """
+    return DECLARES_SERIES_RE.search(HTML_COMMENT_RE.sub("", source)) is not None
 
 
 def plain(body: str) -> str:
-    return html.unescape(TAG_RE.sub("", body)).strip()
+    return body.strip()
 
 
 def number(value):
@@ -264,9 +480,9 @@ def outliers(points: list, tolerance: float) -> list:
     return found
 
 
-def named_text(source: str) -> str:
+def named_text(doc: _Scanner) -> str:
     """The accessible name and description, where a figure says what it is."""
-    return " ".join(plain(m.group("body")) for m in NAMED_RE.finditer(source)).casefold()
+    return " ".join(plain(element.body) for element in doc.named).casefold()
 
 
 def looks_like_slopegraph(path: Path, source: str) -> bool:
@@ -277,72 +493,47 @@ def looks_like_slopegraph(path: Path, source: str) -> bool:
     declares no parseable series - that combination is the fail-closed case, not
     a pass. The whole document is searched: a 4000-character window missed a file
     whose only declaration sat behind a long stylesheet.
+
+    Detection is scoped to the ELEMENT this contract binds. `data-series` alone
+    is shared vocabulary across the chart variants - a bump chart binds it to
+    <path>, and holding that file to the slopegraph contract rejects a figure
+    for lacking <line> elements it never claimed to have. Two readings, each
+    covering the other's blind spot: the raw text (comments stripped) claims a
+    <line> whose broken quoting keeps the parser from ever emitting it, and
+    the parser claims a <line> that declares data-series behind a quoted `>`,
+    which the raw scan cannot see past but the browser still draws.
     """
     if path.name.startswith("example-slopegraph"):
         return True
-    if LINE_DECLARES_SERIES_RE.search(source):
+    if declares_series(source):
         return True
-    described = named_text(source)
+    doc = parse_document(source)
+    if any("data-series" in element.attrs for element in doc.lines):
+        return True
+    described = named_text(doc)
     return "slopegraph" in described or "slope graph" in described
 
 
-def transformed_spans(source: str) -> list:
-    """Offset ranges enclosed by a <g>/<svg> that carries a transform.
-
-    Element-level transforms are easy to see; an ancestor's is not, and shifts
-    everything inside it identically - which is exactly the change that leaves
-    all internal consistency intact while moving every mark on the page.
-    """
-    events = []
-    for match in GROUP_OPEN_RE.finditer(source):
-        if match.group("selfclose"):
-            continue
-        events.append((match.start(), 0, "transform" in attrs_of(match.group("attrs"))))
-    for match in GROUP_CLOSE_RE.finditer(source):
-        events.append((match.start(), 1, False))
-    events.sort()
-    stack, spans = [], []
-    for position, kind, transformed in events:
-        if kind == 0:
-            stack.append((position, transformed))
-        elif stack:
-            start, was_transformed = stack.pop()
-            if was_transformed:
-                spans.append((start, position))
-    # An unclosed transformed group covers everything after it.
-    for start, was_transformed in stack:
-        if was_transformed:
-            spans.append((start, len(source)))
-    return spans
-
-
-def parse_series(source: str, findings: list, name: str) -> list:
+def parse_series(doc: _Scanner, findings: list, name: str) -> list:
     """Series lines, with anything unparseable reported rather than dropped."""
     series = []
-    for match in LINE_RE.finditer(source):
-        raw = match.group("attrs")
-        attrs = attrs_of(raw)
+    for element in doc.lines:
+        attrs = element.attrs
         label = attrs.get("data-series")
         if label is None:
             # A <line> with no data-series is scenery - an axis rule, a legend
-            # swatch - and skipping it is correct. But one whose raw text DOES
-            # declare data-series and still parsed to nothing is markup this
-            # checker cannot read, and dropping it silently is how a lie ships.
-            if DECLARES_SERIES_RE.search(raw):
-                findings.append(
-                    "%s:%d: a <line> declares data-series but its attributes could "
-                    "not be parsed — the checker will not silently skip markup it "
-                    "cannot read. Use plain double-quoted attributes"
-                    % (name, line_of(source, match.start()))
-                )
+            # swatch - and skipping it is correct. The parser reads every tag
+            # the browser reads, so there is no "declared but unparseable"
+            # case left to report here.
             continue
+        line = element.line
         missing = [key for key in ("data-from", "data-to", "x1", "y1", "x2", "y2")
                    if key not in attrs]
         if missing:
             findings.append(
                 "%s:%d: series %r declares data-series but is missing %s — a series "
                 "line must state both values and both endpoints or it cannot be verified"
-                % (name, line_of(source, match.start()), label, ", ".join(missing))
+                % (name, line, label, ", ".join(missing))
             )
             continue
         parsed = [number(attrs[key])
@@ -351,62 +542,63 @@ def parse_series(source: str, findings: list, name: str) -> list:
             findings.append(
                 "%s:%d: series %r has a value or coordinate that is not a finite "
                 "number — cannot verify its slope"
-                % (name, line_of(source, match.start()), label)
+                % (name, line, label)
             )
             continue
         series.append(Series(label, parsed[0], parsed[1], parsed[2], parsed[3],
-                             parsed[4], parsed[5], match.start()))
+                             parsed[4], parsed[5], line))
     return series
 
 
-def check_transforms(source: str, findings: list, name: str) -> None:
-    """No transform may move verified geometry or a bound label."""
-    spans = transformed_spans(source)
+# === CHECKS ==================================================================
 
-    def enclosed(offset):
-        return any(start <= offset <= end for start, end in spans)
 
-    def report(offset, what, how):
+def check_transforms(doc: _Scanner, findings: list, name: str) -> None:
+    """No transform may move verified geometry or a bound label.
+
+    All three carriers are held to that rule - the `transform` attribute, an
+    inline `style="transform: ..."`, and a rule in a <style> block - on the
+    element and on every <g>/<svg> above it, because a gate that closes one of
+    three doorways guards nothing.
+    """
+
+    def report(element, what, how):
         findings.append(
             "%s:%d: %s carries %s — this checker validates raw x/y attributes, so "
             "a transform moves the rendered mark away from the number it was "
             "checked against. Bake the offset into the coordinates instead"
-            % (name, line_of(source, offset), what, how)
+            % (name, element.line, what, how)
         )
 
-    for match in LINE_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
-        if "data-series" not in attrs:
-            continue
-        what = "series %r" % attrs["data-series"]
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+    def check_element(element, what):
+        how = transform_carrier(element.attrs)
+        if how is None:
+            how = element.ancestor
+        if how is not None:
+            report(element, what, how)
 
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
-        if "data-series" not in attrs and "data-axis" not in attrs:
-            continue
-        what = "a bound label (%s)" % plain(match.group("body"))[:20]
-        if "transform" in attrs:
-            report(match.start(), what, "transform=%r" % attrs["transform"])
-        elif enclosed(match.start()):
-            report(match.start(), what, "an ancestor <g>/<svg> transform")
+    for element in doc.lines:
+        if "data-series" in element.attrs:
+            check_element(element, "series %r" % element.attrs["data-series"])
 
-    for match in STYLE_RE.finditer(source):
-        found = CSS_TRANSFORM_RE.search(match.group("body"))
+    for element in doc.texts:
+        if "data-series" in element.attrs or "data-axis" in element.attrs:
+            check_element(element, "a bound label (%s)" % plain(element.body)[:20])
+
+    for element in doc.styles:
+        found = css_moves_mark(element.body)
         if found:
             findings.append(
-                "%s:%d: a CSS `transform` declaration — this checker cannot tell "
+                "%s:%d: a CSS `%s` declaration — this checker cannot tell "
                 "which marks it applies to, and a transform on verified geometry "
                 "invalidates every coordinate here. Remove it, or bake the offset "
                 "into the coordinates"
-                % (name, line_of(source, match.start("body") + found.start()))
+                % (name, element.line + element.body.count("\n", 0, found.start("prop")),
+                   found.group("prop").lower())
             )
 
 
-def check_axes(series: list, findings: list, source: str, name: str) -> None:
+def check_axes(series: list, findings: list, name: str) -> None:
     """Every series must span the same two axis positions."""
     for attr, end in (("x1", "from"), ("x2", "to")):
         positions = sorted({round(s.axis_x(end), 3) for s in series})
@@ -415,12 +607,12 @@ def check_axes(series: list, findings: list, source: str, name: str) -> None:
             findings.append(
                 "%s:%d: series do not share one %s — found %s (%s). Every line must "
                 "run between the same two axes or the slopes are not comparable"
-                % (name, line_of(source, series[0].offset), attr,
+                % (name, series[0].line, attr,
                    "/".join("%g" % p for p in positions), offenders)
             )
 
 
-def check_scale(series: list, findings: list, source: str, name: str) -> None:
+def check_scale(series: list, findings: list, name: str) -> None:
     """The two axes must share one linear value-to-y map, and no point may drift."""
     left = [(s.frm, s.y1) for s in series]
     right = [(s.to, s.y2) for s in series]
@@ -428,7 +620,7 @@ def check_scale(series: list, findings: list, source: str, name: str) -> None:
     values = [v for v, _ in combined]
     span = max(values) - min(values)
     mid = (max(values) + min(values)) / 2.0
-    line = line_of(source, series[0].offset)
+    line = series[0].line
 
     left_fit = fit(left)
     right_fit = fit(right)
@@ -478,7 +670,7 @@ def check_scale(series: list, findings: list, source: str, name: str) -> None:
             "%s:%d: series %r draws its %s endpoint (%g) at y=%g where the shared "
             "scale its peers describe puts %g at y=%.1f — off by %.1f px. Do not move "
             "a point to make room for its label"
-            % (name, line_of(source, s.offset), s.name, ends[index], value, drawn,
+            % (name, s.line, s.name, ends[index], value, drawn,
                value, expected, abs(drawn - expected))
         )
 
@@ -499,11 +691,15 @@ def misplaced_row(series: list, owner: str, end: str, y: float):
     return None
 
 
-def collect_bound_labels(source: str, findings: list, name: str) -> dict:
-    """Bound labels keyed by (series, end, role), with duplicates reported."""
+def collect_bound_labels(doc: _Scanner, findings: list, name: str) -> dict:
+    """Bound labels keyed by (series, end, role), with duplicates reported.
+
+    Each value is (visible text, y, source offset, line); the offset keeps the
+    caller's report order the document's order.
+    """
     found = {}
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.texts:
+        attrs = element.attrs
         label, end = attrs.get("data-series"), attrs.get("data-end")
         if label is None or end is None:
             continue
@@ -516,33 +712,33 @@ def collect_bound_labels(source: str, findings: list, name: str) -> dict:
             findings.append(
                 "%s:%d: a second %s %s label for series %r — one endpoint, one "
                 "label, or the figure states two things about one point"
-                % (name, line_of(source, match.start()), end, role, label)
+                % (name, element.line, end, role, label)
             )
             continue
-        found[key] = (plain(match.group("body")), number(attrs.get("y")),
-                      match.start())
+        found[key] = (plain(element.body), number(attrs.get("y")),
+                      element.offset, element.line)
     return found
 
 
-def check_labels(series: list, source: str, findings: list, name: str) -> None:
+def check_labels(series: list, doc: _Scanner, findings: list, name: str) -> None:
     """Printed values and names must exist, be unique, match, and sit on their row."""
-    bound = collect_bound_labels(source, findings, name)
+    bound = collect_bound_labels(doc, findings, name)
     declared = {s.name for s in series}
 
-    for (label, end, role), (body, y, offset) in sorted(
+    for (label, end, role), (body, y, _offset, line) in sorted(
         bound.items(), key=lambda item: item[1][2]
     ):
         if label not in declared:
             findings.append(
                 "%s:%d: a %s label names series %r, which no line declares — a label "
                 "with no mark is not verifiable and reads as data"
-                % (name, line_of(source, offset), role, label)
+                % (name, line, role, label)
             )
             continue
         if end not in ("from", "to"):
             findings.append(
                 "%s:%d: label for series %r has data-end=%r, which is neither "
-                "'from' nor 'to'" % (name, line_of(source, offset), label, end)
+                "'from' nor 'to'" % (name, line, label, end)
             )
             continue
         # Row placement. A label bound to one series but drawn beside another's
@@ -555,7 +751,7 @@ def check_labels(series: list, source: str, findings: list, name: str) -> None:
                     "%s:%d: the %s %s label for series %r is drawn at y=%g, nearer "
                     "%r's endpoint than its own — a label on the wrong row renames "
                     "the line"
-                    % (name, line_of(source, offset), end, role, label, y, sits_by)
+                    % (name, line, end, role, label, y, sits_by)
                 )
 
     for s in series:
@@ -565,24 +761,22 @@ def check_labels(series: list, source: str, findings: list, name: str) -> None:
                 findings.append(
                     "%s:%d: series %r prints no %s endpoint value — a slopegraph must "
                     "label both ends, or the reader has a slope and no magnitude"
-                    % (name, line_of(source, s.offset), s.name, end)
+                    % (name, s.line, s.name, end)
                 )
             else:
-                body, _y, offset = value_entry
+                body, _y, _offset, line = value_entry
                 shown, reason = printed_number(body)
                 if shown is None:
                     findings.append(
                         "%s:%d: the %s endpoint label for %r %s (%r) — label both "
                         "endpoints with one complete value each"
-                        % (name, line_of(source, offset), end, s.name, reason,
-                           body[:28])
+                        % (name, line, end, s.name, reason, body[:28])
                     )
                 elif abs(shown - s.value(end)) > VALUE_TOLERANCE:
                     findings.append(
                         "%s:%d: series %r prints %r at its %s endpoint but declares "
                         "%g — the label and the geometry must state one number"
-                        % (name, line_of(source, offset), s.name, body, end,
-                           s.value(end))
+                        % (name, line, s.name, body, end, s.value(end))
                     )
             name_entry = bound.get((s.name, end, "name"))
             if name_entry is None:
@@ -590,40 +784,40 @@ def check_labels(series: list, source: str, findings: list, name: str) -> None:
                     "%s:%d: series %r has no %s name label (data-role=\"name\") — a "
                     "slopegraph names every series at both ends, and an unbound name "
                     "can be swapped with another row undetected"
-                    % (name, line_of(source, s.offset), s.name, end)
+                    % (name, s.line, s.name, end)
                 )
                 continue
-            body, _y, offset = name_entry
+            body, _y, _offset, line = name_entry
             if body != s.name:
                 findings.append(
                     "%s:%d: a name label bound to series %r reads %r — the visible "
                     "name and the binding must agree"
-                    % (name, line_of(source, offset), s.name, body[:28])
+                    % (name, line, s.name, body[:28])
                 )
 
 
-def check_captions(series: list, source: str, findings: list, name: str) -> None:
+def check_captions(series: list, doc: _Scanner, findings: list, name: str) -> None:
     """Each state caption must name the axis it is drawn against."""
     seen = {}
-    for match in TEXT_RE.finditer(source):
-        attrs = attrs_of(match.group("attrs"))
+    for element in doc.texts:
+        attrs = element.attrs
         end = attrs.get("data-axis")
         if end is None:
             continue
         if end not in ("from", "to"):
             findings.append(
                 "%s:%d: a state caption has data-axis=%r, which is neither 'from' "
-                "nor 'to'" % (name, line_of(source, match.start()), end)
+                "nor 'to'" % (name, element.line, end)
             )
             continue
         if end in seen:
             findings.append(
                 "%s:%d: a second %r state caption — one axis, one caption"
-                % (name, line_of(source, match.start()), end)
+                % (name, element.line, end)
             )
             continue
-        seen[end] = (number(attrs.get("x")), plain(match.group("body")),
-                     attrs.get("data-state"), match.start())
+        seen[end] = (number(attrs.get("x")), plain(element.body),
+                     attrs.get("data-state"), element.line)
 
     for end in ("from", "to"):
         if end not in seen:
@@ -633,14 +827,14 @@ def check_captions(series: list, source: str, findings: list, name: str) -> None
                 % (name, end, end)
             )
             continue
-        x, body, declared, offset = seen[end]
+        x, body, declared, line = seen[end]
         expected = series[0].axis_x(end)
         if x is None or abs(x - expected) > CAPTION_TOLERANCE:
             findings.append(
                 "%s:%d: the %r state caption (%r) is drawn at x=%s but its axis is at "
                 "x=%g — the captions are swapped or misplaced, which reverses the "
                 "direction every slope is read in"
-                % (name, line_of(source, offset), end, body[:20],
+                % (name, line, end, body[:20],
                    "%g" % x if x is not None else "?", expected)
             )
         # Position alone is not enough: swapping just the two visible strings
@@ -651,13 +845,13 @@ def check_captions(series: list, source: str, findings: list, name: str) -> None
                 "%s:%d: the %r state caption (%r) has no data-state — its visible "
                 "text is unbound, so it can be exchanged with the other caption and "
                 "nothing here would notice"
-                % (name, line_of(source, offset), end, body[:20])
+                % (name, line, end, body[:20])
             )
         elif body != declared:
             findings.append(
                 "%s:%d: the %r state caption reads %r but declares data-state=%r — the "
                 "visible caption and its binding must agree"
-                % (name, line_of(source, offset), end, body[:20], declared)
+                % (name, line, end, body[:20], declared)
             )
 
     if len(seen) == 2:
@@ -666,15 +860,36 @@ def check_captions(series: list, source: str, findings: list, name: str) -> None
             findings.append(
                 "%s:%d: both state captions read %r — two states the reader cannot "
                 "tell apart is not a comparison"
-                % (name, line_of(source, second[3]), first[1])
+                % (name, second[3], first[1])
             )
+
+
+# === DRIVER ==================================================================
 
 
 def check_source(path: Path, raw: str) -> list:
     """Findings for one already-read document."""
-    source = blank_comments(raw)
     findings: list = []
-    series = parse_series(source, findings, path.name)
+    doc = parse_document(raw)
+    if doc.error is not None:
+        findings.append(
+            "%s: presents as a slopegraph but could not be parsed as HTML (%s) — "
+            "refusing to report OK on a file this checker could not read"
+            % (path.name, doc.error)
+        )
+        return findings
+    # The raw text claimed a bound <line> the parser never emitted: an unclosed
+    # quote turned the tag into character data. Nothing downstream can verify
+    # a mark that does not exist, so say which tag was lost rather than count
+    # zero series and leave the author hunting for a line that is plainly there.
+    if declares_series(raw) and not any("data-series" in e.attrs for e in doc.lines):
+        findings.append(
+            "%s: declares data-series on a <line> but no complete <line> could be "
+            "parsed — an unclosed attribute quote swallows the tag; fix the markup. "
+            "Refusing to report OK on a file this checker could not read" % path.name
+        )
+        return findings
+    series = parse_series(doc, findings, path.name)
 
     if len(series) < 2:
         findings.append(
@@ -684,11 +899,11 @@ def check_source(path: Path, raw: str) -> list:
         )
         return findings
 
-    check_transforms(source, findings, path.name)
-    check_axes(series, findings, source, path.name)
-    check_scale(series, findings, source, path.name)
-    check_labels(series, source, findings, path.name)
-    check_captions(series, source, findings, path.name)
+    check_transforms(doc, findings, path.name)
+    check_axes(series, findings, path.name)
+    check_scale(series, findings, path.name)
+    check_labels(series, doc, findings, path.name)
+    check_captions(series, doc, findings, path.name)
     return findings
 
 

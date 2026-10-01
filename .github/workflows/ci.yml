@@ -48,13 +48,19 @@ jobs:
 
       # Versions are bumped on main by the Auto Version Bump workflow after
       # each merge (ADR 0009); pull requests must leave them untouched.
+      # A pull_request checkout is GitHub's merge of the PR into the current
+      # base tip, so the merge's first parent is the base to compare against.
+      # github.event.pull_request.base.sha can predate later auto-bumps and
+      # would report their versions as edits made by the PR.
       - name: Forbid manifest version changes in pull requests
-        env:
-          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            python3 scripts/verify-plugin-package.py --require-no-bump "$BASE_REF"
+            if ! git rev-parse -q --verify HEAD^2 >/dev/null; then
+              echo "expected the pull request merge commit at HEAD" >&2
+              exit 1
+            fi
+            python3 scripts/verify-plugin-package.py --require-no-bump HEAD^1
           else
             python3 scripts/verify-plugin-package.py --current-only
           fi
@@ -161,6 +167,14 @@ jobs:
           python scripts/test-verify-polar.py
           python scripts/verify-polar.py
 
+      - name: Verify heatmap monotone ramp and grid
+        if: always()
+        id: heatmap
+        shell: bash
+        run: |
+          python scripts/test-verify-heatmap.py
+          python scripts/verify-heatmap.py --all
+
       - name: Verify sequence OAuth specs
         if: always()
         id: oauth
@@ -223,6 +237,11 @@ jobs:
         id: screenshots
         run: python scripts/verify-screenshot-freshness.py
 
+      - name: Verify screenshot freshness checker
+        if: always()
+        id: screenshots_tests
+        run: python scripts/test-verify-screenshot-freshness.py
+
       - name: Install Pillow for README thumbnail verification
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         env:
@@ -243,6 +262,11 @@ jobs:
         if: always()
         id: self_check
         run: python scripts/test-self-check.py
+
+      - name: Verify standalone SVG export (CSS carry + defs IDs)
+        if: always()
+        id: export_svg
+        run: python scripts/test-export-svg-standalone.py
 
       - name: Verify label geometry
         if: always()
@@ -274,6 +298,16 @@ jobs:
         id: treemap_tests
         run: python scripts/test-verify-treemap.py
 
+      - name: Verify marimekko width, height and area shares
+        if: always()
+        id: marimekko
+        run: python scripts/verify-marimekko.py --all
+
+      - name: Verify marimekko checker
+        if: always()
+        id: marimekko_tests
+        run: python scripts/test-verify-marimekko.py
+
       - name: Verify dumbbell domain and contrast rules
         if: always()
         id: dumbbell
@@ -292,6 +326,16 @@ jobs:
         if: always()
         id: slopegraph_tests
         run: python scripts/test-verify-slopegraph.py
+
+      - name: Verify streamgraph stack and baseline
+        if: always()
+        id: streamgraph
+        run: python scripts/verify-streamgraph.py --all
+
+      - name: Verify streamgraph checker
+        if: always()
+        id: streamgraph_tests
+        run: python scripts/test-verify-streamgraph.py
 
       - name: Verify sankey flow conservation
         if: always()
@@ -430,6 +474,8 @@ jobs:
           echo "| Mojibake Repair Utility | ${{ steps.mojibake.outcome == 'success' && '✅ Passed' || (steps.mojibake.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Heatmap Monotone Ramp & Grid | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Heatmap Checker | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Semantic-Motion Verifier Tests | ${{ steps.semantic_motion_tests.outcome == 'success' && '✅ Passed' || (steps.semantic_motion_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence-OAuth Verifier Tests | ${{ steps.oauth_tests.outcome == 'success' && '✅ Passed' || (steps.oauth_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -441,18 +487,24 @@ jobs:
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Screenshot Freshness Checker | ${{ steps.screenshots_tests.outcome == 'success' && '✅ Passed' || (steps.screenshots_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| README Thumbnail Freshness | ${{ steps.readme_thumbs.outcome == 'success' && '✅ Passed' || (steps.readme_thumbs.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Standalone SVG Export | ${{ steps.export_svg.outcome == 'success' && '✅ Passed' || (steps.export_svg.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Block Registry | ${{ steps.block_registry.outcome == 'success' && '✅ Passed' || (steps.block_registry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Block Registry Checker | ${{ steps.block_registry_tests.outcome == 'success' && '✅ Passed' || (steps.block_registry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Marimekko Width, Height & Area | ${{ steps.marimekko.outcome == 'success' && '✅ Passed' || (steps.marimekko.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Marimekko Checker | ${{ steps.marimekko_tests.outcome == 'success' && '✅ Passed' || (steps.marimekko_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dumbbell Domain & Contrast | ${{ steps.dumbbell.outcome == 'success' && '✅ Passed' || (steps.dumbbell.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Dumbbell Checker | ${{ steps.dumbbell_tests.outcome == 'success' && '✅ Passed' || (steps.dumbbell_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Shared Scale | ${{ steps.slopegraph.outcome == 'success' && '✅ Passed' || (steps.slopegraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Slopegraph Checker | ${{ steps.slopegraph_tests.outcome == 'success' && '✅ Passed' || (steps.slopegraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Streamgraph Stack & Baseline | ${{ steps.streamgraph.outcome == 'success' && '✅ Passed' || (steps.streamgraph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Streamgraph Checker | ${{ steps.streamgraph_tests.outcome == 'success' && '✅ Passed' || (steps.streamgraph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sankey Flow Conservation | ${{ steps.sankey.outcome == 'success' && '✅ Passed' || (steps.sankey.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sankey Checker | ${{ steps.sankey_tests.outcome == 'success' && '✅ Passed' || (steps.sankey_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Waterfall Running-Total Conservation | ${{ steps.waterfall.outcome == 'success' && '✅ Passed' || (steps.waterfall.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

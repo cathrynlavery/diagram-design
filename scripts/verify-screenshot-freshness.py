@@ -13,6 +13,7 @@ from screenshot_catalog import (
     png_dimensions,
     screenshot_path,
     sha256,
+    sha256_text,
     source_path,
 )
 
@@ -20,8 +21,8 @@ from screenshot_catalog import (
 def main() -> int:
     errors: list[str] = []
     slugs = canonical_slugs()
-    if len(slugs) != 40 or len(slugs) != len(set(slugs)):
-        errors.append(f"expected 40 unique canonical types; found {len(slugs)}")
+    if len(slugs) != 41 or len(slugs) != len(set(slugs)):
+        errors.append(f"expected 41 unique canonical types; found {len(slugs)}")
 
     if not MANIFEST.is_file():
         errors.append("docs/screenshots/manifest.json is missing")
@@ -79,7 +80,7 @@ def main() -> int:
             errors.append(f"{slug}: manifest source must be {expected_source}")
         if entry.get("screenshot") != expected_screenshot:
             errors.append(f"{slug}: manifest screenshot must be {expected_screenshot}")
-        if entry.get("source_sha256") != sha256(source):
+        if entry.get("source_sha256") != sha256_text(source):
             errors.append(f"{slug}: source changed; rerun scripts/render-canonical-screenshots.py")
         if entry.get("screenshot_sha256") != sha256(screenshot):
             errors.append(f"{slug}: screenshot changed without a matching manifest refresh")
@@ -96,7 +97,7 @@ def main() -> int:
         for error in errors:
             print(f"  - {error}")
         return 1
-    print("OK screenshot freshness: 40 canonical sources and PNG digests match")
+    print("OK screenshot freshness: 41 canonical sources and PNG digests match")
     return 0
 
 

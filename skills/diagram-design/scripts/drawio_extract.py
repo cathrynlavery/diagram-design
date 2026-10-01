@@ -12,7 +12,7 @@ Usage:
     python3 drawio_extract.py <file.drawio> [--page N|NAME] [--json]
                              [--max-rows N] [--out PATH]
 
-Default output is a compact Markdown digest meant to be read into context.
+Default output is a compact Markdown digest for local review.
 ``--json`` emits the full IR instead (every node, every edge, every style).
 
 Exit codes: 0 ok, 2 unreadable / unsupported input.
@@ -173,7 +173,7 @@ def load_mxfile(path: Path) -> str:
         if not xml:
             _fail(f"{path.name}: PNG has no embedded draw.io diagram")
         return xml
-    text = data.decode("utf-8", "replace").lstrip("﻿").strip()
+    text = data.decode("utf-8-sig", "replace").strip()
     if "<mxfile" in text or "<mxGraphModel" in text:
         return text
     if "<svg" in text[:2000]:
@@ -465,8 +465,8 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         px, py, pdepth = resolve(parent, seen)
         return node.x + px, node.y + py, pdepth + 1
 
-    for node in page.nodes:
-        ax, ay, depth = resolve(node, set())
+    resolved = [resolve(node, set()) for node in page.nodes]
+    for node, (ax, ay, depth) in zip(page.nodes, resolved):
         node.x, node.y, node.depth = ax, ay, depth
         parent = node_map.get(node.parent or "")
         if parent is not None:

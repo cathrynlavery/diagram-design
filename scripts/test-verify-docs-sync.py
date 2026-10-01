@@ -7,6 +7,7 @@ import importlib.util
 import json
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -44,6 +45,54 @@ effective_w        = 1000 - right_strip_w - strip_margin
 ## 8. Anti-patterns
 """
 
+GRID_SKILL = """\
+### 4px grid
+
+**Structural geometry, divisible by 4:** node origins, widths, heights, gaps, padding. Off-grid by design: type sizes (role ramp in `references/output-spec.md`), stroke widths, opacity.
+
+| Category | Allowed values |
+|---|---|
+| Node width / height | 80, 96, 120 |
+| Gap between nodes | 20, 24, 32 |
+
+### Complexity budget
+
+<text x="10" y="20" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Ingest</text>
+<text x="10" y="34" font-size="8.5" font-family="'Geist', sans-serif">source: s3</text>
+<text x="10" y="48" font-size="7" font-family="'Geist Mono', monospace">API</text>
+<text x="10" y="90" fill="rgba(45,49,66,0.06)" font-size="72" font-family="'Geist Mono', monospace">2026</text>
+"""
+
+TYPE_RAMP_SPEC = """\
+### Type ramp per size class
+
+| Role | standard | presentation | print |
+|---|---|---|---|
+| Title (Instrument Serif) | 28 | 40 | 32 |
+| Node name (Geist 600) | 12 | 16 | 12 |
+| Sublabel (Geist Mono) | 9 | 12 | 9 |
+| Arrow label (Geist Mono) | 8 | 12 | 8 |
+| Eyebrow / tag (Geist Mono) | 8 | 8 | 8 |
+| Node box min height | 48 | 64 | 48 |
+| Min gap between nodes | 24 | 40 | 24 |
+
+Every `font-size` is one of the role values above for the preset in use, or one of these named exceptions:
+
+| Exception | Font | Sizes |
+|---|---|---|
+| Dense annotation: legend keys, axis ticks | Geist Mono or Geist regular | 7 to 11, half steps allowed |
+| Group or entity heading | Geist 600 | 14 |
+| Decorative watermark numerals at or under 0.08 opacity | any | any |
+
+### Registered legacy sizes
+
+| File | Sizes | What they are |
+|---|---|---|
+| `assets/example-legacy.html` | Geist 600 13, Geist 600 22 | node name and a counter |
+
+### Safe areas
+"""
+
 
 def load_verify_module():
     sys.dont_write_bytecode = True
@@ -53,6 +102,627 @@ def load_verify_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+# Every file that carries the Google Fonts css2 link or the export @import.
+# The fixtures copy them from the real tree, so the passing case is the
+# shipped wiring and each mutation below is the only defect in the tree.
+# SKILL.md left both lists when the ADR 0004 split routed its typography to
+# style-guide.md; check_font_link_copies covers a copy that comes back.
+FONT_SURFACES = (
+    "assets/template.html",
+    "assets/template-dark.html",
+    "assets/template-full.html",
+    "assets/template-motion.html",
+    "references/style-guide.md",
+    "references/export.md",
+)
+# Spelled out here rather than read from the verifier: a surface or template
+# dropped from the verifier's own lists must fail a test, not shrink it.
+LINK_SURFACES = (
+    "assets/template-dark.html",
+    "assets/template-full.html",
+    "assets/template-motion.html",
+    "references/style-guide.md",
+)
+# Files the ADR 0004 split made carriers of the type-ramp contract: the grid
+# owner, the two files holding markup patterns, and the spec they answer to.
+TYPE_RAMP_FILES = (
+    "SKILL.md",
+    "references/primitives-core.md",
+    "references/layout-budget.md",
+    "references/output-spec.md",
+)
+TEMPLATES = (
+    "assets/template.html",
+    "assets/template-dark.html",
+    "assets/template-full.html",
+    "assets/template-motion.html",
+)
+NOTO_SERIF_FAMILY = "&family=Noto+Serif:ital@0;1"
+TITLE_ORDER = "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'"
+
+
+def mutate(path: Path, old: str, new: str) -> bytes:
+    """Replace *old* once in *path* and return the original bytes."""
+    original = path.read_bytes()
+    text = original.decode("utf-8")
+    if old not in text:
+        raise AssertionError(f"{path.name} no longer contains {old!r}; update the fixture")
+    path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+    return original
+
+
+@contextmanager
+def font_fixture():
+    """Yield a temp root holding the shipped font surfaces, byte for byte."""
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-fonts-") as temp_dir:
+        root = Path(temp_dir)
+        for relative in FONT_SURFACES:
+            target = root / "skills/diagram-design" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+        yield root
+
+
+def run_checks(root: Path, *checks) -> list[str]:
+    errors: list[str] = []
+    for check in checks:
+        check(errors, root)
+    return errors
+
+
+def order_error(relative: str, face: str) -> str:
+    return (
+        f"{relative} --font-serif lists {face!r} before 'Noto Serif'; Google "
+        f"Fonts slices Cyrillic into {face} as well, so a Cyrillic title "
+        "would draw from it"
+    )
+
+
+def lacks_error(relative: str) -> str:
+    return (
+        f"{relative} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
+        "no Cyrillic, so a Cyrillic title falls through to the next face"
+    )
+
+
+def link_error(relative: str) -> str:
+    return (
+        f"{relative} font link does not request Noto Serif, which its "
+        "--font-serif names for Cyrillic titles; without it they resolve "
+        "through whatever serif the viewer has installed"
+    )
+
+
+def check_font_link_parity(verify) -> None:
+    """Every css2 surface requests the template's families, each one checked."""
+    with font_fixture() as root:
+        skill = root / "skills/diagram-design"
+        errors = run_checks(root, verify.check_export_font_parity)
+        if errors:
+            raise AssertionError(f"shipped font links failed parity: {errors}")
+
+        for relative in LINK_SURFACES:
+            path = skill / relative
+            original = mutate(path, NOTO_SERIF_FAMILY, "")
+            errors = run_checks(root, verify.check_export_font_parity)
+            expected = (
+                f"{relative} font link drifts from assets/template.html: "
+                "missing Noto Serif"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{relative} dropping a family was not reported: {errors}")
+            path.write_bytes(original)
+
+        export = skill / "references/export.md"
+        original = mutate(export, "&amp;family=Noto+Serif:ital@0;1", "")
+        errors = run_checks(root, verify.check_export_font_parity)
+        expected = (
+            "references/export.md @import omits Noto Serif, which "
+            "assets/template.html requests; an exported .svg would resolve "
+            "those scripts through whatever font the viewer happens to have"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"export @import drift was not reported: {errors}")
+        export.write_bytes(original)
+
+        style_guide = skill / "references/style-guide.md"
+        original = mutate(
+            style_guide, "&display=swap", "&family=Roboto:wght@400&display=swap"
+        )
+        errors = run_checks(root, verify.check_export_font_parity)
+        expected = (
+            "references/style-guide.md font link drifts from assets/template.html: "
+            "extra Roboto"
+        )
+        if errors != [expected]:
+            raise AssertionError(f"an extra style-guide family was not reported: {errors}")
+        style_guide.write_bytes(original)
+    print("OK font links: every css2 surface requests the template's families")
+
+
+def check_title_stack_order(verify) -> None:
+    """Every --font-serif in every template reaches 'Noto Serif' first."""
+    with font_fixture() as root:
+        skill = root / "skills/diagram-design"
+        errors = run_checks(root, verify.check_title_fallback_order)
+        if errors:
+            raise AssertionError(f"shipped title stacks failed the fallback order: {errors}")
+
+        # Google Fonts slices Cyrillic into Noto Serif KR too, so a stack that
+        # reaches the Korean face first draws a Cyrillic title from it.
+        for relative in TEMPLATES:
+            path = skill / relative
+            original = mutate(
+                path, TITLE_ORDER, "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'"
+            )
+            errors = run_checks(root, verify.check_title_fallback_order)
+            if errors != [order_error(relative, "Noto Serif KR")]:
+                raise AssertionError(
+                    f"a CJK serif ahead of Noto Serif in {relative} was not reported: {errors}"
+                )
+            path.write_bytes(original)
+
+        # A dark-mode override is a second declaration, and the first one
+        # passing must not hide it. JP and HK carry a Cyrillic slice as well.
+        template = skill / "assets/template.html"
+        for face in ("Noto Serif JP", "Noto Serif HK"):
+            original = mutate(
+                template,
+                "</style>",
+                "@media (prefers-color-scheme: dark) {\n"
+                f"      :root {{ --font-serif: 'Instrument Serif', '{face}', "
+                "'Noto Serif', serif; }\n"
+                "    }\n"
+                "  </style>",
+            )
+            errors = run_checks(root, verify.check_title_fallback_order)
+            if errors != [order_error("assets/template.html", face)]:
+                raise AssertionError(
+                    f"a second --font-serif leading with {face} was not reported: {errors}"
+                )
+            template.write_bytes(original)
+
+        # Each distinct problem is reported once, in declaration order: an
+        # override repeated is one defect, and it does not hide a different one.
+        original = mutate(
+            template, TITLE_ORDER, "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'"
+        )
+        override = (
+            "@media (prefers-color-scheme: dark) {\n"
+            "      :root { --font-serif: 'Instrument Serif', 'Noto Serif JP', "
+            "'Noto Serif', serif; }\n"
+            "    }\n"
+            "  "
+        )
+        mutate(template, "</style>", override * 2 + "</style>")
+        errors = run_checks(root, verify.check_title_fallback_order)
+        expected = [
+            order_error("assets/template.html", "Noto Serif KR"),
+            order_error("assets/template.html", "Noto Serif JP"),
+        ]
+        if errors != expected:
+            raise AssertionError(f"stack errors were not each reported once: {errors}")
+        template.write_bytes(original)
+
+        motion = skill / "assets/template-motion.html"
+        original = mutate(motion, "'Noto Serif', ", "")
+        errors = run_checks(root, verify.check_title_fallback_order)
+        if errors != [lacks_error("assets/template-motion.html")]:
+            raise AssertionError(f"a stack without Noto Serif was not reported: {errors}")
+        motion.write_bytes(original)
+    print("OK title stacks: 'Noto Serif' leads every CJK serif face")
+
+
+def check_title_font_link(verify) -> None:
+    """A stack naming Noto Serif is only as good as the link that loads it."""
+    with font_fixture() as root:
+        mutate(
+            root / "skills/diagram-design/assets/template-motion.html",
+            NOTO_SERIF_FAMILY,
+            "",
+        )
+        errors = run_checks(
+            root, verify.check_export_font_parity, verify.check_title_fallback_order
+        )
+        expected = [
+            "assets/template-motion.html font link drifts from assets/template.html: "
+            "missing Noto Serif",
+            link_error("assets/template-motion.html"),
+        ]
+        if errors != expected:
+            raise AssertionError(f"a template link without Noto Serif was not reported: {errors}")
+
+    # A failing stack must not hide the failing link beside it.
+    with font_fixture() as root:
+        motion = root / "skills/diagram-design/assets/template-motion.html"
+        mutate(motion, "'Noto Serif', ", "")
+        mutate(motion, NOTO_SERIF_FAMILY, "")
+        errors = run_checks(
+            root, verify.check_export_font_parity, verify.check_title_fallback_order
+        )
+        expected = [
+            "assets/template-motion.html font link drifts from assets/template.html: "
+            "missing Noto Serif",
+            lacks_error("assets/template-motion.html"),
+            link_error("assets/template-motion.html"),
+        ]
+        if errors != expected:
+            raise AssertionError(f"a failing stack hid the failing link beside it: {errors}")
+
+    # Dropping the family from every copy at once leaves parity nothing to
+    # disagree about; only the templates' own links can still catch it.
+    with font_fixture() as root:
+        for relative in FONT_SURFACES:
+            family = (
+                "&amp;family=Noto+Serif:ital@0;1"
+                if relative == "references/export.md"
+                else NOTO_SERIF_FAMILY
+            )
+            mutate(root / "skills/diagram-design" / relative, family, "")
+        errors = run_checks(root, verify.check_export_font_parity)
+        if errors:
+            raise AssertionError(f"a coordinated removal should pass parity: {errors}")
+        errors = run_checks(root, verify.check_title_fallback_order)
+        expected = [link_error(relative) for relative in TEMPLATES]
+        if errors != expected:
+            raise AssertionError(f"a coordinated Noto Serif removal was not reported: {errors}")
+    print("OK title links: every template loads the Noto Serif its stack names")
+
+
+def check_font_link_copies(verify) -> None:
+    """A css2 link outside the required surfaces is still held to parity.
+
+    SKILL.md carried a required copy until the ADR 0004 split routed its
+    typography to style-guide.md. A copy that comes back, in SKILL.md or in any
+    reference, must match the template like every required one does.
+    """
+    style_guide = (ROOT / "skills/diagram-design/references/style-guide.md").read_text(
+        encoding="utf-8"
+    )
+    link = next(line for line in style_guide.splitlines() if "fonts.googleapis.com/css2" in line)
+    drifted = link.replace(NOTO_SERIF_FAMILY, "")
+    if drifted == link:
+        raise AssertionError("style-guide.md font link no longer requests Noto Serif")
+    for relative in ("SKILL.md", "references/primitives-core.md"):
+        shipped = (ROOT / "skills/diagram-design" / relative).read_text(encoding="utf-8")
+        with font_fixture() as root:
+            path = root / "skills/diagram-design" / relative
+            path.write_text(shipped, encoding="utf-8")
+            errors = run_checks(root, verify.check_export_font_parity)
+            if errors:
+                raise AssertionError(f"shipped {relative} failed font parity: {errors}")
+
+            path.write_text(shipped + f"\n```html\n{link}\n```\n", encoding="utf-8")
+            errors = run_checks(root, verify.check_export_font_parity)
+            if errors:
+                raise AssertionError(f"a matching css2 copy in {relative} was rejected: {errors}")
+
+            expected = [
+                f"{relative} font link drifts from assets/template.html: missing Noto Serif"
+            ]
+            for copy in (drifted, single_quoted(drifted)):
+                path.write_text(shipped + f"\n```html\n{copy}\n```\n", encoding="utf-8")
+                errors = run_checks(root, verify.check_export_font_parity)
+                if errors != expected:
+                    raise AssertionError(
+                        f"a drifted css2 copy in {relative} was not reported: {copy} {errors}"
+                    )
+
+            path.write_text(shipped + f"\n```html\n{single_quoted(link)}\n```\n", encoding="utf-8")
+            errors = run_checks(root, verify.check_export_font_parity)
+            if errors:
+                raise AssertionError(
+                    f"a matching single-quoted css2 copy in {relative} was rejected: {errors}"
+                )
+
+    # A required surface may quote its href either way; drift is still drift,
+    # not a missing link.
+    with font_fixture() as root:
+        path = root / "skills/diagram-design/references/style-guide.md"
+        path.write_text(style_guide.replace(link, single_quoted(link)), encoding="utf-8")
+        errors = run_checks(root, verify.check_export_font_parity)
+        if errors:
+            raise AssertionError(f"a single-quoted style-guide link was rejected: {errors}")
+
+        path.write_text(style_guide.replace(link, single_quoted(drifted)), encoding="utf-8")
+        errors = run_checks(root, verify.check_export_font_parity)
+        expected = [
+            "references/style-guide.md font link drifts from assets/template.html: "
+            "missing Noto Serif"
+        ]
+        if errors != expected:
+            raise AssertionError(f"a single-quoted drifted style-guide link was not reported: {errors}")
+    print("OK font links: a css2 copy in SKILL.md or any reference is held to parity")
+
+
+def single_quoted(link: str) -> str:
+    """*link* with its href value in single quotes instead of double."""
+    head, marker, rest = link.partition('href="')
+    value, closing, tail = rest.partition('"')
+    if not marker or not closing:
+        raise AssertionError(f"no double-quoted href to requote in {link!r}")
+    return f"{head}href='{value}'{tail}"
+
+
+@contextmanager
+def type_ramp_fixture():
+    """Yield a temp root holding the shipped type-ramp carriers, byte for byte."""
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-ramp-") as temp_dir:
+        root = Path(temp_dir)
+        for relative in TYPE_RAMP_FILES:
+            target = root / "skills/diagram-design" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+        yield root
+
+
+def check_split_type_ramp(verify) -> None:
+    """The type-ramp contract follows the grid and the patterns out of SKILL.md."""
+    errors: list[str] = []
+    verify.check_type_ramp_surfaces(errors, ROOT)
+    if errors:
+        raise AssertionError(f"shipped type-ramp surfaces disagree with output-spec.md: {errors}")
+
+    with type_ramp_fixture() as root:
+        package = root / "skills/diagram-design"
+        grid = package / "references/layout-budget.md"
+        primitives = package / "references/primitives-core.md"
+        skill = package / "SKILL.md"
+        if run_checks(root, verify.check_type_ramp_surfaces):
+            raise AssertionError("the shipped type-ramp fixture does not pass")
+
+        original = mutate(grid, "### 4px grid\n", "### Grid\n")
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if errors != ["references/layout-budget.md has no '### 4px grid' section"]:
+            raise AssertionError(f"a grid owner without the grid was not reported: {errors}")
+        grid.write_bytes(original)
+
+        original = mutate(
+            grid,
+            "| Border radius | 4, 6, 8 |\n",
+            "| Border radius | 4, 6, 8 |\n| Font sizes | 8, 12 |\n",
+        )
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if (
+            len(errors) != 1
+            or not errors[0].startswith("references/layout-budget.md 4px-grid table")
+            or "'Font sizes' row" not in errors[0]
+        ):
+            raise AssertionError(f"a font-size row in the moved grid was not reported: {errors}")
+        grid.write_bytes(original)
+
+        original = mutate(grid, " (role ramp in `references/output-spec.md`)", "")
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if len(errors) != 1 or not errors[0].startswith(
+            "references/layout-budget.md 4px-grid section does not link to references/output-spec.md"
+        ):
+            raise AssertionError(f"an unlinked moved grid was not reported: {errors}")
+        grid.write_bytes(original)
+
+        original = mutate(primitives, 'font-size="12"', 'font-size="13"')
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if len(errors) != 1 or not errors[0].startswith(
+            "references/primitives-core.md uses font-size=13 on sans-600 text"
+        ):
+            raise AssertionError(f"an off-ramp size in the moved patterns was not reported: {errors}")
+        primitives.write_bytes(original)
+
+        original = skill.read_bytes()
+        skill.write_text(
+            original.decode("utf-8")
+            + "\n<text font-size=\"13\" font-weight=\"600\" "
+            "font-family=\"'Geist', sans-serif\">X</text>\n",
+            encoding="utf-8",
+        )
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if len(errors) != 1 or not errors[0].startswith("SKILL.md uses font-size=13"):
+            raise AssertionError(f"an off-ramp size back in SKILL.md was not reported: {errors}")
+        skill.write_bytes(original)
+
+        original = grid.read_bytes()
+        grid.unlink()
+        errors = run_checks(root, verify.check_type_ramp_surfaces)
+        if errors != ["type-ramp surface is missing: references/layout-budget.md"]:
+            raise AssertionError(f"a missing grid owner was not reported: {errors}")
+        grid.write_bytes(original)
+    print("OK type ramp: the moved grid and patterns are held to the output-spec ramp")
+
+
+# Every link a section thinned by the ADR 0004 split must keep, one per moved
+# block. Spelled out here so a route dropped from the verifier fails a test.
+SPLIT_ROUTE_LINKS = (
+    ("## 5. Design System", "references/style-guide.md#node-type--treatment"),
+    ("## 5. Design System", "references/style-guide.md#typography"),
+    ("## 6. Core SVG Primitives", "references/primitives-core.md"),
+    ("## 6. Core SVG Primitives", "references/primitives-core.md#mandatory-connector-rules"),
+    ("## 7. Layout & Spacing", "references/layout-budget.md"),
+    ("## 7. Layout & Spacing", "references/layout-budget.md#complexity-budget-per-diagram"),
+    ("## 8. Summary Card Pattern", "references/layout-budget.md#summary-card-pattern"),
+    ("## 12. Output", "references/primitives-core.md#accessible-svg-contract"),
+)
+
+
+def split_route_error(heading: str, target: str) -> str:
+    return (
+        f"SKILL.md {heading!r} no longer routes to {target}; the ADR 0004 split "
+        "moved that content there, so it would ship unreachable"
+    )
+
+
+def check_split_routes(verify) -> None:
+    """Each SKILL.md section the ADR 0004 split thinned still routes to its content."""
+    skill = verify.SKILL.read_text(encoding="utf-8")
+    errors: list[str] = []
+    verify.check_split_routes(errors, skill)
+    if errors:
+        raise AssertionError(f"shipped SKILL.md split routes failed: {errors}")
+
+    # Each moved block keeps its own link, so dropping any one link alone must
+    # fail, even while a sibling link to the same file survives in the section.
+    for heading, target in SPLIT_ROUTE_LINKS:
+        link = f"]({target})"
+        if skill.count(link) != 1:
+            raise AssertionError(f"SKILL.md should carry {link!r} exactly once; update the fixture")
+        errors = []
+        verify.check_split_routes(errors, skill.replace(link, "](references/gone.md)"))
+        if errors != [split_route_error(heading, target)]:
+            raise AssertionError(f"dropping only the {target} link was not reported: {errors}")
+
+    errors = []
+    verify.check_split_routes(
+        errors, skill.replace("## 8. Summary Card Pattern", "## Summary cards", 1)
+    )
+    expected = [
+        "SKILL.md has no '## 8.' section; it must route to "
+        "references/layout-budget.md#summary-card-pattern"
+    ]
+    if errors != expected:
+        raise AssertionError(f"a renumbered split section was not reported: {errors}")
+    print("OK split routes: every section the split thinned still links its new home")
+
+
+def check_style_guide_anchors(verify) -> None:
+    """SKILL.md's routing links must land on a heading, not only on the file."""
+    skill = verify.SKILL.read_text(encoding="utf-8")
+    errors: list[str] = []
+    verify.check_skill_reference_links(errors, skill, verify.SKILL.parent)
+    if errors:
+        raise AssertionError(f"shipped SKILL.md reference links failed: {errors}")
+
+    # Punctuation drops out of the slug and the spaces around it survive.
+    errors = []
+    verify.check_skill_reference_links(
+        errors,
+        "See [strokes](references/style-guide.md#stroke-radius-spacing) and "
+        "[inversion](references/style-guide.md#inversion-rule-light--dark).",
+        verify.SKILL.parent,
+    )
+    if errors:
+        raise AssertionError(f"punctuated style-guide headings failed: {errors}")
+
+    errors = []
+    verify.check_skill_reference_links(
+        errors,
+        skill + "\nSee [gone](references/style-guide.md#no-such-heading).\n",
+        verify.SKILL.parent,
+    )
+    expected = (
+        "SKILL.md links to 'references/style-guide.md#no-such-heading', "
+        "which matches no heading in references/style-guide.md"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"a dangling style-guide anchor was not reported: {errors}")
+    print("OK style-guide anchors: every SKILL.md link lands on a heading")
+
+
+def check_heading_syntax(verify) -> None:
+    """Closing hashes are not heading text, and fenced lines are not headings."""
+    dangling = [
+        "SKILL.md links to 'references/style-guide.md#cyrillic-labels', "
+        "which matches no heading in references/style-guide.md"
+    ]
+    cases = (
+        ("# Style Guide\n\n### Cyrillic labels ###\n", []),
+        ("```\n### Not a heading\n```\n\n### Cyrillic labels\n", []),
+        ("# Style Guide\n\n```markdown\n### Cyrillic labels\n```\n", dangling),
+        ("# Style Guide\n\n~~~\n### Cyrillic labels\n~~~\n", dangling),
+        ("# Style Guide\n\n````\n```\n### Cyrillic labels\n```\n````\n", dangling),
+        # Only the opening character closes a fence, and a backtick run with
+        # another backtick after it on the line is a code span, not a fence.
+        ("# Style Guide\n\n```\n~~~\n### Cyrillic labels\n```\n", dangling),
+        ("```x``` inline\n\n### Cyrillic labels\n", []),
+    )
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-anchors-") as temp_dir:
+        skill = Path(temp_dir)
+        guide = skill / "references/style-guide.md"
+        guide.parent.mkdir()
+        for text, expected in cases:
+            guide.write_text(text, encoding="utf-8")
+            errors: list[str] = []
+            verify.check_skill_reference_links(
+                errors, "See [Cyrillic](references/style-guide.md#cyrillic-labels).", skill
+            )
+            if errors != expected:
+                raise AssertionError(f"heading syntax misread in {text!r}: {errors}")
+    print("OK heading syntax: closing hashes stripped, fenced lines skipped")
+
+
+# Spelled out here rather than read from the verifier, with the separator each
+# surface puts between presets: a surface dropped from the verifier's own list
+# must fail a test, not shrink it.
+SIZE_SURFACES = {
+    "skills/diagram-design/SKILL.md": " · ",
+    "README.md": " · ",
+    "commands/import-drawio.md": ", ",
+    "commands/import-mermaid.md": ", ",
+    "commands/import-excalidraw.md": ", ",
+}
+OUTPUT_SPEC = "skills/diagram-design/references/output-spec.md"
+LETTER_ROW = "| `print-letter-landscape` | `0 0 1056 816` |"
+A2_ROW = "| `print-a2-landscape` | `0 0 2244 1584` | ~1.41:1 | @3 | print | A2 |\n"
+
+
+def size_drift(relative: str, drift: str) -> str:
+    return f"{relative} size presets drift from the output-spec.md size table: {drift}"
+
+
+def check_size_preset_surfaces(verify) -> None:
+    """Every size-selection surface names exactly the output-spec presets."""
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-sizes-") as temp_dir:
+        root = Path(temp_dir)
+        for relative in (OUTPUT_SPEC, *SIZE_SURFACES):
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / relative).read_bytes())
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        if errors:
+            raise AssertionError(f"shipped size-preset surfaces failed: {errors}")
+
+        for relative, separator in SIZE_SURFACES.items():
+            path = root / relative
+            original = mutate(path, f"{separator}`print-letter-landscape`", "")
+            errors = run_checks(root, verify.check_size_preset_surfaces)
+            expected = [size_drift(relative, "missing print-letter-landscape")]
+            if errors != expected:
+                raise AssertionError(f"{relative} dropping a preset was not reported: {errors}")
+            path.write_bytes(original)
+
+        spec = root / OUTPUT_SPEC
+        original = mutate(spec, LETTER_ROW, A2_ROW + LETTER_ROW)
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = [
+            size_drift(relative, "missing print-a2-landscape") for relative in SIZE_SURFACES
+        ]
+        if errors != expected:
+            raise AssertionError(f"a new output-spec preset was not propagated: {errors}")
+        spec.write_bytes(original)
+
+        command = root / "commands/import-mermaid.md"
+        original = mutate(command, "`fit`.", "`fit`, `print-a2-landscape`.")
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = [size_drift("commands/import-mermaid.md", "extra print-a2-landscape")]
+        if errors != expected:
+            raise AssertionError(f"an unknown preset on a surface was not reported: {errors}")
+        command.write_bytes(original)
+
+        readme = root / "README.md"
+        original = mutate(readme, "`doc-inline` · `doc-wide`", "`doc-wide` · `doc-inline`")
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = [size_drift("README.md", "presets out of output-spec.md order")]
+        if errors != expected:
+            raise AssertionError(f"reordered presets were not reported: {errors}")
+        readme.write_bytes(original)
+
+        skill = root / "skills/diagram-design/SKILL.md"
+        original = mutate(skill, "| **Size** |", "| **Canvas** |")
+        errors = run_checks(root, verify.check_size_preset_surfaces)
+        expected = ["skills/diagram-design/SKILL.md has no size-preset list"]
+        if errors != expected:
+            raise AssertionError(f"a lost size-preset list was not reported: {errors}")
+        skill.write_bytes(original)
+    print("OK size presets: every size-selection surface names the output-spec presets")
 
 
 def main() -> int:
@@ -102,6 +772,18 @@ def main() -> int:
         verify.check_manifest_descriptions(errors, root)
         if len(errors) != 1 or "lost the lexical hook" not in errors[0]:
             raise AssertionError(f"missing routing hook was not rejected: {errors}")
+
+        document = json.loads(codex.read_text(encoding="utf-8"))
+        document["description"] = short.replace("lifecycle phase", "subject progress")
+        document["interface"]["longDescription"] = document["interface"]["longDescription"].replace(
+            "lifecycle phase", "subject progress"
+        )
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        lifecycle_errors = [error for error in errors if "discovery hook 'lifecycle phase'" in error]
+        if len(lifecycle_errors) != 2:
+            raise AssertionError(f"missing lifecycle discovery hooks were not rejected: {errors}")
 
     for length in (1024, 1025):
         errors: list[str] = []
@@ -169,6 +851,301 @@ def main() -> int:
     )
     if errors != [expected]:
         raise AssertionError(f"light-skin regression was not reported: {errors}")
+
+    # ── type-ramp contract tests ─────────────────────────────────────────────
+    errors = []
+    verify.check_type_ramp(errors, GRID_SKILL, TYPE_RAMP_SPEC)
+    if errors:
+        raise AssertionError(f"valid type-ramp contract failed: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="12"', 'font-size="13"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"off-ramp font size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="8.5"', 'font-size="8.25"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=8.25" not in errors[0]:
+        raise AssertionError(f"quarter-step font size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace("|---|---|\n", "|---|---|\n| Font sizes | 8, 12 |\n", 1),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "'Font sizes' row" not in errors[0]:
+        raise AssertionError(f"font-size row in the grid table was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace(" (role ramp in `references/output-spec.md`)", ""),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "does not link to references/output-spec.md" not in errors[0]:
+        raise AssertionError(f"unlinked grid section was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL,
+        TYPE_RAMP_SPEC.replace("| Sublabel (Geist Mono) | 9 | 12 | 9 |\n", ""),
+    )
+    if not any("'Sublabel'" in error for error in errors):
+        raise AssertionError(f"missing ramp role was not reported: {errors}")
+
+    heading_skill = GRID_SKILL.replace('font-size="12"', 'font-size="14"')
+    errors = []
+    verify.check_type_ramp(errors, heading_skill, TYPE_RAMP_SPEC)
+    if errors:
+        raise AssertionError(f"exempt heading size 14 was rejected: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        heading_skill,
+        TYPE_RAMP_SPEC.replace("| Group or entity heading | Geist 600 | 14 |\n", ""),
+    )
+    if len(errors) != 1 or "font-size=14" not in errors[0]:
+        raise AssertionError(
+            f"size 14 was accepted without its named exception: {errors}"
+        )
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL,
+        TYPE_RAMP_SPEC[: TYPE_RAMP_SPEC.index("Every `font-size`")] + "### Safe areas\n",
+    )
+    if not any("named font-size exceptions table" in error for error in errors):
+        raise AssertionError(f"missing exceptions table was not reported: {errors}")
+
+    # Both declared syntaxes, not just the double-quoted attribute.
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace('font-size="12"', "font-size='13'"),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"single-quoted off-ramp size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL + "\n<style>.axis { font-size:13px; }</style>\n",
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "font-size=13" not in errors[0]:
+        raise AssertionError(f"CSS off-ramp size was not reported: {errors}")
+
+    errors = []
+    verify.check_type_ramp(
+        errors,
+        GRID_SKILL.replace("font-size=\"8.5\" font-family=\"'Geist', sans-serif\"", 'font-size="8.5"'),
+        TYPE_RAMP_SPEC,
+    )
+    if len(errors) != 1 or "declares no font" not in errors[0]:
+        raise AssertionError(f"fontless off-ramp size was not reported: {errors}")
+
+    # An exception belongs to a role, not to a number range. A node name is set
+    # in Geist 600 and cannot take a dense-annotation size just by being small.
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="12"', 'font-size="7.5"'), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=7.5 on sans-600 text" not in errors[0]:
+        raise AssertionError(
+            f"node name borrowing a dense-annotation size was not reported: {errors}"
+        )
+
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace('font-size="7"', 'font-size="7.5"'), TYPE_RAMP_SPEC
+    )
+    if errors:
+        raise AssertionError(f"dense annotation at 7.5 in Geist Mono was rejected: {errors}")
+
+    # The 72px watermark is legal only while its opacity keeps it decorative.
+    errors = []
+    verify.check_type_ramp(
+        errors, GRID_SKILL.replace("rgba(45,49,66,0.06)", "rgba(45,49,66,0.30)"), TYPE_RAMP_SPEC
+    )
+    if len(errors) != 1 or "font-size=72" not in errors[0]:
+        raise AssertionError(f"opaque watermark size was not reported: {errors}")
+
+    # The grid lives in layout-budget.md and the markup patterns in
+    # primitives-core.md since the ADR 0004 split; SKILL.md stays covered too.
+    errors = []
+    verify.check_type_ramp_surfaces(errors, ROOT)
+    if errors:
+        raise AssertionError(f"shipped type-ramp surfaces and output-spec.md disagree: {errors}")
+
+    # ── registered legacy sizes ──────────────────────────────────────────────
+    legacy_markup = (
+        '<svg viewBox="0 0 10 10">'
+        '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>'
+        '<text font-size="22" font-weight="600" font-family="\'Geist\', sans-serif">2/5</text>'
+        "</svg>"
+    )
+    with tempfile.TemporaryDirectory(prefix="legacy-type-sizes-") as temp_dir:
+        fake_root = Path(temp_dir)
+        assets = fake_root / "skills/diagram-design/assets"
+        references = fake_root / "skills/diagram-design/references"
+        assets.mkdir(parents=True)
+        references.mkdir(parents=True)
+        legacy = assets / "example-legacy.html"
+        legacy.write_text(legacy_markup, encoding="utf-8")
+
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(f"registered legacy sizes were rejected: {errors}")
+
+        legacy.write_text(
+            legacy_markup.replace("</svg>", '<text font-size="17">x</text></svg>'),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
+            raise AssertionError(f"a grown legacy inventory was not reported: {errors}")
+
+        legacy.write_text(legacy_markup.replace('font-size="22"', 'font-size="16"'), encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
+            raise AssertionError(f"a shrunk legacy inventory was not reported: {errors}")
+
+        # An exception belongs to one font, so the same size under another font
+        # is a different use and has to be reported even though the size list is
+        # unchanged. Swap the registered 13px Geist 600 name for a serif one.
+        legacy.write_text(
+            legacy_markup.replace(
+                "font-size=\"13\" font-weight=\"600\" font-family='Geist', sans-serif",
+                "font-size=\"13\" font-family='Instrument Serif', serif",
+            ).replace(
+                '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>',
+                '<text font-size="13" font-family="\'Instrument Serif\', serif">A</text>',
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "Instrument Serif 13" not in errors[0]:
+            raise AssertionError(
+                f"a legacy size moved to another font was not reported: {errors}"
+            )
+
+        legacy.write_text(legacy_markup, encoding="utf-8")
+
+        # A dense-annotation size is legal in Geist Mono and illegal in the
+        # serif, at the same size, in the same shipped file. 7 is on no role
+        # ramp, so only the exception can carry it.
+        annotation = (
+            '<svg viewBox="0 0 10 10">'
+            '<text font-size="7" font-family="\'Geist Mono\', monospace">40 ms</text>'
+            "</svg>"
+        )
+        extra = assets / "example-annotation.html"
+        extra.write_text(annotation, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(
+                f"a Geist Mono annotation at 7 was not accepted: {errors}"
+            )
+
+        extra.write_text(
+            annotation.replace("'Geist Mono', monospace", "'Instrument Serif', serif"),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 7" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"an annotation size under the wrong font was not reported: {errors}"
+            )
+
+        # Same size, same file, set through a CSS class and a custom property:
+        # the sweep has to resolve the family before it can judge the size.
+        styled = (
+            "<style>:root{--font-mono:'Geist Mono',ui-monospace,monospace;"
+            "--font-serif:'Instrument Serif',serif}"
+            ".tick{font-family:var(--font-mono);font-size:7px}</style>"
+            '<svg viewBox="0 0 10 10"><text class="tick">40 ms</text></svg>'
+        )
+        extra.write_text(styled, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(
+                f"a CSS-set Geist Mono annotation at 7 was not accepted: {errors}"
+            )
+
+        extra.write_text(
+            styled.replace("var(--font-mono)", "var(--font-serif)"), encoding="utf-8"
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 7" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"a CSS-set annotation under the wrong font was not reported: {errors}"
+            )
+        # The heading exception is Geist 600 at 14, and the same reading applies
+        # to it: the size is not a licence the serif can pick up.
+        heading = (
+            '<svg viewBox="0 0 10 10">'
+            '<text font-size="14" font-weight="600" font-family="\'Geist\', sans-serif">'
+            "Ingest</text></svg>"
+        )
+        extra.write_text(heading, encoding="utf-8")
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if errors:
+            raise AssertionError(f"a Geist 600 heading at 14 was not accepted: {errors}")
+
+        extra.write_text(
+            heading.replace(
+                "font-weight=\"600\" font-family=\"'Geist', sans-serif\"",
+                "font-family=\"'Instrument Serif', serif\"",
+            ),
+            encoding="utf-8",
+        )
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if not any(
+            "example-annotation" in error and "Instrument Serif 14" in error
+            for error in errors
+        ):
+            raise AssertionError(
+                f"a heading size under the wrong font was not reported: {errors}"
+            )
+        extra.unlink()
+
+        legacy.unlink()
+        errors = []
+        verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
+        if len(errors) != 1 or "drop the row" not in errors[0]:
+            raise AssertionError(f"a stale legacy row was not reported: {errors}")
+
+    errors = []
+    verify.check_legacy_type_sizes(
+        errors, verify.OUTPUT_SPEC_REFERENCE.read_text(encoding="utf-8"), verify.ROOT
+    )
+    if errors:
+        raise AssertionError(f"shipped legacy type-size registry is stale: {errors}")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-") as temp_dir:
         skill = Path(temp_dir)
@@ -509,6 +1486,78 @@ diagram-design/
                     f"a count unrelated to the taxonomy was rejected for {benign!r}: {errors}"
                 )
 
+        # README is the same surface by another route: it carries the count in
+        # prose a user reads before installing, and it went stale there — it
+        # said 39 while the selection table shipped 40 — because nothing checked
+        # it. It points at SKILL.md §3 instead, and the two phrasings the real
+        # file used are covered so the wording cannot come back.
+        readme_routed = (
+            "# Diagram Design\n\n"
+            "Every visual type ships in three static variants; see `SKILL.md` §3.\n"
+        )
+        readme.write_text(readme_routed, encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"a count-free README failed: {errors}")
+
+        for stale in (
+            "39 editorial diagram types for Claude Code.\n",
+            "All 39 visual types ship in three static variants.\n",
+            "Open the gallery to see all 39 diagrams.\n",
+            "deterministic 39-type PNG catalog renderer\n",
+            "any of the 39 visual types\n",
+        ):
+            readme.write_text(readme_routed + stale, encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if (
+                len(errors) != 1
+                or "README.md" not in errors[0]
+                or "hardcodes the visual-type count" not in errors[0]
+            ):
+                raise AssertionError(
+                    f"a hardcoded README count was not reported for {stale!r}: {errors}"
+                )
+
+        # README carries ordinary numbers that are not the taxonomy count, and
+        # the two added phrasings must not start rejecting them. The last four
+        # are the shapes those phrasings would overmatch without their
+        # single-digit floor: `2-type` and `all 3 diagrams` are ordinary prose
+        # in a repository that ships 40 types, and this gate blocks a pull
+        # request, so rejecting them is worse than missing a stale count. The
+        # two-digit cases prove the guard is contextual rather than relying on
+        # a numeral-length heuristic.
+        for benign in (
+            "Renders all 3 variants from one source.\n",
+            "The gallery lists 2 file types.\n",
+            "Allows 24 nodes per diagram.\n",
+            "Runs on Python 3.11 and 3.12.\n",
+            "A 2-type system is enough here.\n",
+            "A 10-type taxonomy is enough here.\n",
+            "See all 3 diagrams in the appendix.\n",
+            "See all 12 diagrams in the appendix.\n",
+            "The 4-type taxonomy of joins.\n",
+            "All 5 diagrams are inlined.\n",
+        ):
+            readme.write_text(readme_routed + benign, encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if errors:
+                raise AssertionError(
+                    f"a README count unrelated to the taxonomy was rejected for {benign!r}: "
+                    f"{errors}"
+                )
+
+        # A missing README is named rather than skipped, the way a missing
+        # command is.
+        readme.unlink()
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors != ["type-count surface is missing: README.md"]:
+            raise AssertionError(f"a missing README surface was not reported: {errors}")
+        readme.write_text(readme_routed, encoding="utf-8")
+
         # Restore the routed wording first: leaving a stale count behind lets
         # this case pass on the wrong error and never names the missing surface.
         mermaid.write_text(routed, encoding="utf-8")
@@ -637,25 +1686,85 @@ diagram-design/
         ridge_trio = ["example-ridgeline.html", "example-ridgeline-dark.html", "example-ridgeline-full.html"]
 
         # 7. Variant sharing its parent's eyebrow is allowed (no error).
-        html = make_gallery_html(make_tab("line", "20"), make_tab("ridgeline", "20", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if any("eyebrow" in e or "parent" in e for e in errs):
             raise AssertionError(f"valid parent/variant reuse raised error: {errs}")
         print("OK gallery: variant sharing parent eyebrow is allowed")
 
         # 8. Variant with wrong eyebrow number is caught.
-        html = make_gallery_html(make_tab("line", "20"), make_tab("ridgeline", "99", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "99", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if not any("ridgeline" in e and "eyebrow" in e for e in errs):
             raise AssertionError(f"variant with wrong eyebrow not caught: {errs}")
         print("OK gallery: variant with wrong eyebrow number caught")
 
         # 9. Variant declaring a missing parent is caught.
-        html = make_gallery_html(make_tab("ridgeline", "20", parent="line"))
+        html = make_gallery_html(make_tab("ridgeline", "01", parent="line"))
         errs = run_gallery_check(html, ridge_trio)
         if not any("ridgeline" in e and "line" in e for e in errs):
             raise AssertionError(f"variant with missing parent not caught: {errs}")
         print("OK gallery: variant with missing parent caught")
+
+        lifecycle_trio = [
+            "example-state-lifecycle.html",
+            "example-state-lifecycle-dark.html",
+            "example-state-lifecycle-full.html",
+        ]
+
+        # 10. Lifecycle is a complete State variant and reuses eyebrow 01.
+        html = make_gallery_html(
+            make_tab("state", "01"),
+            make_tab("state-lifecycle", "01", parent="state"),
+        )
+        errs = run_gallery_check(html, [
+            "example-state.html",
+            "example-state-dark.html",
+            "example-state-full.html",
+            *lifecycle_trio,
+        ])
+        if errs:
+            raise AssertionError(f"valid lifecycle State variant failed: {errs}")
+        print("OK gallery: lifecycle phase map is a complete State variant")
+
+        # 11. Out-of-order independent ordinals are caught (uniqueness alone is not enough).
+        html = make_gallery_html(
+            make_tab("bar", "01"),
+            make_tab("waterfall", "03"),
+            make_tab("line", "02"),
+        )
+        trio_files = (
+            ["example-bar.html", "example-bar-dark.html", "example-bar-full.html"]
+            + ["example-waterfall.html", "example-waterfall-dark.html", "example-waterfall-full.html"]
+            + line_trio
+        )
+        errs = run_gallery_check(html, trio_files)
+        if not any("contiguous ascending" in e for e in errs):
+            raise AssertionError(f"out-of-order independent ordinals not caught: {errs}")
+        print("OK gallery: out-of-order independent ordinals caught")
+
+        # 12. Gapped independent ordinals are caught (e.g. missing 02).
+        html = make_gallery_html(
+            make_tab("bar", "01"),
+            make_tab("waterfall", "02"),
+            make_tab("line", "04"),
+        )
+        errs = run_gallery_check(html, trio_files)
+        if not any("contiguous ascending" in e for e in errs):
+            raise AssertionError(f"gapped independent ordinals not caught: {errs}")
+        print("OK gallery: gapped independent ordinals caught")
+
+        # 13. Contiguous ascending independent ordinals with mid-gallery variants pass.
+        html = make_gallery_html(
+            make_tab("bar", "01"),
+            make_tab("waterfall", "02"),
+            make_tab("line", "03"),
+            make_tab("ridgeline", "03", parent="line"),
+        )
+        errs = run_gallery_check(html, trio_files + ridge_trio)
+        if any("contiguous ascending" in e or "duplicate eyebrow" in e for e in errs):
+            raise AssertionError(f"contiguous sequence with variants raised error: {errs}")
+        print("OK gallery: contiguous ascending independent ordinals pass")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-assets-") as asset_tmp:
         tmp_skill_dir = Path(asset_tmp)
@@ -683,10 +1792,22 @@ diagram-design/
             raise AssertionError(f"valid asset citations produced unexpected error: {errs}")
         print("OK reference assets: valid asset citations produce no error")
 
+    check_font_link_parity(verify)
+    check_font_link_copies(verify)
+    check_title_stack_order(verify)
+    check_title_font_link(verify)
+    check_style_guide_anchors(verify)
+    check_heading_syntax(verify)
+    check_size_preset_surfaces(verify)
+    check_split_type_ramp(verify)
+    check_split_routes(verify)
+
     print(
-        "PASS: docs sync checks references, asset citations, strict-bundler packaging, "
-        "routing surfaces, Factory install contract, type-count routing, High-Level invariants, "
-        "and gallery guards (parent/variant model)"
+        "PASS: docs sync checks references, style-guide anchors, asset citations, "
+        "strict-bundler packaging, "
+        "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
+        "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
+        "split routing, and gallery guards (parent/variant model, contiguous ordinals)"
     )
     return 0
 

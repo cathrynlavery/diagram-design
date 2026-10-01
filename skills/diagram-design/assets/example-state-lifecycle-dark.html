@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsletter publication lifecycle · State machine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root { --color-paper:#2d3142; --color-ink:#f5f5f5; --color-muted:#bfc0c0; --color-accent:#f08a59; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; overflow-x:auto; }
+    .eyebrow { font-family:var(--font-mono); font-size:0.66rem; font-weight:500; letter-spacing:0.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:0.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + 0.75rem,2rem); font-weight:400; letter-spacing:-0.02em; line-height:1.15; margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+    svg text { font-family:'Geist',sans-serif; }
+    .band { fill:rgba(245,245,245,0.035); stroke:rgba(245,245,245,0.14); }
+    .flow { fill:none; stroke:#bfc0c0; stroke-width:1.2; }
+    .flow.retry { stroke-dasharray:5 4; }
+    .flow.accent { stroke:#f08a59; stroke-width:1.4; }
+    .mask { fill:#2d3142; }
+    .phase { fill:#393e53; stroke:#f5f5f5; }
+    .support { fill:#2d3142; stroke:#bfc0c0; stroke-dasharray:5 4; }
+    .terminal { fill:rgba(245,245,245,0.04); stroke:#bfc0c0; }
+    .terminal.failed { stroke-width:1.5; stroke-dasharray:3 3; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">State · Lifecycle phase map</p>
+    <h1>Newsletter publication lifecycle</h1>
+    <svg viewBox="0 0 1000 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="state-lifecycle-dark-title state-lifecycle-dark-desc">
+      <title id="state-lifecycle-dark-title">Newsletter publication lifecycle</title>
+      <desc id="state-lifecycle-dark-desc">A dark lifecycle phase map with Draft, Editing, Scheduled, Sending, and Sent on the primary rail; Approval and Delivery Retry in a recovery band; and Cancelled and Failed terminal outcomes.</desc>
+      <defs>
+        <pattern id="lifecycle-dark-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/></pattern>
+        <marker id="lifecycle-dark-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#bfc0c0"/></marker>
+        <marker id="lifecycle-dark-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f08a59"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#lifecycle-dark-dots)" opacity="0.55"/>
+      <rect class="band" x="24" y="44" width="952" height="120" rx="8"/>
+      <rect class="band" x="24" y="400" width="952" height="104" rx="8"/>
+      <g fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace" letter-spacing="0.14em"><text x="40" y="64">WAIT / RECOVERY</text><text x="40" y="208">PRIMARY PHASES</text><text x="40" y="420">TERMINAL OUTCOMES</text></g>
+
+      <line class="flow" x1="40" y1="256" x2="64" y2="256" marker-end="url(#lifecycle-dark-arrow)"/>
+      <line class="flow" x1="214" y1="256" x2="244" y2="256" marker-end="url(#lifecycle-dark-arrow)"/>
+      <path class="flow" d="M319 220 V176 H369 V140" marker-end="url(#lifecycle-dark-arrow)"/>
+      <path class="flow" d="M449 140 V176 H499 V220" marker-end="url(#lifecycle-dark-arrow)"/>
+      <line class="flow" x1="574" y1="256" x2="604" y2="256" marker-end="url(#lifecycle-dark-arrow)"/>
+      <line class="flow accent" x1="754" y1="256" x2="800" y2="256" marker-end="url(#lifecycle-dark-arrow-accent)"/>
+      <path class="flow retry" d="M649 220 V176 H639 V140" marker-end="url(#lifecycle-dark-arrow)"/>
+      <path class="flow retry" d="M719 140 V188 H709 V220" marker-end="url(#lifecycle-dark-arrow)"/>
+      <path class="flow" d="M499 292 V416" marker-end="url(#lifecycle-dark-arrow)"/>
+      <path class="flow" d="M604 104 H584 V380 H749 V416" marker-end="url(#lifecycle-dark-arrow)"/>
+
+      <g font-family="'Geist Mono',monospace" font-size="7" text-anchor="middle" letter-spacing="0.08em" fill="#bfc0c0">
+        <rect class="mask" x="27" y="238" width="32" height="12" rx="2"/><text x="43" y="247">NEW</text>
+        <rect class="mask" x="215" y="238" width="28" height="12" rx="2"/><text x="229" y="247">WRITE</text>
+        <rect class="mask" x="326" y="158" width="48" height="12" rx="2"/><text x="350" y="167">SUBMIT</text>
+        <rect class="mask" x="448" y="158" width="56" height="12" rx="2"/><text x="476" y="167">APPROVE</text>
+        <rect class="mask" x="575" y="238" width="28" height="12" rx="2"/><text x="589" y="247">START</text>
+        <rect class="mask" x="760" y="238" width="34" height="12" rx="2"/><text x="777" y="247" fill="#f08a59">DELIVER</text>
+        <rect class="mask" x="620" y="158" width="46" height="12" rx="2"/><text x="643" y="167">ERROR</text>
+        <rect class="mask" x="700" y="180" width="42" height="12" rx="2"/><text x="721" y="189">RETRY</text>
+        <rect class="mask" x="474" y="350" width="52" height="12" rx="2"/><text x="500" y="359">CANCEL</text>
+        <rect class="mask" x="588" y="362" width="66" height="12" rx="2"/><text x="621" y="371">EXHAUSTED</text>
+      </g>
+      <circle cx="34" cy="256" r="6" fill="#f5f5f5"/>
+
+      <g text-anchor="middle" font-family="'Geist',sans-serif">
+        <g><rect class="phase" x="64" y="220" width="150" height="72" rx="8"/><text x="139" y="251" fill="#f5f5f5" font-size="12" font-weight="600">Draft</text><text x="139" y="270" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">content exists</text></g>
+        <g><rect class="phase" x="244" y="220" width="150" height="72" rx="8"/><text x="319" y="251" fill="#f5f5f5" font-size="12" font-weight="600">Editing</text><text x="319" y="270" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">owner revises</text></g>
+        <g><rect class="phase" x="424" y="220" width="150" height="72" rx="8"/><text x="499" y="251" fill="#f5f5f5" font-size="12" font-weight="600">Scheduled</text><text x="499" y="270" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">send time set</text></g>
+        <g><rect class="phase" x="604" y="220" width="150" height="72" rx="8"/><text x="679" y="251" fill="#f5f5f5" font-size="12" font-weight="600">Sending</text><text x="679" y="270" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">provider active</text></g>
+        <g><rect x="800" y="220" width="150" height="72" rx="8" fill="rgba(240,138,89,0.08)" stroke="#f08a59"/><circle cx="824" cy="244" r="7" fill="none" stroke="#f08a59"/><circle cx="824" cy="244" r="4" fill="#f08a59"/><text x="875" y="251" fill="#f5f5f5" font-size="12" font-weight="600">Sent</text><text x="875" y="270" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">delivery complete</text></g>
+      </g>
+
+      <g text-anchor="middle">
+        <g><rect class="support" x="334" y="68" width="150" height="72" rx="8"/><rect x="344" y="78" width="34" height="12" rx="2" fill="none" stroke="rgba(191,192,192,0.50)"/><text x="361" y="87" fill="#bfc0c0" font-size="7" font-family="'Geist Mono',monospace">WAIT</text><text x="409" y="111" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist',sans-serif">Approval</text><text x="409" y="126" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">editor decision</text></g>
+        <g><rect class="support" x="604" y="68" width="150" height="72" rx="8"/><rect x="614" y="78" width="52" height="12" rx="2" fill="none" stroke="rgba(191,192,192,0.50)"/><text x="640" y="87" fill="#bfc0c0" font-size="7" font-family="'Geist Mono',monospace">RECOVERY</text><text x="679" y="111" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist',sans-serif">Delivery Retry</text><text x="679" y="126" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">attempt 1 of 3</text></g>
+        <g><rect class="terminal" x="424" y="416" width="150" height="72" rx="8"/><rect x="434" y="426" width="54" height="12" rx="2" fill="none" stroke="rgba(191,192,192,0.50)"/><text x="461" y="435" fill="#bfc0c0" font-size="7" font-family="'Geist Mono',monospace">TERMINAL</text><text x="499" y="459" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist',sans-serif">Cancelled</text><text x="499" y="474" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">stopped by owner</text></g>
+        <g><rect class="terminal failed" x="674" y="416" width="150" height="72" rx="8"/><rect x="684" y="426" width="54" height="12" rx="2" fill="none" stroke="rgba(191,192,192,0.50)"/><text x="711" y="435" fill="#bfc0c0" font-size="7" font-family="'Geist Mono',monospace">TERMINAL</text><text x="749" y="459" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist',sans-serif">Failed</text><text x="749" y="474" fill="#bfc0c0" font-size="8" font-family="'Geist Mono',monospace">retries exhausted</text></g>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

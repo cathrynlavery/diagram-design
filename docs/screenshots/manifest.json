@@ -33,8 +33,8 @@
       "slug": "flowchart",
       "source": "skills/diagram-design/assets/example-flowchart.html",
       "screenshot": "docs/screenshots/flowchart.png",
-      "source_sha256": "ba0a39df57d5fd4beccebeb51d62028b420371b30793b2658d308df04d571ff3",
-      "screenshot_sha256": "47c84d9f89a4e60ad131b05b0619e356894052d0477a8b3b024d56e5bd91b517",
+      "source_sha256": "735b3cd96c77d0897f15b1b399e551fc18f5bc0fc7b8615fbe8dcb17743acef1",
+      "screenshot_sha256": "74729889a792981f49bd652b337e9eb3087001c14bc28dd7fd5ea9cfc6814b57",
       "width": 2400,
       "height": 1442
     },
@@ -123,8 +123,8 @@
       "slug": "nested",
       "source": "skills/diagram-design/assets/example-nested.html",
       "screenshot": "docs/screenshots/nested.png",
-      "source_sha256": "17648e5a26604bf678d7cd256ec0d84a54f7f2c6920fb56c030226e6ffc6557a",
-      "screenshot_sha256": "7199d6871a0aab4377af0002a42c3dc9daee9e869f1131493ecf6e17a5a1cac0",
+      "source_sha256": "33608608681a08fd6a6cd16837442b6209e1b9af042adfb7160a91e024fca72e",
+      "screenshot_sha256": "16fa6c5fad38160cc70ad64a4d8642cb22b2c74c2f583407245e9183f3fc9994",
       "width": 2400,
       "height": 1202
     },
@@ -197,6 +197,15 @@
       "screenshot": "docs/screenshots/treemap.png",
       "source_sha256": "95f0dd0e5072bbe327c7a85d1fa71a18cff3ade32240a917c4b672940d151008",
       "screenshot_sha256": "e8a341bcb240b4f3d7a4c61fae302304cb6e0be5234653e92cffec54bec1ac3c",
+      "width": 2400,
+      "height": 1202
+    },
+    {
+      "slug": "heatmap",
+      "source": "skills/diagram-design/assets/example-heatmap.html",
+      "screenshot": "docs/screenshots/heatmap.png",
+      "source_sha256": "1dd42f8cdfb73d1f0a139de52653c98da760ef4e1403990424f6a5da201cdb6b",
+      "screenshot_sha256": "71dde28b4cab7788fd735a3c543a60c4fdc854749c627749eb768adc52fd9186",
       "width": 2400,
       "height": 1202
     },
