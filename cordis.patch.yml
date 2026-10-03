@@ -1,0 +1,8 @@
+# Diagram Design on DeepSeek Harness.
+#
+# One row. The plugin registers a packaged skill provider over the repository's own
+# `skills/diagram-design/` tree and six human commands. It ships no tools, no hooks
+# and no config, so the row carries no `config` block.
+- insert:
+    - id: diagram-design
+      name: diagram-design
