@@ -9,7 +9,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { stat } from 'node:fs/promises'
+import { stat, utimes } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
@@ -21,22 +21,31 @@ function fakeContext() {
   const commands = []
   const effects = []
   const warnings = []
+  const invalidations = []
   const context = {
-    skills: { registerProvider: create => providers.push(create({ invalidate() {}, signal: new AbortController().signal })) },
-    commands: { register: definition => commands.push(definition) },
-    // The real `ctx.effect` does not run the callback; the disposer is returned.
-    // Mirror that shape, and hand the disposer back so a test can tear down.
-    effect(_fn, label) { effects.push({ label, dispose: () => {} }) },
+    skills: {
+      registerProvider(create) {
+        // The real control is `{ signal, invalidate }`; `invalidate` clears the
+        // catalog cache. Record the calls so a test can prove the watcher makes
+        // them — a no-op control made this fix untestable.
+        providers.push(create({
+          signal: new AbortController().signal,
+          invalidate: () => invalidations.push(Date.now()),
+        }))
+        return () => {}
+      },
+    },
+    commands: { register: definition => { commands.push(definition); return () => {} } },
+    // The real `ctx.effect` runs the callback immediately and keeps the returned
+    // disposer. Mirror that, or the code under test never runs at all.
+    effect(fn, label) {
+      const dispose = fn()
+      effects.push({ label, dispose: typeof dispose === 'function' ? dispose : () => {} })
+      return dispose
+    },
     logger: { warn: text => warnings.push(String(text)) },
   }
-  return {
-    ctx: context,
-    providers,
-    commands,
-    effects,
-    warnings,
-    dispose: () => effects.splice(0).forEach(entry => entry.dispose()),
-  }
+  return { ctx: context, providers, commands, effects, warnings, invalidations }
 }
 
 /** Close whatever `apply()` started, so no watcher outlives the test. */
@@ -46,6 +55,8 @@ function applyWithTeardown(t, context) {
     for (const entry of context.effects.splice(0)) entry.dispose()
   })
 }
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 test('the plugin declares the two services it consumes', () => {
   assert.equal(name, 'diagram-design')
@@ -91,10 +102,6 @@ test('a provider that cannot read its skill reports and contributes nothing', as
   // other skill the user installed.
   const context = fakeContext()
   applyWithTeardown(t, context)
-  const provider = context.providers[0]
-  provider.list = async () => {
-    throw new Error('SKILL.md is missing')
-  }
 
   const { createDiagramProvider } = await import('../lib/provider.js')
   const reported = []
@@ -109,13 +116,25 @@ test('a provider that cannot read its skill reports and contributes nothing', as
   assert.match(reported[0], /cannot read the packaged skill/u)
 })
 
-test('the packaged files are watched so an editable install refreshes', (t) => {
+test('editing a packaged file invalidates the skill catalog', async (t) => {
+  // `list()` is cached by the registry and `get()` is not, so an editable
+  // install is half-live without this: the body refreshes, the description
+  // does not. Mutating this to a no-op must fail here.
   const context = fakeContext()
-
   applyWithTeardown(t, context)
+  assert.equal(context.invalidations.length, 0, 'nothing was invalidated at load')
 
-  const watcher = context.effects.find(entry => entry.label.includes('watcher'))
-  assert.ok(watcher !== undefined, 'no watcher effect was registered')
+  const entry = fileURLToPath(new URL('../lib/entry.md', import.meta.url))
+  const before = new Date(Date.now() - 60_000)
+  await utimes(entry, before, before)
+
+  const deadline = Date.now() + 4000
+  while (context.invalidations.length === 0 && Date.now() < deadline) await sleep(25)
+
+  assert.ok(
+    context.invalidations.length > 0,
+    'touching the router did not invalidate the catalog — the watcher is not wired',
+  )
 })
 
 test('the packaged plugin is the one under this repository', async (t) => {

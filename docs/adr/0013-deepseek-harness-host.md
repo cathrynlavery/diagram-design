@@ -19,12 +19,13 @@ later turn. Then, when a session crosses its compaction threshold,
 `@deepseek-ai/dsh-compaction-tool-result-pruner` rewrites `tool/result` events over
 `thresholdChars: 8192`, keeping `headChars: 4096` and `tailChars: 1024`. A 29,706-character skill
 result is over that line, so it is reduced to its opening and closing and sections 4 to 11 leave
-the history permanently. An earlier draft of this ADR claimed the reduction happened at load time;
-it does not — the review that produced this revision checked the two call sites, and the pruning
-pass runs from compaction, not from the result event. ADR 0004's own amendment already treats
+the history permanently. An earlier draft of this ADR claimed the reduction happened at load time and that it was
+permanent; the review that produced this revision checked the call sites, the price function and
+the replacement record, and both were wrong. The pruning pass runs from compaction, not from the
+result event, and it rewrites the surface rather than the log. ADR 0004's own amendment already treats
 `SKILL.md` as a router over `references/`; this decision extends that to the host.
 
-Second, DSH removed its `.dsh-plugin` authoring format on 2026-09-04 with no compatibility parser retained, so there is no directory manifest to add. DSH's native metadata is the root `package.json`, whose `dsh.bundle.patch` points at `cordis.patch.yml`. This repository's three existing manifests are `plugin.json` files that their own hosts resolve; `package.json` is the same role for DSH, so the shared-metadata rule below applies to it.
+Second, DSH removed its `.dsh-plugin` authoring format in commit `993550e6c8` (2026-08-09), recorded in `.agents/notes/archived/simplification/2026-08-09-remove-repository-plugin.md`, with no compatibility parser retained, so there is no directory manifest to add. DSH's native metadata is the root `package.json`, whose `dsh.bundle.patch` points at `cordis.patch.yml`. This repository's three existing manifests are `plugin.json` files that their own hosts resolve; `package.json` is the same role for DSH, so the shared-metadata rule below applies to it. A symlink carries no version gate at all: `engines.dsh` has no consumer in 0.2.0-rc.2, and the enforced gate is the `@deepseek-ai/*` peer range, which only a manifest can declare.
 
 ## Decision
 
@@ -43,6 +44,12 @@ The body sent to the model is a compact router under 4,096 characters that names
 The provider ranks below every local root rather than at the harness's bundled rank. The filesystem provider ranks project-dsh 100, project-agents 200, custom 300, user-dsh 400, and user-agents 500; at the bundled rank of 600 a leftover symlink in `~/.agents/skills` — which this README tells users to create — would win, and the model would receive the 28,661-character `SKILL.md` that the pruner then middle-elides. Measured on 0.2.0-rc.2 before the rank was lowered, and again after.
 
 Each command registers a description and an argument hint carried over verbatim from its upstream `commands/<name>.md` frontmatter, and its handler submits the command body plus the user's arguments into the session as one user message. `$ARGUMENTS` is `CommandInvocation.rawInput` in DSH, and the Claude `allowed-tools` lists have no direct equivalent, so the bodies route to `references/` rather than restating the procedures.
+
+Four commands take a file — `/export-diagram` and the three imports — so they declare
+`input.attachments: true` and place the admitted blocks ahead of the body text. Without it the host
+refuses the submission *before* the handler runs, and dragging a `.drawio` into the composer with
+`/import-drawio` would never reach the command. `/doctor` and `/profile` read nothing from the
+composer and do not declare it.
 
 The submission uses `agent.followup(createUserMessage({ ..., source: { kind: 'user' } }))`, which
 is the host's own pattern for a UI command that sends text to the model (`command-goal`). Two

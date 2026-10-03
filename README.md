@@ -184,7 +184,7 @@ Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/ski
 dsh plugin --profile <profile> add github:cathrynlavery/diagram-design
 ```
 
-The plugin installs the skill, its references, and the six slash commands as one package, and `dsh plugin` picks up merged releases the same way the marketplace hosts do. Ask for a diagram in natural language, or run `/doctor`, `/export-diagram`, `/import-drawio`, `/import-mermaid`, `/import-excalidraw`, and `/profile` — DSH resolves a skill name from the same `SKILL.md` description every other host uses. The plugin hands the model a short router and points it at the installed skill directory, so nothing is fetched at runtime and nothing in `skills/diagram-design/` is copied or modified. The import and export procedures run the packaged Python helpers, so `python3` must be on `PATH`.
+The plugin installs the skill, its references, and the six slash commands as one package, and `dsh plugin` picks up merged releases the same way the marketplace hosts do. Ask for a diagram in natural language, or run `/doctor`, `/export-diagram`, `/import-drawio`, `/import-mermaid`, `/import-excalidraw`, and `/profile` (the four file commands accept a dropped attachment) — DSH resolves a skill name from the same `SKILL.md` description every other host uses. The plugin hands the model a short router and points it at the installed skill directory, so nothing is fetched at runtime and nothing in `skills/diagram-design/` is copied or modified. The import and export procedures run the packaged Python helpers, so `python3` must be on `PATH`.
 
 Verified against DeepSeek Harness `0.2.0-rc.2`.
 

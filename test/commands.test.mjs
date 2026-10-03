@@ -149,6 +149,11 @@ test('registerCommands registers six valid definitions', () => {
     assert.ok(definition.input !== undefined, `${definition.name} declares no input`)
     assert.ok(definition.input.hint.length > 0, `${definition.name} has no input hint`)
     assert.equal(
+      definition.input.attachments,
+      definition.attachments,
+      `${definition.name} disagrees with itself about attachments`,
+    )
+    assert.equal(
       definition.recordInput,
       false,
       `${definition.name} records rawInput, duplicating the steered payload in the session log`,
@@ -279,4 +284,37 @@ test('a missing command body is reported as an error result, not thrown', async 
   assert.ok(result.text.includes('/doctor'), 'error text does not name the command')
   assert.ok(result.text.includes('doctor.md'), `error text does not name the missing file: ${result.text}`)
   assert.equal(steered.length + submitted.length, 0, 'a failed body load must not reach the agent')
+})
+test('the four file-taking commands accept attachments and two do not', () => {
+  const { ctx, registered } = fakeContext()
+  registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY })
+
+  const accepts = registered.filter(definition => definition.input.attachments === true).map(d => d.name)
+  assert.deepEqual(accepts.sort(), ['export-diagram', 'import-drawio', 'import-excalidraw', 'import-mermaid'])
+  for (const definition of registered) {
+    const hint = definition.input.hint
+    if (definition.input.attachments === true) {
+      assert.ok(/<[a-z-]+-file>/.test(hint), `${definition.name} accepts files but its hint names none: ${hint}`)
+    } else {
+      assert.ok(!/<[a-z-]+-file>/.test(hint), `${definition.name} takes no file but its hint names one: ${hint}`)
+    }
+  }
+})
+
+test('attached files lead the submitted message', async () => {
+  // Without `attachments: true` the host refuses the submission before the
+  // handler runs, so dragging a .drawio into the composer with /import-drawio
+  // would never reach the command.
+  const { ctx, registered } = fakeContext()
+  registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY, messageFactory: fakeMessageFactory })
+  const { agent, submitted } = fakeAgent()
+  const call = invocation(agent, '')
+  call.attachments = [{ type: 'file', file: { id: 'f1', name: 'graph.drawio' } }]
+
+  const result = await registered.find(d => d.name === 'import-drawio').handler(call)
+
+  assert.equal(result.kind, 'success')
+  const [message] = submitted
+  assert.equal(message.content[0].type, 'file', 'the attachment must lead the message')
+  assert.equal(message.content[message.content.length - 1].type, 'text', 'the body must still be the trailing text')
 })

@@ -11,9 +11,10 @@
  * `resourceBase` so the model resolves `references/` against it.
  *
  * The body sent to the model is `lib/entry.md`, not `SKILL.md`. The reason is in
- * `lib/skill.js`: inlining 29,706 characters costs roughly 7,400 tokens on every
- * load, and a result that size is later reduced to its opening and closing when
- * the session compacts, which removes sections 4 to 11 from the history. See
+ * `lib/skill.js`: inlining the whole rendered block costs roughly 7,300 tokens
+ * on every load, and a result that size is later reduced to its opening and
+ * closing when the session compacts, which drops most of the document from the
+ * model-facing surface. See
  * `docs/adr/0013-deepseek-harness-host.md`.
  *
  * @module diagram-design
