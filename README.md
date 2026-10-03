@@ -188,7 +188,7 @@ The plugin installs the skill, its references, and the six slash commands as one
 
 Verified against DeepSeek Harness `0.2.0-rc.2`.
 
-DeepSeek Harness also scans `~/.agents/skills`, so symlinking the inner skill there works without the plugin — use that route for editable work, as in [Editable install](#editable-install) below.
+DeepSeek Harness also scans `~/.agents/skills`, so symlinking the inner skill there works without the plugin — use that route for editable work, as in [Editable install](#editable-install) below. If both are present, the installed plugin wins, and editing a linked copy will not change what the model receives until the copy is removed or the plugin is removed.
 
 > **One-time migration:** an existing standalone `npx skills add` copy will not start following the Codex marketplace automatically. Remove that standalone copy, then use the Codex marketplace commands above. Likewise, uninstall a personal Cowork copy and reinstall Diagram Design from your organization's marketplace. Future marketplace version bumps then flow through each client's native update path.
 
