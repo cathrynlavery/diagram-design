@@ -100,6 +100,7 @@ SIZE_PRESET_SURFACES = {
 }
 FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
 FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
+DSH_MANIFEST = Path(".dsh-plugin/plugin.json")
 SUPPORT_DIRECTORIES = frozenset(
     {"references", "templates", "scripts", "assets", "examples"}
 )
@@ -1337,6 +1338,7 @@ MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/marketplace.json"), ("description",)),
     (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
     (FACTORY_MANIFEST, ("description",)),
+    (DSH_MANIFEST, ("description",)),
 )
 
 

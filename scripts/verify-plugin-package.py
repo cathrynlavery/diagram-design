@@ -12,6 +12,11 @@ Three modes cover the release flow (ADR 0009):
 - ``verify-plugin-package.py --current-only`` skips the base comparison and
   validates only the current tree (synchronization, identity, marketplace
   paths, packaged skill). CI runs this on pushes to main.
+
+Hosts that install from a marketplace document (Claude, Codex, Factory) are
+checked against it. DSH installs from the git root, so it contributes a
+manifest to the synchronization and identity checks and the repository root to
+the shared-plugin-root check, and no marketplace of its own.
 """
 
 from __future__ import annotations
@@ -29,6 +34,7 @@ MANIFEST_PATHS = {
     "Claude": Path(".claude-plugin/plugin.json"),
     "Codex": Path(".codex-plugin/plugin.json"),
     "Factory": Path(".factory-plugin/plugin.json"),
+    "DSH": Path(".dsh-plugin/plugin.json"),
 }
 CLAUDE_MARKETPLACE = Path(".claude-plugin/marketplace.json")
 CODEX_MARKETPLACE = Path(".agents/plugins/marketplace.json")
@@ -279,13 +285,20 @@ def verify_marketplaces(root: Path, errors: list[str]) -> None:
     if factory_root is not None and not (factory_root / MANIFEST_PATHS["Factory"]).is_file():
         errors.append("Factory marketplace target does not contain .factory-plugin/plugin.json")
 
+    # DSH installs from the git root rather than a marketplace document, so its
+    # packaged root is the repository itself. `resolve_local_path` returns an
+    # already-resolved path, so the comparison needs `root.resolve()` rather
+    # than a bare `root` (which would compare unequal and fail for the wrong
+    # reason).
+    dsh_root = root.resolve()
+
     plugin_roots = [
         plugin_root
-        for plugin_root in (claude_root, codex_root, factory_root)
+        for plugin_root in (claude_root, codex_root, factory_root, dsh_root)
         if plugin_root is not None
     ]
     if plugin_roots and any(plugin_root != plugin_roots[0] for plugin_root in plugin_roots[1:]):
-        errors.append("Claude, Codex, and Factory marketplaces must package the same plugin root")
+        errors.append("Claude, Codex, Factory, and DSH must package the same plugin root")
 
     plugin_root = codex_root or claude_root or factory_root
     if plugin_root is None:
@@ -521,7 +534,7 @@ def main() -> int:
         "current-only": "current tree",
     }[mode]
     print(
-        f"OK plugin package ({detail}): Claude, Codex, and Factory {versions}, "
+        f"OK plugin package ({detail}): Claude, Codex, Factory, and DSH {versions}, "
         f"marketplace paths, and packaged skill"
     )
     return 0

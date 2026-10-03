@@ -67,13 +67,32 @@ def seed_factory(root: Path, version: str) -> None:
     )
 
 
+def seed_dsh(root: Path, version: str) -> None:
+    """Seed the DSH manifest from the Claude manifest, as a real host addition does.
+
+    DSH has no marketplace document - it installs from the git root - so this
+    writes only the manifest. The shared identity fields are copied rather than
+    retyped, which is what keeps the verifier's byte-equality check honest.
+    """
+    claude_path = root / ".claude-plugin/plugin.json"
+    payload = json.loads(claude_path.read_text(encoding="utf-8"))
+    payload["version"] = version
+    payload["dsh"] = {"plugin": f"dsh plugin add {PLUGIN_NAME}"}
+    write_json(root / ".dsh-plugin/plugin.json", payload)
+
+
 def seed_package(
-    root: Path, version: str = "1.2.3", include_factory: bool = True
+    root: Path,
+    version: str = "1.2.3",
+    include_factory: bool = True,
+    include_dsh: bool = True,
 ) -> None:
     write_json(root / ".claude-plugin/plugin.json", manifest(version))
     write_json(root / ".codex-plugin/plugin.json", manifest(version, codex=True))
     if include_factory:
         seed_factory(root, version)
+    if include_dsh:
+        seed_dsh(root, version)
     write_json(
         root / ".claude-plugin/marketplace.json",
         {
@@ -121,10 +140,14 @@ def write_skill(root: Path, version: str) -> None:
 
 
 @contextmanager
-def package_repo(include_factory: bool = True) -> Iterator[Path]:
+def package_repo(
+    include_factory: bool = True, include_dsh: bool = True
+) -> Iterator[Path]:
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
-        seed_package(root, include_factory=include_factory)
+        seed_package(
+            root, include_factory=include_factory, include_dsh=include_dsh
+        )
         subprocess.run(["git", "init", "-q"], cwd=root, check=True)
         subprocess.run(["git", "config", "user.name", "Package Test"], cwd=root, check=True)
         subprocess.run(
@@ -138,14 +161,21 @@ def package_repo(include_factory: bool = True) -> Iterator[Path]:
 
 
 def set_versions(
-    root: Path, claude: str, codex: str, factory: Optional[str] = None
+    root: Path,
+    claude: str,
+    codex: str,
+    factory: Optional[str] = None,
+    dsh: Optional[str] = None,
 ) -> None:
     if factory is None:
         factory = codex
+    if dsh is None:
+        dsh = factory
     for relative, version in (
         (Path(".claude-plugin/plugin.json"), claude),
         (Path(".codex-plugin/plugin.json"), codex),
         (Path(".factory-plugin/plugin.json"), factory),
+        (Path(".dsh-plugin/plugin.json"), dsh),
     ):
         payload = json.loads((root / relative).read_text(encoding="utf-8"))
         payload["version"] = version
@@ -327,6 +357,52 @@ def test_verifier() -> None:
             "Factory manifest deletion",
             VERIFY.verify_package(root, "HEAD"),
             "could not read",
+        )
+
+    with package_repo(include_dsh=False) as root:
+        set_existing_versions(root, "1.2.4")
+        seed_dsh(root, "1.2.4")
+        errors = VERIFY.verify_package(root, "HEAD")
+        if errors:
+            raise AssertionError(f"valid DSH bootstrap failed: {errors}")
+        print("OK: synchronized DSH bootstrap accepted")
+
+    with package_repo(include_dsh=False) as root:
+        seed_dsh(root, "1.2.3")
+        expect_failure(
+            "DSH bootstrap without package bump",
+            VERIFY.verify_package(root, "HEAD"),
+            "must increase",
+        )
+
+    with package_repo(include_dsh=False) as root:
+        set_existing_versions(root, "1.2.4")
+        seed_dsh(root, "1.2.4")
+        dsh_path = root / ".dsh-plugin/plugin.json"
+        dsh = json.loads(dsh_path.read_text(encoding="utf-8"))
+        dsh["description"] = "Drifted DSH description."
+        write_json(dsh_path, dsh)
+        expect_failure(
+            "DSH bootstrap with manifest drift",
+            VERIFY.verify_package(root, "HEAD"),
+            "must match Claude",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        (root / ".dsh-plugin/plugin.json").unlink()
+        expect_failure(
+            "DSH manifest deletion",
+            VERIFY.verify_package(root, "HEAD"),
+            "could not read",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4", dsh="1.2.5")
+        expect_failure(
+            "DSH version drift",
+            VERIFY.verify_package(root, "HEAD"),
+            "versions must match",
         )
 
     with package_repo() as root:
