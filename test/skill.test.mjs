@@ -124,8 +124,9 @@ test('the packaged provider outranks every local root, or the body gets pruned',
   // Regression guard, added after a live boot on 0.2.0-rc.2 showed the failure
   // this prevents: at the harness's bundled rank of 600, a copy or symlink in
   // `~/.agents/skills` (which this repository's README tells users to create)
-  // won the duplicate name, and the model received the 28,661-byte SKILL.md
-  // that the 8,192-character tool-result pruner then middle-elided. The ranks
+  // won the duplicate name, and the model received the 28,661-character
+  // SKILL.md body — the file is 29,706 bytes, the body the rest — which
+  // compaction later reduces to its opening and closing. The ranks
   // below are `packages/skill/skill-filesystem/src/index.ts:36-40`.
   const LOCAL_ROOT_RANKS = { 'project-dsh': 100, 'project-agents': 200, custom: 300, 'user-dsh': 400, 'user-agents': 500 }
   const candidate = buildCandidate({ skillDirectory: '/pkg/skills/diagram-design', description: 'd' })
