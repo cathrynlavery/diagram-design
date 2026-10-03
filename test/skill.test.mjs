@@ -10,8 +10,9 @@
  */
 
 import assert from 'node:assert/strict'
-import { stat } from 'node:fs/promises'
+import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import { readFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
@@ -32,6 +33,32 @@ const SKILL_DIRECTORY = fileURLToPath(new URL('../skills/diagram-design/', impor
 const SKILL_FILE = fileURLToPath(new URL('../skills/diagram-design/SKILL.md', import.meta.url))
 const ENTRY_FILE = fileURLToPath(new URL('../lib/entry.md', import.meta.url))
 const PACKAGED_PATH = /`(?:references|scripts)\/[A-Za-z0-9._-]+\.(?:md|py)`/g
+
+/**
+ * Every path `lib/entry.md` is required to route to. Enumerated rather than
+ * counted so that deleting a routing row fails this test instead of quietly
+ * shrinking the table.
+ */
+const EXPECTED_ROUTER_PATHS = [
+  'references/type-flowchart.md',
+  'references/style-guide.md',
+  'references/primitives-core.md',
+  'references/layout-budget.md',
+  'references/semantic-patterns.md',
+  'references/animation.md',
+  'references/import-drawio.md',
+  'references/import-mermaid.md',
+  'references/import-excalidraw.md',
+  'references/export.md',
+  'references/profiles.md',
+  'references/onboarding.md',
+  'references/doctor.md',
+  'scripts/drawio_extract.py',
+  'scripts/mermaid_extract.py',
+  'scripts/excalidraw_extract.py',
+  'scripts/export_svg.py',
+  'scripts/self_check.py',
+]
 
 test('parseFields reads flat keys, keeps colons in values, skips nested and commented lines', () => {
   const fields = parseFields([
@@ -113,12 +140,38 @@ test('the router body is inside the pruning budget', async () => {
   assert.equal(body, (await readFile(ENTRY_FILE, 'utf8')).trim())
 })
 
-test('every packaged path the router names exists', async () => {
+test('the pruning budget is pinned to the harness threshold, not to itself', async () => {
+  // The assertion in the test above compares the body against a constant
+  // imported from the module under test, so it passes whatever that constant
+  // says. These two assertions are what make the guard real: the harness mounts
+  // `@deepseek-ai/dsh-compaction-tool-result-pruner` with `thresholdChars: 8192`
+  // in `packages/bundle/base/cordis.patch.yml`, and a router above that is
+  // silently middle-elided.
+  assert.equal(ENTRY_BODY_MAX_CHARS, 4096, 'the budget is half the harness threshold')
+  assert.ok(ENTRY_BODY_MAX_CHARS <= 8192, 'the budget must fit the harness thresholdChars')
+})
+
+test('an oversized router is refused, not truncated', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'dd-entry-'))
+  const path = join(directory, 'entry.md')
+  await writeFile(path, 'x'.repeat(ENTRY_BODY_MAX_CHARS + 1), 'utf8')
+
+  await assert.rejects(
+    () => loadEntryBody(path),
+    /limit is 4096/u,
+    'the guard must reject an oversized body rather than shipping it',
+  )
+  await rm(directory, { recursive: true, force: true })
+})
+
+test('the router names exactly the expected packaged paths', async () => {
+  // A floor (`>= 8`) let nine of the eighteen routing targets be deleted
+  // silently. Naming the exact set makes a lost row a failing test.
   const entry = await readFile(ENTRY_FILE, 'utf8')
   const named = [...entry.matchAll(PACKAGED_PATH)].map(match => match[0].slice(1, -1))
 
-  assert.ok(named.length >= 8, `the router names only ${named.length} packaged paths`)
-  for (const relative of new Set(named)) {
+  assert.deepEqual(new Set(named), new Set(EXPECTED_ROUTER_PATHS))
+  for (const relative of EXPECTED_ROUTER_PATHS) {
     await assert.doesNotReject(
       readFile(join(SKILL_DIRECTORY, relative), 'utf8'),
       `the router names ${relative}, which is not packaged`,

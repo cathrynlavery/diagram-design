@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Increment the synchronized Claude, Codex, Factory, and DSH manifest versions."""
+"""Increment the synchronized Claude, Codex, and Factory manifest versions."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ MANIFEST_PATHS = (
     Path(".claude-plugin/plugin.json"),
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
-    Path(".dsh-plugin/plugin.json"),
 )
 SKILL_PATH = Path("skills/diagram-design/SKILL.md")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
@@ -142,7 +141,7 @@ def main() -> int:
     except PackageVersionError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    print(f"Updated Claude, Codex, Factory, and DSH plugin manifests to {version}")
+    print(f"Updated Claude, Codex, and Factory plugin manifests to {version}")
     return 0
 
 

@@ -184,7 +184,7 @@ Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/ski
 dsh plugin --profile <profile> add github:cathrynlavery/diagram-design
 ```
 
-The plugin installs the skill and its references as one package, and `dsh plugin` picks up merged releases the same way the marketplace hosts do. Confirm discovery by asking for a diagram in natural language; DSH matches on the same skill description as every other host. The plugin hands the model a short router and points it at the installed skill directory, so nothing is fetched at runtime and nothing in `skills/diagram-design/` is copied or modified. The import and export procedures run the packaged Python helpers, so `python3` must be on `PATH`.
+The plugin installs the skill, its references, and the six slash commands as one package, and `dsh plugin` picks up merged releases the same way the marketplace hosts do. Ask for a diagram in natural language, or run `/doctor`, `/export-diagram`, `/import-drawio`, `/import-mermaid`, `/import-excalidraw`, and `/profile` — DSH resolves a skill name from the same `SKILL.md` description every other host uses. The plugin hands the model a short router and points it at the installed skill directory, so nothing is fetched at runtime and nothing in `skills/diagram-design/` is copied or modified. The import and export procedures run the packaged Python helpers, so `python3` must be on `PATH`.
 
 DeepSeek Harness also scans `~/.agents/skills`, so symlinking the inner skill there works without the plugin — use that route for editable work, as in [Editable install](#editable-install) below.
 
@@ -415,7 +415,6 @@ diagram-design/
 ├── .claude-plugin/                  — Claude marketplace + plugin manifest
 ├── .codex-plugin/                   — Codex plugin manifest
 ├── .factory-plugin/                 — Factory Droid marketplace + plugin manifest
-├── .dsh-plugin/                     — DeepSeek Harness plugin manifest
 ├── package.json                     — DeepSeek Harness bundle (dsh.bundle.patch)
 ├── cordis.patch.yml                 — DeepSeek Harness profile row
 ├── index.js                         — DeepSeek Harness skill provider and commands

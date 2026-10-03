@@ -10,7 +10,7 @@ Diagram Design is a set of instructions, HTML templates, and small local scripts
 
 LittleMight collects no personal data through Diagram Design.
 
-When you use it, the plugin works with what you give your agent: a description of the diagram you want, files you ask it to redraw (draw.io, Mermaid, or Excalidraw), and, if you ask for brand onboarding, a website address. That content stays in your agent session and wherever your agent runs: on your computer for local agents such as Claude Code or the Codex CLI, or in your provider's workspace for hosted agents such as ChatGPT. The plugin does not ask for payment details, health data, government identifiers, passwords, or other sensitive data, and it does not need any.
+When you use it, the plugin works with what you give your agent: a description of the diagram you want, files you ask it to redraw (draw.io, Mermaid, or Excalidraw), and, if you ask for brand onboarding, a website address. Some hosts also put the path of the installed skill directory into the instructions they send your provider, so the packaged helper scripts can be located; on a local install that path contains your user name and your agent's profile directory. That content stays in your agent session and wherever your agent runs: on your computer for local agents such as Claude Code or the Codex CLI, or in your provider's workspace for hosted agents such as ChatGPT. The plugin does not ask for payment details, health data, government identifiers, passwords, or other sensitive data, and it does not need any.
 
 ## How data is used
 

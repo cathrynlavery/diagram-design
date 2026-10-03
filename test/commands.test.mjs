@@ -141,7 +141,50 @@ test('registerCommands registers six valid definitions', () => {
     assert.equal(typeof definition.handler, 'function')
     assert.ok(definition.input !== undefined, `${definition.name} declares no input`)
     assert.ok(definition.input.hint.length > 0, `${definition.name} has no input hint`)
+    assert.equal(
+      definition.recordInput,
+      false,
+      `${definition.name} records rawInput, duplicating the steered payload in the session log`,
+    )
   }
+})
+
+test('a handler that cannot reach the agent reports an error, not an unhandled rejection', async () => {
+  // The message factory is `@deepseek-ai/dsh-llm`'s `createUserMessage`, loaded
+  // dynamically. If that package cannot be resolved on a user's machine, the
+  // rejection must surface as a command result rather than escaping into the
+  // dispatching UI.
+  const { ctx, registered } = fakeContext()
+  registerCommands(ctx, {
+    skillDirectory: SKILL_DIRECTORY,
+    messageFactory: () => Promise.reject(new Error('Cannot find package @deepseek-ai/dsh-llm')),
+  })
+  const { agent, steered } = fakeAgent()
+
+  const result = await registered[0].handler(invocation(agent, '--json'))
+
+  assert.equal(result.kind, 'error')
+  assert.ok(result.text.includes('/doctor'), `error text does not name the command: ${result.text}`)
+  assert.ok(
+    result.text.includes('dsh-llm'),
+    `error text does not carry the underlying cause: ${result.text}`,
+  )
+  assert.equal(steered.length, 0, 'a failed message build must not steer the agent')
+})
+
+test('a handler that throws while steering reports an error', async () => {
+  const { ctx, registered } = fakeContext()
+  registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY, messageFactory: fakeMessageFactory })
+  const agent = {
+    steer() {
+      throw new Error('cannot read inbox state: its projection registration is not active')
+    },
+  }
+
+  const result = await registered[0].handler(invocation(agent, ''))
+
+  assert.equal(result.kind, 'error')
+  assert.ok(result.text.includes('/doctor'))
 })
 
 test('a handler steers the body and its arguments into the agent', async () => {

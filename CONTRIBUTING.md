@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 42 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi, DeepSeek Harness) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 42 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -27,7 +27,7 @@ See [README.md](README.md) for the full picture, including the design system and
 
 Every validation gate below must pass before a PR is ready. They also run automatically as GitHub Actions CI (`.github/workflows/ci.yml`).
 
-**Do not bump the plugin version in your PR.** The Claude, Codex, and Factory manifest versions are bumped automatically on `main` after each merge by the Auto Version Bump workflow (`.github/workflows/auto-bump.yml`, ADR 0009), so pull requests must leave all three `plugin.json` versions untouched — CI rejects any change to them. This keeps open PRs from conflicting with each other on every merge. If your change warrants more than a patch release, say so in the PR description and the maintainer will apply the `release:minor` or `release:major` label before merging; the label selects the bump size. (`scripts/bump-plugin-version.py` still exists for the workflow and the maintainer — contributors never need to run it.)
+**Do not bump the plugin version in your PR.** The Claude, Codex, and Factory manifest versions are bumped automatically on `main` after each merge by the Auto Version Bump workflow (`.github/workflows/auto-bump.yml`, ADR 0009), so pull requests must leave all three `plugin.json` versions untouched — CI rejects any change to them. DeepSeek Harness has no `plugin.json`: its metadata is the root `package.json`, whose `dsh.bundle.patch` points at `cordis.patch.yml`, and its version is not release metadata for this repository (ADR 0013). This keeps open PRs from conflicting with each other on every merge. If your change warrants more than a patch release, say so in the PR description and the maintainer will apply the `release:minor` or `release:major` label before merging; the label selects the bump size. (`scripts/bump-plugin-version.py` still exists for the workflow and the maintainer — contributors never need to run it.)
 
 | What it checks | Command |
 |---|---|

@@ -16,7 +16,6 @@ MANIFEST_PATHS = (
     Path(".claude-plugin/plugin.json"),
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
-    Path(".dsh-plugin/plugin.json"),
 )
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
