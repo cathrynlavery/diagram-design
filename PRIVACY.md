@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Diagram Design is published by LittleMight (Cathryn Lavery). This policy covers the Diagram Design plugin and skill in every host it is installed in, including ChatGPT, Codex, and Claude Code.
+Diagram Design is published by LittleMight (Cathryn Lavery). This policy covers the Diagram Design plugin and skill in every host it is installed in, including ChatGPT, Codex, Claude Code, and DeepSeek Harness.
 
 Effective 2026-10-01.
 

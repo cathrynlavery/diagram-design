@@ -35,6 +35,7 @@ This repository does not duplicate `SKILL.md` into host-specific loader stubs. F
 |---|---|---|
 | **Claude Code** | Marketplace plugin, `~/.claude/skills/`, or project `.claude/skills/` | Use `/plugin install` for managed updates or link the inner skill for editable work. |
 | **Codex** | Marketplace plugin or `~/.agents/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
+| **DeepSeek Harness** | Plugin bundle, `~/.dsh/skills/`, `~/.agents/skills/`, or project `.dsh/skills/` and `.agents/skills/` | Use `dsh plugin add` for managed updates, or link the inner skill for editable work. The import and export procedures need `python3` on `PATH`. |
 | **Cursor** | `~/.cursor/skills/`, `~/.agents/skills/`, project `.cursor/skills/`, or project `.agents/skills/` | Link the inner skill, then ask in Agent chat. |
 | **Cline CLI / VS Code** | `~/.cline/skills/`, `~/.agents/skills/`, workspace `.cline/skills/`, or workspace `.agents/skills/` | Link the inner skill and enable it from the Skills view when needed. |
 | **Kiro** | Workspace `.kiro/skills/` or global `~/.kiro/skills/` | Link the inner skill, or import its GitHub subdirectory URL; imported skills are copied and must be re-imported to update. |

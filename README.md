@@ -17,7 +17,7 @@
 
 *New in 2.5.10: ten more layout grammars — Sankey, fishbone, Wardley map, kanban, user journey, deployment, dependency graph, UML class, story map, and database schema.*
 
-Editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
+Editorial diagram types for Claude Code, Codex, Factory Droid, Pi, DeepSeek Harness, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
 
@@ -178,6 +178,16 @@ Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/ski
 
 **OpenCode:** Copy or symlink `skills/diagram-design/` to `.opencode/skills/diagram-design` in a project or `~/.config/opencode/skills/diagram-design` globally. OpenCode has no Diagram Design marketplace package; copied installs update only when you replace the directory from a newer checkout.
 
+**DeepSeek Harness:**
+
+```bash
+dsh plugin --profile <profile> add github:cathrynlavery/diagram-design
+```
+
+The plugin installs the skill and its references as one package, and `dsh plugin` picks up merged releases the same way the marketplace hosts do. Confirm discovery by asking for a diagram in natural language; DSH matches on the same skill description as every other host. The plugin hands the model a short router and points it at the installed skill directory, so nothing is fetched at runtime and nothing in `skills/diagram-design/` is copied or modified. The import and export procedures run the packaged Python helpers, so `python3` must be on `PATH`.
+
+DeepSeek Harness also scans `~/.agents/skills`, so symlinking the inner skill there works without the plugin — use that route for editable work, as in [Editable install](#editable-install) below.
+
 > **One-time migration:** an existing standalone `npx skills add` copy will not start following the Codex marketplace automatically. Remove that standalone copy, then use the Codex marketplace commands above. Likewise, uninstall a personal Cowork copy and reinstall Diagram Design from your organization's marketplace. Future marketplace version bumps then flow through each client's native update path.
 
 ### Editable install
@@ -190,10 +200,14 @@ git clone git@github.com:cathrynlavery/diagram-design.git ~/code/diagram-design
 # Pi: register the checkout as a local package
 pi install ~/code/diagram-design
 
+# DeepSeek Harness: register the checkout as a plugin layer
+dsh plugin --profile <profile> add ~/code/diagram-design
+
 # Claude Code: symlink the inner skill
 ln -s ~/code/diagram-design/skills/diagram-design ~/.claude/skills/diagram-design
 
 # Other Agent Skills hosts: create only the roots you use
+# DeepSeek Harness reads ~/.agents/skills and ~/.dsh/skills, so the link below covers it
 mkdir -p ~/.agents/skills ~/.cursor/skills ~/.cline/skills ~/.kiro/skills ~/.config/opencode/skills ~/.copilot/skills
 ln -s ~/code/diagram-design/skills/diagram-design ~/.agents/skills/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.cursor/skills/diagram-design
@@ -203,7 +217,7 @@ ln -s ~/code/diagram-design/skills/diagram-design ~/.config/opencode/skills/diag
 ln -s ~/code/diagram-design/skills/diagram-design ~/.copilot/skills/diagram-design
 ```
 
-The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, and other Agent Skills-compatible tools use the same files.
+The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, DeepSeek Harness, and other Agent Skills-compatible tools use the same files.
 
 ---
 
@@ -401,6 +415,11 @@ diagram-design/
 ├── .claude-plugin/                  — Claude marketplace + plugin manifest
 ├── .codex-plugin/                   — Codex plugin manifest
 ├── .factory-plugin/                 — Factory Droid marketplace + plugin manifest
+├── .dsh-plugin/                     — DeepSeek Harness plugin manifest
+├── package.json                     — DeepSeek Harness bundle (dsh.bundle.patch)
+├── cordis.patch.yml                 — DeepSeek Harness profile row
+├── index.js                         — DeepSeek Harness skill provider and commands
+├── lib/                             — provider, router body and command bodies
 ├── commands/
 │   ├── export-diagram.md            — plugin export command
 │   ├── import-drawio.md             — plugin draw.io import command

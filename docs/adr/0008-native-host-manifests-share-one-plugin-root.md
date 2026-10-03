@@ -15,3 +15,7 @@ The three native plugin manifests carry identical shared identity, description, 
 ## Consequences
 
 Each native host has an explicit install path while diagram behavior remains single-sourced. Adding another host requires native metadata, package-gate coverage, documentation, and a synchronized version bump; it never justifies copying the skill or command surface. Git-based Factory installs are updated by marketplace commit, while the synchronized manifest version remains release metadata and a review gate.
+
+## Amendments
+
+**2026-10-02: DeepSeek Harness joins as a fourth native manifest.** DSH is registered through `.dsh-plugin/plugin.json` alongside the three existing manifests, resolves the repository root like the others, and reuses `skills/diagram-design/` and `commands/` without duplication. Its install is `dsh plugin add`, not a marketplace document, so it contributes a root to the shared-plugin-root rule and no marketplace file. Its version is bumped and reviewed by the same gates as the others. ADR 0013 records why the host was added, and why its skill body is routed to a read instead of inlined.
