@@ -1,9 +1,10 @@
 # Diagram Design — DeepSeek Harness entry
 
 This is a router, not the specification. The full `SKILL.md` in this skill's base
-directory is about 29 KB, and DeepSeek Harness prunes tool results over 8,192
-characters, so it is not inlined here. Read the parts you need with the `read`
-tool before drawing anything.
+directory is about 29 KB, so it is not inlined here — inlining it would spend
+roughly 7,400 tokens on every load for a document that mostly points at the
+reference files below. Read the parts you need with the `read` tool before
+drawing anything.
 
 ## Read first
 

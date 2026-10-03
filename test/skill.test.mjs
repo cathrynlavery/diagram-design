@@ -117,6 +117,7 @@ test('buildCandidate returns a registry-valid candidate', () => {
   assert.deepEqual(candidate.invocation, { modelInvocable: true, userInvocable: true })
   assert.deepEqual(candidate.resourceBase, { kind: 'directory', path: '/pkg/skills/diagram-design' })
   assert.equal(candidate.locator, '/pkg/skills/diagram-design/SKILL.md')
+  assert.equal(candidate.path, '/pkg/skills/diagram-design/SKILL.md')
 })
 
 test('the packaged provider outranks every local root, or the body gets pruned', () => {
@@ -198,6 +199,7 @@ test('the provider lists one skill and loads the router body', async () => {
   assert.equal(definition.description, description)
   assert.equal(definition.content, (await readFile(ENTRY_FILE, 'utf8')).trim())
   assert.deepEqual(definition.resourceBase, candidates[0].resourceBase)
+  assert.equal(definition.path, candidates[0].path)
   assert.equal('rank' in definition, false, 'a definition carries no rank')
   assert.equal('locator' in definition, false, 'a definition carries no locator')
 })

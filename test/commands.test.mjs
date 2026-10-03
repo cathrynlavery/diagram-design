@@ -49,10 +49,23 @@ function fakeContext() {
   }
 }
 
-/** Records everything a handler steers into an agent. */
+/**
+ * Records everything a handler submits to an agent, and whether it used the
+ * queueing call. `steer` is deliberately absent: the handler must not use it,
+ * because a user command queues for the next turn like any other user input
+ * rather than interrupting the turn already running.
+ */
 function fakeAgent() {
+  const submitted = []
   const steered = []
-  return { steered, agent: { steer(message) { steered.push(message) } } }
+  return {
+    submitted,
+    steered,
+    agent: {
+      followup(message) { submitted.push(message) },
+      steer(message) { steered.push(message) },
+    },
+  }
 }
 
 /** Stands in for `@deepseek-ai/dsh-llm`'s `createUserMessage`, which mints an id. */
@@ -60,14 +73,8 @@ function fakeMessageFactory(input) {
   return Promise.resolve({ id: 'test-message-id', role: 'user', ...input })
 }
 
-function invocation(agent, rawInput) {
-  return {
-    commandId: 'test-command-id',
-    agent,
-    rawInput,
-    attachments: [],
-    signal: new AbortController().signal,
-  }
+function invocation(agent, rawInput, signal = new AbortController().signal) {
+  return { commandId: 'test-command-id', agent, rawInput, attachments: [], signal }
 }
 
 test('COMMAND_NAMES holds the six upstream commands in a stable order', () => {
@@ -172,11 +179,11 @@ test('a handler that cannot reach the agent reports an error, not an unhandled r
   assert.equal(steered.length, 0, 'a failed message build must not steer the agent')
 })
 
-test('a handler that throws while steering reports an error', async () => {
+test('a handler that throws while submitting reports an error', async () => {
   const { ctx, registered } = fakeContext()
   registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY, messageFactory: fakeMessageFactory })
   const agent = {
-    steer() {
+    followup() {
       throw new Error('cannot read inbox state: its projection registration is not active')
     },
   }
@@ -187,18 +194,22 @@ test('a handler that throws while steering reports an error', async () => {
   assert.ok(result.text.includes('/doctor'))
 })
 
-test('a handler steers the body and its arguments into the agent', async () => {
+test('a handler submits the body and its arguments as the next user turn', async () => {
   const { ctx, registered } = fakeContext()
   registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY, messageFactory: fakeMessageFactory })
-  const { agent, steered } = fakeAgent()
+  const { agent, steered, submitted } = fakeAgent()
 
   const result = await registered[1].handler(invocation(agent, ' diagram.html --png-only '))
 
-  assert.deepEqual(result, { kind: 'success' })
-  assert.equal(steered.length, 1)
-  const [message] = steered
+  assert.equal(result.kind, 'success')
+  assert.ok(result.text.length > 0, 'a successful command must acknowledge the user')
+  assert.equal(steered.length, 0, 'a user command must not steer into the running turn')
+  assert.equal(submitted.length, 1)
+  const [message] = submitted
   assert.equal(message.role, 'user')
-  assert.deepEqual(message.source, { kind: 'plugin', plugin: 'diagram-design' })
+  // `kind: 'user'` is declared in the host's MessageSourceMap. An invented kind
+  // renders as an opaque transcript node labelled with its own string.
+  assert.deepEqual(message.source, { kind: 'user' })
   const [block] = message.content
   assert.equal(block.type, 'text')
   assert.ok(block.text.includes('/export-diagram'), 'steered text does not name the command')
@@ -207,14 +218,49 @@ test('a handler steers the body and its arguments into the agent', async () => {
   assert.ok(block.text.includes('diagram.html --png-only'), 'steered text does not carry the arguments')
 })
 
-test('a handler steers without an argument label when none were typed', async () => {
+test('a handler submits without an argument label when none were typed', async () => {
   const { ctx, registered } = fakeContext()
   registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY, messageFactory: fakeMessageFactory })
-  const { agent, steered } = fakeAgent()
+  const { agent, submitted } = fakeAgent()
 
   await registered[0].handler(invocation(agent, ''))
 
-  assert.ok(!steered[0].content[0].text.includes('User arguments'))
+  assert.ok(!submitted[0].content[0].text.includes('User arguments'))
+})
+
+test('a cancelled invocation does not submit', async () => {
+  const { ctx, registered } = fakeContext()
+  registerCommands(ctx, { skillDirectory: SKILL_DIRECTORY, messageFactory: fakeMessageFactory })
+  const { agent, submitted } = fakeAgent()
+  const controller = new AbortController()
+  controller.abort()
+
+  const result = await registered[0].handler(invocation(agent, '', controller.signal))
+
+  assert.equal(result.kind, 'error')
+  assert.ok(result.text.includes('cancelled'), result.text)
+  assert.equal(submitted.length, 0, 'a cancelled command must not submit to the agent')
+})
+
+test('a failed body load is retried, not cached for the process', async () => {
+  // `Promise.all` reads all six bodies at once, so one transient read failure
+  // must not leave every later invocation returning the same cached error.
+  const missing = await mkdtemp(`${tmpdir()}/diagram-design-missing-`)
+  const { ctx, registered } = fakeContext()
+  const options = {
+    skillDirectory: SKILL_DIRECTORY,
+    bodiesDirectory: missing,
+    messageFactory: fakeMessageFactory,
+  }
+  registerCommands(ctx, options)
+  const { agent } = fakeAgent()
+
+  const first = await registered[0].handler(invocation(agent, ''))
+  const second = await registered[0].handler(invocation(agent, ''))
+
+  assert.equal(first.kind, 'error')
+  assert.equal(second.kind, 'error', 'the retry must attempt the read again')
+  assert.notEqual(first.text, undefined)
 })
 
 test('a missing command body is reported as an error result, not thrown', async () => {
@@ -225,12 +271,12 @@ test('a missing command body is reported as an error result, not thrown', async 
     bodiesDirectory: empty,
     messageFactory: fakeMessageFactory,
   })
-  const { agent, steered } = fakeAgent()
+  const { agent, steered, submitted } = fakeAgent()
 
   const result = await registered[0].handler(invocation(agent, '--json'))
 
   assert.equal(result.kind, 'error')
   assert.ok(result.text.includes('/doctor'), 'error text does not name the command')
   assert.ok(result.text.includes('doctor.md'), `error text does not name the missing file: ${result.text}`)
-  assert.equal(steered.length, 0, 'a failed body load must not steer the agent')
+  assert.equal(steered.length + submitted.length, 0, 'a failed body load must not reach the agent')
 })
