@@ -18,7 +18,7 @@ import { test } from 'node:test'
 
 import { createDiagramProvider } from '../lib/provider.js'
 import {
-  BUNDLED_SKILL_RANK,
+  PLUGIN_SKILL_RANK,
   ENTRY_BODY_MAX_CHARS,
   PROVIDER_NAME,
   SKILL_NAME,
@@ -86,11 +86,24 @@ test('buildCandidate returns a registry-valid candidate', () => {
   assert.equal(candidate.provider, PROVIDER_NAME)
   assert.notEqual(candidate.provider, SKILL_NAME, 'the provider label must differ from the plugin name')
   assert.equal(candidate.source, 'bundled')
-  assert.equal(candidate.rank, BUNDLED_SKILL_RANK)
-  assert.equal(candidate.rank, 600)
+  assert.equal(candidate.rank, PLUGIN_SKILL_RANK)
   assert.deepEqual(candidate.invocation, { modelInvocable: true, userInvocable: true })
   assert.deepEqual(candidate.resourceBase, { kind: 'directory', path: '/pkg/skills/diagram-design' })
   assert.equal(candidate.locator, '/pkg/skills/diagram-design/SKILL.md')
+})
+
+test('the packaged provider outranks every local root, or the body gets pruned', () => {
+  // Regression guard, added after a live boot on 0.2.0-rc.2 showed the failure
+  // this prevents: at the harness's bundled rank of 600, a copy or symlink in
+  // `~/.agents/skills` (which this repository's README tells users to create)
+  // won the duplicate name, and the model received the 28,661-byte SKILL.md
+  // that the 8,192-character tool-result pruner then middle-elided. The ranks
+  // below are `packages/skill/skill-filesystem/src/index.ts:36-40`.
+  const LOCAL_ROOT_RANKS = { 'project-dsh': 100, 'project-agents': 200, custom: 300, 'user-dsh': 400, 'user-agents': 500 }
+  const candidate = buildCandidate({ skillDirectory: '/pkg/skills/diagram-design', description: 'd' })
+  for (const [root, rank] of Object.entries(LOCAL_ROOT_RANKS)) {
+    assert.ok(candidate.rank < rank, `${root} (rank ${rank}) would beat this provider (rank ${candidate.rank})`)
+  }
 })
 
 test('the router body is inside the pruning budget', async () => {
