@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: read # gh api reads release labels from merged pull requests
     outputs:
       should_bump: ${{ steps.guard.outputs.should_bump }}
       source_sha: ${{ steps.guard.outputs.source_sha }}
@@ -347,7 +347,7 @@ jobs:
       - name: Push the validated bump to protected main
         if: steps.fresh.outputs.matches == 'true'
         env:
-          AUTO_BUMP_TOKEN: ${{ secrets.AUTO_BUMP_TOKEN }}
+          AUTO_BUMP_TOKEN: ${{ secrets.AUTO_BUMP_TOKEN }} # zizmor: ignore[secrets-outside-env] exposed only to the final validated push step
         shell: bash
         run: |
           set -euo pipefail
