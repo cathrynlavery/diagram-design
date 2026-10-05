@@ -10,7 +10,7 @@ is derived from the workflow's ``run:`` steps with these rules:
   inside ``$(...)`` or an ``if`` branch. ``python`` is spelled ``python3``
   locally.
 - Shell glue is not a gate: the commands in ``SHELL_GLUE`` install or print
-  tools (``pip install``, ``playwright install``, ``python -c``, ``echo``) or
+  tools (``playwright install``, ``python -c``, ``echo``) or
   steer control flow (``if``/``then``/``else``/``fi``, ``[``, ``git
   rev-parse``, ``exit``). The list is read off the run lines ci.yml has.
 - A line starting with ``npx`` is one gate (the Claude plugin validator).
@@ -121,6 +121,7 @@ RUN_KEY = re.compile(r"^(?P<prefix>\s*(?:-\s+)?)run:\s*(?P<value>.*?)\s*$")
 PYTHON_SCRIPT = re.compile(
     r"(?<![\w./-])python3?\s+(?P<script>[\w./-]+\.py)(?P<args>(?:[ \t]+[^\s;&|()<>]+)*)"
 )
+UV_RUN = re.compile(r"\buv run --locked --project \.github/ci/python\s+")
 
 
 def normalize(command: str) -> str:
@@ -238,6 +239,7 @@ def ci_gates(workflow: str) -> tuple[set[str], list[str]]:
     for block in run_blocks(workflow):
         commands: list[str] = []
         for line in logical_lines(block):
+            line = UV_RUN.sub("", line)
             if line.startswith("git diff") and "--exit-code" in line:
                 if commands:
                     commands[-1] = f"{commands[-1]} && {line}"

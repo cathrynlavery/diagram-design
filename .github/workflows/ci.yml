@@ -117,6 +117,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set up uv
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: latest-known
+          enable-cache: false
+
       - name: Verify accessible SVG contract
         if: always()
         id: a11y
@@ -245,21 +252,12 @@ jobs:
         id: screenshots_tests
         run: python scripts/test-verify-screenshot-freshness.py
 
-      - name: Install Pillow for README thumbnail verification
-        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-        env:
-          PILLOW_VERSION: "12.1.1"
-        shell: bash
-        run: |
-          pip install "Pillow==${PILLOW_VERSION}"
-          python -c "import PIL; print('Pillow', PIL.__version__)"
-
       - name: Verify README thumbnails
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         id: readme_thumbs
         run: |
-          python scripts/test-build-readme-thumbs.py
-          python scripts/build-readme-thumbs.py --check
+          uv run --locked --project .github/ci/python python scripts/test-build-readme-thumbs.py
+          uv run --locked --project .github/ci/python python scripts/build-readme-thumbs.py --check
 
       - name: Verify packaged self-check
         if: always()
@@ -452,7 +450,7 @@ jobs:
 
       # lint-render.py's oracle is pixels, so the browser is part of the contract:
       # pin Playwright exactly, and let that pin choose the Chromium build. Bump
-      # both together, deliberately, by editing PLAYWRIGHT_VERSION.
+      # both together through the uv lockfile.
       #
       # One platform only. Antialiasing and font fallback differ per OS, so running
       # a pixel comparison across the whole matrix would compare six oracles rather
@@ -460,13 +458,10 @@ jobs:
       # matrix legs still run every source-level gate.
       - name: Install Playwright Chromium
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-        env:
-          PLAYWRIGHT_VERSION: "1.62.0"
         shell: bash
         run: |
-          pip install "playwright==${PLAYWRIGHT_VERSION}"
-          playwright install --with-deps chromium
-          python -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
+          uv run --locked --project .github/ci/python playwright install --with-deps chromium
+          uv run --locked --project .github/ci/python python -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
 
       # The export snippet's browser contract, enforced where Playwright and
       # Chromium are already installed (stalled load, normal load, and
@@ -478,7 +473,7 @@ jobs:
         run: |
           # Playwright is installed on this leg, so a SKIP means the browser
           # contract silently went unverified -- treat it as a failure.
-          out="$(python scripts/test-export-wait.py)"
+          out="$(uv run --locked --project .github/ci/python python scripts/test-export-wait.py)"
           echo "$out"
           case "$out" in
             SKIP:*) echo "::error::export-wait tests skipped despite Playwright being installed" && exit 1 ;;
@@ -490,12 +485,12 @@ jobs:
       - name: Verify render linter checks
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         id: render_selftest
-        run: python scripts/lint-render.py --self-test
+        run: uv run --locked --project .github/ci/python python scripts/lint-render.py --self-test
 
       - name: Run render linter
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         id: render
-        run: python scripts/lint-render.py --all
+        run: uv run --locked --project .github/ci/python python scripts/lint-render.py --all
 
       - name: Verify generated icon assets
         if: always()
