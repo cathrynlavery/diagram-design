@@ -81,7 +81,7 @@ jobs:
           set -euo pipefail
           last_bump=$(python3 scripts/plugin_version_history.py last-bump "$SOURCE_SHA")
 
-          part=patch
+          part="patch"
           while IFS= read -r commit; do
             labels=$(gh api \
               "repos/${REPOSITORY}/commits/${commit}/pulls" \
