@@ -318,3 +318,111 @@ test('attached files lead the submitted message', async () => {
   assert.equal(message.content[0].type, 'file', 'the attachment must lead the message')
   assert.equal(message.content[message.content.length - 1].type, 'text', 'the body must still be the trailing text')
 })
+
+/**
+ * Behavioural literals restated in both copies. The DSH bodies deliberately
+ * compress the upstream Flags sections to a pointer at the reference ("their
+ * values and the size presets are in `references/output-spec.md`"), so this
+ * table pins only what the bodies actually restate: defaults the model acts
+ * on, edge-case sentinels, extractor names, and thresholds. If upstream
+ * changes one, the literal vanishes there and this fails until the body
+ * follows; if a body invents one, it fails the other way.
+ */
+const BEHAVIOUR_LITERALS = {
+  'doctor': ['--strict', '--json', 'read-only', 'references/doctor.md'],
+  'export-diagram': ['device_scale_factor=2', 'assets/index.html', 'data-block-id', '1, 2, 3'],
+  'import-drawio': ['drawio_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'balanced', 'mixed', 'light'],
+  'import-mermaid': ['mermaid_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'untrusted'],
+  'import-excalidraw': ['excalidraw_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'freedraw'],
+  'profile': ['switch', 'marker', '.diagram-design'],
+}
+
+/**
+ * Extra DSH required-behaviour steps beyond the upstream count, with the
+ * reason. The upstream draw.io command has no untrusted-data step; the DSH
+ * body carries one like every other import body, so the upstream count stays
+ * the floor and only this declared extra is allowed.
+ */
+const DOCUMENTED_EXTRA_STEPS = {
+  'import-drawio': 1,
+}
+
+async function upstreamCommand(name) {
+  return readFile(new URL(`../commands/${name}.md`, import.meta.url), 'utf8')
+}
+
+async function dshBody(name) {
+  return readFile(new URL(`../lib/command-bodies/${name}.md`, import.meta.url), 'utf8')
+}
+
+/** Every `--flag` token in the text. Upstream input includes the frontmatter hint. */
+function flagNames(text) {
+  return new Set([...text.matchAll(/--([a-z][a-z0-9-]*)/gu)].map(match => match[1]))
+}
+
+/**
+ * Numbered steps under the Required behaviour section. Both spellings occur:
+ * upstream `commands/` writes "Required behavior", the DSH bodies "Required
+ * behaviour". Asserts the section exists — a missing section is a failure,
+ * not a zero.
+ */
+function requiredStepCount(text) {
+  const stripped = text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/u, '')
+  const section = /^(?:##\s+)?required\s+behavio[u]?r\s*$/im.exec(stripped)
+  assert.ok(section !== null, 'no Required behaviour section found')
+  const rest = stripped.slice(section.index + section[0].length)
+  const nextHeading = /^##\s+/m.exec(rest)
+  const body = nextHeading === null ? rest : rest.slice(0, nextHeading.index)
+  const steps = body.match(/^\s*\d+[.)]\s+/gmu) ?? []
+  assert.ok(steps.length > 0, 'Required behaviour section holds no numbered steps')
+  return steps.length
+}
+
+test('every flag a DSH body names exists upstream, and vice versa', async () => {
+  for (const name of COMMAND_NAMES) {
+    const upstream = flagNames(await upstreamCommand(name))
+    const body = flagNames(await dshBody(name))
+    for (const flag of body) {
+      assert.ok(upstream.has(flag), `${name}: body names --${flag}, which upstream does not`)
+    }
+    for (const flag of upstream) {
+      assert.ok(body.has(flag), `${name}: upstream names --${flag}, which the body dropped`)
+    }
+  }
+})
+
+test('every restated behaviour literal survives in both copies', async () => {
+  for (const name of COMMAND_NAMES) {
+    const upstream = await upstreamCommand(name)
+    const body = await dshBody(name)
+    for (const literal of BEHAVIOUR_LITERALS[name]) {
+      assert.ok(upstream.includes(literal), `${name}: upstream no longer says ${JSON.stringify(literal)}`)
+      assert.ok(body.includes(literal), `${name}: body no longer says ${JSON.stringify(literal)}`)
+    }
+  }
+})
+
+test('required-behaviour step counts match, with one documented exception', async () => {
+  for (const name of COMMAND_NAMES) {
+    const upstream = requiredStepCount(await upstreamCommand(name))
+    const body = requiredStepCount(await dshBody(name))
+    const allowed = upstream + (DOCUMENTED_EXTRA_STEPS[name] ?? 0)
+    assert.equal(body, allowed, `${name}: upstream has ${upstream} required steps, body has ${body}`)
+  }
+})
+
+test('profile routing bullets match the upstream routing', async () => {
+  const bullets = text => {
+    const stripped = text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/u, '')
+    const section = /^(?:##\s+)?routing\s*$/im.exec(stripped)
+    assert.ok(section !== null, 'no Routing section found')
+    const rest = stripped.slice(section.index + section[0].length)
+    const nextHeading = /^(?:##\s+|required\s+behavio[u]?r\s*$)/m.exec(rest)
+    const body = nextHeading === null ? rest : rest.slice(0, nextHeading.index)
+    return body.match(/^\s*-\s+/gmu) ?? []
+  }
+  const upstream = bullets(await upstreamCommand('profile'))
+  const body = bullets(await dshBody('profile'))
+  assert.ok(upstream.length > 0 && body.length > 0, 'routing section holds no bullets')
+  assert.equal(body.length, upstream.length, `upstream routes ${upstream.length} ways, body ${body.length}`)
+})
