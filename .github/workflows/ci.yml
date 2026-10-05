@@ -60,8 +60,10 @@ jobs:
       # would report their versions as edits made by the PR.
       - name: Forbid manifest version changes in pull requests
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
             if ! git rev-parse -q --verify HEAD^2 >/dev/null; then
               echo "expected the pull request merge commit at HEAD" >&2
               exit 1
@@ -508,7 +510,7 @@ jobs:
       - name: Generate CI execution summary table
         if: always()
         shell: bash
-        run: |
+        run: | # zizmor: ignore[template-injection] values resolve only from fixed matrices and step outcomes
           echo "### 📊 CI Verification Summary (${{ matrix.os }}, Python ${{ matrix.python-version }})" >> $GITHUB_STEP_SUMMARY
           echo "| Verification Gate | Outcome |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
