@@ -40,6 +40,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install Node CI dependencies
+        run: npm ci --prefix .github/ci/node
+
       - name: Test plugin package tooling
         run: python3 scripts/test-plugin-package.py
 
@@ -69,7 +72,7 @@ jobs:
           fi
 
       - name: Validate Claude marketplace package without warnings
-        run: npx --yes @anthropic-ai/claude-code@2.1.229 plugin validate . --strict
+        run: .github/ci/node/node_modules/.bin/claude plugin validate . --strict
 
   python39-compat:
     name: Python 3.9 Compatibility
