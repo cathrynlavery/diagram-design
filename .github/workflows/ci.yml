@@ -40,6 +40,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Test DSH host adapter
+        run: node --test test/*.test.mjs
+
       - name: Test plugin package tooling
         run: python3 scripts/test-plugin-package.py
 

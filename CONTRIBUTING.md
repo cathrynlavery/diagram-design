@@ -36,6 +36,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | OpenAI plugin directory listing limits and upload ZIP contents | `python3 scripts/test-build-openai-plugin-zip.py` |
 | Manifest versions untouched and synchronized; valid marketplace paths; packaged skill | `python3 scripts/verify-plugin-package.py --require-no-bump origin/main` |
 | Claude marketplace and plugin schema, with warnings treated as errors | `claude plugin validate . --strict` |
+| DSH host adapter (skill provider, command registration, bodies, wiring) | `node --test test/*.test.mjs` (requires Node 22+, same as CI) |
 | Accessible SVG contract (unit tests for the a11y linter) | `python3 scripts/test-lint-a11y.py` |
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
 | Animated-example structure and accessibility | `python3 scripts/verify-semantic-motion.py --example-only` |
