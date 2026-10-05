@@ -13,7 +13,8 @@ is derived from the workflow's ``run:`` steps with these rules:
   tools (``playwright install``, ``python -c``, ``echo``) or
   steer control flow (``if``/``then``/``else``/``fi``, ``[``, ``git
   rev-parse``, ``exit``). The list is read off the run lines ci.yml has.
-- A line starting with ``npx`` is one gate (the Claude plugin validator).
+- A line starting with ``npx`` or the locked local Claude executable is one
+  gate (the Claude plugin validator).
 - A ``git diff ... --exit-code`` line checks what the command before it in
   the same step generated, so it joins that command with ``&&`` (the
   build-icons freshness gate). Backslash continuations are joined first.
@@ -104,6 +105,7 @@ SHELL_GLUE = (
     ("esac",),
     ("[",),
     ("git", "rev-parse"),
+    ("npm", "ci"),
     ("pip", "install"),
     ("python", "-m", "pip", "install"),
     ("playwright", "install"),
@@ -127,6 +129,7 @@ UV_RUN = re.compile(r"\buv run --locked --project \.github/ci/python\s+")
 def normalize(command: str) -> str:
     """Canonical form of a policy entry: CI spelling, version gate collapsed."""
     command = " ".join(command.split())
+    command = re.sub(r"^npm ci --prefix \.github/ci/node && ", "", command)
     command = re.sub(r"^python(?=\s)", "python3", command)
     return VERSION_GATE if command == LOCAL_VERSION_GATE else command
 
@@ -246,7 +249,7 @@ def ci_gates(workflow: str) -> tuple[set[str], list[str]]:
                 else:
                     commands.append(line)
                 continue
-            if line.startswith("npx "):
+            if line.startswith(("npx ", ".github/ci/node/node_modules/.bin/claude ")):
                 commands.append(line)
                 continue
             commands.extend(match.group(0) for match in PYTHON_SCRIPT.finditer(line))
