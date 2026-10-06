@@ -614,6 +614,34 @@ def main():
     else:
         print("OK: shipped_wording_binds_as_a_contrast_claim")
 
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        archived = light_source.replace("</body>",
+            "<!-- Archived legend: <p>Other continents · fainter contrast is larger</p> -->\n</body>", 1)
+        code, output = run(write(directory, "commented-legend.html", archived))
+        if code:
+            failures.append(f"commented old legend was treated as visible copy: {output}")
+        else:
+            print("OK: archived HTML comment is not a visible claim")
+        joined = light_source.replace("stronger contrast is larger", "str<!-- editorial note -->onger contrast is larger")
+        code, output = run(write(directory, "inline-comment.html", joined))
+        if code or "1 making a directional tone claim" not in output:
+            failures.append(f"inline comment changed the visible claim: {output}")
+        else:
+            print("OK: inline comment preserves adjacent visible text")
+        incorrect = light_source.replace("stronger contrast is larger", "faint<!-- editorial note -->er contrast is larger")
+        code, output = run(write(directory, "inline-comment-wrong.html", incorrect))
+        if not code or "but the ramp draws larger as stronger" not in output:
+            failures.append(f"wrong visible claim with an inline comment was accepted: {output}")
+        else:
+            print("OK: incorrect visible claim remains rejected across an inline comment")
+        unmatched = archived.replace("stronger contrast is larger", "larger means something stronger eventually")
+        code, output = run(write(directory, "visible-unparsed-with-comment.html", unmatched))
+        if not code:
+            failures.append("unparsed visible claim was excused by the archived comment")
+        else:
+            print("OK: unparsed visible claim remains rejected beside an archived comment")
+
     for failure in failures:
         print("FAIL: {}".format(failure))
     if failures:
