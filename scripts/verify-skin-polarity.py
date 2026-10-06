@@ -73,6 +73,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
 from pathlib import Path
@@ -319,6 +320,29 @@ def parse_fill(value):
     return parse_rgb(value) or parse_hex_fill(value)
 
 
+def painted_fill(attrs):
+    """Literal fill alpha after explicit SVG presentation opacity attributes.
+
+    CSS rules and inherited/group opacity remain outside this source checker.
+    """
+    parsed = parse_fill(attrs.get("fill", ""))
+    if parsed is None:
+        return None
+    ink, alpha = parsed
+    for name in ("fill-opacity", "opacity"):
+        if name not in attrs:
+            continue
+        token = attrs[name].strip()
+        try:
+            value = float(token[:-1]) / 100.0 if token.endswith("%") else float(token)
+        except ValueError:
+            return None
+        if not math.isfinite(value):
+            return None
+        alpha *= max(0.0, min(1.0, value))
+    return ink, alpha
+
+
 def srgb_to_linear(channel):
     ratio = channel / 255.0
     return ratio / 12.92 if ratio <= 0.04045 else ((ratio + 0.055) / 1.055) ** 2.4
@@ -385,6 +409,7 @@ def collect_members(source):
             name = attribute.group("name")
             if name not in attrs:  # browsers keep the first duplicate attribute
                 attrs[name] = attribute.group("value")
+        paint = painted_fill(attrs)
         signature = (
             match.group("tag").lower(),
             attrs.get("x"),
@@ -402,7 +427,7 @@ def collect_members(source):
         twinnable = any(value is not None for value in signature[1:])
         position = index_by_signature.get(signature) if twinnable else None
         if position is None:
-            merged.append([dict(attrs), match.start()])
+            merged.append([dict(attrs), match.start(), paint])
             if twinnable:
                 index_by_signature[signature] = len(merged) - 1
             continue
@@ -410,16 +435,17 @@ def collect_members(source):
         for name, value in attrs.items():
             # A translucent fill wins over the mask's opaque one, and a rank
             # attribute is adopted from whichever twin declared it.
-            parsed_fill = parse_fill(value) if name == "fill" else None
+            parsed_fill = paint if name == "fill" else None
             if name not in existing[0] or (
                 name == "fill" and parsed_fill is not None and 0.0 < parsed_fill[1] < 1.0
             ):
                 existing[0][name] = value
+                if name == "fill":
+                    existing[2] = paint
         existing[1] = min(existing[1], match.start())
 
     groups = {}
-    for attrs, offset in merged:
-        parsed = parse_fill(attrs.get("fill", ""))
+    for attrs, offset, parsed in merged:
         if parsed is None:
             continue
         ink, alpha = parsed

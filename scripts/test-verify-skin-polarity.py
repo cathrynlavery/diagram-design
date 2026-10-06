@@ -136,6 +136,39 @@ def main():
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
 
+        # SVG presentation opacity is multiplicative with the color alpha.
+        for skin, source, ramp, ink, hex_ink in (
+            ("light", light_source, LIGHT_RAMP, LIGHT_INK, "#2d3142"),
+            ("dark", dark_source, DARK_RAMP, DARK_INK, "#f5f5f5"),
+        ):
+            explicit = source
+            for rank, alpha in ramp:
+                explicit = explicit.replace(
+                    f'data-share="{rank}" fill="rgba({ink},{alpha})"',
+                    f'data-share="{rank}" fill="{hex_ink}" fill-opacity="{float(alpha) * 100:g}%"', 1)
+            code, output = run(write(directory, f"{skin}-fill-opacity.html", explicit))
+            if code:
+                failures.append(f"{skin} explicit fill-opacity ramp failed: {output}")
+            else:
+                print(f"OK: {skin} explicit fill-opacity ramp passes")
+        for attrs, expected in (
+            ('fill="rgba(45,49,66,.8)" fill-opacity=".5" opacity="25%"', .1),
+            ('fill="#2d3142" fill-opacity="200%" opacity=".25"', .25),
+        ):
+            members = COLLECT_MEMBERS(f'<rect x="0" y="0" width="10" height="10" data-share="1" {attrs}/>')
+            found = [m for group in members.values() for m in group]
+            if len(found) != 1 or abs(found[0].alpha - expected) > 1e-9:
+                failures.append(f"presentation opacity measured incorrectly: {attrs}")
+            else:
+                print(f"OK: presentation opacity measures {expected:g}")
+        inverted = light_source.replace('data-share="18.29" fill=',
+            'data-share="18.29" fill-opacity=".1" fill=', 1)
+        code, output = run(write(directory, "opacity-breaks-order.html", inverted))
+        if code == 0:
+            failures.append("explicit opacity that breaks rank order was accepted")
+        else:
+            print("OK: explicit opacity that breaks rank order is rejected")
+
         # SVG accepts both quote styles. Convert every rank-bearing ramp member
         # to single-quoted attributes; the checker must still discover all five
         # members and verify the shipped claim.
