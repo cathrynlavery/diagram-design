@@ -245,6 +245,41 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn('stroke="none"', svg)
         self.assertIn('id="rgba-demo-dots"', svg)
 
+    def test_compound_original_root_does_not_gain_an_ancestor(self) -> None:
+        for selector in ('.diagram#original .paint',
+                         'svg.diagram#original .paint',
+                         '[data-mode="active"]#original.diagram .paint'):
+            with self.subTest(selector=selector):
+                source = '<style>' + selector + ' {fill:#ff0000}</style>'
+                source += '<svg id="original" class="diagram" data-mode="active" viewBox="0 0 40 40">'
+                source += '<rect class="paint" width="40" height="40"/></svg>'
+                result = self.mod.export_svg_document(source, Path('compound.html'))
+                expected = selector.replace('#original', '#compound-root')
+                self.assertIn(expected + ' { fill:#ff0000 }', embedded_css(result))
+                self.assertNotIn('#compound-root ' + expected, embedded_css(result))
+
+    def test_root_retarget_compares_whole_decoded_css_id_tokens(self) -> None:
+        cases = (
+            (r'#panel.v1 .paint', 'panel.v1', r'#panel.v1 .paint'),
+            (r'#panel\.v1 .paint', 'panel.v1', '#export-root .paint'),
+            (r'#panel\2e v1 .paint', 'panel.v1', '#export-root .paint'),
+            (r'#panel\00002Ev1 .paint', 'panel.v1', '#export-root .paint'),
+            (r'#panel\:v1 .paint', 'panel:v1', '#export-root .paint'),
+            (r'#panel\.v1-child .paint', 'panel.v1', r'#panel\.v1-child .paint'),
+            ('#123 .paint', '123', '#123 .paint'),
+            (r'#\31 23 .paint', '123', '#export-root .paint'),
+            (r'#\-123 .paint', '-123', '#export-root .paint'),
+            ('#-123 .paint', '-123', '#-123 .paint'),
+            ('#面板 .paint', '面板', '#export-root .paint'),
+        )
+        for selector, original, expected in cases:
+            with self.subTest(selector=selector):
+                self.assertEqual(self.mod.retarget_root_selector(selector, original, 'export-root'), expected)
+        self.assertEqual(self.mod.scope_selector('.paint[data-label="#export-root"]', 'export-root'),
+                         '#export-root .paint[data-label="#export-root"]')
+        self.assertEqual(self.mod.scope_selector('.paint:is(#export-root)', 'export-root'),
+                         '#export-root .paint:is(#export-root)')
+
     def test_original_svg_root_selectors_follow_replaced_id(self) -> None:
         for quote in ('"', "'"):
             with self.subTest(quote=quote):

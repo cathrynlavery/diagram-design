@@ -183,6 +183,84 @@ def is_chrome_selector(selector: str) -> bool:
     )
 
 
+def css_escape(text: str, pos: int) -> tuple[str, int] | None:
+    """Read one CSS identifier escape, including its optional hex terminator."""
+    end = pos + 1
+    if end == len(text) or text[end] in "\n\r\f":
+        return None
+    start = end
+    while end < min(start + 6, len(text)) and text[end] in "0123456789abcdefABCDEF":
+        end += 1
+    if end == start:
+        return text[end], end + 1
+    code = int(text[start:end], 16)
+    value = chr(code) if 0 < code <= 0x10FFFF and not 0xD800 <= code <= 0xDFFF else "\ufffd"
+    if end < len(text) and text[end] in " \t\n\r\f":
+        end += 2 if text[end:end + 2] == "\r\n" else 1
+    return value, end
+
+
+def css_id_token(text: str, pos: int) -> tuple[str, int] | None:
+    """Read a whole valid CSS ID selector after '#', decoding identifier escapes."""
+    def starts_name(index: int) -> bool:
+        char = text[index:index + 1]
+        return bool(char) and (char in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                               or ord(char) >= 128
+                               or (char == "\\" and css_escape(text, index) is not None))
+
+    if not starts_name(pos) and not (text[pos:pos + 1] == "-"
+            and (starts_name(pos + 1) or text[pos + 1:pos + 2] == "-")):
+        return None
+    out: list[str] = []
+    while pos < len(text):
+        char = text[pos]
+        if char == "\\":
+            escaped = css_escape(text, pos)
+            if escaped is None:
+                break
+            value, pos = escaped
+            out.append(value)
+        elif char in "_-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" or ord(char) >= 128:
+            out.append(char)
+            pos += 1
+        else:
+            break
+    return "".join(out), pos
+
+
+def root_bound_compound(selector: str, root_id: str) -> bool:
+    """Whether the first compound names this root outside attributes/functions."""
+    pos = 0
+    depth = 0
+    quote = ""
+    while pos < len(selector):
+        char = selector[pos]
+        if char == "\\":
+            escaped = css_escape(selector, pos)
+            pos = escaped[1] if escaped else pos + 1
+            continue
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char in "[(":
+            depth += 1
+        elif char in "])":
+            depth -= 1
+        elif depth == 0 and (char.isspace() or char in ">+~"):
+            break
+        elif depth == 0 and char == "#":
+            token = css_id_token(selector, pos + 1)
+            if token:
+                value, pos = token
+                if value == root_id:
+                    return True
+                continue
+        pos += 1
+    return False
+
+
 def scope_selector(selector: str, root_id: str) -> str:
     scoped: list[str] = []
     for part in selector.split(","):
@@ -193,6 +271,9 @@ def scope_selector(selector: str, root_id: str) -> str:
             # `:root { … }` and rare `:root .x` → bind tokens to the SVG root.
             remainder = part[len(":root") :].strip()
             scoped.append(f"#{root_id}" + (f" {remainder}" if remainder else ""))
+        elif root_bound_compound(part, root_id):
+            # A compound such as `.diagram#root` already names the SVG itself.
+            scoped.append(part)
         elif part.startswith("#"):
             # Already an ID selector — leave alone (title/desc IDs stay global).
             scoped.append(part)
@@ -228,16 +309,17 @@ def escape_css_for_xml(css: str) -> str:
 
 
 def retarget_root_selector(selector: str, original_id: str, root_id: str) -> str:
-    """Retarget literal ID tokens, preserving quoted values and CSS escapes."""
+    """Retarget whole decoded ID tokens, preserving unrelated escapes and literals."""
     out: list[str] = []
     quote = ""
     pos = 0
-    token = f"#{original_id}"
     while pos < len(selector):
         char = selector[pos]
         if char == "\\":
-            out.append(selector[pos:pos + 2])
-            pos += 2
+            escaped = css_escape(selector, pos)
+            end = escaped[1] if escaped else pos + 1
+            out.append(selector[pos:end])
+            pos = end
             continue
         if quote:
             out.append(char)
@@ -246,12 +328,12 @@ def retarget_root_selector(selector: str, original_id: str, root_id: str) -> str
         elif char in "\"'":
             quote = char
             out.append(char)
-        elif selector.startswith(token, pos):
-            after = pos + len(token)
-            next_char = selector[after:after + 1]
-            if not next_char or not (next_char.isalnum() or next_char in "_-\\" or ord(next_char) >= 128):
-                out.append(f"#{root_id}")
-                pos = after
+        elif char == "#":
+            token = css_id_token(selector, pos + 1)
+            if token:
+                value, end = token
+                out.append(f"#{root_id}" if value == original_id else selector[pos:end])
+                pos = end
                 continue
             out.append(char)
         else:
