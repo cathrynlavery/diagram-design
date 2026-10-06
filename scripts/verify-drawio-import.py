@@ -64,6 +64,21 @@ def run_extract(args: list[str]) -> str:
     return proc.stdout
 
 
+def expect_extract_error(args: list[str], message: str) -> None:
+    proc = subprocess.run(
+        [sys.executable, str(EXTRACT), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode != 2 or message not in proc.stderr:
+        fail(
+            f"expected exit 2 containing {message!r} for {args}; got "
+            f"{proc.returncode}: {proc.stderr.strip()!r}"
+        )
+
+
 def check_legacy_stdout_encoding(tmp: Path) -> None:
     source = tmp / "unicode-stdout.drawio"
     source.write_text(
@@ -457,6 +472,53 @@ def check_security_and_limits(tmp: Path) -> None:
     )
     if proc.returncode != 2 or "truncated metadata chunk" not in proc.stderr:
         fail("truncated PNG metadata must be rejected with a clear diagnostic")
+
+    duplicate_id = tmp / "duplicate-id.drawio"
+    duplicate_id.write_text(
+        '<mxGraphModel><root><mxCell id="same" vertex="1"/>'
+        '<mxCell id="same" value="amplified label" vertex="1"/>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error([str(duplicate_id)], "duplicate cell id")
+
+    nested_pages = tmp / "nested-pages.drawio"
+    nested_pages.write_text(
+        '<mxfile>'
+        + '<diagram name="outer">' * 20
+        + '<mxGraphModel><root><mxCell id="node" value="Node" vertex="1"/>'
+        + '</root></mxGraphModel>'
+        + '</diagram>' * 20
+        + '</mxfile>',
+        encoding="utf-8",
+    )
+    nested_payload = json.loads(run_extract([str(nested_pages), "--json"]))
+    if nested_payload["pages_total"] != 1:
+        fail("nested diagram descendants were treated as independent pages")
+
+    too_many_pages = tmp / "too-many-pages.drawio"
+    too_many_pages.write_text(
+        '<mxfile>'
+        + '<diagram><mxGraphModel><root/></mxGraphModel></diagram>'
+        * (extractor.MAX_PAGES + 1)
+        + '</mxfile>',
+        encoding="utf-8",
+    )
+    expect_extract_error(
+        [str(too_many_pages)], f"page limit exceeded (max {extractor.MAX_PAGES})"
+    )
+
+    too_many_cells = tmp / "too-many-cells.drawio"
+    too_many_cells.write_text(
+        '<mxGraphModel><root>'
+        + '<mxCell id="cell"/>' * (extractor.MAX_CELLS_PER_PAGE + 1)
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error(
+        [str(too_many_cells)],
+        f"cell limit exceeded (max {extractor.MAX_CELLS_PER_PAGE})",
+    )
 
     proc = subprocess.run(
         [sys.executable, str(EXTRACT), str(FIXTURE), "--max-rows", "0"],
