@@ -228,6 +228,27 @@ def check_parse_raw() -> dict:
     return payload
 
 
+def check_relative_geometry(tmp: Path) -> None:
+    parent = '<mxCell id="outer" value="Outer" vertex="1" parent="1"><mxGeometry x="20" y="50" width="200" height="100" as="geometry"/></mxCell>'
+    for relative, offset, expected in ((True, False, (120.0, 150.0)), (True, True, (90.0, 130.0)), (False, False, (120.0, 150.0)), (False, True, (120.0, 150.0))):
+        position = 'x="0.5" y="1" relative="1"' if relative else 'x="100" y="100"'
+        child = f'<mxCell id="child" value="Child" vertex="1" parent="outer"><mxGeometry {position} width="60" height="40" as="geometry">'
+        child += '<mxPoint x="-30" y="-20" as="offset"/>' if offset else ''
+        child += '</mxGeometry></mxCell>'
+        for order in ((parent, child), (child, parent)):
+            path = tmp / "relative-child.drawio"
+            path.write_text('<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>' + ''.join(order) + '</root></mxGraphModel>', encoding="utf-8")
+            page = json.loads(run_extract([str(path), "--json"]))["pages"][0]
+            node = next(node for node in page["nodes"] if node["id"] == "child")
+            if (node["x"], node["y"]) != expected or (node["parent"], node["depth"]) != ("outer", 1):
+                fail(f"relative child geometry disagrees with mxGraph: {node}")
+    path.write_text(path.read_text().replace('x="100" y="100"', 'x="1e308" y="1" relative="1"'), encoding="utf-8")
+    expect_extract_error([str(path)], "geometry overflow")
+    path.write_text(path.read_text().replace('x="-30"', 'x="Infinity"'), encoding="utf-8")
+    expect_extract_error([str(path)], "invalid geometry: x must be finite")
+    ok("relative child positions resolve parent dimensions/offsets independent of cell order")
+
+
 def check_nested_geometry(tmp: Path) -> None:
     cells = (
         '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
@@ -712,6 +733,7 @@ def main() -> int:
         tmp = Path(tmp_dir)
         check_files()
         check_parse_raw()
+        check_relative_geometry(tmp)
         check_nested_geometry(tmp)
         check_bom_prefixed(tmp)
         check_containers(tmp)
