@@ -23,6 +23,7 @@ The algorithm matches ``references/export.md``. No third-party deps.
 from __future__ import annotations
 
 import argparse
+import html
 import math
 import re
 import sys
@@ -321,9 +322,29 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
     return svg
 
 
+def _decoded_css_property_text(style: str) -> str:
+    """Read opacity spellings conservatively without changing carried CSS."""
+    style = CSS_COMMENT_RE.sub("", html.unescape(style))
+
+    def escape(match: re.Match[str]) -> str:
+        hexadecimal, literal = match.groups()
+        if hexadecimal is not None:
+            value = int(hexadecimal, 16)
+            return chr(value) if 0 < value <= 0x10FFFF and not 0xD800 <= value <= 0xDFFF else "\ufffd"
+        return "" if literal in "\r\n\f" else literal
+
+    return re.sub(r"\\(?:([0-9a-fA-F]{1,6})(?:\r\n|[ \t\r\n\f])?|([\s\S]))", escape, style)
+
+
 def normalize_rgba_presentation_attrs(svg: str) -> str:
     """Split rgba paint and combine its alpha with existing presentation opacity."""
 
+    # A parent's paint and opacity may be inherited independently. Converting
+    # its color alpha into opacity would also change children overriding paint.
+    try:
+        parents = {index for index, element in enumerate(ET.fromstring(svg).iter()) if len(element)}
+    except ET.ParseError:
+        return svg  # The existing final XML validator supplies the public error.
     opacity_counts = {"fill-opacity": 0, "stroke-opacity": 0}
     styles = list(STYLE_BLOCK_RE.findall(svg))
 
@@ -339,11 +360,16 @@ def normalize_rgba_presentation_attrs(svg: str) -> str:
     _rewrite_start_tags(svg, collect_opacity_context)
     css_opacity = {
         key for key in opacity_counts
-        if any(re.search(rf"(?:^|[;{{])\s*{key}\s*:", CSS_COMMENT_RE.sub("", style), re.IGNORECASE)
+        if any(re.search(rf"(?:^|[;{{])\s*{key}\s*:", _decoded_css_property_text(style), re.IGNORECASE)
                for style in styles)
     }
 
+    position = 0
+
     def normalize_tag(match: re.Match[str]) -> str:
+        nonlocal position
+        is_parent = position in parents
+        position += 1
         name, attrs, end = match.groups()
         values = {
             attr.group(2): attr.group(4)[1:-1]
@@ -365,7 +391,7 @@ def normalize_rgba_presentation_attrs(svg: str) -> str:
             # Presentation opacity may be overridden by CSS or inherited from
             # another element. Preserve the color alpha when that cascade is
             # unresolved instead of replacing it with opaque RGB.
-            if opacity_name in css_opacity or opacity_counts[opacity_name] > int(opacity_name in values):
+            if is_parent or opacity_name in css_opacity or opacity_counts[opacity_name] > int(opacity_name in values):
                 continue
             opacity = alpha
             if opacity_name in values:

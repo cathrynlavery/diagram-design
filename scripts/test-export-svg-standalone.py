@@ -220,6 +220,26 @@ class ExportSvgStandaloneTests(unittest.TestCase):
                         shape = ET.fromstring(result).find(".//{http://www.w3.org/2000/svg}rect")
                     self.assertEqual(shape.get(prop), "rgba(255,0,0,0.5)")
 
+    def test_rgba_parent_preserves_independent_child_paints(self) -> None:
+        for prop in ("fill", "stroke"):
+            html = f'<svg viewBox="0 0 10 10"><g {prop}="rgba(255,0,0,0.5)" {prop}-opacity="0.5"><rect {prop}="#0000ff"/></g></svg>'
+            result = ET.fromstring(self.mod.export_svg_document(html, Path("parent.html")))
+            group = result.find("{http://www.w3.org/2000/svg}g")
+            self.assertEqual(group.get(prop), "rgba(255,0,0,0.5)")
+            self.assertEqual(group.get(f"{prop}-opacity"), "0.5")
+            self.assertEqual(group[0].get(prop), "#0000ff")
+
+    def test_rgba_css_guard_reads_entities_and_escaped_property_names(self) -> None:
+        for prop in ("fill", "stroke"):
+            declarations = (f"{prop}-opacity&#58;0.5", f"{prop}\\2d opacity:0.5", f"{prop}&#92;2d opacity&#58;0.5")
+            for declaration in declarations:
+                html = f'<svg viewBox="0 0 10 10"><rect {prop}="rgba(255,0,0,0.5)" style="{declaration}"/></svg>'
+                result = ET.fromstring(self.mod.export_svg_document(html, Path("encoded.html")))
+                self.assertEqual(result.find("{http://www.w3.org/2000/svg}rect").get(prop), "rgba(255,0,0,0.5)")
+            html = f'<svg viewBox="0 0 10 10"><style>rect {{ {prop}\\2d opacity:0.5 }}</style><rect {prop}="rgba(255,0,0,0.5)"/></svg>'
+            result = ET.fromstring(self.mod.export_svg_document(html, Path("escaped.html")))
+            self.assertEqual(result.find("{http://www.w3.org/2000/svg}rect").get(prop), "rgba(255,0,0,0.5)")
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
