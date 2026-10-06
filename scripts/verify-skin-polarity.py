@@ -437,7 +437,7 @@ def collect_members(source):
             # attribute is adopted from whichever twin declared it.
             parsed_fill = paint if name == "fill" else None
             if name not in existing[0] or (
-                name == "fill" and parsed_fill is not None and 0.0 < parsed_fill[1] < 1.0
+                name == "fill" and parsed_fill is not None and 0.0 <= parsed_fill[1] < 1.0
             ):
                 existing[0][name] = value
                 if name == "fill":
@@ -449,8 +449,9 @@ def collect_members(source):
         if parsed is None:
             continue
         ink, alpha = parsed
+        # A zero-alpha ranked fill is still a point: it has paper contrast.
         # A fully opaque fill is not a point on an opacity ramp.
-        if not 0.0 < alpha < 1.0:
+        if not 0.0 <= alpha < 1.0:
             continue
         rank = None
         for name in RANK_ATTRS:

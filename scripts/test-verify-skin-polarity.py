@@ -647,6 +647,29 @@ def main():
     else:
         print("OK: shipped_wording_binds_as_a_contrast_claim")
 
+    with tempfile.TemporaryDirectory(prefix="polarity-zero-opacity-") as raw:
+        directory = Path(raw)
+        for skin, source, ink, alpha in (
+            ("light", light_source, LIGHT_INK, "0.16"),
+            ("dark", dark_source, DARK_INK, "0.14"),
+        ):
+            for attribute in ("fill-opacity", "opacity"):
+                for value in ("0", "-0.25"):
+                    anchor = f'data-share="18.29" fill="rgba({ink},{alpha})"'
+                    changed = source.replace(anchor, anchor + f' {attribute}="{value}"', 1)
+                    code, output = run(write(directory, f"{skin}-{attribute}-{value}.html", changed))
+                    if not code or "does not move strictly one way" not in output:
+                        failures.append(f"transparent largest {skin} {attribute}={value} omitted from ramp: {output}")
+                    else:
+                        print(f"OK: transparent largest {skin} {attribute}={value} remains a ramp member")
+            smallest = 'data-share="0.56" fill="rgba(' + ink + ',0.04)"'
+            changed = source.replace(smallest, smallest + ' fill-opacity="0"', 1)
+            code, output = run(write(directory, f"{skin}-zero-smallest.html", changed))
+            if code:
+                failures.append(f"valid zero-alpha smallest {skin} member was rejected: {output}")
+            else:
+                print(f"OK: valid zero-alpha smallest {skin} member passes")
+
     for failure in failures:
         print("FAIL: {}".format(failure))
     if failures:
