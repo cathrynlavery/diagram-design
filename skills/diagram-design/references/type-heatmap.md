@@ -69,4 +69,6 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 `scripts/verify-heatmap.py` enforces the complete `rows × cols` grid, the monotone fill ramp on non-focal cells, and at most one focal cell. It does **not** verify cell geometry (position, width, height) because both axes are categorical — position encodes "which row/column", and that is carried by the label, not by a scale the checker can measure against.
 
+Focal-text contrast measurement accepts finite unitless and explicit `px` coordinates. Unsupported relative units or malformed lengths produce a named measurement finding, never a traceback; this does not add a quantitative cell-geometry check.
+
 **No `transform` on any verified element.** Bake any coordinate offsets directly into `x`/`y` attributes.

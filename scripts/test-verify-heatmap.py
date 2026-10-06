@@ -337,12 +337,28 @@ def main() -> int:
             "dark focal value text fails 4.5:1 contrast against the actual dark underlay",
         )
 
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for original_source, label in ((original, "light"),
+                                       (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            pixel_lengths = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"',
+                                   lambda m: f'{m.group(1)}="{m.group(2)}px"', original_source)
+            code, output = run(write(d, f"pixel-lengths-{label}.html", pixel_lengths))
+            if code != 0:
+                failures.append(f"equivalent pixel lengths {label} were rejected: {output.strip()}")
+        for length in ("520%", "unknown", "nan", "1e400px"):
+            changed = original.replace(FOCAL_CELL, FOCAL_CELL.replace('x="520"', f'x="{length}"'), 1)
+            code, output = run(write(d, "unsupported-length.html", changed))
+            if code == 0 or "focal-text contrast measurement" not in output or "Traceback" in output:
+                failures.append(f"unsupported length {length!r} lacked a named finding: {output.strip()}")
+        print("OK: equivalent pixel lengths pass; unsupported/non-finite lengths are named findings")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print(f"OK — {13 + 3} cases ({3} positive, {13} negative), all passed.")
+    print("OK — 22 cases (5 positive, 17 negative), all passed.")
     return 0
 
 
