@@ -1,10 +1,12 @@
 [project]
 name = "diagram-design-ci"
 version = "0.0.0"
-requires-python = "==3.12.*"
+requires-python = ">=3.10"
 dependencies = [
   "pillow==12.1.1",
   "playwright==1.62.0",
+  "ruff==0.16.8",
+  "ty==0.0.84",
 ]
 
 [tool.uv]
