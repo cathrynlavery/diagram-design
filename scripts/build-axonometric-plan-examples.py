@@ -33,23 +33,26 @@ T = 6  # wall thickness
 # ---------------------------------------------------------------- boxes and paint order
 
 
+# ---------------------------------------------------------------------- boxes and paint order
+# 场景包围框Box类，管理物体属性与渲染绘制顺序
 @dataclass
 class Box:
-    rect: Rect
-    h: float
-    kind: str = "furniture"   # wall | furniture | building | tree | rack
-    focal: bool = False
-    inset_top: bool = False
-    name: str = ""
-    sub: str = ""
-    step: int = 0
-    tag_at: tuple | None = None
+    rect: Rect                  # 包围框坐标
+    h: float                    # 物体高度
+    kind: str = "furniture"    # 物体类型 wall/furniture/building/tree/rack
+    focal: bool = False         # 是否焦点物体
+    inset_top: bool = False     # 顶部是否内凹
+    name: str = ""              # 物体名称
+    sub: str = ""               # 子描述
+    step: int = 0               # 渲染绘制层级
+    tag_at: tuple | None = None # 标签位置，None无标签
 
 
 def behind(a: Rect, b: Rect) -> bool:
-    """a is entirely farther from the viewer than b."""
-    e = 1e-6
+    """a is entirely farther from the viewer than b. 判断a在b后方，用于渲染遮挡排序"""
+    e = 1e-6 # 浮点数计算误差容错
     return a.x1 <= b.x0 + e or a.y1 <= b.y0 + e
+
 
 
 def bbox(P, box: Box, z):
