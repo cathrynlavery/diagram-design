@@ -401,7 +401,7 @@ Or just ask in natural language:
 "Save my-diagram.html as PNG."
 ```
 
-- **SVG** — extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator. Carried diagram CSS retains its screen/print media conditions.
+- **SVG** — extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator. Carried diagram CSS retains its screen/print media conditions; supported animation names and bindings are isolated per exported root.
 - **PNG** — rasterizes the diagram via Playwright at 2× by default. One-time setup: `pip install playwright && playwright install chromium`.
 
 Both formats are diagram-only — editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagram-design/references/export.md`](skills/diagram-design/references/export.md) for the full procedure.

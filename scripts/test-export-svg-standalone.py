@@ -204,6 +204,45 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
 
+    def test_keyframes_and_bindings_are_scoped_together(self) -> None:
+        html = '<style>@keyframes pulse {from {fill:#ff0000} to {fill:#ff0000}}'
+        html += '@-webkit-keyframes other {to {opacity:1}}'
+        html += '.paint {animation:pulse var(--duration) linear, other 2s; animation-name:"pulse", other; content:"pulse; other";}'
+        html += '@media print {.paint {animation:none !important}}</style>'
+        html += '<svg viewBox="0 0 40 40"><rect class="paint" style="animation-name:pulse"/></svg>'
+        result = self.mod.export_svg_document(html, Path("frames.html"))
+        css = embedded_css(result)
+        self.assertIn('@keyframes frames-root-pulse { from {fill:#ff0000} to {fill:#ff0000} }', css)
+        self.assertIn('@-webkit-keyframes frames-root-other', css)
+        self.assertIn('animation:frames-root-pulse var(--duration) linear, frames-root-other 2s', css)
+        self.assertIn('animation-name:"frames-root-pulse", frames-root-other', css)
+        self.assertIn('content:"pulse; other"', css)
+        self.assertIn('style="animation-name:frames-root-pulse"', result)
+        self.assertIn('animation:none !important', css)
+        self.assertEqual(self.mod._animation_declarations('animation:pulse 1s steps(2, end)', {'pulse':'frames-pulse','steps':'frames-steps'}), 'animation:frames-pulse 1s steps(2, end)')
+        other = self.mod.export_svg_document(html, Path("second.html"))
+        self.assertNotIn('frames-root-pulse', other)
+        for value in ('var(--name)', 'pulse 1s, var(--other)'):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, 'unresolved CSS animation name'):
+                self.mod._animation_declarations(f'animation:{value}', {'pulse':'frames-root-pulse'})
+        with self.assertRaisesRegex(ValueError, 'ambiguous CSS animation name'):
+            self.mod._animation_declarations('animation:linear 1s', {'linear':'frames-root-linear'})
+        with self.assertRaisesRegex(ValueError, 'unsupported SVG-local animation stylesheet'):
+            self.mod.export_svg_document(html.replace('<rect', '<style>.paint {animation:pulse 1s}</style><rect'), Path("local.html"))
+
+    def test_inline_animation_literals_decode_once_and_keep_comments(self) -> None:
+        for attribute in ('style="animation:&quot;linear&quot; 1s both"', "style='animation:\"linear\" 1s both'"):
+            html = '<style>@keyframes "linear" {to {fill:#ff0000}}</style>'
+            html += f'<svg viewBox="0 0 40 40"><rect {attribute}/></svg>'
+            result = self.mod.export_svg_document(html, Path("literal.html"))
+            shape = ET.fromstring(result).find("{http://www.w3.org/2000/svg}rect")
+            self.assertEqual(shape.get("style"), 'animation:"literal-root-linear" 1s both')
+        html = '<style>@keyframes pulse {to {fill:#ff0000}}</style><svg viewBox="0 0 40 40">'
+        html += '<rect style="/*note: retained;*/ animation-name:pulse; content:&quot;&amp;copy;&quot;"/></svg>'
+        result = self.mod.export_svg_document(html, Path("comment.html"))
+        shape = ET.fromstring(result).find("{http://www.w3.org/2000/svg}rect")
+        self.assertEqual(shape.get("style"), '/*note: retained;*/ animation-name:comment-root-pulse; content:"&copy;"')
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
