@@ -64,15 +64,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-RECT_RE = re.compile(
-    r"<rect\b[^>]*?"
-    r'\bx="(?P<x>-?[\d.]+)"\s+'
-    r'y="(?P<y>-?[\d.]+)"\s+'
-    r'width="(?P<w>[\d.]+)"\s+'
-    r'height="(?P<h>[\d.]+)"',
-    re.IGNORECASE,
-)
-
 NODE_MIN_W = 60.0
 NODE_MIN_H = 40.0
 MASK_MIN_W = 20.0
@@ -102,18 +93,16 @@ class Rect:
 
 
 def parse_rects(source: str) -> list[Rect]:
+    """Mask and node bounds in the same translated canvas as connectors."""
     rects: list[Rect] = []
-    for match in RECT_RE.finditer(source):
-        rects.append(
-            Rect(
-                float(match.group("x")),
-                float(match.group("y")),
-                float(match.group("w")),
-                float(match.group("h")),
-                source.count("\n", 0, match.start()) + 1,
-                match.start(),
-            )
-        )
+    for tag, attrs, start, frame in shapes(source):
+        if tag != "rect" or frame is None:
+            continue
+        x, y, w, h = (number(attrs, key) for key in ("x", "y", "width", "height"))
+        if None in (x, y, w, h):
+            continue
+        rects.append(Rect(x + frame[0], y + frame[1], w, h,
+                          source.count("\n", 0, start) + 1, start))
     return rects
 
 
