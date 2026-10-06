@@ -80,7 +80,15 @@
       /* padding: 1.5rem; */
     }
 
-    svg { width: 100%; min-width: 900px; display: block; }
+    svg { width: 100%; min-width: 1000px; display: block; }  /* == viewBox width: never scale the type ramp down */
+    /* Paper has no scrollbar, so the local scroller would clip instead of
+       scroll. Let the diagram scale down to the sheet: smaller but whole
+       beats sharp but cut off. Must come after the svg rule above - a media
+       query adds no specificity, so a later plain rule would win. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
 
     /* ── Info cards ───────────────────────────────────────────────── */
     .cards {

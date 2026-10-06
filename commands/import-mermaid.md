@@ -28,11 +28,11 @@ Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` block
 ## Flags
 
 - `--format` — `html` (default), `svg`, `png`, or `html+png`. Non-HTML formats are produced from HTML through `references/export.md`.
-- `--size` — any preset in `output-spec.md` §2: `doc-inline`, `doc-wide`, `slide-16x9`, `slide-4x3`, `social-og`, `social-square`, `print-a4-landscape`, `print-letter-landscape`, `fit`.
+- `--size` — any preset in `output-spec.md` §2: `doc-inline`, `doc-wide`, `slide-16x9`, `slide-4x3`, `social-og`, `social-square`, `print-a4-landscape`, `print-a3-landscape`, `print-letter-landscape`, `fit`.
 - `--detail` — `faithful` (≤24 nodes, zoned), `balanced` (≤12), `simplified` (≤7).
 - `--audience` — `engineer`, `mixed`, `executive`. Governs wording, not element count.
 - `--type` — force a diagram type instead of inferring it.
-- `--diagram` — diagram index or `all` (one file per block).
+- `--diagram` — diagram index or `all` (one file per block). An index fails only if that block fails; other blocks that cannot be parsed are listed as `unparsed` in the header. `all` fails if any block fails.
 - `--variant` — `light`, `dark`, or `full` editorial template.
 - `--output` — output base path; the extension is appended per format.
 

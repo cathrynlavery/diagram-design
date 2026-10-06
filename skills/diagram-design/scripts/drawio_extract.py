@@ -12,7 +12,7 @@ Usage:
     python3 drawio_extract.py <file.drawio> [--page N|NAME] [--json]
                              [--max-rows N] [--out PATH]
 
-Default output is a compact Markdown digest meant to be read into context.
+Default output is a compact Markdown digest for local review.
 ``--json`` emits the full IR instead (every node, every edge, every style).
 
 Exit codes: 0 ok, 2 unreadable / unsupported input.
@@ -173,7 +173,7 @@ def load_mxfile(path: Path) -> str:
         if not xml:
             _fail(f"{path.name}: PNG has no embedded draw.io diagram")
         return xml
-    text = data.decode("utf-8", "replace").lstrip("﻿").strip()
+    text = data.decode("utf-8-sig", "replace").strip()
     if "<mxfile" in text or "<mxGraphModel" in text:
         return text
     if "<svg" in text[:2000]:

@@ -15,6 +15,33 @@ VERIFIER = ROOT / "scripts/verify-motion.py"
 SEMANTIC_VERIFIER = ROOT / "scripts/verify-semantic-motion.py"
 TEMPLATE = ROOT / "skills/diagram-design/assets/template-motion.html"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
+SELF_CHECK = ROOT / "skills/diagram-design/scripts/self_check.py"
+
+
+def load_self_check():
+    spec = importlib.util.spec_from_file_location("self_check", SELF_CHECK)
+    if spec is None or spec.loader is None:
+        raise AssertionError("could not load self_check.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def svg_names(parser) -> list[tuple[object, ...]]:
+    """Summarize what a parser captured as each SVG's accessible name."""
+    summary = []
+    for svg in parser.svgs:
+        title, desc = svg["title"], svg["desc"]
+        summary.append(
+            (
+                svg["first"],
+                title.get("attrs", {}).get("id"),
+                str(title.get("text", "")).strip(),
+                desc.get("attrs", {}).get("id"),
+                str(desc.get("text", "")).strip(),
+            )
+        )
+    return summary
 
 
 def load_verifier():
@@ -38,6 +65,7 @@ def load_semantic_verifier():
 def main() -> int:
     module = load_verifier()
     semantic_module = load_semantic_verifier()
+    self_check_module = load_self_check()
     source = TEMPLATE.read_text(encoding="utf-8")
 
     with tempfile.TemporaryDirectory(prefix="verify-motion-") as temporary:
@@ -207,6 +235,85 @@ def main() -> int:
             ),
             "title must be its first child",
         )
+
+        # Only the root <svg>'s direct <title>/<desc> name the diagram, as in
+        # self_check.py. A descendant title (a tooltip on a group, or inside an
+        # aria-hidden icon <svg>) must neither fail a valid root name nor stand
+        # in for a missing, empty, or mislabelled one.
+        root_title = '<title id="template-motion-title">Request evaluation</title>'
+        root_desc = (
+            '<desc id="template-motion-desc">A request is validated, evaluated '
+            "against a policy, queued, and appended to an audit log.</desc>"
+        )
+        step_two = '<g data-motion-item data-step="2" aria-label="Step 2: Policy passed">'
+        for fragment in (root_title, root_desc, step_two):
+            if source.count(fragment) != 1:
+                raise AssertionError(f"template fixture anchor drifted: {fragment!r}")
+
+        def nested(html: str, child: str) -> str:
+            return html.replace(step_two, f"{step_two}\n        {child}", 1)
+
+        nested_title_cases = [
+            (
+                "nested-group-title",
+                nested(source, "<title>Policy rule 2 passed</title>"),
+                None,
+            ),
+            (
+                "nested-group-desc",
+                nested(source, "<desc>Rule 2 allows the request.</desc>"),
+                None,
+            ),
+            (
+                "nested-icon-title",
+                nested(
+                    source,
+                    '<svg x="364" y="136" width="24" height="24" viewBox="0 0 24 24" '
+                    'aria-hidden="true"><title>Shield</title>'
+                    '<path d="M12 3l8 4v5c0 5-8 9-8 9s-8-4-8-9V7z"/></svg>',
+                ),
+                None,
+            ),
+            (
+                "nested-title-masks-wrong-root-id",
+                nested(
+                    source.replace(
+                        root_title, '<title id="motion-title">Request evaluation</title>', 1
+                    ),
+                    '<title id="template-motion-title">Policy rule 2 passed</title>',
+                ),
+                "aria-labelledby must name title then desc",
+            ),
+            (
+                "nested-title-fills-empty-root-title",
+                nested(
+                    source.replace(root_title, '<title id="template-motion-title"></title>', 1),
+                    '<title id="template-motion-title">Policy rule 2 passed</title>',
+                ),
+                "needs non-empty title and desc",
+            ),
+            (
+                "nested-desc-replaces-missing-root-desc",
+                nested(source.replace(root_desc, "", 1), root_desc),
+                "needs non-empty title and desc",
+            ),
+            (
+                "nested-title-replaces-missing-root-title",
+                nested(source.replace(root_title, "", 1), root_title),
+                "needs non-empty title and desc",
+            ),
+        ]
+        for name, html, expected in nested_title_cases:
+            check(name, html, expected)
+            motion_names = svg_names(module.parsed_document(html))
+            self_check_names = svg_names(self_check_module.parsed_document(html))
+            if motion_names != self_check_names:
+                raise AssertionError(
+                    f"{name}: verify-motion captured {motion_names}, "
+                    f"self_check captured {self_check_names}"
+                )
+            print(f"OK: {name} parsed identically by verify-motion and self_check")
+
         check(
             "color-only-stage",
             source.replace('aria-label="Step 1: Request received"', 'aria-description="accent stage"', 1),
@@ -402,7 +509,7 @@ def main() -> int:
             missing_guide = directory / "missing-guide.md"
             missing_guide.write_text(
                 original_skill.read_text(encoding="utf-8").replace(
-                    "### Visual-type guide (40)", "### Visual guide"
+                    f"### Visual-type guide ({semantic_module.VISUAL_TYPE_COUNT})", "### Visual guide"
                 ),
                 encoding="utf-8",
             )
@@ -410,7 +517,7 @@ def main() -> int:
             markdown_errors = semantic_module.verify_markdown()
         finally:
             semantic_module.SKILL = original_skill
-        if not any("must contain the 40-row visual-type guide" in error for error in markdown_errors):
+        if not any(f"must contain the {semantic_module.VISUAL_TYPE_COUNT}-row visual-type guide" in error for error in markdown_errors):
             raise AssertionError(f"missing visual-guide anchor was accepted: {markdown_errors}")
         print("OK: missing visual-type guide anchor is rejected")
 

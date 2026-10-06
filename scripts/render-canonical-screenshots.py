@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the 40 canonical minimal-light examples and record their digests."""
+"""Render the 44 canonical minimal-light examples and record their digests."""
 
 from __future__ import annotations
 
@@ -15,14 +15,15 @@ from screenshot_catalog import (
     png_dimensions,
     screenshot_path,
     sha256,
+    sha256_text,
     source_path,
 )
 
 
 def main() -> int:
     slugs = canonical_slugs()
-    if len(slugs) != 40 or len(slugs) != len(set(slugs)):
-        raise SystemExit(f"expected 40 unique canonical types; found {len(slugs)}")
+    if len(slugs) != 44 or len(slugs) != len(set(slugs)):
+        raise SystemExit(f"expected 44 unique canonical types; found {len(slugs)}")
 
     SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, object]] = []
@@ -50,13 +51,13 @@ def main() -> int:
                     "slug": slug,
                     "source": source.relative_to(ROOT).as_posix(),
                     "screenshot": output.relative_to(ROOT).as_posix(),
-                    "source_sha256": sha256(source),
+                    "source_sha256": sha256_text(source),
                     "screenshot_sha256": sha256(output),
                     "width": width,
                     "height": height,
                 }
             )
-            print(f"[{index:02d}/40] {slug}: {width}x{height}")
+            print(f"[{index:02d}/{len(slugs)}] {slug}: {width}x{height}")
         browser.close()
 
     payload = {

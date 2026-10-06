@@ -32,6 +32,10 @@ from typing import Any, NoReturn
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
 MAX_NODES = 2000
 MAX_EDGES = 5000
+# One logical flowchart statement, whether it spans lines or shares a line
+# with others. Real statements are a few hundred characters at most; the cap
+# keeps per-statement parsing work bounded.
+MAX_STATEMENT_CHARS = 4096
 SUPPORTED_KINDS = "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram"
 UNSUPPORTED_KINDS = {
     "pie",
@@ -58,9 +62,12 @@ def _configure_stdout_utf8() -> None:
         reconfigure(encoding="utf-8", errors="strict")
 
 
+class ExtractError(Exception):
+    """An input the extractor refuses. `main()` reports it and exits 2."""
+
+
 def _fail(message: str) -> NoReturn:
-    print(f"mermaid_extract: {message}", file=sys.stderr)
-    raise SystemExit(2)
+    raise ExtractError(message)
 
 
 @dataclass
@@ -405,6 +412,13 @@ def _statement_complete(text: str) -> bool:
     return quote is None and not stack
 
 
+def _statement_too_long(line_number: int) -> NoReturn:
+    _fail(
+        f"statement at line {line_number} exceeds the "
+        f"{MAX_STATEMENT_CHARS}-character limit"
+    )
+
+
 def _logical_statements(
     lines: list[tuple[int, str]],
 ) -> list[tuple[int, str]]:
@@ -419,13 +433,22 @@ def _logical_statements(
             start_line = line_number
         pending.append(raw)
         combined = "\n".join(pending)
-        if not _statement_complete(combined):
+        statements = _split_top_level(combined, ";")
+        complete = _statement_complete(combined)
+        # Everything before the last top-level semicolon is finished even while
+        # a quote or bracket after it stays open, so only that open statement is
+        # carried to the next line. Each statement is bounded on its own, and
+        # the open one is bounded before the next line joins and rescans it.
+        for statement in statements if complete else statements[:-1]:
+            if len(statement) > MAX_STATEMENT_CHARS:
+                _statement_too_long(start_line)
+            logical.append((start_line, statement))
+        if complete:
+            pending = []
             continue
-        logical.extend(
-            (start_line, statement)
-            for statement in _split_top_level(combined, ";")
-        )
-        pending = []
+        if len(statements[-1]) > MAX_STATEMENT_CHARS:
+            _statement_too_long(start_line)
+        pending = [statements[-1]]
     if pending:
         _fail(f"unterminated statement at line {start_line}")
     return logical
@@ -606,51 +629,70 @@ def _edge_operators(text: str) -> list[_Operator]:
     # `A-- text -->B`, `A-. retry .-> B`, `A== critical ==> B`, and the
     # undirected forms of each. The compact form drops the spaces —
     # `B--yes-->C` — and may retain a left arrow/circle/cross marker, as in
-    # `A<--yes-->B` or `A o--yes--o B`. Its label may not contain whitespace,
-    # and the operator characters themselves may not open one (keeping
-    # `A----->B` unlabeled and `A --o B --> C` two separate links).
+    # `A<--yes-->B` or `A o--yes--o B`. The spaced form consumes exactly one
+    # whitespace character next to each operator; any further padding falls
+    # inside the label span, which `clean_label` strips, so the operator
+    # boundaries are never ambiguous. For the dash and equals forms, the
+    # compact label may not contain whitespace, and the operator characters
+    # themselves may not open one (keeping `A----->B` unlabeled and
+    # `A --o B --> C` two separate links). The dotted form's closing operator
+    # always opens with a literal `.`, which a dash/equals label can't
+    # produce, so its compact label may contain internal whitespace (as in
+    # `A-.next candidate.->B`) without that ambiguity.
     text_edge = re.compile(
         r"(?P<opening>"
-        r"<(?:--|-\.|==)"
-        r"|(?<![\w.:-])[xo](?:--|-\.|==)"
-        r"|(?:--|-\.|==)"
+        r"<(?:--|==)"
+        r"|(?<![\w.:-])[xo](?:--|==)"
+        r"|(?:--|==)"
         r")"
-        r"(?:\s+(?P<spaced>.+?)\s+|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
-        r"(?P<closing>\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+        r"(?:\s(?P<spaced>.+?)\s|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
+        r"(?P<closing>-{2,}>|--[xo]|=+>|={2,}|-{3,})"
+    )
+    dotted_edge = re.compile(
+        r"(?P<opening>"
+        r"<-\."
+        r"|(?<![\w.:-])[xo]-\."
+        r"|-\."
+        r")"
+        r"(?:\s(?P<spaced>.+?)\s|(?![-=.\s])(?P<compact>[^\n|<>]+?))"
+        r"(?P<closing>\.-+[>xo]|\.-+)"
     )
     trailing_operator = re.compile(
         r"(?:\.-+[>xo]|\.-+|-{2,}>|--[xo]|=+>|={2,}|-{3,})"
         r"(?:\|[^|\n]*\|)?\s*$"
     )
-    for match in text_edge.finditer(mask):
-        opening = match.group("opening")
-        operator_start = match.start()
-        if opening.startswith(("x", "o")):
-            prefix = mask[:operator_start]
-            if not prefix.strip() or trailing_operator.search(prefix):
-                # Here x/o is the endpoint before a regular opening operator,
-                # not a left marker: `x--yes-->B` or `A-->x--go-->B`.
-                operator_start += 1
-                opening = opening[1:]
-        token = opening + match.group("closing")
-        style, arrowhead, bidirectional, undirected = _operator_style(token)
-        # Read the label from the whole span between the operators rather than
-        # from the matched group. The mask blanks quoted spans, so a quoted
-        # label — `A-- "text" -->B` — leaves the spaced group nothing but
-        # blanks to settle on, and slicing that group returns a stray quote
-        # instead of the text. `clean_label` strips the padding and quotes.
-        operators.append(
-            _Operator(
-                operator_start,
-                match.end(),
-                clean_label(text[match.end("opening") : match.start("closing")]),
-                style,
-                arrowhead,
-                bidirectional,
-                undirected,
+    for edge_pattern in (text_edge, dotted_edge):
+        for match in edge_pattern.finditer(mask):
+            opening = match.group("opening")
+            operator_start = match.start()
+            if opening.startswith(("x", "o")):
+                prefix = mask[:operator_start]
+                if not prefix.strip() or trailing_operator.search(prefix):
+                    # Here x/o is the endpoint before a regular opening
+                    # operator, not a left marker: `x--yes-->B` or
+                    # `A-->x--go-->B`.
+                    operator_start += 1
+                    opening = opening[1:]
+            token = opening + match.group("closing")
+            style, arrowhead, bidirectional, undirected = _operator_style(token)
+            # Read the label from the whole span between the operators rather
+            # than from the matched group. The mask blanks quoted spans, so a
+            # quoted label — `A-- "text" -->B` — leaves the spaced group
+            # nothing but blanks to settle on, and slicing that group returns
+            # a stray quote instead of the text. `clean_label` strips the
+            # padding and quotes.
+            operators.append(
+                _Operator(
+                    operator_start,
+                    match.end(),
+                    clean_label(text[match.end("opening") : match.start("closing")]),
+                    style,
+                    arrowhead,
+                    bidirectional,
+                    undirected,
+                )
             )
-        )
-        occupied.append((operator_start, match.end()))
+            occupied.append((operator_start, match.end()))
 
     pattern = re.compile(
         r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}"
@@ -1146,19 +1188,28 @@ def _escape_table(text: str) -> str:
     return _escape_markdown(text.replace("\n", " ⏎ "))
 
 
+def _block_summary(block: SourceBlock, selected: list[Diagram]) -> str:
+    """One header entry. A block that was not selected is parsed only to
+    describe it, so a failure there is listed instead of ending the run."""
+    diagram = next((item for item in selected if item.index == block.index), None)
+    if diagram is None:
+        try:
+            diagram = parse_block(block)
+        except ExtractError as error:
+            return f"[{block.index}] unparsed: {_escape_markdown(str(error))}"
+    return f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
+
+
 def digest(
     path: Path,
-    diagrams: list[Diagram],
+    blocks: list[SourceBlock],
     selected: list[Diagram],
     max_rows: int,
 ) -> str:
     output = [f"# Mermaid IR — {path.name}", ""]
     output.append(
-        f"{len(diagrams)} diagram(s): "
-        + ", ".join(
-            f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
-            for diagram in diagrams
-        )
+        f"{len(blocks)} diagram(s): "
+        + ", ".join(_block_summary(block, selected) for block in blocks)
     )
     for diagram in selected:
         info = analyze(diagram)
@@ -1270,11 +1321,11 @@ def digest(
     return "\n".join(output)
 
 
-def to_json(path: Path, diagrams: list[Diagram], selected: list[Diagram]) -> str:
+def to_json(path: Path, blocks: list[SourceBlock], selected: list[Diagram]) -> str:
     return json.dumps(
         {
             "source": str(path),
-            "diagrams_total": len(diagrams),
+            "diagrams_total": len(blocks),
             "diagrams": [
                 {
                     "index": diagram.index,
@@ -1296,21 +1347,30 @@ def to_json(path: Path, diagrams: list[Diagram], selected: list[Diagram]) -> str
     )
 
 
-def select_diagrams(diagrams: list[Diagram], selector: str | None) -> list[Diagram]:
+def select_blocks(blocks: list[SourceBlock], selector: str | None) -> list[SourceBlock]:
+    """Pick blocks before parsing, so a bad block fails only when selected."""
     if selector is None:
-        return diagrams[:1]
+        return blocks[:1]
     if selector == "all":
-        return diagrams
+        return blocks
     if selector.isdigit():
         index = int(selector)
-        selected = [diagram for diagram in diagrams if diagram.index == index]
+        selected = [block for block in blocks if block.index == index]
         if not selected:
-            _fail(f"no diagram with index {index} (have 0..{len(diagrams) - 1})")
+            _fail(f"no diagram with index {index} (have 0..{len(blocks) - 1})")
         return selected
     _fail("--diagram must be an index or 'all'")
 
 
 def main(argv: list[str] | None = None) -> int:
+    try:
+        return _run(argv)
+    except ExtractError as error:
+        print(f"mermaid_extract: {error}", file=sys.stderr)
+        raise SystemExit(2) from None
+
+
+def _run(argv: list[str] | None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("file", help=".mmd, .mermaid, or Markdown with mermaid fences")
     parser.add_argument(
@@ -1332,12 +1392,11 @@ def main(argv: list[str] | None = None) -> int:
     if not path.is_file():
         _fail(f"{path}: no such file")
     blocks = load_blocks(path)
-    diagrams = [parse_block(block) for block in blocks]
-    selected = select_diagrams(diagrams, args.diagram)
+    selected = [parse_block(block) for block in select_blocks(blocks, args.diagram)]
     output = (
-        to_json(path, diagrams, selected)
+        to_json(path, blocks, selected)
         if args.json
-        else digest(path, diagrams, selected, args.max_rows)
+        else digest(path, blocks, selected, args.max_rows)
     )
     if args.out:
         try:

@@ -1,0 +1,4 @@
+# SKILL.md is held to a byte cap (ADR 0004). Keep it LF in the repository
+# and in every checkout, whatever core.autocrlf says, so the measured size
+# is the committed size.
+skills/diagram-design/SKILL.md text eol=lf

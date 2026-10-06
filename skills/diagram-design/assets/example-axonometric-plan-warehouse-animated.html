@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fulfillment floor · Dock to dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --color-paper: #f5f5f5;
+      --color-ink: #2d3142;
+      --color-muted: #4f5d75;
+      --color-soft: #7a8399;
+      --color-accent: #eb6c36;
+      --color-rule: rgba(45,49,66,0.12);
+      --font-sans: 'Geist', system-ui, sans-serif;
+      --font-serif: 'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
+      --font-mono: 'Geist Mono', ui-monospace, monospace;
+      --motion-fast: 160ms;
+      --motion-step: 600ms;
+      --motion-hold: 900ms;
+      --motion-total: 2700ms;
+      --motion-ease: cubic-bezier(.2,.8,.2,1);
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 48px 32px;
+      color: var(--color-ink);
+      background: var(--color-paper);
+      font-family: var(--font-sans);
+    }
+    [data-motion-root] { width: min(100%, 1000px); }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--color-muted);
+      font: 500 12px/1.4 var(--font-mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0 0 24px; font: 400 32px/1.15 var(--font-serif); }
+    svg { display: block; width: 100%; min-width: 1000px; }
+    /* The SVG holds its readable width (min-width == the viewBox width, so the
+       type ramp is never silently scaled down). This wrapper lets a narrow
+       screen scroll the diagram instead of the whole page. body is a centred
+       grid, so the root needs max-width/min-width to stop the grid item from
+       sizing itself to the SVG's max-content width. */
+    [data-motion-root] { max-width: 100%; min-width: 0; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    /* Static source is complete. Only an initialized enhancement hides items. */
+    .motion-ready [data-motion-item] {
+      opacity: .12;
+      transform: translateY(8px);
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: opacity var(--motion-step) var(--motion-ease),
+                  transform var(--motion-step) var(--motion-ease);
+    }
+    .motion-ready [data-motion-item].is-visible,
+    .motion-ready[data-frame="end"] [data-motion-item],
+    .motion-ready[data-frame="static"] [data-motion-item] {
+      opacity: 1;
+      transform: none;
+    }
+    .draw-path {
+      fill: none;
+      stroke: var(--color-accent);
+      stroke-width: 3;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      pointer-events: none;
+    }
+    .motion-ready .draw-path.is-visible {
+      animation: draw-path var(--motion-step) linear forwards;
+    }
+    .flow-token { opacity: 0; pointer-events: none; }
+    .motion-ready.is-playing .flow-token.is-visible {
+      opacity: 1;
+      animation: token-flow 3.2s linear 1 forwards;
+    }
+    .motion-ready[data-motion-mode="loop"].is-playing .flow-token.is-visible {
+      animation-iteration-count: infinite;
+    }
+    @keyframes draw-path { to { stroke-dashoffset: 0; } }
+    @keyframes token-flow {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(240px); }
+    }
+
+    [data-motion-controls] {
+      display: none;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--color-rule);
+    }
+    .motion-ready [data-motion-controls] { display: flex; }
+    [data-motion-controls][hidden] { display: none !important; }
+    [data-motion-controls] button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--color-muted);
+      border-radius: 4px;
+      color: var(--color-ink);
+      background: var(--color-paper);
+      font: 600 12px/1 var(--font-sans);
+      cursor: pointer;
+    }
+    [data-motion-controls] button:hover { border-color: var(--color-accent); }
+    [data-motion-controls] button:focus-visible {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+    [data-motion-controls] button:disabled { cursor: not-allowed; opacity: .45; }
+    [data-motion-status-visible] {
+      margin-left: auto;
+      color: var(--color-muted);
+      font: 500 12px/1.4 var(--font-mono);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+    noscript p {
+      margin: 12px 0 0;
+      color: var(--color-muted);
+      font: 500 12px/1.4 var(--font-mono);
+    }
+
+    html[data-motion="static"] [data-motion-controls],
+    html[data-motion="static"] [data-motion-decorative] { display: none !important; }
+    html[data-motion="static"] [data-motion-item] {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+    }
+    html[data-motion="step"] [data-motion-controls],
+    html[data-motion="step"] [data-motion-decorative] { display: none !important; }
+    html[data-motion="step"] [data-motion-item] {
+      animation: none !important;
+      transition: none !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+      [data-motion-item] { opacity: 1 !important; transform: none !important; }
+      [data-motion-decorative] { display: none !important; }
+      [data-motion-controls] { display: none !important; }
+    }
+    @media print {
+      /* Paper has no scrollbar, so the local scroller would clip instead of
+         scroll. Let the diagram scale down to the sheet: smaller but whole
+         beats sharp but cut off. */
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+      [data-motion-controls], [data-motion-decorative] { display: none !important; }
+      [data-motion-item] {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* Static source is the finished plan. Only an initialized enhancement hides
+       the buildings, which then drop in by phase, never further than 16px. */
+    .motion-ready [data-motion-item][data-appear] { opacity: 0; transform: translateY(-16px); transition: none; }
+    .motion-ready [data-motion-item][data-appear].is-visible { opacity: 1; transform: none; transition: opacity var(--motion-step) var(--motion-ease), transform var(--motion-step) var(--motion-ease); }
+    .motion-ready[data-frame="end"] [data-motion-item][data-appear],
+    .motion-ready[data-frame="static"] [data-motion-item][data-appear] { opacity: 1; transform: none; }
+  </style>
+</head>
+<body>
+  <main data-motion-root data-motion-mode="reveal" data-step-count="3" data-step-current="3" data-frame="static" data-static-frame="complete">
+    <p class="eyebrow">Axonometric plan · Optional motion</p>
+    <h1>Fulfillment floor · Dock to dock</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 528" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="axonometric-plan-warehouse-animated-title axonometric-plan-warehouse-animated-desc">
+        <title id="axonometric-plan-warehouse-animated-title">Fulfillment floor · Dock to dock</title>
+        <desc id="axonometric-plan-warehouse-animated-desc">Axonometric plan of a fulfillment warehouse: receiving docks, storage racks, a pick zone, packing stations, and shipping docks, with packing as the focal zone.</desc>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <g data-axo-plan data-origin="420 76">
+        <g data-plate data-rect="0 0 460 300 0" data-z="0" data-t="6"><path data-role="silhouette" d="M 120 220 L 120 220 L 420 70 L 420 70 L 880 300 L 880 300 L 880 306 L 880 306 L 580 456 L 580 456 L 120 226 L 120 226 Z" fill="#ffffff"/><path d="M 120 220 L 120 220 L 580 450 L 580 450 L 580 456 L 580 456 L 120 226 L 120 226 Z" fill="rgba(45,49,66,0.07)"/><path d="M 580 450 L 580 450 L 880 300 L 880 300 L 880 306 L 880 306 L 580 456 L 580 456 Z" fill="rgba(45,49,66,0.15)"/><path d="M 120 220 L 120 220 L 580 450 L 580 450 L 880 300 L 880 300 M 580 450 L 580 456" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 120 220 L 120 220 L 420 70 L 420 70 L 880 300 L 880 300 L 880 306 L 880 306 L 580 456 L 580 456 L 120 226 L 120 226 Z" fill="none" stroke="#2d3142" stroke-width="1.2" stroke-linejoin="round"/></g>
+        <path d="M 368 114 L 368 114 L 356 108 L 356 108 L 396 88 L 396 88 L 408 94 L 408 94 Z" fill="rgba(45,49,66,0.07)"/>
+        <path d="M 278 159 L 278 159 L 266 153 L 266 153 L 306 133 L 306 133 L 318 139 L 318 139 Z" fill="rgba(45,49,66,0.07)"/>
+        <path d="M 188 204 L 188 204 L 176 198 L 176 198 L 216 178 L 216 178 L 228 184 L 228 184 Z" fill="rgba(45,49,66,0.07)"/>
+        <line x1="510" y1="121" x2="222" y2="265" stroke="rgba(45,49,66,0.25)" stroke-width="0.8" stroke-dasharray="6,5"/>
+        <line x1="720" y1="226" x2="432" y2="370" stroke="rgba(45,49,66,0.25)" stroke-width="0.8" stroke-dasharray="6,5"/>
+        <line x1="794" y1="263" x2="506" y2="407" stroke="rgba(45,49,66,0.25)" stroke-width="0.8" stroke-dasharray="6,5"/>
+        <line x1="320" y1="216" x2="530" y2="321" stroke="rgba(45,49,66,0.25)" stroke-width="0.8" stroke-dasharray="6,5"/>
+        <g data-room data-name="Receiving" data-rect="6 6 96 294 0"></g>
+        <g data-room data-name="Storage" data-rect="96 6 306 196 0"></g>
+        <g data-room data-name="Pick zone" data-rect="96 196 306 294 0"></g>
+        <g data-room data-name="Packing" data-rect="306 6 380 294 0" data-focal><path d="M 506 407 L 506 407 L 432 370 L 432 370 L 720 226 L 720 226 L 794 263 L 794 263 Z" fill="rgba(235,108,54,0.12)"/></g>
+        <g data-room data-name="Shipping" data-rect="380 6 454 294 0"></g>
+        <g data-box data-rect="0 0 460 6 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 414 51 L 414 51 L 420 48 L 420 48 L 880 278 L 880 278 L 880 300 L 880 300 L 874 303 L 874 303 L 414 73 L 414 73 Z" fill="#ffffff"/><path d="M 414 51 L 414 51 L 874 281 L 874 281 L 874 303 L 874 303 L 414 73 L 414 73 Z" fill="rgba(45,49,66,0.07)"/><path d="M 874 281 L 874 281 L 880 278 L 880 278 L 880 300 L 880 300 L 874 303 L 874 303 Z" fill="rgba(45,49,66,0.15)"/><path d="M 414 51 L 414 51 L 874 281 L 874 281 L 880 278 L 880 278 M 874 281 L 874 303" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 414 51 L 414 51 L 420 48 L 420 48 L 880 278 L 880 278 L 880 300 L 880 300 L 874 303 L 874 303 L 414 73 L 414 73 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="0 6 6 30 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 390 63 L 390 63 L 414 51 L 414 51 L 420 54 L 420 54 L 420 76 L 420 76 L 396 88 L 396 88 L 390 85 L 390 85 Z" fill="#ffffff"/><path d="M 390 63 L 390 63 L 396 66 L 396 66 L 396 88 L 396 88 L 390 85 L 390 85 Z" fill="rgba(45,49,66,0.07)"/><path d="M 396 66 L 396 66 L 420 54 L 420 54 L 420 76 L 420 76 L 396 88 L 396 88 Z" fill="rgba(45,49,66,0.15)"/><path d="M 390 63 L 390 63 L 396 66 L 396 66 L 420 54 L 420 54 M 396 66 L 396 88" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 390 63 L 390 63 L 414 51 L 414 51 L 420 54 L 420 54 L 420 76 L 420 76 L 396 88 L 396 88 L 390 85 L 390 85 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="0 70 6 120 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 300 108 L 300 108 L 350 83 L 350 83 L 356 86 L 356 86 L 356 108 L 356 108 L 306 133 L 306 133 L 300 130 L 300 130 Z" fill="#ffffff"/><path d="M 300 108 L 300 108 L 306 111 L 306 111 L 306 133 L 306 133 L 300 130 L 300 130 Z" fill="rgba(45,49,66,0.07)"/><path d="M 306 111 L 306 111 L 356 86 L 356 86 L 356 108 L 356 108 L 306 133 L 306 133 Z" fill="rgba(45,49,66,0.15)"/><path d="M 300 108 L 300 108 L 306 111 L 306 111 L 356 86 L 356 86 M 306 111 L 306 133" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 300 108 L 300 108 L 350 83 L 350 83 L 356 86 L 356 86 L 356 108 L 356 108 L 306 133 L 306 133 L 300 130 L 300 130 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-motion-item data-step="1" data-appear aria-label="Inbound: receiving pallets and storage racks"><g data-box data-rect="36 36 64 64 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 392 106 L 392 106 L 420 92 L 420 92 L 448 106 L 448 106 L 448 120 L 448 120 L 420 134 L 420 134 L 392 120 L 392 120 Z" fill="#ffffff"/><path d="M 392 106 L 392 106 L 420 120 L 420 120 L 420 134 L 420 134 L 392 120 L 392 120 Z" fill="rgba(45,49,66,0.07)"/><path d="M 420 120 L 420 120 L 448 106 L 448 106 L 448 120 L 448 120 L 420 134 L 420 134 Z" fill="rgba(45,49,66,0.15)"/><path d="M 420 117 L 420 117 L 398 106 L 398 106 L 420 95 L 420 95 L 442 106 L 442 106 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 392 106 L 392 106 L 420 120 L 420 120 L 448 106 L 448 106 M 420 120 L 420 134" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 392 106 L 392 106 L 420 92 L 420 92 L 448 106 L 448 106 L 448 120 L 448 120 L 420 134 L 420 134 L 392 120 L 392 120 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="110 20 194 34 0" data-z="6" data-h="52" data-kind="rack"><path data-role="silhouette" d="M 496 90 L 496 90 L 510 83 L 510 83 L 594 125 L 594 125 L 594 177 L 594 177 L 580 184 L 580 184 L 496 142 L 496 142 Z" fill="#ffffff"/><path d="M 496 90 L 496 90 L 580 132 L 580 132 L 580 184 L 580 184 L 496 142 L 496 142 Z" fill="rgba(45,49,66,0.07)"/><path d="M 580 132 L 580 132 L 594 125 L 594 125 L 594 177 L 594 177 L 580 184 L 580 184 Z" fill="rgba(45,49,66,0.15)"/><path d="M 496 128 L 580 170 L 594 163" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 496 114 L 580 156 L 594 149" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 496 100 L 580 142 L 594 135" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="524" y1="156" x2="524" y2="104" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="552" y1="170" x2="552" y2="118" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 496 90 L 496 90 L 580 132 L 580 132 L 594 125 L 594 125 M 580 132 L 580 184" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 496 90 L 496 90 L 510 83 L 510 83 L 594 125 L 594 125 L 594 177 L 594 177 L 580 184 L 580 184 L 496 142 L 496 142 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="36 126 64 154 0" data-z="6" data-h="18" data-kind="furniture"><path data-role="silhouette" d="M 302 147 L 302 147 L 330 133 L 330 133 L 358 147 L 358 147 L 358 165 L 358 165 L 330 179 L 330 179 L 302 165 L 302 165 Z" fill="#ffffff"/><path d="M 302 147 L 302 147 L 330 161 L 330 161 L 330 179 L 330 179 L 302 165 L 302 165 Z" fill="rgba(45,49,66,0.07)"/><path d="M 330 161 L 330 161 L 358 147 L 358 147 L 358 165 L 358 165 L 330 179 L 330 179 Z" fill="rgba(45,49,66,0.15)"/><path d="M 330 158 L 330 158 L 308 147 L 308 147 L 330 136 L 330 136 L 352 147 L 352 147 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 302 147 L 302 147 L 330 161 L 330 161 L 358 147 L 358 147 M 330 161 L 330 179" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 302 147 L 302 147 L 330 133 L 330 133 L 358 147 L 358 147 L 358 165 L 358 165 L 330 179 L 330 179 L 302 165 L 302 165 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="110 72 194 86 0" data-z="6" data-h="52" data-kind="rack"><path data-role="silhouette" d="M 444 116 L 444 116 L 458 109 L 458 109 L 542 151 L 542 151 L 542 203 L 542 203 L 528 210 L 528 210 L 444 168 L 444 168 Z" fill="#ffffff"/><path d="M 444 116 L 444 116 L 528 158 L 528 158 L 528 210 L 528 210 L 444 168 L 444 168 Z" fill="rgba(45,49,66,0.07)"/><path d="M 528 158 L 528 158 L 542 151 L 542 151 L 542 203 L 542 203 L 528 210 L 528 210 Z" fill="rgba(45,49,66,0.15)"/><path d="M 444 154 L 528 196 L 542 189" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 444 140 L 528 182 L 542 175" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 444 126 L 528 168 L 542 161" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="472" y1="182" x2="472" y2="130" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="500" y1="196" x2="500" y2="144" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 444 116 L 444 116 L 528 158 L 528 158 L 542 151 L 542 151 M 528 158 L 528 210" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 444 116 L 444 116 L 458 109 L 458 109 L 542 151 L 542 151 L 542 203 L 542 203 L 528 210 L 528 210 L 444 168 L 444 168 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="110 124 194 138 0" data-z="6" data-h="52" data-kind="rack"><path data-role="silhouette" d="M 392 142 L 392 142 L 406 135 L 406 135 L 490 177 L 490 177 L 490 229 L 490 229 L 476 236 L 476 236 L 392 194 L 392 194 Z" fill="#ffffff"/><path d="M 392 142 L 392 142 L 476 184 L 476 184 L 476 236 L 476 236 L 392 194 L 392 194 Z" fill="rgba(45,49,66,0.07)"/><path d="M 476 184 L 476 184 L 490 177 L 490 177 L 490 229 L 490 229 L 476 236 L 476 236 Z" fill="rgba(45,49,66,0.15)"/><path d="M 392 180 L 476 222 L 490 215" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 392 166 L 476 208 L 490 201" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 392 152 L 476 194 L 490 187" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="420" y1="208" x2="420" y2="156" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="448" y1="222" x2="448" y2="170" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 392 142 L 392 142 L 476 184 L 476 184 L 490 177 L 490 177 M 476 184 L 476 236" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 392 142 L 392 142 L 406 135 L 406 135 L 490 177 L 490 177 L 490 229 L 490 229 L 476 236 L 476 236 L 392 194 L 392 194 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="214 20 298 34 0" data-z="6" data-h="52" data-kind="rack"><path data-role="silhouette" d="M 600 142 L 600 142 L 614 135 L 614 135 L 698 177 L 698 177 L 698 229 L 698 229 L 684 236 L 684 236 L 600 194 L 600 194 Z" fill="#ffffff"/><path d="M 600 142 L 600 142 L 684 184 L 684 184 L 684 236 L 684 236 L 600 194 L 600 194 Z" fill="rgba(45,49,66,0.07)"/><path d="M 684 184 L 684 184 L 698 177 L 698 177 L 698 229 L 698 229 L 684 236 L 684 236 Z" fill="rgba(45,49,66,0.15)"/><path d="M 600 180 L 684 222 L 698 215" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 600 166 L 684 208 L 698 201" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 600 152 L 684 194 L 698 187" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="628" y1="208" x2="628" y2="156" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="656" y1="222" x2="656" y2="170" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 600 142 L 600 142 L 684 184 L 684 184 L 698 177 L 698 177 M 684 184 L 684 236" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 600 142 L 600 142 L 614 135 L 614 135 L 698 177 L 698 177 L 698 229 L 698 229 L 684 236 L 684 236 L 600 194 L 600 194 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="36 216 64 244 0" data-z="6" data-h="12" data-kind="furniture"><path data-role="silhouette" d="M 212 198 L 212 198 L 240 184 L 240 184 L 268 198 L 268 198 L 268 210 L 268 210 L 240 224 L 240 224 L 212 210 L 212 210 Z" fill="#ffffff"/><path d="M 212 198 L 212 198 L 240 212 L 240 212 L 240 224 L 240 224 L 212 210 L 212 210 Z" fill="rgba(45,49,66,0.07)"/><path d="M 240 212 L 240 212 L 268 198 L 268 198 L 268 210 L 268 210 L 240 224 L 240 224 Z" fill="rgba(45,49,66,0.15)"/><path d="M 240 209 L 240 209 L 218 198 L 218 198 L 240 187 L 240 187 L 262 198 L 262 198 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 212 198 L 212 198 L 240 212 L 240 212 L 268 198 L 268 198 M 240 212 L 240 224" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 212 198 L 212 198 L 240 184 L 240 184 L 268 198 L 268 198 L 268 210 L 268 210 L 240 224 L 240 224 L 212 210 L 212 210 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="214 72 298 86 0" data-z="6" data-h="52" data-kind="rack"><path data-role="silhouette" d="M 548 168 L 548 168 L 562 161 L 562 161 L 646 203 L 646 203 L 646 255 L 646 255 L 632 262 L 632 262 L 548 220 L 548 220 Z" fill="#ffffff"/><path d="M 548 168 L 548 168 L 632 210 L 632 210 L 632 262 L 632 262 L 548 220 L 548 220 Z" fill="rgba(45,49,66,0.07)"/><path d="M 632 210 L 632 210 L 646 203 L 646 203 L 646 255 L 646 255 L 632 262 L 632 262 Z" fill="rgba(45,49,66,0.15)"/><path d="M 548 206 L 632 248 L 646 241" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 548 192 L 632 234 L 646 227" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 548 178 L 632 220 L 646 213" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="576" y1="234" x2="576" y2="182" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="604" y1="248" x2="604" y2="196" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 548 168 L 548 168 L 632 210 L 632 210 L 646 203 L 646 203 M 632 210 L 632 262" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 548 168 L 548 168 L 562 161 L 562 161 L 646 203 L 646 203 L 646 255 L 646 255 L 632 262 L 632 262 L 548 220 L 548 220 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="214 124 298 138 0" data-z="6" data-h="52" data-kind="rack"><path data-role="silhouette" d="M 496 194 L 496 194 L 510 187 L 510 187 L 594 229 L 594 229 L 594 281 L 594 281 L 580 288 L 580 288 L 496 246 L 496 246 Z" fill="#ffffff"/><path d="M 496 194 L 496 194 L 580 236 L 580 236 L 580 288 L 580 288 L 496 246 L 496 246 Z" fill="rgba(45,49,66,0.07)"/><path d="M 580 236 L 580 236 L 594 229 L 594 229 L 594 281 L 594 281 L 580 288 L 580 288 Z" fill="rgba(45,49,66,0.15)"/><path d="M 496 232 L 580 274 L 594 267" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 496 218 L 580 260 L 594 253" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 496 204 L 580 246 L 594 239" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="524" y1="260" x2="524" y2="208" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="552" y1="274" x2="552" y2="222" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 496 194 L 496 194 L 580 236 L 580 236 L 594 229 L 594 229 M 580 236 L 580 288" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 496 194 L 496 194 L 510 187 L 510 187 L 594 229 L 594 229 L 594 281 L 594 281 L 580 288 L 580 288 L 496 246 L 496 246 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g></g>
+        <g data-box data-rect="0 160 6 210 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 210 153 L 210 153 L 260 128 L 260 128 L 266 131 L 266 131 L 266 153 L 266 153 L 216 178 L 216 178 L 210 175 L 210 175 Z" fill="#ffffff"/><path d="M 210 153 L 210 153 L 216 156 L 216 156 L 216 178 L 216 178 L 210 175 L 210 175 Z" fill="rgba(45,49,66,0.07)"/><path d="M 216 156 L 216 156 L 266 131 L 266 131 L 266 153 L 266 153 L 216 178 L 216 178 Z" fill="rgba(45,49,66,0.15)"/><path d="M 210 153 L 210 153 L 216 156 L 216 156 L 266 131 L 266 131 M 216 156 L 216 178" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 210 153 L 210 153 L 260 128 L 260 128 L 266 131 L 266 131 L 266 153 L 266 153 L 216 178 L 216 178 L 210 175 L 210 175 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="0 250 6 300 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 120 198 L 120 198 L 170 173 L 170 173 L 176 176 L 176 176 L 176 198 L 176 198 L 126 223 L 126 223 L 120 220 L 120 220 Z" fill="#ffffff"/><path d="M 120 198 L 120 198 L 126 201 L 126 201 L 126 223 L 126 223 L 120 220 L 120 220 Z" fill="rgba(45,49,66,0.07)"/><path d="M 126 201 L 126 201 L 176 176 L 176 176 L 176 198 L 176 198 L 126 223 L 126 223 Z" fill="rgba(45,49,66,0.15)"/><path d="M 120 198 L 120 198 L 126 201 L 126 201 L 176 176 L 176 176 M 126 201 L 126 223" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 120 198 L 120 198 L 170 173 L 170 173 L 176 176 L 176 176 L 176 198 L 176 198 L 126 223 L 126 223 L 120 220 L 120 220 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-motion-item data-step="2" data-appear aria-label="Pick and pack: carts, flow rack, and packing stations"><g data-box data-rect="110 214 298 228 0" data-z="6" data-h="24" data-kind="rack"><path data-role="silhouette" d="M 302 215 L 302 215 L 316 208 L 316 208 L 504 302 L 504 302 L 504 326 L 504 326 L 490 333 L 490 333 L 302 239 L 302 239 Z" fill="#ffffff"/><path d="M 302 215 L 302 215 L 490 309 L 490 309 L 490 333 L 490 333 L 302 239 L 302 239 Z" fill="rgba(45,49,66,0.07)"/><path d="M 490 309 L 490 309 L 504 302 L 504 302 L 504 326 L 504 326 L 490 333 L 490 333 Z" fill="rgba(45,49,66,0.15)"/><path d="M 302 225 L 490 319 L 504 312" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="333.33" y1="254.67" x2="333.33" y2="230.67" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="364.67" y1="270.33" x2="364.67" y2="246.33" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="396" y1="286" x2="396" y2="262" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="427.33" y1="301.67" x2="427.33" y2="277.67" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><line x1="458.67" y1="317.33" x2="458.67" y2="293.33" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 302 215 L 302 215 L 490 309 L 490 309 L 504 302 L 504 302 M 490 309 L 490 333" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 302 215 L 302 215 L 316 208 L 316 208 L 504 302 L 504 302 L 504 326 L 504 326 L 490 333 L 490 333 L 302 239 L 302 239 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="318 30 354 74 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 664 252 L 664 252 L 708 230 L 708 230 L 744 248 L 744 248 L 744 262 L 744 262 L 700 284 L 700 284 L 664 266 L 664 266 Z" fill="#ffffff"/><path d="M 664 252 L 664 252 L 700 270 L 700 270 L 700 284 L 700 284 L 664 266 L 664 266 Z" fill="rgba(45,49,66,0.07)"/><path d="M 700 270 L 700 270 L 744 248 L 744 248 L 744 262 L 744 262 L 700 284 L 700 284 Z" fill="rgba(45,49,66,0.15)"/><path d="M 700 267 L 700 267 L 670 252 L 670 252 L 708 233 L 708 233 L 738 248 L 738 248 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 664 252 L 664 252 L 700 270 L 700 270 L 744 248 L 744 248 M 700 270 L 700 284" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 664 252 L 664 252 L 708 230 L 708 230 L 744 248 L 744 248 L 744 262 L 744 262 L 700 284 L 700 284 L 664 266 L 664 266 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="122 242 138 266 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 276 250 L 276 250 L 300 238 L 300 238 L 316 246 L 316 246 L 316 260 L 316 260 L 292 272 L 292 272 L 276 264 L 276 264 Z" fill="#ffffff"/><path d="M 276 250 L 276 250 L 292 258 L 292 258 L 292 272 L 292 272 L 276 264 L 276 264 Z" fill="rgba(45,49,66,0.07)"/><path d="M 292 258 L 292 258 L 316 246 L 316 246 L 316 260 L 316 260 L 292 272 L 292 272 Z" fill="rgba(45,49,66,0.15)"/><path d="M 292 255 L 292 255 L 282 250 L 282 250 L 300 241 L 300 241 L 310 246 L 310 246 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 276 250 L 276 250 L 292 258 L 292 258 L 316 246 L 316 246 M 292 258 L 292 272" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 276 250 L 276 250 L 300 238 L 300 238 L 316 246 L 316 246 L 316 260 L 316 260 L 292 272 L 292 272 L 276 264 L 276 264 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="162 242 178 266 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 316 270 L 316 270 L 340 258 L 340 258 L 356 266 L 356 266 L 356 280 L 356 280 L 332 292 L 332 292 L 316 284 L 316 284 Z" fill="#ffffff"/><path d="M 316 270 L 316 270 L 332 278 L 332 278 L 332 292 L 332 292 L 316 284 L 316 284 Z" fill="rgba(45,49,66,0.07)"/><path d="M 332 278 L 332 278 L 356 266 L 356 266 L 356 280 L 356 280 L 332 292 L 332 292 Z" fill="rgba(45,49,66,0.15)"/><path d="M 332 275 L 332 275 L 322 270 L 322 270 L 340 261 L 340 261 L 350 266 L 350 266 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 316 270 L 316 270 L 332 278 L 332 278 L 356 266 L 356 266 M 332 278 L 332 292" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 316 270 L 316 270 L 340 258 L 340 258 L 356 266 L 356 266 L 356 280 L 356 280 L 332 292 L 332 292 L 316 284 L 316 284 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="318 110 354 154 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 584 292 L 584 292 L 628 270 L 628 270 L 664 288 L 664 288 L 664 302 L 664 302 L 620 324 L 620 324 L 584 306 L 584 306 Z" fill="#ffffff"/><path d="M 584 292 L 584 292 L 620 310 L 620 310 L 620 324 L 620 324 L 584 306 L 584 306 Z" fill="rgba(45,49,66,0.07)"/><path d="M 620 310 L 620 310 L 664 288 L 664 288 L 664 302 L 664 302 L 620 324 L 620 324 Z" fill="rgba(45,49,66,0.15)"/><path d="M 620 307 L 620 307 L 590 292 L 590 292 L 628 273 L 628 273 L 658 288 L 658 288 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 584 292 L 584 292 L 620 310 L 620 310 L 664 288 L 664 288 M 620 310 L 620 324" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 584 292 L 584 292 L 628 270 L 628 270 L 664 288 L 664 288 L 664 302 L 664 302 L 620 324 L 620 324 L 584 306 L 584 306 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="202 242 218 266 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 356 290 L 356 290 L 380 278 L 380 278 L 396 286 L 396 286 L 396 300 L 396 300 L 372 312 L 372 312 L 356 304 L 356 304 Z" fill="#ffffff"/><path d="M 356 290 L 356 290 L 372 298 L 372 298 L 372 312 L 372 312 L 356 304 L 356 304 Z" fill="rgba(45,49,66,0.07)"/><path d="M 372 298 L 372 298 L 396 286 L 396 286 L 396 300 L 396 300 L 372 312 L 372 312 Z" fill="rgba(45,49,66,0.15)"/><path d="M 372 295 L 372 295 L 362 290 L 362 290 L 380 281 L 380 281 L 390 286 L 390 286 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 356 290 L 356 290 L 372 298 L 372 298 L 396 286 L 396 286 M 372 298 L 372 312" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 356 290 L 356 290 L 380 278 L 380 278 L 396 286 L 396 286 L 396 300 L 396 300 L 372 312 L 372 312 L 356 304 L 356 304 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="318 190 354 234 0" data-z="6" data-h="14" data-kind="furniture"><path data-role="silhouette" d="M 504 332 L 504 332 L 548 310 L 548 310 L 584 328 L 584 328 L 584 342 L 584 342 L 540 364 L 540 364 L 504 346 L 504 346 Z" fill="#ffffff"/><path d="M 504 332 L 504 332 L 540 350 L 540 350 L 540 364 L 540 364 L 504 346 L 504 346 Z" fill="rgba(45,49,66,0.07)"/><path d="M 540 350 L 540 350 L 584 328 L 584 328 L 584 342 L 584 342 L 540 364 L 540 364 Z" fill="rgba(45,49,66,0.15)"/><path d="M 540 347 L 540 347 L 510 332 L 510 332 L 548 313 L 548 313 L 578 328 L 578 328 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 504 332 L 504 332 L 540 350 L 540 350 L 584 328 L 584 328 M 540 350 L 540 364" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 504 332 L 504 332 L 548 310 L 548 310 L 584 328 L 584 328 L 584 342 L 584 342 L 540 364 L 540 364 L 504 346 L 504 346 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="362 20 372 236 0" data-z="6" data-h="8" data-kind="furniture"><path data-role="silhouette" d="M 546 361 L 546 361 L 762 253 L 762 253 L 772 258 L 772 258 L 772 266 L 772 266 L 556 374 L 556 374 L 546 369 L 546 369 Z" fill="#ffffff"/><path d="M 546 361 L 546 361 L 556 366 L 556 366 L 556 374 L 556 374 L 546 369 L 546 369 Z" fill="rgba(45,49,66,0.07)"/><path d="M 556 366 L 556 366 L 772 258 L 772 258 L 772 266 L 772 266 L 556 374 L 556 374 Z" fill="rgba(45,49,66,0.15)"/><path d="M 546 361 L 546 361 L 556 366 L 556 366 L 772 258 L 772 258 M 556 366 L 556 374" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 546 361 L 546 361 L 762 253 L 762 253 L 772 258 L 772 258 L 772 266 L 772 266 L 556 374 L 556 374 L 546 369 L 546 369 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g></g>
+        <g data-motion-item data-step="3" data-appear aria-label="Outbound: shipping pallets"><g data-box data-rect="392 46 420 74 0" data-z="6" data-h="20" data-kind="furniture"><path data-role="silhouette" d="M 738 283 L 738 283 L 766 269 L 766 269 L 794 283 L 794 283 L 794 303 L 794 303 L 766 317 L 766 317 L 738 303 L 738 303 Z" fill="#ffffff"/><path d="M 738 283 L 738 283 L 766 297 L 766 297 L 766 317 L 766 317 L 738 303 L 738 303 Z" fill="rgba(45,49,66,0.07)"/><path d="M 766 297 L 766 297 L 794 283 L 794 283 L 794 303 L 794 303 L 766 317 L 766 317 Z" fill="rgba(45,49,66,0.15)"/><path d="M 766 294 L 766 294 L 744 283 L 744 283 L 766 272 L 766 272 L 788 283 L 788 283 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 738 283 L 738 283 L 766 297 L 766 297 L 794 283 L 794 283 M 766 297 L 766 317" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 738 283 L 738 283 L 766 269 L 766 269 L 794 283 L 794 283 L 794 303 L 794 303 L 766 317 L 766 317 L 738 303 L 738 303 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="392 136 420 164 0" data-z="6" data-h="16" data-kind="furniture"><path data-role="silhouette" d="M 648 332 L 648 332 L 676 318 L 676 318 L 704 332 L 704 332 L 704 348 L 704 348 L 676 362 L 676 362 L 648 348 L 648 348 Z" fill="#ffffff"/><path d="M 648 332 L 648 332 L 676 346 L 676 346 L 676 362 L 676 362 L 648 348 L 648 348 Z" fill="rgba(45,49,66,0.07)"/><path d="M 676 346 L 676 346 L 704 332 L 704 332 L 704 348 L 704 348 L 676 362 L 676 362 Z" fill="rgba(45,49,66,0.15)"/><path d="M 676 343 L 676 343 L 654 332 L 654 332 L 676 321 L 676 321 L 698 332 L 698 332 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 648 332 L 648 332 L 676 346 L 676 346 L 704 332 L 704 332 M 676 346 L 676 362" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 648 332 L 648 332 L 676 318 L 676 318 L 704 332 L 704 332 L 704 348 L 704 348 L 676 362 L 676 362 L 648 348 L 648 348 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g><g data-box data-rect="392 226 420 254 0" data-z="6" data-h="22" data-kind="furniture"><path data-role="silhouette" d="M 558 371 L 558 371 L 586 357 L 586 357 L 614 371 L 614 371 L 614 393 L 614 393 L 586 407 L 586 407 L 558 393 L 558 393 Z" fill="#ffffff"/><path d="M 558 371 L 558 371 L 586 385 L 586 385 L 586 407 L 586 407 L 558 393 L 558 393 Z" fill="rgba(45,49,66,0.07)"/><path d="M 586 385 L 586 385 L 614 371 L 614 371 L 614 393 L 614 393 L 586 407 L 586 407 Z" fill="rgba(45,49,66,0.15)"/><path d="M 586 382 L 586 382 L 564 371 L 564 371 L 586 360 L 586 360 L 608 371 L 608 371 Z" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.6"/><path d="M 558 371 L 558 371 L 586 385 L 586 385 L 614 371 L 614 371 M 586 385 L 586 407" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 558 371 L 558 371 L 586 357 L 586 357 L 614 371 L 614 371 L 614 393 L 614 393 L 586 407 L 586 407 L 558 393 L 558 393 Z" fill="none" stroke="#2d3142" stroke-width="0.8" stroke-linejoin="round"/></g></g>
+        <g data-box data-rect="6 294 454 300 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 126 201 L 126 201 L 132 198 L 132 198 L 580 422 L 580 422 L 580 444 L 580 444 L 574 447 L 574 447 L 126 223 L 126 223 Z" fill="#ffffff"/><path d="M 126 201 L 126 201 L 574 425 L 574 425 L 574 447 L 574 447 L 126 223 L 126 223 Z" fill="rgba(45,49,66,0.07)"/><path d="M 574 425 L 574 425 L 580 422 L 580 422 L 580 444 L 580 444 L 574 447 L 574 447 Z" fill="rgba(45,49,66,0.15)"/><path d="M 126 201 L 126 201 L 574 425 L 574 425 L 580 422 L 580 422 M 574 425 L 574 447" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 126 201 L 126 201 L 132 198 L 132 198 L 580 422 L 580 422 L 580 444 L 580 444 L 574 447 L 574 447 L 126 223 L 126 223 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="454 6 460 40 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 834 295 L 834 295 L 868 278 L 868 278 L 874 281 L 874 281 L 874 303 L 874 303 L 840 320 L 840 320 L 834 317 L 834 317 Z" fill="#ffffff"/><path d="M 834 295 L 834 295 L 840 298 L 840 298 L 840 320 L 840 320 L 834 317 L 834 317 Z" fill="rgba(45,49,66,0.07)"/><path d="M 840 298 L 840 298 L 874 281 L 874 281 L 874 303 L 874 303 L 840 320 L 840 320 Z" fill="rgba(45,49,66,0.15)"/><path d="M 834 295 L 834 295 L 840 298 L 840 298 L 874 281 L 874 281 M 840 298 L 840 320" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 834 295 L 834 295 L 868 278 L 868 278 L 874 281 L 874 281 L 874 303 L 874 303 L 840 320 L 840 320 L 834 317 L 834 317 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="454 80 460 130 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 744 340 L 744 340 L 794 315 L 794 315 L 800 318 L 800 318 L 800 340 L 800 340 L 750 365 L 750 365 L 744 362 L 744 362 Z" fill="#ffffff"/><path d="M 744 340 L 744 340 L 750 343 L 750 343 L 750 365 L 750 365 L 744 362 L 744 362 Z" fill="rgba(45,49,66,0.07)"/><path d="M 750 343 L 750 343 L 800 318 L 800 318 L 800 340 L 800 340 L 750 365 L 750 365 Z" fill="rgba(45,49,66,0.15)"/><path d="M 744 340 L 744 340 L 750 343 L 750 343 L 800 318 L 800 318 M 750 343 L 750 365" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 744 340 L 744 340 L 794 315 L 794 315 L 800 318 L 800 318 L 800 340 L 800 340 L 750 365 L 750 365 L 744 362 L 744 362 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="454 170 460 220 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 654 385 L 654 385 L 704 360 L 704 360 L 710 363 L 710 363 L 710 385 L 710 385 L 660 410 L 660 410 L 654 407 L 654 407 Z" fill="#ffffff"/><path d="M 654 385 L 654 385 L 660 388 L 660 388 L 660 410 L 660 410 L 654 407 L 654 407 Z" fill="rgba(45,49,66,0.07)"/><path d="M 660 388 L 660 388 L 710 363 L 710 363 L 710 385 L 710 385 L 660 410 L 660 410 Z" fill="rgba(45,49,66,0.15)"/><path d="M 654 385 L 654 385 L 660 388 L 660 388 L 710 363 L 710 363 M 660 388 L 660 410" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 654 385 L 654 385 L 704 360 L 704 360 L 710 363 L 710 363 L 710 385 L 710 385 L 660 410 L 660 410 L 654 407 L 654 407 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-box data-rect="454 260 460 294 0" data-z="6" data-h="22" data-kind="wall"><path data-role="silhouette" d="M 580 422 L 580 422 L 614 405 L 614 405 L 620 408 L 620 408 L 620 430 L 620 430 L 586 447 L 586 447 L 580 444 L 580 444 Z" fill="#ffffff"/><path d="M 580 422 L 580 422 L 586 425 L 586 425 L 586 447 L 586 447 L 580 444 L 580 444 Z" fill="rgba(45,49,66,0.07)"/><path d="M 586 425 L 586 425 L 620 408 L 620 408 L 620 430 L 620 430 L 586 447 L 586 447 Z" fill="rgba(45,49,66,0.15)"/><path d="M 580 422 L 580 422 L 586 425 L 586 425 L 620 408 L 620 408 M 586 425 L 586 447" fill="none" stroke="rgba(45,49,66,0.55)" stroke-width="0.8"/><path d="M 580 422 L 580 422 L 614 405 L 614 405 L 620 408 L 620 408 L 620 430 L 620 430 L 586 447 L 586 447 L 580 444 L 580 444 Z" fill="none" stroke="#2d3142" stroke-width="1.0" stroke-linejoin="round"/></g>
+        <g data-motion-item data-step="1" data-appear aria-label="Receiving and Storage tagged"><g data-role="tag" data-name="Receiving" data-at="74 174 6"><rect x="278" y="178" width="84" height="32" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/><text data-role="name" x="320" y="194" text-anchor="middle" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Receiving</text><text x="320" y="205" text-anchor="middle" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">3 dock doors</text></g><g data-role="tag" data-name="Storage" data-at="204 162 6"><rect x="428" y="237" width="68" height="32" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/><text data-role="name" x="462" y="253" text-anchor="middle" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Storage</text><text x="462" y="264" text-anchor="middle" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">6 racks</text></g></g>
+        <g data-motion-item data-step="2" data-appear aria-label="Pick zone and Packing tagged"><g data-role="tag" data-name="Pick zone" data-at="254 272 6"><rect x="348" y="317" width="108" height="32" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/><text data-role="name" x="402" y="333" text-anchor="middle" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Pick zone</text><text x="402" y="344" text-anchor="middle" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">carts, flow rack</text></g><g data-role="tag" data-name="Packing" data-at="338 262 6"><rect x="460" y="354" width="72" height="32" rx="2" fill="#ffffff" stroke="#eb6c36" stroke-width="0.8"/><text data-role="name" x="496" y="370" text-anchor="middle" fill="#eb6c36" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Packing</text><text x="496" y="381" text-anchor="middle" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">3 stations</text></g></g>
+        <g data-motion-item data-step="3" data-appear aria-label="Shipping tagged"><g data-role="tag" data-name="Shipping" data-at="424 186 6"><rect x="616" y="359" width="84" height="32" rx="2" fill="#ffffff" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/><text data-role="name" x="658" y="375" text-anchor="middle" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Shipping</text><text x="658" y="386" text-anchor="middle" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">3 dock doors</text></g></g>
+        </g>
+        <text x="120" y="500" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">FOCAL ZONE</text>
+        <text x="240" y="500" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Goods move left to right; packing is where most orders wait, so it gets the accent.</text>
+      </svg>
+    </div>
+
+    <div data-motion-controls role="group" aria-label="Diagram playback controls">
+      <button type="button" data-motion-action="prev">Previous</button>
+      <button type="button" data-motion-action="play" aria-pressed="false">Play</button>
+      <button type="button" data-motion-action="pause" aria-pressed="true">Pause</button>
+      <button type="button" data-motion-action="next">Next</button>
+      <button type="button" data-motion-action="replay">Replay</button>
+      <span class="keyboard-help">←/→ step · Space play/pause · R replay · Home/End jump</span>
+      <span data-motion-status-visible aria-hidden="true">Step <span data-motion-step-label>3</span> of 3</span>
+    </div>
+    <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p>Animation controls require JavaScript. The complete site plan is shown above.</p></noscript>
+  </main>
+
+  <script data-diagram-controls>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const staticOverride = params.get('motion') === 'static' || document.documentElement.dataset.motion === 'static';
+      const requestedStep = params.get('step');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      document.fonts.ready.then(() => { document.documentElement.dataset.fontsReady = 'true'; });
+
+      document.querySelectorAll('[data-motion-root]').forEach((root) => {
+        const count = Number(root.dataset.stepCount);
+        const hold = parseFloat(getComputedStyle(root).getPropertyValue('--motion-hold')) || 720;
+        const parsedStep = requestedStep !== null && /^\d+$/.test(requestedStep) ? Number(requestedStep) : null;
+        const exactStep = params.get('motion') === 'step' && Number.isSafeInteger(parsedStep) && parsedStep >= 0 && parsedStep <= count ? parsedStep : null;
+        const items = [...root.querySelectorAll('[data-motion-item]')];
+        const labels = Array.from({ length: count + 1 }, (_, index) => index === 0
+          ? 'Ready'
+          : items.filter((item) => !item.hasAttribute('data-motion-decorative') && Number(item.dataset.step) === index)
+              .map((item) => item.getAttribute('aria-label')).join('; '));
+        const controls = root.querySelector('[data-motion-controls]');
+        const status = root.querySelector('[data-motion-status]');
+        const visibleStep = root.querySelector('[data-motion-step-label]');
+        let step = count;
+        let timer = 0;
+        let playing = false;
+        let stepBeforeReduce = 0;
+        let resumeAfterReduce = root.dataset.motionMode === 'reveal';
+
+        const buttons = (action) => controls.querySelector(`[data-motion-action="${action}"]`);
+        const clearClock = () => { window.clearTimeout(timer); timer = 0; };
+        const announce = () => { status.textContent = `Step ${step} of ${count}: ${labels[step] || 'Complete'}`; };
+        const setControlsAvailable = (available) => {
+          controls.hidden = !available;
+          controls.setAttribute('aria-hidden', String(!available));
+          controls.dataset.playbackDisabled = String(!available);
+          controls.querySelectorAll('button').forEach((control) => { control.disabled = !available; });
+        };
+
+        function render(next, userInitiated = false) {
+          step = Math.max(0, Math.min(count, next));
+          root.dataset.stepCurrent = String(step);
+          root.dataset.frame = step === count ? 'end' : step === 0 ? 'start' : 'step';
+          items.forEach((item) => {
+            const itemStep = Number(item.dataset.step);
+            item.classList.toggle('is-visible', itemStep <= step);
+            item.classList.toggle('is-current', itemStep === step);
+          });
+          if (visibleStep) visibleStep.textContent = String(step);
+          const unavailable = controls.dataset.playbackDisabled === 'true';
+          buttons('prev').disabled = unavailable || step === 0;
+          buttons('next').disabled = unavailable || step === count;
+          if (userInitiated) announce();
+        }
+
+        function pause(userInitiated = false) {
+          clearClock();
+          playing = false;
+          root.classList.remove('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'false');
+          buttons('pause').setAttribute('aria-pressed', 'true');
+          if (userInitiated) status.textContent = `Paused at step ${step} of ${count}`;
+        }
+
+        function finish() {
+          pause(false);
+          root.dataset.frame = 'end';
+          status.textContent = `Complete · step ${count} of ${count}`;
+        }
+
+        function tick() {
+          if (!playing) return;
+          if (step >= count) { finish(); return; }
+          render(step + 1, false);
+          if (step >= count) { finish(); return; }
+          timer = window.setTimeout(tick, hold);
+        }
+
+        function play(fromStart = false, userInitiated = false) {
+          clearClock();
+          if (fromStart || step >= count) render(0, userInitiated);
+          playing = true;
+          root.classList.add('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'true');
+          buttons('pause').setAttribute('aria-pressed', 'false');
+          timer = window.setTimeout(tick, hold);
+        }
+
+        controls.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-motion-action]');
+          if (!button) return;
+          const action = button.dataset.motionAction;
+          if (action === 'play') play(false, true);
+          if (action === 'pause') pause(true);
+          if (action === 'replay') play(true, true);
+          if (action === 'prev') { pause(false); render(step - 1, true); }
+          if (action === 'next') { pause(false); render(step + 1, true); }
+        });
+
+        root.addEventListener('keydown', (event) => {
+          if (event.target.matches('input, textarea, select, a[href]')) return;
+          const keys = { ArrowLeft: step - 1, ArrowRight: step + 1, Home: 0, End: count };
+          if (event.code === 'Space' && !event.target.closest('button')) {
+            event.preventDefault();
+            playing ? pause(true) : play(false, true);
+            return;
+          }
+          if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'r') {
+            event.preventDefault();
+            play(true, true);
+            return;
+          }
+          if (!(event.key in keys)) return;
+          event.preventDefault();
+          pause(false);
+          render(keys[event.key], true);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden' && playing) pause(false);
+        });
+        reduce.addEventListener('change', (event) => {
+          if (event.matches && root.dataset.motionState !== 'reduced') {
+            stepBeforeReduce = step;
+            resumeAfterReduce = playing;
+          }
+          pause(false);
+          if (event.matches) {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'reduced';
+            status.textContent = 'Reduced motion · complete static frame · playback controls unavailable';
+          } else if (staticOverride || root.dataset.motionMode === 'none') {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'static';
+            status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+          } else {
+            delete root.dataset.motionState;
+            if (exactStep !== null) {
+              setControlsAvailable(false);
+              render(exactStep, false);
+              root.dataset.frame = 'step';
+              root.dataset.motionState = 'test';
+              status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+            } else {
+              setControlsAvailable(true);
+              render(stepBeforeReduce, false);
+              status.textContent = `Ready · step ${step} of ${count}`;
+              if (resumeAfterReduce && root.dataset.motionMode === 'reveal') {
+                play(false, false);
+              }
+            }
+            resumeAfterReduce = false;
+          }
+        });
+
+        if (staticOverride) {
+          document.documentElement.dataset.motion = 'static';
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = 'static';
+          status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+        } else if (reduce.matches || root.dataset.motionMode === 'none') {
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = reduce.matches ? 'reduced' : 'static';
+          status.textContent = reduce.matches
+            ? 'Reduced motion · complete static frame · playback controls unavailable'
+            : 'Static frame · complete diagram · playback controls unavailable';
+        } else if (exactStep !== null) {
+          document.documentElement.dataset.motion = 'step';
+          pause(false);
+          setControlsAvailable(false);
+          render(exactStep, false);
+          root.dataset.frame = 'step';
+          root.dataset.motionState = 'test';
+          status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+        } else if (root.dataset.motionMode === 'reveal') {
+          setControlsAvailable(true);
+          render(0, false);
+          play(false, false);
+        } else {
+          pause(false);
+          setControlsAvailable(true);
+          render(0, false);
+          status.textContent = `Ready · step 0 of ${count}`;
+        }
+        root.classList.add('motion-ready');
+      });
+    })();
+  </script>
+</body>
+</html>

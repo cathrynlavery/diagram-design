@@ -28,7 +28,8 @@
       padding: 3rem 2rem;
     }
 
-    .frame { max-width: 1200px; width: 100%; }
+    .frame { max-width: 1200px; width: 100%; min-width: 0; }
+    .diagram-container { width: 100%; overflow-x: auto; }
 
     .eyebrow {
       font-family: var(--font-mono);
@@ -50,7 +51,11 @@
       margin-bottom: 1.5rem;
     }
 
-    svg { width: 100%; min-width: 900px; display: block; }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
   </style>
 </head>
 <body>
@@ -58,9 +63,10 @@
     <p class="eyebrow">Flowchart · Diagram Design</p>
     <h1>Should you write this as a skill?</h1>
 
-    <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flowchart-dark-title flowchart-dark-desc">
-      <title id="flowchart-dark-title">Should you write this as a skill?</title>
-      <desc id="flowchart-dark-desc">Flowchart showing when a new workflow should stay manual, become a project note, or be written as a reusable skill.</desc>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flowchart-dark-title flowchart-dark-desc">
+        <title id="flowchart-dark-title">Should you write this as a skill?</title>
+        <desc id="flowchart-dark-desc">Flowchart showing when a new workflow should stay manual, become a project note, or be written as a reusable skill.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
             <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
@@ -87,20 +93,20 @@
         <line x1="500" y1="424" x2="500" y2="464" stroke="#f08a59" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
 
         <!-- Arrow labels -->
-        <rect x="644" y="230" width="24" height="12" rx="2" fill="#2d3142"/>
-        <text x="656" y="239" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+        <rect x="644" y="220" width="24" height="12" rx="2" fill="#2d3142"/>
+        <text x="656" y="229" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
 
-        <rect x="484" y="298" width="32" height="12" rx="2" fill="#2d3142"/>
-        <text x="500" y="307" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+        <rect x="508" y="298" width="32" height="12" rx="2" fill="#2d3142"/>
+        <text x="524" y="307" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
 
-        <rect x="644" y="366" width="24" height="12" rx="2" fill="#2d3142"/>
-        <text x="656" y="375" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+        <rect x="644" y="356" width="24" height="12" rx="2" fill="#2d3142"/>
+        <text x="656" y="365" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
 
-        <rect x="484" y="434" width="32" height="12" rx="2" fill="#2d3142"/>
-        <text x="500" y="443" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+        <rect x="508" y="434" width="32" height="12" rx="2" fill="#2d3142"/>
+        <text x="524" y="443" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
 
         <!-- Start oval -->
-        <rect x="420" y="40" width="160" height="48" rx="24" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+        <rect x="420" y="40" width="160" height="48" rx="20" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
         <text x="500" y="68" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">New workflow</text>
 
         <!-- Rectangle: Step -->
@@ -109,26 +115,26 @@
 
         <!-- Diamond 1: Repeated >3 times? -->
         <polygon points="500,192 600,240 500,288 400,240" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <text x="500" y="238" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Will you repeat</text>
-        <text x="500" y="252" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">it >3 times?</text>
+        <text x="500" y="238" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Will you repeat</text>
+        <text x="500" y="252" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">it >3 times?</text>
 
         <!-- End oval: One-off -->
-        <rect x="720" y="216" width="160" height="48" rx="24" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+        <rect x="720" y="216" width="160" height="48" rx="20" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
         <text x="800" y="240" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">One-off</text>
         <text x="800" y="254" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">keep manual</text>
 
         <!-- Diamond 2: Reusable across projects? -->
         <polygon points="500,328 600,376 500,424 400,376" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <text x="500" y="374" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reusable across</text>
-        <text x="500" y="388" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">projects?</text>
+        <text x="500" y="374" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reusable across</text>
+        <text x="500" y="388" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">projects?</text>
 
-        <!-- End oval: CLAUDE.md note -->
-        <rect x="720" y="352" width="160" height="48" rx="24" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
-        <text x="800" y="376" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CLAUDE.md note</text>
+        <!-- End oval: project note -->
+        <rect x="720" y="352" width="160" height="48" rx="20" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+        <text x="800" y="376" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Project note</text>
         <text x="800" y="390" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">project-scoped</text>
 
         <!-- End oval: Write a skill (coral focal) -->
-        <rect x="420" y="464" width="160" height="56" rx="28" fill="rgba(240,138,89,0.08)" stroke="#f08a59" stroke-width="1"/>
+        <rect x="420" y="464" width="160" height="56" rx="20" fill="rgba(240,138,89,0.08)" stroke="#f08a59" stroke-width="1"/>
         <text x="500" y="492" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Write a skill</text>
         <text x="500" y="508" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reusable + assets</text>
 
@@ -151,6 +157,7 @@
         <line x1="768" y1="580" x2="796" y2="580" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
         <text x="804" y="582" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Branch</text>
       </svg>
+    </div>
   </div>
 </body>
 </html>

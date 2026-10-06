@@ -1,6 +1,9 @@
-# Diagram Design
-
-**Editorial diagrams your designer won't hate.**
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/hero/hero-dark.webp">
+    <img alt="Diagram Design. Editorial diagrams your designer won't hate." src="docs/hero/hero-light.webp">
+  </picture>
+</h1>
 
 <a href="https://trendshift.io/repositories/26141?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-26141" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/26141" alt="cathrynlavery%2Fdiagram-design | Trendshift" width="250" height="55"/></a>
 
@@ -17,6 +20,8 @@
 Editorial diagram types for Claude Code, Codex, Factory Droid, Pi, and Agent Skills-compatible hosts. Self-contained HTML + SVG. No shadows. No Mermaid slop. Semantic patterns describe behavior separately from layout, so a queue, policy trace, or trust boundary can use the nearest existing type without expanding the type count. Static HTML remains the default; optional motion is available for ordered explanations. The skill also redraws draw.io, Mermaid, or Excalidraw sources at a chosen format, size, and detail level.
 
 No Figma. No generic rounded boxes. No 30-minute color-picking sessions.
+
+Project site: [diagramdesign.dev](https://diagramdesign.dev?utm_source=diagram-design&utm_medium=readme&utm_campaign=github&utm_content=intro)
 
 ---
 
@@ -102,18 +107,31 @@ Every visual type ships in three static variants: minimal light, minimal dark, a
 </tr>
 <tr>
   <td align="center" width="33%"><a href="docs/screenshots/waterfall.png"><img src="docs/screenshots/thumbs/waterfall.webp" alt="Waterfall"></a><br><b>Waterfall</b><br><sub>Running total + signed bridges</sub></td>
-  <td align="center" width="33%"></td>
+  <td align="center" width="33%"><a href="docs/screenshots/architecture-delta.png"><img src="docs/screenshots/thumbs/architecture-delta.webp" alt="Architecture delta"></a><br><b>Architecture delta</b><br><sub>Before · Changes · After topology</sub></td>
+  <td align="center" width="33%"><a href="docs/screenshots/exploded.png"><img src="docs/screenshots/thumbs/exploded.webp" alt="Exploded axonometric"></a><br><b>Exploded axonometric</b><br><sub>Parts pulled apart on one axis</sub></td>
+</tr>
+<tr>
+  <td align="center" width="33%"><a href="docs/screenshots/axonometric-plan.png"><img src="docs/screenshots/thumbs/axonometric-plan.webp" alt="Axonometric plan"></a><br><b>Axonometric plan</b><br><sub>Rooms and buildings on one plate</sub></td>
+  <td align="center" width="33%"><a href="docs/screenshots/heatmap.png"><img src="docs/screenshots/thumbs/heatmap.webp" alt="Heatmap"></a><br><b>Heatmap</b><br><sub>Value per row × column cell</sub></td>
   <td align="center" width="33%"></td>
 </tr>
 </table>
 
-The v2.5.10 release added the final ten types above. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
+Architecture delta compares synchronized topologies through a Before · Changes · After ledger of added, removed, changed, moved, and rewired objects. See its [reference](skills/diagram-design/references/type-architecture-delta.md) and [order-fulfilment example](skills/diagram-design/assets/example-architecture-delta.html). Attribute-only comparisons remain tables; a single snapshot uses Architecture.
+
+Exploded axonometric draws one object in 2:1 dimetric projection with its parts lifted apart at equal gaps: a [phone teardown](skills/diagram-design/assets/example-exploded-phone.html), an [unboxing](skills/diagram-design/assets/example-exploded-unboxing.html), an [app stack](skills/diagram-design/assets/example-exploded.html), an [AI agent stack](skills/diagram-design/assets/example-exploded-ai-stack.html), or a [mechanical keyboard](skills/diagram-design/assets/example-exploded-keyboard.html). Every coordinate comes from one projection function, and the [animated phone](skills/diagram-design/assets/example-exploded-phone-animated.html) opens assembled and explodes once. See its [reference](skills/diagram-design/references/type-exploded.md).
+
+Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagram-design/assets/example-axonometric-plan.html), the [campus](skills/diagram-design/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagram-design/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagram-design/assets/example-axonometric-plan-warehouse.html), the [phased campus animation](skills/diagram-design/assets/example-axonometric-plan-campus-animated.html), and the [reference](skills/diagram-design/references/type-axonometric-plan.md).
+
+The v2.5.10 release added ten layout grammars. Compare their light, dark, and full-editorial variants in the [30-variant contact sheet](.github/pr-previews/editorial-diagrams-2.5.10.jpg).
 
 **Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/) — or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs.
 
 ---
 
 ## Install
+
+Official builds come only from this repository. LittleMight, Cathryn Lavery's company, publishes the plugin directory listings; a listing under any other name is an unofficial copy. [PRIVACY.md](PRIVACY.md) lists what the skill sends over the network.
 
 **Claude Code:**
 
@@ -337,7 +355,7 @@ The point isn't conversion, it's **fitting the output to where it's going**. Sam
 | Dial | Options | What it changes |
 |---|---|---|
 | **Format** | `html` · `svg` · `png` · `html+png` | The deliverable. SVG for Figma, PNG for slides, HTML for the web. |
-| **Size** | `doc-inline` · `doc-wide` · `slide-16x9` · `slide-4x3` · `social-og` · `social-square` · `print-a4-landscape` · `print-letter-landscape` · `fit` | The `viewBox` **and the type ramp** — a projected slide gets 16px node names, not 12px. |
+| **Size** | `doc-inline` · `doc-wide` · `slide-16x9` · `slide-4x3` · `social-og` · `social-square` · `print-a4-landscape` · `print-a3-landscape` · `print-letter-landscape` · `fit` | The `viewBox` **and the type ramp** — a projected slide gets 16px node names, not 12px. |
 | **Detail** | `faithful` (≤24 nodes, zoned) · `balanced` (≤12) · `simplified` (≤7) | How much of the source survives, via a fixed degrade ladder — decorations, then duplicates, then leaf clusters, then infrastructure. |
 | **Audience** | `engineer` · `mixed` · `executive` | The *wording*, not the count. `Auth Service / JWT · RS256 · :8443` → `Auth Service / token check` → `Sign-in`. |
 
@@ -433,6 +451,7 @@ diagram-design/
 │       │   ├── export.md            — SVG / PNG export + sizing
 │       │   ├── export-registry.md   — block-metadata JSON sidecar export
 │       │   ├── type-architecture.md
+│       │   ├── type-architecture-delta.md
 │       │   ├── type-flowchart.md
 │       │   ├── type-sequence.md
 │       │   ├── type-state.md
@@ -444,6 +463,8 @@ diagram-design/
 │       │   ├── type-tree.md
 │       │   ├── type-org-chart.md
 │       │   ├── type-layers.md
+│       │   ├── type-exploded.md
+│       │   ├── type-axonometric-plan.md
 │       │   ├── type-venn.md
 │       │   ├── type-pyramid.md
 │       │   ├── type-sankey.md
@@ -456,6 +477,8 @@ diagram-design/
 │       │   ├── type-uml-class.md
 │       │   ├── type-story-map.md
 │       │   ├── type-db-schema.md
+│       │   ├── primitives-core.md
+│       │   ├── layout-budget.md
 │       │   ├── primitive-annotation.md
 │       │   ├── primitive-sketchy.md
 │       │   └── primitive-terminal.md
@@ -523,7 +546,7 @@ If you touch the Excalidraw import path, `python3 scripts/verify-excalidraw-impo
 pass — it covers scene parsing, bound labels, groups and frames, adversarial labels,
 trust-boundary behavior, resource caps, named failures, and reference/command wiring.
 
-Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
+Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. The same script fails diagonal connectors, connectors that run along a node's border or attach at its corner, ports crowded closer than 12px, and arrows stacked on one trunk. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
 Diagrams using the traceable block decomposition pattern get a structural gate on top of that: `python3 scripts/verify-block-registry.py --all` fails CI on a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block in the same file, a cycle in the parent chain, a blank `data-block-id`, or a missing or blank `data-block-name` — the same defects that would make `--registry`'s exported JSON (see [`export-registry.md`](skills/diagram-design/references/export-registry.md)) misrepresent the tree it claims to describe. `python3 scripts/test-verify-block-registry.py` keeps that checker honest in both directions.
 Treemaps get a second geometric gate, because their whole claim is that area *is* the encoding: `python3 scripts/verify-treemap.py --all` fails CI when a cell's share of the drawn area doesn't match the value printed inside it, or when a label overruns the cell it names. It measures area error as a *relative* figure — an absolute one passes exactly the small cells most likely to be wrong. `python3 scripts/test-verify-treemap.py` keeps it honest in both directions.
 Waterfalls get the same treatment, because their whole claim is that the running total is conserved: `python3 scripts/verify-waterfall.py --all` fails CI when the declared start, deltas, and end don't reconcile, when a bridge bar is drawn anywhere other than its two running levels on the shared scale, when a carry connector is missing or sits at the wrong level, when a delta prints without an explicit sign, or when the two directions collapse into one fill. `python3 scripts/test-verify-waterfall.py` keeps it honest in both directions.
@@ -576,6 +599,9 @@ At startup, the agent sees only the skill name and description. When a request m
 |---|---|
 | "Make me a flowchart" | `SKILL.md` + `references/type-flowchart.md` |
 | "Build an architecture diagram" | `SKILL.md` + `references/type-architecture.md` |
+| "Show what was added, removed, changed, moved, or rewired in this migration" | `SKILL.md` + `references/type-architecture-delta.md` |
+| "Show what's inside this device, exploded" | `SKILL.md` + `references/type-exploded.md` |
+| "Draw our office floor plan" | `SKILL.md` + `references/type-axonometric-plan.md` |
 | "Compare why these two policy requests differ" | `SKILL.md` + `references/semantic-patterns.md` + `references/type-flowchart.md` |
 | "Animate that policy trace" | Prior selection + `references/animation.md` |
 | "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |
@@ -586,7 +612,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
-| Routine static diagram-making (any visual type) | Only `SKILL.md` + that one type's reference |
+| Routine static diagram-making (any visual type) | `SKILL.md` + that one type's reference, plus `references/primitives-core.md` or `references/layout-budget.md` only when it needs exact markup or a per-type budget row |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
 
@@ -594,7 +620,7 @@ No matter how many types exist, the agent only reads the one you need. Add a new
 
 ## It's working if…
 
-- A routine request ("make me a flowchart") loads `SKILL.md` plus exactly one type reference — nothing else.
+- A routine request ("make me a flowchart") loads `SKILL.md`, exactly one type reference, and at most the two core references (`primitives-core.md`, `layout-budget.md`), and nothing else.
 - Before drawing, the agent states the chosen type, pattern, size, and planned cuts, then renders.
 - The output is one `.html` file that opens double-clicked, offline, with no network requests beyond Google Fonts.
 - Screen readers announce the diagram's title and description; `prefers-reduced-motion` shows the complete static frame.

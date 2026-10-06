@@ -7,13 +7,31 @@
   },
   "entries": [
     {
+      "thumb": "architecture-delta.webp",
+      "source": "docs/screenshots/architecture-delta.png",
+      "source_sha256": "f7c4dbfd20d85cd426a32a368664416d6260f7878c6f7920e6a2724271bbf185",
+      "width": 600,
+      "height": 340,
+      "quality": 82,
+      "thumb_sha256": "d72f3048c14d0d23c99a5a18daab4dbe2aa5367c6c468124889160151c182d71"
+    },
+    {
       "thumb": "architecture.webp",
       "source": "docs/screenshots/architecture.png",
-      "source_sha256": "2258aef552e8e83aa9936ab4ca2b58fbee76fdb742cc4f68ce6499785b80f614",
+      "source_sha256": "af466b2029259c11800f74170711a05711569388d908ff24894961c583fb6339",
       "width": 1400,
       "height": 673,
       "quality": 90,
-      "thumb_sha256": "e6ee9e1037d1441042c7978e796d6404cb99da4561841c169ba41f8b4e810982"
+      "thumb_sha256": "212b3a793673c8b6a1f7f1ecb88085bbc378add2bc09d04e9372ebb6caed2bed"
+    },
+    {
+      "thumb": "axonometric-plan.webp",
+      "source": "docs/screenshots/axonometric-plan.png",
+      "source_sha256": "eeeaa6d8f100b50854f1d452b253807c2ad4abc9b450bce854c04fdb95fbb7b1",
+      "width": 600,
+      "height": 270,
+      "quality": 82,
+      "thumb_sha256": "44ce05b9aa51e730f54fc5dc128caa55c2eea73cedc8876129169e2fa3378529"
     },
     {
       "thumb": "bar.webp",
@@ -36,11 +54,11 @@
     {
       "thumb": "db-schema.webp",
       "source": "docs/screenshots/db-schema.png",
-      "source_sha256": "939061c701f7bb70aa1b5f7ee1fe2da3a68b3b8edc4822cd9dcb7586acd7a2d6",
+      "source_sha256": "d5a82a34734c7d1dcd82770a6482cbb238ba1b79dda6cc36e4716a58f0bba24f",
       "width": 600,
       "height": 312,
       "quality": 82,
-      "thumb_sha256": "77ad43cc5cb8509fd76b1fdfee62827cb876c3893df6e46c2b1a278c50748e41"
+      "thumb_sha256": "e9a1353e9c55c8953f6118707d8200a82a71b45da24fb3a563f6e4cb725ffa2a"
     },
     {
       "thumb": "dependency.webp",
@@ -88,6 +106,15 @@
       "thumb_sha256": "cf2a816b86ca379f13ac1cb9de1bc1619eee598237e81a582d8dff239f24c822"
     },
     {
+      "thumb": "exploded.webp",
+      "source": "docs/screenshots/exploded.png",
+      "source_sha256": "e835ddfc5e9bf34191e410fe2d7020ed9340b34535647964abdba82ff68baa9c",
+      "width": 600,
+      "height": 334,
+      "quality": 82,
+      "thumb_sha256": "2dd0e991d4dce224b16effe9197dd597aab8b8847d09dbaf654d63751f6dd85b"
+    },
+    {
       "thumb": "fishbone.webp",
       "source": "docs/screenshots/fishbone.png",
       "source_sha256": "c634bb13367a2299d862dc84f0046017d5067ab64498784024a220576b473f33",
@@ -99,11 +126,11 @@
     {
       "thumb": "flowchart.webp",
       "source": "docs/screenshots/flowchart.png",
-      "source_sha256": "47c84d9f89a4e60ad131b05b0619e356894052d0477a8b3b024d56e5bd91b517",
+      "source_sha256": "58556c5bcdf39fbaa817abca5e4a72180ef87469d2df30b961e87d1a39ac1ddf",
       "width": 600,
       "height": 360,
       "quality": 82,
-      "thumb_sha256": "7232caea4a42ea2a8368fccea295bed4ff86b941c83247cce7b7d7a70172705c"
+      "thumb_sha256": "d6c3b7cbc7d7ff677df4b956646d086ad67bf2a69c92be63545ffdeed9e563b1"
     },
     {
       "thumb": "gantt.webp",
@@ -115,13 +142,22 @@
       "thumb_sha256": "54aa3ae88f21a22827dc7f1111526ddc34c144c86bcdf40e1bbdb2548ddca03a"
     },
     {
+      "thumb": "heatmap.webp",
+      "source": "docs/screenshots/heatmap.png",
+      "source_sha256": "71dde28b4cab7788fd735a3c543a60c4fdc854749c627749eb768adc52fd9186",
+      "width": 600,
+      "height": 300,
+      "quality": 82,
+      "thumb_sha256": "45abb0fc9b8eea482aadee4805f7cb4e40d568aa063b20b4c03c5554d165c51b"
+    },
+    {
       "thumb": "high-level.webp",
       "source": "docs/screenshots/high-level.png",
-      "source_sha256": "afe822249fbbb601657edc468d5572d2c4a6acc8cbef4ea41771d42d13e3b75e",
+      "source_sha256": "9fe677ad9292f5d090b8dc9a84d0166833896e407c1fa33bd38bd6b4e489cc6b",
       "width": 600,
       "height": 324,
       "quality": 82,
-      "thumb_sha256": "027ff242466734b821097272e2863438b3731a3d177a2bf7952023831d9b5e17"
+      "thumb_sha256": "732908cafe7a2af84ac7de44b0fdd451bd155a7607ea6d2f8876dfeaec35e863"
     },
     {
       "thumb": "import-drawio.webp",
@@ -198,11 +234,11 @@
     {
       "thumb": "nested.webp",
       "source": "docs/screenshots/nested.png",
-      "source_sha256": "7199d6871a0aab4377af0002a42c3dc9daee9e869f1131493ecf6e17a5a1cac0",
+      "source_sha256": "16fa6c5fad38160cc70ad64a4d8642cb22b2c74c2f583407245e9183f3fc9994",
       "width": 600,
       "height": 300,
       "quality": 82,
-      "thumb_sha256": "c12d8e15f30e382987b05d22d1e930cfd801a7d76792348b2a22ce107785f979"
+      "thumb_sha256": "a20e8f99a4962d88fe2b451a9aeba871c0c7319d17d570026e1f225632405aa0"
     },
     {
       "thumb": "org-chart.webp",
@@ -306,11 +342,11 @@
     {
       "thumb": "swimlane.webp",
       "source": "docs/screenshots/swimlane.png",
-      "source_sha256": "562c47b77f177732aa0e5fffe2ce32426c121b4e98fa28f9f482aba1d73dba38",
+      "source_sha256": "14d08ffe32fd8742767f9bb770b4ea60b7420674689abf90fac52dc9418a0d54",
       "width": 600,
       "height": 288,
       "quality": 82,
-      "thumb_sha256": "1347c543efd3e1b032faf28e530371d8b39244997d028b4ff952a830672afd10"
+      "thumb_sha256": "0f49aa61d41afdfd41216f122c6cf544ce3c580c5944bd752ab0e24299f21036"
     },
     {
       "thumb": "timeline.webp",

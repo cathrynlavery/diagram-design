@@ -319,6 +319,24 @@ H -- "  padded  " --> I
     ]:
         fail("quoted labeled multidirectional links lost their arrowheads")
 
+    chain_file = tmp / "quoted-label-chain.mmd"
+    chain_file.write_text(
+        'flowchart LR\nA -- "yes" --> B --> C\nD -- (maybe) --> E --> F\n',
+        encoding="utf-8",
+    )
+    chain = json.loads(run_extract([str(chain_file), "--json"]))["diagrams"][0]
+    chain_edges = [(edge["source"], edge["target"], edge["label"]) for edge in chain["edges"]]
+    if chain_edges != [
+        ("A", "B", "yes"),
+        ("B", "C", ""),
+        ("D", "E", "(maybe)"),
+        ("E", "F", ""),
+    ]:
+        fail(
+            "a quoted or bracketed spaced label followed by another link must end at "
+            f"its own closing operator: {chain_edges}"
+        )
+
     compact_file = tmp / "compact-labeled-links.mmd"
     compact_file.write_text(
         """flowchart LR
@@ -414,6 +432,40 @@ E-->|maybe|x--next-->F
         ("x", "F", "next"),
     ]:
         fail("chained x/o endpoint IDs were consumed as left edge markers")
+
+    compact_dotted_space_file = tmp / "compact-dotted-space-labels.mmd"
+    compact_dotted_space_file.write_text(
+        """flowchart LR
+Q-.next candidate.->R
+S<-.both ways.->T
+U o-.circle marker.-o V
+W----->X
+""",
+        encoding="utf-8",
+    )
+    compact_dotted_space = json.loads(
+        run_extract([str(compact_dotted_space_file), "--json"])
+    )["diagrams"][0]
+    compact_dotted_space_ids = sorted(node["id"] for node in compact_dotted_space["nodes"])
+    if compact_dotted_space_ids != ["Q", "R", "S", "T", "U", "V", "W", "X"]:
+        fail(
+            "a whitespace-bearing compact dotted label materialized phantom "
+            f"nodes: {compact_dotted_space_ids}"
+        )
+    compact_dotted_space_edges = [
+        (edge["label"], edge["style"], edge["bidirectional"])
+        for edge in compact_dotted_space["edges"]
+    ]
+    if compact_dotted_space_edges != [
+        ("next candidate", "dashed", False),
+        ("both ways", "dashed", True),
+        ("circle marker", "dashed", True),
+        ("", "solid", False),
+    ]:
+        fail(
+            "a compact dotted link's label lost internal whitespace or its "
+            f"style/bidirectional semantics: {compact_dotted_space_edges}"
+        )
 
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
@@ -616,6 +668,49 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def check_selection_before_parse(tmp: Path) -> None:
+    """A malformed block fails only when it is selected (#209)."""
+    bad_first = tmp / "bad-first-block.md"
+    bad_first.write_text(
+        "# doc\n\n```mermaid\nflowchart LR\nA -->\n```\n\n"
+        "```mermaid\nflowchart LR\nC --> D\n```\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(bad_first), "--diagram", "1", "--json"]))
+    if payload["diagrams_total"] != 2:
+        fail(f"diagrams_total must count every block: {payload['diagrams_total']}")
+    if [(item["index"], item["kind"]) for item in payload["diagrams"]] != [
+        (1, "flowchart")
+    ]:
+        fail("--diagram 1 did not return block 1 past a malformed block 0")
+    digest = run_extract([str(bad_first), "--diagram", "1"])
+    for needle in (
+        "2 diagram(s): [0] unparsed: malformed edge at line 5, [1] flowchart (2n/1e)",
+        "## Diagram 1",
+    ):
+        if needle not in digest:
+            fail(f"selected-block digest missing {needle!r}: {digest!r}")
+    if "## Diagram 0" in digest:
+        fail("an unselected malformed block was emitted as a diagram")
+    for selector in ([], ["--diagram", "0"], ["--diagram", "all"]):
+        expect_error([str(bad_first), *selector], "malformed edge at line 5")
+    expect_error([str(bad_first), "--diagram", "9"], "no diagram with index 9 (have 0..1)")
+
+    bad_second = tmp / "bad-second-block.md"
+    bad_second.write_text(
+        "```mermaid\nflowchart LR\nA --> B\n```\n\n"
+        "```mermaid\npie title Pets\n```\n",
+        encoding="utf-8",
+    )
+    default_digest = run_extract([str(bad_second)])
+    if "[1] unparsed: unsupported diagram kind" not in default_digest:
+        fail(f"default selection did not list the unparsed block 1: {default_digest!r}")
+    if "## Diagram 0" not in default_digest:
+        fail("default selection did not emit diagram 0 past a bad block 1")
+    expect_error([str(bad_second), "--diagram", "1"], "unsupported diagram kind: `pie`")
+    ok("--diagram selects a block before parsing it; selected bad blocks still fail")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload = json.loads(run_extract([str(ADVERSARIAL), "--json"]))
     diagram = payload["diagrams"][0]
@@ -811,6 +906,63 @@ def check_errors_and_limits(tmp: Path) -> None:
     oversized = tmp / "oversized.mmd"
     oversized.write_bytes(b"flowchart TD\n" + b" " * extractor.MAX_SOURCE_BYTES)
     expect_error([str(oversized)], "source exceeds")
+
+    statement_cap = getattr(extractor, "MAX_STATEMENT_CHARS", 4096)
+    at_cap = tmp / "statement-at-cap.mmd"
+    stem = 'A[""] --> B'
+    at_cap.write_text(
+        'flowchart TD\nA["' + "x" * (statement_cap - len(stem)) + '"] --> B\n',
+        encoding="utf-8",
+    )
+    run_extract([str(at_cap)])
+    over_cap = tmp / "statement-over-cap.mmd"
+    over_cap.write_text(
+        'flowchart TD\nA["' + "x" * (statement_cap - len(stem) + 1) + '"] --> B\n',
+        encoding="utf-8",
+    )
+    expect_error(
+        [str(over_cap)],
+        f"statement at line 2 exceeds the {statement_cap}-character limit",
+    )
+    minified = tmp / "statement-minified.mmd"
+    minified.write_text(
+        "flowchart TD\n" + ";".join(f"N{index}-->N{index + 1}" for index in range(600)) + "\n",
+        encoding="utf-8",
+    )
+    if len(minified.read_text(encoding="utf-8")) <= statement_cap:
+        fail("the minified fixture must be longer than one statement's cap")
+    run_extract([str(minified)])
+    unterminated_long = tmp / "statement-unterminated-long.mmd"
+    unterminated_long.write_text(
+        'flowchart TD\nA["' + "\n".join("x" * 60 for _ in range(200)) + "\n",
+        encoding="utf-8",
+    )
+    expect_error(
+        [str(unterminated_long)],
+        f"statement at line 2 exceeds the {statement_cap}-character limit",
+    )
+    minified_then_multiline = tmp / "statement-minified-then-multiline.mmd"
+    minified_then_multiline.write_text(
+        "flowchart TD\n"
+        + ";".join(f"N{index}-->N{index + 1}" for index in range(600))
+        + ';M["label that\ncontinues"] --> N0\n',
+        encoding="utf-8",
+    )
+    minified_multiline = json.loads(run_extract([str(minified_then_multiline), "--json"]))["diagrams"][0]
+    if len(minified_multiline["edges"]) != 601:
+        fail(
+            "a minified line followed by a multiline label must parse every statement: "
+            f"{len(minified_multiline['edges'])} edges"
+        )
+    unterminated_one_line = tmp / "statement-unterminated-one-line.mmd"
+    unterminated_one_line.write_text(
+        'flowchart TD\nA["' + "x" * (statement_cap + 10) + "\n",
+        encoding="utf-8",
+    )
+    expect_error(
+        [str(unterminated_one_line)],
+        f"statement at line 2 exceeds the {statement_cap}-character limit",
+    )
     ok("all documented exit-2 paths and resource caps fire specifically")
 
 
@@ -887,6 +1039,7 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_selection_before_parse(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)
         check_adversarial(tmp)

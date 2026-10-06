@@ -42,7 +42,14 @@
       text-transform: uppercase;
     }
     h1 { margin: 0 0 24px; font: 400 32px/1.15 var(--font-serif); }
-    svg { display: block; width: 100%; min-width: 720px; }
+    svg { display: block; width: 100%; min-width: 960px; }
+    /* The SVG holds its readable width (min-width == the viewBox width, so the
+       type ramp is never silently scaled down). This wrapper lets a narrow
+       screen scroll the diagram instead of the whole page. body is a centred
+       grid, so the root needs max-width/min-width to stop the grid item from
+       sizing itself to the SVG's max-content width. */
+    [data-motion-root] { max-width: 100%; min-width: 0; }
+    .diagram-container { width: 100%; overflow-x: auto; }
 
     /* Static source is complete. Only an initialized enhancement hides items. */
     .motion-ready [data-motion-item] {
@@ -160,6 +167,11 @@
       [data-motion-controls] { display: none !important; }
     }
     @media print {
+      /* Paper has no scrollbar, so the local scroller would clip instead of
+         scroll. Let the diagram scale down to the sheet: smaller but whole
+         beats sharp but cut off. */
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
       [data-motion-controls], [data-motion-decorative] { display: none !important; }
       [data-motion-item] {
         opacity: 1 !important;
@@ -176,50 +188,52 @@
     <p class="eyebrow">Process · Optional motion</p>
     <h1>Request evaluation</h1>
 
-    <svg viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="template-motion-title template-motion-desc">
-      <title id="template-motion-title">Request evaluation</title>
-      <desc id="template-motion-desc">A request is validated, evaluated against a policy, queued, and appended to an audit log.</desc>
-      <defs>
-        <marker id="template-motion-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-          <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
-        </marker>
-      </defs>
-      <rect width="960" height="480" fill="#f5f5f5"/>
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="template-motion-title template-motion-desc">
+        <title id="template-motion-title">Request evaluation</title>
+        <desc id="template-motion-desc">A request is validated, evaluated against a policy, queued, and appended to an audit log.</desc>
+        <defs>
+          <marker id="template-motion-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+          </marker>
+        </defs>
+        <rect width="960" height="480" fill="#f5f5f5"/>
 
-      <!-- Persistent connectors carry the static meaning. -->
-      <path d="M248 180 H356" fill="none" stroke="#4f5d75" marker-end="url(#template-motion-arrow)"/>
-      <path d="M556 180 H664" fill="none" stroke="#4f5d75" marker-end="url(#template-motion-arrow)"/>
-      <path d="M764 232 V328" fill="none" stroke="#4f5d75" marker-end="url(#template-motion-arrow)"/>
+        <!-- Persistent connectors carry the static meaning. -->
+        <path d="M248 180 H356" fill="none" stroke="#4f5d75" marker-end="url(#template-motion-arrow)"/>
+        <path d="M556 180 H664" fill="none" stroke="#4f5d75" marker-end="url(#template-motion-arrow)"/>
+        <path d="M764 232 V328" fill="none" stroke="#4f5d75" marker-end="url(#template-motion-arrow)"/>
 
-      <g data-motion-item data-step="1" aria-label="Step 1: Request received">
-        <rect x="48" y="128" width="200" height="104" rx="8" fill="#f5f5f5" stroke="#2d3142"/>
-        <text x="148" y="172" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Request</text>
-        <text x="148" y="196" text-anchor="middle" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">fields complete</text>
-      </g>
-      <g data-motion-item data-step="2" aria-label="Step 2: Policy passed">
-        <rect x="356" y="128" width="200" height="104" rx="8" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/>
-        <text x="456" y="168" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Policy</text>
-        <text x="456" y="196" text-anchor="middle" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">✓ PASS · rule 2</text>
-      </g>
-      <g data-motion-item data-step="3" aria-label="Step 3: Three items queued">
-        <rect x="664" y="128" width="200" height="104" rx="8" fill="#f5f5f5" stroke="#2d3142"/>
-        <text x="764" y="164" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Queue</text>
-        <rect x="700" y="184" width="16" height="16" fill="#4f5d75"/><rect x="724" y="184" width="16" height="16" fill="#4f5d75"/><rect x="748" y="184" width="16" height="16" fill="#4f5d75"/>
-        <text x="796" y="196" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">3 queued</text>
-      </g>
-      <g data-motion-item data-step="4" aria-label="Step 4: Audit entry appended">
-        <rect x="664" y="328" width="200" height="88" rx="8" fill="#f5f5f5" stroke="#2d3142"/>
-        <text x="764" y="364" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Audit log</text>
-        <text x="764" y="388" text-anchor="middle" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">0042 · appended</text>
-      </g>
-      <g data-motion-item data-step="5" aria-label="Step 5: Evaluation complete">
-        <text x="48" y="376" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Outcome: accepted and recorded</text>
-      </g>
+        <g data-motion-item data-step="1" aria-label="Step 1: Request received">
+          <rect x="48" y="128" width="200" height="104" rx="8" fill="#f5f5f5" stroke="#2d3142"/>
+          <text x="148" y="172" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Request</text>
+          <text x="148" y="196" text-anchor="middle" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">fields complete</text>
+        </g>
+        <g data-motion-item data-step="2" aria-label="Step 2: Policy passed">
+          <rect x="356" y="128" width="200" height="104" rx="8" fill="rgba(235,108,54,0.08)" stroke="#eb6c36"/>
+          <text x="456" y="168" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Policy</text>
+          <text x="456" y="196" text-anchor="middle" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">✓ PASS · rule 2</text>
+        </g>
+        <g data-motion-item data-step="3" aria-label="Step 3: Three items queued">
+          <rect x="664" y="128" width="200" height="104" rx="8" fill="#f5f5f5" stroke="#2d3142"/>
+          <text x="764" y="164" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Queue</text>
+          <rect x="700" y="184" width="16" height="16" fill="#4f5d75"/><rect x="724" y="184" width="16" height="16" fill="#4f5d75"/><rect x="748" y="184" width="16" height="16" fill="#4f5d75"/>
+          <text x="796" y="196" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">3 queued</text>
+        </g>
+        <g data-motion-item data-step="4" aria-label="Step 4: Audit entry appended">
+          <rect x="664" y="328" width="200" height="88" rx="8" fill="#f5f5f5" stroke="#2d3142"/>
+          <text x="764" y="364" text-anchor="middle" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Audit log</text>
+          <text x="764" y="388" text-anchor="middle" fill="#4f5d75" font-family="Geist Mono, monospace" font-size="12">0042 · appended</text>
+        </g>
+        <g data-motion-item data-step="5" aria-label="Step 5: Evaluation complete">
+          <text x="48" y="376" fill="#2d3142" font-family="Geist, sans-serif" font-size="16" font-weight="600">Outcome: accepted and recorded</text>
+        </g>
 
-      <!-- Decorative duplicate path and token never carry unique meaning. -->
-      <path data-motion-item data-step="2" data-motion-decorative aria-hidden="true" focusable="false" pathLength="1" class="draw-path" d="M248 180 H356"/>
-      <circle data-motion-item data-step="3" data-motion-decorative aria-hidden="true" focusable="false" class="flow-token" cx="556" cy="180" r="6" fill="#eb6c36"/>
-    </svg>
+        <!-- Decorative duplicate path and token never carry unique meaning. -->
+        <path data-motion-item data-step="2" data-motion-decorative aria-hidden="true" focusable="false" pathLength="1" class="draw-path" d="M248 180 H356"/>
+        <circle data-motion-item data-step="3" data-motion-decorative aria-hidden="true" focusable="false" class="flow-token" cx="556" cy="180" r="6" fill="#eb6c36"/>
+      </svg>
+    </div>
 
     <div data-motion-controls role="group" aria-label="Diagram playback controls">
       <button type="button" data-motion-action="prev">Previous</button>

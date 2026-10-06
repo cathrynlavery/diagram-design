@@ -247,8 +247,8 @@
         <!-- STEP 1: Ingress Traffic Arrives (Slots 1 & 2 + Initial 2/5 Queue Depth Badge) -->
         <g data-motion-item data-step="1" aria-label="Step 1: Web App and Mobile API send steady ingress traffic (7 req/sec total) into queue slots 1 and 2">
           <!-- Ingress Flow Arrows 1 & 2 -->
-          <path d="M 260 132 L 340 234" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <path d="M 260 232 L 340 282" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <path d="M 260 132 H 308 Q 316 132 316 140 V 226 Q 316 234 324 234 H 340" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <path d="M 260 248 H 284 Q 292 248 292 256 V 270 Q 292 278 300 278 H 340" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
 
           <!-- Queue Slot 1 -->
           <rect x="360" y="216" width="265" height="36" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
@@ -269,8 +269,8 @@
         <!-- STEP 2: Ingress Spike Fills Queue (Slots 3, 4, 5 + Updated 5/5 Full Warn Queue Depth Badge) -->
         <g data-motion-item data-step="2" aria-label="Step 2: Payment and ERP traffic spike (20 req/sec total) fills queue to 5/5 slots capacity">
           <!-- Ingress Flow Arrows 3 & 4 -->
-          <path d="M 260 332 L 340 322" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
-          <path d="M 260 432 L 340 370" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <path d="M 260 332 H 340" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
+          <path d="M 260 432 H 292 Q 300 432 300 424 V 374 Q 300 366 308 366 H 340" fill="none" stroke="#eb6c36" stroke-width="2" marker-end="url(#arrow-accent)" />
 
           <!-- Queue Slot 3 -->
           <rect x="360" y="304" width="265" height="36" rx="4" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
@@ -294,7 +294,7 @@
         <!-- STEP 3: Rate Limiter Diverts Excess Traffic (429 Dropped Sink) -->
         <g data-motion-item data-step="3" aria-label="Step 3: Overflow backpressure activates, shedding excess 19 req/sec to 429 Rate Limiter sink">
           <!-- Overflow Diverter Connector -->
-          <path d="M 525 150 L 525 92 L 760 92" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
+          <path d="M 525 150 V 100 Q 525 92 533 92 H 760" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
           
           <!-- 429 Dropped Traffic Sink Node (Expanded to width 350px) -->
           <rect x="760" y="50" width="350" height="85" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
@@ -305,7 +305,7 @@
         <!-- STEP 4: Worker Service Processing & Downstream Output -->
         <g data-motion-item data-step="4" aria-label="Step 4: Constrained worker node processes queue at 8 req/sec max emitting 200 OK downstream responses">
           <!-- Worker Processing Connector -->
-          <path d="M 710 310 L 760 280" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <path d="M 710 280 H 760" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
 
           <!-- Worker Node A (Expanded to width 350px) -->
           <rect x="760" y="215" width="350" height="130" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />

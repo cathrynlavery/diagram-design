@@ -61,6 +61,12 @@ layer. ``--fonts`` excludes exactly the two Google Fonts hostnames from the
 resolver block and allows them only over HTTPS on an exact hostname match.
 ``--self-test`` proves the isolation against a local listener.
 
+One check sits outside that browser: ``--all`` and ``--self-test`` run the PNG
+rasterize snippet from ``references/export.md`` in a subprocess, the way the doc
+tells a user to, on local fixtures (the shipped templates re-drawn at a wide
+preset, with every remote ``<link>`` removed). That subprocess's Chromium is not
+under the resolver block, which is why the fixtures carry no remote references.
+
 Because the oracle is pixels, CI must pin Playwright and its bundled Chromium
 rather than taking whatever is newest; see ``.github/workflows/ci.yml``.
 
@@ -76,7 +82,9 @@ Requires Playwright (same dev dependency the PNG export uses):
 import argparse
 import base64
 import os
+import re
 import socket
+import subprocess
 import sys
 import tempfile
 import threading
@@ -85,6 +93,7 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
+EXPORT_DOC = ROOT / "skills/diagram-design/references/export.md"
 
 VIEWPORT = {"width": 1600, "height": 1000}
 TOLERANCE = 1.0  # px of slop before page overflow counts, absorbs subpixel layout
@@ -884,6 +893,249 @@ def marimekko_mobile_failures(context, marimekko_paths=None):
     return failures
 
 
+def template_mobile_failures(context, template_paths=None):
+    """Every template must survive a phone, because every diagram starts as one.
+
+    Two defects, both invisible on a desktop:
+
+    * An SVG whose ``min-width`` exceeds the viewport with no local scroller
+      drags the whole document sideways, and the nodes on the right are simply
+      gone unless the reader thinks to scroll the page.
+    * When an ancestor is ``overflow: hidden`` (the terminal template's window
+      chrome), the same SVG is clipped instead: no scrollbar, no page overflow,
+      nothing for a page-overflow check to see. The content is unreachable and
+      the linter reports the file clean.
+
+    ``min-width`` must also equal the viewBox width. Anything smaller scales the
+    whole drawing down and silently takes the type ramp with it - a 12px node
+    name on a 1280 viewBox pinned at 900 draws at 8.4px, under every floor the
+    style guide sets.
+    """
+    paths = template_paths or sorted(ASSET_DIR.glob("template*.html"))
+    failures = []
+    for path in paths:
+        page = context.new_page()
+        page.set_viewport_size({"width": 390, "height": 844})
+        try:
+            page.goto(path.as_uri(), wait_until="load")
+            facts = page.evaluate(
+                """
+                () => {
+                  const doc = document.documentElement;
+                  const svg = document.querySelector('svg');
+                  if (!svg) return { missingSvg: true };
+                  let ancestor = svg.parentElement;
+                  let localScroller = false, clipped = false;
+                  while (ancestor && ancestor !== document.body) {
+                    const overflow = getComputedStyle(ancestor).overflowX;
+                    const overflows = ancestor.scrollWidth > ancestor.clientWidth + 1;
+                    if ((overflow === 'auto' || overflow === 'scroll') && overflows) {
+                      localScroller = true;
+                      break;
+                    }
+                    if (overflow === 'hidden' && overflows) clipped = true;
+                    ancestor = ancestor.parentElement;
+                  }
+                  const viewBox = (svg.getAttribute('viewBox') || '').trim().split(/[ ,]+/);
+                  return {
+                    missingSvg: false,
+                    pageOverflow: doc.scrollWidth - doc.clientWidth,
+                    svgWidth: svg.getBoundingClientRect().width,
+                    minWidth: parseFloat(getComputedStyle(svg).minWidth) || 0,
+                    viewBoxWidth: viewBox.length === 4 ? parseFloat(viewBox[2]) : 0,
+                    localScroller,
+                    clipped,
+                  };
+                }
+                """
+            )
+        finally:
+            page.close()
+
+        shown_path = display_path(path)
+        if facts["missingSvg"]:
+            failures.append(f"{shown_path}: template-mobile-svg: no SVG found")
+            continue
+        if facts["pageOverflow"] > TOLERANCE:
+            failures.append(
+                f"{shown_path}: template-mobile-page-overflow: page extends "
+                f"{facts['pageOverflow']:.1f}px past the 390px viewport"
+            )
+        if facts["clipped"] and not facts["localScroller"]:
+            failures.append(
+                f"{shown_path}: template-mobile-clipped: an overflow:hidden ancestor cuts the "
+                f"{facts['svgWidth']:.0f}px SVG off with no scroller - the content is unreachable"
+            )
+        if facts["minWidth"] > TOLERANCE and not facts["localScroller"]:
+            failures.append(
+                f"{shown_path}: template-mobile-containment: wide SVG needs a local horizontal scroller"
+            )
+        if facts["minWidth"] <= TOLERANCE and facts["viewBoxWidth"] > TOLERANCE:
+            # An absent min-width is not a pass: the SVG then shrinks into the
+            # phone and the type ramp shrinks with it, which is the same defect
+            # the type-ramp check below reports - it just reads as 0 instead of
+            # a wrong number, and would otherwise skip both checks silently.
+            drawn = facts["svgWidth"]
+            failures.append(
+                f"{shown_path}: template-mobile-type-ramp: no min-width, so the SVG shrinks to "
+                f"{drawn:.0f}px against a {facts['viewBoxWidth']:.0f} viewBox and a 12px node name "
+                f"lands at {12 * drawn / facts['viewBoxWidth']:.1f}px; pin min-width to the viewBox width"
+            )
+        if (
+            facts["minWidth"] > TOLERANCE
+            and facts["viewBoxWidth"] > TOLERANCE
+            and abs(facts["minWidth"] - facts["viewBoxWidth"]) > TOLERANCE
+        ):
+            ratio = facts["minWidth"] / facts["viewBoxWidth"]
+            failures.append(
+                f"{shown_path}: template-mobile-type-ramp: min-width {facts['minWidth']:.0f}px "
+                f"!= viewBox width {facts['viewBoxWidth']:.0f}px, so everything draws at "
+                f"{ratio:.3f} scale and a 12px node name lands at {12 * ratio:.1f}px"
+            )
+    return failures
+
+
+OUTPUT_SPEC_DOC = ROOT / "skills/diagram-design/references/output-spec.md"
+
+
+def output_spec_widest_preset():
+    """The widest fixed viewBox in the output-spec.md size table, or None."""
+    text = OUTPUT_SPEC_DOC.read_text(encoding="utf-8")
+    sizes = re.findall(r"^\| `[a-z0-9-]+` \| `0 0 (\d+) (\d+)`", text, re.M)
+    return max((int(w), int(h)) for w, h in sizes) if sizes else None
+
+
+# The export check re-draws each template at the widest fixed preset in
+# output-spec.md (print-a3-landscape, 1584 wide, at the time of writing). With
+# min-width pinned to the viewBox width, every preset from 1280 up is wider than
+# the templates' 1200px frame; the widest is the hardest to capture whole. The
+# self-test fails if this falls back or drifts from the table.
+WIDE_PRESET = output_spec_widest_preset() or (1280, 720)
+# A node in the rightmost 100 units of the wide preset; the PNG must paint it.
+EXPORT_PROBE = {"x": WIDE_PRESET[0] - 100, "y": WIDE_PRESET[1] // 2 - 32, "width": 80, "height": 60}
+EXPORT_PROBE_MARKUP = (
+    '<rect id="export-probe" x="{x}" y="{y}" width="{width}" height="{height}" '
+    'fill="#ff00ff"/>'.format(**EXPORT_PROBE)
+)
+EXPORT_TIMEOUT = 120  # seconds for one run of the recipe, browser launch included
+
+PNG_PROBE_JS = """
+async ([src, probe, viewBoxWidth]) => {
+  const img = new Image();
+  img.src = src;
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const k = img.naturalWidth / viewBoxWidth;
+  const y = probe.y + probe.height / 2;
+  const xs = [probe.x + 4, probe.x + probe.width / 2, probe.x + probe.width - 4];
+  const pixels = xs.map((x) => Array.from(ctx.getImageData(Math.floor(x * k), Math.floor(y * k), 1, 1).data));
+  return { width: img.naturalWidth, height: img.naturalHeight, pixels };
+}
+"""
+
+
+def export_recipe():
+    """The PNG rasterize snippet from export.md, found by heading, not position."""
+    text = EXPORT_DOC.read_text(encoding="utf-8")
+    match = re.search(r"^### Rasterize[ \t]*\n(.*?)^```python\n(.*?)^```", text, re.M | re.S)
+    if match is None or re.search(r"^#{1,3} ", match.group(1), re.M):
+        return None
+    return match.group(2)
+
+
+def wide_preset_fixture(html):
+    """Re-draw a template at the widest preset the way output-spec.md says:
+    viewBox and min-width both at the preset width, plus a probe node at the
+    right edge.
+    Remote <link>s are dropped so the recipe runs without a network."""
+    match = re.search(r'<svg\b[^>]*\bviewBox="0 0 (\d+) (\d+)"', html)
+    if match is None:
+        return None
+    width = match.group(1)
+    html = html[: match.start(1)] + f"{WIDE_PRESET[0]} {WIDE_PRESET[1]}" + html[match.end(2) :]
+    html, pinned = re.subn(rf"min-width:\s*{width}px", f"min-width: {WIDE_PRESET[0]}px", html)
+    if pinned != 1 or "</svg>" not in html:
+        return None
+    html = html.replace("</svg>", EXPORT_PROBE_MARKUP + "</svg>", 1)
+    return re.sub(r"<link\b[^>]*\bhref=\"https?://[^>]*>", "", html)
+
+
+def export_png_failures(context, label, html, recipe):
+    """Run export.md's rasterize recipe on ``html`` exactly as the doc says
+    (snippet in a temp file, ``python <tmp.py> <src.html> <out.png> 1``) and
+    report a PNG that is not the full viewBox width or does not paint the probe."""
+    with tempfile.TemporaryDirectory() as directory:
+        directory_path = Path(directory)
+        script = directory_path / "rasterize.py"
+        source = directory_path / "wide-preset.html"
+        out = directory_path / "wide-preset.png"
+        script.write_text(recipe, encoding="utf-8")
+        source.write_text(html, encoding="utf-8")
+        try:
+            run = subprocess.run(
+                [sys.executable, str(script), str(source), str(out), "1"],
+                capture_output=True, text=True, timeout=EXPORT_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            return [f"{label}: template-export: the export.md recipe did not finish in {EXPORT_TIMEOUT}s"]
+        if run.returncode != 0 or not out.is_file():
+            tail = (run.stderr.strip().splitlines() or ["no output"])[-1]
+            return [f"{label}: template-export: the export.md recipe failed: {tail}"]
+        png = out.read_bytes()
+    page = context.new_page()
+    try:
+        facts = page.evaluate(PNG_PROBE_JS, [data_url(png), EXPORT_PROBE, WIDE_PRESET[0]])
+    finally:
+        page.close()
+    failures = []
+    if facts["width"] != WIDE_PRESET[0]:
+        failures.append(
+            f"{label}: template-export: PNG is {facts['width']}px wide at scale 1, "
+            f"expected the viewBox width {WIDE_PRESET[0]}px"
+        )
+    painted = [r > 200 and g < 60 and b > 200 and a > 200 for r, g, b, a in facts["pixels"]]
+    if not all(painted):
+        failures.append(
+            f"{label}: template-export: the node at x={EXPORT_PROBE['x']}-"
+            f"{EXPORT_PROBE['x'] + EXPORT_PROBE['width']} of a {WIDE_PRESET[0]}-wide preset is "
+            f"missing from the PNG (sampled {facts['pixels']}); an ancestor clipped the SVG "
+            f"during capture"
+        )
+    return failures
+
+
+def template_export_failures(context, template_paths=None):
+    """A template re-drawn at doc-wide or slide-16x9 must export to a whole PNG.
+
+    min-width equal to the viewBox width makes a 1280 SVG wider than the 1200px
+    frame, so the local scroller (and the terminal's overflow:hidden chrome)
+    clips it on screen. The rasterize recipe screenshots the SVG's box, and
+    whatever an ancestor clipped is simply not in the PNG: full size, blank on
+    the right, no error. This runs the recipe from export.md itself, so the
+    check follows the doc rather than a copy of it.
+    """
+    recipe = export_recipe()
+    if recipe is None:
+        return [f"{display_path(EXPORT_DOC)}: template-export: no ```python block under ### Rasterize"]
+    paths = template_paths or sorted(ASSET_DIR.glob("template*.html"))
+    failures = []
+    for path in paths:
+        shown_path = display_path(path)
+        fixture = wide_preset_fixture(path.read_text(encoding="utf-8"))
+        if fixture is None:
+            failures.append(
+                f"{shown_path}: template-export: could not re-draw at the {WIDE_PRESET[0]} preset "
+                "(needs one viewBox=\"0 0 W H\" and one `min-width: Wpx`)"
+            )
+            continue
+        failures += export_png_failures(context, shown_path, fixture, recipe)
+    return failures
+
+
 def self_test(context):
     page = context.new_page()
     failures = []
@@ -1042,6 +1294,121 @@ def self_test(context):
                 + "; ".join(contained_failures)
             )
 
+    # Templates: three polarities, because the clipped case is the one a
+    # page-overflow check cannot see - it reports clean precisely because the
+    # content was destroyed instead of overflowing.
+    checks += 5
+    with tempfile.TemporaryDirectory() as directory:
+        directory_path = Path(directory)
+
+        overflowing = directory_path / "template-overflow.html"
+        overflowing.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}'
+            'svg{width:100%;min-width:1000px;display:block}</style>'
+            '<body><div class="frame"><svg viewBox="0 0 1000 600"></svg></div></body></html>',
+            encoding="utf-8",
+        )
+        overflow_failures = template_mobile_failures(context, [overflowing])
+        if not any("template-mobile-page-overflow" in f for f in overflow_failures):
+            failures.append("template-overflow-fixture: page overflow was not reported")
+        if not any("template-mobile-containment" in f for f in overflow_failures):
+            failures.append("template-overflow-fixture: missing local scroller was not reported")
+
+        clipped = directory_path / "template-clipped.html"
+        clipped.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.chrome{overflow:hidden}'
+            'svg{width:100%;min-width:1000px;display:block}</style>'
+            '<body><div class="chrome"><svg viewBox="0 0 1000 600"></svg></div></body></html>',
+            encoding="utf-8",
+        )
+        clipped_failures = template_mobile_failures(context, [clipped])
+        if not any("template-mobile-clipped" in f for f in clipped_failures):
+            failures.append("template-clipped-fixture: unreachable clipped SVG was not reported")
+
+        contained = directory_path / "template-contained.html"
+        contained.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;min-width:1000px;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1000 600"></svg></div>'
+            '</div></body></html>',
+            encoding="utf-8",
+        )
+        contained_failures = template_mobile_failures(context, [contained])
+        if contained_failures:
+            failures.append(
+                "template-contained-fixture: false finding: " + "; ".join(contained_failures)
+            )
+
+        ramp = directory_path / "template-ramp.html"
+        ramp.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;min-width:900px;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1280 720"></svg></div>'
+            '</div></body></html>',
+            encoding="utf-8",
+        )
+        if not any("template-mobile-type-ramp" in f for f in template_mobile_failures(context, [ramp])):
+            failures.append("template-ramp-fixture: min-width below the viewBox width was not reported")
+
+        absent = directory_path / "template-no-min-width.html"
+        absent.write_text(
+            '<!DOCTYPE html><html><style>body{margin:0}.diagram-container{width:100%;overflow-x:auto}'
+            'svg{width:100%;display:block}</style><body><div class="frame">'
+            '<div class="diagram-container"><svg viewBox="0 0 1280 720"></svg></div>'
+            '</div></body></html>',
+            encoding="utf-8",
+        )
+        if not any("template-mobile-type-ramp" in f for f in template_mobile_failures(context, [absent])):
+            failures.append("template-no-min-width-fixture: absent min-width was treated as a pass")
+
+    # The export check must cover the widest preset output-spec.md offers, or
+    # clipping that only a wider preset hits goes untested.
+    checks += 1
+    widest = output_spec_widest_preset()
+    if widest is None:
+        failures.append("template-export-widest-preset: no viewBox rows in the output-spec.md size table")
+    elif WIDE_PRESET != widest:
+        failures.append(
+            f"template-export-widest-preset: the export check uses {WIDE_PRESET[0]}x{WIDE_PRESET[1]}, "
+            f"but the widest output-spec.md preset is {widest[0]}x{widest[1]}"
+        )
+
+    # Export of the wide preset, both polarities: an SVG wider than the 1200px
+    # frame, held in a local scroller, must come out whole, and a probe node that
+    # really is cut off (clip-path, which export does not release) must be reported.
+    checks += 2
+    recipe = export_recipe()
+    if recipe is None:
+        failures.append("template-export: no python snippet under ### Rasterize in export.md")
+    else:
+        wide_page = (
+            '<!DOCTYPE html><html><style>body{{margin:0;padding:32px;background:#f5f5f5}}'
+            '.frame{{max-width:1200px;width:100%}}.diagram-container{{width:100%;overflow-x:auto}}'
+            'svg{{width:100%;min-width:' + str(WIDE_PRESET[0]) + 'px;display:block}}</style>'
+            '<body><div class="frame"><div class="diagram-container"{clip}>'
+            '<svg viewBox="0 0 ' + f"{WIDE_PRESET[0]} {WIDE_PRESET[1]}" + '" '
+            'xmlns="http://www.w3.org/2000/svg"><rect width="' + str(WIDE_PRESET[0])
+            + '" height="' + str(WIDE_PRESET[1]) + '" fill="#f5f5f5"/>'
+            + EXPORT_PROBE_MARKUP
+            + "</svg></div></div></body></html>"
+        )
+        scroller_failures = export_png_failures(
+            context, "template-export-scroller-fixture", wide_page.format(clip=""), recipe
+        )
+        if scroller_failures:
+            failures.append(
+                f"template-export-scroller-fixture: the recipe clipped a {WIDE_PRESET[0]}-wide SVG held in a "
+                "local scroller: " + "; ".join(scroller_failures)
+            )
+        clipped_failures = export_png_failures(
+            context,
+            "template-export-clipped-fixture",
+            wide_page.format(clip=' style="clip-path:inset(0 160px 0 0)"'),
+            recipe,
+        )
+        if not any("is missing from the PNG" in f for f in clipped_failures):
+            failures.append("template-export-clipped-fixture: a cut-off probe node was not reported")
+
     # A broken route should be a targeted failure, not a delayed Playwright
     # timeout or traceback that escapes the self-test report.
     checks += 1
@@ -1130,6 +1497,8 @@ def main():
             mobile_failures = waterfall_mobile_failures(context)
             mobile_failures += excalidraw_mobile_failures(context)
             mobile_failures += marimekko_mobile_failures(context)
+            mobile_failures += template_mobile_failures(context)
+            mobile_failures += template_export_failures(context)
             total_findings += len(mobile_failures)
             if not args.quiet:
                 for failure in mobile_failures:

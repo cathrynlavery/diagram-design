@@ -241,6 +241,37 @@ def check_nested_geometry(tmp: Path) -> None:
     ok("nested geometry and bounds are independent of cell order")
 
 
+def check_bom_prefixed(tmp: Path) -> None:
+    model = re.search(
+        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
+    )
+    if not model:
+        fail("fixture has no mxGraphModel")
+    # ElementTree accepts a leading U+FEFF, so the raw XML case passes even
+    # without BOM handling. The bare payload is the case that needs it:
+    # base64 decoding rejects the BOM and the extractor exits 2.
+    inputs = {
+        "raw XML": FIXTURE.read_bytes(),
+        "bare base64+deflate payload": compress_model(model.group(0)).encode("ascii"),
+    }
+    for index, (label, body) in enumerate(inputs.items()):
+        # Same file name in both runs: a bare payload's page is named after it.
+        plain = tmp / f"bom-{index}" / "plain" / "input.drawio"
+        prefixed = tmp / f"bom-{index}" / "prefixed" / "input.drawio"
+        for path in (plain, prefixed):
+            path.parent.mkdir(parents=True)
+        plain.write_bytes(body)
+        prefixed.write_bytes(b"\xef\xbb\xbf" + body)
+        expected = json.loads(run_extract([str(plain), "--json"]))["pages"]
+        actual = json.loads(run_extract([str(prefixed), "--json"]))["pages"]
+        analysis = actual[0]["analysis"]
+        if analysis["nodes_total"] != 12 or analysis["edges_total"] != 8:
+            fail(f"UTF-8 BOM-prefixed {label} graph differs from the source fixture")
+        if actual != expected:
+            fail(f"UTF-8 BOM-prefixed {label} extracts differently from the same input without a BOM")
+    ok("UTF-8 BOM-prefixed raw XML and bare compressed payload parse like their unprefixed input")
+
+
 def check_containers(tmp: Path) -> None:
     model = re.search(
         r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
@@ -476,6 +507,7 @@ def check_docs() -> None:
         "social-og",
         "social-square",
         "print-a4-landscape",
+        "print-a3-landscape",
         "print-letter-landscape",
         "`fit`",
     ):
@@ -491,7 +523,8 @@ def check_docs() -> None:
         if needle not in output_text:
             fail(f"output-spec.md missing section {needle!r}")
 
-    # Every viewBox preset must respect the 4px grid rule (SKILL.md §7).
+    # Every viewBox preset must respect the 4px grid rule (SKILL.md §7; the
+    # table lives in references/layout-budget.md).
     for w, h in re.findall(r"`0 0 (\d+) (\d+)`", output_text):
         if int(w) % 4 or int(h) % 4:
             fail(f"viewBox preset {w}×{h} is off the 4px grid")
@@ -548,6 +581,7 @@ def main() -> int:
         check_files()
         check_parse_raw()
         check_nested_geometry(tmp)
+        check_bom_prefixed(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)
         check_digest_escaping(tmp)

@@ -275,10 +275,10 @@
 
         <!-- STEP 3: Security Gate Approval → Production Gateway → Database Deployment -->
         <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy, approves artifact, and deploys via Production API Gateway to Isolated Core Database">
-          <!-- Gate ✓ PASS → Production API Gateway (diagonal: gate right edge to gateway left edge) -->
-          <path d="M 690 230 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="700" y="166" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="732" y="179" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
+          <!-- Gate ✓ PASS → Production API Gateway (elbow through the gutter between zones at x=735) -->
+          <path d="M 690 248 H 727 Q 735 248 735 240 V 140 Q 735 132 743 132 H 780" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="702.5" y="181" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="735" y="194" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
           <!-- Production API Gateway → Isolated Core Database (vertical: gateway bottom to db top) -->
           <path d="M 940 168 L 940 210" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
         </g>

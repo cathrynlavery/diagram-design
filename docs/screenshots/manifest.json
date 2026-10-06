@@ -15,10 +15,19 @@
       "slug": "architecture",
       "source": "skills/diagram-design/assets/example-architecture.html",
       "screenshot": "docs/screenshots/architecture.png",
-      "source_sha256": "03716fdb0a4ad641c30a5267b14a4c573d699f0f31ab3d8a0ba4e2b74ad56177",
-      "screenshot_sha256": "2258aef552e8e83aa9936ab4ca2b58fbee76fdb742cc4f68ce6499785b80f614",
+      "source_sha256": "9b2aab47bb4a362d338d4749e601ec4bfdbe21a29d51e3117a1ad41ea483c8fe",
+      "screenshot_sha256": "af466b2029259c11800f74170711a05711569388d908ff24894961c583fb6339",
       "width": 2400,
       "height": 1154
+    },
+    {
+      "slug": "architecture-delta",
+      "source": "skills/diagram-design/assets/example-architecture-delta.html",
+      "screenshot": "docs/screenshots/architecture-delta.png",
+      "source_sha256": "a8b9b1e1f27caba825f5335e1026dec2f32deb60c7e3a83730bc2183aaf56b52",
+      "screenshot_sha256": "f7c4dbfd20d85cd426a32a368664416d6260f7878c6f7920e6a2724271bbf185",
+      "width": 2400,
+      "height": 1362
     },
     {
       "slug": "it-state",
@@ -33,8 +42,8 @@
       "slug": "flowchart",
       "source": "skills/diagram-design/assets/example-flowchart.html",
       "screenshot": "docs/screenshots/flowchart.png",
-      "source_sha256": "ba0a39df57d5fd4beccebeb51d62028b420371b30793b2658d308df04d571ff3",
-      "screenshot_sha256": "47c84d9f89a4e60ad131b05b0619e356894052d0477a8b3b024d56e5bd91b517",
+      "source_sha256": "4242060c6b8bdb601c33f040ec656c0c23b8dc36eb94133af839cf7b507b7308",
+      "screenshot_sha256": "58556c5bcdf39fbaa817abca5e4a72180ef87469d2df30b961e87d1a39ac1ddf",
       "width": 2400,
       "height": 1442
     },
@@ -78,8 +87,8 @@
       "slug": "swimlane",
       "source": "skills/diagram-design/assets/example-swimlane.html",
       "screenshot": "docs/screenshots/swimlane.png",
-      "source_sha256": "75fc463ad3282dd0faaa4328c6b07f7e853184eeb1edcff2add8f7ed1876ab3b",
-      "screenshot_sha256": "562c47b77f177732aa0e5fffe2ce32426c121b4e98fa28f9f482aba1d73dba38",
+      "source_sha256": "7f023145bf19ec84837a081df2f6d722344d796f950ab363dd5584d7bdcb0618",
+      "screenshot_sha256": "14d08ffe32fd8742767f9bb770b4ea60b7420674689abf90fac52dc9418a0d54",
       "width": 2400,
       "height": 1154
     },
@@ -123,8 +132,8 @@
       "slug": "nested",
       "source": "skills/diagram-design/assets/example-nested.html",
       "screenshot": "docs/screenshots/nested.png",
-      "source_sha256": "17648e5a26604bf678d7cd256ec0d84a54f7f2c6920fb56c030226e6ffc6557a",
-      "screenshot_sha256": "7199d6871a0aab4377af0002a42c3dc9daee9e869f1131493ecf6e17a5a1cac0",
+      "source_sha256": "33608608681a08fd6a6cd16837442b6209e1b9af042adfb7160a91e024fca72e",
+      "screenshot_sha256": "16fa6c5fad38160cc70ad64a4d8642cb22b2c74c2f583407245e9183f3fc9994",
       "width": 2400,
       "height": 1202
     },
@@ -154,6 +163,24 @@
       "screenshot_sha256": "74f5708645ba4a30cb65f8d6f2ae997ab6229140f3db7384aaf8ade9ada46cfe",
       "width": 2400,
       "height": 1202
+    },
+    {
+      "slug": "exploded",
+      "source": "skills/diagram-design/assets/example-exploded.html",
+      "screenshot": "docs/screenshots/exploded.png",
+      "source_sha256": "164bee35a19956151cb0c3043ac41054de9d5ae6dfcf0ed2c2c211d16218604d",
+      "screenshot_sha256": "e835ddfc5e9bf34191e410fe2d7020ed9340b34535647964abdba82ff68baa9c",
+      "width": 2400,
+      "height": 1336
+    },
+    {
+      "slug": "axonometric-plan",
+      "source": "skills/diagram-design/assets/example-axonometric-plan.html",
+      "screenshot": "docs/screenshots/axonometric-plan.png",
+      "source_sha256": "06f0e85d99c7e59b52d0bcbdb491eb5ec0a51a6036879fe6d809626ffa2b7fac",
+      "screenshot_sha256": "eeeaa6d8f100b50854f1d452b253807c2ad4abc9b450bce854c04fdb95fbb7b1",
+      "width": 2400,
+      "height": 1078
     },
     {
       "slug": "venn",
@@ -201,6 +228,15 @@
       "height": 1202
     },
     {
+      "slug": "heatmap",
+      "source": "skills/diagram-design/assets/example-heatmap.html",
+      "screenshot": "docs/screenshots/heatmap.png",
+      "source_sha256": "1dd42f8cdfb73d1f0a139de52653c98da760ef4e1403990424f6a5da201cdb6b",
+      "screenshot_sha256": "71dde28b4cab7788fd735a3c543a60c4fdc854749c627749eb768adc52fd9186",
+      "width": 2400,
+      "height": 1202
+    },
+    {
       "slug": "line",
       "source": "skills/diagram-design/assets/example-line.html",
       "screenshot": "docs/screenshots/line.png",
@@ -231,8 +267,8 @@
       "slug": "high-level",
       "source": "skills/diagram-design/assets/example-high-level.html",
       "screenshot": "docs/screenshots/high-level.png",
-      "source_sha256": "33789942cb06be5228ffa6e450602d1f7c9344b7d263fa2674b7ba5e6dd7e788",
-      "screenshot_sha256": "afe822249fbbb601657edc468d5572d2c4a6acc8cbef4ea41771d42d13e3b75e",
+      "source_sha256": "f19c413a21be949cdcbda5f50abbb59a72e0d82f261b6f9a35eef8adee557ac0",
+      "screenshot_sha256": "9fe677ad9292f5d090b8dc9a84d0166833896e407c1fa33bd38bd6b4e489cc6b",
       "width": 2400,
       "height": 1298
     },
@@ -366,8 +402,8 @@
       "slug": "db-schema",
       "source": "skills/diagram-design/assets/example-db-schema.html",
       "screenshot": "docs/screenshots/db-schema.png",
-      "source_sha256": "58d473906c57670fecee29bc55377df5b433549445962204412ebd2c081b76db",
-      "screenshot_sha256": "939061c701f7bb70aa1b5f7ee1fe2da3a68b3b8edc4822cd9dcb7586acd7a2d6",
+      "source_sha256": "6031e6df48ba3511906f30ceb0b3fe5741091dd6bb30ca67ac6ab178492de57b",
+      "screenshot_sha256": "d5a82a34734c7d1dcd82770a6482cbb238ba1b79dda6cc36e4716a58f0bba24f",
       "width": 2480,
       "height": 1288
     }

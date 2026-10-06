@@ -46,15 +46,24 @@ jobs:
       - name: Verify maintainer policy tracks package and CI truth
         run: python3 scripts/test-maintainer-policy.py
 
+      - name: Verify OpenAI plugin directory listing and upload ZIP
+        run: python3 scripts/test-build-openai-plugin-zip.py
+
       # Versions are bumped on main by the Auto Version Bump workflow after
       # each merge (ADR 0009); pull requests must leave them untouched.
+      # A pull_request checkout is GitHub's merge of the PR into the current
+      # base tip, so the merge's first parent is the base to compare against.
+      # github.event.pull_request.base.sha can predate later auto-bumps and
+      # would report their versions as edits made by the PR.
       - name: Forbid manifest version changes in pull requests
-        env:
-          BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            python3 scripts/verify-plugin-package.py --require-no-bump "$BASE_REF"
+            if ! git rev-parse -q --verify HEAD^2 >/dev/null; then
+              echo "expected the pull request merge commit at HEAD" >&2
+              exit 1
+            fi
+            python3 scripts/verify-plugin-package.py --require-no-bump HEAD^1
           else
             python3 scripts/verify-plugin-package.py --current-only
           fi
@@ -161,6 +170,14 @@ jobs:
           python scripts/test-verify-polar.py
           python scripts/verify-polar.py
 
+      - name: Verify heatmap monotone ramp and grid
+        if: always()
+        id: heatmap
+        shell: bash
+        run: |
+          python scripts/test-verify-heatmap.py
+          python scripts/verify-heatmap.py --all
+
       - name: Verify sequence OAuth specs
         if: always()
         id: oauth
@@ -223,6 +240,11 @@ jobs:
         id: screenshots
         run: python scripts/verify-screenshot-freshness.py
 
+      - name: Verify screenshot freshness checker
+        if: always()
+        id: screenshots_tests
+        run: python scripts/test-verify-screenshot-freshness.py
+
       - name: Install Pillow for README thumbnail verification
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         env:
@@ -243,6 +265,11 @@ jobs:
         if: always()
         id: self_check
         run: python scripts/test-self-check.py
+
+      - name: Verify standalone SVG export (CSS carry + defs IDs)
+        if: always()
+        id: export_svg
+        run: python scripts/test-export-svg-standalone.py
 
       - name: Verify label geometry
         if: always()
@@ -373,6 +400,46 @@ jobs:
         id: beeswarm_tests
         run: python scripts/test-verify-beeswarm.py
 
+      - name: Verify architecture delta snapshots and ledger
+        if: always()
+        id: architecture_delta
+        run: python scripts/verify-architecture-delta.py --all
+
+      - name: Verify architecture delta checker
+        if: always()
+        id: architecture_delta_tests
+        run: python scripts/test-verify-architecture-delta.py
+
+      - name: Verify exploded examples match their builder
+        if: always()
+        id: exploded_build
+        run: python scripts/build-exploded-examples.py --check
+
+      - name: Verify exploded axonometric geometry
+        if: always()
+        id: exploded
+        run: python scripts/verify-exploded.py --all
+
+      - name: Verify exploded axonometric checker
+        if: always()
+        id: exploded_tests
+        run: python scripts/test-verify-exploded.py
+
+      - name: Verify axonometric plan examples match their builder
+        if: always()
+        id: axo_plan_build
+        run: python scripts/build-axonometric-plan-examples.py --check
+
+      - name: Verify axonometric plan geometry and tags
+        if: always()
+        id: axo_plan
+        run: python scripts/verify-axonometric-plan.py --all
+
+      - name: Verify axonometric plan checker
+        if: always()
+        id: axo_plan_tests
+        run: python scripts/test-verify-axonometric-plan.py
+
       - name: Verify tone claims against the ramps they describe
         if: always()
         id: skin_polarity
@@ -400,6 +467,23 @@ jobs:
           pip install "playwright==${PLAYWRIGHT_VERSION}"
           playwright install --with-deps chromium
           python -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
+
+      # The export snippet's browser contract, enforced where Playwright and
+      # Chromium are already installed (stalled load, normal load, and
+      # non-timeout errors propagating must all hold).
+      - name: Verify export snippet stalled-load fallback
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: export_wait
+        shell: bash
+        run: |
+          # Playwright is installed on this leg, so a SKIP means the browser
+          # contract silently went unverified -- treat it as a failure.
+          out="$(python scripts/test-export-wait.py)"
+          echo "$out"
+          case "$out" in
+            SKIP:*) echo "::error::export-wait tests skipped despite Playwright being installed" && exit 1 ;;
+          esac
+          echo "$out" | grep -q "All export-wait cases passed"
 
       # The checks before the sweep: a broken linter must not be able to report
       # a clean repository.
@@ -440,6 +524,8 @@ jobs:
           echo "| Mojibake Repair Utility | ${{ steps.mojibake.outcome == 'success' && '✅ Passed' || (steps.mojibake.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Heatmap Monotone Ramp & Grid | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Heatmap Checker | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Semantic-Motion Verifier Tests | ${{ steps.semantic_motion_tests.outcome == 'success' && '✅ Passed' || (steps.semantic_motion_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Sequence-OAuth Verifier Tests | ${{ steps.oauth_tests.outcome == 'success' && '✅ Passed' || (steps.oauth_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -451,8 +537,10 @@ jobs:
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Docs & Routing Sync | ${{ steps.docs_sync.outcome == 'success' && '✅ Passed' || (steps.docs_sync.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Canonical Screenshot Freshness | ${{ steps.screenshots.outcome == 'success' && '✅ Passed' || (steps.screenshots.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Screenshot Freshness Checker | ${{ steps.screenshots_tests.outcome == 'success' && '✅ Passed' || (steps.screenshots_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| README Thumbnail Freshness | ${{ steps.readme_thumbs.outcome == 'success' && '✅ Passed' || (steps.readme_thumbs.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Packaged Self-Check | ${{ steps.self_check.outcome == 'success' && '✅ Passed' || (steps.self_check.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Standalone SVG Export | ${{ steps.export_svg.outcome == 'success' && '✅ Passed' || (steps.export_svg.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry | ${{ steps.geometry.outcome == 'success' && '✅ Passed' || (steps.geometry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Block Registry | ${{ steps.block_registry.outcome == 'success' && '✅ Passed' || (steps.block_registry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -479,8 +567,17 @@ jobs:
           echo "| Bump Checker | ${{ steps.bump_tests.outcome == 'success' && '✅ Passed' || (steps.bump_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Beeswarm Positions & Packing | ${{ steps.beeswarm.outcome == 'success' && '✅ Passed' || (steps.beeswarm.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Beeswarm Checker | ${{ steps.beeswarm_tests.outcome == 'success' && '✅ Passed' || (steps.beeswarm_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture Delta Checker | ${{ steps.architecture_delta_tests.outcome == 'success' && '✅ Passed' || (steps.architecture_delta_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exploded Examples Match Builder | ${{ steps.exploded_build.outcome == 'success' && '✅ Passed' || (steps.exploded_build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exploded Axonometric Geometry | ${{ steps.exploded.outcome == 'success' && '✅ Passed' || (steps.exploded.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exploded Axonometric Checker | ${{ steps.exploded_tests.outcome == 'success' && '✅ Passed' || (steps.exploded_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Axonometric Plan Examples Match Builder | ${{ steps.axo_plan_build.outcome == 'success' && '✅ Passed' || (steps.axo_plan_build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Axonometric Plan Geometry & Tags | ${{ steps.axo_plan.outcome == 'success' && '✅ Passed' || (steps.axo_plan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Axonometric Plan Checker | ${{ steps.axo_plan_tests.outcome == 'success' && '✅ Passed' || (steps.axo_plan_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tone Claim vs Ramp Polarity | ${{ steps.skin_polarity.outcome == 'success' && '✅ Passed' || (steps.skin_polarity.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Skin Polarity Checker | ${{ steps.skin_polarity_tests.outcome == 'success' && '✅ Passed' || (steps.skin_polarity_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Export Snippet Stalled-Load Fallback | ${{ steps.export_wait.outcome == 'success' && '✅ Passed' || (steps.export_wait.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

@@ -14,8 +14,9 @@
     .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
     h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
     .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
-    .diagram-container { background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
-    svg { width: 100%; min-width: 900px; display: block; }
+    .diagram-container { width: 100%; background: var(--color-paper-2); border-radius: 8px; border: 1px solid var(--color-rule); padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
     .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
     @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
     .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
@@ -68,20 +69,20 @@
         <line x1="500" y1="424" x2="500" y2="464" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
 
         <!-- Arrow labels -->
-        <rect x="644" y="230" width="24" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="656" y="239" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+        <rect x="644" y="220" width="24" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="656" y="229" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
 
-        <rect x="484" y="298" width="32" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="500" y="307" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+        <rect x="508" y="298" width="32" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="524" y="307" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
 
-        <rect x="644" y="366" width="24" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="656" y="375" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+        <rect x="644" y="356" width="24" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="656" y="365" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
 
-        <rect x="484" y="434" width="32" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="500" y="443" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+        <rect x="508" y="434" width="32" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="524" y="443" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
 
         <!-- Start oval -->
-        <rect x="420" y="40" width="160" height="48" rx="24" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <rect x="420" y="40" width="160" height="48" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
         <text x="500" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">New workflow</text>
 
         <!-- Rectangle: Step -->
@@ -90,26 +91,26 @@
 
         <!-- Diamond 1: Repeated >3 times? -->
         <polygon points="500,192 600,240 500,288 400,240" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-        <text x="500" y="238" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Will you repeat</text>
-        <text x="500" y="252" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">it >3 times?</text>
+        <text x="500" y="238" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Will you repeat</text>
+        <text x="500" y="252" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">it >3 times?</text>
 
         <!-- End oval: One-off -->
-        <rect x="720" y="216" width="160" height="48" rx="24" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <rect x="720" y="216" width="160" height="48" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
         <text x="800" y="240" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">One-off</text>
         <text x="800" y="254" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">keep manual</text>
 
         <!-- Diamond 2: Reusable across projects? -->
         <polygon points="500,328 600,376 500,424 400,376" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-        <text x="500" y="374" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reusable across</text>
-        <text x="500" y="388" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">projects?</text>
+        <text x="500" y="374" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reusable across</text>
+        <text x="500" y="388" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">projects?</text>
 
-        <!-- End oval: CLAUDE.md note -->
-        <rect x="720" y="352" width="160" height="48" rx="24" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-        <text x="800" y="376" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CLAUDE.md note</text>
+        <!-- End oval: project note -->
+        <rect x="720" y="352" width="160" height="48" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="800" y="376" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Project note</text>
         <text x="800" y="390" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">project-scoped</text>
 
         <!-- End oval: Write a skill (coral focal) -->
-        <rect x="420" y="464" width="160" height="56" rx="28" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <rect x="420" y="464" width="160" height="56" rx="20" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
         <text x="500" y="492" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Write a skill</text>
         <text x="500" y="508" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">reusable + assets</text>
 
