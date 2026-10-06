@@ -6,6 +6,7 @@ skills/diagram-design/references/export.md against local fixtures:
 
 - a stalled stylesheet request is cancelled with window.stop(), the snippet
   warns about fallback typography, and capture completes quickly;
+- an actual stalled font download is cancelled and font readiness finishes;
 - a normal load captures cleanly with no warning;
 - non-timeout errors are not swallowed by the fallback.
 
@@ -18,6 +19,7 @@ from __future__ import annotations
 import contextlib
 import io
 import re
+import subprocess
 import sys
 import tempfile
 import threading
@@ -132,8 +134,8 @@ class _StallHandler(BaseHTTPRequestHandler):
         pass
 
 
-def start_stall_server() -> ThreadingHTTPServer:
-    server = ThreadingHTTPServer(("127.0.0.1", 0), _StallHandler)
+def start_stall_server(handler: type[BaseHTTPRequestHandler] = _StallHandler) -> ThreadingHTTPServer:
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
@@ -202,6 +204,59 @@ def require_stalled_fallback(snippet: str, tmp: Path) -> None:
             f"OK: stalled stylesheet cancels via window.stop(), warns, "
             f"and captures in {elapsed:.1f}s"
         )
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def require_stalled_font_fallback(snippet: str, tmp: Path) -> None:
+    fast = snippet.replace("timeout=15000", FAST_IDLE_TIMEOUT).replace(
+        "wait_for_timeout(4000)", FAST_SETTLE
+    )
+    font_requested = threading.Event()
+
+    class FontStallHandler(_StallHandler):
+        def do_GET(self) -> None:  # noqa: N802 - stdlib naming
+            if self.path == "/stall.woff2":
+                font_requested.set()
+            super().do_GET()
+
+    server = start_stall_server(FontStallHandler)
+    try:
+        port = server.server_address[1]
+        src = tmp / "stalled-font.html"
+        src.write_text(
+            "<!doctype html><meta charset='utf-8'><style>"
+            "@font-face{font-family:OwnedStalledFont;src:url("
+            f"http://127.0.0.1:{port}/stall.woff2) format('woff2')}}"
+            "</style><svg xmlns='http://www.w3.org/2000/svg' "
+            "viewBox='0 0 400 240' width='400' height='240'>"
+            "<text x='20' y='120' font-family='OwnedStalledFont,sans-serif'>"
+            "stalled font fixture</text></svg>",
+            encoding="utf-8",
+        )
+        out = tmp / "stalled-font.png"
+        started = time.monotonic()
+        result = subprocess.run(
+            [sys.executable, "-c", fast, str(src), str(out)],
+            capture_output=True, text=True, check=True,
+            timeout=FALLBACK_BUDGET_SECONDS,
+        )
+        stderr = result.stderr
+        elapsed = time.monotonic() - started
+        if not font_requested.is_set():
+            raise AssertionError("stalled-font: fixture never started its font download")
+        require_png(out, "stalled-font")
+        if not out.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+            raise AssertionError("stalled-font: output is not a PNG")
+        if WARNING_ANCHOR not in stderr:
+            raise AssertionError(f"stalled-font: fallback warning did not fire\n{stderr}")
+        if elapsed > FALLBACK_BUDGET_SECONDS:
+            raise AssertionError(
+                f"stalled-font: capture took {elapsed:.1f}s, over the "
+                f"{FALLBACK_BUDGET_SECONDS:.0f}s budget after font cancellation"
+            )
+        print(f"OK: actual stalled font cancels, fonts.ready finishes, and PNG captures in {elapsed:.1f}s")
     finally:
         server.shutdown()
         server.server_close()
@@ -291,6 +346,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-export-wait-") as raw_tmp:
         tmp = Path(raw_tmp)
         require_stalled_fallback(snippet, tmp)
+        require_stalled_font_fallback(snippet, tmp)
         require_normal_load(snippet, tmp)
         require_other_errors_propagate(snippet, tmp)
         require_static_motion_frame(snippet, tmp)
