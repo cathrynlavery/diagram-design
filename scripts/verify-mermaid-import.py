@@ -668,6 +668,28 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def check_named_composite_states(tmp: Path) -> None:
+    for declaration, expected in (("state \"Processing request\" as processing {", "Processing request"), ("state processing {", "processing")):
+        path = tmp / "named-composite.mmd"
+        path.write_text("stateDiagram-v2\n" + declaration + "\n[*] --> queued\nqueued --> done\n}\nprocessing --> [*]\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node for node in diagram["nodes"]}
+        parent = nodes.get("processing")
+        if parent is None or parent["label"] != expected or not parent["container"]:
+            fail("named composite state lost its ID, label or container")
+        for child in ("queued", "done"):
+            if (nodes[child]["parent"], nodes[child]["depth"]) != ("processing", 1):
+                fail("named composite state lost child membership")
+        if diagram["analysis"]["containers"] != 1 or len(diagram["edges"]) != 3:
+            fail("named composite state changed transitions or container counts")
+    path.write_text('stateDiagram-v2\nstate "Waiting for work" as Waiting\nWaiting --> [*]\n', encoding="utf-8")
+    diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "Waiting")
+    if node["label"] != "Waiting for work" or node["container"]:
+        fail("ordinary quoted state alias changed")
+    ok("named composite states retain aliases, child membership and transitions")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1039,6 +1061,7 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_named_composite_states(tmp)
         check_selection_before_parse(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)

@@ -966,9 +966,12 @@ def _parse_state(
             diagram.add_node(node_id, node_id, "container", parent, container=True)
             containers.append(node_id)
             continue
-        alias = re.match(r'^state\s+"(.*?)"\s+as\s+([\w.:-]+)$', text, re.I)
+        alias = re.match(r'^state\s+"(.*?)"\s+as\s+([\w.:-]+)\s*(\{)?$', text, re.I)
         if alias:
-            diagram.add_node(alias.group(2), clean_label(alias.group(1)), "state", parent)
+            label, node_id, opening = alias.groups()
+            diagram.add_node(node_id, clean_label(label), "container" if opening else "state", parent, container=bool(opening))
+            if opening:
+                containers.append(node_id)
             continue
         stereotype = re.match(
             r"^state\s+([\w.:-]+)\s+<<(fork|join|choice)>>$", text, re.I
