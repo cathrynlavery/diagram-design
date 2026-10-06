@@ -525,6 +525,20 @@ def main() -> int:
                  '<text data-polar-value-label="" visibility="inherit">25</text>'),
         "explicitly hidden",
     ))
+    for css in ("body { display:none; }", "body { visibility:hidden; }",
+                ":root { opacity:0%; }", ".wrapper { opacity:-1; }",
+                "body { display:none!important; display:block; }"):
+        cases.append((
+            f"stylesheet ancestor hiding {css}",
+            VALID.replace('<body>', f'<head><style>{css}</style></head><body class="wrapper">'),
+            "CSS visibility rules can hide chart ancestors",
+        ))
+    for value in ("0%", "-1", "-10%"):
+        cases.append((
+            f"ancestor opacity {value}",
+            VALID.replace('data-polar-category="c1"', f'data-polar-category="c1" opacity="{value}"'),
+            "explicitly hidden",
+        ))
     positive_visibility = [
         ("visible child overrides hidden parent", VALID.replace(
             'data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"'
@@ -536,6 +550,12 @@ def main() -> int:
                   '<text data-polar-value-label="" visibility="initial">25</text>')),
         ("hidden sibling does not affect categories", VALID.replace(
             '<svg ', '<div hidden><br/></div><svg ', 1)),
+        ("ordinary stylesheet layout", VALID.replace('<body>',
+             '<head><style>body { display:flex; opacity:50%; visibility:visible; }</style></head><body>')),
+        ("percentage opacity remains visible", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" opacity="50%"')),
+        ("invalid opacity is ignored", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" opacity="invalid"')),
         ("ordinary visible category", VALID.replace(
             'data-polar-category="c1"', 'data-polar-category="c1" visibility="visible" opacity="0.5"')),
     ]

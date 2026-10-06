@@ -394,6 +394,25 @@ def _point(attrs: dict[str, str], x_key: str, y_key: str) -> tuple[float, float]
     return x, y
 
 
+def _opacity(value: str) -> float:
+    if value.endswith("%"):
+        return _float(value[:-1]) / 100
+    return _float(value)
+
+
+def _stylesheet_can_hide_ancestors(css: str) -> bool:
+    # Without a CSS cascade engine, a hiding rule on an allowed HTML selector
+    # cannot prove readable labels. Reject the rule rather than guessing which
+    # ancestor or competing declaration wins; ordinary layout remains allowed.
+    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    for _, declarations in CSS_RULE.findall(without_comments):
+        for declaration in declarations.split(";"):
+            suppressed, visibility = _visibility_state({"style": declaration}, (False, "visible"))
+            if suppressed or visibility in {"hidden", "collapse"}:
+                return True
+    return False
+
+
 def _visibility_state(
     attrs: dict[str, str], parent: tuple[bool, str]
 ) -> tuple[bool, str]:
@@ -404,7 +423,7 @@ def _visibility_state(
         "hidden" in attrs
         or attrs.get("aria-hidden", "").strip().casefold() == "true"
         or _presentation_property(attrs, "display") == "none"
-        or _float(_presentation_property(attrs, "opacity")) == 0
+        or _opacity(_presentation_property(attrs, "opacity")) <= 0
     )
     own_visibility = _presentation_property(attrs, "visibility")
     if own_visibility in {"visible", "hidden", "collapse"}:
@@ -430,6 +449,8 @@ def check(path: Path) -> list[str]:
         findings.append("CSS stylesheet loading is forbidden in polar documents")
     if any(_contains_geometry_css(css) for css in parser.style_blocks):
         findings.append("CSS geometry properties are forbidden in polar documents")
+    if any(_stylesheet_can_hide_ancestors(css) for css in parser.style_blocks):
+        findings.append("CSS visibility rules can hide chart ancestors")
     if any(_stylesheet_can_target_chart(css) for css in parser.style_blocks):
         findings.append("CSS selectors must not target data-polar-chart")
     if any(not _allowed_stylesheet(href) for href in parser.stylesheet_urls):
