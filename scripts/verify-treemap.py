@@ -59,7 +59,7 @@ TAG_RE = re.compile(r"<[^>]+>")
 # the number 0.6 against cells measured in billions produces nonsense, so the
 # percentage pattern is tried first and anchored on the sign.
 PCT_RE = re.compile(
-    r"(?<![\w.,+\-\u2212])"
+    r"(?<![\w.+\-\u2212])(?<!\d,)"
     r"(?P<num>[-+\u2212]?(?:\d[\d,]*(?:\.\d*)?|\.\d+)"
     r"(?:[eE][-+]?\d+)?)\s*%"
 )

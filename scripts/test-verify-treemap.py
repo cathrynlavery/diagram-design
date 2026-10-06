@@ -485,6 +485,25 @@ def main() -> int:
         else:
             print("OK: every hosted percentage claim must agree")
 
+        # Commas separating a magnitude from a percentage are punctuation,
+        # while grouped digits remain one complete number.
+        for label, claim, expected_pass, expected_finding in (
+            ("comma-matching", "4.78B,59% of world", True, ""),
+            ("comma-scientific-matching", "4.78B,5.9e1% of world", True, ""),
+            ("comma-conflicting", "4.78B,99% of world", False, "is labelled 99%"),
+            ("comma-second-conflicting", "4.78B · 59%,99% of world", False, "conflicting percentage claims"),
+            ("comma-grouped-number", "4.78B,1,059% of world", False, "is labelled 1059%"),
+            ("comma-negative-number", "4.78B,-59% of world", False, "is labelled -59%"),
+        ):
+            changed = source.replace("4.78B · 59% of world", claim, 1)
+            code, output = run(write(directory, f"{label}.html", changed))
+            if (code == 0) != expected_pass or (
+                not expected_pass and expected_finding not in output
+            ):
+                failures.append(f"{label}: unexpected percentage result: {output.strip()}")
+            else:
+                print(f"OK: {label} keeps complete percentage claims")
+
         # 15. Explicit metadata outranks both sides of the decorative-rect
         #     heuristic. A declared cell cannot disappear merely because a bad
         #     edit makes it implausibly wide or tall.
