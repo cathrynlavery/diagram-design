@@ -42,6 +42,8 @@ from xml.etree import ElementTree as ET
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_XML_BYTES = 64 * 1024 * 1024
+MAX_PAGES = 100
+MAX_CELLS_PER_PAGE = 10000
 
 
 def _configure_stdout_utf8() -> None:
@@ -380,6 +382,10 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
     root = model.find("root")
     if root is None:
         return page
+    if len(root) > MAX_CELLS_PER_PAGE:
+        _fail(
+            f"page {index}: cell limit exceeded (max {MAX_CELLS_PER_PAGE})"
+        )
 
     # Pass 1: collect raw cells, unwrapping <object>/<UserObject> containers.
     raw: dict[str, dict[str, Any]] = {}
@@ -405,6 +411,8 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             continue
         if not cid:
             continue
+        if cid in raw:
+            _fail(f"page {index}: duplicate cell id")
         raw[cid] = {"cell": cell, "attrs": attrs, "value": value}
         order.append(cid)
 
@@ -551,9 +559,11 @@ def parse_file(path: Path) -> list[Page]:
         wrapper = ET.Element("diagram", {"name": path.stem, "id": "single"})
         wrapper.append(root)
         return [parse_page(wrapper, 0)]
-    diagrams = root.findall(".//diagram")
+    diagrams = root.findall("diagram")
     if not diagrams:
         _fail(f"{path.name}: mxfile contains no <diagram> pages")
+    if len(diagrams) > MAX_PAGES:
+        _fail(f"page limit exceeded (max {MAX_PAGES})")
     return [parse_page(d, i) for i, d in enumerate(diagrams)]
 
 

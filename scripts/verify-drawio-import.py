@@ -471,6 +471,53 @@ def check_security_and_limits(tmp: Path) -> None:
     if proc.returncode != 2 or "truncated metadata chunk" not in proc.stderr:
         fail("truncated PNG metadata must be rejected with a clear diagnostic")
 
+    duplicate_id = tmp / "duplicate-id.drawio"
+    duplicate_id.write_text(
+        '<mxGraphModel><root><mxCell id="same" vertex="1"/>'
+        '<mxCell id="same" value="amplified label" vertex="1"/>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error([str(duplicate_id)], "duplicate cell id")
+
+    nested_pages = tmp / "nested-pages.drawio"
+    nested_pages.write_text(
+        '<mxfile>'
+        + '<diagram name="outer">' * 20
+        + '<mxGraphModel><root><mxCell id="node" value="Node" vertex="1"/>'
+        + '</root></mxGraphModel>'
+        + '</diagram>' * 20
+        + '</mxfile>',
+        encoding="utf-8",
+    )
+    nested_payload = json.loads(run_extract([str(nested_pages), "--json"]))
+    if nested_payload["pages_total"] != 1:
+        fail("nested diagram descendants were treated as independent pages")
+
+    too_many_pages = tmp / "too-many-pages.drawio"
+    too_many_pages.write_text(
+        '<mxfile>'
+        + '<diagram><mxGraphModel><root/></mxGraphModel></diagram>'
+        * (extractor.MAX_PAGES + 1)
+        + '</mxfile>',
+        encoding="utf-8",
+    )
+    expect_extract_error(
+        [str(too_many_pages)], f"page limit exceeded (max {extractor.MAX_PAGES})"
+    )
+
+    too_many_cells = tmp / "too-many-cells.drawio"
+    too_many_cells.write_text(
+        '<mxGraphModel><root>'
+        + '<mxCell id="cell"/>' * (extractor.MAX_CELLS_PER_PAGE + 1)
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error(
+        [str(too_many_cells)],
+        f"cell limit exceeded (max {extractor.MAX_CELLS_PER_PAGE})",
+    )
+
     for name, coordinate, diagnostic in (
         ("nan", "NaN", "must be finite"),
         ("infinity", "Infinity", "must be finite"),
