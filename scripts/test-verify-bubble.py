@@ -211,6 +211,23 @@ class Harness:
 
 
 def run_cases(h: Harness) -> int:
+
+    collapsed_x = re.sub(r'cx="[^"]*"', 'cx="500"', honest())
+    collapsed_x = re.sub(r'(<text data-tick="x"[^>]* x=")[^"]*',
+                         r'\g<1>500', collapsed_x)
+    h.expect_finding("distinct x values cannot collapse onto one column",
+                     collapsed_x, "zero or non-finite scale")
+    collapsed_y = re.sub(r'cy="[^"]*"', 'cy="250"', honest())
+    collapsed_y = re.sub(r'(<text data-tick="y"[^>]* y=")[^"]*',
+                         r'\g<1>254', collapsed_y)
+    h.expect_finding("distinct y values cannot collapse onto one row",
+                     collapsed_y, "zero or non-finite scale")
+    inverted = re.sub(r'cx="([^"]*)"',
+                      lambda m: 'cx="%g"' % (1000 - float(m.group(1))), honest())
+    inverted = re.sub(r'(<text data-tick="x"[^>]* x=")([^"]*)',
+                      lambda m: m.group(1) + str(1000 - float(m.group(2))), inverted)
+    h.expect_clean("a finite nonzero inverted axis remains measurable", inverted)
+
     # ── Positive polarity: honest figures pass ────────────────────────────
     for path in SHIPPED:
         found = verify.check(path)

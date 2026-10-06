@@ -543,6 +543,12 @@ def check_scale(dots: list, findings: list, source: str, name: str):
         return None, None
 
     slope, intercept = fit(points)
+    if slope == 0 or not all(map(math.isfinite, (slope, intercept))):
+        findings.append(
+            "%s: the value axis has a zero or non-finite scale — distinct "
+            "values must map to distinct finite positions" % name
+        )
+        return None, None
     if len(points) >= 4:
         for index, (value, drawn) in enumerate(points):
             peers = points[:index] + points[index + 1:]

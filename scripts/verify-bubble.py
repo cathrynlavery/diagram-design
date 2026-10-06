@@ -641,6 +641,13 @@ def check_axis(bubbles: list, axis: str, findings: list, name: str):
         )
         return None, None
 
+    if slope == 0 or not all(map(math.isfinite, (slope, intercept))):
+        findings.append(
+            "%s:%d: the %s axis has a zero or non-finite scale — distinct "
+            "values must map to distinct finite positions" % (name, line, axis)
+        )
+        return None, None
+
     # A bubble whose PEERS all share one value cannot be measured: the
     # leave-one-out fit for it is degenerate, so `outliers` skips it, and the
     # full-set fit passes exactly through wherever it was drawn — its position
