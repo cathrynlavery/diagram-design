@@ -134,7 +134,7 @@ def contained(inner: Rect, outer: Rect) -> bool:
 
 
 TAG_RE = re.compile(
-    r"<!--[\s\S]*?-->|<(?P<close>/?)(?P<tag>g|svg|defs|symbol|marker|pattern|clipPath|mask|rect|path|line)\b(?P<attrs>[^>]*?)(?P<empty>/?)>",
+    r"<!--[\s\S]*?-->|<(?P<close>/?)(?P<tag>g|svg|defs|symbol|marker|pattern|clipPath|mask|rect|path|line)\b(?P<attrs>(?:\"[^\"]*\"|'[^']*'|[^'\">])*?)(?P<empty>/?)>",
     re.IGNORECASE,
 )
 TRANSLATE_RE = re.compile(

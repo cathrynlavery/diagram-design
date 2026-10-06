@@ -133,6 +133,16 @@ def main() -> int:
         + '<!-- <defs><g>prototype</g></defs> -->' + prototype), 1)
     check("ordinary painted group is still checked", document(mask + '<g>' + prototype + '</g>'), 1)
     check("self-closing definitions do not hide following paint", document(mask + '<defs/>' + prototype), 1)
+    for quote in ('"', "'"):
+        for container in ("defs", "symbol", "marker", "pattern", "clipPath", "mask"):
+            quoted = f"<{container} data-note={quote}a > b{quote}/>"
+            check(f"quoted {container} self-close cannot hide following node ({quote})",
+                document(mask + quoted + prototype), 1)
+        check(f"quoted definition attribute keeps prototypes unpainted ({quote})",
+            document(mask + f"<defs data-note={quote}a > b{quote}>" + prototype + '</defs>'), 0)
+        check(f"quoted painted group preserves following connector ({quote})", document(
+            f"<g data-note={quote}a > b{quote}/>"
+            + '<path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/>'), 1)
     check("nested definition containers keep prototypes unpainted", document(mask
         + '<defs><symbol id="prototype">' + prototype + '</symbol></defs>'), 0)
     check("painted group after nested definitions is still checked", document(mask
