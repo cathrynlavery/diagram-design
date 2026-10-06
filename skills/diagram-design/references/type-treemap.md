@@ -23,6 +23,8 @@ Not for: ranked lists where exact values matter more than proportion (use a **ba
 
 ### Declaring the share
 
+Printed percentages are read as complete signed numbers, including leading decimals and scientific notation; `5.9e1%` means 59%, while `-59%` contradicts a positive share. Non-finite percentage claims are findings.
+
 **Every cell carries `data-share` — including cells too small to label.** It is the cell's percentage of the whole, and it is what makes the area checkable:
 
 ```svg

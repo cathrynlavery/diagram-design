@@ -541,6 +541,28 @@ def main() -> int:
             else:
                 print(f"OK: {label} data-share geometry fails closed")
 
+
+    with tempfile.TemporaryDirectory() as directory:
+        d = Path(directory)
+        for label, claim, expect_pass, finding in (
+            ("negative", "-59%", False, "labelled -59%"),
+            ("unicode-minus", "\u221259%", False, "labelled -59%"),
+            ("scientific", "5.9e1%", True, ""),
+            ("positive-sign", "+59%", True, ""),
+            ("leading-decimal", ".590e2%", True, ""),
+            ("wrong-exponent", "5.9e2%", False, "labelled 590%"),
+            ("signed-conflict", "59% and -59%", False, "conflicting percentage claims"),
+            ("non-finite-claim", "1e400%", False, "must be finite numeric"),
+        ):
+            changed = source.replace("59% of world", claim + " of world")
+            code, output = run(write(d, "percentage-" + label + ".html", changed))
+            if changed == source or (code == 0) != expect_pass:
+                failures.append(f"{label} percentage behaved incorrectly: {output.strip()}")
+            elif finding and finding not in output:
+                failures.append(f"{label} percentage lacked its finding: {output.strip()}")
+            else:
+                print(f"OK: {label} percentage is read as one complete numeric claim")
+
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:

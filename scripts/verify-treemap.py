@@ -58,7 +58,11 @@ TAG_RE = re.compile(r"<[^>]+>")
 # a percentage ("59%", "0.6%") is already the claimed share. Reading "0.6%" as
 # the number 0.6 against cells measured in billions produces nonsense, so the
 # percentage pattern is tried first and anchored on the sign.
-PCT_RE = re.compile(r"(?P<num>\d[\d,]*(?:\.\d+)?)\s*%")
+PCT_RE = re.compile(
+    r"(?<![\w.,+\-\u2212])"
+    r"(?P<num>[-+\u2212]?(?:\d[\d,]*(?:\.\d*)?|\.\d+)"
+    r"(?:[eE][-+]?\d+)?)\s*%"
+)
 VALUE_RE = re.compile(r"(?P<num>\d[\d,]*(?:\.\d+)?)\s*(?P<unit>[BMK])\b")
 
 MONO_ADVANCE = 0.62
@@ -277,7 +281,8 @@ def _number(match: re.Match[str] | None) -> float | None:
     if match is None:
         return None
     try:
-        return float(match.group("num").replace(",", ""))
+        value = float(match.group("num").replace(",", "").replace("\u2212", "-"))
+        return value if math.isfinite(value) else None
     except ValueError:
         return None
 
@@ -446,11 +451,16 @@ def check(path: Path) -> list[str]:
         # percentage in the hosted labels: search() alone silently accepted a
         # later contradictory claim when the first happened to be correct.
         label_text = " ".join(labels[index])
-        percentages = [
-            value
-            for match in PCT_RE.finditer(label_text)
-            if (value := _number(match)) is not None
-        ]
+        percentages = []
+        for match in PCT_RE.finditer(label_text):
+            percentage = _number(match)
+            if percentage is None:
+                findings.append(
+                    f"{path.name}:{line_of(source, cell.offset)}: percentage claim "
+                    f"{match.group(0)!r} must be finite numeric"
+                )
+            else:
+                percentages.append(percentage)
         distinct_percentages: list[float] = []
         for percentage in percentages:
             if not any(
