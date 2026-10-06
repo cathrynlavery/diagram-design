@@ -140,6 +140,25 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIsNone(re.search(r"url\(#arrow\)", svg))
         self.assertIsNone(re.search(r"url\(#dots\)", svg))
 
+    def test_quoted_local_paint_urls_follow_namespaced_defs(self) -> None:
+        references = (
+            'url(#paint)', 'url("#paint")', "url('#paint')",
+            'url(  "#paint"  )', 'url(&quot;#paint&quot;)', 'url(&apos;#paint&apos;)',
+        )
+        for reference in references:
+            with self.subTest(reference=reference):
+                markup = '<svg><defs><linearGradient id="paint"/></defs>'
+                markup += '<rect style="fill: ' + reference.replace('"', '&quot;') + '"/>'
+                markup += '<style>.node { fill: ' + reference + '; }</style></svg>'
+                exported = self.mod.namespace_defs_ids(markup, "quoted")
+                self.assertIn('id="quoted-paint"', exported)
+                self.assertEqual(exported.count('url(#quoted-paint)'), 2)
+        untouched = '<svg><defs><linearGradient id="paint"/></defs>'
+        untouched += '<rect fill="url(#paint-other)" stroke="url(other.svg#paint)"/></svg>'
+        result = self.mod.namespace_defs_ids(untouched, "quoted")
+        self.assertIn('url(#paint-other)', result)
+        self.assertIn('url(other.svg#paint)', result)
+
     def test_light_and_dark_architecture_do_not_collide_when_inlined(self) -> None:
         light_src = ASSETS / "example-architecture.html"
         dark_src = ASSETS / "example-architecture-dark.html"
