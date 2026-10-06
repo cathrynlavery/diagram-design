@@ -23,7 +23,7 @@ Full argument string: `$ARGUMENTS`
 
 - `--svg-only` — emit only the SVG. Skip Playwright entirely.
 - `--png-only` — emit only the PNG.
-- `--scale=1` / `--scale=2` / `--scale=3` — override the PNG device scale factor. Default `2`.
+- `--scale=N` — override the PNG device scale factor with a finite number from `1` to `4`, including fractional values such as `1.25`. Default `2`.
 - `--output=<path>` — override the output base path; the format extension is appended. Applies to both formats when both are produced.
 - `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Follows [`skills/diagram-design/references/export-registry.md`](../skills/diagram-design/references/export-registry.md), a procedure independent of the SVG/PNG rasterization above — it never needs Playwright. Used alone (see Defaults), it is the *only* output produced. Combine with `--svg-only` and/or `--png-only` to also produce an image in the same call.
 
@@ -33,7 +33,7 @@ Full argument string: `$ARGUMENTS`
 2. **Source is `assets/index.html`** (the gallery, multiple SVGs in one file) → refuse and ask which specific diagram file. Per the reference's edge-case section.
 3. **Source has no `<svg>` block** → refuse and tell the user; don't write anything.
 4. **PNG requested but Playwright not installed** → surface the install instruction from the reference verbatim and stop. Do **not** auto-install.
-5. **PNG requested with `--scale` outside {1,2,3}** → reject; valid values are 1, 2, 3.
+5. **PNG requested with a non-numeric or non-finite `--scale`, or a value outside the inclusive 1–4 range** → reject. Fractional values within that range are valid.
 6. **`--registry` requested but source has no `data-block-id` attributes** → refuse and tell the user; don't emit an empty or partial registry file. Per the export-registry reference's edge-case section.
 7. **`--registry` is the only flag given** (no `--svg-only`/`--png-only`) → emit only the registry JSON. Do not also produce SVG/PNG, and do not check for Playwright — a registry-only call must succeed on a host that doesn't have it installed at all.
 

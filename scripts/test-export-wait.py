@@ -236,7 +236,7 @@ def require_fractional_scales(snippet: str, tmp: Path) -> None:
     # Page layout must not change dimensions promised by the viewBox contract.
     source.write_text(source.read_text(encoding="utf-8").replace("</head>", "<style>svg { width:1200px; min-width:1200px; height:auto; }</style></head>"), encoding="utf-8")
     for scale, dimensions in (("1", (400, 240)), ("1.25", (500, 300)),
-                               ("1.5", (600, 360)), ("3", (1200, 720))):
+                               ("1.5", (600, 360)), ("3", (1200, 720)), ("4", (1600, 960))):
         output = tmp / f"scale-{scale}.png"
         run_snippet(snippet, source, output, scale)
         require_png(output, scale)
