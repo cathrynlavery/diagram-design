@@ -54,7 +54,7 @@
       margin-bottom: 1.5rem;
     }
 
-    svg { width: 100%; min-width: 1000px; display: block; }
+    svg { width: 100%; min-width: 960px; display: block; }
     /* Paper has no scrollbar, so the local scroller would clip instead of
        scroll. Let the diagram scale down to the sheet: smaller but whole
        beats sharp but cut off. Must come after the svg rule above - a media
@@ -72,7 +72,7 @@
 
     <!-- Replace [diagram-slug] with a unique slug for this diagram before export. -->
     <div class="diagram-container">
-      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="[diagram-slug]-title [diagram-slug]-desc">
+      <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="[diagram-slug]-title [diagram-slug]-desc">
         <title id="[diagram-slug]-title">[Diagram title]</title>
         <desc id="[diagram-slug]-desc">[One sentence describing what the diagram shows]</desc>
         <defs>

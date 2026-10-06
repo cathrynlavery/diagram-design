@@ -21,15 +21,17 @@
 
 Flip the vertical signs for right+up. Use a plain `<line>` only when endpoints share the same x or y. Arrow labels sit on the vertical segment, centered horizontally on `mid` and vertically between the two corners.
 
-**Port selection — use top/bottom for vertical connectors.** When the destination is noticeably above or below the source, exit the source's top/bottom edge and enter the destination's top/bottom edge. Use a single-bend L-path (horizontal → corner → vertical into the node), not a left/right side port:
+**Port selection for vertical connectors.** When the destination is noticeably above or below the source, enter the destination through its top or bottom edge. Use a single-bend L-path: leave the source through the side edge that faces the destination's column, run horizontally, turn once, and run vertically into the destination:
 
 ```svg
-<!-- entering a node from its bottom (destination above source) -->
-<path d="M x1,y_src H x2-8 Q x2,y_src x2,y_src-8 V y_dst"
+<!-- destination above source: leave the source's right edge at (x_right, y_port), enter the destination's bottom edge at x2 -->
+<path d="M x_right,y_port H x2-8 Q x2,y_port x2,y_port-8 V y_dst"
       fill="none" stroke="…" stroke-width="1.2" marker-end="url(#arrow)"/>
 ```
 
-Reserve left/right ports for connections that travel primarily horizontally. Entering a node from the side on a mainly-vertical path looks like the arrow punctures the node face rather than arriving from above or below.
+Every segment leaves its box perpendicular to the edge it starts on. Never start a horizontal segment on a top or bottom edge: it runs along the border, hidden behind the node fill, and the arrow looks like it grows out of the corner. When two of these connectors leave the same side edge, fan their ports (primitives-core.md rule 4) and keep each port at least 8px from a corner so it never lands on the corner radius.
+
+Reserve left/right ports on the destination for connections that travel primarily horizontally. Entering a node from the side on a mainly-vertical path looks like the arrow punctures the node face rather than arriving from above or below.
 
 **Dashed paths — same routing rules.** Optional, return, async, and passive flows use `stroke-dasharray="4,3"` and a lighter stroke weight (`stroke-width="1"`). Apply the **same orthogonal routing, port-selection, and bridge/hop rules** as solid paths — the dash pattern only communicates semantic weight, not a different routing grammar. When a dashed path and a solid path must cross, bridge the dashed one (it is by definition the less important connection).
 

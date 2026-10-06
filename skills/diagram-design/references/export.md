@@ -94,13 +94,17 @@ Render **the original HTML** (not the extracted SVG) and screenshot only the `<s
 
 ### Detection
 
-Before running anything, verify Playwright is installed:
+Before running anything, verify Playwright is installed in the Python interpreter
+you will use for the export. Try:
 
 ```
-python -c "import playwright" 2>NUL || python -c "import playwright"
+python3 -c "import playwright"
 ```
 
-If the import fails, surface this exact instruction to the user and stop:
+If that fails, try `python -c "import playwright"` (the usual command on
+Windows). Use whichever interpreter passes the import for the rasterization
+command below. If both imports fail, surface this exact instruction to the user
+and stop:
 
 > Playwright is not available. PNG export requires an approved Playwright
 > installation and a compatible browser to be provisioned by the host
@@ -111,7 +115,9 @@ Don't auto-install. The user asked for one feature, not a system change.
 
 ### Rasterize
 
-Write the snippet below to a temp file and run it with `python <tmp.py> <src.html> <out.png>`:
+Write the snippet below to a temp file and run it with the interpreter that
+passed detection: `python3 <tmp.py> <src.html> <out.png>` or
+`python <tmp.py> <src.html> <out.png>`:
 
 ```python
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright

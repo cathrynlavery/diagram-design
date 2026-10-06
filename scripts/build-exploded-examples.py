@@ -66,8 +66,27 @@ def draw_part(P, p: Part, sk, focal: bool, uid: str):
                 f'<path d="{outline(P, ir, z1)}" fill="none" stroke="{inner}" stroke-width="0.8"/>',
                 f'<path d="{M(point(P, p.rect, 135, z1))} {walk(P, p.rect, 135, 315, z1)}" fill="none" stroke="{stroke}" stroke-width="1.2" stroke-linejoin="round"/>']
         return pr, out
+    if p.kind in ("keycaps", "switches"):
+        return draw_key_grid(P, p, sk, focal)
     pr, out = solid(P, p.rect, z0, z1, sk, tones, stroke, inner)
     r = p.rect
+    if p.kind in AI_DETAIL:
+        out += finish(pr, stroke, inner)
+        out += AI_DETAIL[p.kind](P, r, z1, sk, focal)
+        return pr, out
+    if p.kind == "plate":
+        for k in KEYS:
+            cx, cy = k.center()
+            out.append(f'<path d="{outline(P, Rect(cx - 7, cy - 7, cx + 7, cy + 7, 1), z1)}" fill="{sk["cavity"]}" stroke="{inner}" stroke-width="0.5"/>')
+    elif p.kind == "pcb":
+        out += finish(pr, stroke, inner)
+        for k in KEYS:
+            cx, cy = k.center()
+            out.append(f'<path d="{outline(P, Rect(cx - 3, cy - 3, cx + 3, cy + 3, 3), z1)}" fill="{sk["chip_top"]}"/>')
+        for ax, ay, bx, by, h in ((64, 76, 92, 90, 2), (128, 78, 144, 88, 1.5), (104, 6, 124, 14, 4)):
+            chip = prism(P, Rect(ax, ay, bx, by, 1), z1, z1 + h)
+            out += [f'<path d="{chip["sil"]}" fill="{sk["chip_side"]}"/>', f'<path d="{chip["top"]}" fill="{sk["chip_top"]}"/>']
+        return pr, out
     if p.kind == "display":
         out.append(f'<path d="{outline(P, r.inset(4), z1)}" fill="{sk["screen"]}"/>')
         cx = (r.x0 + r.x1) / 2
@@ -342,6 +361,146 @@ def exploded_animated(fig: Figure, slug: str, body: str, vh: int, steps: int) ->
 
 EYEBROW = "Exploded axonometric · Diagram Design"
 
+# ---------------------------------------------------------------- keyboard and agent stack detail
+
+U, KPAD = 16, 10  # key unit and the case margin around the key field
+KEY_ROWS = ([1] * 13, [1.5] + [1] * 10 + [1.5], [1.75] + [1] * 9 + [2.25],
+            [2.25] + [1] * 8 + [2.75], [1.5, 1.5, 7, 1.5, 1.5])
+
+
+@dataclass
+class Key:
+    rect: Rect
+    mod: bool
+
+    def center(self):
+        return (self.rect.x0 + self.rect.x1) / 2, (self.rect.y0 + self.rect.y1) / 2
+
+
+def key_layout():
+    keys = []
+    for row, widths in enumerate(KEY_ROWS):
+        x = 0.0
+        for w in widths:
+            keys.append(Key(Rect(KPAD + x * U + 1, KPAD + row * U + 1, KPAD + (x + w) * U - 1, KPAD + (row + 1) * U - 1, 2),
+                            mod=w != 1 or (row == 0 and x == 0)))
+            x += w
+    return keys
+
+
+KEYS = key_layout()
+
+
+def mini(P, rect, z0, z1, sk, tones, stroke, inner, top=None):
+    """A small solid inside a part: face tones, an optional top fill, a thin outline."""
+    pr = prism(P, rect, z0, z1)
+    out = [f'<path d="{pr["sil"]}" fill="{sk["base"]}"/>']
+    for path, tone in zip((pr["top"], pr["left"], pr["right"]), tones):
+        if tone:
+            out.append(f'<path d="{path}" fill="{tone}"/>')
+    if top:
+        out.append(f'<path d="{pr["top"]}" fill="{top}"/>')
+    out += [f'<path d="{pr["edge"]}" fill="none" stroke="{inner}" stroke-width="0.5"/>',
+            f'<path d="{pr["sil"]}" fill="none" stroke="{stroke}" stroke-width="0.8" stroke-linejoin="round"/>']
+    return out
+
+
+def draw_key_grid(P, p: Part, sk, focal: bool):
+    """Keycaps or switches: one small solid per key, back to front. The part's own box is
+    the envelope of the grid, so its silhouette is declared but not painted."""
+    tones, stroke, inner = styles(sk, focal)
+    z0, z1 = p.z, p.z + p.t
+    pr = prism(P, p.rect, z0, z1)
+    out = [f'<path data-role="silhouette" d="{pr["sil"]}" fill="none"/>']
+    for k in sorted(KEYS, key=lambda k: (k.rect.y0, k.rect.x0)):
+        if p.kind == "keycaps":
+            top = f'rgba({sk["ink_rgb"]},0.12)' if k.mod else None
+            out += mini(P, k.rect, z0, z1, sk, tones, stroke, inner, top)
+            out.append(f'<path d="{outline(P, k.rect.inset(2.5), z1)}" fill="none" stroke="{inner}" stroke-width="0.5"/>')
+        else:
+            cx, cy = k.center()
+            out += mini(P, Rect(cx - 6, cy - 6, cx + 6, cy + 6, 1), z0, z1, sk, tones, stroke, inner)
+            for stem in (Rect(cx - 1, cy - 3.5, cx + 1, cy + 3.5, 0), Rect(cx - 3.5, cy - 1, cx + 3.5, cy + 1, 0)):
+                out.append(f'<path d="{outline(P, stem, z1)}" fill="{sk["accent"] if focal else sk["chip_top"]}"/>')
+    return pr, out
+
+
+def vault_detail(P, r, z, sk, focal):
+    cx, cy = (r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2
+    door = r.inset(12)
+    dial = Rect(cx - 18, cy - 18, cx + 18, cy + 18, 18)
+    tones, stroke, inner = styles(sk, False)
+    out = [f'<path d="{outline(P, door, z)}" fill="none" stroke="{sk["inner"]}" stroke-width="0.8"/>']
+    out += mini(P, dial, z, z + 5, sk, sk["shade"], sk["sil"], sk["inner"])
+    out.append(f'<path d="{outline(P, dial.inset(6), z + 5)}" fill="none" stroke="{sk["inner"]}" stroke-width="0.8"/>')
+    out.append(f'<path d="{outline(P, Rect(cx - 4, cy - 4, cx + 4, cy + 4, 4), z + 5)}" fill="{sk["chip_top"]}"/>')
+    return out
+
+
+SOCKETS = [(x, y) for y in (40, 80, 120) for x in (40, 80, 120)]
+PLUGS = {(40, 40), (120, 40), (80, 80), (40, 120)}
+
+
+def tools_detail(P, r, z, sk, focal):
+    out = []
+    for x, y in SOCKETS:
+        well = Rect(r.x0 + x - 11, r.y0 + y - 11, r.x0 + x + 11, r.y0 + y + 11, 11)
+        out.append(f'<path d="{outline(P, well, z)}" fill="{sk["well"]}" stroke="{sk["inner"]}" stroke-width="0.6"/>')
+    for x, y in sorted(PLUGS, key=lambda c: (c[0] + c[1], c[0])):
+        plug = Rect(r.x0 + x - 7, r.y0 + y - 7, r.x0 + x + 7, r.y0 + y + 7, 7)
+        out += mini(P, plug, z, z + 10, sk, sk["shade"], sk["sil"], sk["inner"], sk["chip_top"])
+    return out
+
+
+CARDS = [(x, y) for y in (14, 86) for x in (14, 62, 110)]
+
+
+def skills_detail(P, r, z, sk, focal):
+    out = []
+    tones = sk["shade"]
+    for x, y in CARDS:
+        card = Rect(r.x0 + x, r.y0 + y, r.x0 + x + 36, r.y0 + y + 60, 3)
+        out += mini(P, card, z, z + 5, sk, tones, sk["sil"], sk["inner"])
+        for i, w in enumerate((22, 26, 18, 24)):
+            ly = card.y0 + 10 + i * 11
+            line = Rect(card.x0 + 6, ly, card.x0 + 6 + w, ly + 3, 0)
+            fill = sk["accent"] if i == 0 else f'rgba({sk["ink_rgb"]},0.30)'
+            out.append(f'<path d="{outline(P, line, z + 5)}" fill="{fill}"/>')
+    return out
+
+
+def harness_detail(P, r, z, sk, focal):
+    cx, cy = (r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2
+    chip = Rect(cx - 30, cy - 30, cx + 30, cy + 30, 4)
+    out = [f'<path d="{outline(P, chip.inset(-10, 8), z)}" fill="none" stroke="{sk["inner"]}" stroke-width="0.8"/>']
+    for k in range(-24, 25, 12):
+        for a, b in (((cx + k, r.y0 + 12), (cx + k, cy - 40)), ((cx + k, cy + 40), (cx + k, r.y1 - 12)),
+                     ((r.x0 + 12, cy + k), (cx - 40, cy + k)), ((cx + 40, cy + k), (r.x1 - 12, cy + k))):
+            pa, pb = P.iso(a[0], a[1], z), P.iso(b[0], b[1], z)
+            out.append(f'<line x1="{f(pa[0])}" y1="{f(pa[1])}" x2="{f(pb[0])}" y2="{f(pb[1])}" stroke="{sk["inner"]}" stroke-width="0.6"/>')
+    c = prism(P, chip, z, z + 6)
+    out += [f'<path d="{c["sil"]}" fill="{sk["chip_side"]}"/>', f'<path d="{c["top"]}" fill="{sk["chip_top"]}"/>',
+            f'<path d="{outline(P, chip.inset(10), z + 6)}" fill="none" stroke="{sk["lens_ring"]}" stroke-width="0.8"/>']
+    return out
+
+
+def interface_detail(P, r, z, sk, focal):
+    screen = r.inset(8)
+    out = [f'<path d="{outline(P, screen, z)}" fill="{sk["screen"]}"/>']
+    x0, y0 = screen.x0 + 12, screen.y0 + 14
+    for i, w in enumerate((60, 84, 44, 72, 0)):
+        ly = y0 + i * 18
+        out.append(f'<path d="{outline(P, Rect(x0, ly, x0 + 6, ly + 4, 0), z)}" fill="rgba(245,245,245,0.85)"/>')
+        if w:
+            out.append(f'<path d="{outline(P, Rect(x0 + 12, ly, x0 + 12 + w, ly + 4, 0), z)}" fill="rgba(245,245,245,0.40)"/>')
+        else:
+            out.append(f'<path d="{outline(P, Rect(x0 + 12, ly - 2, x0 + 18, ly + 6, 0), z)}" fill="rgba(245,245,245,0.85)"/>')
+    return out
+
+
+AI_DETAIL = {"vault": vault_detail, "tools": tools_detail, "skills": skills_detail,
+             "harness": harness_detail, "interface": interface_detail}
+
 # ---------------------------------------------------------------- content
 
 def app_stack():
@@ -373,6 +532,29 @@ def unboxing():
             Part("cable", "Cable", "usb-c, 1 m", CABLE, t=14, kind="cable", closed_z=9, level=2),
             Part("speaker", "Speaker", "the product", SPK, t=60, kind="speaker", closed_z=9, level=2),
             Part("lid", "Lid", "printed sleeve", Rect(-3, -3, BW + 3, BD + 3, 6), t=28, kind="lid", closed_z=48)]
+
+
+AI = 160
+
+
+def ai_stack():
+    slab = Rect(0, 0, AI, AI, 10)
+    return [Part("vault", "Secrets vault", "scoped service token", Rect(16, 16, AI - 16, AI - 16, 8), t=24, kind="vault", closed_z=0),
+            Part("tools", "Tools", "clis, apis, mcp, scripts", slab, t=14, kind="tools", closed_z=24),
+            Part("skills", "Skills", "markdown playbooks", slab, t=12, kind="skills", closed_z=38),
+            Part("harness", "Agent harness", "claude code, codex", slab, t=16, kind="harness", closed_z=50),
+            Part("interface", "Interface", "chat or terminal", slab, t=10, kind="interface", closed_z=66)]
+
+
+KW, KD = 13 * U + 2 * KPAD, 5 * U + 2 * KPAD
+
+
+def keyboard():
+    return [Part("case", "Case", "aluminium tray", Rect(0, 0, KW, KD, 6), t=22, kind="housing", closed_z=0),
+            Part("pcb", "PCB", "hot-swap sockets", Rect(6, 6, KW - 6, KD - 6, 3), t=4, kind="pcb", closed_z=3),
+            Part("plate", "Plate", "steel, one cutout per key", Rect(6, 6, KW - 6, KD - 6, 3), t=3, kind="plate", closed_z=12),
+            Part("switches", "Switches", "mechanical, linear", Rect(KPAD + 2, KPAD + 2, KW - KPAD - 2, KD - KPAD - 2, 1), t=9, kind="switches", closed_z=10),
+            Part("keycaps", "Keycaps", "pbt, 51 keys", Rect(KPAD + 1, KPAD + 1, KW - KPAD - 1, KD - KPAD - 1, 2), t=9, kind="keycaps", closed_z=19)]
 
 
 FIGURES = {
@@ -407,8 +589,29 @@ FIGURES = {
                ("", "ink", "Reading the explode", ["Lid telescopes over the box walls", "Insert wells match the parts they hold", "Cable and speaker lift as one level", "Box stays put"]),
                ("", "muted", "When to use it", "Packaging reviews, supplier briefs, and launch pages. For a list of what is in the box, a table is faster.")],
         footer="unboxing · exploded axonometric"),
+    "exploded-ai-stack": lambda: Figure(
+        slug="exploded-ai-stack",
+        title="AI agent stack · What sits under the prompt",
+        desc="Exploded view of an AI agent stack: a secrets vault at the base, then tools, skills, the agent harness that runs the model, and the chat or terminal interface on top, with skills as the focal layer.",
+        parts=ai_stack(), focus="skills", gap_k=0.75,
+        caption=("FOCAL LAYER", "Skills are plain files the agent reads before it acts. Swap the harness or the model and they still work."),
+        subtitle="Five layers pulled apart along one axis. You type at the top, the harness runs the model, and skills decide how the work gets done.",
+        cards=[("The headline", "coral", "Skills are the layer you own", "The interface and the harness come from a vendor and change every few months. A skill is a markdown playbook in your repo, so it carries over when the rest of the stack is swapped."),
+               ("", "ink", "Reading the explode", ["Top layer is where you type", "The dark chip is the model inside the harness", "Each card on the skills layer is one playbook", "Plugs on the tools layer are the CLIs and APIs it can call"]),
+               ("", "muted", "Why the vault is at the bottom", "Every tool call runs on a scoped service token. Keep it under everything else so no layer above holds a raw secret.")],
+        footer="ai agent stack · exploded axonometric"),
+    "exploded-keyboard": lambda: Figure(
+        slug="exploded-keyboard",
+        title="Mechanical keyboard · Five layers under your fingers",
+        desc="Exploded view of a mechanical keyboard: the case, the PCB with hot-swap sockets, the steel plate, a switch for every key, and the keycaps on top, with the switches as the focal part.",
+        parts=keyboard(), focus="switches", gap_k=0.7,
+        subtitle="Keycaps come off first. Under them every key has its own switch, held by a steel plate and plugged into the board in the case.",
+        cards=[("The headline", "coral", "The switches are the feel", "Keycaps change the sound and the look. The switch under each key sets how far it travels and how hard it pushes back, so the switches get the accent."),
+               ("", "ink", "Reading the explode", ["One switch per keycap, one cutout per switch", "Hot-swap sockets mean no soldering", "The case is a tray, so its front walls paint last", "Wider keys sit on one centred switch"]),
+               ("", "muted", "Small parts, one primitive", "Every keycap and switch is the same rounded prism as the case, just smaller. The part box is the envelope of its grid.")],
+        footer="mechanical keyboard · exploded axonometric"),
 }
-ANIMATED = ("exploded-phone", "exploded-unboxing")
+ANIMATED = ("exploded-phone", "exploded-unboxing", "exploded-ai-stack", "exploded-keyboard")
 
 
 def render_all() -> dict[Path, str]:

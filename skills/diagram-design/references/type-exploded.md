@@ -62,7 +62,7 @@ Light comes from the top left, so the left face is lighter than the right. Alway
 
 ### Detail
 
-Three levels at most: the form (the rounded prism), insets on its top face (a screen, a cell outline, a moulded well), and micro detail (chips, lenses, a logo mark). Clip any inset that could reach a face edge to that face, keep it 4 units or more inside the edge, and stop at three levels. No contact shadow: shadows are out in this skin (SKILL.md §4). If the object needs grounding, the bottom part already provides it.
+Three levels at most: the form (the rounded prism), insets on its top face (a screen, a cell outline, a moulded well), and micro detail (chips, lenses, a logo mark). A part made of many identical pieces, such as keycaps or switches, declares the envelope of its grid as its box and paints one small prism per piece instead of the envelope; the silhouette path is still there for the verifier, with no fill. Clip any inset that could reach a face edge to that face, keep it 4 units or more inside the edge, and stop at three levels. No contact shadow: shadows are out in this skin (SKILL.md §4). If the object needs grounding, the bottom part already provides it.
 
 ### Focal part
 
@@ -106,5 +106,8 @@ An exploded view may open as the assembled object and explode once, because watc
 - `assets/example-exploded-full.html`: app stack, full editorial
 - `assets/example-exploded-phone.html`, `-dark`, `-full`: phone teardown with a housing, a shared board and battery level, and a display
 - `assets/example-exploded-unboxing.html`, `-dark`, `-full`: packaging with a telescoping lid, a product and cable on one level, an insert, and a box
+- `assets/example-exploded-ai-stack.html`, `-dark`, `-full`: an AI agent stack with a secrets vault, tools, skills as small cards on one layer, the agent harness around the model, and the interface
+- `assets/example-exploded-keyboard.html`, `-dark`, `-full`: a mechanical keyboard with a case tray, PCB, plate, a grid of switches, and a grid of keycaps
 - `assets/example-exploded-phone-animated.html`: the phone assembled, then exploded once
 - `assets/example-exploded-unboxing-animated.html`: the box closed, then unpacked once
+- `assets/example-exploded-ai-stack-animated.html`, `assets/example-exploded-keyboard-animated.html`: the stack and the keyboard assembled, then exploded once

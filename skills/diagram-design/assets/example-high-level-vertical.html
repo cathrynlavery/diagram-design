@@ -125,21 +125,21 @@
            ARROWS  (drawn before nodes — z-order rule)
            ═══════════════════════════════════════════ -->
 
-      <!-- Sources → NiFi (staggered entry on NiFi left edge x=212; entry_y = 132,152,172,188) -->
-      <path d="M 184,92  H 196 Q 200,92  200,96  V 128 Q 200,132 204,132 H 212" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-      <path d="M 184,172 H 196 Q 200,172 200,168 V 156 Q 200,152 204,152 H 212" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-      <path d="M 184,252 H 196 Q 200,252 200,248 V 176 Q 200,172 204,172 H 212" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-      <path d="M 184,332 H 196 Q 200,332 200,328 V 192 Q 200,188 204,188 H 212" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <!-- Sources → NiFi: PostgreSQL and SFTP enter the left edge (y=132, 172); Web forms and Legacy rise into the bottom edge (x=236, 260) -->
+      <path d="M 168,124 Q 168,132 176,132 H 212" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 184,172 H 212" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 184,252 H 228 Q 236,252 236,244 V 200" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <path d="M 184,332 H 252 Q 260,332 260,324 V 200" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
 
       <!-- Airflow bar → NiFi, Trino, Notebooks (trigger drops at each node's cx, from bar.bottom=96 to node.top=120) -->
       <line x1="288" y1="96" x2="288" y2="120" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-sm)"/>
       <line x1="480" y1="96" x2="480" y2="120" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-sm)"/>
       <line x1="672" y1="96" x2="672" y2="120" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-sm)"/>
 
-      <!-- NiFi → Trino (secondary, straight at cy=164) -->
-      <line x1="364" y1="164" x2="404" y2="164" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-      <!-- NiFi → MinIO (PRIMARY accent — trunk at boundary x=388, drop to MinIO cy=256) -->
-      <path d="M 364,156 H 384 Q 388,156 388,164 V 248 Q 388,256 396,256 H 404" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <!-- NiFi → Trino (secondary, straight at y=148) -->
+      <line x1="364" y1="148" x2="404" y2="148" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+      <!-- NiFi → MinIO (PRIMARY accent — own port at y=176, trunk at boundary x=388, drop to MinIO cy=256) -->
+      <path d="M 364,176 H 380 Q 388,176 388,184 V 248 Q 388,256 396,256 H 404" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
 
       <!-- Trino ↔ MinIO (query read-back, dashed) -->
       <line x1="480" y1="200" x2="480" y2="216" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-dim)"/>

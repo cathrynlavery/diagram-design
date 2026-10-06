@@ -90,6 +90,60 @@ def depth_sort(P, boxes: list[Box], z) -> list[Box]:
     return [boxes[i] for i in order]
 
 
+def depth_sort_phased(P, boxes: list[Box], z) -> list[Box]:
+    """Back-to-front order that keeps every phase contiguous, so each phase can reveal as one
+    group. Boxes of one step contract to a single node; static boxes stay on their own. The
+    contracted graph must be acyclic, or a phase would have to paint on both sides of a box."""
+    n = len(boxes)
+    bb = [bbox(P, b, z) for b in boxes]
+    edges = set()
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            a, b = boxes[i].rect, boxes[j].rect
+            ai, bj = bb[i], bb[j]
+            overlap = ai[0] < bj[2] and bj[0] < ai[2] and ai[1] < bj[3] and bj[1] < ai[3]
+            if overlap and behind(a, b) and not behind(b, a):
+                edges.add((i, j))
+    key = lambda k: (boxes[k].rect.x0 + boxes[k].rect.y0, boxes[k].rect.x0)
+    node = lambda k: ("s", boxes[k].step) if boxes[k].step else ("b", k)
+    members: dict = {}
+    for k in range(n):
+        members.setdefault(node(k), []).append(k)
+
+    def topo(nodes, succ, rank):
+        indeg = {v: 0 for v in nodes}
+        for v in nodes:
+            for w in succ[v]:
+                indeg[w] += 1
+        ready = sorted((v for v in nodes if indeg[v] == 0), key=rank)
+        order = []
+        while ready:
+            v = ready.pop(0)
+            order.append(v)
+            for w in succ[v]:
+                indeg[w] -= 1
+                if indeg[w] == 0:
+                    ready.append(w)
+            ready.sort(key=rank)
+        if len(order) != len(nodes):
+            raise ValueError("a phase must paint on both sides of another box; move it or split the phase")
+        return order
+
+    groups = list(members)
+    gsucc = {g: set() for g in groups}
+    for i, j in edges:
+        if node(i) != node(j):
+            gsucc[node(i)].add(node(j))
+    out = []
+    for g in topo(groups, gsucc, lambda g: min(key(k) for k in members[g])):
+        inner = members[g]
+        isucc = {k: {j for i, j in edges if i == k and j in inner} for k in inner}
+        out += [boxes[k] for k in topo(inner, isucc, key)]
+    return out
+
+
 def box_attrs(b: Box, z):
     a = f'data-box data-rect="{b.rect.attr()}" data-z="{f(z)}" data-h="{f(b.h)}" data-kind="{b.kind}"'
     if b.name:
@@ -113,9 +167,19 @@ def draw_box(P, b: Box, z, sk, skin):
                 f'<path d="{can["sil"]}" fill="none" stroke="{sk["sil"]}" stroke-width="0.6"/>']
         return f'<g {box_attrs(b, z + 8)}>' + "".join(body) + "</g>"
     if b.kind == "rack":
-        pr = prism(P, b.rect, z, z + b.h)
-        body = [f'<path data-role="silhouette" d="{pr["sil"]}" fill="{sk["chip_side"]}"/>',
-                f'<path d="{pr["top"]}" fill="{sk["chip_top"]}"/>']
+        # Shelving: house face shading, a shelf line every 14 units, and an upright every 30.
+        tones, stroke, inner = styles(sk, False)
+        r = b.rect
+        pr, body = solid(P, r, z, z + b.h, sk, tones, stroke, inner)
+        for zz in range(int(z) + 14, int(z + b.h), 14):
+            a, c, e = P.iso(r.x0, r.y1, zz), P.iso(r.x1, r.y1, zz), P.iso(r.x1, r.y0, zz)
+            body.append(f'<path d="M {f(a[0])} {f(a[1])} L {f(c[0])} {f(c[1])} L {f(e[0])} {f(e[1])}" fill="none" stroke="{inner}" stroke-width="0.6"/>')
+        n = max(1, round((r.x1 - r.x0) / 30))
+        for i in range(1, n):
+            x = r.x0 + (r.x1 - r.x0) * i / n
+            a, c = P.iso(x, r.y1, z), P.iso(x, r.y1, z + b.h)
+            body.append(f'<line x1="{f(a[0])}" y1="{f(a[1])}" x2="{f(c[0])}" y2="{f(c[1])}" stroke="{inner}" stroke-width="0.6"/>')
+        body += finish(pr, stroke, inner, 0.8)
         return f'<g {box_attrs(b, z)}>' + "".join(body) + "</g>"
     tones, stroke, inner = styles(sk, b.focal)
     pr, body = solid(P, b.rect, z, z + b.h, sk, tones, stroke, inner)
@@ -151,6 +215,7 @@ class Room:
     rect: Rect
     tag_at: tuple
     focal: bool = False
+    step: int = 0
 
 
 @dataclass
@@ -169,6 +234,7 @@ class Plan:
     cards: list = field(default_factory=list)
     footer: str = ""
     steps: int = 0
+    phases: dict = field(default_factory=dict)  # step -> aria label, for plans revealed zone by zone
 
 
 def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
@@ -199,6 +265,8 @@ def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
         tint = f'<path d="{outline(P, r.rect, top)}" fill="rgba({sk["acc_rgb"]},0.12)"/>' if r.focal else ""
         out.append(f"<g {attrs}>{tint}</g>")
 
+    if motion and plan.phases:
+        return build_phased(plan, P, sk, skin, top, out, vh, ox, minx)
     tags = []
     for b in depth_sort(P, plan.boxes, top):
         g = draw_box(P, b, top, sk, skin)
@@ -221,6 +289,55 @@ def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
         x0 = ox + minx
         out.append(f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>')
         out.append(f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{plan.caption[1]}</text>')
+    return "\n        ".join(out), vh
+
+
+def caption(plan, sk, vh, x0):
+    cy = vh - 28
+    return [f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>',
+            f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{plan.caption[1]}</text>']
+
+
+def build_phased(plan: Plan, P, sk, skin, top, out, vh, ox, minx):
+    """A floor revealed zone by zone: each phase's boxes paint as one contiguous group, and
+    its room tags arrive with it in a second group after every box."""
+    run, run_step = [], 0
+
+    def close():
+        if run:
+            out.append(f'<g data-motion-item data-step="{run_step}" data-appear aria-label="{plan.phases[run_step]}">' + "".join(run) + "</g>")
+            run.clear()
+
+    seen = set()
+    for b in depth_sort_phased(P, plan.boxes, top):
+        g = draw_box(P, b, top, sk, skin)
+        if b.step:
+            if b.step != run_step or not run:
+                close()
+                if b.step in seen:
+                    raise ValueError(f"phase {b.step} paints in two runs")
+                if seen and b.step < max(seen):
+                    raise ValueError(f"phase {b.step} paints after phase {max(seen)}; number phases back to front so the DOM reads in narrative order")
+                seen.add(b.step)
+                run_step = b.step
+            run.append(g)
+        else:
+            close()
+            out.append(g)
+    close()
+    staged = {}
+    for r in plan.rooms:
+        t = tag(P, sk, r.name, r.sub, r.tag_at, top, r.focal)
+        if r.step:
+            staged.setdefault(r.step, []).append((r.name, t))
+        else:
+            out.append(t)
+    for step in sorted(staged):
+        names = " and ".join(n for n, _ in staged[step])
+        out.append(f'<g data-motion-item data-step="{step}" data-appear aria-label="{names} tagged">' + "".join(t for _, t in staged[step]) + "</g>")
+    out.append("</g>")
+    if plan.caption:
+        out += caption(plan, sk, vh, ox + minx)
     return "\n        ".join(out), vh
 
 
@@ -309,8 +426,93 @@ def campus() -> Plan:
         footer="campus · axonometric plan", steps=3)
 
 
-FIGURES = {"axonometric-plan": office, "axonometric-plan-campus": campus}
-ANIMATED = ("axonometric-plan-campus",)
+def post(x, y):
+    return Box(Rect(x - 3, y - 3, x + 3, y + 3, 3), 18, step=2)
+
+
+def coffee_shop() -> Plan:
+    W, D = 360, 260
+    walls = (hwall(0, (0, W)) + vwall(0, (6, D))
+             + hwall(D - 6, (6, 150), (190, W)) + vwall(W - 6, (6, D - 6))
+             + hwall(80, (6, 30), (64, 290), (322, W - 6))
+             + vwall(250, (6, 80)))
+    kitchen = [Box(Rect(12, 12, 64, 26), 34, "rack"),
+               Box(Rect(84, 12, 124, 36), 18),
+               Box(Rect(136, 12, 164, 30), 16, inset_top=True),
+               Box(Rect(100, 48, 196, 66), 14, inset_top=True)]
+    restroom = [Box(Rect(264, 12, 288, 26), 16, inset_top=True),
+                Box(Rect(320, 12, 340, 36), 12)]
+    bar = [Box(Rect(10, 96, 32, 118), 30, step=1),
+           Box(Rect(10, 122, 32, 162), 26, inset_top=True, step=1),
+           Box(Rect(10, 166, 32, 180), 28, step=1),
+           Box(Rect(10, 184, 32, 208), 16, inset_top=True, step=1),
+           Box(Rect(78, 100, 94, 140), 20, inset_top=True, step=1),
+           Box(Rect(78, 144, 94, 212), 16, step=1)]
+    queue = [post(118, y) for y in (126, 158, 190, 222)]
+    seating = [Box(Rect(x - 12, y - 12, x + 12, y + 12, 12), 12, inset_top=True, step=3)
+               for x, y in ((222, 114), (290, 114), (222, 186), (290, 186))]
+    seating += [Box(Rect(330, 100, 348, 240), 8, step=3),
+                Box(Rect(206, 216, 306, 236), 12, inset_top=True, step=3)]
+    rooms = [
+        Room("Entrance", "door, queue", Rect(100, 86, 196, 254), (148, 170), step=2),
+        Room("Espresso bar", "order, pickup", Rect(6, 86, 100, 254), (42, 228), focal=True, step=1),
+        Room("Seating", "22 seats", Rect(196, 86, 354, 254), (252, 150), step=3),
+        Room("Kitchen", "back of house", Rect(6, 6, 250, 80), (46, 60)),
+        Room("Restroom", "1 stall", Rect(256, 6, 354, 80), (296, 50)),
+    ]
+    return Plan(
+        slug="axonometric-plan-coffee-shop",
+        title="Corner coffee shop · From the door to a seat",
+        desc="Axonometric floor plan of a small coffee shop with an entrance and queue, an espresso bar, seating, a kitchen, and a restroom, with the espresso bar as the focal room.",
+        plate=Rect(0, 0, W, D, 0), plate_t=6, boxes=walls + kitchen + restroom + bar + queue + seating, rooms=rooms,
+        caption=("FOCAL ROOM", "Every customer passes the espresso bar twice, once to order and once to pick up, so it sits beside the door."),
+        subtitle="One room with a kitchen behind it. The queue runs along the counter, so ordering, paying and pickup happen in one line.",
+        cards=[("The headline", "coral", "The bar is the bottleneck", "Every order goes through two baristas and one espresso machine. The accent marks the bar because its length sets how many people can wait without blocking the door."),
+               ("", "ink", "Reading the plan", ["Posts mark the queue lane along the counter", "The tall unit on the back bar is the fridge", "Round tables seat two, the long table seats six", "Gaps in walls are doors"]),
+               ("", "muted", "When to use it", "Fit-outs, staffing reviews, and new-store briefs. For a list of equipment and costs, a table is faster.")],
+        footer="coffee shop · axonometric plan", steps=3,
+        phases={1: "The espresso bar: back bar and counter", 2: "The entrance and the queue posts", 3: "Seating: tables and the window bench"})
+
+
+def warehouse() -> Plan:
+    W, D = 460, 300
+    walls = (hwall(0, (0, W)) + vwall(0, (6, 30), (70, 120), (160, 210), (250, D))
+             + hwall(D - 6, (6, W - 6))
+             + vwall(W - 6, (6, 40), (80, 130), (170, 220), (260, D - 6)))
+    dock = lambda y: Rect(6, y, 18, y + 40, 0)
+    receiving = [Box(Rect(36, y, 64, y + 28), h, inset_top=True, step=1) for y, h in ((36, 14), (126, 18), (216, 12))]
+    racks = [Box(Rect(x0, y, x0 + 84, y + 14), 52, "rack", step=1) for y in (20, 72, 124) for x0 in (110, 214)]
+    pick = [Box(Rect(110, 214, 298, 228), 24, "rack", step=2)]
+    pick += [Box(Rect(x, 242, x + 16, 266), 14, inset_top=True, step=2) for x in (122, 162, 202)]
+    packing = [Box(Rect(318, y, 354, y + 44), 14, inset_top=True, step=2) for y in (30, 110, 190)]
+    packing += [Box(Rect(362, 20, 372, 236), 8, step=2)]
+    shipping = [Box(Rect(392, y, 420, y + 28), h, inset_top=True, step=3) for y, h in ((46, 20), (136, 16), (226, 22))]
+    rooms = [
+        Room("Receiving", "3 dock doors", Rect(6, 6, 96, 294), (74, 174), step=1),
+        Room("Storage", "6 racks", Rect(96, 6, 306, 196), (204, 162), step=1),
+        Room("Pick zone", "carts, flow rack", Rect(96, 196, 306, 294), (254, 272), step=2),
+        Room("Packing", "3 stations", Rect(306, 6, 380, 294), (338, 262), focal=True, step=2),
+        Room("Shipping", "3 dock doors", Rect(380, 6, 454, 294), (424, 186), step=3),
+    ]
+    return Plan(
+        slug="axonometric-plan-warehouse",
+        title="Fulfillment floor · Dock to dock",
+        desc="Axonometric plan of a fulfillment warehouse: receiving docks, storage racks, a pick zone, packing stations, and shipping docks, with packing as the focal zone.",
+        plate=Rect(0, 0, W, D, 0), plate_t=6, boxes=walls + receiving + racks + pick + packing + shipping, rooms=rooms,
+        flats=[(dock(30), "dock"), (dock(120), "dock"), (dock(210), "dock")],
+        lines=[((96, 6), (96, 294)), ((306, 6), (306, 294)), ((380, 6), (380, 294)), ((96, 196), (306, 196))],
+        caption=("FOCAL ZONE", "Goods move left to right; packing is where most orders wait, so it gets the accent."),
+        subtitle="Goods come in on the left and leave on the right. Everything in between is storage, picking and packing, laid out in that order.",
+        cards=[("The headline", "coral", "Packing sets the pace", "Receiving and storage can run ahead. An order only ships when someone packs it, so the three stations are the accent and the place to add capacity first."),
+               ("", "ink", "Reading the plan", ["Tall racks hold reserve stock", "The low flow rack faces the pick lane", "The conveyor carries packed orders to shipping", "Gaps in the side walls are dock doors"]),
+               ("", "muted", "When to use it", "Layout changes, peak season planning, and new-hire walkthroughs. For pick rates by zone, use a bar chart.")],
+        footer="fulfillment floor · axonometric plan", steps=3,
+        phases={1: "Inbound: receiving pallets and storage racks", 2: "Pick and pack: carts, flow rack, and packing stations", 3: "Outbound: shipping pallets"})
+
+
+FIGURES = {"axonometric-plan": office, "axonometric-plan-campus": campus,
+           "axonometric-plan-coffee-shop": coffee_shop, "axonometric-plan-warehouse": warehouse}
+ANIMATED = ("axonometric-plan-campus", "axonometric-plan-coffee-shop", "axonometric-plan-warehouse")
 
 
 def render_all() -> dict[Path, str]:

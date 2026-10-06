@@ -1,12 +1,12 @@
 {
   "name": "diagram-design",
   "description": "Architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar, loop, nested, tree, org chart, layer stack, exploded/plan, Venn, pyramid/funnel, bar, waterfall, treemap, heatmap, line, Gantt, scatter, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, journey, deployment, dependency graph, UML class, story map, DB schema, lifecycle phases.",
-  "version": "2.6.56",
+  "version": "2.6.61",
   "author": {
     "name": "Cathryn Lavery",
     "url": "https://github.com/cathrynlavery"
   },
-  "homepage": "https://github.com/cathrynlavery/diagram-design",
+  "homepage": "https://diagramdesign.dev",
   "repository": "https://github.com/cathrynlavery/diagram-design",
   "license": "MIT",
   "keywords": [
@@ -33,7 +33,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/cathrynlavery/diagram-design",
+    "websiteURL": "https://diagramdesign.dev",
     "privacyPolicyURL": "https://github.com/cathrynlavery/diagram-design/blob/main/PRIVACY.md",
     "defaultPrompt": [
       "Make an architecture diagram of my app.",

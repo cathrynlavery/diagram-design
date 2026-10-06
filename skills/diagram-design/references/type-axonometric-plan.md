@@ -27,6 +27,7 @@ Every element is a rounded prism standing on the plate: `r = 0` for walls, furni
 - **Walls:** 6 units thick and cut at desk height, about 22 units, so no wall hides a room. Doors are gaps in a wall. Walls meet without overlapping: run one wall through a junction and stop the other at its face.
 - **Furniture and buildings:** Boxes on the plate with the house face shading (`type-exploded.md` § Faces and lines). Heights are to scale with each other. Two footprints never overlap.
 - **Flat marks:** Roads, paths, and floor tints sit on the plate's top face as flat fills (`ink` at 0.07) with no thickness. A dashed centre line (`ink` at 0.25, `6,5`) may mark a road.
+- **Racks:** Tall shelving is a box of kind `rack` with the house shading, a shelf line every 14 units, and an upright every 30. Run rack rows along x so the reader sees the lit face and the aisles between rows.
 - **Trees:** A canopy cylinder 8 units up on a short trunk, canopy top in `rule-solid` light (`#bfc0c0`) or `soft` dark (`#8e98ac`). Trees are planting, so keep them small and off every footprint.
 - **Paint order:** The plate first, then flat marks, then every box back to front. Sort with a topological order: box A paints before box B when A lies entirely behind B (`A.x1 <= B.x0` or `A.y1 <= B.y0`) and their screen outlines overlap. A plain `x + y` sort fails on long walls.
 - **Frame:** The canvas is 1000 wide and the plate is centred. The viewBox height follows the plate and its tallest box plus a 48px top margin.
@@ -44,7 +45,9 @@ One room or one building wears the accent. A focal room gets an `accent` tint on
 
 ## Optional motion
 
-A site that is built in phases can reveal its buildings phase by phase with the pinned controller from `assets/template-motion.html` in `reveal` mode. Each building and its tag form one `data-motion-item` whose `data-step` is its phase, at most two per step. Buildings drop 16px into place and fade in, inside the 24px limit in `animation.md`. The static, no-JavaScript, reduced-motion, print, and export states show the finished site.
+A site that is built in phases can reveal its buildings phase by phase with the pinned controller from `assets/template-motion.html` in `reveal` mode. Each building and its tag form one `data-motion-item` whose `data-step` is its phase, at most two per step. Buildings drop 16px into place and fade in, inside the 24px limit in `animation.md`.
+
+A floor plan can reveal by zone the same way. Give each zone's furniture a `step`, and the builder paints each phase as one contiguous group of boxes (it contracts a phase to one node in the depth sort, so a phase that would have to paint on both sides of a static wall fails the build) plus one group of that phase's room tags after every box. That is two motion items per phase, inside the limit of two per step. Walls and unphased rooms stay static. The static, no-JavaScript, reduced-motion, print, and export states show the finished site.
 
 ## Metadata contract
 
@@ -52,7 +55,7 @@ A site that is built in phases can reveal its buildings phase by phase with the 
 
 - The figure: one `<g data-axo-plan data-origin="ox oy">`.
 - The plate: one `<g data-plate data-rect="x0 y0 x1 y1 r" data-z="0" data-t="t">`.
-- Each box: a `<g data-box>` with `data-rect`, `data-z` (the plate top, or 8 above it for a tree canopy), `data-h`, `data-kind` (`wall`, `furniture`, `building`, `tree`), and for a building `data-name`. Its first path is `data-role="silhouette"`.
+- Each box: a `<g data-box>` with `data-rect`, `data-z` (the plate top, or 8 above it for a tree canopy), `data-h`, `data-kind` (`wall`, `furniture`, `building`, `tree`, `rack`), and for a building `data-name`. Its first path is `data-role="silhouette"`.
 - Each room: a `<g data-room data-name data-rect>`.
 - Each tag: a `<g data-role="tag" data-name data-at="x y z">` with a backing `<rect>` and a `<text data-role="name">`. The point sits inside the room it names at the plate top, or on the building's roof.
 - The focal room or building carries `data-focal`.
@@ -72,4 +75,7 @@ A site that is built in phases can reveal its buildings phase by phase with the 
 - `assets/example-axonometric-plan-dark.html`: office floor, minimal dark
 - `assets/example-axonometric-plan-full.html`: office floor, full editorial
 - `assets/example-axonometric-plan-campus.html`, `-dark`, `-full`: campus site plan with roads, trees, and buildings tagged by phase
+- `assets/example-axonometric-plan-coffee-shop.html`, `-dark`, `-full`: a coffee shop with an entrance and queue posts, an espresso bar, round tables, a kitchen, and a restroom
+- `assets/example-axonometric-plan-warehouse.html`, `-dark`, `-full`: a fulfillment floor with dock doors, tall storage racks, a pick zone, packing stations, and shipping docks
 - `assets/example-axonometric-plan-campus-animated.html`: the campus built phase by phase
+- `assets/example-axonometric-plan-coffee-shop-animated.html`, `assets/example-axonometric-plan-warehouse-animated.html`: each floor revealed zone by zone in three phases
