@@ -724,12 +724,17 @@ def page_bounds(page: Page) -> tuple[float, float, float, float]:
         _fail("invalid geometry: bounding box overflow")
     if not boxes:
         return (0.0, 0.0, 0.0, 0.0)
-    return (
+    bounds = (
         min(b[0] for b in boxes),
         min(b[1] for b in boxes),
         max(b[2] for b in boxes),
         max(b[3] for b in boxes),
     )
+    if not math.isfinite(bounds[2] - bounds[0]) or not math.isfinite(
+        bounds[3] - bounds[1]
+    ):
+        _fail("invalid geometry: canvas span overflow")
+    return bounds
 
 
 def digest(path: Path, pages: list[Page], selected: list[Page], max_rows: int) -> str:

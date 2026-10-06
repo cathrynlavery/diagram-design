@@ -488,6 +488,21 @@ def check_security_and_limits(tmp: Path) -> None:
                 [str(malformed_geometry), *output_args], diagnostic
             )
 
+    canvas_span_overflow = tmp / "canvas-span-overflow.drawio"
+    canvas_span_overflow.write_text(
+        '<mxGraphModel><root>'
+        '<mxCell id="left" value="Left" vertex="1">'
+        '<mxGeometry x="-1e308" y="0" width="10" height="10"/></mxCell>'
+        '<mxCell id="right" value="Right" vertex="1">'
+        '<mxGeometry x="1e308" y="0" width="10" height="10"/></mxCell>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_extract_error(
+            [str(canvas_span_overflow), *output_args], "canvas span overflow"
+        )
+
     deep_parents = tmp / "deep-parents.drawio"
     deep_parents.write_text(
         '<mxGraphModel><root>'
