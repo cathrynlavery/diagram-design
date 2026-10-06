@@ -246,6 +246,39 @@ def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
     raise AssertionError("missing-source: expected goto on a missing file to raise")
 
 
+
+def require_static_motion_frame(snippet: str, tmp: Path) -> None:
+    # Exercise the exact shipped controller, avoiding external font requests.
+    source = (ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html").read_text(encoding="utf-8")
+    source = re.sub(r"<link\b[^>]*>", "", source, flags=re.I)
+    src = tmp / "motion-fixture.html"
+    src.write_text(source, encoding="utf-8")
+    observed = snippet.replace(
+        "    svg.screenshot(path=out, omit_background=True)",
+        "    assert page.locator('[data-motion-root]').first.get_attribute('data-frame') == 'static', 'motion frame is incomplete'\n"
+        "    svg.screenshot(path=out, omit_background=True)",
+    )
+    first, second = tmp / "motion-first.png", tmp / "motion-second.png"
+    run_snippet(observed, src, first)
+    run_snippet(observed, src, second)
+    require_png(first, "static-motion")
+    if first.read_bytes() != second.read_bytes():
+        raise AssertionError("motion captures from the same static source are not identical")
+
+    # A broken controller must fail rather than silently capture hidden steps.
+    broken = re.sub(r"<script\b[^>]*>.*?</script>", "", source, flags=re.I | re.S)
+    broken = broken.replace('data-frame="static" data-static-frame=', 'data-frame="start" data-static-frame=', 1)
+    src.write_text(broken, encoding="utf-8")
+    never = tmp / "incomplete.png"
+    try:
+        run_snippet(snippet, src, never)
+    except RuntimeError as exc:
+        if "static" not in str(exc) or never.exists():
+            raise AssertionError(f"incomplete motion frame failed incorrectly: {exc}")
+    else:
+        raise AssertionError("incomplete motion frame was exported without an error")
+    print("OK: motion exports show the complete static frame, repeat identically, and reject incomplete roots")
+
 def main() -> int:
     try:
         import playwright  # noqa: F401
@@ -260,6 +293,7 @@ def main() -> int:
         require_stalled_fallback(snippet, tmp)
         require_normal_load(snippet, tmp)
         require_other_errors_propagate(snippet, tmp)
+        require_static_motion_frame(snippet, tmp)
     print("All export-wait cases passed.")
     return 0
 

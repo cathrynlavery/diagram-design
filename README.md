@@ -402,7 +402,7 @@ Or just ask in natural language:
 ```
 
 - **SVG** — extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator.
-- **PNG** — rasterizes the diagram via Playwright at 2× by default. One-time setup: `pip install playwright && playwright install chromium`.
+- **PNG** — rasterizes the diagram via Playwright at 2× by default, with motion diagrams captured at their verified complete static frame. One-time setup: `pip install playwright && playwright install chromium`.
 
 Both formats are diagram-only — editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagram-design/references/export.md`](skills/diagram-design/references/export.md) for the full procedure.
 
@@ -545,6 +545,8 @@ behavior, resource caps, named failures, and reference/command wiring.
 If you touch the Excalidraw import path, `python3 scripts/verify-excalidraw-import.py` must also
 pass — it covers scene parsing, bound labels, groups and frames, adversarial labels,
 trust-boundary behavior, resource caps, named failures, and reference/command wiring.
+
+Rendered clipping checks compare the same complete static motion frame, so JavaScript playback cannot introduce a false difference between captures.
 
 Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. The same script fails diagonal connectors, connectors that run along a node's border or attach at its corner, ports crowded closer than 12px, and arrows stacked on one trunk. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
 Diagrams using the traceable block decomposition pattern get a structural gate on top of that: `python3 scripts/verify-block-registry.py --all` fails CI on a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block in the same file, a cycle in the parent chain, a blank `data-block-id`, or a missing or blank `data-block-name` — the same defects that would make `--registry`'s exported JSON (see [`export-registry.md`](skills/diagram-design/references/export-registry.md)) misrepresent the tree it claims to describe. `python3 scripts/test-verify-block-registry.py` keeps that checker honest in both directions.
