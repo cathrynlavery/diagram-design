@@ -365,12 +365,12 @@ def check_geometry(bars: list[Bar], levels: list[tuple[Fraction, Fraction]], err
         if abs(bar.y - expected_top) > GEOMETRY_TOLERANCE:
             errors.append(
                 f"{bar.label}: top edge drawn at y={bar.y:g} but the shared scale puts "
-                f"the {hi:g} level at y={expected_top:.1f}"
+                f"the {float(hi):g} level at y={expected_top:.1f}"
             )
         if abs(bar.bottom - expected_bottom) > GEOMETRY_TOLERANCE:
             errors.append(
                 f"{bar.label}: bottom edge drawn at y={bar.bottom:g} but the shared scale puts "
-                f"the {lo:g} level at y={expected_bottom:.1f}"
+                f"the {float(lo):g} level at y={expected_bottom:.1f}"
             )
     return baseline, scale
 

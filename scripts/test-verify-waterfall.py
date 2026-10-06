@@ -102,6 +102,12 @@ def main() -> int:
             "shared scale puts",
         ),
         (
+            "bridge top lie: its bottom stays at the correct running level",
+            '<rect x="688" y="146" width="96" height="50" fill="rgba(235,108,54,0.12)"',
+            '<rect x="688" y="136" width="96" height="60" fill="rgba(235,108,54,0.12)"',
+            "top edge drawn",
+        ),
+        (
             "missing carry: a gap has no connector conserving the total",
             '<line x1="496" y1="167" x2="544" y2="167" stroke="rgba(45,49,66,0.55)" stroke-width="1" data-carry="266"/>',
             "",
@@ -210,15 +216,20 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as tmp:
         directory = Path(tmp)
+        bridge_paths: list[Path] = []
         for index, (name, old, new, expected) in enumerate(cases):
             if old not in source:
                 failures.append(f"fixture drift: {name} — mutation target not found in {GOOD.name}")
                 continue
             mutated = source.replace(old, new)
             path = write(directory, f"example-waterfall-mutant-{index}.html", mutated)
+            if name.startswith("bridge"):
+                bridge_paths.append(path)
             code, output = run(str(path))
             if code == 0:
                 failures.append(f"checker stayed quiet on: {name}")
+            elif code != 1 or "Traceback" in output:
+                failures.append(f"checker must return findings without crashing on {name}:\n{output}")
             elif expected not in output:
                 failures.append(
                     f"checker fired on {name} but without naming the lie "
@@ -226,6 +237,12 @@ def main() -> int:
                 )
             else:
                 print(f"OK: fails on {name}")
+
+        code, output = run(*(str(path) for path in bridge_paths), str(GOOD))
+        if code != 1 or "Traceback" in output or any(f"FAIL {path}" not in output for path in bridge_paths) or f"OK {GOOD}" not in output:
+            failures.append(f"geometry findings must not stop checks of remaining files:\n{output}")
+        else:
+            print("OK: bridge findings do not stop subsequent file checks")
 
         # Usage contract: no arguments is an error, not a silent pass.
         code, _ = run()
