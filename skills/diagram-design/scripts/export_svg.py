@@ -146,7 +146,11 @@ def xmlify_attributes(svg: str) -> str:
 
 def normalize_html_entities(svg: str) -> str:
     """Convert named HTML references to XML-safe text without decoding markup."""
-    opaque = re.compile(r"<!--.*?-->|<!\[CDATA\[.*?\]\]>|<style\b[^>]*>.*?</style>|<script\b[^>]*>.*?</script>", re.DOTALL | re.IGNORECASE)
+    opaque = re.compile(
+        r"<!--.*?-->|<!\[CDATA\[.*?\]\]>|"
+        r"(?P<opening><(?P<tag>style|script)\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>)"
+        r".*?</(?P=tag)\s*>", re.DOTALL | re.IGNORECASE,
+    )
     named = re.compile(r"&[A-Za-z][A-Za-z0-9]+;")
 
     def replace_entity(match: re.Match[str]) -> str:
@@ -163,7 +167,11 @@ def normalize_html_entities(svg: str) -> str:
     pos = 0
     for match in opaque.finditer(svg):
         out.append(named.sub(replace_entity, svg[pos:match.start()]))
-        out.append(match.group(0))
+        opening = match.group("opening")
+        if opening is not None:
+            out.append(named.sub(replace_entity, opening) + match.group(0)[len(opening):])
+        else:
+            out.append(match.group(0))
         pos = match.end()
     out.append(named.sub(replace_entity, svg[pos:]))
     return "".join(out)
