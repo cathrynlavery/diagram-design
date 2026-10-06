@@ -270,7 +270,7 @@ Before writing tokens, the skill verifies WCAG AA contrast on `ink` over `paper`
 
 ### Accessible by default
 
-Every diagram template gives the inline SVG an accessible name and description: `role="img"`, a resolving `aria-labelledby`, and first-child `<title>` / `<desc>` slots. IDs are prefixed per diagram and variant, so multiple SVG exports can be safely inlined on one page without duplicate accessible-name IDs. Decorative specimen icons are hidden from assistive technology instead.
+Every diagram template gives the inline SVG an accessible name and description: `role="img"`, a resolving `aria-labelledby`, and first-child `<title>` / `<desc>` slots. IDs are prefixed per diagram and variant, so multiple SVG exports can be safely inlined on one page without duplicate accessible-name IDs. Decorative specimen icons are hidden from assistive technology instead. The packaged output self-check rejects duplicate IDs used to name an accessible SVG anywhere in the document, including collisions with ordinary HTML headings.
 
 ### Manual override
 
