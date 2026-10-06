@@ -27,6 +27,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Iterator
 
 GOOGLE_FONTS_IMPORT = (
     "@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1"
@@ -221,27 +222,76 @@ def escape_css_for_xml(css: str) -> str:
     return css.replace("&", "&amp;").replace("<", "&lt;")
 
 
+def _css_blocks(css: str) -> Iterator[tuple[str, str]]:
+    """Yield whole balanced rules without flattening nested conditional blocks."""
+    start = 0
+    opening = -1
+    depth = 0
+    quote = ""
+    escaped = False
+    for index, char in enumerate(css):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if quote:
+            if char == quote:
+                quote = ""
+            continue
+        if char in "\"'":
+            quote = char
+        elif char == "{":
+            if depth == 0:
+                opening = index
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth < 0:
+                raise ValueError("diagram CSS has an unmatched closing brace")
+            if depth == 0:
+                yield css[start:opening].strip(), css[opening + 1:index]
+                start = index + 1
+        elif char == ";" and depth == 0:
+            # Statement at-rules are not diagram paint rules.
+            start = index + 1
+    if depth or quote:
+        raise ValueError("diagram CSS has an unclosed rule or string")
+
+
+def _diagram_css_rules(block: str, root_id: str) -> str:
+    kept: list[str] = []
+    for selector, body in _css_blocks(block):
+        selector = " ".join(selector.split())
+        body = body.strip()
+        if not selector or not body:
+            continue
+        if re.match(r"@media\b", selector, re.IGNORECASE):
+            inner = _diagram_css_rules(body, root_id)
+            if inner:
+                kept.append(f"{escape_css_for_xml(selector)} {{\n{inner}\n}}")
+            continue
+        if re.match(r"@(?:-webkit-)?keyframes\b", selector, re.IGNORECASE):
+            kept.append(escape_css_for_xml(f"{selector} {{ {body} }}"))
+            continue
+        if selector.startswith("@"):
+            raise ValueError(f"unsupported CSS block in SVG export: {selector}")
+        inherited = body_inherited_css(selector, body, root_id)
+        if inherited:
+            kept.append(escape_css_for_xml(inherited))
+        if is_chrome_selector(selector):
+            continue
+        kept.append(escape_css_for_xml(f"{scope_selector(selector, root_id)} {{ {body} }}"))
+    return "\n      ".join(kept)
+
+
 def diagram_css_from_html(html: str, root_id: str) -> str:
-    """Filter page <style> rules down to diagram rules, scoped under root_id."""
+    """Carry scoped diagram CSS while retaining its existing media conditions."""
     kept: list[str] = []
     for block in STYLE_BLOCK_RE.findall(html):
-        # A comment before a rule would otherwise become part of its selector
-        # (`/* Tokens */ :root` is not recognised as `:root`).
         block = CSS_COMMENT_RE.sub("", block)
-        for match in RULE_RE.finditer(block):
-            selector = " ".join(match.group(1).split())
-            body = match.group(2).strip()
-            if not selector or not body:
-                continue
-            inherited = body_inherited_css(selector, body, root_id)
-            if inherited:
-                kept.append(escape_css_for_xml(inherited))
-            if is_chrome_selector(selector):
-                continue
-            # Escape rule text before it lands in SVG XML (e.g. content:"R&D").
-            kept.append(
-                escape_css_for_xml(f"{scope_selector(selector, root_id)} {{ {body} }}")
-            )
+        kept.append(_diagram_css_rules(block, root_id))
     return "\n      ".join(kept)
 
 

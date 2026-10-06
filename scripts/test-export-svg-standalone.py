@@ -232,6 +232,26 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn('stroke="none"', svg)
         self.assertIn('id="rgba-demo-dots"', svg)
 
+    def test_conditional_diagram_css_retains_media_wrappers(self) -> None:
+        html = '<style>.paint {fill: #ff0000;} @media print { .paint {fill: #0000ff;} '
+        html += 'body {padding: 40px;} @media (min-width: 10px) {.edge {stroke: #00ff00;}} }</style>'
+        html += '<svg viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+        result = self.mod.export_svg_document(html, Path("media.html"))
+        css = embedded_css(result)
+        self.assertIn('@media print {', css)
+        self.assertIn('@media (min-width: 10px) {', css)
+        self.assertIn('#media-root .paint { fill: #0000ff; }', css)
+        self.assertNotIn('padding', css)
+        blocks = list(self.mod._css_blocks(css[css.index("');") + 3:]))
+        self.assertEqual(blocks[0][0], '#media-root .paint')
+        self.assertEqual(blocks[1][0], '@media print')
+        self.assertIn('#media-root .paint', blocks[1][1])
+        # Braces inside a string are not a nested block.
+        css = self.mod.diagram_css_from_html('<style>.label {content: "{x}";}</style>', 'root')
+        self.assertIn('content: "{x}"', css)
+        with self.assertRaisesRegex(ValueError, 'unsupported CSS block'):
+            self.mod.diagram_css_from_html('<style>@unknown {.paint {fill: red;}}</style>', 'root')
+
     def test_root_tokens_bind_to_svg_root(self) -> None:
         # Without the :root re-scope the tokens land on `#root :root`, which
         # matches nothing, and every var(--token) fill falls back to black.
