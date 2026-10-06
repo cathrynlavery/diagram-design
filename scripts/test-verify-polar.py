@@ -498,6 +498,48 @@ def main() -> int:
         ),
     ]
 
+    # Presentation attributes follow the actual SVG ancestor paint semantics.
+    for attribute in ('visibility="hidden"', 'display="none"', 'opacity="0"'):
+        cases.append((
+            f"ancestor {attribute}",
+            VALID.replace('data-polar-category="c1"', f'data-polar-category="c1" {attribute}'),
+            "explicitly hidden",
+        ))
+    for attribute in ('display="none"', 'opacity="0"'):
+        cases.append((
+            f"ancestor {attribute} cannot be restored",
+            VALID.replace('data-polar-category="c1"', f'data-polar-category="c1" {attribute}')
+            .replace('<text data-polar-value-label="">25</text>',
+                     '<text data-polar-value-label="" display="inline" opacity="1" visibility="visible">25</text>'),
+            "explicitly hidden",
+        ))
+    cases.append((
+        "hidden chart ancestor",
+        VALID.replace('<body>', '<body><div style="display:none">').replace('</body>', '</div></body>'),
+        "explicitly hidden",
+    ))
+    cases.append((
+        "child explicit inherit retains hidden visibility",
+        VALID.replace('data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"')
+        .replace('<text data-polar-value-label="">25</text>',
+                 '<text data-polar-value-label="" visibility="inherit">25</text>'),
+        "explicitly hidden",
+    ))
+    positive_visibility = [
+        ("visible child overrides hidden parent", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"'
+        ).replace('<text data-polar-value-label="">25</text>',
+                  '<text data-polar-value-label="" visibility="visible">25</text>')),
+        ("initial visibility restores child", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"'
+        ).replace('<text data-polar-value-label="">25</text>',
+                  '<text data-polar-value-label="" visibility="initial">25</text>')),
+        ("hidden sibling does not affect categories", VALID.replace(
+            '<svg ', '<div hidden><br/></div><svg ', 1)),
+        ("ordinary visible category", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" visibility="visible" opacity="0.5"')),
+    ]
+
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
@@ -506,6 +548,13 @@ def main() -> int:
         findings = module.check(valid_path)
         if findings != []:
             failures.append(f"valid fixture: expected no findings, got {findings}")
+
+        for label, source in positive_visibility:
+            path = root / f"{label.replace(' ', '-')}.html"
+            path.write_text(source, encoding="utf-8")
+            findings = module.check(path)
+            if findings:
+                failures.append(f"{label}: expected no findings, got {findings}")
 
         for label, source, expected in cases:
             path = root / f"{label.replace(' ', '-')}.html"
