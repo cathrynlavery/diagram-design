@@ -49,6 +49,7 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import sys
 from pathlib import Path
@@ -231,7 +232,7 @@ def parse_cells(source: str) -> list[dict]:
             value = float(val_str)
         except ValueError:
             continue
-        if not (0.0 <= value < 1e9) or value != value:  # reject nan/inf/negative
+        if not math.isfinite(value) or value < 0:  # unsigned finite rates/counts
             continue
 
         fill = _attr(attrs_str, "fill") or ""

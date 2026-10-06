@@ -337,6 +337,23 @@ def main() -> int:
             "dark focal value text fails 4.5:1 contrast against the actual dark underlay",
         )
 
+
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for factor in (250_000_000, 1_000_000_000, 10_000_000_000):
+            scaled = re.sub(r'data-value="(\d+)"',
+                            lambda m: 'data-value="%d"' % (int(m.group(1)) * factor),
+                            original)
+            code, output = run(write(d, f"billion-counts-{factor}.html", scaled))
+            if code != 0:
+                failures.append(f"finite counts scaled by {factor} were rejected: {output.strip()}")
+        for invalid in ("nan", "inf", "-1", "1e400"):
+            changed = original.replace('data-value="4"', f'data-value="{invalid}"', 1)
+            code, output = run(write(d, "invalid-value.html", changed))
+            if code == 0 or "expected 30 cells" not in output or "Traceback" in output:
+                failures.append(f"invalid {invalid} did not retain grid completeness finding: {output.strip()}")
+        print("OK: billion-scale counts preserve the grid; non-finite/negative values remain findings")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
