@@ -23,10 +23,12 @@ The algorithm matches ``references/export.md``. No third-party deps.
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Callable
 
 GOOGLE_FONTS_IMPORT = (
     "@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1"
@@ -120,17 +122,14 @@ def _xml_start_tag(match: re.Match[str]) -> str:
     return f"<{name}{TAG_ATTR_RE.sub(attr, attrs)}{end}>"
 
 
-def xmlify_attributes(svg: str) -> str:
-    """Rewrite valueless and unquoted HTML attributes as XML (`attr=""`).
-
-    Comments and CDATA sections are copied unchanged.
-    """
+def _rewrite_start_tags(svg: str, transform: Callable[[re.Match[str]], str]) -> str:
+    """Transform actual start tags, preserving comments and CDATA sections."""
     out: list[str] = []
     pos = 0
     while True:
         opener = XML_OPAQUE_OPEN_RE.search(svg, pos)
         text_end = opener.start() if opener else len(svg)
-        out.append(START_TAG_RE.sub(_xml_start_tag, svg[pos:text_end]))
+        out.append(START_TAG_RE.sub(transform, svg[pos:text_end]))
         if opener is None:
             break
         closer = "-->" if opener.group(0) == "<!--" else "]]>"
@@ -141,6 +140,11 @@ def xmlify_attributes(svg: str) -> str:
         if close_at == -1:
             break
     return "".join(out)
+
+
+def xmlify_attributes(svg: str) -> str:
+    """Rewrite valueless and unquoted HTML attributes as XML (`attr=""`)."""
+    return _rewrite_start_tags(svg, _xml_start_tag)
 
 
 def ensure_xmlns(svg: str) -> str:
@@ -318,17 +322,73 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
 
 
 def normalize_rgba_presentation_attrs(svg: str) -> str:
-    """Split rgba()/transparent presentation attrs for strict SVG 1.1 importers."""
+    """Split rgba paint and combine its alpha with existing presentation opacity."""
 
-    def repl(match: re.Match[str]) -> str:
-        prop, r, g, b, a = match.groups()
-        return '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
-            prop, int(r), int(g), int(b), a
-        )
+    opacity_counts = {"fill-opacity": 0, "stroke-opacity": 0}
+    styles = list(STYLE_BLOCK_RE.findall(svg))
 
-    svg = RGBA_ATTR_RE.sub(repl, svg)
-    svg = TRANSPARENT_ATTR_RE.sub(r'\1="none"', svg)
-    return svg
+    def collect_opacity_context(match: re.Match[str]) -> str:
+        for attr in TAG_ATTR_RE.finditer(match.group(2)):
+            key, value = attr.group(2), attr.group(4)
+            if key in opacity_counts:
+                opacity_counts[key] += 1
+            elif key == "style" and value is not None:
+                styles.append(value[1:-1])
+        return match.group(0)
+
+    _rewrite_start_tags(svg, collect_opacity_context)
+    css_opacity = {
+        key for key in opacity_counts
+        if any(re.search(rf"(?:^|[;{{])\s*{key}\s*:", CSS_COMMENT_RE.sub("", style), re.IGNORECASE)
+               for style in styles)
+    }
+
+    def normalize_tag(match: re.Match[str]) -> str:
+        name, attrs, end = match.groups()
+        values = {
+            attr.group(2): attr.group(4)[1:-1]
+            for attr in TAG_ATTR_RE.finditer(attrs)
+            if attr.group(4) is not None
+        }
+        updates: dict[str, str] = {}
+        additions: list[str] = []
+        for prop in ("fill", "stroke"):
+            value = values.get(prop, "")
+            if value == "transparent":
+                updates[prop] = "none"
+                continue
+            rgba = RGBA_ATTR_RE.fullmatch(f'{prop}="{value}"')
+            if rgba is None:
+                continue
+            _, r, g, b, alpha = rgba.groups()
+            opacity_name = f"{prop}-opacity"
+            # Presentation opacity may be overridden by CSS or inherited from
+            # another element. Preserve the color alpha when that cascade is
+            # unresolved instead of replacing it with opaque RGB.
+            if opacity_name in css_opacity or opacity_counts[opacity_name] > int(opacity_name in values):
+                continue
+            opacity = alpha
+            if opacity_name in values:
+                try:
+                    original = values[opacity_name].strip()
+                    amount = float(original.rstrip("%")) / (100 if original.endswith("%") else 1)
+                except ValueError:
+                    continue  # Keep paint intact when the opacity cannot be resolved here.
+                if not math.isfinite(amount):
+                    continue
+                opacity = format(min(1, max(0, amount)) * min(1, float(alpha)), ".12g")
+                updates[opacity_name] = opacity
+            else:
+                additions.append(f' {opacity_name}="{opacity}"')
+            updates[prop] = "#{:02x}{:02x}{:02x}".format(*(min(255, int(c)) for c in (r, g, b)))
+
+        def replace_attr(attr: re.Match[str]) -> str:
+            space, key, _equals, _value = attr.groups()
+            return f'{space}{key}="{updates[key]}"' if key in updates else attr.group(0)
+
+        return f"<{name}{TAG_ATTR_RE.sub(replace_attr, attrs)}{''.join(additions)}{end}>"
+
+    return _rewrite_start_tags(svg, normalize_tag)
 
 
 def has_diagram_stylesheet(svg: str) -> bool:

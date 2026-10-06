@@ -64,20 +64,9 @@ That script is the source of truth for the transform below (CSS carry-forward, d
      </defs>
      ```
 6. **Namespace `<defs>` IDs.** Prefix every referenceable defs ID — on `marker`, `pattern`, `linearGradient`, `radialGradient`, `filter`, `clipPath`, `mask`, and `symbol` — with `<slug>-`, and rewrite matching `url(#…)` and `href="#…"` / `xlink:href="#…"` references. Rewrite **longest-id-first** so `arrow-accent` is not clipped by a shorter `arrow` rule. Example: `id="arrow"` in `example-loop.html` becomes `id="example-loop-arrow"` with `marker-end="url(#example-loop-arrow)"`.
-7. Normalize colors for strict SVG 1.1 consumers. This design system's tokens are authored as `rgba(...)` (see `style-guide.md`) and render correctly wherever colors are read as CSS — browsers, Figma, Illustrator. PowerPoint's SVG importer does not: it treats `rgba(...)` and `transparent` as unrecognized and paints them **opaque black**, turning a barely-there tint into a solid block that swallows the label inside it. The transform is lossless (every replacement renders identically to the original in a browser), so apply it to presentation attributes before writing the file:
+7. Normalize colors for strict SVG 1.1 consumers. This design system's tokens are authored as `rgba(...)` (see `style-guide.md`) and render correctly wherever colors are read as CSS — browsers, Figma, Illustrator. PowerPoint's SVG importer does not: it treats `rgba(...)` and `transparent` as unrecognized and paints them **opaque black**, turning a barely-there tint into a solid block that swallows the label inside it. Normalize presentation attributes only when their paint opacity can be resolved without changing the cascade:
 
-   ```python
-   import re
-
-   svg = re.sub(
-       r'(fill|stroke)="rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)"',
-       lambda m: '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
-           m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), m.group(5)
-       ),
-       svg,
-   )
-   svg = re.sub(r'(fill|stroke)="transparent"', r'\1="none"', svg)
-   ```
+   Normalize actual `fill` and `stroke` attributes, never matching attribute-like text inside labels, comments, CDATA, or metadata. If a matching presentation opacity is already present, multiply its clamped value by the rgba alpha and update that attribute once; otherwise add the alpha as the presentation opacity. Preserve RGBA paint when the existing opacity cannot be resolved as a number or percentage, when stylesheet or inline CSS declares the matching opacity, or when another element declares it and inheritance cannot be resolved. This conservative fallback retains browser appearance; unresolved RGBA is not guaranteed to import correctly in strict SVG 1.1 consumers. Single- and double-quoted attributes follow the same transform.
 
    The `\s*` around each channel tolerates a spaced `rgba(45, 49, 66, 0.03)` as well as the compact `rgba(45,49,66,0.03)` the templates normally use; `\d*\.?\d+` accepts an alpha value with or without a leading zero (both `0.03` and `.03` appear in shipped tokens). Matching is scoped to the `fill="..."` / `stroke="..."` presentation attribute. Class-styled diagrams may still carry `rgba(...)` inside the embedded `<style>` block via custom properties (e.g. `--accent-tint`); that form is correct in browsers and in Figma/Illustrator, and is out of scope for this presentation-attribute pass. (A brand's onboarded palette in `style-guide.md` could in principle add a third notation such as `hsl()`; none exists in any shipped token today, so this pass doesn't handle it — extend the regex if one is ever introduced.)
 8. **Gate:** if the exported SVG still contains `class=` but no diagram CSS rules, stop and fix the CSS carry step — that fragment will render as black boxes. A fonts-only `<style>` (Google Fonts `@import` with no rules) does **not** satisfy the gate.
