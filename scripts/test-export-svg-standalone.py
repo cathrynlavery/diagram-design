@@ -258,6 +258,13 @@ class ExportSvgStandaloneTests(unittest.TestCase):
                 self.assertIn(expected + ' { fill:#ff0000 }', embedded_css(result))
                 self.assertNotIn('#compound-root ' + expected, embedded_css(result))
 
+    def test_hex_root_escape_retains_descendant_separator(self) -> None:
+        source = r'<style>.paint {fill:#00ff00} #\31  .paint {fill:#ff0000}</style>'
+        source += '<svg id="1" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+        result = self.mod.export_svg_document(source, Path('single-hex.html'))
+        self.assertIn('#single-hex-root .paint { fill:#ff0000 }', embedded_css(result))
+        self.assertNotIn('#single-hex-root.paint', embedded_css(result))
+
     def test_root_retarget_compares_whole_decoded_css_id_tokens(self) -> None:
         cases = (
             (r'#panel.v1 .paint', 'panel.v1', r'#panel.v1 .paint'),

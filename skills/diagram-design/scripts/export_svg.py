@@ -350,9 +350,12 @@ def diagram_css_from_html(html: str, root_id: str, original_root_id: str = "") -
         # (`/* Tokens */ :root` is not recognised as `:root`).
         block = CSS_COMMENT_RE.sub("", block)
         for match in RULE_RE.finditer(block):
-            selector = " ".join(match.group(1).split())
+            selector = match.group(1).strip()
             if original_root_id:
                 selector = retarget_root_selector(selector, original_root_id, root_id)
+            # Retarget before collapsing whitespace: a hex escape consumes one
+            # terminator, so a second space may be the descendant combinator.
+            selector = " ".join(selector.split())
             body = match.group(2).strip()
             if not selector or not body:
                 continue
