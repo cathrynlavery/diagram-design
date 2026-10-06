@@ -125,6 +125,12 @@ def main() -> int:
             + f'<{container} id="definition">' + prototype + f'</{container}>'), 0)
     check("painted rectangle after definitions is still checked", document(mask
         + '<defs><g id="prototype">' + prototype + '</g></defs>' + prototype), 1)
+    check("commented definition opening cannot hide painted nodes", document(mask
+        + '<!-- Reusable shapes can be placed under <defs>. -->' + prototype), 1)
+    check("commented definition close cannot expose prototypes", document(mask
+        + '<defs><!-- Close this section with </defs>. -->' + prototype + '</defs>'), 0)
+    check("commented definition wrapper cannot alter paint custody", document(mask
+        + '<!-- <defs><g>prototype</g></defs> -->' + prototype), 1)
     check("ordinary painted group is still checked", document(mask + '<g>' + prototype + '</g>'), 1)
     check("self-closing definitions do not hide following paint", document(mask + '<defs/>' + prototype), 1)
     check("unsupported transforms retain previous mask coverage", document(mask

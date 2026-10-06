@@ -134,7 +134,7 @@ def contained(inner: Rect, outer: Rect) -> bool:
 
 
 TAG_RE = re.compile(
-    r"<(?P<close>/?)(?P<tag>g|svg|defs|symbol|marker|pattern|clipPath|mask|rect|path|line)\b(?P<attrs>[^>]*?)(?P<empty>/?)>",
+    r"<!--[\s\S]*?-->|<(?P<close>/?)(?P<tag>g|svg|defs|symbol|marker|pattern|clipPath|mask|rect|path|line)\b(?P<attrs>[^>]*?)(?P<empty>/?)>",
     re.IGNORECASE,
 )
 TRANSLATE_RE = re.compile(
@@ -346,6 +346,8 @@ def shapes(source: str):
     stack: list[Offset | None] = []
     containers: list[str] = []
     for match in TAG_RE.finditer(source):
+        if match.group("tag") is None:  # Inert comments cannot change paint custody.
+            continue
         tag, attrs = match.group("tag").lower(), match.group("attrs")
         if tag in {"g", "svg"} or tag in DEFINITION_TAGS:
             if match.group("close"):
