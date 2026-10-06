@@ -359,7 +359,7 @@ def main() -> int:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print(f"OK — {13 + 3} cases ({3} positive, {13} negative), all passed.")
+    print("OK — 23 cases (6 positive, 17 negative), all passed.")
     return 0
 
 
