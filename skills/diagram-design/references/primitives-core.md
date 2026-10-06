@@ -49,6 +49,8 @@ Don't use the dot pattern when the diagram sits inside a product page, slide, or
 
 **Draw arrows before boxes** so z-order puts lines behind nodes.
 
+The geometry source gate excludes shapes inside definition-only containers (`defs`, `symbol`, `marker`, `pattern`, `clipPath`, `mask`) because those shapes do not paint at their local coordinates. It does not resolve `<use>` instances; check referenced drawings with rendered lint and visual review.
+
 ## Mandatory connector rules
 
 These six rules are **non-negotiable**. Run the pre-output checklist (SKILL.md §9) to verify before producing any diagram.

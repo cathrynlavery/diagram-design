@@ -134,7 +134,7 @@ def contained(inner: Rect, outer: Rect) -> bool:
 
 
 TAG_RE = re.compile(
-    r"<(?P<close>/?)(?P<tag>g|svg|rect|path|line)\b(?P<attrs>[^>]*?)(?P<empty>/?)>",
+    r"<(?P<close>/?)(?P<tag>g|svg|defs|symbol|marker|pattern|clipPath|mask|rect|path|line)\b(?P<attrs>[^>]*?)(?P<empty>/?)>",
     re.IGNORECASE,
 )
 TRANSLATE_RE = re.compile(
@@ -317,6 +317,7 @@ def path_segments(d: str) -> list[Segment] | None:
 
 
 Offset = tuple[float, float]
+DEFINITION_TAGS = {"defs", "symbol", "marker", "pattern", "clippath", "mask"}
 
 
 def translation(attrs: str) -> Offset | None:
@@ -337,19 +338,26 @@ def shapes(source: str):
     Offsets accumulate `translate()` on enclosing groups, so panels drawn with
     the same local coordinates (architecture delta snapshots) are compared in
     canvas space. Under any other transform, or inside a nested `<svg>` icon,
-    the offset is None and the element is left out of connector checks.
+    the offset is None and the element is left out of connector checks. Shapes
+    inside definition-only containers do not paint at their source coordinates
+    and are also left out; this does not resolve referenced <use> instances.
     """
 
     stack: list[Offset | None] = []
+    containers: list[str] = []
     for match in TAG_RE.finditer(source):
         tag, attrs = match.group("tag").lower(), match.group("attrs")
-        if tag in {"g", "svg"}:
+        if tag in {"g", "svg"} or tag in DEFINITION_TAGS:
             if match.group("close"):
                 if stack:
                     stack.pop()
+                    containers.pop()
             elif not match.group("empty"):
                 nested_svg = tag == "svg" and bool(stack)
                 stack.append(None if nested_svg else translation(attrs))
+                containers.append(tag)
+            continue
+        if any(container in DEFINITION_TAGS for container in containers):
             continue
         frame: Offset | None = (0.0, 0.0)
         for step in stack + [translation(attrs)]:
@@ -634,7 +642,9 @@ def shared_ports(
 
 def check(path: Path) -> list[str]:
     source = path.read_text(encoding="utf-8")
-    rects = parse_rects(source)
+    painted_rects = {start for tag, _attrs, start, frame in shapes(source)
+                     if tag == "rect"}
+    rects = [rect for rect in parse_rects(source) if rect.offset in painted_rects]
     nodes = [r for r in rects if r.w >= NODE_MIN_W and r.h >= NODE_MIN_H]
     masks = [
         r

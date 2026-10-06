@@ -114,6 +114,26 @@ def main() -> int:
         0,
     )
 
+    # Definitions are reusable geometry, not paint at their local coordinates.
+    mask = '<rect x="50" y="80" width="80" height="12" fill="#fff"/>'
+    prototype = '<rect x="100" y="70" width="100" height="60" fill="#eee" stroke="#000"/>'
+    check("unpainted reusable node cannot clip a mask", document(mask
+        + '<defs><g id="prototype">' + prototype + '</g></defs>'
+        + '<use href="#prototype" x="300"/>'), 0)
+    for container in ("symbol", "marker", "pattern", "clipPath", "mask"):
+        check(f"{container} definition is not a painted node", document(mask
+            + f'<{container} id="definition">' + prototype + f'</{container}>'), 0)
+    check("painted rectangle after definitions is still checked", document(mask
+        + '<defs><g id="prototype">' + prototype + '</g></defs>' + prototype), 1)
+    check("ordinary painted group is still checked", document(mask + '<g>' + prototype + '</g>'), 1)
+    check("self-closing definitions do not hide following paint", document(mask + '<defs/>' + prototype), 1)
+    check("unsupported transforms retain previous mask coverage", document(mask
+        + '<g transform="rotate(0)">' + prototype + '</g>'), 1)
+    check("nested painted SVG retains previous mask coverage", document(mask
+        + '<svg x="0" y="0">' + prototype + '</svg>'), 1)
+    check("connector prototypes are not painted arrows", document(
+        '<defs><path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/></defs>'), 0)
+
     # A long mono plate (128px, as shipped in example-sequence-oauth.html) or a
     # wide CJK label plate must be recognized as a mask and checked like any other.
     check(
