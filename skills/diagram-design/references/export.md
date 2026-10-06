@@ -45,7 +45,7 @@ That script is the source of truth for the transform below (CSS carry-forward, d
    - Ensure a `viewBox` is present. The skill's templates always include one; warn the user if absent rather than guessing.
    - Preserve `role="img"`, `aria-labelledby`, and the first-child `<title>` / `<desc>` exactly as authored.
    - Rewrite HTML-only attribute syntax as XML: a valueless attribute (`<g data-motion-item>`) becomes `data-motion-item=""`, and an unquoted value gets double quotes. Comments and CDATA sections stay as written.
-   - Set `id="<slug>-root"` on the opening `<svg>` tag, where `<slug>` is the source basename without extension (e.g. `example-loop.html` → `example-loop`). This ID scopes carried CSS so several inlined figures do not leak rules into each other.
+   - Set `id="<slug>-root"` on the opening `<svg>` tag, where `<slug>` is the source basename without extension (e.g. `example-loop.html` → `example-loop`). This ID scopes carried CSS so several inlined figures do not leak rules into each other. When replacing an existing SVG root ID, retarget selectors for that root in the carried CSS; descendant IDs, quoted selector values, and escaped selector contents remain unchanged.
 4. **Carry page CSS into the SVG.** Class-styled diagrams (the loop family, process, medallion, data-flow, and others) declare fills and type in the page `<style>` block — `.station`, `.hub`, `.node-name`, and so on. Extracting the bare `<svg>` without those rules yields black boxes. Copy the page's diagram rules into a `<style>` inside `<defs>`, then:
    - Strip CSS comments first, so a comment in front of a rule does not become part of its selector.
    - Re-scope `:root { … }` custom properties onto `#<slug>-root` so the figure keeps its own tokens.

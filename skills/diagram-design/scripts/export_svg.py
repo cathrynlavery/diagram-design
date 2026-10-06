@@ -155,17 +155,23 @@ def ensure_viewbox(svg: str) -> None:
 
 
 def set_root_id(svg: str, root_id: str) -> str:
-    """Put `id="{root_id}"` on the opening <svg> tag (replace any existing id)."""
+    """Put the scoped ID on the actual root id attribute, preserving other data."""
+    opening = START_TAG_RE.match(svg)
+    assert opening is not None
+    name, attrs, end = opening.groups()
+    replaced = False
 
-    def repl(match: re.Match[str]) -> str:
-        tag = match.group(0)
-        if re.search(r"\bid\s*=", tag, re.IGNORECASE):
-            tag = re.sub(r'\bid\s*=\s*("[^"]*"|\'[^\']*\')', f'id="{root_id}"', tag, count=1)
-        else:
-            tag = tag[:-1] + f' id="{root_id}">'
-        return tag
+    def replace_attr(attr: re.Match[str]) -> str:
+        nonlocal replaced
+        if attr.group(2) != "id":
+            return attr.group(0)
+        replaced = True
+        return f'{attr.group(1)}id="{root_id}"'
 
-    return re.sub(r"<svg\b[^>]*>", repl, svg, count=1, flags=re.IGNORECASE)
+    attrs = TAG_ATTR_RE.sub(replace_attr, attrs)
+    if not replaced:
+        attrs += f' id="{root_id}"'
+    return f"<{name}{attrs}{end}>" + svg[opening.end():]
 
 
 def is_chrome_selector(selector: str) -> bool:
@@ -221,7 +227,40 @@ def escape_css_for_xml(css: str) -> str:
     return css.replace("&", "&amp;").replace("<", "&lt;")
 
 
-def diagram_css_from_html(html: str, root_id: str) -> str:
+def retarget_root_selector(selector: str, original_id: str, root_id: str) -> str:
+    """Retarget literal ID tokens, preserving quoted values and CSS escapes."""
+    out: list[str] = []
+    quote = ""
+    pos = 0
+    token = f"#{original_id}"
+    while pos < len(selector):
+        char = selector[pos]
+        if char == "\\":
+            out.append(selector[pos:pos + 2])
+            pos += 2
+            continue
+        if quote:
+            out.append(char)
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+            out.append(char)
+        elif selector.startswith(token, pos):
+            after = pos + len(token)
+            next_char = selector[after:after + 1]
+            if not next_char or not (next_char.isalnum() or next_char in "_-\\" or ord(next_char) >= 128):
+                out.append(f"#{root_id}")
+                pos = after
+                continue
+            out.append(char)
+        else:
+            out.append(char)
+        pos += 1
+    return "".join(out)
+
+
+def diagram_css_from_html(html: str, root_id: str, original_root_id: str = "") -> str:
     """Filter page <style> rules down to diagram rules, scoped under root_id."""
     kept: list[str] = []
     for block in STYLE_BLOCK_RE.findall(html):
@@ -230,6 +269,8 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
         block = CSS_COMMENT_RE.sub("", block)
         for match in RULE_RE.finditer(block):
             selector = " ".join(match.group(1).split())
+            if original_root_id:
+                selector = retarget_root_selector(selector, original_root_id, root_id)
             body = match.group(2).strip()
             if not selector or not body:
                 continue
@@ -361,8 +402,15 @@ def export_svg_document(html: str, source_path: Path) -> str:
     svg = xmlify_attributes(extract_first_svg(html))
     ensure_viewbox(svg)
     svg = ensure_xmlns(svg)
+    opening = START_TAG_RE.match(svg)
+    assert opening is not None
+    original_root_id = next(
+        (attr.group(4)[1:-1] for attr in TAG_ATTR_RE.finditer(opening.group(2))
+         if attr.group(2) == "id" and attr.group(4) is not None),
+        "",
+    )
     svg = set_root_id(svg, root_id)
-    diagram_css = diagram_css_from_html(html, root_id)
+    diagram_css = diagram_css_from_html(html, root_id, original_root_id)
     svg = merge_style_into_defs(svg, diagram_css)
     svg = namespace_defs_ids(svg, slug)
     svg = normalize_rgba_presentation_attrs(svg)

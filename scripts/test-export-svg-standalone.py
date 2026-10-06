@@ -204,6 +204,19 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
 
+    def test_root_selector_retarget_preserves_literals_and_escapes(self) -> None:
+        selector = r"""#original .paint[data-label="#original"], [data-label='#original'], .\#original, #original-child, #original\:child, #originalé"""
+        expected = r"""#export-root .paint[data-label="#original"], [data-label='#original'], .\#original, #original-child, #original\:child, #originalé"""
+        self.assertEqual(self.mod.retarget_root_selector(selector, "original", "export-root"), expected)
+        escaped_quote = r' .paint[data-label="escaped\"#original"] #original'
+        self.assertEqual(self.mod.retarget_root_selector(escaped_quote, "original", "export-root"),
+                         r' .paint[data-label="escaped\"#original"] #export-root')
+        html = '<style>.paint[data-label="#original"] { fill:#00ff00 } #original .paint { stroke:#0000ff }</style>'
+        html += '<svg id="original" viewBox="0 0 40 40"><rect class="paint" data-label="#original" width="40" height="40"/></svg>'
+        svg = self.mod.export_svg_document(html, Path("literal.html"))
+        self.assertIn('#literal-root .paint[data-label="#original"]', svg)
+        self.assertIn('#literal-root .paint { stroke:#0000ff }', svg)
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
@@ -231,6 +244,27 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn('fill="#2d3142" fill-opacity="0.10"', svg)
         self.assertIn('stroke="none"', svg)
         self.assertIn('id="rgba-demo-dots"', svg)
+
+    def test_original_svg_root_selectors_follow_replaced_id(self) -> None:
+        for quote in ('"', "'"):
+            with self.subTest(quote=quote):
+                html = '<style>#original .paint {fill: #ff0000;} '
+                html += '#original-child {stroke: #00ff00;}</style>'
+                html += '<svg id=' + quote + 'original' + quote + ' viewBox="0 0 40 40">'
+                html += '<rect id="original-child" class="paint" width="40" height="40"/></svg>'
+                result = self.mod.export_svg_document(html, Path("renamed.html"))
+                css = embedded_css(result)
+                self.assertIn('#renamed-root .paint { fill: #ff0000; }', css)
+                self.assertIn('#original-child { stroke: #00ff00; }', css)
+                self.assertIn('id="original-child"', result)
+                self.assertNotIn('#original .paint', css)
+        # An unrelated attribute that contains the word id is not the root id.
+        source = '<style>#original .paint {fill: #f00;}</style>'
+        source += '<svg data-id="original" viewBox="0 0 10 10"><rect class="paint"/></svg>'
+        result = self.mod.export_svg_document(source, Path("data-id.html"))
+        self.assertIn('#original .paint', embedded_css(result))
+        self.assertIn('data-id="original"', result)
+        self.assertEqual(ET.fromstring(result).get('id'), 'data-id-root')
 
     def test_root_tokens_bind_to_svg_root(self) -> None:
         # Without the :root re-scope the tokens land on `#root :root`, which
