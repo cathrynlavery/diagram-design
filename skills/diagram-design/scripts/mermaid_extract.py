@@ -1188,15 +1188,13 @@ def _escape_table(text: str) -> str:
     return _escape_markdown(text.replace("\n", " ⏎ "))
 
 
-def _block_summary(block: SourceBlock, selected: list[Diagram]) -> str:
-    """One header entry. A block that was not selected is parsed only to
-    describe it, so a failure there is listed instead of ending the run."""
-    diagram = next((item for item in selected if item.index == block.index), None)
+def _block_summary(
+    block: SourceBlock, selected_by_index: dict[int, Diagram]
+) -> str:
+    """Describe selected blocks without parsing unselected source."""
+    diagram = selected_by_index.get(block.index)
     if diagram is None:
-        try:
-            diagram = parse_block(block)
-        except ExtractError as error:
-            return f"[{block.index}] unparsed: {_escape_markdown(str(error))}"
+        return f"[{block.index}] not selected"
     return f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
 
 
@@ -1207,9 +1205,10 @@ def digest(
     max_rows: int,
 ) -> str:
     output = [f"# Mermaid IR — {path.name}", ""]
+    selected_by_index = {diagram.index: diagram for diagram in selected}
     output.append(
         f"{len(blocks)} diagram(s): "
-        + ", ".join(_block_summary(block, selected) for block in blocks)
+        + ", ".join(_block_summary(block, selected_by_index) for block in blocks)
     )
     for diagram in selected:
         info = analyze(diagram)
