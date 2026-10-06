@@ -337,12 +337,25 @@ def main() -> int:
             "dark focal value text fails 4.5:1 contrast against the actual dark underlay",
         )
 
+    # Translucent foregrounds compose against the cell beneath them, not paper.
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for template, theme in ((original, "light"),
+                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            for alpha, expected_pass in (("0.8", True), ("0.2", False)):
+                changed = template.replace('x="578" y="149" fill="#111111"',
+                                           f'x="578" y="149" fill="rgba(17,17,17,{alpha})"', 1)
+                code, output = run(write(d, f"alpha-{theme}-{alpha}.html", changed))
+                if (code == 0) != expected_pass or (not expected_pass and "below WCAG AA" not in output):
+                    failures.append(f"alpha foreground {theme}/{alpha} unexpected result: {output.strip()}")
+        print("OK: translucent AA foregrounds pass; weak-alpha text still fails in both themes")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print(f"OK — {13 + 3} cases ({3} positive, {13} negative), all passed.")
+    print("OK — 20 cases (5 positive, 15 negative), all passed.")
     return 0
 
 

@@ -69,4 +69,6 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 `scripts/verify-heatmap.py` enforces the complete `rows × cols` grid, the monotone fill ramp on non-focal cells, and at most one focal cell. It does **not** verify cell geometry (position, width, height) because both axes are categorical — position encodes "which row/column", and that is carried by the label, not by a scale the checker can measure against.
 
+Focal-text contrast composites translucent foreground text against the resolved focal-cell fill before measuring WCAG AA. The 4.5:1 minimum applies to that foreground/background pair in both themes.
+
 **No `transform` on any verified element.** Bake any coordinate offsets directly into `x`/`y` attributes.
