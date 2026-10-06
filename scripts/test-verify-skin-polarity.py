@@ -642,6 +642,20 @@ def main():
         else:
             print("OK: unparsed visible claim remains rejected beside an archived comment")
 
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        for label, replacement, wrong in (
+            ("archived-inline-correct", "str<!-- archived <text>old legend</text> -->onger contrast is larger", False),
+            ("archived-inline-wrong", "faint<!-- archived <text>old legend</text> -->er contrast is larger", True),
+            ("archived-inline-unparsed", "larger<!-- archived <text>old legend</text> --> means something stronger eventually", True),
+        ):
+            source = light_source.replace("stronger contrast is larger", replacement)
+            code, output = run(write(directory, label + ".html", source))
+            if bool(code) != wrong or (not wrong and "1 making a directional tone claim" not in output):
+                failures.append(f"{label}: archived closing markup changed visible claim parsing: {output}")
+            else:
+                print(f"OK: {label} preserves complete visible copy")
+
     for failure in failures:
         print("FAIL: {}".format(failure))
     if failures:
