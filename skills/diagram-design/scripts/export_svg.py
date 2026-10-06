@@ -322,9 +322,7 @@ def normalize_rgba_presentation_attrs(svg: str) -> str:
 
     def repl(match: re.Match[str]) -> str:
         prop, r, g, b, a = match.groups()
-        return '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
-            prop, int(r), int(g), int(b), a
-        )
+        return f'{prop}="#{int(r):02x}{int(g):02x}{int(b):02x}" {prop}-opacity="{a}"'
 
     svg = RGBA_ATTR_RE.sub(repl, svg)
     svg = TRANSPARENT_ATTR_RE.sub(r'\1="none"', svg)

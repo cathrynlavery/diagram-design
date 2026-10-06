@@ -12,8 +12,8 @@ Exit: 0 all pass, 1 a case failed.
 
 from __future__ import annotations
 
-import runpy
 import re
+import runpy
 import subprocess
 import sys
 import tempfile

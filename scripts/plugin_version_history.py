@@ -8,8 +8,8 @@ import json
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST_PATHS = (
@@ -38,7 +38,7 @@ def git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
+def versions_at(root: Path, ref: str) -> tuple[str, ...]:
     versions = []
     for relative in MANIFEST_PATHS:
         raw = git(root, "show", f"{ref}:{relative.as_posix()}")

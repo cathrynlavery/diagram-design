@@ -324,7 +324,7 @@ def plain(body: str) -> str:
 
 
 class Bar:
-    __slots__ = ("x", "y", "w", "h", "offset", "value", "label", "values", "inflow", "outflow")
+    __slots__ = ("h", "inflow", "label", "offset", "outflow", "value", "values", "w", "x", "y")
 
     def __init__(self, x: float, y: float, w: float, h: float, offset: int) -> None:
         self.x, self.y, self.w, self.h, self.offset = x, y, w, h, offset
@@ -344,7 +344,7 @@ class Bar:
 
 
 class Ribbon:
-    __slots__ = ("x0", "y0t", "y0b", "x1", "y1t", "y1b", "controls", "offset")
+    __slots__ = ("controls", "offset", "x0", "x1", "y0b", "y0t", "y1b", "y1t")
 
     def __init__(self, nums: list[float], offset: int) -> None:
         # index:  0   1     2  3    4  5    6  7     8  9    10 11   12 13   14 15

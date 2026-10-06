@@ -190,7 +190,7 @@ MARK_TAGS = ("path", "line")                  # outlines and their baseline rule
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "offset", "tag")
 
     def __init__(self, tag, attrs, offset, line, ancestor):
         self.tag = tag
@@ -202,7 +202,7 @@ class Element:
 
 
 class Ridge:
-    __slots__ = ("name", "values", "points", "baseline", "stroke", "width", "line")
+    __slots__ = ("baseline", "line", "name", "points", "stroke", "values", "width")
 
     def __init__(self, name, values, points, baseline, stroke, width, line):
         self.name = name

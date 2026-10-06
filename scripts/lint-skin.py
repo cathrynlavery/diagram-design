@@ -17,7 +17,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-
 ROOT = Path(__file__).resolve().parent.parent
 STYLE_GUIDE = ROOT / "skills/diagram-design/references/style-guide.md"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"

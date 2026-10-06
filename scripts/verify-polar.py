@@ -3,15 +3,14 @@
 
 from __future__ import annotations
 
+import re
+import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from math import cos, hypot, isfinite, pi, radians, sin
 from pathlib import Path
-import re
-import sys
-from typing import Sequence
 from urllib.parse import urlsplit
-
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills" / "diagram-design" / "assets"
@@ -272,9 +271,7 @@ class PolarParser(HTMLParser):
                 self._chart.class_attribute_count += 1
             for key, value in data.items():
                 normalized_value = value.strip().casefold()
-                if key in REFERENCE_ATTRIBUTES and normalized_value not in {"", "none"}:
-                    self._chart.url_attributes.append(key)
-                elif key in {"fill", "stroke"} and "url(" in normalized_value:
+                if key in REFERENCE_ATTRIBUTES and normalized_value not in {"", "none"} or key in {"fill", "stroke"} and "url(" in normalized_value:
                     self._chart.url_attributes.append(key)
             if tag == "g" and "data-polar-category" in data:
                 category = Category(

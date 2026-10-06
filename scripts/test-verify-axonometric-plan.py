@@ -103,8 +103,8 @@ def main() -> int:
     lifted = module.prism(module.Proj(*origin), module.Rect(24, 28, 68, 52, 0), z0 + 10, z0 + 10 + h)["sil"]
     floating = office.replace(m.group(0), m.group(0).replace(f'data-z="{m.group(1)}"', f'data-z="{z0 + 10:g}"').replace(m.group(3), lifted), 1)
 
-    first_box = re.search(r'<g data-box [^>]*>.*?</g>', office, re.S).group(0)
-    booth_tag = re.search(r'<g data-role="tag" data-name="Booth".*?</g>', office, re.S).group(0)
+    first_box = re.search(r'<g data-box [^>]*>.*?</g>', office, re.DOTALL).group(0)
+    booth_tag = re.search(r'<g data-role="tag" data-name="Booth".*?</g>', office, re.DOTALL).group(0)
 
     cases = {
         "silhouette vertex moved": (
@@ -133,7 +133,7 @@ def main() -> int:
         "room with no tag": (office.replace(booth_tag, "", 1), "has 0 tags"),
         "room with two tags": (office.replace(booth_tag, booth_tag + booth_tag, 1), "has 2 tags"),
         "tag text disagrees with its name": (
-            once(r'(<g data-role="tag" data-name="Lobby".*?>)Lobby(</text>)', r"\1Foyer\2", office, re.S),
+            once(r'(<g data-role="tag" data-name="Lobby".*?>)Lobby(</text>)', r"\1Foyer\2", office, re.DOTALL),
             "disagrees with its data-name"),
         "second focal element": (
             once(r'(data-room data-name="Kitchen")', r"\1 data-focal", office),

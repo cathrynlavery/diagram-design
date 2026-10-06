@@ -22,9 +22,26 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
-from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, L, M, Proj, Rect,  # noqa: E402
-                        animated_page, cards_html, f, finish, outline, point, prism, solid, styles, walk)
-
+from axonometry import (
+    FONT_LINK,
+    FULL,
+    MINIMAL,
+    SKINS,
+    L,
+    M,
+    Proj,
+    Rect,
+    animated_page,
+    cards_html,
+    f,
+    finish,
+    outline,
+    point,
+    prism,
+    solid,
+    styles,
+    walk,
+)
 
 # ---------------------------------------------------------------- parts
 

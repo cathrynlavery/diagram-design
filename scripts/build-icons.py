@@ -19,8 +19,8 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 

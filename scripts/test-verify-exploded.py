@@ -120,7 +120,7 @@ def main() -> int:
             once(r'(data-role="silhouette")', r'\1 transform="translate(4 0)"', stack),
             "carries transform="),
         "duplicate label for one part": (
-            once(r'(<g data-role="label">.*?</g>)', lambda m: m.group(1) + m.group(1), stack, re.S),
+            once(r'(<g data-role="label">.*?</g>)', lambda m: m.group(1) + m.group(1), stack, re.DOTALL),
             "has more than one label"),
         "silhouette missing": (
             once(r'data-role="silhouette"', 'data-role="outline"', stack),

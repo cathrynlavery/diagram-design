@@ -125,7 +125,7 @@ ACCENTS = {"#eb6c36", "#f08a59"}   # light and dark skin accent tokens
 
 
 class Series:
-    __slots__ = ("name", "ranks", "points", "stroke", "width", "offset")
+    __slots__ = ("name", "offset", "points", "ranks", "stroke", "width")
 
     def __init__(self, name, ranks, points, stroke, width, offset):
         self.name = name

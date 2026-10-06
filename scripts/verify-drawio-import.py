@@ -243,7 +243,7 @@ def check_nested_geometry(tmp: Path) -> None:
 
 def check_bom_prefixed(tmp: Path) -> None:
     model = re.search(
-        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
+        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.DOTALL
     )
     if not model:
         fail("fixture has no mxGraphModel")
@@ -274,7 +274,7 @@ def check_bom_prefixed(tmp: Path) -> None:
 
 def check_containers(tmp: Path) -> None:
     model = re.search(
-        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
+        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.DOTALL
     )
     if not model:
         fail("fixture has no mxGraphModel")

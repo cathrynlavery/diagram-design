@@ -53,7 +53,7 @@ def fix(path: str) -> int:
         return 0
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(text)
-    note = f' (also stripped BOM)' if had_bom else ''
+    note = ' (also stripped BOM)' if had_bom else ''
     print(f'{path}: replaced {n} sequence(s){note}')
     return n
 

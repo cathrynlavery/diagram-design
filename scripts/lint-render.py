@@ -1001,7 +1001,7 @@ OUTPUT_SPEC_DOC = ROOT / "skills/diagram-design/references/output-spec.md"
 def output_spec_widest_preset():
     """The widest fixed viewBox in the output-spec.md size table, or None."""
     text = OUTPUT_SPEC_DOC.read_text(encoding="utf-8")
-    sizes = re.findall(r"^\| `[a-z0-9-]+` \| `0 0 (\d+) (\d+)`", text, re.M)
+    sizes = re.findall(r"^\| `[a-z0-9-]+` \| `0 0 (\d+) (\d+)`", text, re.MULTILINE)
     return max((int(w), int(h)) for w, h in sizes) if sizes else None
 
 
@@ -1041,8 +1041,8 @@ async ([src, probe, viewBoxWidth]) => {
 def export_recipe():
     """The PNG rasterize snippet from export.md, found by heading, not position."""
     text = EXPORT_DOC.read_text(encoding="utf-8")
-    match = re.search(r"^### Rasterize[ \t]*\n(.*?)^```python\n(.*?)^```", text, re.M | re.S)
-    if match is None or re.search(r"^#{1,3} ", match.group(1), re.M):
+    match = re.search(r"^### Rasterize[ \t]*\n(.*?)^```python\n(.*?)^```", text, re.MULTILINE | re.DOTALL)
+    if match is None or re.search(r"^#{1,3} ", match.group(1), re.MULTILINE):
         return None
     return match.group(2)
 

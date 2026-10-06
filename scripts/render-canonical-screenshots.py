@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 
 from playwright.sync_api import sync_playwright
-
 from screenshot_catalog import (
     MANIFEST,
     ROOT,

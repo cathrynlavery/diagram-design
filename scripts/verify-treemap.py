@@ -83,14 +83,14 @@ MARKER_EPSILON = 0.01
 
 class Box:
     __slots__ = (
-        "x",
-        "y",
-        "w",
         "h",
         "offset",
+        "rect_count",
         "share",
         "share_errors",
-        "rect_count",
+        "w",
+        "x",
+        "y",
     )
 
     def __init__(

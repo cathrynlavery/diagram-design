@@ -189,7 +189,7 @@ DRAWN_AS = {
 class Member:
     """One rank-bearing translucent fill on the ramp."""
 
-    __slots__ = ("rank", "alpha", "ink", "offset")
+    __slots__ = ("alpha", "ink", "offset", "rank")
 
     def __init__(self, rank, alpha, ink, offset):
         self.rank = rank
@@ -202,7 +202,13 @@ class Claim:
     """A directional tone assertion found in rendered copy."""
 
     __slots__ = (
-        "axis", "tone_dir", "magnitude_dir", "phrase", "copy", "offset", "span"
+        "axis",
+        "copy",
+        "magnitude_dir",
+        "offset",
+        "phrase",
+        "span",
+        "tone_dir"
     )
 
     def __init__(self, axis, tone_dir, magnitude_dir, phrase, copy, offset, span):
@@ -532,11 +538,11 @@ def check(path):
     findings = []
     for phrase, copy, offset in unparsed:
         findings.append(
-            '{}:{}: copy reads as a directional tone claim - "{}" in "{}" - but no '
+            f'{path.name}:{line_of(source, offset)}: copy reads as a directional tone claim - "{phrase}" in "{excerpt(copy)}" - but no '
             "supported sentence form binds it, so it would go unchecked. Rephrase it "
             "as <tone> <is|means|represents> <magnitude> (\"stronger contrast is "
             "larger\"), or separate the two words so it no longer reads as a "
-            "claim".format(path.name, line_of(source, offset), phrase, excerpt(copy))
+            "claim"
         )
     if not claims:
         return findings, True
@@ -544,11 +550,9 @@ def check(path):
     if paper is None:
         for claim in claims:
             findings.append(
-                '{}:{}: copy claims "{}" but the file declares no paper color '
+                f'{path.name}:{line_of(source, claim.offset)}: copy claims "{claim.phrase}" but the file declares no paper color '
                 "(--color-paper, or a full-bleed backdrop rect), so the ramp cannot be "
-                "composited and the claim cannot be checked".format(
-                    path.name, line_of(source, claim.offset), claim.phrase
-                )
+                "composited and the claim cannot be checked"
             )
         return findings, True
 
@@ -579,7 +583,7 @@ def check(path):
                     path.name,
                     line_of(source, claim.offset),
                     claim.phrase,
-                    ", ".join("{:g}".format(rank) for rank in ranks),
+                    ", ".join(f"{rank:g}" for rank in ranks),
                 )
             )
         return findings, True
@@ -601,7 +605,7 @@ def check(path):
         ink[0],
         ink[1],
         ink[2],
-        " -> ".join("{:g}".format(member.alpha) for member in ramp),
+        " -> ".join(f"{member.alpha:g}" for member in ramp),
         int(round(paper[0])),
         int(round(paper[1])),
         int(round(paper[2])),
@@ -620,7 +624,7 @@ def check(path):
                     claim.phrase,
                     claim.axis,
                     described,
-                    ", ".join("{:.4f}".format(value) for value in series),
+                    ", ".join(f"{value:.4f}" for value in series),
                 )
             )
             continue
@@ -634,16 +638,8 @@ def check(path):
             else "Fix the claim or the ramp so they state one thing"
         )
         findings.append(
-            '{}:{}: copy claims "{}" - "{}" - but the ramp draws larger as {} ({}). '
-            "{}".format(
-                path.name,
-                line,
-                claim.phrase,
-                excerpt(claim.copy),
-                DRAWN_AS[(claim.axis, actual)],
-                described,
-                remedy,
-            )
+            f'{path.name}:{line}: copy claims "{claim.phrase}" - "{excerpt(claim.copy)}" - but the ramp draws larger as {DRAWN_AS[(claim.axis, actual)]} ({described}). '
+            f"{remedy}"
         )
     return findings, True
 
@@ -687,7 +683,7 @@ def main():
     claiming = 0
     for path in targets(args):
         if not path.exists():
-            print("error: {} does not exist".format(path), file=sys.stderr)
+            print(f"error: {path} does not exist", file=sys.stderr)
             return 2
         file_findings, made_claim = check(path)
         findings.extend(file_findings)
@@ -698,14 +694,14 @@ def main():
         print(finding)
     if findings:
         print(
-            "\n{} skin-polarity finding(s) across {} file(s).".format(len(findings), checked)
+            f"\n{len(findings)} skin-polarity finding(s) across {checked} file(s)."
         )
         return 1
     # The claim count is reported so a run that checked nothing cannot be
     # mistaken for a run that found nothing.
     print(
-        "OK skin polarity: {} file(s), {} making a directional tone claim, "
-        "every claim matches its composited ramp".format(checked, claiming)
+        f"OK skin polarity: {checked} file(s), {claiming} making a directional tone claim, "
+        "every claim matches its composited ramp"
     )
     return 0
 

@@ -182,7 +182,7 @@ BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data 
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "offset", "tag")
 
     def __init__(self, tag, attrs, offset, line, ancestor):
         self.tag = tag
@@ -194,7 +194,7 @@ class Element:
 
 
 class Layer:
-    __slots__ = ("name", "values", "top", "bottom", "line", "controls")
+    __slots__ = ("bottom", "controls", "line", "name", "top", "values")
 
     def __init__(self, name, values, top, bottom, line):
         self.name = name

@@ -38,9 +38,9 @@ WARNING_ANCHOR = "fallback typography"
 FALLBACK_BUDGET_SECONDS = 15.0
 
 
-RASTERIZE_HEADING = re.compile(r"^### Rasterize\b.*$", re.M)
-NEXT_HEADING = re.compile(r"^#{1,3} ", re.M)
-PYTHON_FENCE = re.compile(r"^( *)```python[ \t]*\n(.*?)^\1```[ \t]*$", re.M | re.S)
+RASTERIZE_HEADING = re.compile(r"^### Rasterize\b.*$", re.MULTILINE)
+NEXT_HEADING = re.compile(r"^#{1,3} ", re.MULTILINE)
+PYTHON_FENCE = re.compile(r"^( *)```python[ \t]*\n(.*?)^\1```[ \t]*$", re.MULTILINE | re.DOTALL)
 
 
 def select_rasterize_block(text: str) -> str:
@@ -121,7 +121,7 @@ def load_snippet() -> str:
 class _StallHandler(BaseHTTPRequestHandler):
     """Serves nothing: holds /stall* requests open so the load never settles."""
 
-    def do_GET(self) -> None:  # noqa: N802 - stdlib naming
+    def do_GET(self) -> None:
         if self.path.startswith("/stall"):
             time.sleep(STALL_HOLD_SECONDS)
             self.send_error(500)

@@ -194,7 +194,7 @@ ROLES = ("label", "caption", "key")
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "tag")
 
     def __init__(self, tag, attrs, line, ancestor):
         self.tag = tag
@@ -205,7 +205,7 @@ class Element:
 
 
 class Segment:
-    __slots__ = ("column", "series", "amount", "x", "y", "w", "h", "line", "accent", "element")
+    __slots__ = ("accent", "amount", "column", "element", "h", "line", "series", "w", "x", "y")
 
     def __init__(self, column, series, amount, x, y, w, h, line, accent, element):
         self.column, self.series, self.amount = column, series, amount
@@ -230,7 +230,7 @@ class Segment:
 
 
 class Column:
-    __slots__ = ("name", "segments", "x", "w", "top", "bottom", "line")
+    __slots__ = ("bottom", "line", "name", "segments", "top", "w", "x")
 
     def __init__(self, name, segments):
         self.name = name

@@ -192,7 +192,7 @@ MARK_TAGS = ("circle",)                       # the element this contract binds
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "offset", "tag")
 
     def __init__(self, tag, attrs, offset, line, ancestor):
         self.tag = tag
@@ -204,7 +204,7 @@ class Element:
 
 
 class Bubble:
-    __slots__ = ("name", "x", "y", "size", "cx", "cy", "r", "accent", "line")
+    __slots__ = ("accent", "cx", "cy", "line", "name", "r", "size", "x", "y")
 
     def __init__(self, name, x, y, size, cx, cy, r, accent, line):
         self.name = name

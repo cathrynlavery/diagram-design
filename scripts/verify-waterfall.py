@@ -173,7 +173,7 @@ def check_transforms(source: str, errors: list[str]) -> None:
 
 
 class Bar:
-    __slots__ = ("role", "value", "name", "x", "y", "w", "h", "fill", "stroke", "index")
+    __slots__ = ("fill", "h", "index", "name", "role", "stroke", "value", "w", "x", "y")
 
     def __init__(self, index: int, role: str, value: float, name: str,
                  x: float, y: float, w: float, h: float, fill: str, stroke: str) -> None:

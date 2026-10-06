@@ -11,7 +11,6 @@ import json
 import tempfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts/build-readme-thumbs.py"
 

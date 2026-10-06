@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import platform
 import shutil
 import subprocess
@@ -361,9 +360,7 @@ def summarize(checks: list[CheckResult], strict: bool) -> tuple[str, dict[str, i
         status = "PASS"
 
     exit_code = 0
-    if counts[FAIL] > 0:
-        exit_code = 1
-    elif strict and counts[WARN] > 0:
+    if counts[FAIL] > 0 or strict and counts[WARN] > 0:
         exit_code = 1
 
     return status, counts, exit_code

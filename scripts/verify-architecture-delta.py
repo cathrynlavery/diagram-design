@@ -34,8 +34,8 @@ STATUSES = {"unchanged", "added", "removed", "changed", "moved", "rewired"}
 CSS_MOVES = re.compile(
     r"(?:^|[;{])\s*(?:-(?:webkit|moz|ms|o)-)?"
     r"(?:transform|translate|rotate|scale|x|y|cx|cy|r|rx|ry|d|"
-    r"offset(?:-(?:path|distance|position|anchor|rotate))?)\s*:", re.I)
-CSS_SIZE = re.compile(r"(?:^|[;{])\s*(?:width|height)\s*:", re.I)
+    r"offset(?:-(?:path|distance|position|anchor|rotate))?)\s*:", re.IGNORECASE)
+CSS_SIZE = re.compile(r"(?:^|[;{])\s*(?:width|height)\s*:", re.IGNORECASE)
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 EPS = 1e-6
 ENDPOINT_TOLERANCE = 2.0
@@ -145,11 +145,11 @@ def within(node: Node, ancestor: Node) -> bool:
 
 
 def clean_css(raw: str) -> str:
-    return re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+    return re.sub(r"/\*.*?\*/", "", raw, flags=re.DOTALL)
 
 
 def hiding_values(values: dict[str, str]) -> bool:
-    values = {key: re.sub(r"\s*!important\s*$", "", value, flags=re.I).strip().lower()
+    values = {key: re.sub(r"\s*!important\s*$", "", value, flags=re.IGNORECASE).strip().lower()
               for key, value in values.items()}
     if values.get("display") == "none" or values.get("visibility") in {"hidden", "collapse"}:
         return True

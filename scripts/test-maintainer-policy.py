@@ -40,7 +40,6 @@ import json
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = ROOT / ".maintainer-policy.json"
 CI_WORKFLOW = ROOT / ".github/workflows/ci.yml"
@@ -267,9 +266,7 @@ def policy_failures(policy: dict, workflow: str) -> list[str]:
     failures = []
     if manifests != EXPECTED_MANIFESTS:
         failures.append(
-            "versioning.manifests must be exactly {}; found {}".format(
-                sorted(EXPECTED_MANIFESTS), sorted(manifests)
-            )
+            f"versioning.manifests must be exactly {sorted(EXPECTED_MANIFESTS)}; found {sorted(manifests)}"
         )
     missing_commands = sorted(REQUIRED_COMMANDS - commands)
     if missing_commands:
@@ -284,7 +281,7 @@ def policy_failures(policy: dict, workflow: str) -> list[str]:
     for line in unmapped:
         failures.append(
             "ci.yml runs a command this test cannot map to a local gate "
-            "(extend scripts/test-maintainer-policy.py): {}".format(line)
+            f"(extend scripts/test-maintainer-policy.py): {line}"
         )
     unregistered = sorted(gates - local)
     if unregistered:
@@ -496,7 +493,7 @@ def synthetic_policy(commands: list[str]) -> dict:
 def synthetic_ci(extra: str = "") -> str:
     """The synthetic workflow, plus a step running every REQUIRED_COMMANDS gate."""
     required = "".join(
-        "\n      - name: Required gate\n        run: {}\n".format(command)
+        f"\n      - name: Required gate\n        run: {command}\n"
         for command in sorted(REQUIRED_COMMANDS)
     )
     return SYNTHETIC_CI + required + extra
@@ -636,10 +633,8 @@ def main() -> int:
 
     gates, _unmapped = ci_gates(workflow)
     print(
-        "OK maintainer policy: {} manifests, {} required current gates, "
-        "{} CI gates registered in local_commands".format(
-            len(EXPECTED_MANIFESTS), len(REQUIRED_COMMANDS), len(gates)
-        )
+        f"OK maintainer policy: {len(EXPECTED_MANIFESTS)} manifests, {len(REQUIRED_COMMANDS)} required current gates, "
+        f"{len(gates)} CI gates registered in local_commands"
     )
     return 0
 
