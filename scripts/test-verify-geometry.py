@@ -133,10 +133,11 @@ def main() -> int:
         + '<!-- <defs><g>prototype</g></defs> -->' + prototype), 1)
     check("ordinary painted group is still checked", document(mask + '<g>' + prototype + '</g>'), 1)
     check("self-closing definitions do not hide following paint", document(mask + '<defs/>' + prototype), 1)
-    check("unsupported transforms retain previous mask coverage", document(mask
-        + '<g transform="rotate(0)">' + prototype + '</g>'), 1)
-    check("nested painted SVG retains previous mask coverage", document(mask
-        + '<svg x="0" y="0">' + prototype + '</svg>'), 1)
+    check("nested definition containers keep prototypes unpainted", document(mask
+        + '<defs><symbol id="prototype">' + prototype + '</symbol></defs>'), 0)
+    check("painted group after nested definitions is still checked", document(mask
+        + '<defs><symbol id="prototype">' + prototype + '</symbol></defs><g>'
+        + prototype + '</g>'), 1)
     check("connector prototypes are not painted arrows", document(
         '<defs><path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/></defs>'), 0)
 
