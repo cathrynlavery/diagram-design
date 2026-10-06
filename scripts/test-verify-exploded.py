@@ -103,6 +103,20 @@ def main() -> int:
     crowded = page(module, module.FIGURES["exploded-phone"]())
     module.explode = real_explode
 
+    # Inline SVG spans style the label without changing its visible name.
+    with tempfile.TemporaryDirectory(prefix="verify-label-spans-") as tmp:
+        for label, replacement in (
+            ("styled span", '<tspan font-weight="600">Data</tspan>'),
+            ("mixed nested span text", 'D<tspan>a<tspan>t</tspan></tspan>a'),
+        ):
+            path = Path(tmp) / "label-span.html"
+            path.write_text(stack.replace(">Data</text>", ">" + replacement + "</text>", 1), encoding="utf-8")
+            code, output = run(str(path))
+            if code != 0:
+                failures.append(f"{label} failed: {output}")
+            else:
+                print(f"OK: {label} retains the declared name")
+
     cases = {
         "silhouette vertex moved": (
             once(r'(data-role="silhouette" d="M )(-?\d+(?:\.\d+)?)', bump_first_number, stack),

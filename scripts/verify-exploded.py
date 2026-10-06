@@ -80,7 +80,12 @@ class Tree(HTMLParser):
             self.cur = node.parent
 
     def handle_data(self, data):
+        # A label's visible name includes inline tspan descendants, in source
+        # order, as well as text before and after them.
         self.cur.text += data
+        for ancestor in self.cur.ancestors():
+            if ancestor.tag == "text":
+                ancestor.text += data
 
 
 # ---------------------------------------------------------------- projection (independent of the builder)
