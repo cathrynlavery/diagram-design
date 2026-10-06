@@ -503,6 +503,21 @@ def check_security_and_limits(tmp: Path) -> None:
             [str(canvas_span_overflow), *output_args], "canvas span overflow"
         )
 
+    parent_position_overflow = tmp / "parent-position-overflow.drawio"
+    parent_position_overflow.write_text(
+        '<mxGraphModel><root>'
+        '<mxCell id="parent" value="Parent" vertex="1">'
+        '<mxGeometry x="1e308" y="0" width="10" height="10"/></mxCell>'
+        '<mxCell id="child" value="Child" vertex="1" parent="parent">'
+        '<mxGeometry x="1e308" y="0" width="10" height="10"/></mxCell>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_extract_error(
+            [str(parent_position_overflow), *output_args], "page 0: geometry overflow"
+        )
+
     deep_parents = tmp / "deep-parents.drawio"
     deep_parents.write_text(
         '<mxGraphModel><root>'
