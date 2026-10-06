@@ -204,6 +204,19 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
 
+    def test_named_html_entities_retain_readable_text(self) -> None:
+        html = '<svg viewBox="0 0 40 40"><title>R&nbsp;D &copy;</title><desc>&LT;literal&GT;</desc>'
+        html += '<text data-label="&quot;A&nbsp;B&quot;">R&nbsp;D &amp;nbsp; &copy; &#160;</text></svg>'
+        result = self.mod.export_svg_document(html, Path("entities.html"))
+        root = ET.fromstring(result)
+        text = root.find("{http://www.w3.org/2000/svg}text")
+        self.assertEqual(text.text, "R\u00a0D &nbsp; © \u00a0")
+        self.assertEqual(text.get("data-label"), '"A\u00a0B"')
+        self.assertEqual(root.find("{http://www.w3.org/2000/svg}desc").text, "<literal>")
+        opaque = '<!-- &nbsp; --><![CDATA[&nbsp;]]><style>.label {content:"&nbsp;"}</style>'
+        self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
+        self.assertEqual(self.mod.normalize_html_entities('&notARealEntity;'), '&notARealEntity;')
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
