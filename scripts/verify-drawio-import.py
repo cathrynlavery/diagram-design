@@ -51,17 +51,30 @@ def normalize_newlines(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def run_extract(args: list[str]) -> str:
-    proc = subprocess.run(
+def invoke(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         [sys.executable, str(EXTRACT), *args],
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
     )
+
+
+def run_extract(args: list[str]) -> str:
+    proc = invoke(args)
     if proc.returncode != 0:
         fail(f"extractor exited {proc.returncode} for {args}: {proc.stderr.strip()}")
     return proc.stdout
+
+
+def expect_extract_error(args: list[str], message: str) -> None:
+    proc = invoke(args)
+    if proc.returncode != 2 or message not in proc.stderr:
+        fail(
+            f"expected exit 2 containing {message!r} for {args}; got "
+            f"{proc.returncode}: {proc.stderr.strip()!r}"
+        )
 
 
 def check_legacy_stdout_encoding(tmp: Path) -> None:
@@ -457,6 +470,48 @@ def check_security_and_limits(tmp: Path) -> None:
     )
     if proc.returncode != 2 or "truncated metadata chunk" not in proc.stderr:
         fail("truncated PNG metadata must be rejected with a clear diagnostic")
+
+    for name, coordinate, diagnostic in (
+        ("nan", "NaN", "must be finite"),
+        ("infinity", "Infinity", "must be finite"),
+        ("derived-overflow", "1e308", "bounding box overflow"),
+    ):
+        malformed_geometry = tmp / f"{name}.drawio"
+        malformed_geometry.write_text(
+            '<mxGraphModel><root><mxCell id="node" value="Node" vertex="1">'
+            f'<mxGeometry x="{coordinate}" y="0" width="{coordinate}" height="10"/>'
+            '</mxCell></root></mxGraphModel>',
+            encoding="utf-8",
+        )
+        for output_args in ([], ["--json"]):
+            expect_extract_error(
+                [str(malformed_geometry), *output_args], diagnostic
+            )
+
+    deep_parents = tmp / "deep-parents.drawio"
+    deep_parents.write_text(
+        '<mxGraphModel><root>'
+        + ''.join(
+            f'<mxCell id="n{index}" value="Node" vertex="1" parent="n{index - 1}">'
+            '<mxGeometry x="1" y="1" width="1" height="1"/></mxCell>'
+            for index in range(1, 1101)
+        )
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    deepest = json.loads(run_extract([str(deep_parents), "--json"]))["pages"][0]["nodes"][-1]
+    if (deepest["x"], deepest["y"], deepest["depth"]) != (1100, 1100, 1099):
+        fail(f"deep parent chain resolved incorrectly: {deepest}")
+
+    parent_cycle = tmp / "parent-cycle.drawio"
+    parent_cycle.write_text(
+        '<mxGraphModel><root>'
+        '<mxCell id="a" value="A" vertex="1" parent="b"/>'
+        '<mxCell id="b" value="B" vertex="1" parent="a"/>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error([str(parent_cycle)], "parent cycle")
 
     proc = subprocess.run(
         [sys.executable, str(EXTRACT), str(FIXTURE), "--max-rows", "0"],

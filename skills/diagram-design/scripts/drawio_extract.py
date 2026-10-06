@@ -24,6 +24,7 @@ import argparse
 import base64
 import html
 import json
+import math
 import re
 import struct
 import sys
@@ -350,9 +351,12 @@ def _num(geom: ET.Element | None, key: str) -> float:
     if geom is None:
         return 0.0
     try:
-        return float(geom.get(key, "0") or 0)
-    except ValueError:
+        value = float(geom.get(key, "0") or 0)
+    except (OverflowError, ValueError):
         return 0.0
+    if not math.isfinite(value):
+        _fail(f"invalid geometry: {key} must be finite")
+    return value
 
 
 def parse_page(diagram: ET.Element, index: int) -> Page:
@@ -454,18 +458,34 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
 
     node_map = page.node_map
 
-    # Resolve absolute geometry + depth by walking the parent chain.
-    def resolve(node: Node, seen: set[str]) -> tuple[float, float, int]:
-        if node.id in seen:
-            return node.x, node.y, 0
-        seen.add(node.id)
-        parent = node_map.get(node.parent or "")
-        if parent is None:
-            return node.x, node.y, 0
-        px, py, pdepth = resolve(parent, seen)
-        return node.x + px, node.y + py, pdepth + 1
+    # Resolve absolute geometry + depth iteratively and reuse resolved prefixes.
+    resolved_by_id: dict[str, tuple[float, float, int]] = {}
+    for node in page.nodes:
+        chain: list[Node] = []
+        active: set[str] = set()
+        current = node
+        while current.id not in resolved_by_id:
+            if current.id in active:
+                _fail(f"page {index}: parent cycle")
+            active.add(current.id)
+            chain.append(current)
+            parent = node_map.get(current.parent or "")
+            if parent is None:
+                position = (0.0, 0.0, -1)
+                break
+            current = parent
+        else:
+            position = resolved_by_id[current.id]
 
-    resolved = [resolve(node, set()) for node in page.nodes]
+        px, py, pdepth = position
+        while chain:
+            current = chain.pop()
+            px, py, pdepth = current.x + px, current.y + py, pdepth + 1
+            if not math.isfinite(px) or not math.isfinite(py):
+                _fail(f"page {index}: geometry overflow")
+            resolved_by_id[current.id] = (px, py, pdepth)
+
+    resolved = [resolved_by_id[node.id] for node in page.nodes]
     for node, (ax, ay, depth) in zip(page.nodes, resolved):
         node.x, node.y, node.depth = ax, ay, depth
         parent = node_map.get(node.parent or "")
@@ -700,6 +720,8 @@ def _escape_table(text: str) -> str:
 
 def page_bounds(page: Page) -> tuple[float, float, float, float]:
     boxes = [(n.x, n.y, n.x + n.w, n.y + n.h) for n in page.nodes if n.w and n.h]
+    if any(not math.isfinite(value) for box in boxes for value in box):
+        _fail("invalid geometry: bounding box overflow")
     if not boxes:
         return (0.0, 0.0, 0.0, 0.0)
     return (
