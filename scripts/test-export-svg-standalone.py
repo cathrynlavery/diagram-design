@@ -152,7 +152,10 @@ class ExportSvgStandaloneTests(unittest.TestCase):
                 markup += '<style>.node { fill: ' + reference + '; }</style></svg>'
                 exported = self.mod.namespace_defs_ids(markup, "quoted")
                 self.assertIn('id="quoted-paint"', exported)
-                self.assertEqual(exported.count('url(#quoted-paint)'), 2)
+                expected = reference.replace('#paint', '#quoted-paint').replace('  ', '')
+                self.assertIn(expected, exported)
+                self.assertIn(expected.replace('"', '&quot;'), exported)
+                self.assertEqual(exported.count('#quoted-paint'), 2)
         untouched = '<svg><defs><linearGradient id="paint"/></defs>'
         untouched += '<rect fill="url(#paint-other)" stroke="url(other.svg#paint)"/></svg>'
         result = self.mod.namespace_defs_ids(untouched, "quoted")
@@ -222,6 +225,17 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         # Document must parse as XML (export already validates; assert explicitly).
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
+
+    def test_quoted_urls_preserve_delimiters_and_exact_fragment_case(self) -> None:
+        markup = '<svg><defs><linearGradient id="paint)"/></defs><style>.paint { fill:url("#paint)"); }</style></svg>'
+        result = self.mod.namespace_defs_ids(markup, "quoted")
+        self.assertIn('url("#quoted-paint)")', result)
+        markup = '<svg><defs><linearGradient id="A"/><linearGradient id="a"/></defs>'
+        markup += '<style>.paint { fill:URL("#a"); stroke:url("#A"); }</style><use HREF="#a"/></svg>'
+        result = self.mod.namespace_defs_ids(markup, "quoted")
+        self.assertIn('url("#quoted-a")', result)
+        self.assertIn('url("#quoted-A")', result)
+        self.assertIn('HREF="#quoted-a"', result)
 
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"

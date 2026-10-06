@@ -303,17 +303,15 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
             svg,
         )
         svg = re.sub(
-            rf"url\(\s*(?P<quote>[\"']|&quot;|&apos;|)\s*#\s*"
+            rf"(?i:url)\(\s*(?P<quote>[\"']|&quot;|&apos;|)\s*#\s*"
             rf"{re.escape(old)}\s*(?P=quote)\s*\)",
-            f"url(#{new})",
+            lambda match: f"url({match.group('quote')}#{new}{match.group('quote')})",
             svg,
-            flags=re.IGNORECASE,
         )
         svg = re.sub(
-            rf"""((?:xlink:)?href\s*=\s*['"])#{re.escape(old)}(['"])""",
+            rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
             rf"\1#{new}\2",
             svg,
-            flags=re.IGNORECASE,
         )
     return svg
 
