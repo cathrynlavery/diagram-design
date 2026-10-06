@@ -668,6 +668,24 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def check_state_descriptions(tmp: Path) -> None:
+    cases = (
+        ("idle : Waiting for message\nidle : Retrying previous request\n[*] --> idle\n", "Waiting for message\nRetrying previous request"),
+        ("[*] --> idle\nidle : Waiting for message\n", "Waiting for message"),
+        ("idle : idle\nidle : Next step\nidle --> [*]\n", "idle\nNext step"),
+    )
+    for index, (body, label) in enumerate(cases):
+        path = tmp / f"state-descriptions-{index}.mmd"
+        path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+        if node["label"] != label:
+            fail(f"state descriptions lost source-ordered text: {node['label']!r}")
+        if len(diagram["edges"]) != 1:
+            fail("state descriptions changed transition extraction")
+    ok("multiple state descriptions retain source order and ordinary transitions")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1039,6 +1057,7 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_state_descriptions(tmp)
         check_selection_before_parse(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)

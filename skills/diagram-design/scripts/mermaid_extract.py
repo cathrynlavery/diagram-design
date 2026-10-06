@@ -945,6 +945,7 @@ def _parse_state(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
     containers: list[str] = []
+    descriptions: dict[str, list[str]] = {}
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
@@ -993,9 +994,12 @@ def _parse_state(
             continue
         description = re.match(r"^([A-Za-z_][\w.-]*)\s*:\s*(.+)$", text)
         if description:
-            diagram.add_node(
-                description.group(1), clean_label(description.group(2)), "state", parent
-            )
+            node_id, label = description.group(1), clean_label(description.group(2))
+            if node_id not in descriptions:
+                existing = diagram.node_map.get(node_id)
+                descriptions[node_id] = [existing.label] if existing and existing.label != node_id else []
+            descriptions[node_id].append(label)
+            diagram.add_node(node_id, "\n".join(descriptions[node_id]), "state", parent)
             continue
         plain = re.match(r"^state\s+([\w.:-]+)$", text, re.I)
         if plain:
