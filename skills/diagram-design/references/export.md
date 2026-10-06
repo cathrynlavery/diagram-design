@@ -129,7 +129,7 @@ scale = int(sys.argv[3]) if len(sys.argv) > 3 else 2
 with sync_playwright() as p:
     browser = p.chromium.launch()
     page = browser.new_page(device_scale_factor=scale)
-    page.goto(f"file://{pathlib.Path(src).resolve()}", wait_until="domcontentloaded")
+    page.goto(pathlib.Path(src).resolve().as_uri(), wait_until="domcontentloaded")
     try:
         page.wait_for_load_state("networkidle", timeout=15000)
     except PlaywrightTimeoutError:
@@ -154,7 +154,7 @@ The overflow release matters for the wide presets. `min-width` equals the viewBo
 
 ### Output naming
 
-`example-architecture.html` → `example-architecture.png`, written next to the source. Honour explicit user-provided paths.
+`example-architecture.html` → `example-architecture.png`, written next to the source. Honour explicit user-provided paths. The rasterizer encodes the absolute source path as a file URI, so literal `#` and `%` characters in filenames remain filename content.
 
 ## Sizing the export
 
