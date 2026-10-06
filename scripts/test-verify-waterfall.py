@@ -12,7 +12,9 @@ Exit: 0 all pass, 1 a case failed.
 
 from __future__ import annotations
 
+import re
 import subprocess
+from decimal import Decimal
 import sys
 import tempfile
 from pathlib import Path
@@ -23,10 +25,11 @@ GOOD = ROOT / "skills/diagram-design/assets/example-waterfall.html"
 SHIPPED = sorted(GOOD.parent.glob("example-waterfall*.html"))
 
 
-def run(*args: str) -> tuple[int, str]:
+def run(*args: str, timeout: float | None = None) -> tuple[int, str]:
     result = subprocess.run(
         [sys.executable, str(CHECKER), *args],
         capture_output=True,
+        timeout=timeout,
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -38,6 +41,26 @@ def write(directory: Path, name: str, source: str) -> Path:
     path = directory / name
     path.write_text(source, encoding="utf-8")
     return path
+
+
+def decimal_budget(source: str, factor: str, cents: bool = False) -> str:
+    """Render the shipped walk in another unit, with exact decimal declarations."""
+    values = [Decimal(n) * Decimal(factor) for n in (240, 64, -38, 22, -52)]
+    if cents:
+        values = [v + d for v, d in zip(values, map(Decimal, (".1", ".1", "-.1", ".1", "-.3")))]
+    values.append(sum(values))
+    formatted = [str(v) if i in (0, 5) else f"{v:+}" for i, v in enumerate(values)]
+    it = iter(formatted)
+    result = re.sub(r'data-value="[^"]+"', lambda m: f'data-value="{next(it)}"', source)
+    levels = [values[0]]
+    for value in values[1:-1]:
+        levels.append(levels[-1] + value)
+    it = iter(levels)
+    result = re.sub(r'data-carry="[^"]+"', lambda m: f'data-carry="{next(it)}"', result)
+    for old, new in zip(("240", "+64", "−38", "+22", "−52", "236"), formatted):
+        result = result.replace(f">{old}</text>", f">{new.replace('-', '−')}</text>")
+    return result
+
 
 
 def main() -> int:
@@ -211,12 +234,35 @@ def main() -> int:
         else:
             print("OK: usage error exits 2")
 
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        budget = decimal_budget(source, "1000000", cents=True)
+        small = decimal_budget(source, "0.001")
+        scientific = small.replace('data-value="0.240"', 'data-value="2.40e-1"')
+        decimal_cases = (
+            ("large dollars and cents", budget, True, ""),
+            ("small fractional units", small, True, ""),
+            ("equivalent exponent declaration", scientific, True, ""),
+            ("one-cent end mismatch", budget.replace('data-value="235999999.9"', 'data-value="235999999.91"'), False, "running total must conserve"),
+            ("one-cent carry mismatch", budget.replace('data-carry="240000000.1"', 'data-carry="240000000.11"'), False, "carry declares"),
+            ("one-cent printed mismatch", budget.replace('>+64000000.1</text>', '>+64000000.11</text>'), False, "no printed label"),
+            ("tiny real discrepancy", small.replace('data-value="0.236"', 'data-value="0.2360000001"'), False, "running total must conserve"),
+            ("nonzero underflow", source.replace('data-value="+64"', 'data-value="+1e-1000000000"'), False, "is not a number"),
+            ("running overflow", source.replace('data-value="240"', 'data-value="1.6e308"').replace('data-value="+64"', 'data-value="+1.6e308"'), False, "running total must remain finite"),
+        )
+        for index, (name, changed, expected_pass, fragment) in enumerate(decimal_cases):
+            code, output = run(str(write(d, f"decimal-{index}.html", changed)), timeout=10)
+            if (code == 0) != expected_pass or (not expected_pass and fragment not in output) or "Traceback" in output:
+                failures.append(f"decimal case {name} unexpected result: {output}")
+            else:
+                print(f"OK: decimal case {name}")
+
     if failures:
         print("\nFAIL verify-waterfall tests:")
         for failure in failures:
             print(f"  - {failure}")
         return 1
-    print(f"\nOK: verify-waterfall passes {len(SHIPPED)} shipped files and fails all {len(cases)} mutations")
+    print(f"\nOK: verify-waterfall passes {len(SHIPPED)} shipped files and fails all {len(cases)} mutations; 9 decimal controls pass")
     return 0
 
 
