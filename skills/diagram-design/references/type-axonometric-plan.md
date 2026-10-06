@@ -60,6 +60,8 @@ A floor plan can reveal by zone the same way. Give each zone's furniture a `step
 - Each tag: a `<g data-role="tag" data-name data-at="x y z">` with a backing `<rect>` and a `<text data-role="name">`. The point sits inside the room it names at the plate top, or on the building's roof.
 - The focal room or building carries `data-focal`.
 
+The silhouette verifier accepts signed decimal and scientific-notation coordinates within the existing absolute M/L/A/Z path contract. Every operand must be finite; projected vertices, corner radii, and arc flags are still checked. This does not add relative path commands.
+
 ## Anti-patterns
 
 - Full-height walls that hide the rooms behind them.

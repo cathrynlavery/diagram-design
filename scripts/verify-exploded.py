@@ -139,18 +139,35 @@ def silhouette_poly(origin, r, z0, z1, n=24):
 
 def parse_path(d):
     """Return (endpoints, is_arc, arcs as (rx, ry, rotation, large-arc, sweep)) for an absolute M/L/A/Z path."""
-    tokens = re.findall(r"[MLAZ]|-?\d+(?:\.\d+)?", d)
+    token_re = re.compile(r"[MLAZ]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?")
+    tokens = []
+    end = 0
+    for match in token_re.finditer(d):
+        if d[end:match.start()].strip(" \t\r\n,"):
+            raise ValueError(f"unsupported path token {d[end:match.start()]!r}")
+        tokens.append(match.group())
+        end = match.end()
+    if d[end:].strip(" \t\r\n,"):
+        raise ValueError(f"unsupported path token {d[end:]!r}")
+
+    def operand(index):
+        value = float(tokens[index])
+        if not math.isfinite(value):
+            raise ValueError("non-finite path operand")
+        return value
     pts, arcs, radii = [], [], []
     i = 0
     while i < len(tokens):
         cmd = tokens[i]
         if cmd in ("M", "L"):
-            pts.append((float(tokens[i + 1]), float(tokens[i + 2])))
+            pts.append((operand(i + 1), operand(i + 2)))
             arcs.append(False)
             i += 3
         elif cmd == "A":
-            radii.append(tuple(float(tokens[i + k]) for k in range(1, 6)))
-            pts.append((float(tokens[i + 6]), float(tokens[i + 7])))
+            if tokens[i + 4] not in {"0", "1"} or tokens[i + 5] not in {"0", "1"}:
+                raise ValueError("arc flags must be literal 0 or 1")
+            radii.append(tuple(operand(i + k) for k in range(1, 6)))
+            pts.append((operand(i + 6), operand(i + 7)))
             arcs.append(True)
             i += 8
         elif cmd == "Z":
