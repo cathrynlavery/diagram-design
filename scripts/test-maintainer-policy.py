@@ -436,6 +436,18 @@ CASE_GUARDED_STEP = """
           echo "$out" | grep -q "All export-wait cases passed"
 """
 
+UV_PREFIXED_STEP = """
+      - name: Verify browser-backed export
+        run: |
+          uv run --locked --project .github/ci/python playwright install --with-deps chromium
+          uv run --locked --project .github/ci/python python scripts/test-export-svg-standalone.py
+"""
+
+LOCKED_CLAUDE_STEP = """
+      - name: Validate Claude marketplace package with locked executable
+        run: .github/ci/node/node_modules/.bin/claude plugin validate . --strict
+"""
+
 UNMAPPED_STEP = """
       - name: Verify something with a shell script
         run: bash scripts/check-something.sh
@@ -561,6 +573,23 @@ def self_test() -> list[str]:
             "CI gate behind a case guard registered",
             synthetic_ci(CASE_GUARDED_STEP),
             SYNTHETIC_POLICY_COMMANDS + ["python3 scripts/test-export-wait.py"],
+            None,
+        ),
+        (
+            "uv-prefixed gate registered",
+            synthetic_ci(UV_PREFIXED_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + ["python3 scripts/test-export-svg-standalone.py"],
+            None,
+        ),
+        (
+            "locked Claude executable registered",
+            synthetic_ci(LOCKED_CLAUDE_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + [
+                "npm ci --prefix .github/ci/node && "
+                ".github/ci/node/node_modules/.bin/claude plugin validate . --strict"
+            ],
             None,
         ),
         (
