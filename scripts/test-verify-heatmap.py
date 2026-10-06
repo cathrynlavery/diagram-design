@@ -346,6 +346,21 @@ def main() -> int:
             code, output = run(write(d, f"pixel-lengths-{label}.html", pixel_lengths))
             if code != 0:
                 failures.append(f"equivalent pixel lengths {label} were rejected: {output.strip()}")
+        # Supported coordinate syntax must not bypass the contrast comparison.
+        for template, theme in ((original, "light"),
+                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            bad_contrast = template.replace('x="578" y="149" fill="#111111"',
+                                            'x="578" y="149" fill="#ffffff"', 1)
+            for notation in ("px", "exponent-px"):
+                def length(match: re.Match[str]) -> str:
+                    number = match.group(2)
+                    if notation == "exponent-px":
+                        number = f"{float(number):.4e}"
+                    return f'{match.group(1)}="{number}px"'
+                changed = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"', length, bad_contrast)
+                code, output = run(write(d, f"bad-contrast-{theme}-{notation}.html", changed))
+                if code == 0 or "below WCAG AA" not in output or "Traceback" in output:
+                    failures.append(f"{theme}/{notation} bypassed contrast failure: {output.strip()}")
         for length in ("520%", "unknown", "nan", "1e400px"):
             changed = original.replace(FOCAL_CELL, FOCAL_CELL.replace('x="520"', f'x="{length}"'), 1)
             code, output = run(write(d, "unsupported-length.html", changed))
@@ -358,7 +373,7 @@ def main() -> int:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print("OK — 22 cases (5 positive, 17 negative), all passed.")
+    print("OK — 26 cases (5 positive, 21 negative), all passed.")
     return 0
 
 
