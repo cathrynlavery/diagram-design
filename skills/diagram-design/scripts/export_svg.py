@@ -245,6 +245,27 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
     return "\n      ".join(kept)
 
 
+def leading_accessibility_end(svg: str, pos: int) -> int:
+    """Keep leading title/desc and comments ahead of a newly inserted defs."""
+    token = re.compile(r"<!--.*?-->|<title\b[^>]*>|<desc\b[^>]*>", re.DOTALL | re.IGNORECASE)
+    while True:
+        start = re.match(r"\s*", svg[pos:])
+        assert start is not None
+        next_pos = pos + start.end()
+        opening = token.match(svg, next_pos)
+        if opening is None:
+            return pos
+        if opening.group(0).startswith("<!--"):
+            pos = opening.end()
+            continue
+        name = "title" if opening.group(0).lower().startswith("<title") else "desc"
+        endings = re.compile(rf"<!--.*?-->|<!\[CDATA\[.*?\]\]>|</{name}\s*>", re.DOTALL | re.IGNORECASE)
+        close = next((match for match in endings.finditer(svg, opening.end()) if match.group(0).startswith("</")), None)
+        if close is None:
+            return pos
+        pos = close.end()
+
+
 def merge_style_into_defs(svg: str, style_css: str) -> str:
     """Ensure one <defs> and place a <style> with fonts + diagram CSS first."""
     style_inner = GOOGLE_FONTS_IMPORT
@@ -257,11 +278,10 @@ def merge_style_into_defs(svg: str, style_css: str) -> str:
         insert_at = defs_match.end()
         return svg[:insert_at] + "\n      " + style_tag + svg[insert_at:]
 
-    # No defs yet — insert one right after the opening svg tag (after title/desc
-    # would also be fine; putting defs first keeps markers available).
+    # Keep the authored first-child title/desc ahead of a newly created defs.
     open_match = re.match(r"<svg\b[^>]*>", svg, re.IGNORECASE)
     assert open_match is not None
-    insert_at = open_match.end()
+    insert_at = leading_accessibility_end(svg, open_match.end())
     return (
         svg[:insert_at]
         + f"\n  <defs>\n      {style_tag}\n  </defs>"

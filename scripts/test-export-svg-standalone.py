@@ -204,6 +204,19 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
 
+    def test_new_defs_preserve_leading_accessible_title(self) -> None:
+        for asset in ("example-journey.html", "example-polar.html"):
+            source = ASSETS / asset
+            root = ET.fromstring(self.mod.export_svg_document(source.read_text(encoding="utf-8"), source))
+            self.assertEqual(root[0].tag, "{http://www.w3.org/2000/svg}title")
+            self.assertEqual(root[1].tag, "{http://www.w3.org/2000/svg}desc")
+        html = '<svg viewBox="0 0 40 40"><!-- before title --><title><![CDATA[Literal </title> text]]></title>'
+        html += '<desc>Keep description</desc><rect width="40" height="40"/></svg>'
+        root = ET.fromstring(self.mod.export_svg_document(html, Path("title.html")))
+        self.assertEqual(root[0].text, "Literal </title> text")
+        self.assertEqual(root[1].text, "Keep description")
+        self.assertEqual(root[2].tag, "{http://www.w3.org/2000/svg}defs")
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
