@@ -122,7 +122,7 @@ python3 scripts/test-verify-motion.py
 python3 scripts/lint-skin.py path/to/animated-diagram.html
 ```
 
-The verifier checks mode/state declarations, contiguous steps, motion budgets, complete SVG naming, no-JS source visibility, decorative accessibility, the full control set, live status, reduced-motion/print CSS, keyboard handling, page-hide pause, bounded static/test overrides, immediate final-step stop, and exact canonical-controller identity. Its adversarial tests mutate the canonical template to prove each failure is rejected.
+The verifier checks mode/state declarations, contiguous steps, motion budgets, complete SVG naming, no-JS source visibility, decorative accessibility, the full control set, live status, reduced-motion/print CSS, keyboard handling, page-hide pause, bounded static/test overrides, immediate final-step stop, and exact canonical-controller identity. Root SVG icons marked `aria-hidden="true"` are exempt from diagram naming checks, while the document still needs an accessible SVG (exactly one for the policy-trace example). Its adversarial tests mutate the canonical template to prove each failure is rejected.
 
 Then verify in a browser:
 
