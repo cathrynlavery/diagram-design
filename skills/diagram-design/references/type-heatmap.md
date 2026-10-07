@@ -58,7 +58,7 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 ## Declaring the values
 
-**Every drawn cell is bound to its row, column, and value.** The paper underlay carries nothing. The data rect carries all three.
+**Every drawn cell is bound to its row, column, and value.** Declared data values are finite and nonnegative; unsigned counts may exceed one billion. NaN, infinity, and negative values are rejected rather than weakening grid completeness. The paper underlay carries nothing. The data rect carries all three.
 
 | Binding | Without it |
 |---|---|
