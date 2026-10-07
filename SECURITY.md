@@ -15,8 +15,12 @@ and filesystem access. We are also interested in CI vulnerabilities that
 could let an attacker compromise the plugin distribution supply chain. More
 details are in the [threat model](THREAT_MODEL.md).
 
-Bugs causing cosmetic output defects, fork-specific changes, or behavior that
-requires intended maintainer authority are not considered vulnerabilities.
+## What not to report
+
+Bugs causing cosmetic output defects, denial of service or resource exhaustion,
+fork-specific changes, or behavior that requires intended maintainer authority
+are not considered vulnerabilities. Submit availability-only fixes directly
+through the ordinary pull request process.
 
 ## Private reporting of vulnerabilities
 
@@ -50,6 +54,10 @@ disclosure.
 Please avoid accessing, modifying, or deleting data that does not belong to
 you, disrupting services, or degrading other users' experience. If testing
 could affect other people or systems, stop and submit a private report first.
+
+Do not exploit suspected CI or supply-chain vulnerabilities in this repository
+without prior maintainer approval. Prefer testing and demonstrating them first
+in a researcher-owned fork.
 
 Do not use social engineering or attempt to compromise maintainer accounts.
 

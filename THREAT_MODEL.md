@@ -23,6 +23,9 @@ harness, and cannot narrow permissions that the operator intentionally grants.
 - Deterministic tools treat fields as data: they do not execute, render, or
   fetch embedded content, and they resist injection and unintended file access.
 - Input, decompression, features, and output limits bound resource use.
+- A failure of these limits that causes only denial of service or resource
+  exhaustion is an ordinary reliability defect, not a security issue. Submit
+  availability-only fixes directly through the pull request process.
 - Generated files are static by default. Validation rejects JavaScript URLs,
   event handlers, unsafe CSS, and unapproved external resources. Animated
   diagrams may include only the repository's canonical motion script;
