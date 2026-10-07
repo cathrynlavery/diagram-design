@@ -569,15 +569,16 @@ def main() -> int:
         if findings != []:
             failures.append(f"valid fixture: expected no findings, got {findings}")
 
-        for label, source in positive_visibility:
-            path = root / f"{label.replace(' ', '-')}.html"
+        # Index-based names: labels contain characters Windows forbids in paths.
+        for index, (label, source) in enumerate(positive_visibility):
+            path = root / f"positive-{index}.html"
             path.write_text(source, encoding="utf-8")
             findings = module.check(path)
             if findings:
                 failures.append(f"{label}: expected no findings, got {findings}")
 
-        for label, source, expected in cases:
-            path = root / f"{label.replace(' ', '-')}.html"
+        for index, (label, source, expected) in enumerate(cases):
+            path = root / f"case-{index}.html"
             path.write_text(source, encoding="utf-8")
             findings = module.check(path)
             if not findings:
