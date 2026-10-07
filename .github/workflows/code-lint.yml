@@ -41,3 +41,7 @@ jobs:
       - name: Run ty against the minimum Python version
         continue-on-error: true
         run: uv run --locked --project .github/ci/python ty check . --no-progress
+
+      - name: Run Semgrep security scan (advisory)
+        continue-on-error: true
+        run: uv run --locked --project .github/ci/python semgrep scan --config auto --error .

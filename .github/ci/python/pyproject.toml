@@ -6,8 +6,11 @@ dependencies = [
   "pillow==12.1.1",
   "playwright==1.62.0",
   "ruff==0.16.8",
+  "semgrep==1.178.0",
   "ty==0.0.84",
 ]
 
 [tool.uv]
 package = false
+# Avoid resolving dependencies published too recently for meaningful community review.
+exclude-newer = "7 days"
