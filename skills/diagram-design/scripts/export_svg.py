@@ -155,17 +155,23 @@ def ensure_viewbox(svg: str) -> None:
 
 
 def set_root_id(svg: str, root_id: str) -> str:
-    """Put `id="{root_id}"` on the opening <svg> tag (replace any existing id)."""
+    """Put the scoped ID on the actual root id attribute, preserving other data."""
+    opening = START_TAG_RE.match(svg)
+    assert opening is not None
+    name, attrs, end = opening.groups()
+    replaced = False
 
-    def repl(match: re.Match[str]) -> str:
-        tag = match.group(0)
-        if re.search(r"\bid\s*=", tag, re.IGNORECASE):
-            tag = re.sub(r'\bid\s*=\s*("[^"]*"|\'[^\']*\')', f'id="{root_id}"', tag, count=1)
-        else:
-            tag = tag[:-1] + f' id="{root_id}">'
-        return tag
+    def replace_attr(attr: re.Match[str]) -> str:
+        nonlocal replaced
+        if attr.group(2) != "id":
+            return attr.group(0)
+        replaced = True
+        return f'{attr.group(1)}id="{root_id}"'
 
-    return re.sub(r"<svg\b[^>]*>", repl, svg, count=1, flags=re.IGNORECASE)
+    attrs = TAG_ATTR_RE.sub(replace_attr, attrs)
+    if not replaced:
+        attrs += f' id="{root_id}"'
+    return f"<{name}{attrs}{end}>" + svg[opening.end():]
 
 
 def is_chrome_selector(selector: str) -> bool:
@@ -175,6 +181,84 @@ def is_chrome_selector(selector: str) -> bool:
     return all(
         part.lower() == "svg" or CHROME_SELECTOR_RE.match(part) is not None for part in parts
     )
+
+
+def css_escape(text: str, pos: int) -> tuple[str, int] | None:
+    """Read one CSS identifier escape, including its optional hex terminator."""
+    end = pos + 1
+    if end == len(text) or text[end] in "\n\r\f":
+        return None
+    start = end
+    while end < min(start + 6, len(text)) and text[end] in "0123456789abcdefABCDEF":
+        end += 1
+    if end == start:
+        return text[end], end + 1
+    code = int(text[start:end], 16)
+    value = chr(code) if 0 < code <= 0x10FFFF and not 0xD800 <= code <= 0xDFFF else "\ufffd"
+    if end < len(text) and text[end] in " \t\n\r\f":
+        end += 2 if text[end:end + 2] == "\r\n" else 1
+    return value, end
+
+
+def css_id_token(text: str, pos: int) -> tuple[str, int] | None:
+    """Read a whole valid CSS ID selector after '#', decoding identifier escapes."""
+    def starts_name(index: int) -> bool:
+        char = text[index:index + 1]
+        return bool(char) and (char in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                               or ord(char) >= 128
+                               or (char == "\\" and css_escape(text, index) is not None))
+
+    if not starts_name(pos) and not (text[pos:pos + 1] == "-"
+            and (starts_name(pos + 1) or text[pos + 1:pos + 2] == "-")):
+        return None
+    out: list[str] = []
+    while pos < len(text):
+        char = text[pos]
+        if char == "\\":
+            escaped = css_escape(text, pos)
+            if escaped is None:
+                break
+            value, pos = escaped
+            out.append(value)
+        elif char in "_-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" or ord(char) >= 128:
+            out.append(char)
+            pos += 1
+        else:
+            break
+    return "".join(out), pos
+
+
+def root_bound_compound(selector: str, root_id: str) -> bool:
+    """Whether the first compound names this root outside attributes/functions."""
+    pos = 0
+    depth = 0
+    quote = ""
+    while pos < len(selector):
+        char = selector[pos]
+        if char == "\\":
+            escaped = css_escape(selector, pos)
+            pos = escaped[1] if escaped else pos + 1
+            continue
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char in "[(":
+            depth += 1
+        elif char in "])":
+            depth -= 1
+        elif depth == 0 and (char.isspace() or char in ">+~"):
+            break
+        elif depth == 0 and char == "#":
+            token = css_id_token(selector, pos + 1)
+            if token:
+                value, pos = token
+                if value == root_id:
+                    return True
+                continue
+        pos += 1
+    return False
 
 
 def scope_selector(selector: str, root_id: str) -> str:
@@ -187,6 +271,9 @@ def scope_selector(selector: str, root_id: str) -> str:
             # `:root { … }` and rare `:root .x` → bind tokens to the SVG root.
             remainder = part[len(":root") :].strip()
             scoped.append(f"#{root_id}" + (f" {remainder}" if remainder else ""))
+        elif root_bound_compound(part, root_id):
+            # A compound such as `.diagram#root` already names the SVG itself.
+            scoped.append(part)
         elif part.startswith("#"):
             # Already an ID selector — leave alone (title/desc IDs stay global).
             scoped.append(part)
@@ -221,7 +308,41 @@ def escape_css_for_xml(css: str) -> str:
     return css.replace("&", "&amp;").replace("<", "&lt;")
 
 
-def diagram_css_from_html(html: str, root_id: str) -> str:
+def retarget_root_selector(selector: str, original_id: str, root_id: str) -> str:
+    """Retarget whole decoded ID tokens, preserving unrelated escapes and literals."""
+    out: list[str] = []
+    quote = ""
+    pos = 0
+    while pos < len(selector):
+        char = selector[pos]
+        if char == "\\":
+            escaped = css_escape(selector, pos)
+            end = escaped[1] if escaped else pos + 1
+            out.append(selector[pos:end])
+            pos = end
+            continue
+        if quote:
+            out.append(char)
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+            out.append(char)
+        elif char == "#":
+            token = css_id_token(selector, pos + 1)
+            if token:
+                value, end = token
+                out.append(f"#{root_id}" if value == original_id else selector[pos:end])
+                pos = end
+                continue
+            out.append(char)
+        else:
+            out.append(char)
+        pos += 1
+    return "".join(out)
+
+
+def diagram_css_from_html(html: str, root_id: str, original_root_id: str = "") -> str:
     """Filter page <style> rules down to diagram rules, scoped under root_id."""
     kept: list[str] = []
     for block in STYLE_BLOCK_RE.findall(html):
@@ -229,7 +350,12 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
         # (`/* Tokens */ :root` is not recognised as `:root`).
         block = CSS_COMMENT_RE.sub("", block)
         for match in RULE_RE.finditer(block):
-            selector = " ".join(match.group(1).split())
+            selector = match.group(1).strip()
+            if original_root_id:
+                selector = retarget_root_selector(selector, original_root_id, root_id)
+            # Retarget before collapsing whitespace: a hex escape consumes one
+            # terminator, so a second space may be the descendant combinator.
+            selector = " ".join(selector.split())
             body = match.group(2).strip()
             if not selector or not body:
                 continue
@@ -360,8 +486,15 @@ def export_svg_document(html: str, source_path: Path) -> str:
     svg = xmlify_attributes(extract_first_svg(html))
     ensure_viewbox(svg)
     svg = ensure_xmlns(svg)
+    opening = START_TAG_RE.match(svg)
+    assert opening is not None
+    original_root_id = next(
+        (attr.group(4)[1:-1] for attr in TAG_ATTR_RE.finditer(opening.group(2))
+         if attr.group(2) == "id" and attr.group(4) is not None),
+        "",
+    )
     svg = set_root_id(svg, root_id)
-    diagram_css = diagram_css_from_html(html, root_id)
+    diagram_css = diagram_css_from_html(html, root_id, original_root_id)
     svg = merge_style_into_defs(svg, diagram_css)
     svg = namespace_defs_ids(svg, slug)
     svg = normalize_rgba_presentation_attrs(svg)
