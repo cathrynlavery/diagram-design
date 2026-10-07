@@ -498,6 +498,68 @@ def main() -> int:
         ),
     ]
 
+    # Presentation attributes follow the actual SVG ancestor paint semantics.
+    for attribute in ('visibility="hidden"', 'display="none"', 'opacity="0"'):
+        cases.append((
+            f"ancestor {attribute}",
+            VALID.replace('data-polar-category="c1"', f'data-polar-category="c1" {attribute}'),
+            "explicitly hidden",
+        ))
+    for attribute in ('display="none"', 'opacity="0"'):
+        cases.append((
+            f"ancestor {attribute} cannot be restored",
+            VALID.replace('data-polar-category="c1"', f'data-polar-category="c1" {attribute}')
+            .replace('<text data-polar-value-label="">25</text>',
+                     '<text data-polar-value-label="" display="inline" opacity="1" visibility="visible">25</text>'),
+            "explicitly hidden",
+        ))
+    cases.append((
+        "hidden chart ancestor",
+        VALID.replace('<body>', '<body><div style="display:none">').replace('</body>', '</div></body>'),
+        "explicitly hidden",
+    ))
+    cases.append((
+        "child explicit inherit retains hidden visibility",
+        VALID.replace('data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"')
+        .replace('<text data-polar-value-label="">25</text>',
+                 '<text data-polar-value-label="" visibility="inherit">25</text>'),
+        "explicitly hidden",
+    ))
+    for css in ("body { display:none; }", "body { visibility:hidden; }",
+                ":root { opacity:0%; }", ".wrapper { opacity:-1; }",
+                "body { display:none!important; display:block; }"):
+        cases.append((
+            f"stylesheet ancestor hiding {css}",
+            VALID.replace('<body>', f'<head><style>{css}</style></head><body class="wrapper">'),
+            "CSS visibility rules can hide chart ancestors",
+        ))
+    for value in ("0%", "-1", "-10%"):
+        cases.append((
+            f"ancestor opacity {value}",
+            VALID.replace('data-polar-category="c1"', f'data-polar-category="c1" opacity="{value}"'),
+            "explicitly hidden",
+        ))
+    positive_visibility = [
+        ("visible child overrides hidden parent", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"'
+        ).replace('<text data-polar-value-label="">25</text>',
+                  '<text data-polar-value-label="" visibility="visible">25</text>')),
+        ("initial visibility restores child", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"'
+        ).replace('<text data-polar-value-label="">25</text>',
+                  '<text data-polar-value-label="" visibility="initial">25</text>')),
+        ("hidden sibling does not affect categories", VALID.replace(
+            '<svg ', '<div hidden><br/></div><svg ', 1)),
+        ("ordinary stylesheet layout", VALID.replace('<body>',
+             '<head><style>body { display:flex; opacity:50%; visibility:visible; }</style></head><body>')),
+        ("percentage opacity remains visible", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" opacity="50%"')),
+        ("invalid opacity is ignored", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" opacity="invalid"')),
+        ("ordinary visible category", VALID.replace(
+            'data-polar-category="c1"', 'data-polar-category="c1" visibility="visible" opacity="0.5"')),
+    ]
+
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as scratch:
         root = Path(scratch)
@@ -506,6 +568,13 @@ def main() -> int:
         findings = module.check(valid_path)
         if findings != []:
             failures.append(f"valid fixture: expected no findings, got {findings}")
+
+        for label, source in positive_visibility:
+            path = root / f"{label.replace(' ', '-')}.html"
+            path.write_text(source, encoding="utf-8")
+            findings = module.check(path)
+            if findings:
+                failures.append(f"{label}: expected no findings, got {findings}")
 
         for label, source, expected in cases:
             path = root / f"{label.replace(' ', '-')}.html"
