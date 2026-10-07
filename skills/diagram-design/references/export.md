@@ -129,7 +129,7 @@ scale = int(sys.argv[3]) if len(sys.argv) > 3 else 2
 with sync_playwright() as p:
     browser = p.chromium.launch()
     page = browser.new_page(device_scale_factor=scale)
-    page.goto(pathlib.Path(src).resolve().as_uri(), wait_until="domcontentloaded")
+    page.goto(pathlib.Path(src).resolve().as_uri() + "?motion=static", wait_until="domcontentloaded")
     try:
         page.wait_for_load_state("networkidle", timeout=15000)
     except PlaywrightTimeoutError:
@@ -138,6 +138,11 @@ with sync_playwright() as p:
         page.evaluate("window.stop()")
         page.wait_for_timeout(4000)
         print("warning: webfont request stalled - captured with fallback typography; the PNG may not match the intended fonts", file=sys.stderr)
+    page.evaluate("document.fonts.ready")
+    if not page.locator("[data-motion-root]").evaluate_all(
+        "roots => roots.every(root => root.dataset.frame === 'static')"
+    ):
+        raise RuntimeError("motion export requires a complete static frame")
     svg = page.locator("svg").first
     # Release every clipping ancestor (local scroller, overflow:hidden chrome)
     # so an SVG wider than its frame is captured whole.
@@ -146,7 +151,7 @@ with sync_playwright() as p:
     browser.close()
 ```
 
-If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the snippet cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally.
+If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the snippet cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally. The URL requests the complete static motion frame, waits for font readiness, and rejects a motion root that has not reached `data-frame="static"`; ordinary script-free diagrams need no motion root.
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg.
 
