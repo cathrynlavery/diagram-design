@@ -19,6 +19,7 @@ import contextlib
 import io
 import re
 import sys
+import struct
 import tempfile
 import threading
 import time
@@ -139,11 +140,11 @@ def start_stall_server() -> ThreadingHTTPServer:
     return server
 
 
-def run_snippet(snippet: str, src: Path, out: Path) -> str:
+def run_snippet(snippet: str, src: Path, out: Path, scale: str | None = None) -> str:
     """Exec the doc snippet with the given argv; return captured stderr."""
     stderr = io.StringIO()
     old_argv, old_stderr = sys.argv, sys.stderr
-    sys.argv = ["export", str(src), str(out)]
+    sys.argv = ["export", str(src), str(out)] + ([scale] if scale is not None else [])
     try:
         with contextlib.redirect_stderr(stderr):
             exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})
@@ -230,6 +231,41 @@ def require_normal_load(snippet: str, tmp: Path) -> None:
     print("OK: normal load captures with no fallback warning")
 
 
+def require_fractional_scales(snippet: str, tmp: Path) -> None:
+    source = tmp / "normal-fixture.html"  # 400 by 240 viewBox units
+    # Page layout must not change dimensions promised by the viewBox contract.
+    source.write_text(source.read_text(encoding="utf-8").replace("</head>", "<style>svg { width:1200px; min-width:1200px; height:auto; }</style></head>"), encoding="utf-8")
+    for scale, dimensions in (("1", (400, 240)), ("1.25", (500, 300)),
+                               ("1.5", (600, 360)), ("3", (1200, 720)), ("4", (1600, 960))):
+        output = tmp / f"scale-{scale}.png"
+        run_snippet(snippet, source, output, scale)
+        require_png(output, scale)
+        actual = struct.unpack(">II", output.read_bytes()[16:24])
+        if actual != dimensions:
+            raise AssertionError(f"scale {scale}: expected {dimensions}, got {actual}")
+    for viewbox in ("0 0 0 240", "0 0 400 0", "not-a-viewbox"):
+        broken = tmp / "invalid-viewbox.html"
+        broken.write_text(source.read_text(encoding="utf-8").replace("viewBox='0 0 400 240'", f"viewBox='{viewbox}'"), encoding="utf-8")
+        output = tmp / "invalid-viewbox.png"
+        try:
+            run_snippet(snippet, broken, output, "2")
+        except Exception as exc:
+            if "viewBox" not in str(exc) or output.exists():
+                raise AssertionError(f"invalid viewBox failed incorrectly: {exc}")
+        else:
+            raise AssertionError(f"invalid viewBox {viewbox!r} was accepted")
+    for scale in ("0.5", "4.1", "nan", "inf", "not-a-number"):
+        output = tmp / "invalid-scale.png"
+        try:
+            run_snippet(snippet, source, output, scale)
+        except ValueError:
+            if output.exists():
+                raise AssertionError(f"invalid scale {scale} wrote a PNG")
+        else:
+            raise AssertionError(f"invalid scale {scale} was accepted")
+    print("OK: fractional scales produce exact dimensions; invalid scales fail")
+
+
 def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
     missing = tmp / "does-not-exist.html"
     out = tmp / "never.png"
@@ -259,6 +295,7 @@ def main() -> int:
         tmp = Path(raw_tmp)
         require_stalled_fallback(snippet, tmp)
         require_normal_load(snippet, tmp)
+        require_fractional_scales(snippet, tmp)
         require_other_errors_propagate(snippet, tmp)
     print("All export-wait cases passed.")
     return 0
