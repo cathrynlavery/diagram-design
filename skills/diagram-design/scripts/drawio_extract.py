@@ -418,6 +418,7 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
 
     # Pass 2: vertices (absolute geometry resolved after the pass).
     edge_label_parts: dict[str, list[str]] = {}
+    relative_offsets: dict[str, tuple[float, float]] = {}
     for cid in order:
         entry = raw[cid]
         cell = entry["cell"]
@@ -440,6 +441,9 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             continue
 
         geom = cell.find("mxGeometry")
+        if geom is not None and geom.get("relative") == "1":
+            offset = geom.find("mxPoint[@as='offset']")
+            relative_offsets[cid] = (_num(offset, "x"), _num(offset, "y"))
         node = Node(
             id=cid,
             label=clean_label(entry["value"]),
@@ -488,7 +492,12 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         px, py, pdepth = position
         while chain:
             current = chain.pop()
-            px, py, pdepth = current.x + px, current.y + py, pdepth + 1
+            dx, dy = current.x, current.y
+            parent = node_map.get(current.parent or "")
+            if parent is not None and current.id in relative_offsets:
+                ox, oy = relative_offsets[current.id]
+                dx, dy = dx * parent.w + ox, dy * parent.h + oy
+            px, py, pdepth = dx + px, dy + py, pdepth + 1
             if not math.isfinite(px) or not math.isfinite(py):
                 _fail(f"page {index}: geometry overflow")
             resolved_by_id[current.id] = (px, py, pdepth)

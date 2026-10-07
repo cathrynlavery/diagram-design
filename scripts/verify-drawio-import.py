@@ -265,6 +265,27 @@ def check_arrow_directions(tmp: Path) -> None:
     ok("arrowhead direction, degrees, entry/terminal analysis and bidirectional cycles agree")
 
 
+def check_relative_geometry(tmp: Path) -> None:
+    parent = '<mxCell id="outer" value="Outer" vertex="1" parent="1"><mxGeometry x="20" y="50" width="200" height="100" as="geometry"/></mxCell>'
+    for relative, offset, expected in ((True, False, (120.0, 150.0)), (True, True, (90.0, 130.0)), (False, False, (120.0, 150.0)), (False, True, (120.0, 150.0))):
+        position = 'x="0.5" y="1" relative="1"' if relative else 'x="100" y="100"'
+        child = f'<mxCell id="child" value="Child" vertex="1" parent="outer"><mxGeometry {position} width="60" height="40" as="geometry">'
+        child += '<mxPoint x="-30" y="-20" as="offset"/>' if offset else ''
+        child += '</mxGeometry></mxCell>'
+        for order in ((parent, child), (child, parent)):
+            path = tmp / "relative-child.drawio"
+            path.write_text('<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>' + ''.join(order) + '</root></mxGraphModel>', encoding="utf-8")
+            page = json.loads(run_extract([str(path), "--json"]))["pages"][0]
+            node = next(node for node in page["nodes"] if node["id"] == "child")
+            if (node["x"], node["y"]) != expected or (node["parent"], node["depth"]) != ("outer", 1):
+                fail(f"relative child geometry disagrees with mxGraph: {node}")
+    path.write_text(path.read_text().replace('x="100" y="100"', 'x="1e308" y="1" relative="1"'), encoding="utf-8")
+    expect_extract_error([str(path)], "geometry overflow")
+    path.write_text(path.read_text().replace('x="-30"', 'x="Infinity"'), encoding="utf-8")
+    expect_extract_error([str(path)], "invalid geometry: x must be finite")
+    ok("relative child positions resolve parent dimensions/offsets independent of cell order")
+
+
 def check_nested_geometry(tmp: Path) -> None:
     cells = (
         '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
@@ -289,6 +310,36 @@ def check_nested_geometry(tmp: Path) -> None:
         if page["bounds"] != {"x0": 100, "y0": 200, "x1": 200, "y1": 300}:
             fail(f"nested geometry changed canvas bounds: {page['bounds']}")
     ok("nested geometry and bounds are independent of cell order")
+
+
+def check_nested_relative_geometry(tmp: Path) -> None:
+    # Encoded by mxGraph 4.2.2: both the inner group and leaf have relative
+    # positions plus offsets. The leaf extends beyond its ancestor's box.
+    cells = (
+        '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
+        '<mxGeometry x="20" y="50" width="200" height="100" as="geometry"/></mxCell>',
+        '<mxCell id="inner" value="Inner" vertex="1" parent="outer">'
+        '<mxGeometry x="0.5" y="0.5" width="80" height="60" relative="1" as="geometry">'
+        '<mxPoint x="-10" y="15" as="offset"/></mxGeometry></mxCell>',
+        '<mxCell id="leaf" value="Leaf" vertex="1" parent="inner">'
+        '<mxGeometry x="1" y="0.5" width="30" height="20" relative="1" as="geometry">'
+        '<mxPoint x="5" y="-5" as="offset"/></mxGeometry></mxCell>',
+    )
+    expected = {"outer": (20, 50, 0), "inner": (110, 115, 1), "leaf": (195, 140, 2)}
+    source = tmp / "nested-relative.drawio"
+    for order in itertools.permutations(cells):
+        source.write_text(
+            '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+            + "".join(order) + "</root></mxGraphModel>",
+            encoding="utf-8",
+        )
+        page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+        actual = {n["id"]: (n["x"], n["y"], n["depth"]) for n in page["nodes"]}
+        if actual != expected:
+            fail(f"nested relative geometry depends on cell order: {actual}")
+        if page["bounds"] != {"x0": 20, "y0": 50, "x1": 225, "y1": 175}:
+            fail(f"nested relative geometry changed canvas bounds: {page['bounds']}")
+    ok("nested relative groups, offsets, depth and bounds match all six cell orders")
 
 
 def check_bom_prefixed(tmp: Path) -> None:
@@ -750,7 +801,9 @@ def main() -> int:
         check_files()
         check_parse_raw()
         check_arrow_directions(tmp)
+        check_relative_geometry(tmp)
         check_nested_geometry(tmp)
+        check_nested_relative_geometry(tmp)
         check_bom_prefixed(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)
