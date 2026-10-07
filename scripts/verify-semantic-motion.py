@@ -19,7 +19,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-
 ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills/diagram-design/SKILL.md"
 GIT_ROOT = ROOT
@@ -287,6 +286,7 @@ def skill_lf_pin_problem(root: Path) -> str | None:
             capture_output=True,
             text=True,
             env=env,
+            check=False,
         )
     if result.returncode != 0:
         return f"git check-attr failed: {result.stderr.strip()}"

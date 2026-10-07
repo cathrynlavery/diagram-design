@@ -7,7 +7,6 @@ import re
 import struct
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills/diagram-design/SKILL.md"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"

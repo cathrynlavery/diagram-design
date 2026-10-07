@@ -34,8 +34,8 @@ STATUSES = {"unchanged", "added", "removed", "changed", "moved", "rewired"}
 CSS_MOVES = re.compile(
     r"(?:^|[;{])\s*(?:-(?:webkit|moz|ms|o)-)?"
     r"(?:transform|translate|rotate|scale|x|y|cx|cy|r|rx|ry|d|"
-    r"offset(?:-(?:path|distance|position|anchor|rotate))?)\s*:", re.I)
-CSS_SIZE = re.compile(r"(?:^|[;{])\s*(?:width|height)\s*:", re.I)
+    r"offset(?:-(?:path|distance|position|anchor|rotate))?)\s*:", re.IGNORECASE)
+CSS_SIZE = re.compile(r"(?:^|[;{])\s*(?:width|height)\s*:", re.IGNORECASE)
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 EPS = 1e-6
 ENDPOINT_TOLERANCE = 2.0
@@ -145,11 +145,11 @@ def within(node: Node, ancestor: Node) -> bool:
 
 
 def clean_css(raw: str) -> str:
-    return re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+    return re.sub(r"/\*.*?\*/", "", raw, flags=re.DOTALL)
 
 
 def hiding_values(values: dict[str, str]) -> bool:
-    values = {key: re.sub(r"\s*!important\s*$", "", value, flags=re.I).strip().lower()
+    values = {key: re.sub(r"\s*!important\s*$", "", value, flags=re.IGNORECASE).strip().lower()
               for key, value in values.items()}
     if values.get("display") == "none" or values.get("visibility") in {"hidden", "collapse"}:
         return True
@@ -441,13 +441,15 @@ def check_source(path: Path, source: str) -> list[str]:
     expected = set()
     for identity in before.keys() | after.keys():
         old, new = before.get(identity), after.get(identity)
-        obj = new or old
         if old is None:
+            assert new is not None
             if new.status != {"added"}:
                 fail(new.node, f"after-only object {identity!r} must be added")
+            obj = new
         elif new is None:
             if old.status != {"removed"}:
                 fail(old.node, f"before-only object {identity!r} must be removed")
+            obj = old
         else:
             if old.kind != new.kind:
                 fail(new.node, f"retained object {identity!r} changed kind")
@@ -462,6 +464,7 @@ def check_source(path: Path, source: str) -> list[str]:
                     fail(new.node, f"component size changed without CHANGED for {identity!r}")
             if old.kind == new.kind == "relationship" and (old.endpoints != new.endpoints) != ("rewired" in new.status):
                 fail(new.node, f"REWIRED endpoints mismatch for {identity!r}: endpoints differ iff rewired")
+            obj = new
         expected.update((identity, status.upper()) for status in obj.status - {"unchanged"})
     component_ids = {obj.id for obj in objects if obj.kind == "component"}
     relationship_ids = {obj.id for obj in objects if obj.kind == "relationship"}

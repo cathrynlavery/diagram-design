@@ -572,6 +572,7 @@ def run_cases(h: Harness) -> int:
         result = subprocess.run(
             [sys.executable, str(ROOT / "scripts/verify-marimekko.py"), str(commented_path)],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=False,
         )
     finally:
         commented_path.unlink()
@@ -635,6 +636,7 @@ def run_cases(h: Harness) -> int:
         result = subprocess.run(
             [sys.executable, str(script)] + [str(p) for p in SHIPPED],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=False,
         )
         h.check(
             "%s skips all three shipped marimekko files" % sibling,
@@ -649,6 +651,7 @@ def run_cases(h: Harness) -> int:
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts/verify-treemap.py"), "--all"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,
     )
     h.check(
         "verify-treemap.py --all never reads the shipped marimekko files",
@@ -660,6 +663,7 @@ def run_cases(h: Harness) -> int:
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts/verify-marimekko.py")] + [str(p) for p in TREEMAPS],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,
     )
     h.check(
         "the CLI reports the parent's files as skipped, not as passing",
@@ -670,6 +674,7 @@ def run_cases(h: Harness) -> int:
     result = subprocess.run(
         [sys.executable, str(ROOT / "scripts/verify-marimekko.py")],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,
     )
     h.check("the CLI exits 2 with no arguments", result.returncode == 2)
 

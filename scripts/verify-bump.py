@@ -125,7 +125,7 @@ ACCENTS = {"#eb6c36", "#f08a59"}   # light and dark skin accent tokens
 
 
 class Series:
-    __slots__ = ("name", "ranks", "points", "stroke", "width", "offset")
+    __slots__ = ("name", "offset", "points", "ranks", "stroke", "width")
 
     def __init__(self, name, ranks, points, stroke, width, offset):
         self.name = name
@@ -423,7 +423,7 @@ def check_columns(series: list, findings: list, source: str, name: str) -> None:
 
 def rank_map(series: list):
     """(top, pitch) derived from the figure, or None if it cannot be derived."""
-    pairs = {}
+    pairs: dict[int, float] = {}
     for s in series:
         for rank, (_, y) in zip(s.ranks, s.points):
             pairs.setdefault(rank, y)

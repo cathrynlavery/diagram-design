@@ -73,8 +73,10 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -127,13 +129,13 @@ TONE_ALT = "|".join(term[0] for term in TONE_TERMS)
 
 MAGNITUDE_TERMS = (
     (
-        r"largest|larger|biggest|bigger|greatest|greater|highest|higher|"
-        r"longest|longer|tallest|taller|most|more",
+        (r"largest|larger|biggest|bigger|greatest|greater|highest|higher|"
+        r"longest|longer|tallest|taller|most|more"),
         +1,
     ),
     (
-        r"smallest|smaller|fewest|fewer|lowest|lower|shortest|shorter|"
-        r"lesser|least|less",
+        (r"smallest|smaller|fewest|fewer|lowest|lower|shortest|shorter|"
+        r"lesser|least|less"),
         -1,
     ),
 )
@@ -189,7 +191,7 @@ DRAWN_AS = {
 class Member:
     """One rank-bearing translucent fill on the ramp."""
 
-    __slots__ = ("rank", "alpha", "ink", "offset")
+    __slots__ = ("alpha", "ink", "offset", "rank")
 
     def __init__(self, rank, alpha, ink, offset):
         self.rank = rank
@@ -202,7 +204,13 @@ class Claim:
     """A directional tone assertion found in rendered copy."""
 
     __slots__ = (
-        "axis", "tone_dir", "magnitude_dir", "phrase", "copy", "offset", "span"
+        "axis",
+        "copy",
+        "magnitude_dir",
+        "offset",
+        "phrase",
+        "span",
+        "tone_dir"
     )
 
     def __init__(self, axis, tone_dir, magnitude_dir, phrase, copy, offset, span):
@@ -368,7 +376,7 @@ def resolve_paper(source):
     return None
 
 
-def collect_members(source):
+def collect_members(source: str) -> dict[tuple[float, ...], list[Member]]:
     """Rank-bearing translucent fills, grouped by ink triple.
 
     A cell is painted twice - a paper mask, then the body - and the rank
@@ -377,10 +385,10 @@ def collect_members(source):
     signature before a member is built, so a rank declared on the mask still
     reaches the ramp instead of silently shortening it.
     """
-    merged = []
-    index_by_signature = {}
+    merged: list[tuple[dict[str, str], int]] = []
+    index_by_signature: dict[tuple[str | None, ...], int] = {}
     for match in ELEMENT_RE.finditer(source):
-        attrs = {}
+        attrs: dict[str, str] = {}
         for attribute in ATTR_RE.finditer(match.group("attrs")):
             name = attribute.group("name")
             if name not in attrs:  # browsers keep the first duplicate attribute
@@ -402,22 +410,22 @@ def collect_members(source):
         twinnable = any(value is not None for value in signature[1:])
         position = index_by_signature.get(signature) if twinnable else None
         if position is None:
-            merged.append([dict(attrs), match.start()])
+            merged.append((dict(attrs), match.start()))
             if twinnable:
                 index_by_signature[signature] = len(merged) - 1
             continue
-        existing = merged[position]
+        existing_attrs, existing_offset = merged[position]
         for name, value in attrs.items():
             # A translucent fill wins over the mask's opaque one, and a rank
             # attribute is adopted from whichever twin declared it.
             parsed_fill = parse_fill(value) if name == "fill" else None
-            if name not in existing[0] or (
+            if name not in existing_attrs or (
                 name == "fill" and parsed_fill is not None and 0.0 < parsed_fill[1] < 1.0
             ):
-                existing[0][name] = value
-        existing[1] = min(existing[1], match.start())
+                existing_attrs[name] = value
+        merged[position] = (existing_attrs, min(existing_offset, match.start()))
 
-    groups = {}
+    groups: dict[tuple[float, ...], list[Member]] = {}
     for attrs, offset in merged:
         parsed = parse_fill(attrs.get("fill", ""))
         if parsed is None:
@@ -435,7 +443,7 @@ def collect_members(source):
                     rank = None
                 break
         # NaN compares unequal to itself and would corrupt every ordering test.
-        if rank is None or rank != rank:
+        if rank is None or math.isnan(rank):
             continue
         groups.setdefault(ink, []).append(Member(rank, alpha, ink, offset))
     return groups
@@ -443,7 +451,7 @@ def collect_members(source):
 
 def direction(values, epsilon):
     """+1 strictly rising, -1 strictly falling, 0 neither."""
-    pairs = list(zip(values, values[1:]))
+    pairs = list(pairwise(values))
     if not pairs:
         return 0
     if all(later - earlier > epsilon for earlier, later in pairs):
@@ -532,11 +540,11 @@ def check(path):
     findings = []
     for phrase, copy, offset in unparsed:
         findings.append(
-            '{}:{}: copy reads as a directional tone claim - "{}" in "{}" - but no '
+            f'{path.name}:{line_of(source, offset)}: copy reads as a directional tone claim - "{phrase}" in "{excerpt(copy)}" - but no '
             "supported sentence form binds it, so it would go unchecked. Rephrase it "
             "as <tone> <is|means|represents> <magnitude> (\"stronger contrast is "
             "larger\"), or separate the two words so it no longer reads as a "
-            "claim".format(path.name, line_of(source, offset), phrase, excerpt(copy))
+            "claim"
         )
     if not claims:
         return findings, True
@@ -544,11 +552,9 @@ def check(path):
     if paper is None:
         for claim in claims:
             findings.append(
-                '{}:{}: copy claims "{}" but the file declares no paper color '
+                f'{path.name}:{line_of(source, claim.offset)}: copy claims "{claim.phrase}" but the file declares no paper color '
                 "(--color-paper, or a full-bleed backdrop rect), so the ramp cannot be "
-                "composited and the claim cannot be checked".format(
-                    path.name, line_of(source, claim.offset), claim.phrase
-                )
+                "composited and the claim cannot be checked"
             )
         return findings, True
 
@@ -579,7 +585,7 @@ def check(path):
                     path.name,
                     line_of(source, claim.offset),
                     claim.phrase,
-                    ", ".join("{:g}".format(rank) for rank in ranks),
+                    ", ".join(f"{rank:g}" for rank in ranks),
                 )
             )
         return findings, True
@@ -601,10 +607,10 @@ def check(path):
         ink[0],
         ink[1],
         ink[2],
-        " -> ".join("{:g}".format(member.alpha) for member in ramp),
-        int(round(paper[0])),
-        int(round(paper[1])),
-        int(round(paper[2])),
+        " -> ".join(f"{member.alpha:g}" for member in ramp),
+        round(paper[0]),
+        round(paper[1]),
+        round(paper[2]),
     )
 
     for claim in claims:
@@ -620,7 +626,7 @@ def check(path):
                     claim.phrase,
                     claim.axis,
                     described,
-                    ", ".join("{:.4f}".format(value) for value in series),
+                    ", ".join(f"{value:.4f}" for value in series),
                 )
             )
             continue
@@ -634,16 +640,8 @@ def check(path):
             else "Fix the claim or the ramp so they state one thing"
         )
         findings.append(
-            '{}:{}: copy claims "{}" - "{}" - but the ramp draws larger as {} ({}). '
-            "{}".format(
-                path.name,
-                line,
-                claim.phrase,
-                excerpt(claim.copy),
-                DRAWN_AS[(claim.axis, actual)],
-                described,
-                remedy,
-            )
+            f'{path.name}:{line}: copy claims "{claim.phrase}" - "{excerpt(claim.copy)}" - but the ramp draws larger as {DRAWN_AS[(claim.axis, actual)]} ({described}). '
+            f"{remedy}"
         )
     return findings, True
 
@@ -687,7 +685,7 @@ def main():
     claiming = 0
     for path in targets(args):
         if not path.exists():
-            print("error: {} does not exist".format(path), file=sys.stderr)
+            print(f"error: {path} does not exist", file=sys.stderr)
             return 2
         file_findings, made_claim = check(path)
         findings.extend(file_findings)
@@ -698,14 +696,14 @@ def main():
         print(finding)
     if findings:
         print(
-            "\n{} skin-polarity finding(s) across {} file(s).".format(len(findings), checked)
+            f"\n{len(findings)} skin-polarity finding(s) across {checked} file(s)."
         )
         return 1
     # The claim count is reported so a run that checked nothing cannot be
     # mistaken for a run that found nothing.
     print(
-        "OK skin polarity: {} file(s), {} making a directional tone claim, "
-        "every claim matches its composited ramp".format(checked, claiming)
+        f"OK skin polarity: {checked} file(s), {claiming} making a directional tone claim, "
+        "every claim matches its composited ramp"
     )
     return 0
 

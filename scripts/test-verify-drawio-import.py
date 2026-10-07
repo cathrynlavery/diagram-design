@@ -9,7 +9,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCE = Path("skills/diagram-design/references/import-drawio.md")
 EXAMPLE = Path("skills/diagram-design/assets/example-import-drawio.html")
@@ -24,6 +23,7 @@ def run_verifier(root: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
 
 

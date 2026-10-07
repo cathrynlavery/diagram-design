@@ -10,10 +10,11 @@ is derived from the workflow's ``run:`` steps with these rules:
   inside ``$(...)`` or an ``if`` branch. ``python`` is spelled ``python3``
   locally.
 - Shell glue is not a gate: the commands in ``SHELL_GLUE`` install or print
-  tools (``pip install``, ``playwright install``, ``python -c``, ``echo``) or
+  tools (``playwright install``, ``python -c``, ``echo``) or
   steer control flow (``if``/``then``/``else``/``fi``, ``[``, ``git
   rev-parse``, ``exit``). The list is read off the run lines ci.yml has.
-- A line starting with ``npx`` is one gate (the Claude plugin validator).
+- A line starting with ``npx`` or the locked local Claude executable is one
+  gate (the Claude plugin validator).
 - A ``git diff ... --exit-code`` line checks what the command before it in
   the same step generated, so it joins that command with ``&&`` (the
   build-icons freshness gate). Backslash continuations are joined first.
@@ -38,7 +39,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = ROOT / ".maintainer-policy.json"
@@ -104,6 +104,7 @@ SHELL_GLUE = (
     ("esac",),
     ("[",),
     ("git", "rev-parse"),
+    ("npm", "ci"),
     ("pip", "install"),
     ("python", "-m", "pip", "install"),
     ("playwright", "install"),
@@ -121,11 +122,13 @@ RUN_KEY = re.compile(r"^(?P<prefix>\s*(?:-\s+)?)run:\s*(?P<value>.*?)\s*$")
 PYTHON_SCRIPT = re.compile(
     r"(?<![\w./-])python3?\s+(?P<script>[\w./-]+\.py)(?P<args>(?:[ \t]+[^\s;&|()<>]+)*)"
 )
+UV_RUN = re.compile(r"\buv run --locked --project \.github/ci/python\s+")
 
 
 def normalize(command: str) -> str:
     """Canonical form of a policy entry: CI spelling, version gate collapsed."""
     command = " ".join(command.split())
+    command = re.sub(r"^npm ci --prefix \.github/ci/node && ", "", command)
     command = re.sub(r"^python(?=\s)", "python3", command)
     return VERSION_GATE if command == LOCAL_VERSION_GATE else command
 
@@ -238,13 +241,14 @@ def ci_gates(workflow: str) -> tuple[set[str], list[str]]:
     for block in run_blocks(workflow):
         commands: list[str] = []
         for line in logical_lines(block):
+            line = UV_RUN.sub("", line)
             if line.startswith("git diff") and "--exit-code" in line:
                 if commands:
                     commands[-1] = f"{commands[-1]} && {line}"
                 else:
                     commands.append(line)
                 continue
-            if line.startswith("npx "):
+            if line.startswith(("npx ", ".github/ci/node/node_modules/.bin/claude ")):
                 commands.append(line)
                 continue
             commands.extend(match.group(0) for match in PYTHON_SCRIPT.finditer(line))
@@ -262,9 +266,7 @@ def policy_failures(policy: dict, workflow: str) -> list[str]:
     failures = []
     if manifests != EXPECTED_MANIFESTS:
         failures.append(
-            "versioning.manifests must be exactly {}; found {}".format(
-                sorted(EXPECTED_MANIFESTS), sorted(manifests)
-            )
+            f"versioning.manifests must be exactly {sorted(EXPECTED_MANIFESTS)}; found {sorted(manifests)}"
         )
     missing_commands = sorted(REQUIRED_COMMANDS - commands)
     if missing_commands:
@@ -279,7 +281,7 @@ def policy_failures(policy: dict, workflow: str) -> list[str]:
     for line in unmapped:
         failures.append(
             "ci.yml runs a command this test cannot map to a local gate "
-            "(extend scripts/test-maintainer-policy.py): {}".format(line)
+            f"(extend scripts/test-maintainer-policy.py): {line}"
         )
     unregistered = sorted(gates - local)
     if unregistered:
@@ -310,9 +312,9 @@ SYNTHETIC_POLICY_COMMANDS = [
     "python3 scripts/build-readme-thumbs.py --check",
     "python3 scripts/lint-render.py --self-test",
     "python3 scripts/lint-render.py --all",
-    "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
+    ("python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
     "skills/diagram-design/assets/icons.html "
-    "skills/diagram-design/references/primitive-icons.md",
+    "skills/diagram-design/references/primitive-icons.md"),
 ]
 
 SYNTHETIC_CI = """\
@@ -431,6 +433,18 @@ CASE_GUARDED_STEP = """
           echo "$out" | grep -q "All export-wait cases passed"
 """
 
+UV_PREFIXED_STEP = """
+      - name: Verify browser-backed export
+        run: |
+          uv run --locked --project .github/ci/python playwright install --with-deps chromium
+          uv run --locked --project .github/ci/python python scripts/test-export-svg-standalone.py
+"""
+
+LOCKED_CLAUDE_STEP = """
+      - name: Validate Claude marketplace package with locked executable
+        run: .github/ci/node/node_modules/.bin/claude plugin validate . --strict
+"""
+
 UNMAPPED_STEP = """
       - name: Verify something with a shell script
         run: bash scripts/check-something.sh
@@ -479,7 +493,7 @@ def synthetic_policy(commands: list[str]) -> dict:
 def synthetic_ci(extra: str = "") -> str:
     """The synthetic workflow, plus a step running every REQUIRED_COMMANDS gate."""
     required = "".join(
-        "\n      - name: Required gate\n        run: {}\n".format(command)
+        f"\n      - name: Required gate\n        run: {command}\n"
         for command in sorted(REQUIRED_COMMANDS)
     )
     return SYNTHETIC_CI + required + extra
@@ -508,22 +522,22 @@ def self_test() -> list[str]:
             "CI gate missing from policy",
             synthetic_ci(EXTRA_GATE_STEP),
             SYNTHETIC_POLICY_COMMANDS,
-            "gates.local_commands omits gates that ci.yml runs: "
-            "python3 scripts/test-export-svg-standalone.py",
+            ("gates.local_commands omits gates that ci.yml runs: "
+            "python3 scripts/test-export-svg-standalone.py"),
         ),
         (
             "CI gate inside command substitution missing from policy",
             synthetic_ci(SUBSTITUTED_GATE_STEP),
             SYNTHETIC_POLICY_COMMANDS,
-            "gates.local_commands omits gates that ci.yml runs: "
-            "python3 scripts/test-export-wait.py",
+            ("gates.local_commands omits gates that ci.yml runs: "
+            "python3 scripts/test-export-wait.py"),
         ),
         (
             "policy command CI does not run",
             synthetic_ci(),
             SYNTHETIC_POLICY_COMMANDS + ["python3 scripts/test-retired.py"],
-            "gates.local_commands lists commands that ci.yml does not run: "
-            "python3 scripts/test-retired.py",
+            ("gates.local_commands lists commands that ci.yml does not run: "
+            "python3 scripts/test-retired.py"),
         ),
         (
             "policy drops the version gate",
@@ -536,15 +550,15 @@ def self_test() -> list[str]:
             synthetic_ci(),
             [c for c in SYNTHETIC_POLICY_COMMANDS if c != icons_command]
             + [icons_command.replace("--ignore-space-at-eol ", "")],
-            "gates.local_commands lists commands that ci.yml does not run: "
-            "python3 scripts/build-icons.py && git diff --exit-code",
+            ("gates.local_commands lists commands that ci.yml does not run: "
+            "python3 scripts/build-icons.py && git diff --exit-code"),
         ),
         (
             "unmapped CI command",
             synthetic_ci(UNMAPPED_STEP),
             SYNTHETIC_POLICY_COMMANDS,
-            "cannot map to a local gate (extend scripts/test-maintainer-policy.py): "
-            "bash scripts/check-something.sh",
+            ("cannot map to a local gate (extend scripts/test-maintainer-policy.py): "
+            "bash scripts/check-something.sh"),
         ),
         (
             "CI gate inside command substitution registered",
@@ -556,6 +570,23 @@ def self_test() -> list[str]:
             "CI gate behind a case guard registered",
             synthetic_ci(CASE_GUARDED_STEP),
             SYNTHETIC_POLICY_COMMANDS + ["python3 scripts/test-export-wait.py"],
+            None,
+        ),
+        (
+            "uv-prefixed gate registered",
+            synthetic_ci(UV_PREFIXED_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + ["python3 scripts/test-export-svg-standalone.py"],
+            None,
+        ),
+        (
+            "locked Claude executable registered",
+            synthetic_ci(LOCKED_CLAUDE_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + [
+                ("npm ci --prefix .github/ci/node && "
+                ".github/ci/node/node_modules/.bin/claude plugin validate . --strict")
+            ],
             None,
         ),
         (
@@ -602,10 +633,8 @@ def main() -> int:
 
     gates, _unmapped = ci_gates(workflow)
     print(
-        "OK maintainer policy: {} manifests, {} required current gates, "
-        "{} CI gates registered in local_commands".format(
-            len(EXPECTED_MANIFESTS), len(REQUIRED_COMMANDS), len(gates)
-        )
+        f"OK maintainer policy: {len(EXPECTED_MANIFESTS)} manifests, {len(REQUIRED_COMMANDS)} required current gates, "
+        f"{len(gates)} CI gates registered in local_commands"
     )
     return 0
 

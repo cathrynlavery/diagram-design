@@ -60,7 +60,7 @@ def cx(value: float) -> float:
 
 
 def dot(value: float, row: int = 0, name=None, drawn_cx=None, drawn_cy=None,
-        r: float = R, fill: str = INK, stroke: str = "#4f5d75",
+        r: float = R, fill: str | None = INK, stroke: str = "#4f5d75",
         omit: str = "", extra: str = "") -> str:
     parts = ['data-value="%s"' % value]
     if name is not None:
@@ -655,6 +655,7 @@ def run_cases(h: Harness) -> int:
         result = subprocess.run(
             [sys.executable, str(script)] + [str(p) for p in SHIPPED],
             capture_output=True, text=True,
+            check=False,
         )
         h.check(
             "%s skips all three shipped beeswarm files" % sibling,

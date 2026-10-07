@@ -28,6 +28,7 @@ import importlib.util
 import math
 import sys
 from pathlib import Path
+from typing import Any, TypedDict
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
@@ -35,12 +36,25 @@ TOL = 0.05
 TRUNK = 8  # a tree canopy stands this far above the plate on its trunk
 
 _spec = importlib.util.spec_from_file_location("verify_exploded", Path(__file__).with_name("verify-exploded.py"))
+if _spec is None or _spec.loader is None:
+    raise RuntimeError("cannot load verify-exploded.py")
 vx = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = vx
 _spec.loader.exec_module(vx)
 
 
-def numbers(text, count, what, errors):
+class Box(TypedDict):
+    el: Any
+    rect: tuple[float, ...]
+    z: float
+    h: float
+    label: str
+    kind: str
+    name: str
+    focal: bool
+
+
+def numbers(text: str | None, count: int, what: str, errors: list[str]) -> tuple[float, ...] | None:
     vals = vx.NUMBER.findall(text or "")
     if len(vals) != count:
         errors.append(f"{what} must be {count} numbers; found {text!r}")
@@ -118,7 +132,7 @@ def verify_source(source: str, name: str) -> list[str]:
     check_silhouette(plate_el, origin, plate, 0, pt, f"{name}: plate", errors)
 
     order = {id(el): i for i, el in enumerate(fig.walk())}
-    boxes = []
+    boxes: list[Box] = []
     for el in fig.walk():
         if el.tag != "g" or "data-box" not in el.attrs:
             continue
@@ -128,8 +142,8 @@ def verify_source(source: str, name: str) -> list[str]:
         if rect is None or z is None or h is None:
             continue
         label = el.attrs.get("data-name") or f"{el.attrs.get('data-kind', 'box')} at {rect[:4]}"
-        boxes.append(dict(el=el, rect=rect, z=z, h=h, label=label, kind=el.attrs.get("data-kind", ""),
-                          name=el.attrs.get("data-name", ""), focal="data-focal" in el.attrs))
+        boxes.append(Box(el=el, rect=rect, z=z, h=h, label=label, kind=el.attrs.get("data-kind", ""),
+                         name=el.attrs.get("data-name", ""), focal="data-focal" in el.attrs))
         check_silhouette(el, origin, rect, z, z + h, f"{name}: {label}", errors)
 
     # Boxes stand on the plate top (a canopy on its trunk), inside the plate, and never share floor area.
@@ -154,9 +168,10 @@ def verify_source(source: str, name: str) -> list[str]:
             if a is b:
                 continue
             sb = screen_box(origin, b["rect"], b["z"], b["z"] + b["h"])
-            if overlaps(sa, sb) and behind(a["rect"], b["rect"]) and not behind(b["rect"], a["rect"]):
-                if order[id(a["el"])] > order[id(b["el"])]:
-                    errors.append(f"{name}: {a['label']} is behind {b['label']} but painted after it")
+            if (overlaps(sa, sb) and behind(a["rect"], b["rect"])
+                    and not behind(b["rect"], a["rect"])
+                    and order[id(a["el"])] > order[id(b["el"])]):
+                errors.append(f"{name}: {a['label']} is behind {b['label']} but painted after it")
 
     # Tags: centred on their point, one per named room or building, never overlapping.
     tags = []
@@ -199,7 +214,7 @@ def verify_source(source: str, name: str) -> list[str]:
             errors.append(f"{name}: tag {label!r} names no room or building")
 
     # Each tag stands on the thing it names: inside its room on the floor, or on its building's roof.
-    targets = {}
+    targets: dict[str, tuple[tuple[float, ...], float, str]] = {}
     for el in fig.walk():
         if el.tag == "g" and "data-room" in el.attrs:
             rect = numbers(el.attrs.get("data-rect"), 5, f"{name}: room data-rect", errors)

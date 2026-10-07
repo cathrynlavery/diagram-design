@@ -23,6 +23,7 @@ import sys
 import tempfile
 import zlib
 from pathlib import Path
+from typing import NoReturn
 from urllib.parse import quote
 
 sys.dont_write_bytecode = True
@@ -38,7 +39,7 @@ FIXTURE = ROOT / "scripts/fixtures/sample-architecture.drawio"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-drawio.html"
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     print(f"FAIL: {msg}", file=sys.stderr)
     raise SystemExit(1)
 
@@ -58,6 +59,7 @@ def invoke(args: list[str]) -> subprocess.CompletedProcess[str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
 
 
@@ -92,9 +94,9 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     env["PYTHONUTF8"] = "0"
     process = subprocess.run(
         [sys.executable, str(EXTRACT), str(source)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         env=env,
+        check=False,
     )
     if process.returncode != 0:
         fail(
@@ -113,9 +115,9 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     destination = tmp / "unicode-stdout.md"
     file_process = subprocess.run(
         [sys.executable, str(EXTRACT), str(source), "--out", str(destination)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         env=env,
+        check=False,
     )
     if file_process.returncode != 0:
         fail("draw.io --out failed under a legacy Windows encoding")
@@ -230,12 +232,12 @@ def check_parse_raw() -> dict:
 
 def check_nested_geometry(tmp: Path) -> None:
     cells = (
-        '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
-        '<mxGeometry x="100" y="200" width="100" height="100" as="geometry"/></mxCell>',
-        '<mxCell id="inner" value="Inner" vertex="1" parent="outer">'
-        '<mxGeometry x="20" y="30" width="30" height="40" as="geometry"/></mxCell>',
-        '<mxCell id="leaf" value="Leaf" vertex="1" parent="inner">'
-        '<mxGeometry x="5" y="6" width="10" height="10" as="geometry"/></mxCell>',
+        ('<mxCell id="outer" value="Outer" vertex="1" parent="1">'
+        '<mxGeometry x="100" y="200" width="100" height="100" as="geometry"/></mxCell>'),
+        ('<mxCell id="inner" value="Inner" vertex="1" parent="outer">'
+        '<mxGeometry x="20" y="30" width="30" height="40" as="geometry"/></mxCell>'),
+        ('<mxCell id="leaf" value="Leaf" vertex="1" parent="inner">'
+        '<mxGeometry x="5" y="6" width="10" height="10" as="geometry"/></mxCell>'),
     )
     expected = {"outer": (100, 200, 0), "inner": (120, 230, 1), "leaf": (125, 236, 2)}
     source = tmp / "nested.drawio"
@@ -256,7 +258,7 @@ def check_nested_geometry(tmp: Path) -> None:
 
 def check_bom_prefixed(tmp: Path) -> None:
     model = re.search(
-        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
+        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.DOTALL
     )
     if not model:
         fail("fixture has no mxGraphModel")
@@ -287,7 +289,7 @@ def check_bom_prefixed(tmp: Path) -> None:
 
 def check_containers(tmp: Path) -> None:
     model = re.search(
-        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
+        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.DOTALL
     )
     if not model:
         fail("fixture has no mxGraphModel")
@@ -353,7 +355,8 @@ def check_containers(tmp: Path) -> None:
     bad = tmp / "notadiagram.txt"
     bad.write_text("hello", encoding="utf-8")
     proc = subprocess.run(
-        [sys.executable, str(EXTRACT), str(bad)], capture_output=True, text=True
+        [sys.executable, str(EXTRACT), str(bad)], capture_output=True, text=True,
+        check=False,
     )
     if proc.returncode != 2 or "not a draw.io file" not in proc.stderr:
         fail("non-draw.io input must exit 2 with a clear message")
@@ -438,7 +441,8 @@ def check_security_and_limits(tmp: Path) -> None:
         encoding="utf-8",
     )
     proc = subprocess.run(
-        [sys.executable, str(EXTRACT), str(dtd)], capture_output=True, text=True
+        [sys.executable, str(EXTRACT), str(dtd)], capture_output=True, text=True,
+        check=False,
     )
     if proc.returncode != 2 or "DTD and entity declarations" not in proc.stderr:
         fail("DTD/entity input must be rejected with a clear diagnostic")
@@ -457,6 +461,7 @@ def check_security_and_limits(tmp: Path) -> None:
         [sys.executable, str(EXTRACT), str(compressed_dtd)],
         capture_output=True,
         text=True,
+        check=False,
     )
     if proc.returncode != 2 or "DTD and entity declarations" not in proc.stderr:
         fail("DTD/entity declarations in compressed pages must be rejected")
@@ -467,6 +472,7 @@ def check_security_and_limits(tmp: Path) -> None:
         [sys.executable, str(EXTRACT), str(truncated_png)],
         capture_output=True,
         text=True,
+        check=False,
     )
     if proc.returncode != 2 or "truncated metadata chunk" not in proc.stderr:
         fail("truncated PNG metadata must be rejected with a clear diagnostic")
@@ -594,6 +600,7 @@ def check_security_and_limits(tmp: Path) -> None:
         [sys.executable, str(EXTRACT), str(FIXTURE), "--max-rows", "0"],
         capture_output=True,
         text=True,
+        check=False,
     )
     if proc.returncode != 2 or "--max-rows must be at least 1" not in proc.stderr:
         fail("non-positive --max-rows must be rejected")
@@ -699,6 +706,7 @@ def check_docs() -> None:
         [sys.executable, str(ROOT / "scripts/lint-skin.py"), str(EXAMPLE)],
         capture_output=True,
         text=True,
+        check=False,
     )
     if proc.returncode != 0:
         fail(f"worked example fails lint-skin: {proc.stdout.strip()}")

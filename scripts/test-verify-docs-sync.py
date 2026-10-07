@@ -10,7 +10,6 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY = ROOT / "scripts" / "verify-docs-sync.py"
 
@@ -327,8 +326,8 @@ def check_title_font_link(verify) -> None:
             root, verify.check_export_font_parity, verify.check_title_fallback_order
         )
         expected = [
-            "assets/template-motion.html font link drifts from assets/template.html: "
-            "missing Noto Serif",
+            ("assets/template-motion.html font link drifts from assets/template.html: "
+            "missing Noto Serif"),
             link_error("assets/template-motion.html"),
         ]
         if errors != expected:
@@ -343,8 +342,8 @@ def check_title_font_link(verify) -> None:
             root, verify.check_export_font_parity, verify.check_title_fallback_order
         )
         expected = [
-            "assets/template-motion.html font link drifts from assets/template.html: "
-            "missing Noto Serif",
+            ("assets/template-motion.html font link drifts from assets/template.html: "
+            "missing Noto Serif"),
             lacks_error("assets/template-motion.html"),
             link_error("assets/template-motion.html"),
         ]
@@ -429,8 +428,8 @@ def check_font_link_copies(verify) -> None:
         path.write_text(style_guide.replace(link, single_quoted(drifted)), encoding="utf-8")
         errors = run_checks(root, verify.check_export_font_parity)
         expected = [
-            "references/style-guide.md font link drifts from assets/template.html: "
-            "missing Noto Serif"
+            ("references/style-guide.md font link drifts from assets/template.html: "
+            "missing Noto Serif")
         ]
         if errors != expected:
             raise AssertionError(f"a single-quoted drifted style-guide link was not reported: {errors}")
@@ -575,8 +574,8 @@ def check_split_routes(verify) -> None:
         errors, skill.replace("## 8. Summary Card Pattern", "## Summary cards", 1)
     )
     expected = [
-        "SKILL.md has no '## 8.' section; it must route to "
-        "references/layout-budget.md#summary-card-pattern"
+        ("SKILL.md has no '## 8.' section; it must route to "
+        "references/layout-budget.md#summary-card-pattern")
     ]
     if errors != expected:
         raise AssertionError(f"a renumbered split section was not reported: {errors}")
@@ -620,8 +619,8 @@ def check_style_guide_anchors(verify) -> None:
 def check_heading_syntax(verify) -> None:
     """Closing hashes are not heading text, and fenced lines are not headings."""
     dangling = [
-        "SKILL.md links to 'references/style-guide.md#cyrillic-labels', "
-        "which matches no heading in references/style-guide.md"
+        ("SKILL.md links to 'references/style-guide.md#cyrillic-labels', "
+        "which matches no heading in references/style-guide.md")
     ]
     cases = (
         ("# Style Guide\n\n### Cyrillic labels ###\n", []),
@@ -775,15 +774,15 @@ def main() -> int:
             original = path.read_text(encoding="utf-8")
             for length in (500, 501):
                 document = json.loads(original)
-                container = document["metadata"] if "metadata" in document else document
+                container = document.get("metadata", document)
                 # Count the original value, including trailing whitespace.
                 container["description"] = short.ljust(length)
                 path.write_text(json.dumps(document), encoding="utf-8")
                 errors: list[str] = []
                 verify.check_manifest_descriptions(errors, root)
                 expected = [] if length == 500 else [
-                    f"{relative.as_posix()} description exceeds the Cowork limit "
-                    "(501 > 500 characters)"
+                    (f"{relative.as_posix()} description exceeds the Cowork limit "
+                    "(501 > 500 characters)")
                 ]
                 if errors != expected:
                     raise AssertionError(f"manifest size boundary failed: {errors}")
@@ -799,8 +798,7 @@ def main() -> int:
                 document = json.loads(original)
                 container = (
                     document["interface"] if key == "longDescription"
-                    else document["metadata"] if "metadata" in document
-                    else document
+                    else document.get("metadata", document)
                 )
                 before = container[key]
                 container[key] = before.replace("architecture delta, ", "")

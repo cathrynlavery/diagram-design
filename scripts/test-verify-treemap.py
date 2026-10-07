@@ -12,8 +12,8 @@ Exit: 0 all pass, 1 a case failed.
 
 from __future__ import annotations
 
-import runpy
 import re
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -37,6 +37,7 @@ def run(path: Path) -> tuple[int, str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 

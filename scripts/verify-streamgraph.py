@@ -98,7 +98,9 @@ import argparse
 import math
 import re
 import sys
+from collections.abc import Iterable
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -182,7 +184,7 @@ BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data 
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "offset", "tag")
 
     def __init__(self, tag, attrs, offset, line, ancestor):
         self.tag = tag
@@ -194,7 +196,7 @@ class Element:
 
 
 class Layer:
-    __slots__ = ("name", "values", "top", "bottom", "line", "controls")
+    __slots__ = ("bottom", "controls", "line", "name", "top", "values")
 
     def __init__(self, name, values, top, bottom, line):
         self.name = name
@@ -705,7 +707,7 @@ def stacked_order(layers: list) -> list:
 def check_stack(layers: list, findings: list, name: str) -> None:
     """Layers must tile: each bottom is the previous top; envelope centred."""
     ordered = stacked_order(layers)
-    for below, above in zip(ordered, ordered[1:]):
+    for below, above in pairwise(ordered):
         worst = None
         for i in range(len(below.top)):
             gap = above.bottom[i][1] - below.top[i][1]
@@ -773,7 +775,7 @@ def check_controls(layers: list, findings: list, name: str) -> None:
             )
 
 
-def layers_named_in(body: str, names) -> set:
+def layers_named_in(body: str, names: Iterable[str]) -> set[str]:
     """Which declared layer names the visible text actually prints.
 
     Longest candidate first at each position, so a layer called "Unit" is

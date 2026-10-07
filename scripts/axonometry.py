@@ -21,28 +21,28 @@ S2 = math.sqrt(2)
 
 # Face tones per skin. Every value is a style-guide role or an rgba() of one.
 SKINS = {
-    "light": dict(
-        paper="#f5f5f5", ink="#2d3142", muted="#4f5d75", soft="#7a8399", accent="#eb6c36",
-        ink_rgb="45,49,66", acc_rgb="235,108,54", base="#ffffff", rule="rgba(45,49,66,0.12)",
-        shade=(None, "rgba(45,49,66,0.07)", "rgba(45,49,66,0.15)"),
-        focal=("rgba(235,108,54,0.10)", "rgba(235,108,54,0.20)", "rgba(235,108,54,0.32)"),
-        cavity="rgba(45,49,66,0.10)", floor="rgba(45,49,66,0.04)", well="rgba(45,49,66,0.14)",
-        screen="#2d3142", island="#111111", chip_top="#4f5d75", chip_side="#2d3142",
-        sil="#2d3142", inner="rgba(45,49,66,0.55)", trace="rgba(45,49,66,0.30)",
-        lead="rgba(45,49,66,0.40)", lead_acc="rgba(235,108,54,0.60)", inner_acc="rgba(235,108,54,0.70)",
-        lens="#2d3142", lens_ring="rgba(245,245,245,0.35)",
-    ),
-    "dark": dict(
-        paper="#2d3142", ink="#f5f5f5", muted="#bfc0c0", soft="#8e98ac", accent="#f08a59",
-        ink_rgb="245,245,245", acc_rgb="240,138,89", base="#393e53", rule="rgba(245,245,245,0.12)",
-        shade=("rgba(245,245,245,0.10)", None, "rgba(45,49,66,0.45)"),
-        focal=("rgba(240,138,89,0.18)", None, "rgba(45,49,66,0.45)"),
-        cavity="rgba(45,49,66,0.55)", floor="rgba(45,49,66,0.25)", well="rgba(45,49,66,0.40)",
-        screen="#111111", island="#2d3142", chip_top="#8e98ac", chip_side="#2d3142",
-        sil="#f5f5f5", inner="rgba(245,245,245,0.45)", trace="rgba(245,245,245,0.30)",
-        lead="rgba(245,245,245,0.40)", lead_acc="rgba(240,138,89,0.60)", inner_acc="rgba(240,138,89,0.70)",
-        lens="#111111", lens_ring="rgba(245,245,245,0.35)",
-    ),
+    "light": {
+        "paper": "#f5f5f5", "ink": "#2d3142", "muted": "#4f5d75", "soft": "#7a8399", "accent": "#eb6c36",
+        "ink_rgb": "45,49,66", "acc_rgb": "235,108,54", "base": "#ffffff", "rule": "rgba(45,49,66,0.12)",
+        "shade": (None, "rgba(45,49,66,0.07)", "rgba(45,49,66,0.15)"),
+        "focal": ("rgba(235,108,54,0.10)", "rgba(235,108,54,0.20)", "rgba(235,108,54,0.32)"),
+        "cavity": "rgba(45,49,66,0.10)", "floor": "rgba(45,49,66,0.04)", "well": "rgba(45,49,66,0.14)",
+        "screen": "#2d3142", "island": "#111111", "chip_top": "#4f5d75", "chip_side": "#2d3142",
+        "sil": "#2d3142", "inner": "rgba(45,49,66,0.55)", "trace": "rgba(45,49,66,0.30)",
+        "lead": "rgba(45,49,66,0.40)", "lead_acc": "rgba(235,108,54,0.60)", "inner_acc": "rgba(235,108,54,0.70)",
+        "lens": "#2d3142", "lens_ring": "rgba(245,245,245,0.35)",
+    },
+    "dark": {
+        "paper": "#2d3142", "ink": "#f5f5f5", "muted": "#bfc0c0", "soft": "#8e98ac", "accent": "#f08a59",
+        "ink_rgb": "245,245,245", "acc_rgb": "240,138,89", "base": "#393e53", "rule": "rgba(245,245,245,0.12)",
+        "shade": ("rgba(245,245,245,0.10)", None, "rgba(45,49,66,0.45)"),
+        "focal": ("rgba(240,138,89,0.18)", None, "rgba(45,49,66,0.45)"),
+        "cavity": "rgba(45,49,66,0.55)", "floor": "rgba(45,49,66,0.25)", "well": "rgba(45,49,66,0.40)",
+        "screen": "#111111", "island": "#2d3142", "chip_top": "#8e98ac", "chip_side": "#2d3142",
+        "sil": "#f5f5f5", "inner": "rgba(245,245,245,0.45)", "trace": "rgba(245,245,245,0.30)",
+        "lead": "rgba(245,245,245,0.40)", "lead_acc": "rgba(240,138,89,0.60)", "inner_acc": "rgba(240,138,89,0.70)",
+        "lens": "#111111", "lens_ring": "rgba(245,245,245,0.35)",
+    },
 }
 
 
@@ -88,7 +88,7 @@ class Rect:
 
 
 def corner(theta):
-    return int(math.floor(theta / 90)) % 4
+    return math.floor(theta / 90) % 4
 
 
 def point(P, rect, theta, z, k=None):
@@ -134,23 +134,23 @@ def outline(P, rect, z):
 def prism(P, rect, z0, z1):
     """Top face, the two visible side bands, the silhouette, the top-front edge, and the label anchor."""
     lt, ft, rt = point(P, rect, 135, z1), point(P, rect, 45, z1), point(P, rect, -45, z1)
-    lb, fb, rb = point(P, rect, 135, z0), point(P, rect, 45, z0), point(P, rect, -45, z0)
+    fb, rb = point(P, rect, 45, z0), point(P, rect, -45, z0)
     edge = f"{M(lt)} {walk(P, rect, 135, -45, z1)}"
     if rect.r == 0:
         edge += f" {M(ft)} {L(fb)}"
     n = 24
     poly = [point(P, rect, 135 + 180 * i / n, z1) for i in range(n + 1)]
     poly += [point(P, rect, -45 + 180 * i / n, z0) for i in range(n + 1)]
-    return dict(
-        top=outline(P, rect, z1),
-        left=f"{M(lt)} {walk(P, rect, 135, 45, z1)} {L(fb)} {walk(P, rect, 45, 135, z0)} Z",
-        right=f"{M(ft)} {walk(P, rect, 45, -45, z1)} {L(rb)} {walk(P, rect, -45, 45, z0)} Z",
-        sil=f"{M(lt)} {walk(P, rect, 135, 315, z1)} {L(rb)} {walk(P, rect, -45, 135, z0)} Z",
-        edge=edge,
-        rx=rt[0],
-        anchor=(rt[0], (rt[1] + rb[1]) / 2),
-        poly=poly,
-    )
+    return {
+        "top": outline(P, rect, z1),
+        "left": f"{M(lt)} {walk(P, rect, 135, 45, z1)} {L(fb)} {walk(P, rect, 45, 135, z0)} Z",
+        "right": f"{M(ft)} {walk(P, rect, 45, -45, z1)} {L(rb)} {walk(P, rect, -45, 45, z0)} Z",
+        "sil": f"{M(lt)} {walk(P, rect, 135, 315, z1)} {L(rb)} {walk(P, rect, -45, 135, z0)} Z",
+        "edge": edge,
+        "rx": rt[0],
+        "anchor": (rt[0], (rt[1] + rb[1]) / 2),
+        "poly": poly,
+    }
 
 
 def solid(P, rect, z0, z1, sk, tones, stroke, inner, role=True):

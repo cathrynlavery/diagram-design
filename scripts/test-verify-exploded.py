@@ -31,12 +31,14 @@ SHIPPED = sorted(ASSETS.glob("example-exploded*.html"))
 
 def run(*args: str) -> tuple[int, str]:
     result = subprocess.run([sys.executable, str(CHECKER), *args], capture_output=True,
-                            text=True, encoding="utf-8", errors="replace")
+                            text=True, encoding="utf-8", errors="replace", check=False)
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 
 
 def builder():
     spec = importlib.util.spec_from_file_location("build_exploded", BUILDER)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {BUILDER}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module  # dataclasses resolve their module through sys.modules
     spec.loader.exec_module(module)
@@ -120,7 +122,7 @@ def main() -> int:
             once(r'(data-role="silhouette")', r'\1 transform="translate(4 0)"', stack),
             "carries transform="),
         "duplicate label for one part": (
-            once(r'(<g data-role="label">.*?</g>)', lambda m: m.group(1) + m.group(1), stack, re.S),
+            once(r'(<g data-role="label">.*?</g>)', lambda m: m.group(1) + m.group(1), stack, re.DOTALL),
             "has more than one label"),
         "silhouette missing": (
             once(r'data-role="silhouette"', 'data-role="outline"', stack),

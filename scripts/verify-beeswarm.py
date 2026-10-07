@@ -205,7 +205,7 @@ MAX_NAMED = 6                  # labeled dots; past this the tail is a list
 
 
 class Dot:
-    __slots__ = ("value", "cx", "cy", "r", "name", "fill", "accent", "offset")
+    __slots__ = ("accent", "cx", "cy", "fill", "name", "offset", "r", "value")
 
     def __init__(self, value, cx, cy, r, name, fill, accent, offset):
         self.value = value

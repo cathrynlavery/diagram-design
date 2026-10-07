@@ -29,9 +29,9 @@ import re
 import struct
 import sys
 import zlib
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
@@ -57,7 +57,7 @@ class PayloadTooLarge(ValueError):
     """Raised when compressed metadata expands beyond the supported limit."""
 
 
-def _fail(msg: str) -> "NoReturn":  # type: ignore[valid-type]
+def _fail(msg: str) -> NoReturn:
     print(f"drawio_extract: {msg}", file=sys.stderr)
     raise SystemExit(2)
 
@@ -97,7 +97,7 @@ def _inflate(payload: str) -> str | None:
     """Undo draw.io's base64 + raw-deflate + URL-encoding pipeline."""
     try:
         raw = base64.b64decode(payload, validate=False)
-    except Exception:
+    except ValueError:
         return None
     for wbits in (-15, 15, 47):
         try:
@@ -106,8 +106,8 @@ def _inflate(payload: str) -> str | None:
             _fail(
                 f"decoded diagram exceeds the {MAX_XML_BYTES // (1024 * 1024)} MiB limit"
             )
-        except Exception:
-            continue
+        except zlib.error:
+            continue  # Invalid framing; try the next supported wrapper.
         # draw.io URL-encodes before deflating; unquote is a no-op if it didn't.
         return unquote(text)
     return None
@@ -663,8 +663,7 @@ def analyze(page: Page) -> dict[str, Any]:
     if not candidates:
         candidates.append("architecture")
 
-    seen: set[str] = set()
-    candidates = [c for c in candidates if not (c in seen or seen.add(c))]
+    candidates = list(dict.fromkeys(candidates))
 
     # Collapse candidates: containers whose children are all leaves, and
     # fan-out clusters — the first things to merge when simplifying.

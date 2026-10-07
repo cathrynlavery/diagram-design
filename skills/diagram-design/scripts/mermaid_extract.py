@@ -28,7 +28,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, NoReturn
 
-
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
 MAX_NODES = 2000
 MAX_EDGES = 5000
@@ -247,7 +246,7 @@ def load_blocks(path: Path) -> list[SourceBlock]:
     content: list[str] = []
     for line_number, line in enumerate(lines, 1):
         if start is None:
-            match = re.match(r"^\s*(`{3,}|~{3,})\s*mermaid\s*$", line, re.I)
+            match = re.match(r"^\s*(`{3,}|~{3,})\s*mermaid\s*$", line, re.IGNORECASE)
             if match:
                 start = line_number + 1
                 fence = match.group(1)
@@ -322,14 +321,14 @@ def _kind_and_direction(
         text = raw.strip()
         if not text:
             continue
-        match = re.match(r"^(flowchart|graph)\s+(TD|TB|LR|RL|BT)\b", text, re.I)
+        match = re.match(r"^(flowchart|graph)\s+(TD|TB|LR|RL|BT)\b", text, re.IGNORECASE)
         if match:
             return "flowchart", match.group(2).upper(), position
-        if re.match(r"^sequenceDiagram\b", text, re.I):
+        if re.match(r"^sequenceDiagram\b", text, re.IGNORECASE):
             return "sequenceDiagram", "LR", position
-        if re.match(r"^stateDiagram-v2\b", text, re.I):
+        if re.match(r"^stateDiagram-v2\b", text, re.IGNORECASE):
             return "stateDiagram-v2", "TD", position
-        if re.match(r"^erDiagram\b", text, re.I):
+        if re.match(r"^erDiagram\b", text, re.IGNORECASE):
             return "erDiagram", "TD", position
         token = text.split(maxsplit=1)[0]
         if token.casefold() in UNSUPPORTED_KINDS:
@@ -406,9 +405,8 @@ def _statement_complete(text: str) -> bool:
             quote = character
         elif character in "[({":
             stack.append(character)
-        elif character in "])}":
-            if stack and stack[-1] == pairs[character]:
-                stack.pop()
+        elif character in "])}" and stack and stack[-1] == pairs[character]:
+            stack.pop()
     return quote is None and not stack
 
 
@@ -824,7 +822,7 @@ def _parse_sequence(
         r"^(?:create\s+)?(participant|actor)\s+"
         r"(?:\"([^\"]+)\"|'([^']+)'|([\w.:-]+))"
         r"(?:\s+as\s+(.+))?$",
-        re.I,
+        re.IGNORECASE,
     )
     # Endpoints may be bare ids or multi-word names introduced by a quoted
     # `participant "Alice Smith"` declaration; the lazy id keeps `A-->>B`
@@ -862,7 +860,7 @@ def _parse_sequence(
                 "actor" if kind == "actor" else "lifeline",
             )
             continue
-        fragment = re.match(r"^(alt|opt|loop|par|critical|break)\b\s*(.*)$", text, re.I)
+        fragment = re.match(r"^(alt|opt|loop|par|critical|break)\b\s*(.*)$", text, re.IGNORECASE)
         if fragment:
             entry = {
                 "kind": fragment.group(1).casefold(),
@@ -874,7 +872,7 @@ def _parse_sequence(
             diagram.fragments.append(entry)
             fragment_stack.append(entry)
             continue
-        region = re.match(r"^(else|and|option)\b\s*(.*)$", text, re.I)
+        region = re.match(r"^(else|and|option)\b\s*(.*)$", text, re.IGNORECASE)
         if region and fragment_stack:
             fragment_stack[-1]["regions"].append(clean_label(region.group(2)))
             continue
@@ -909,7 +907,7 @@ def _parse_sequence(
                 target,
                 clean_label(label),
                 "dashed"
-                if token.startswith("--") or token.startswith("<<--")
+                if token.startswith(("--", "<<--"))
                 else "solid",
                 arrowhead,
                 bidirectional=token.startswith("<<"),
@@ -956,22 +954,22 @@ def _parse_state(
                 containers.pop()
             continue
         parent = containers[-1] if containers else None
-        direction_match = re.match(r"^direction\s+(TD|TB|LR|RL|BT)$", text, re.I)
+        direction_match = re.match(r"^direction\s+(TD|TB|LR|RL|BT)$", text, re.IGNORECASE)
         if direction_match and not containers:
             diagram.direction = direction_match.group(1).upper()
             continue
-        composite = re.match(r"^state\s+([\w.:-]+)\s*\{$", text, re.I)
+        composite = re.match(r"^state\s+([\w.:-]+)\s*\{$", text, re.IGNORECASE)
         if composite:
             node_id = composite.group(1)
             diagram.add_node(node_id, node_id, "container", parent, container=True)
             containers.append(node_id)
             continue
-        alias = re.match(r'^state\s+"(.*?)"\s+as\s+([\w.:-]+)$', text, re.I)
+        alias = re.match(r'^state\s+"(.*?)"\s+as\s+([\w.:-]+)$', text, re.IGNORECASE)
         if alias:
             diagram.add_node(alias.group(2), clean_label(alias.group(1)), "state", parent)
             continue
         stereotype = re.match(
-            r"^state\s+([\w.:-]+)\s+<<(fork|join|choice)>>$", text, re.I
+            r"^state\s+([\w.:-]+)\s+<<(fork|join|choice)>>$", text, re.IGNORECASE
         )
         if stereotype:
             diagram.add_node(
@@ -997,7 +995,7 @@ def _parse_state(
                 description.group(1), clean_label(description.group(2)), "state", parent
             )
             continue
-        plain = re.match(r"^state\s+([\w.:-]+)$", text, re.I)
+        plain = re.match(r"^state\s+([\w.:-]+)$", text, re.IGNORECASE)
         if plain:
             diagram.add_node(plain.group(1), plain.group(1), "state", parent)
 
@@ -1019,7 +1017,7 @@ def _parse_er(
         if text == "}":
             current = None
             continue
-        direction_match = re.match(r"^direction\s+(TD|TB|LR|RL|BT)$", text, re.I)
+        direction_match = re.match(r"^direction\s+(TD|TB|LR|RL|BT)$", text, re.IGNORECASE)
         if direction_match and current is None:
             diagram.direction = direction_match.group(1).upper()
             continue
@@ -1219,14 +1217,14 @@ def digest(
                 f"## Diagram {diagram.index} — {diagram.kind}",
                 "",
                 f"- source layout: none (Mermaid is layout-free); direction: {diagram.direction}",
-                f"- nodes: {info['nodes_total']} total / {info['nodes_drawable']} drawable / "
-                f"{info['containers']} containers, depth {info['max_depth']}",
-                f"- edges: {info['edges_total']} ({info['edges_labeled']} labeled, "
-                f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}",
+                (f"- nodes: {info['nodes_total']} total / {info['nodes_drawable']} drawable / "
+                f"{info['containers']} containers, depth {info['max_depth']}"),
+                (f"- edges: {info['edges_total']} ({info['edges_labeled']} labeled, "
+                f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}"),
                 f"- shapes: {info['shapes']}",
                 f"- type candidates: {', '.join(info['type_candidates'])}",
-                f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
-                f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
+                (f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
+                f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)"),
             ]
         )
         if diagram.discarded["style_directives"] or diagram.discarded["click_handlers"]:

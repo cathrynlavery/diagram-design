@@ -214,7 +214,7 @@ def reference_error(tag: str, rel: str, value: str) -> str | None:
     lowered = stripped.casefold()
     if not stripped or stripped.startswith("#"):
         return None
-    if lowered.startswith("javascript:") or lowered.startswith("data:text/html"):
+    if lowered.startswith(("javascript:", "data:text/html")):
         return f"executable URL on <{tag}>: {stripped[:80]}"
     remote = lowered.startswith(("http://", "https://", "//")) or (
         ":" in stripped.split("/", 1)[0] and not lowered.startswith("data:")

@@ -1,0 +1,47 @@
+name: Code Lint (advisory)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: code-lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python code lint (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      UV_MANAGED_PYTHON: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: latest-known
+          python-version: "3.10"
+          enable-cache: false
+
+      - name: Run Ruff against the minimum Python version
+        continue-on-error: true
+        run: uv run --locked --project .github/ci/python ruff check .
+
+      - name: Run ty against the minimum Python version
+        continue-on-error: true
+        run: uv run --locked --project .github/ci/python ty check . --no-progress
+
+      - name: Run Semgrep security scan (advisory)
+        continue-on-error: true
+        run: uv run --locked --project .github/ci/python semgrep scan --config auto --error .

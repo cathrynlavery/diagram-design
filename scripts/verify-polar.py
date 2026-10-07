@@ -3,15 +3,14 @@
 
 from __future__ import annotations
 
+import re
+import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from math import cos, hypot, isfinite, pi, radians, sin
 from pathlib import Path
-import re
-import sys
-from typing import Sequence
 from urllib.parse import urlsplit
-
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills" / "diagram-design" / "assets"
@@ -272,9 +271,7 @@ class PolarParser(HTMLParser):
                 self._chart.class_attribute_count += 1
             for key, value in data.items():
                 normalized_value = value.strip().casefold()
-                if key in REFERENCE_ATTRIBUTES and normalized_value not in {"", "none"}:
-                    self._chart.url_attributes.append(key)
-                elif key in {"fill", "stroke"} and "url(" in normalized_value:
+                if key in REFERENCE_ATTRIBUTES and normalized_value not in {"", "none"} or key in {"fill", "stroke"} and "url(" in normalized_value:
                     self._chart.url_attributes.append(key)
             if tag == "g" and "data-polar-category" in data:
                 category = Category(
@@ -289,11 +286,10 @@ class PolarParser(HTMLParser):
                 self._chart.categories.append(category)
                 self._category_stack.append((depth, category))
             current = self._current_category()
-            if current is not None:
-                if tag == "text" and "data-polar-value-label" in data:
-                    label = ValueLabel(attrs=data, text="")
-                    current.value_labels.append(label)
-                    self._value_label_stack.append((depth, label))
+            if current is not None and tag == "text" and "data-polar-value-label" in data:
+                label = ValueLabel(attrs=data, text="")
+                current.value_labels.append(label)
+                self._value_label_stack.append((depth, label))
             if tag == "line":
                 is_ray = "data-polar-ray" in data
                 is_spoke = "data-polar-spoke" in data
@@ -682,14 +678,12 @@ def check(path: Path) -> list[str]:
             continue
         if isinstance(minimum, float) and isinstance(maximum, float) and not minimum <= value <= maximum:
             findings.append(f"value {value:g} outside {minimum:g}..{maximum:g}")
-        if value == 0:
-            if category.rays or category.markers:
-                findings.append(f"zero category {category.name!r} must not carry a ray or marker")
-        elif value > 0:
-            if len(category.rays) != 1 or len(category.markers) != 1:
-                findings.append(
-                    f"positive category {category.name!r} must carry exactly one ray and marker"
-                )
+        if value == 0 and (category.rays or category.markers):
+            findings.append(f"zero category {category.name!r} must not carry a ray or marker")
+        elif value > 0 and (len(category.rays) != 1 or len(category.markers) != 1):
+            findings.append(
+                f"positive category {category.name!r} must carry exactly one ray and marker"
+            )
 
         if not geometry_ready or value <= 0 or len(category.rays) != 1:
             continue

@@ -38,9 +38,9 @@ WARNING_ANCHOR = "fallback typography"
 FALLBACK_BUDGET_SECONDS = 15.0
 
 
-RASTERIZE_HEADING = re.compile(r"^### Rasterize\b.*$", re.M)
-NEXT_HEADING = re.compile(r"^#{1,3} ", re.M)
-PYTHON_FENCE = re.compile(r"^( *)```python[ \t]*\n(.*?)^\1```[ \t]*$", re.M | re.S)
+RASTERIZE_HEADING = re.compile(r"^### Rasterize\b.*$", re.MULTILINE)
+NEXT_HEADING = re.compile(r"^#{1,3} ", re.MULTILINE)
+PYTHON_FENCE = re.compile(r"^( *)```python[ \t]*\n(.*?)^\1```[ \t]*$", re.MULTILINE | re.DOTALL)
 
 
 def select_rasterize_block(text: str) -> str:
@@ -121,14 +121,14 @@ def load_snippet() -> str:
 class _StallHandler(BaseHTTPRequestHandler):
     """Serves nothing: holds /stall* requests open so the load never settles."""
 
-    def do_GET(self) -> None:  # noqa: N802 - stdlib naming
+    def do_GET(self) -> None:
         if self.path.startswith("/stall"):
             time.sleep(STALL_HOLD_SECONDS)
             self.send_error(500)
             return
         self.send_error(404)
 
-    def log_message(self, *args: object) -> None:
+    def log_message(self, format: str, *args: object) -> None:
         pass
 
 
@@ -146,7 +146,8 @@ def run_snippet(snippet: str, src: Path, out: Path) -> str:
     sys.argv = ["export", str(src), str(out)]
     try:
         with contextlib.redirect_stderr(stderr):
-            exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})
+            # Executing the checked-in documentation snippet is the behavior under test.
+            exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})  # nosemgrep: python.lang.security.audit.exec-detected.exec-detected  # noqa: S102
     finally:
         sys.argv, sys.stderr = old_argv, old_stderr
     return stderr.getvalue()
@@ -235,7 +236,7 @@ def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
     out = tmp / "never.png"
     try:
         run_snippet(snippet, missing, out)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- assert that every non-timeout failure propagates
         if type(exc).__name__ == "TimeoutError":
             raise AssertionError(
                 "missing-source: goto failure surfaced as a TimeoutError; "

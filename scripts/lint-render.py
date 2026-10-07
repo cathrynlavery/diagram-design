@@ -433,8 +433,8 @@ def clipping_findings(page, survey):
             findings.append(
                 (
                     "unmeasurable",
-                    f"{entry['label']} sits inside scrolling {entry['blockedBy']}; "
-                    "clipping cannot be measured through it",
+                    (f"{entry['label']} sits inside scrolling {entry['blockedBy']}; "
+                    "clipping cannot be measured through it"),
                 )
             )
         chain = entry["chain"][:MAX_ANCESTOR_STAGES]
@@ -474,8 +474,8 @@ def clipping_findings(page, survey):
             findings.append(
                 (
                     "clipped",
-                    f"{where} paints outside its box: {spills} "
-                    f"({diff['count']} px of ink cut off at {scale:g}x)",
+                    (f"{where} paints outside its box: {spills} "
+                    f"({diff['count']} px of ink cut off at {scale:g}x)"),
                 )
             )
             # One report per svg is enough; deeper stages describe the same spill.
@@ -518,25 +518,25 @@ SVG_CASES = [
     ),
     (
         "marker-spill",
-        '<defs><marker id="a" markerWidth="30" markerHeight="30" refX="0" refY="5" overflow="visible">'
+        ('<defs><marker id="a" markerWidth="30" markerHeight="30" refX="0" refY="5" overflow="visible">'
         '<path d="M0,0 L30,5 L0,10 Z" fill="#000"/></marker></defs>'
-        '<line x1="100" y1="50" x2="199" y2="50" stroke="#000" marker-end="url(#a)"/>',
+        '<line x1="100" y1="50" x2="199" y2="50" stroke="#000" marker-end="url(#a)"/>'),
         "",
         None,
         True,
     ),
     (
         "filter-bleed",
-        '<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>'
-        '<rect x="165" y="10" width="30" height="20" fill="#000" filter="url(#b)"/>',
+        ('<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>'
+        '<rect x="165" y="10" width="30" height="20" fill="#000" filter="url(#b)"/>'),
         "",
         None,
         True,
     ),
     (
         "clip-path-keeps-it-safe",
-        '<clipPath id="c"><rect x="0" y="0" width="200" height="100"/></clipPath>'
-        '<rect x="150" y="10" width="400" height="30" fill="#000" clip-path="url(#c)"/>',
+        ('<clipPath id="c"><rect x="0" y="0" width="200" height="100"/></clipPath>'
+        '<rect x="150" y="10" width="400" height="30" fill="#000" clip-path="url(#c)"/>'),
         "",
         None,
         False,
@@ -658,7 +658,8 @@ def network_isolation_failures(context):
             fixture.write_text(
                 "<!DOCTYPE html><html><body><script>\n"
                 f"  const target = '127.0.0.1:{port}';\n"
-                "  try { new WebSocket('ws://' + target + '/ws'); } catch (e) {}\n"
+                # Plain WebSockets deliberately test whether the sandbox blocks all browser connections.
+                "  try { new WebSocket('ws://' + target + '/ws'); } catch (e) {}\n"  # nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket
                 "  try { fetch('http://' + target + '/fetch').catch(() => {}); } catch (e) {}\n"
                 "  try { new EventSource('http://' + target + '/sse'); } catch (e) {}\n"
                 "  const img = new Image(); img.src = 'http://' + target + '/img.png';\n"
@@ -1001,7 +1002,7 @@ OUTPUT_SPEC_DOC = ROOT / "skills/diagram-design/references/output-spec.md"
 def output_spec_widest_preset():
     """The widest fixed viewBox in the output-spec.md size table, or None."""
     text = OUTPUT_SPEC_DOC.read_text(encoding="utf-8")
-    sizes = re.findall(r"^\| `[a-z0-9-]+` \| `0 0 (\d+) (\d+)`", text, re.M)
+    sizes = re.findall(r"^\| `[a-z0-9-]+` \| `0 0 (\d+) (\d+)`", text, re.MULTILINE)
     return max((int(w), int(h)) for w, h in sizes) if sizes else None
 
 
@@ -1041,8 +1042,8 @@ async ([src, probe, viewBoxWidth]) => {
 def export_recipe():
     """The PNG rasterize snippet from export.md, found by heading, not position."""
     text = EXPORT_DOC.read_text(encoding="utf-8")
-    match = re.search(r"^### Rasterize[ \t]*\n(.*?)^```python\n(.*?)^```", text, re.M | re.S)
-    if match is None or re.search(r"^#{1,3} ", match.group(1), re.M):
+    match = re.search(r"^### Rasterize[ \t]*\n(.*?)^```python\n(.*?)^```", text, re.MULTILINE | re.DOTALL)
+    if match is None or re.search(r"^#{1,3} ", match.group(1), re.MULTILINE):
         return None
     return match.group(2)
 
@@ -1079,6 +1080,7 @@ def export_png_failures(context, label, html, recipe):
             run = subprocess.run(
                 [sys.executable, str(script), str(source), str(out), "1"],
                 capture_output=True, text=True, timeout=EXPORT_TIMEOUT,
+                check=False,
             )
         except subprocess.TimeoutExpired:
             return [f"{label}: template-export: the export.md recipe did not finish in {EXPORT_TIMEOUT}s"]
@@ -1441,6 +1443,7 @@ def self_test(context):
 def main():
     args = parse_args()
     try:
+        from playwright.sync_api import Error as PlaywrightError
         from playwright.sync_api import sync_playwright
     except ImportError:
         print(
@@ -1460,7 +1463,7 @@ def main():
     with sync_playwright() as playwright:
         try:
             browser = launch(playwright, args.fonts)
-        except Exception as error:
+        except PlaywrightError as error:
             print(
                 f"Could not launch a browser: {error}\n"
                 "  playwright install chromium\n"
@@ -1481,7 +1484,7 @@ def main():
             page = context.new_page()
             try:
                 findings = check(page, path)
-            except Exception as error:
+            except PlaywrightError as error:
                 findings = [("render-error", str(error).splitlines()[0])]
             finally:
                 page.close()

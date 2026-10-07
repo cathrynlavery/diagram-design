@@ -5,14 +5,15 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import Iterator, Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 VERIFY_SCRIPT = ROOT / "scripts/verify-plugin-package.py"
@@ -138,7 +139,7 @@ def package_repo(include_factory: bool = True) -> Iterator[Path]:
 
 
 def set_versions(
-    root: Path, claude: str, codex: str, factory: Optional[str] = None
+    root: Path, claude: str, codex: str, factory: str | None = None
 ) -> None:
     if factory is None:
         factory = codex
@@ -720,7 +721,9 @@ def test_ci_version_gate_executes() -> None:
                 [bash, "--noprofile", "--norc", "-eo", "pipefail", str(step)],
                 cwd=root,
                 capture_output=True,
+                env={**os.environ, "EVENT_NAME": "pull_request"},
                 text=True,
+                check=False,
             )
 
         plain = run_step()

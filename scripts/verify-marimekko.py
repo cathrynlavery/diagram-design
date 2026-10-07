@@ -101,6 +101,7 @@ import re
 import sys
 import unicodedata
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -194,7 +195,7 @@ ROLES = ("label", "caption", "key")
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "tag")
 
     def __init__(self, tag, attrs, line, ancestor):
         self.tag = tag
@@ -205,7 +206,7 @@ class Element:
 
 
 class Segment:
-    __slots__ = ("column", "series", "amount", "x", "y", "w", "h", "line", "accent", "element")
+    __slots__ = ("accent", "amount", "column", "element", "h", "line", "series", "w", "x", "y")
 
     def __init__(self, column, series, amount, x, y, w, h, line, accent, element):
         self.column, self.series, self.amount = column, series, amount
@@ -230,7 +231,7 @@ class Segment:
 
 
 class Column:
-    __slots__ = ("name", "segments", "x", "w", "top", "bottom", "line")
+    __slots__ = ("bottom", "line", "name", "segments", "top", "w", "x")
 
     def __init__(self, name, segments):
         self.name = name
@@ -609,7 +610,8 @@ def parse_segments(doc: _Scanner, findings: list, name: str) -> list:
             continue
         seen[key] = line
         accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
-        segments.append(Segment(column, series, amount, *geometry, line, accent, element))
+        x, y, w, h = geometry
+        segments.append(Segment(column, series, amount, x, y, w, h, line, accent, element))
     return segments
 
 
@@ -703,7 +705,7 @@ def check_plot(columns: list, findings: list, name: str) -> bool:
             )
             ok = False
     gutters = []
-    for left, right in zip(columns, columns[1:]):
+    for left, right in pairwise(columns):
         gap = right.x - left.right
         if gap < -EDGE_TOLERANCE:
             findings.append(

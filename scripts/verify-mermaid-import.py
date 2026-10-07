@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import NoReturn
 
 sys.dont_write_bytecode = True
 
@@ -32,7 +33,7 @@ ADVERSARIAL = ROOT / "scripts/fixtures/sample-adversarial.mmd"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-mermaid.html"
 
 
-def fail(message: str) -> None:
+def fail(message: str) -> NoReturn:
     print(f"FAIL: {message}", file=sys.stderr)
     raise SystemExit(1)
 
@@ -52,6 +53,7 @@ def invoke(args: list[str]) -> subprocess.CompletedProcess[str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
 
 
@@ -76,9 +78,9 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     env["PYTHONUTF8"] = "0"
     process = subprocess.run(
         [sys.executable, str(EXTRACT), str(source)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         env=env,
+        check=False,
     )
     if process.returncode != 0:
         fail(
@@ -97,9 +99,9 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     destination = tmp / "unicode-stdout.md"
     file_process = subprocess.run(
         [sys.executable, str(EXTRACT), str(source), "--out", str(destination)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         env=env,
+        check=False,
     )
     if file_process.returncode != 0:
         fail("Mermaid --out failed under a legacy Windows encoding")
@@ -1025,6 +1027,7 @@ def check_docs_and_wiring() -> None:
         [sys.executable, str(ROOT / "scripts/lint-skin.py"), str(EXAMPLE)],
         capture_output=True,
         text=True,
+        check=False,
     )
     if lint.returncode != 0:
         fail(f"worked example fails lint-skin: {lint.stdout.strip()}")

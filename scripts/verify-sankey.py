@@ -112,6 +112,7 @@ import html
 import re
 import sys
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -324,7 +325,7 @@ def plain(body: str) -> str:
 
 
 class Bar:
-    __slots__ = ("x", "y", "w", "h", "offset", "value", "label", "values", "inflow", "outflow")
+    __slots__ = ("h", "inflow", "label", "offset", "outflow", "value", "values", "w", "x", "y")
 
     def __init__(self, x: float, y: float, w: float, h: float, offset: int) -> None:
         self.x, self.y, self.w, self.h, self.offset = x, y, w, h, offset
@@ -344,7 +345,7 @@ class Bar:
 
 
 class Ribbon:
-    __slots__ = ("x0", "y0t", "y0b", "x1", "y1t", "y1b", "controls", "offset")
+    __slots__ = ("controls", "offset", "x0", "x1", "y0b", "y0t", "y1b", "y1t")
 
     def __init__(self, nums: list[float], offset: int) -> None:
         # index:  0   1     2  3    4  5    6  7     8  9    10 11   12 13   14 15
@@ -593,7 +594,7 @@ def parse_bars(source: str) -> list[Bar]:
         box = [length_px(attrs.get(k))[0] for k in ("x", "y", "width", "height")]
         if any(v is None for v in box):
             continue
-        x, y, w, h = box
+        x, y, w, h = cast(list[float], box)
         if not (BAR_MIN_W <= w <= BAR_MAX_W) or h < BAR_MIN_H:
             continue
         if y < BAND_TOP or y + h > BAND_BOTTOM:

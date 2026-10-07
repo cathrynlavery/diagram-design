@@ -174,7 +174,7 @@ MARK_TAGS = ("line",)                         # the element this contract binds
 class Element:
     """One start tag this checker cares about, as the browser tokenized it."""
 
-    __slots__ = ("tag", "attrs", "offset", "line", "body", "ancestor")
+    __slots__ = ("ancestor", "attrs", "body", "line", "offset", "tag")
 
     def __init__(self, tag, attrs, offset, line, ancestor):
         self.tag = tag
@@ -186,7 +186,7 @@ class Element:
 
 
 class Series:
-    __slots__ = ("name", "frm", "to", "x1", "y1", "x2", "y2", "line")
+    __slots__ = ("frm", "line", "name", "to", "x1", "x2", "y1", "y2")
 
     def __init__(self, name, frm, to, x1, y1, x2, y2, line):
         self.name = name

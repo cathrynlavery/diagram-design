@@ -83,7 +83,7 @@ EPSILON = 0.5
 
 
 class Rect:
-    __slots__ = ("x", "y", "w", "h", "line", "offset")
+    __slots__ = ("h", "line", "offset", "w", "x", "y")
 
     def __init__(self, x, y, w, h, line, offset) -> None:
         self.x, self.y, self.w, self.h = x, y, w, h

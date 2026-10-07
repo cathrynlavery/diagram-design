@@ -19,8 +19,8 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
@@ -179,7 +179,8 @@ def fetch(url: str) -> str | None:
         req = urllib.request.Request(
             url, headers={"User-Agent": "diagram-design-build/1.0 (https://github.com)"}
         )
-        with urllib.request.urlopen(req, timeout=15) as r:
+        # URLs are assembled only from the checked-in icon catalog and HTTPS templates.
+        with urllib.request.urlopen(req, timeout=15) as r:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             return r.read().decode("utf-8")
     except urllib.error.HTTPError:
         return None
@@ -359,7 +360,7 @@ def normalize_logz(raw: str) -> str:
     )
 
 
-def build() -> tuple[list[str], list[str]]:
+def build() -> tuple[list[str], list[str], list[str]]:
     md_chunks: list[str] = []
     gallery_chunks: list[str] = []
     misses: list[str] = []

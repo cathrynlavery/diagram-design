@@ -11,7 +11,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 LINTER = ROOT / "scripts/lint-skin.py"
 BUILD_ICONS = ROOT / "scripts/build-icons.py"

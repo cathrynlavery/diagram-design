@@ -22,7 +22,7 @@ def load_verifier():
 
 
 def category(index: int, value: int, endpoint: tuple[float, float] | None) -> str:
-    body = '<text data-polar-value-label="">{}</text>'.format(value)
+    body = f'<text data-polar-value-label="">{value}</text>'
     if endpoint is not None:
         x, y = endpoint
         body = (

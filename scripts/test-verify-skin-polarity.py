@@ -34,7 +34,9 @@ import runpy
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-skin-polarity.py"
@@ -46,7 +48,9 @@ FULL = ASSETS / "example-treemap-full.html"
 SHIPPED_KEY = "Other continents · stronger contrast is larger"
 
 NAMESPACE = runpy.run_path(str(CHECKER), run_name="verify_skin_polarity_test")
-COLLECT_MEMBERS = NAMESPACE["collect_members"]
+COLLECT_MEMBERS = cast(
+    Callable[[str], dict[tuple[float, ...], list[Any]]], NAMESPACE["collect_members"]
+)
 PARSE_CLAIMS = NAMESPACE["parse_claims"]
 RESOLVE_PAPER = NAMESPACE["resolve_paper"]
 COMPOSITE = NAMESPACE["composite"]
@@ -69,6 +73,7 @@ def run(*paths):
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 
@@ -83,8 +88,8 @@ def flatten_ramp(source, ramp, ink, alpha="0.10"):
     """Paint every ramp member at one opacity, leaving the ranks alone."""
     for rank, original in ramp:
         source = source.replace(
-            'data-share="{}" fill="rgba({},{})"'.format(rank, ink, original),
-            'data-share="{}" fill="rgba({},{})"'.format(rank, ink, alpha),
+            f'data-share="{rank}" fill="rgba({ink},{original})"',
+            f'data-share="{rank}" fill="rgba({ink},{alpha})"',
             1,
         )
     return source
@@ -95,8 +100,8 @@ def invert_ramp(source, ramp, ink):
     for index, (rank, _original) in enumerate(ramp):
         replacement = ramp[len(ramp) - 1 - index][1]
         source = source.replace(
-            'data-share="{}" fill="rgba({},'.format(rank, ink),
-            'data-share="{}" fill="rgba({},@{}@'.format(rank, ink, replacement),
+            f'data-share="{rank}" fill="rgba({ink},',
+            f'data-share="{rank}" fill="rgba({ink},@{replacement}@',
             1,
         )
     # Drop each original opacity, now stranded behind its placeholder.
@@ -113,13 +118,13 @@ def main():
     #    means anything.
     code, output = run(LIGHT, DARK, FULL)
     if code != 0:
-        failures.append("shipped_treemap_variants_pass: exit {} - {}".format(code, output.strip()))
+        failures.append(f"shipped_treemap_variants_pass: exit {code} - {output.strip()}")
     else:
         print("OK: shipped_treemap_variants_pass")
 
     code, output = run("--all")
     if code != 0:
-        failures.append("shipped_assets_pass: --all exited {} - {}".format(code, output.strip()))
+        failures.append(f"shipped_assets_pass: --all exited {code} - {output.strip()}")
     elif "making a directional tone claim" not in output:
         failures.append("shipped_assets_pass: summary omits the claim count - " + output.strip())
     else:
@@ -142,12 +147,8 @@ def main():
         single_quoted = light_source
         quoted_edits = 0
         for rank, alpha in LIGHT_RAMP:
-            anchor = 'data-share="{}" fill="rgba({},{})"'.format(
-                rank, LIGHT_INK, alpha
-            )
-            replacement = "data-share='{}' fill='rgba({},{})'".format(
-                rank, LIGHT_INK, alpha
-            )
+            anchor = f'data-share="{rank}" fill="rgba({LIGHT_INK},{alpha})"'
+            replacement = f"data-share='{rank}' fill='rgba({LIGHT_INK},{alpha})'"
             if anchor in single_quoted:
                 single_quoted = single_quoted.replace(anchor, replacement, 1)
                 quoted_edits += 1
@@ -157,9 +158,7 @@ def main():
             code, output = run(write(directory, "single-quoted.html", single_quoted))
         if quoted_edits == len(LIGHT_RAMP) and code != 0:
             failures.append(
-                "single_quoted_ramp_attributes_pass: exit {} - {}".format(
-                    code, output.strip()
-                )
+                f"single_quoted_ramp_attributes_pass: exit {code} - {output.strip()}"
             )
         elif quoted_edits == len(LIGHT_RAMP):
             print("OK: single_quoted_ramp_attributes_pass")
@@ -182,22 +181,16 @@ def main():
                 for actual, wanted in zip(parsed[0] + (parsed[1],), expected[0] + (expected[1],))
             ):
                 failures.append(
-                    "browser_valid_color_is_measured[{}]: got {!r}, expected {!r}".format(
-                        spelling, parsed, expected
-                    )
+                    f"browser_valid_color_is_measured[{spelling}]: got {parsed!r}, expected {expected!r}"
                 )
             else:
-                print("OK: browser_valid_color_is_measured[{}]".format(spelling))
+                print(f"OK: browser_valid_color_is_measured[{spelling}]")
 
         modern_rgb = light_source
         rgb_edits = 0
         for rank, alpha in LIGHT_RAMP:
-            anchor = 'data-share="{}" fill="rgba({},{})"'.format(
-                rank, LIGHT_INK, alpha
-            )
-            replacement = 'data-share="{}" fill="rgb(45 49 66 / {}%)"'.format(
-                rank, float(alpha) * 100
-            )
+            anchor = f'data-share="{rank}" fill="rgba({LIGHT_INK},{alpha})"'
+            replacement = f'data-share="{rank}" fill="rgb(45 49 66 / {float(alpha) * 100}%)"'
             if anchor in modern_rgb:
                 modern_rgb = modern_rgb.replace(anchor, replacement, 1)
                 rgb_edits += 1
@@ -207,7 +200,7 @@ def main():
             code, output = run(write(directory, "modern-rgb.html", modern_rgb))
         if rgb_edits == len(LIGHT_RAMP) and code != 0:
             failures.append(
-                "space_separated_rgb_ramp_passes: exit {} - {}".format(code, output.strip())
+                f"space_separated_rgb_ramp_passes: exit {code} - {output.strip()}"
             )
         elif rgb_edits == len(LIGHT_RAMP):
             print("OK: space_separated_rgb_ramp_passes")
@@ -221,7 +214,7 @@ def main():
             code, output = run(write(directory, "dark-darker.html", reintroduced))
             if code != 1:
                 failures.append(
-                    "dark_ramp_called_darker_is_larger_fails: exit {} - {}".format(code, output.strip())
+                    f"dark_ramp_called_darker_is_larger_fails: exit {code} - {output.strip()}"
                 )
             elif "draws larger as lighter" not in output:
                 failures.append(
@@ -238,7 +231,7 @@ def main():
         code, output = run(write(directory, "light-darker.html", original_wording))
         if code != 0:
             failures.append(
-                "light_ramp_called_darker_is_larger_passes: exit {} - {}".format(code, output.strip())
+                f"light_ramp_called_darker_is_larger_passes: exit {code} - {output.strip()}"
             )
         else:
             print("OK: light_ramp_called_darker_is_larger_passes")
@@ -249,7 +242,7 @@ def main():
         code, output = run(write(directory, "light-lighter.html", light_lighter))
         if code != 1:
             failures.append(
-                "light_ramp_called_lighter_is_larger_fails: exit {} - {}".format(code, output.strip())
+                f"light_ramp_called_lighter_is_larger_fails: exit {code} - {output.strip()}"
             )
         elif "draws larger as darker" not in output:
             failures.append(
@@ -264,7 +257,7 @@ def main():
         code, output = run(write(directory, "dark-lighter.html", dark_lighter))
         if code != 0:
             failures.append(
-                "dark_ramp_called_lighter_is_larger_passes: exit {} - {}".format(code, output.strip())
+                f"dark_ramp_called_lighter_is_larger_passes: exit {code} - {output.strip()}"
             )
         else:
             print("OK: dark_ramp_called_lighter_is_larger_passes")
@@ -278,22 +271,20 @@ def main():
         ):
             inverted = invert_ramp(source, ramp, ink)
             if inverted == source or re.search(r"@[\d.]+@", inverted):
-                failures.append("could not build the {} inverted-ramp fixture".format(label))
+                failures.append(f"could not build the {label} inverted-ramp fixture")
                 continue
-            code, output = run(write(directory, "inverted-{}.html".format(label), inverted))
+            code, output = run(write(directory, f"inverted-{label}.html", inverted))
             if code != 1:
                 failures.append(
-                    "contrast_wording_fails_when_the_{}_ramp_is_inverted: exit {} - {}".format(
-                        label, code, output.strip()
-                    )
+                    f"contrast_wording_fails_when_the_{label}_ramp_is_inverted: exit {code} - {output.strip()}"
                 )
             elif "draws larger as weaker" not in output:
                 failures.append(
-                    "contrast_wording_fails_when_the_{}_ramp_is_inverted: finding does not name "
-                    "the drawn direction - {}".format(label, output.strip())
+                    f"contrast_wording_fails_when_the_{label}_ramp_is_inverted: finding does not name "
+                    f"the drawn direction - {output.strip()}"
                 )
             else:
-                print("OK: contrast_wording_fails_when_the_{}_ramp_is_inverted".format(label))
+                print(f"OK: contrast_wording_fails_when_the_{label}_ramp_is_inverted")
 
         # 8. Fail closed: a ramp painted at one opacity has no direction, so a
         #    claim about it cannot be substantiated either way.
@@ -304,7 +295,7 @@ def main():
             code, output = run(write(directory, "flat.html", flat))
             if code != 1:
                 failures.append(
-                    "flat_ramp_with_a_claim_fails_closed: exit {} - {}".format(code, output.strip())
+                    f"flat_ramp_with_a_claim_fails_closed: exit {code} - {output.strip()}"
                 )
             elif "does not move strictly one way" not in output:
                 failures.append(
@@ -322,7 +313,7 @@ def main():
             code, output = run(write(directory, "tied.html", tied))
             if code != 1:
                 failures.append(
-                    "tied_ranks_with_a_claim_fail_closed: exit {} - {}".format(code, output.strip())
+                    f"tied_ranks_with_a_claim_fail_closed: exit {code} - {output.strip()}"
                 )
             elif "ranks are not distinct" not in output:
                 failures.append(
@@ -342,7 +333,7 @@ def main():
             code, output = run(write(directory, "rankless.html", rankless))
             if code != 1:
                 failures.append(
-                    "claim_without_a_ramp_fails_closed: exit {} - {}".format(code, output.strip())
+                    f"claim_without_a_ramp_fails_closed: exit {code} - {output.strip()}"
                 )
             elif "no ramp to check it against" not in output:
                 failures.append(
@@ -362,7 +353,7 @@ def main():
             code, output = run(write(directory, "paperless.html", paperless))
             if code != 1:
                 failures.append(
-                    "claim_without_paper_fails_closed: exit {} - {}".format(code, output.strip())
+                    f"claim_without_paper_fails_closed: exit {code} - {output.strip()}"
                 )
             elif "no paper color" not in output:
                 failures.append(
@@ -378,7 +369,7 @@ def main():
         code, output = run(write(directory, "silent.html", silent))
         if code != 0:
             failures.append(
-                "file_without_a_tone_claim_passes: exit {} - {}".format(code, output.strip())
+                f"file_without_a_tone_claim_passes: exit {code} - {output.strip()}"
             )
         elif "0 making a directional tone claim" not in output:
             failures.append(
@@ -395,7 +386,7 @@ def main():
         code, output = run(write(directory, "tspan.html", split_claim))
         if code != 1:
             failures.append(
-                "claim_split_across_tspans_is_still_read: exit {} - {}".format(code, output.strip())
+                f"claim_split_across_tspans_is_still_read: exit {code} - {output.strip()}"
             )
         else:
             print("OK: claim_split_across_tspans_is_still_read")
@@ -423,14 +414,12 @@ def main():
             code, output = run(path)
             if len(ramp) != 5:
                 failures.append(
-                    "rank_declared_on_the_mask_rect_still_joins_the_ramp: read {} member(s), "
-                    "expected 5".format(len(ramp))
+                    f"rank_declared_on_the_mask_rect_still_joins_the_ramp: read {len(ramp)} member(s), "
+                    "expected 5"
                 )
             elif code != 0:
                 failures.append(
-                    "rank_declared_on_the_mask_rect_still_joins_the_ramp: exit {} - {}".format(
-                        code, output.strip()
-                    )
+                    f"rank_declared_on_the_mask_rect_still_joins_the_ramp: exit {code} - {output.strip()}"
                 )
             else:
                 print("OK: rank_declared_on_the_mask_rect_still_joins_the_ramp")
@@ -443,20 +432,18 @@ def main():
             ("passive_voice", "bigger cells are painted darker"),
         ):
             fixture = light_source.replace(SHIPPED_KEY, "Other continents · " + phrasing, 1)
-            code, output = run(write(directory, "unparsed-{}.html".format(label), fixture))
+            code, output = run(write(directory, f"unparsed-{label}.html", fixture))
             if code != 1:
                 failures.append(
-                    "unparseable_directional_wording_fails_closed[{}]: exit {} - {}".format(
-                        label, code, output.strip()
-                    )
+                    f"unparseable_directional_wording_fails_closed[{label}]: exit {code} - {output.strip()}"
                 )
             elif "no supported sentence form binds it" not in output:
                 failures.append(
-                    "unparseable_directional_wording_fails_closed[{}]: finding does not name "
-                    "the parse failure - {}".format(label, output.strip())
+                    f"unparseable_directional_wording_fails_closed[{label}]: finding does not name "
+                    f"the parse failure - {output.strip()}"
                 )
             else:
-                print("OK: unparseable_directional_wording_fails_closed[{}]".format(label))
+                print(f"OK: unparseable_directional_wording_fails_closed[{label}]")
 
         # 16. A widened connector must be CHECKED, not merely accepted: one
         #     phrasing, opposite verdicts on the two skins. Accepting it without
@@ -465,17 +452,15 @@ def main():
             fixture = source.replace(
                 SHIPPED_KEY, "Other continents · darker represents larger", 1
             )
-            code, output = run(write(directory, "represents-{}.html".format(label), fixture))
+            code, output = run(write(directory, f"represents-{label}.html", fixture))
             if code != expected:
                 failures.append(
-                    "darker_represents_larger_passes_on_light_and_fails_on_dark[{}]: exit {} "
-                    "- {}".format(label, code, output.strip())
+                    f"darker_represents_larger_passes_on_light_and_fails_on_dark[{label}]: exit {code} "
+                    f"- {output.strip()}"
                 )
             else:
                 print(
-                    "OK: darker_represents_larger_passes_on_light_and_fails_on_dark[{}]".format(
-                        label
-                    )
+                    f"OK: darker_represents_larger_passes_on_light_and_fails_on_dark[{label}]"
                 )
 
         # 17. One correct sentence must not launder an unparsed one beside it,
@@ -488,9 +473,7 @@ def main():
         code, output = run(write(directory, "mixed.html", mixed))
         if code != 1:
             failures.append(
-                "bound_claim_does_not_excuse_unparsed_wording_beside_it: exit {} - {}".format(
-                    code, output.strip()
-                )
+                f"bound_claim_does_not_excuse_unparsed_wording_beside_it: exit {code} - {output.strip()}"
             )
         else:
             print("OK: bound_claim_does_not_excuse_unparsed_wording_beside_it")
@@ -502,12 +485,8 @@ def main():
         duplicate_rank = light_source
         for (parsed_rank, alpha), browser_rank in zip(LIGHT_RAMP, browser_ranks):
             duplicate_rank = duplicate_rank.replace(
-                'data-share="{}" fill="rgba({},{})"'.format(
-                    parsed_rank, LIGHT_INK, alpha
-                ),
-                'data-share="{}" data-share="{}" fill="rgba({},{})"'.format(
-                    browser_rank, parsed_rank, LIGHT_INK, alpha
-                ),
+                f'data-share="{parsed_rank}" fill="rgba({LIGHT_INK},{alpha})"',
+                f'data-share="{browser_rank}" data-share="{parsed_rank}" fill="rgba({LIGHT_INK},{alpha})"',
                 1,
             )
         if duplicate_rank == light_source:
@@ -516,14 +495,12 @@ def main():
             code, output = run(write(directory, "duplicate-rank.html", duplicate_rank))
             if code != 1:
                 failures.append(
-                    "first_duplicate_rank_matches_browser_semantics: exit {} - {}".format(
-                        code, output.strip()
-                    )
+                    f"first_duplicate_rank_matches_browser_semantics: exit {code} - {output.strip()}"
                 )
             elif "draws larger as weaker" not in output:
                 failures.append(
                     "first_duplicate_rank_matches_browser_semantics: finding does not expose "
-                    "the contradicted ramp - {}".format(output.strip())
+                    f"the contradicted ramp - {output.strip()}"
                 )
             else:
                 print("OK: first_duplicate_rank_matches_browser_semantics")
@@ -540,9 +517,7 @@ def main():
         code, output = run(write(directory, "distant.html", distant))
         if code != 0:
             failures.append(
-                "tone_word_far_from_magnitude_word_is_not_a_claim: exit {} - {}".format(
-                    code, output.strip()
-                )
+                f"tone_word_far_from_magnitude_word_is_not_a_claim: exit {code} - {output.strip()}"
             )
         else:
             print("OK: tone_word_far_from_magnitude_word_is_not_a_claim")
@@ -550,13 +525,13 @@ def main():
         # 19. Usage errors are exit 2, distinct from a finding.
         code, output = run(directory / "does-not-exist.html")
         if code != 2:
-            failures.append("missing_file_is_a_usage_error: exit {} - {}".format(code, output.strip()))
+            failures.append(f"missing_file_is_a_usage_error: exit {code} - {output.strip()}")
         else:
             print("OK: missing_file_is_a_usage_error")
 
     code, output = run()
     if code != 2:
-        failures.append("no_arguments_is_a_usage_error: exit {} - {}".format(code, output.strip()))
+        failures.append(f"no_arguments_is_a_usage_error: exit {code} - {output.strip()}")
     elif "EXAMPLES:" not in output:
         failures.append("no_arguments_is_a_usage_error: help output carries no EXAMPLES block")
     else:
@@ -570,14 +545,12 @@ def main():
     accent_in_ramp = [member for member in ramp if member.ink != (45.0, 49.0, 66.0)]
     if accent_in_ramp:
         failures.append(
-            "accent_cell_is_excluded_from_the_ramp: {} off-ink member(s) joined".format(
-                len(accent_in_ramp)
-            )
+            f"accent_cell_is_excluded_from_the_ramp: {len(accent_in_ramp)} off-ink member(s) joined"
         )
     elif len(ramp) != 5:
         failures.append(
-            "accent_cell_is_excluded_from_the_ramp: ramp has {} member(s), expected the "
-            "5 non-focal cells".format(len(ramp))
+            f"accent_cell_is_excluded_from_the_ramp: ramp has {len(ramp)} member(s), expected the "
+            "5 non-focal cells"
         )
     else:
         print("OK: accent_cell_is_excluded_from_the_ramp")
@@ -607,17 +580,17 @@ def main():
         contrast_claims = [claim for claim in claims if claim.axis == "contrast"]
         if not contrast_claims:
             failures.append(
-                "shipped_wording_binds_as_a_contrast_claim: {} bound {} claim(s), none on the "
-                "contrast axis".format(path.name, len(claims))
+                f"shipped_wording_binds_as_a_contrast_claim: {path.name} bound {len(claims)} claim(s), none on the "
+                "contrast axis"
             )
             break
     else:
         print("OK: shipped_wording_binds_as_a_contrast_claim")
 
     for failure in failures:
-        print("FAIL: {}".format(failure))
+        print(f"FAIL: {failure}")
     if failures:
-        print("\n{} case(s) failed.".format(len(failures)))
+        print(f"\n{len(failures)} case(s) failed.")
         return 1
     print("\nOK verify-skin-polarity: both polarities behave, on both skins")
     return 0

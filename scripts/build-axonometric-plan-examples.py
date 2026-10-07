@@ -22,8 +22,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
-from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, Proj, Rect,  # noqa: E402
-                        animated_page, cards_html, f, finish, outline, prism, solid, styles)
+from axonometry import (
+    FONT_LINK,
+    FULL,
+    MINIMAL,
+    SKINS,
+    Proj,
+    Rect,
+    animated_page,
+    cards_html,
+    f,
+    finish,
+    outline,
+    prism,
+    solid,
+    styles,
+)
 
 EYEBROW = "Axonometric plan · Diagram Design"
 TREE_TOP = {"light": "#bfc0c0", "dark": "#8e98ac"}
