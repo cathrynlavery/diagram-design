@@ -26,6 +26,11 @@ harness, and cannot narrow permissions that the operator intentionally grants.
 - A failure of these limits that causes only denial of service or resource
   exhaustion is an ordinary reliability defect, not a security issue. Submit
   availability-only fixes directly through the pull request process.
+- Untrusted source content handled by an `/import-*` command cannot introduce
+  active content into its output. `/export-diagram` likewise treats its input
+  as untrusted: it does not execute source-controlled behavior, and exported
+  artifacts retain no source-controlled scripts, event handlers, executable
+  URLs, unsafe CSS, or external resources.
 - Generated files are static by default. Validation rejects JavaScript URLs,
   event handlers, unsafe CSS, and unapproved external resources. Animated
   diagrams may include only the repository's canonical motion script;
