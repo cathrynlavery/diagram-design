@@ -87,6 +87,8 @@ An exploded view may open as the assembled object and explode once, because watc
 - Inside each part: the first `<path data-role="silhouette">` is the part's outline at its declared box, and a `<g data-role="label">` holds a `<line data-role="leader">` and a `<text data-role="name">`. Its complete text, including inline `<tspan>` descendants, must match the part's `data-name`.
 - Trace lines carry `data-role="trace"`.
 
+The silhouette verifier accepts signed decimal and scientific-notation coordinates within the existing absolute M/L/A/Z path contract. Every operand must be finite; projected vertices, corner radii, and arc flags are still checked. This does not add relative path commands.
+
 ## Anti-patterns
 
 - Hand-placed coordinates, or a CSS `transform` standing in for geometry.
