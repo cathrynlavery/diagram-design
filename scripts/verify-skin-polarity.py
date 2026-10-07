@@ -374,7 +374,7 @@ def resolve_paper(source):
     return None
 
 
-def collect_members(source):
+def collect_members(source: str) -> dict[tuple[float, ...], list[Member]]:
     """Rank-bearing translucent fills, grouped by ink triple.
 
     A cell is painted twice - a paper mask, then the body - and the rank
@@ -383,10 +383,10 @@ def collect_members(source):
     signature before a member is built, so a rank declared on the mask still
     reaches the ramp instead of silently shortening it.
     """
-    merged = []
-    index_by_signature = {}
+    merged: list[tuple[dict[str, str], int]] = []
+    index_by_signature: dict[tuple[str | None, ...], int] = {}
     for match in ELEMENT_RE.finditer(source):
-        attrs = {}
+        attrs: dict[str, str] = {}
         for attribute in ATTR_RE.finditer(match.group("attrs")):
             name = attribute.group("name")
             if name not in attrs:  # browsers keep the first duplicate attribute
@@ -408,22 +408,22 @@ def collect_members(source):
         twinnable = any(value is not None for value in signature[1:])
         position = index_by_signature.get(signature) if twinnable else None
         if position is None:
-            merged.append([dict(attrs), match.start()])
+            merged.append((dict(attrs), match.start()))
             if twinnable:
                 index_by_signature[signature] = len(merged) - 1
             continue
-        existing = merged[position]
+        existing_attrs, existing_offset = merged[position]
         for name, value in attrs.items():
             # A translucent fill wins over the mask's opaque one, and a rank
             # attribute is adopted from whichever twin declared it.
             parsed_fill = parse_fill(value) if name == "fill" else None
-            if name not in existing[0] or (
+            if name not in existing_attrs or (
                 name == "fill" and parsed_fill is not None and 0.0 < parsed_fill[1] < 1.0
             ):
-                existing[0][name] = value
-        existing[1] = min(existing[1], match.start())
+                existing_attrs[name] = value
+        merged[position] = (existing_attrs, min(existing_offset, match.start()))
 
-    groups = {}
+    groups: dict[tuple[float, ...], list[Member]] = {}
     for attrs, offset in merged:
         parsed = parse_fill(attrs.get("fill", ""))
         if parsed is None:

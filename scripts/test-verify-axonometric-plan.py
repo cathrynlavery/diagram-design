@@ -36,6 +36,8 @@ def run(*args: str) -> tuple[int, str]:
 
 def builder():
     spec = importlib.util.spec_from_file_location("build_axonometric_plan", BUILDER)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {BUILDER}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module  # dataclasses resolve their module through sys.modules
     spec.loader.exec_module(module)
@@ -97,14 +99,21 @@ def main() -> int:
 
     # A desk lifted 10 units off the floor, with a silhouette redrawn to match its new height,
     # so floating is the only thing wrong with it.
-    origin = tuple(float(v) for v in re.search(r'data-axo-plan data-origin="([^"]+)"', office).group(1).split())
+    origin_match = re.search(r'data-axo-plan data-origin="([^"]+)"', office)
+    assert origin_match is not None, "office fixture has no axonometric-plan origin"
+    origin = tuple(float(v) for v in origin_match.group(1).split())
     m = re.search(r'<g data-box data-rect="24 28 68 52 0" data-z="(\d+)" data-h="(\d+)"[^>]*><path data-role="silhouette" d="([^"]+)"', office)
+    assert m is not None, "office fixture has no desk box"
     z0, h = float(m.group(1)), float(m.group(2))
     lifted = module.prism(module.Proj(*origin), module.Rect(24, 28, 68, 52, 0), z0 + 10, z0 + 10 + h)["sil"]
     floating = office.replace(m.group(0), m.group(0).replace(f'data-z="{m.group(1)}"', f'data-z="{z0 + 10:g}"').replace(m.group(3), lifted), 1)
 
-    first_box = re.search(r'<g data-box [^>]*>.*?</g>', office, re.DOTALL).group(0)
-    booth_tag = re.search(r'<g data-role="tag" data-name="Booth".*?</g>', office, re.DOTALL).group(0)
+    first_box_match = re.search(r'<g data-box [^>]*>.*?</g>', office, re.DOTALL)
+    booth_tag_match = re.search(r'<g data-role="tag" data-name="Booth".*?</g>', office, re.DOTALL)
+    assert first_box_match is not None, "office fixture lacks a box"
+    assert booth_tag_match is not None, "office fixture lacks the Booth tag"
+    first_box = first_box_match.group(0)
+    booth_tag = booth_tag_match.group(0)
 
     cases = {
         "silhouette vertex moved": (

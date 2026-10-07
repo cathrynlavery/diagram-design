@@ -423,7 +423,7 @@ def check_columns(series: list, findings: list, source: str, name: str) -> None:
 
 def rank_map(series: list):
     """(top, pitch) derived from the figure, or None if it cannot be derived."""
-    pairs = {}
+    pairs: dict[int, float] = {}
     for s in series:
         for rank, (_, y) in zip(s.ranks, s.points):
             pairs.setdefault(rank, y)

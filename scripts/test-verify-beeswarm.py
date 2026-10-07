@@ -60,7 +60,7 @@ def cx(value: float) -> float:
 
 
 def dot(value: float, row: int = 0, name=None, drawn_cx=None, drawn_cy=None,
-        r: float = R, fill: str = INK, stroke: str = "#4f5d75",
+        r: float = R, fill: str | None = INK, stroke: str = "#4f5d75",
         omit: str = "", extra: str = "") -> str:
     parts = ['data-value="%s"' % value]
     if name is not None:

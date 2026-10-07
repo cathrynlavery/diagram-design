@@ -25,6 +25,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -609,7 +610,7 @@ def run_cases(h: Harness) -> int:
     sci = ""
     for n, f, t in (("a", 512, 208), ("b", 376, 164), ("c", 291, 143),
                     ("d", 154, 121)):
-        sci += (series(n, "%ge0" % f, "%ge0" % t, y1=y(f), y2=y(t))
+        sci += (series(n, cast(float, "%ge0" % f), cast(float, "%ge0" % t), y1=y(f), y2=y(t))
                 + labels(n, f, t, shown_from="%ge0" % f, shown_to="%ge0" % t))
     h.expect_clean(
         "scientific-notation labels are parsed, not truncated to the mantissa",

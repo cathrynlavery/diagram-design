@@ -103,16 +103,16 @@ def _parse_color(
     if not value:
         return None
 
-    if underlay is None:
-        underlay = (245, 245, 245)
+    background = underlay if underlay is not None else (245, 245, 245)
 
     def blend(rgb: tuple[int, int, int], alpha: float) -> tuple[int, int, int]:
         if alpha >= 1.0:
             return rgb
-        return tuple(
-            round(c * alpha + underlay[idx] * (1.0 - alpha))
+        red, green, blue = (
+            round(c * alpha + background[idx] * (1.0 - alpha))
             for idx, c in enumerate(rgb)
         )
+        return red, green, blue
 
     if HEX_RE.match(value):
         hex_value = value[1:]

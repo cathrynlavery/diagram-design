@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from typing import NoReturn
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,7 +30,7 @@ OAUTH = [
 LINT = ROOT / "scripts/lint-skin.py"
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     print(f"FAIL: {msg}", file=sys.stderr)
     raise SystemExit(1)
 

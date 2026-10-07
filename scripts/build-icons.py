@@ -359,7 +359,7 @@ def normalize_logz(raw: str) -> str:
     )
 
 
-def build() -> tuple[list[str], list[str]]:
+def build() -> tuple[list[str], list[str], list[str]]:
     md_chunks: list[str] = []
     gallery_chunks: list[str] = []
     misses: list[str] = []

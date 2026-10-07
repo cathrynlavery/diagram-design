@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import NoReturn
 
 sys.dont_write_bytecode = True
 
@@ -32,7 +33,7 @@ ADVERSARIAL = ROOT / "scripts/fixtures/sample-adversarial.excalidraw"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-excalidraw.html"
 
 
-def fail(message: str) -> None:
+def fail(message: str) -> NoReturn:
     print(f"FAIL: {message}", file=sys.stderr)
     raise SystemExit(1)
 

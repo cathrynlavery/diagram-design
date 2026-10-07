@@ -19,6 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-architecture-delta.py"
 SPEC = importlib.util.spec_from_file_location("architecture_delta_verifier", CHECKER)
+if SPEC is None or SPEC.loader is None:
+    raise RuntimeError(f"cannot load {CHECKER}")
 checker = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = checker
 SPEC.loader.exec_module(checker)

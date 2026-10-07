@@ -633,7 +633,7 @@ def check_high_level_reference(errors: list[str], markdown: str) -> None:
     )
     right_strip = re.search(r"^right_strip_w\s*=\s*(\d+)\s+if", markdown, re.MULTILINE)
     strip_margin = re.search(r"^strip_margin\s*=\s*(\d+)\s+if", markdown, re.MULTILINE)
-    if not all((width_formula, right_strip, strip_margin)):
+    if width_formula is None or right_strip is None or strip_margin is None:
         errors.append("High-Level canvas is missing the effective-width formula")
         return
 
@@ -828,7 +828,7 @@ class TypeContract:
         self.canonical: dict[str, set[float]] = {}
         self.ranges: list[tuple[str, float, float]] = []
         self.watermark_alpha: float | None = None
-        self.role_tokens: dict[str, str] = {}
+        self.role_tokens: dict[str, tuple[str, str]] = {}
 
     def allowed(self, klass: str | None) -> set[float]:
         if klass is None:
@@ -1282,6 +1282,8 @@ def check_legacy_type_sizes(errors: list[str], spec_markdown: str, root: Path) -
         if want == got:
             continue
         if want is None:
+            if got is None:
+                continue
             errors.append(
                 f"{name} carries off-contract font sizes "
                 f"{format_uses(got)} that the registered legacy list in "
@@ -1534,7 +1536,7 @@ def check_export_font_parity(errors: list[str], root: Path) -> None:
 
 def title_stack_error(name: str, stack: str) -> str | None:
     """Why one --font-serif value fails the Cyrillic order, or None."""
-    cjk = {face.casefold(): face for face in CJK_SERIF_FACES}
+    cjk: dict[str, str] = {face.casefold(): face for face in CJK_SERIF_FACES}
     faces = [face.strip().strip("'\"").casefold() for face in stack.split(",")]
     if "noto serif" not in faces:
         return (

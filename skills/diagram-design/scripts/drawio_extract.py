@@ -30,7 +30,7 @@ import sys
 import zlib
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 
@@ -54,7 +54,7 @@ class PayloadTooLarge(ValueError):
     """Raised when compressed metadata expands beyond the supported limit."""
 
 
-def _fail(msg: str) -> NoReturn:  # type: ignore[valid-type]
+def _fail(msg: str) -> NoReturn:
     print(f"drawio_extract: {msg}", file=sys.stderr)
     raise SystemExit(2)
 
@@ -633,8 +633,7 @@ def analyze(page: Page) -> dict[str, Any]:
     if not candidates:
         candidates.append("architecture")
 
-    seen: set[str] = set()
-    candidates = [c for c in candidates if not (c in seen or seen.add(c))]
+    candidates = list(dict.fromkeys(candidates))
 
     # Collapse candidates: containers whose children are all leaves, and
     # fan-out clusters — the first things to merge when simplifying.

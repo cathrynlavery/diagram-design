@@ -444,8 +444,7 @@ def analyze(scene: Scene) -> dict[str, Any]:
     if edges and not _has_cycle(nodes, edges) and len(sources) == 1:
         candidates.append("tree")
     candidates.append("architecture")
-    seen: set[str] = set()
-    candidates = [c for c in candidates if not (c in seen or seen.add(c))]
+    candidates = list(dict.fromkeys(candidates))
 
     # Collapse candidates: frames whose members are all leaves, then explicit
     # groups — the first things to merge when simplifying.

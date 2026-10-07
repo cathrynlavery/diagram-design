@@ -21,7 +21,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_NAME = "diagram-design"
@@ -103,7 +103,8 @@ def parse_semver(value: object, label: str, errors: list[str]) -> tuple[int, int
             f"{label} version must be strict MAJOR.MINOR.PATCH semver; got {value!r}"
         )
         return None
-    return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
+    major, minor, patch = match.groups()
+    return int(major), int(minor), int(patch)
 
 
 def resolve_local_path(root: Path, raw_path: object, label: str, errors: list[str]) -> Path | None:
@@ -169,6 +170,9 @@ def verify_versions(
     if mode == "current-only":
         for label in MANIFEST_PATHS:
             parse_semver(current_versions.get(label), f"current {label}", errors)
+        return
+    if base_ref is None:
+        errors.append("a base ref is required unless current-only mode is used")
         return
 
     base_check = subprocess.run(
@@ -514,7 +518,8 @@ def main() -> int:
         for error in errors:
             print(f"  - {error}")
         return 1
-    versions = load_json(ROOT / MANIFEST_PATHS["Claude"], [])["version"]
+    manifest = cast(dict[str, Any], load_json(ROOT / MANIFEST_PATHS["Claude"], []))
+    versions = manifest["version"]
     detail = {
         "increase": "version advanced",
         "no-bump": "version unchanged",

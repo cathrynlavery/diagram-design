@@ -42,6 +42,8 @@ import json
 import pathlib
 import re
 import sys
+from collections.abc import Mapping
+from typing import TypedDict
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 SOURCE_DIR = REPO / "docs" / "screenshots"
@@ -51,6 +53,15 @@ README = REPO / "README.md"
 
 GRID_WIDTH, GRID_QUALITY = 600, 82
 WIDE_WIDTH, WIDE_QUALITY = 1400, 90
+
+
+class ThumbnailSpec(TypedDict):
+    thumb: str
+    source: str
+    source_sha256: str
+    width: int
+    height: int
+    quality: int
 
 # Screenshots README renders as full-width figures rather than grid cells.
 WIDE = {"architecture.png", "loop.png", "import-drawio.png"}
@@ -87,14 +98,14 @@ def render(source: pathlib.Path, width: int, quality: int) -> bytes:
     with Image.open(source) as handle:
         image = handle.convert("RGB")
         height = round(image.height * width / image.width)
-        image = image.resize((width, height), Image.LANCZOS)
+        image = image.resize((width, height), Image.Resampling.LANCZOS)
 
         buffer = io.BytesIO()
         image.save(buffer, "WEBP", quality=quality, method=6)
         return buffer.getvalue()
 
 
-def spec_for(source: pathlib.Path) -> dict[str, object]:
+def spec_for(source: pathlib.Path) -> ThumbnailSpec:
     """Return the part of a manifest record fixed by `source` and its settings."""
     width, quality = target(source.name)
     source_width, source_height = decoded_size(source.read_bytes())
@@ -128,7 +139,7 @@ def load_manifest() -> dict[str, dict[str, object]]:
 
 def stale_reason(
     record: dict[str, object] | None,
-    spec: dict[str, object],
+    spec: Mapping[str, object],
     destination: pathlib.Path,
 ) -> str:
     """Explain why a committed thumb could not be reused, for the --check report."""
@@ -238,7 +249,7 @@ def main(argv: list[str]) -> int:
             after += destination.stat().st_size if destination.is_file() else 0
             continue
         else:
-            payload = render(source, int(spec["width"]), int(spec["quality"]))
+            payload = render(source, spec["width"], spec["quality"])
             destination.write_bytes(payload)
 
         try:

@@ -112,6 +112,7 @@ import html
 import re
 import sys
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -593,7 +594,7 @@ def parse_bars(source: str) -> list[Bar]:
         box = [length_px(attrs.get(k))[0] for k in ("x", "y", "width", "height")]
         if any(v is None for v in box):
             continue
-        x, y, w, h = box
+        x, y, w, h = cast(list[float], box)
         if not (BAR_MIN_W <= w <= BAR_MAX_W) or h < BAR_MIN_H:
             continue
         if y < BAND_TOP or y + h > BAND_BOTTOM:

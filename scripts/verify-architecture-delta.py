@@ -441,13 +441,15 @@ def check_source(path: Path, source: str) -> list[str]:
     expected = set()
     for identity in before.keys() | after.keys():
         old, new = before.get(identity), after.get(identity)
-        obj = new or old
         if old is None:
+            assert new is not None
             if new.status != {"added"}:
                 fail(new.node, f"after-only object {identity!r} must be added")
+            obj = new
         elif new is None:
             if old.status != {"removed"}:
                 fail(old.node, f"before-only object {identity!r} must be removed")
+            obj = old
         else:
             if old.kind != new.kind:
                 fail(new.node, f"retained object {identity!r} changed kind")
@@ -462,6 +464,7 @@ def check_source(path: Path, source: str) -> list[str]:
                     fail(new.node, f"component size changed without CHANGED for {identity!r}")
             if old.kind == new.kind == "relationship" and (old.endpoints != new.endpoints) != ("rewired" in new.status):
                 fail(new.node, f"REWIRED endpoints mismatch for {identity!r}: endpoints differ iff rewired")
+            obj = new
         expected.update((identity, status.upper()) for status in obj.status - {"unchanged"})
     component_ids = {obj.id for obj in objects if obj.kind == "component"}
     relationship_ids = {obj.id for obj in objects if obj.kind == "relationship"}

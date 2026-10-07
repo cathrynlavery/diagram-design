@@ -128,7 +128,7 @@ class _StallHandler(BaseHTTPRequestHandler):
             return
         self.send_error(404)
 
-    def log_message(self, *args: object) -> None:
+    def log_message(self, format: str, *args: object) -> None:
         pass
 
 

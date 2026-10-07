@@ -28,6 +28,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import TypedDict
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
@@ -52,6 +53,19 @@ class Element:
         for child in self.children:
             yield child
             yield from child.walk()
+
+
+class Part(TypedDict):
+    key: str
+    el: Element
+    rect: tuple[float, ...]
+    z: float
+    t: float
+    level: int
+    name: str
+    housing: bool
+    focal: bool
+    closed: str | None
 
 
 class Tree(HTMLParser):
@@ -197,7 +211,7 @@ def verify_source(source: str, name: str) -> list[str]:
     if gap is None:
         return errors
 
-    parts = []
+    parts: list[Part] = []
     for el in fig.walk():
         if el.tag != "g" or "data-part" not in el.attrs:
             continue
@@ -210,9 +224,9 @@ def verify_source(source: str, name: str) -> list[str]:
         z = num(el.attrs.get("data-z"), f"{name}: part {key!r} data-z", errors)
         t = num(el.attrs.get("data-t"), f"{name}: part {key!r} data-t", errors)
         level = num(el.attrs.get("data-level"), f"{name}: part {key!r} data-level", errors)
-        if None in (z, t, level):
+        if z is None or t is None or level is None:
             continue
-        parts.append(dict(key=key, el=el, rect=rect, z=z, t=t, level=int(level),
+        parts.append(Part(key=key, el=el, rect=rect, z=z, t=t, level=int(level),
                           name=el.attrs.get("data-name", ""), housing=el.attrs.get("data-kind") == "housing",
                           focal="data-focal" in el.attrs, closed=el.attrs.get("data-closed-z")))
     if len(parts) < 2:
@@ -251,7 +265,7 @@ def verify_source(source: str, name: str) -> list[str]:
                 break
 
     # 2. Levels, equal gaps, the gap floor, and the bottom staying put.
-    levels: dict[int, list[dict]] = {}
+    levels: dict[int, list[Part]] = {}
     for p in parts:
         levels.setdefault(p["level"], []).append(p)
     order = sorted(levels)

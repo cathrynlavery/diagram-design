@@ -98,6 +98,7 @@ import argparse
 import math
 import re
 import sys
+from collections.abc import Iterable
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -773,7 +774,7 @@ def check_controls(layers: list, findings: list, name: str) -> None:
             )
 
 
-def layers_named_in(body: str, names) -> set:
+def layers_named_in(body: str, names: Iterable[str]) -> set[str]:
     """Which declared layer names the visible text actually prints.
 
     Longest candidate first at each position, so a layer called "Unit" is

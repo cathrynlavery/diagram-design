@@ -39,7 +39,8 @@ def parse_version(value: object, label: str) -> tuple[int, int, int]:
         raise PackageVersionError(
             f"{label} version must be strict MAJOR.MINOR.PATCH semver; got {value!r}"
         )
-    return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
+    major, minor, patch = match.groups()
+    return int(major), int(minor), int(patch)
 
 
 def bump(root: Path, part: str = "patch") -> str:

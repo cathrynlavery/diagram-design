@@ -23,6 +23,7 @@ import sys
 import tempfile
 import zlib
 from pathlib import Path
+from typing import NoReturn
 from urllib.parse import quote
 
 sys.dont_write_bytecode = True
@@ -38,7 +39,7 @@ FIXTURE = ROOT / "scripts/fixtures/sample-architecture.drawio"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-drawio.html"
 
 
-def fail(msg: str) -> None:
+def fail(msg: str) -> NoReturn:
     print(f"FAIL: {msg}", file=sys.stderr)
     raise SystemExit(1)
 

@@ -34,7 +34,9 @@ import runpy
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-skin-polarity.py"
@@ -46,7 +48,9 @@ FULL = ASSETS / "example-treemap-full.html"
 SHIPPED_KEY = "Other continents · stronger contrast is larger"
 
 NAMESPACE = runpy.run_path(str(CHECKER), run_name="verify_skin_polarity_test")
-COLLECT_MEMBERS = NAMESPACE["collect_members"]
+COLLECT_MEMBERS = cast(
+    Callable[[str], dict[tuple[float, ...], list[Any]]], NAMESPACE["collect_members"]
+)
 PARSE_CLAIMS = NAMESPACE["parse_claims"]
 RESOLVE_PAPER = NAMESPACE["resolve_paper"]
 COMPOSITE = NAMESPACE["composite"]

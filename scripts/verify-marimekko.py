@@ -609,7 +609,8 @@ def parse_segments(doc: _Scanner, findings: list, name: str) -> list:
             continue
         seen[key] = line
         accent = bool(ACCENT_RE.search(attrs.get("stroke", "")))
-        segments.append(Segment(column, series, amount, *geometry, line, accent, element))
+        x, y, w, h = geometry
+        segments.append(Segment(column, series, amount, x, y, w, h, line, accent, element))
     return segments
 
 

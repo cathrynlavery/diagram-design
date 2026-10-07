@@ -52,6 +52,7 @@ import math
 import re
 import sys
 from pathlib import Path
+from typing import cast
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -238,7 +239,7 @@ def parse_bars(source: str, errors: list[str]) -> list[Bar]:
         if any(v is None for v in geometry):
             errors.append(f"{name!r}: bar rect is missing numeric x/y/width/height")
             continue
-        x, y, w, h = geometry  # type: ignore[assignment]
+        x, y, w, h = cast(list[float], geometry)
         if w <= 0 or h <= 0 or not all(map(math.isfinite, (x + w, y + h))):
             errors.append(f"{name!r}: bar geometry must have finite edges and positive dimensions")
             continue
@@ -361,7 +362,7 @@ def check_carries(source: str, bars: list[Bar], levels: list[tuple[float, float]
         if value is None or any(v is None for v in coords):
             errors.append(f"carry {declared!r}: non-numeric data-carry or coordinates")
             continue
-        x1, y1, x2, y2 = coords  # type: ignore[assignment]
+        x1, y1, x2, y2 = cast(list[float], coords)
         if abs(y1 - y2) > VALUE_TOLERANCE:
             errors.append(f"carry {declared!r}: a carry is horizontal; drawn from y={y1:g} to y={y2:g}")
             continue
@@ -428,7 +429,7 @@ def check_printed(source: str, bars: list[Bar], errors: list[str]) -> None:
             )
 
 
-def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str) -> None:
+def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str | None) -> None:
     focal = [bar for bar in bars if bar.stroke.lower() in ACCENT_STROKES]
     if len(focal) > 1:
         errors.append(
