@@ -91,7 +91,9 @@ def _nice_magnitude(value: float) -> float:
     base = 10.0 ** exponent
     for step in (1.0, 2.0, 2.5, 5.0, 10.0):
         candidate = step * base
-        if candidate >= magnitude - 1e-12:
+        # Bounds must enclose the data even when its unit is much smaller
+        # than a fixed epsilon. The ladder already provides outward rounding.
+        if candidate >= magnitude:
             return candidate
     return 10.0 * base
 
@@ -188,6 +190,10 @@ def check_domain_rules():
         ("crossing zero", [-20, 5, 40, -3]),
         ("single identical pair", [7, 7]),
         ("tiny magnitudes", [0.0004, 0.0009]),
+        ("small positive magnitudes", [4e-13, 9e-13]),
+        ("small negative magnitudes", [-9e-13, -4e-13]),
+        ("small crossing-zero magnitudes", [-4e-13, 9e-13]),
+        ("small zero-touching magnitudes", [0, 9e-13]),
     ]
     for label, values in cases:
         try:
