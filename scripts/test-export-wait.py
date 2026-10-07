@@ -147,7 +147,7 @@ def run_snippet(snippet: str, src: Path, out: Path) -> str:
     try:
         with contextlib.redirect_stderr(stderr):
             # Executing the checked-in documentation snippet is the behavior under test.
-            exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})  # noqa: S102
+            exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})  # nosemgrep: python.lang.security.audit.exec-detected.exec-detected  # noqa: S102
     finally:
         sys.argv, sys.stderr = old_argv, old_stderr
     return stderr.getvalue()

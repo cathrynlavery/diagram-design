@@ -658,7 +658,8 @@ def network_isolation_failures(context):
             fixture.write_text(
                 "<!DOCTYPE html><html><body><script>\n"
                 f"  const target = '127.0.0.1:{port}';\n"
-                "  try { new WebSocket('ws://' + target + '/ws'); } catch (e) {}\n"
+                # Plain WebSockets deliberately test whether the sandbox blocks all browser connections.
+                "  try { new WebSocket('ws://' + target + '/ws'); } catch (e) {}\n"  # nosemgrep: javascript.lang.security.detect-insecure-websocket.detect-insecure-websocket
                 "  try { fetch('http://' + target + '/fetch').catch(() => {}); } catch (e) {}\n"
                 "  try { new EventSource('http://' + target + '/sse'); } catch (e) {}\n"
                 "  const img = new Image(); img.src = 'http://' + target + '/img.png';\n"
