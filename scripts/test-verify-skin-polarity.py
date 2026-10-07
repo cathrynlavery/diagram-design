@@ -647,6 +647,22 @@ def main():
     else:
         print("OK: shipped_wording_binds_as_a_contrast_claim")
 
+    with tempfile.TemporaryDirectory(prefix="polarity-unreadable-opacity-") as raw:
+        directory = Path(raw)
+        for skin, source, ink, alpha in (
+            ("light", light_source, LIGHT_INK, "0.16"),
+            ("dark", dark_source, DARK_INK, "0.14"),
+        ):
+            for attribute in ("fill-opacity", "opacity"):
+                for value in ("oops", "nan", "inf"):
+                    anchor = f'data-share="18.29" fill="rgba({ink},{alpha})"'
+                    changed = source.replace(anchor, anchor + f' {attribute}="{value}"', 1)
+                    code, output = run(write(directory, f"{skin}-{attribute}-{value}.html", changed))
+                    if not code or "unreadable" not in output:
+                        failures.append(f"unreadable {skin} {attribute}={value} dropped a ramp member silently: {output}")
+                    else:
+                        print(f"OK: unreadable {skin} {attribute}={value} is reported")
+
     with tempfile.TemporaryDirectory(prefix="polarity-zero-opacity-") as raw:
         directory = Path(raw)
         for skin, source, ink, alpha in (
