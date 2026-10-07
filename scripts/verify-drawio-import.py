@@ -228,6 +228,43 @@ def check_parse_raw() -> dict:
     return payload
 
 
+def check_arrow_directions(tmp: Path) -> None:
+    # mxGraph's serialized source/target describe the connector geometry;
+    # its start/end arrowheads describe the actual relationship direction.
+    cases = (
+        ("startArrow=classic;endArrow=none;", "b", "a", False, False, ["B"], ["A"], False),
+        ("startArrow=none;endArrow=classic;", "a", "b", False, False, ["A"], ["B"], False),
+        ("startArrow=classic;endArrow=classic;", "a", "b", True, False, [], [], True),
+        ("startArrow=none;endArrow=none;", "a", "b", False, True, [], [], False),
+        ("", "a", "b", False, False, ["A"], ["B"], False),
+        ("startArrow=0;endArrow=0;", "a", "b", False, True, [], [], False),
+    )
+    for index, (style, source, target, both, neither, entries, terminals, cycle) in enumerate(cases):
+        path = tmp / f"arrow-direction-{index}.drawio"
+        path.write_text(
+            '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+            '<mxCell id="a" value="A" vertex="1" parent="1"><mxGeometry width="60" height="40" as="geometry"/></mxCell>'
+            '<mxCell id="b" value="B" vertex="1" parent="1"><mxGeometry x="100" width="60" height="40" as="geometry"/></mxCell>'
+            f'<mxCell id="e" value="message" style="{style}" edge="1" parent="1" source="a" target="b">'
+            '<mxGeometry relative="1" as="geometry"/></mxCell></root></mxGraphModel>',
+            encoding="utf-8",
+        )
+        page = json.loads(run_extract([str(path), "--json"]))["pages"][0]
+        edge, analysis = page["edges"][0], page["analysis"]
+        if (edge["source"], edge["target"], edge["bidirectional"], edge["undirected"]) != (source, target, both, neither):
+            fail(f"arrow direction {index} disagrees with serialized arrowheads: {edge}")
+        if (analysis["entry_points"], analysis["terminals"], analysis["has_cycle"]) != (entries, terminals, cycle):
+            fail(f"arrow direction {index} has inconsistent structural analysis: {analysis}")
+        if both or neither:
+            if any((node["in_degree"], node["out_degree"]) != (1, 1) for node in page["nodes"]):
+                fail(f"arrow direction {index} invented one-way degree counts")
+        else:
+            nodes = {node["id"]: node for node in page["nodes"]}
+            if (nodes[source]["in_degree"], nodes[source]["out_degree"], nodes[target]["in_degree"], nodes[target]["out_degree"]) != (0, 1, 1, 0):
+                fail(f"arrow direction {index} lost directed degree counts")
+    ok("arrowhead direction, degrees, entry/terminal analysis and bidirectional cycles agree")
+
+
 def check_nested_geometry(tmp: Path) -> None:
     cells = (
         '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
@@ -712,6 +749,7 @@ def main() -> int:
         tmp = Path(tmp_dir)
         check_files()
         check_parse_raw()
+        check_arrow_directions(tmp)
         check_nested_geometry(tmp)
         check_bom_prefixed(tmp)
         check_containers(tmp)

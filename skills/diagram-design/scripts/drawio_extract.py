@@ -520,6 +520,10 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             label = " / ".join([p for p in ([label] + extra) if p])
         source = cell.get("source")
         target = cell.get("target")
+        start_head = style.get("startArrow", "none") not in ("none", "0", "")
+        end_head = style.get("endArrow", "classic") not in ("none", "0", "")
+        if start_head and not end_head:
+            source, target = target, source
         page.edges.append(
             Edge(
                 id=cid,
@@ -527,11 +531,8 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
                 target=target if target in node_map else None,
                 label=label,
                 dashed=style.get("dashed") == "1",
-                bidirectional=style.get("startArrow", "none")
-                not in ("none", "0", "")
-                and style.get("endArrow", "classic") not in ("none", "0"),
-                undirected=style.get("endArrow") in ("none", "0")
-                and style.get("startArrow", "none") in ("none", "0", ""),
+                bidirectional=start_head and end_head,
+                undirected=not start_head and not end_head,
                 style_name=style.get("shape", "")
                 or ("orthogonal" if style.get("edgeStyle") else ""),
                 waypoints=waypoints,
@@ -540,10 +541,17 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         )
 
     for edge in page.edges:
-        if edge.source and edge.source in node_map:
-            node_map[edge.source].out_degree += 1
-        if edge.target and edge.target in node_map:
-            node_map[edge.target].in_degree += 1
+        source, target = node_map.get(edge.source or ""), node_map.get(edge.target or "")
+        if edge.bidirectional or edge.undirected:
+            for endpoint in (source, target):
+                if endpoint is not None:
+                    endpoint.in_degree += 1
+                    endpoint.out_degree += 1
+        else:
+            if source is not None:
+                source.out_degree += 1
+            if target is not None:
+                target.in_degree += 1
 
     return page
 
@@ -577,6 +585,8 @@ def _has_cycle(nodes: list[Node], edges: list[Edge]) -> bool:
     for edge in edges:
         if edge.source and edge.target and edge.source in adjacency:
             adjacency[edge.source].append(edge.target)
+            if edge.bidirectional and edge.target in adjacency:
+                adjacency[edge.target].append(edge.source)
     WHITE, GREY, BLACK = 0, 1, 2
     color = {n.id: WHITE for n in nodes}
 
