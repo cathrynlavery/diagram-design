@@ -81,6 +81,29 @@ CSS_MOVES_MARK_RE = re.compile(
 )
 
 
+LENGTH_RE = re.compile(
+    r"(?P<number>[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)(?:px)?",
+    re.IGNORECASE,
+)
+
+
+def _length_px(raw: str | None, field: str, errors: list[str] | None) -> float | None:
+    """Measure finite unitless/pixel SVG lengths for focal-text contrast."""
+    if raw is None:
+        return None
+    match = LENGTH_RE.fullmatch(raw.strip())
+    if match is not None:
+        value = float(match.group("number"))
+        if math.isfinite(value):
+            return value
+    if errors is not None:
+        errors.append(
+            f"unsupported or non-finite {field} length {raw!r} for focal-text "
+            "contrast measurement; use a finite unitless or px length"
+        )
+    return None
+
+
 def _attr(attrs_str: str, name: str) -> str | None:
     m = re.search(r"\b" + re.escape(name) + r'\s*=\s*"([^"]*)"', attrs_str)
     return m.group(1) if m else None
@@ -216,7 +239,7 @@ def parse_axis_labels(source: str) -> tuple[list[str], list[str], set[str], set[
     return declared_rows, declared_cols, duplicate_rows, duplicate_cols
 
 
-def parse_cells(source: str) -> list[dict]:
+def parse_cells(source: str, errors: list[str] | None = None) -> list[dict]:
     """Return list of cell dicts: row, col, value, opacity, focal."""
     source_clean = COMMENT_RE.sub("", source)
     cells: list[dict] = []
@@ -266,17 +289,17 @@ def parse_cells(source: str) -> list[dict]:
                 "opacity": opacity,
                 "focal": focal,
                 "fill": fill,
-                "x": float(x) if x is not None else None,
-                "y": float(y) if y is not None else None,
-                "width": float(width) if width is not None else None,
-                "height": float(height) if height is not None else None,
+                "x": _length_px(x, "x", errors),
+                "y": _length_px(y, "y", errors),
+                "width": _length_px(width, "width", errors),
+                "height": _length_px(height, "height", errors),
             }
         )
 
     return cells
 
 
-def parse_text_labels(source: str) -> list[dict]:
+def parse_text_labels(source: str, errors: list[str] | None = None) -> list[dict]:
     """Return SVG text labels with their fill, x, y, and rendered text."""
     source_clean = COMMENT_RE.sub("", source)
     texts: list[dict] = []
@@ -291,8 +314,8 @@ def parse_text_labels(source: str) -> list[dict]:
         texts.append(
             {
                 "fill": fill,
-                "x": float(x) if x is not None else None,
-                "y": float(y) if y is not None else None,
+                "x": _length_px(x, "x", errors),
+                "y": _length_px(y, "y", errors),
                 "text": text_content.group(1).strip() if text_content else "",
             }
         )
@@ -315,7 +338,8 @@ def check_file(path: Path) -> list[str]:
                 "cell geometry without changing the attributes this checker reads"
             )
 
-    cells = parse_cells(source)
+    geometry_errors: list[str] = []
+    cells = parse_cells(source, geometry_errors)
 
     if not cells:
         errors.append(
@@ -456,7 +480,8 @@ def check_file(path: Path) -> list[str]:
     if canvas_underlay is None:
         canvas_underlay = (245, 245, 245)
 
-    text_labels = parse_text_labels(source)
+    text_labels = parse_text_labels(source, geometry_errors)
+    errors.extend(f"{path.name}: {finding}" for finding in geometry_errors)
     for focal in focal_cells:
         bg_rgb = _parse_color(focal["fill"], canvas_underlay)
         if bg_rgb is None:

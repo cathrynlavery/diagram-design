@@ -354,12 +354,43 @@ def main() -> int:
                 failures.append(f"invalid {invalid} did not retain grid completeness finding: {output.strip()}")
         print("OK: billion-scale counts preserve the grid; non-finite/negative values remain findings")
 
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for original_source, label in ((original, "light"),
+                                       (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            pixel_lengths = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"',
+                                   lambda m: f'{m.group(1)}="{m.group(2)}px"', original_source)
+            code, output = run(write(d, f"pixel-lengths-{label}.html", pixel_lengths))
+            if code != 0:
+                failures.append(f"equivalent pixel lengths {label} were rejected: {output.strip()}")
+        # Supported coordinate syntax must not bypass the contrast comparison.
+        for template, theme in ((original, "light"),
+                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            bad_contrast = template.replace('x="578" y="149" fill="#111111"',
+                                            'x="578" y="149" fill="#ffffff"', 1)
+            for notation in ("px", "exponent-px"):
+                def length(match: re.Match[str]) -> str:
+                    number = match.group(2)
+                    if notation == "exponent-px":
+                        number = f"{float(number):.4e}"
+                    return f'{match.group(1)}="{number}px"'
+                changed = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"', length, bad_contrast)
+                code, output = run(write(d, f"bad-contrast-{theme}-{notation}.html", changed))
+                if code == 0 or "below WCAG AA" not in output or "Traceback" in output:
+                    failures.append(f"{theme}/{notation} bypassed contrast failure: {output.strip()}")
+        for length in ("520%", "unknown", "nan", "1e400px"):
+            changed = original.replace(FOCAL_CELL, FOCAL_CELL.replace('x="520"', f'x="{length}"'), 1)
+            code, output = run(write(d, "unsupported-length.html", changed))
+            if code == 0 or "focal-text contrast measurement" not in output or "Traceback" in output:
+                failures.append(f"unsupported length {length!r} lacked a named finding: {output.strip()}")
+        print("OK: equivalent pixel lengths pass; unsupported/non-finite lengths are named findings")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print("OK — 23 cases (6 positive, 17 negative), all passed.")
+    print("OK — every heatmap verifier case passed.")
     return 0
 
 
