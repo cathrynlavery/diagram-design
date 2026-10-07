@@ -208,21 +208,21 @@ def normalize_html_entities(svg: str) -> str:
     return "".join(out)
 
 
-XML_REFERENCE_RE = re.compile(r"&(?:(amp|lt|gt|quot|apos)|#([0-9]+)|#[xX]([0-9A-Fa-f]+));")
+XML_REFERENCE_RE = re.compile(r"&(?:(amp|lt|gt|quot|apos);|#[0-9]+;?|#[xX][0-9A-Fa-f]+;?)")
 XML_NAMED = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
 
 
 def decode_xml_references(value: str) -> str:
-    """Decode XML references only, after normalize_html_entities has run.
+    """Decode the references left after normalize_html_entities has run.
 
-    Legacy HTML names that HTML leaves literal in attributes stay literal.
+    Numeric references follow HTML (so &#128; is the euro sign); legacy names
+    that HTML leaves literal in attributes stay literal.
     """
     def replace(match: re.Match[str]) -> str:
-        name, decimal, hexadecimal = match.groups()
+        name = match.group(1)
         if name:
             return XML_NAMED[name]
-        code = int(decimal) if decimal else int(hexadecimal, 16)
-        return chr(code) if 0 < code <= 0x10FFFF else match.group(0)
+        return html_entities.unescape(match.group(0))
 
     return XML_REFERENCE_RE.sub(replace, value)
 
