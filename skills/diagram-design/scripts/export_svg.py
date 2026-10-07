@@ -6,6 +6,7 @@ re-deriving the transform:
 
     python3 <skill-dir>/scripts/export_svg.py my-diagram.html
     python3 <skill-dir>/scripts/export_svg.py my-diagram.html out.svg
+    python3 <skill-dir>/scripts/export_svg.py --sanitize my-diagram.html out.svg
 
 Fixes the export gaps that make a fragment unsafe to open or inline:
 
@@ -17,7 +18,8 @@ Fixes the export gaps that make a fragment unsafe to open or inline:
 3. HTML-only attribute syntax (``<g data-motion-item>``, ``data-step=1``) is
    rewritten as XML so the standalone file parses.
 
-The algorithm matches ``references/export.md``. No third-party deps.
+The algorithm matches ``references/export.md``. The default path has no
+third-party dependencies; sanitization optionally uses ``py-svg-hush``.
 """
 
 from __future__ import annotations
@@ -39,6 +41,10 @@ GOOGLE_FONTS_IMPORT = (
     "&amp;family=Noto+Serif+TC:wght@400"
     "&amp;display=swap');"
 )
+
+# svg-hush does not support CSS @import url(...) syntax, so the canary serves
+# as a placeholder until the very last export step.
+GOOGLE_FONTS_CANARY = "#__diagram-design-google-fonts-import-canary__ {}"
 
 # Page chrome that must not follow a diagram fragment out of its host document.
 # The bare `svg { width; min-width }` rule is page layout too (see
@@ -245,11 +251,11 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
     return "\n      ".join(kept)
 
 
-def merge_style_into_defs(svg: str, style_css: str) -> str:
+def merge_style_into_defs(svg: str, style_css: str, font_canary: bool = False) -> str:
     """Ensure one <defs> and place a <style> with fonts + diagram CSS first."""
-    style_inner = GOOGLE_FONTS_IMPORT
+    style_inner = GOOGLE_FONTS_CANARY if font_canary else GOOGLE_FONTS_IMPORT
     if style_css.strip():
-        style_inner = f"{GOOGLE_FONTS_IMPORT}\n      {style_css.strip()}"
+        style_inner = f"{style_inner}\n      {style_css.strip()}"
     style_tag = f"<style>{style_inner}</style>"
 
     defs_match = re.search(r"<defs\b[^>]*>", svg, re.IGNORECASE)
@@ -336,7 +342,7 @@ def has_diagram_stylesheet(svg: str) -> bool:
     for block in STYLE_BLOCK_RE.findall(svg):
         stripped = re.sub(r"@import\b[^;]*;", "", block, flags=re.IGNORECASE)
         stripped = re.sub(r"/\*.*?\*/", "", stripped, flags=re.DOTALL)
-        if RULE_RE.search(stripped):
+        if any(match.group(2).strip() for match in RULE_RE.finditer(stripped)):
             return True
     return False
 
@@ -354,7 +360,7 @@ def assert_export_gate(svg: str) -> None:
         )
 
 
-def export_svg_document(html: str, source_path: Path) -> str:
+def export_svg_document(html: str, source_path: Path, font_canary: bool = False) -> str:
     """Transform source HTML into a standalone SVG document string."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
@@ -363,7 +369,7 @@ def export_svg_document(html: str, source_path: Path) -> str:
     svg = ensure_xmlns(svg)
     svg = set_root_id(svg, root_id)
     diagram_css = diagram_css_from_html(html, root_id)
-    svg = merge_style_into_defs(svg, diagram_css)
+    svg = merge_style_into_defs(svg, diagram_css, font_canary=font_canary)
     svg = namespace_defs_ids(svg, slug)
     svg = normalize_rgba_presentation_attrs(svg)
     assert_export_gate(svg)
@@ -376,6 +382,27 @@ def export_svg_document(html: str, source_path: Path) -> str:
     return document
 
 
+def sanitize_svg_document(document: str) -> str:
+    """Sanitize a completed SVG document with the optional py-svg-hush package."""
+    if document.count(GOOGLE_FONTS_CANARY) != 1:
+        raise ValueError("sanitized SVG export requires exactly one font canary")
+    try:
+        from py_svg_hush import filter_svg
+    except ImportError as exc:
+        raise ValueError("--sanitize requires py-svg-hush") from exc
+
+    try:
+        sanitized = filter_svg(
+            document.encode("utf-8"),
+            {"image": ["png", "gif", "jpeg"]},
+        ).decode("utf-8")
+    except (TypeError, ValueError, UnicodeDecodeError) as exc:
+        raise ValueError(f"SVG sanitization failed: {exc}") from exc
+    if sanitized.count(GOOGLE_FONTS_CANARY) != 1:
+        raise ValueError("SVG sanitizer did not preserve exactly one font canary")
+    return sanitized.replace(GOOGLE_FONTS_CANARY, GOOGLE_FONTS_IMPORT, 1)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Export a diagram-design HTML file to a standalone SVG."
@@ -386,6 +413,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         nargs="?",
         help="Output .svg path (default: <source-stem>.svg next to the source)",
+    )
+    parser.add_argument(
+        "--sanitize",
+        action="store_true",
+        help="sanitize the completed SVG with the optional py-svg-hush package",
     )
     args = parser.parse_args(argv)
 
@@ -403,7 +435,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         html = source.read_text(encoding="utf-8")
-        document = export_svg_document(html, source)
+        document = export_svg_document(html, source, font_canary=args.sanitize)
+        if args.sanitize:
+            document = sanitize_svg_document(document)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
