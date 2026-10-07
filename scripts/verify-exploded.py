@@ -81,9 +81,14 @@ class Tree(HTMLParser):
 
     def handle_data(self, data):
         # A label's visible name includes inline tspan descendants, in source
-        # order, as well as text before and after them.
+        # order, as well as text before and after them. <title> and <desc> are
+        # never drawn, so their text stays out of the label.
         self.cur.text += data
+        if self.cur.tag in ("title", "desc"):
+            return
         for ancestor in self.cur.ancestors():
+            if ancestor.tag in ("title", "desc"):
+                return
             if ancestor.tag == "text":
                 ancestor.text += data
 

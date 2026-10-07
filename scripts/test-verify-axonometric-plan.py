@@ -112,6 +112,7 @@ def main() -> int:
         for label, replacement in (
             ("styled span", '<tspan font-weight="600">Open office</tspan>'),
             ("mixed nested span text", 'Open <tspan>of<tspan>fi</tspan>ce</tspan>'),
+            ("undrawn title and desc", 'Open office<title>Open office tag</title><desc>Desks</desc>'),
         ):
             path = Path(tmp) / "label-span.html"
             path.write_text(office.replace(">Open office</text>", ">" + replacement + "</text>", 1), encoding="utf-8")

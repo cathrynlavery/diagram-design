@@ -109,6 +109,7 @@ def main() -> int:
         for label, replacement in (
             ("styled span", '<tspan font-weight="600">Data</tspan>'),
             ("mixed nested span text", 'D<tspan>a<tspan>t</tspan></tspan>a'),
+            ("undrawn title and desc", 'Data<title>Data part</title><desc>Storage layer</desc>'),
         ):
             path = Path(tmp) / "label-span.html"
             path.write_text(stack.replace(">Data</text>", ">" + replacement + "</text>", 1), encoding="utf-8")
