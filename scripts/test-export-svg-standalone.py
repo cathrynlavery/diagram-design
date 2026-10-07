@@ -11,9 +11,11 @@ import importlib.util
 import re
 import sys
 import tempfile
+import types
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 HELPER = ROOT / "skills/diagram-design/scripts/export_svg.py"
@@ -188,6 +190,37 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         svg = self.mod.export_svg_document(ok, Path("styled-station.html"))
         self.assertIn("#styled-station-root .station", svg)
         self.assertTrue(self.mod.has_diagram_stylesheet(svg))
+
+    def test_sanitized_cli_round_trip_restores_font_import(self) -> None:
+        fake_hush = types.ModuleType("py_svg_hush")
+
+        def filter_svg(payload: bytes, policy: dict[str, list[str]]) -> bytes:
+            self.assertEqual(payload.count(self.mod.GOOGLE_FONTS_CANARY.encode()), 1)
+            self.assertNotIn(self.mod.GOOGLE_FONTS_IMPORT.encode(), payload)
+            self.assertEqual(policy, {"image": ["png", "gif", "jpeg"]})
+            return payload
+
+        fake_hush.filter_svg = filter_svg
+        with tempfile.TemporaryDirectory() as scratch:
+            source = Path(scratch) / "round-trip.html"
+            output = Path(scratch) / "round-trip.svg"
+            source.write_text(
+                '<style>.x { fill: red; }</style><svg viewBox="0 0 1 1">'
+                '<rect class="x" width="1" height="1"/></svg>',
+                encoding="utf-8",
+            )
+            with mock.patch.dict(sys.modules, {"py_svg_hush": fake_hush}):
+                self.assertEqual(self.mod.main([str(source), str(output), "--sanitize"]), 0)
+            document = output.read_text(encoding="utf-8")
+            self.assertIn(self.mod.GOOGLE_FONTS_IMPORT, document)
+            self.assertNotIn(self.mod.GOOGLE_FONTS_CANARY, document)
+
+    def test_sanitize_requires_exactly_one_font_canary(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exactly one font canary"):
+            self.mod.sanitize_svg_document("<svg/>")
+        duplicate = self.mod.GOOGLE_FONTS_CANARY * 2
+        with self.assertRaisesRegex(ValueError, "exactly one font canary"):
+            self.mod.sanitize_svg_document(duplicate)
 
     def test_carried_css_escapes_xml_specials(self) -> None:
         html = """<!DOCTYPE html><html><head><style>
