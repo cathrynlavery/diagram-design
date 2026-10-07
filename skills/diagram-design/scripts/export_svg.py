@@ -144,6 +144,10 @@ def xmlify_attributes(svg: str) -> str:
     return "".join(out)
 
 
+# HTML named references that browsers decode even without a trailing semicolon.
+LEGACY_ENTITY_NAMES = tuple(name for name in html_entities.entities.html5 if not name.endswith(";"))
+
+
 def normalize_html_entities(svg: str) -> str:
     """Convert named HTML references to XML-safe text without decoding markup."""
     opaque = re.compile(
@@ -151,29 +155,56 @@ def normalize_html_entities(svg: str) -> str:
         r"(?P<opening><(?P<tag>style|script)\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>)"
         r".*?</(?P=tag)\s*>", re.DOTALL | re.IGNORECASE,
     )
-    named = re.compile(r"&[A-Za-z][A-Za-z0-9]+;")
+    # Terminated names first; then HTML's legacy names, which also decode
+    # without a semicolon (longest first, so "&notin" is not read as "&not").
+    named = re.compile(
+        r"&(?:[A-Za-z][A-Za-z0-9]+;|(?P<legacy>"
+        + "|".join(sorted((re.escape(name) for name in LEGACY_ENTITY_NAMES), key=len, reverse=True))
+        + r"))"
+    )
+    tag = re.compile(r"<[A-Za-z/!?](?:[^>\"']|\"[^\"]*\"|'[^']*')*>")
 
-    def replace_entity(match: re.Match[str]) -> str:
+    def replace_entity(match: re.Match[str], in_attribute: bool = False) -> str:
         original = match.group(0)
         if original in ("&amp;", "&lt;", "&gt;", "&apos;", "&quot;"):
             return original
-        decoded = html_entities.entities.html5.get(original[1:])
+        if match.group("legacy") is not None:
+            following = match.string[match.end() : match.end() + 1]
+            # HTML leaves these undecoded inside attribute values.
+            if in_attribute and (following == "=" or following.isalnum()):
+                return original
+            decoded = html_entities.entities.html5[match.group("legacy")]
+        else:
+            decoded = html_entities.entities.html5.get(original[1:])
         if decoded is None:
             return original
         return (html_entities.escape(decoded, quote=True)
                 .replace("\t", "&#9;").replace("\n", "&#10;").replace("\r", "&#13;"))
 
+    def replace_in_attribute(match: re.Match[str]) -> str:
+        return replace_entity(match, in_attribute=True)
+
+    def normalize_region(region: str) -> str:
+        parts: list[str] = []
+        cursor = 0
+        for token in tag.finditer(region):
+            parts.append(named.sub(replace_entity, region[cursor : token.start()]))
+            parts.append(named.sub(replace_in_attribute, token.group(0)))
+            cursor = token.end()
+        parts.append(named.sub(replace_entity, region[cursor:]))
+        return "".join(parts)
+
     out: list[str] = []
     pos = 0
     for match in opaque.finditer(svg):
-        out.append(named.sub(replace_entity, svg[pos:match.start()]))
+        out.append(normalize_region(svg[pos:match.start()]))
         opening = match.group("opening")
         if opening is not None:
-            out.append(named.sub(replace_entity, opening) + match.group(0)[len(opening):])
+            out.append(named.sub(replace_in_attribute, opening) + match.group(0)[len(opening):])
         else:
             out.append(match.group(0))
         pos = match.end()
-    out.append(named.sub(replace_entity, svg[pos:]))
+    out.append(normalize_region(svg[pos:]))
     return "".join(out)
 
 
@@ -542,8 +573,9 @@ def export_svg_document(html: str, source_path: Path) -> str:
     svg = ensure_xmlns(svg)
     opening = START_TAG_RE.match(svg)
     assert opening is not None
+    # Compare the decoded ID: CSS escapes resolve to characters, not to markup.
     original_root_id = next(
-        (attr.group(4)[1:-1] for attr in TAG_ATTR_RE.finditer(opening.group(2))
+        (html_entities.unescape(attr.group(4)[1:-1]) for attr in TAG_ATTR_RE.finditer(opening.group(2))
          if attr.group(2) == "id" and attr.group(4) is not None),
         "",
     )

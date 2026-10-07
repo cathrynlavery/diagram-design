@@ -263,6 +263,26 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
         self.assertEqual(self.mod.normalize_html_entities('&notARealEntity;'), '&notARealEntity;')
 
+    def test_legacy_entities_without_semicolon_follow_html_contexts(self) -> None:
+        html = '<svg viewBox="0 0 40 40"><title>Copyright &copy 2026</title>'
+        html += '<text data-label="&copy 2026">A&nbsp B &amp C &lt D</text></svg>'
+        root = ET.fromstring(self.mod.export_svg_document(html, Path("legacy.html")))
+        self.assertEqual(root.find("{http://www.w3.org/2000/svg}title").text, "Copyright \u00a9 2026")
+        text = root.find("{http://www.w3.org/2000/svg}text")
+        self.assertEqual(text.text, "A\u00a0 B & C < D")
+        self.assertEqual(text.get("data-label"), "\u00a9 2026")
+        # In attribute values HTML leaves a legacy name followed by an
+        # alphanumeric or "=" undecoded; text content decodes the prefix.
+        self.assertEqual(self.mod.normalize_html_entities('<a data-q="x&copy=1&notit">'),
+                         '<a data-q="x&copy=1&notit">')
+        self.assertEqual(self.mod.normalize_html_entities("<b>&notit</b>"), "<b>\u00acit</b>")
+
+    def test_escaped_root_id_keeps_retargeted_styles(self) -> None:
+        html = '<style>#a\\&b .paint { fill:#ff0000 }</style>'
+        html += '<svg id="a&amp;b" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+        svg = self.mod.export_svg_document(html, Path("escaped.html"))
+        self.assertIn("#escaped-root .paint { fill:#ff0000 }", svg)
+
     def test_raw_text_opening_attributes_normalize_entities(self) -> None:
         for tag in ("style", "script"):
             raw = f'<{tag} title="Copyright &copy; > literal">raw &copy; content</{tag}>'
