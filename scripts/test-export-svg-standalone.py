@@ -172,6 +172,10 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx2:
             self.mod.export_svg_document(html, Path("orphan-station.html"))
         self.assertIn("black boxes", str(ctx2.exception))
+        with self.assertRaises(ValueError):
+            self.mod.export_svg_document(
+                html, Path("orphan-station.html"), font_canary=True
+            )
         # With real diagram rules, the gate passes.
         ok = """<!DOCTYPE html><html><head><style>
         .station { fill: #f00; }

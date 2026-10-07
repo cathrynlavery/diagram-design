@@ -342,7 +342,7 @@ def has_diagram_stylesheet(svg: str) -> bool:
     for block in STYLE_BLOCK_RE.findall(svg):
         stripped = re.sub(r"@import\b[^;]*;", "", block, flags=re.IGNORECASE)
         stripped = re.sub(r"/\*.*?\*/", "", stripped, flags=re.DOTALL)
-        if RULE_RE.search(stripped):
+        if any(match.group(2).strip() for match in RULE_RE.finditer(stripped)):
             return True
     return False
 
