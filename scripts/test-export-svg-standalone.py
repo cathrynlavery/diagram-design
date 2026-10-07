@@ -204,6 +204,42 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
 
+    def test_rgba_retains_alpha_with_css_or_inherited_opacity(self) -> None:
+        for prop in ("fill", "stroke"):
+            paint = f'{prop}="rgba(255,0,0,0.5)"'
+            snippets = (
+                f'<style>.paint {{ {prop}-opacity:0.5 }}</style><rect class="paint" {paint} {prop}-opacity="0.8"/>',
+                f'<g {prop}-opacity="0.5"><rect {paint}/></g>',
+                f'<rect {paint} {prop}-opacity="0.8" style="{prop}-opacity:0.5"/>',
+            )
+            for snippet in snippets:
+                with self.subTest(prop=prop, snippet=snippet):
+                    result = self.mod.export_svg_document(f'<svg viewBox="0 0 10 10">{snippet}</svg>', Path("cascade.html"))
+                    shape = ET.fromstring(result).find("{http://www.w3.org/2000/svg}rect")
+                    if shape is None:
+                        shape = ET.fromstring(result).find(".//{http://www.w3.org/2000/svg}rect")
+                    self.assertEqual(shape.get(prop), "rgba(255,0,0,0.5)")
+
+    def test_rgba_parent_preserves_independent_child_paints(self) -> None:
+        for prop in ("fill", "stroke"):
+            html = f'<svg viewBox="0 0 10 10"><g {prop}="rgba(255,0,0,0.5)" {prop}-opacity="0.5"><rect {prop}="#0000ff"/></g></svg>'
+            result = ET.fromstring(self.mod.export_svg_document(html, Path("parent.html")))
+            group = result.find("{http://www.w3.org/2000/svg}g")
+            self.assertEqual(group.get(prop), "rgba(255,0,0,0.5)")
+            self.assertEqual(group.get(f"{prop}-opacity"), "0.5")
+            self.assertEqual(group[0].get(prop), "#0000ff")
+
+    def test_rgba_css_guard_reads_entities_and_escaped_property_names(self) -> None:
+        for prop in ("fill", "stroke"):
+            declarations = (f"{prop}-opacity&#58;0.5", f"{prop}\\2d opacity:0.5", f"{prop}&#92;2d opacity&#58;0.5")
+            for declaration in declarations:
+                html = f'<svg viewBox="0 0 10 10"><rect {prop}="rgba(255,0,0,0.5)" style="{declaration}"/></svg>'
+                result = ET.fromstring(self.mod.export_svg_document(html, Path("encoded.html")))
+                self.assertEqual(result.find("{http://www.w3.org/2000/svg}rect").get(prop), "rgba(255,0,0,0.5)")
+            html = f'<svg viewBox="0 0 10 10"><style>rect {{ {prop}\\2d opacity:0.5 }}</style><rect {prop}="rgba(255,0,0,0.5)"/></svg>'
+            result = ET.fromstring(self.mod.export_svg_document(html, Path("escaped.html")))
+            self.assertEqual(result.find("{http://www.w3.org/2000/svg}rect").get(prop), "rgba(255,0,0,0.5)")
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
@@ -231,6 +267,26 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn('fill="#2d3142" fill-opacity="0.10"', svg)
         self.assertIn('stroke="none"', svg)
         self.assertIn('id="rgba-demo-dots"', svg)
+
+    def test_rgba_combines_existing_presentation_opacity(self) -> None:
+        for prop in ("fill", "stroke"):
+            for quote in ('"', "'"):
+                for alpha, original, expected in (("0.5", "0.5", "0.25"), ("0.5", "50%", "0.25"), ("2", "0.5", "0.5")):
+                    with self.subTest(prop=prop, quote=quote, alpha=alpha, opacity=original):
+                        source = '<svg viewBox="0 0 40 40"><rect width="40" height="40" '
+                        source += f'{prop}={quote}rgba(255,0,0,{alpha}){quote} {prop}-opacity="{original}"/></svg>'
+                        result = self.mod.export_svg_document(source, Path("opacity.html"))
+                        shape = ET.fromstring(result).find('{http://www.w3.org/2000/svg}rect')
+                        self.assertEqual(shape.get(prop), '#ff0000')
+                        self.assertEqual(shape.get(f'{prop}-opacity'), expected)
+        source = '<svg viewBox="0 0 10 10"><text>fill="rgba(255,0,0,0.5)"</text>'
+        source += '<!-- fill="rgba(255,0,0,0.5)" --><![CDATA[stroke="rgba(255,0,0,0.5)"]]>'
+        source += '<rect data-fill="rgba(255,0,0,0.5)" fill="#ff0000"/></svg>'
+        result = self.mod.export_svg_document(source, Path("inert.html"))
+        self.assertIn('<text>fill="rgba(255,0,0,0.5)"</text>', result)
+        self.assertIn('<!-- fill="rgba(255,0,0,0.5)" -->', result)
+        self.assertIn('<![CDATA[stroke="rgba(255,0,0,0.5)"]]>', result)
+        self.assertIn('data-fill="rgba(255,0,0,0.5)"', result)
 
     def test_root_tokens_bind_to_svg_root(self) -> None:
         # Without the :root re-scope the tokens land on `#root :root`, which
