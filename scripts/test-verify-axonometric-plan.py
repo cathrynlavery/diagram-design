@@ -106,6 +106,20 @@ def main() -> int:
     first_box = re.search(r'<g data-box [^>]*>.*?</g>', office, re.S).group(0)
     booth_tag = re.search(r'<g data-role="tag" data-name="Booth".*?</g>', office, re.S).group(0)
 
+    # Inline SVG spans style the label without changing its visible name.
+    with tempfile.TemporaryDirectory(prefix="verify-label-spans-") as tmp:
+        for label, replacement in (
+            ("styled span", '<tspan font-weight="600">Open office</tspan>'),
+            ("mixed nested span text", 'Open <tspan>of<tspan>fi</tspan>ce</tspan>'),
+        ):
+            path = Path(tmp) / "label-span.html"
+            path.write_text(office.replace(">Open office</text>", ">" + replacement + "</text>", 1), encoding="utf-8")
+            code, output = run(str(path))
+            if code != 0:
+                failures.append(f"{label} failed: {output}")
+            else:
+                print(f"OK: {label} retains the declared name")
+
     cases = {
         "silhouette vertex moved": (
             once(r'(data-box [^>]*><path data-role="silhouette" d="M )(-?\d+(?:\.\d+)?)', shift(3), office),

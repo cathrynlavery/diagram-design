@@ -57,7 +57,7 @@ A floor plan can reveal by zone the same way. Give each zone's furniture a `step
 - The plate: one `<g data-plate data-rect="x0 y0 x1 y1 r" data-z="0" data-t="t">`.
 - Each box: a `<g data-box>` with `data-rect`, `data-z` (the plate top, or 8 above it for a tree canopy), `data-h`, `data-kind` (`wall`, `furniture`, `building`, `tree`, `rack`), and for a building `data-name`. Its first path is `data-role="silhouette"`.
 - Each room: a `<g data-room data-name data-rect>`.
-- Each tag: a `<g data-role="tag" data-name data-at="x y z">` with a backing `<rect>` and a `<text data-role="name">`. The point sits inside the room it names at the plate top, or on the building's roof.
+- Each tag: a `<g data-role="tag" data-name data-at="x y z">` with a backing `<rect>` and a `<text data-role="name">`. Its complete text, including inline `<tspan>` descendants, must match the tag's `data-name`. The point sits inside the room it names at the plate top, or on the building's roof.
 - The focal room or building carries `data-focal`.
 
 ## Anti-patterns
