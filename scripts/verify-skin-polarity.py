@@ -102,8 +102,11 @@ PAPER_VAR_RE = re.compile(r"--color-paper\s*:\s*(?P<value>[^;}]+)", re.IGNORECAS
 # Copy a reader - or a screen reader - actually receives as a statement: rendered
 # SVG strings, the accessible description, and the editorial prose the full
 # variant wraps around the chart.
+COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# A complete inline comment must stay indivisible: its archived closing tags
+# cannot terminate the surrounding visible copy element.
 COPY_RE = re.compile(
-    r"<(?P<tag>text|desc|p|h1|h2|h3|h4|li|figcaption)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
+    r"<!--.*?-->|<(?P<tag>text|desc|p|h1|h2|h3|h4|li|figcaption)\b[^>]*>(?P<body>(?:<!--.*?-->|(?!<!--).)*?)</(?P=tag)>",
     re.IGNORECASE | re.DOTALL,
 )
 TAG_RE = re.compile(r"<[^>]+>")
@@ -239,7 +242,7 @@ def plain(body):
     inside it, would otherwise hide the claim from a substring search while a
     reader still receives the whole sentence.
     """
-    return " ".join(html.unescape(TAG_RE.sub("", body)).split())
+    return " ".join(html.unescape(TAG_RE.sub("", COMMENT_RE.sub("", body))).split())
 
 
 def excerpt(text):
@@ -497,6 +500,8 @@ def classify_magnitude(word):
 def parse_claims(source):
     claims = []
     for match in COPY_RE.finditer(source):
+        if match.group("body") is None:  # An HTML comment is not a copy element.
+            continue
         copy = plain(match.group("body"))
         if not copy:
             continue
@@ -535,6 +540,8 @@ def find_unparsed(source, claims):
 
     unparsed = []
     for match in COPY_RE.finditer(source):
+        if match.group("body") is None:  # An HTML comment is not a copy element.
+            continue
         copy = plain(match.group("body"))
         if not copy:
             continue

@@ -670,6 +670,48 @@ def main():
             else:
                 print(f"OK: valid zero-alpha smallest {skin} member passes")
 
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        archived = light_source.replace("</body>",
+            "<!-- Archived legend: <p>Other continents · fainter contrast is larger</p> -->\n</body>", 1)
+        code, output = run(write(directory, "commented-legend.html", archived))
+        if code:
+            failures.append(f"commented old legend was treated as visible copy: {output}")
+        else:
+            print("OK: archived HTML comment is not a visible claim")
+        joined = light_source.replace("stronger contrast is larger", "str<!-- editorial note -->onger contrast is larger")
+        code, output = run(write(directory, "inline-comment.html", joined))
+        if code or "1 making a directional tone claim" not in output:
+            failures.append(f"inline comment changed the visible claim: {output}")
+        else:
+            print("OK: inline comment preserves adjacent visible text")
+        incorrect = light_source.replace("stronger contrast is larger", "faint<!-- editorial note -->er contrast is larger")
+        code, output = run(write(directory, "inline-comment-wrong.html", incorrect))
+        if not code or "but the ramp draws larger as stronger" not in output:
+            failures.append(f"wrong visible claim with an inline comment was accepted: {output}")
+        else:
+            print("OK: incorrect visible claim remains rejected across an inline comment")
+        unmatched = archived.replace("stronger contrast is larger", "larger means something stronger eventually")
+        code, output = run(write(directory, "visible-unparsed-with-comment.html", unmatched))
+        if not code:
+            failures.append("unparsed visible claim was excused by the archived comment")
+        else:
+            print("OK: unparsed visible claim remains rejected beside an archived comment")
+
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        for label, replacement, wrong in (
+            ("archived-inline-correct", "str<!-- archived <text>old legend</text> -->onger contrast is larger", False),
+            ("archived-inline-wrong", "faint<!-- archived <text>old legend</text> -->er contrast is larger", True),
+            ("archived-inline-unparsed", "larger<!-- archived <text>old legend</text> --> means something stronger eventually", True),
+        ):
+            source = light_source.replace("stronger contrast is larger", replacement)
+            code, output = run(write(directory, label + ".html", source))
+            if bool(code) != wrong or (not wrong and "1 making a directional tone claim" not in output):
+                failures.append(f"{label}: archived closing markup changed visible claim parsing: {output}")
+            else:
+                print(f"OK: {label} preserves complete visible copy")
+
     for failure in failures:
         print("FAIL: {}".format(failure))
     if failures:
