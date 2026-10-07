@@ -71,4 +71,6 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 Focal-text contrast measurement accepts finite unitless and explicit `px` coordinates. Unsupported relative units or malformed lengths produce a named measurement finding, never a traceback; this does not add a quantitative cell-geometry check.
 
+Focal-text contrast composites translucent foreground text against the resolved focal-cell fill before measuring WCAG AA. The 4.5:1 minimum applies to that foreground/background pair in both themes.
+
 **No `transform` on any verified element.** Bake any coordinate offsets directly into `x`/`y` attributes.

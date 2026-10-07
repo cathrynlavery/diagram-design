@@ -495,7 +495,7 @@ def check_file(path: Path) -> list[str]:
                 continue
             if not (x0 <= text["x"] <= x0 + width and y0 <= text["y"] <= y0 + height):
                 continue
-            text_rgb = _parse_color(text["fill"])
+            text_rgb = _parse_color(text["fill"], bg_rgb)
             if text_rgb is None:
                 continue
             ratio = _contrast_ratio(text_rgb, bg_rgb)
