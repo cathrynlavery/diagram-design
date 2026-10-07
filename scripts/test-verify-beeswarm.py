@@ -223,6 +223,21 @@ class Harness:
 
 
 def run_cases(h: Harness) -> int:
+
+    separated = ''.join(dot(i * 10, drawn_cy=150 + i * 10) for i in range(24))
+    h.expect_clean("a separated value axis remains measurable", document(separated, TICKS))
+    collapsed = ''.join(dot(i * 10, drawn_cx=500, drawn_cy=150 + i * 10)
+                        for i in range(24))
+    collapsed_ticks = ''.join(tick(value, position=500) for value in (0, 100, 200, 400))
+    h.expect_finding("distinct values cannot share a zero scale despite legal dodge",
+                     document(collapsed, collapsed_ticks), "zero or non-finite scale")
+    inverted = ''.join(dot(i * 10, drawn_cx=1000 - cx(i * 10), drawn_cy=150 + i * 10)
+                       for i in range(24))
+    inverted_ticks = ''.join(tick(value, position=1000 - cx(value))
+                             for value in (0, 100, 200, 400))
+    h.expect_clean("a finite nonzero inverted axis remains measurable",
+                   document(inverted, inverted_ticks))
+
     # ── Positive polarity: honest figures pass ────────────────────────────
     for path in SHIPPED:
         found = verify.check(path)
