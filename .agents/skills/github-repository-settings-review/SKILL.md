@@ -11,7 +11,7 @@ expected baseline.
 
 ## Admin preflight
 
-Resolve the target only from `git remote get-url upstream`, then use `gh repo
+Resolve the target only from `git remote get-url origin`, then use `gh repo
 view "$upstream_url" --json nameWithOwner,viewerPermission` to verify that it is
 `cathrynlavery/diagram-design`. Stop if it does not match. Run `gh auth status` and continue only when
 `viewerPermission` is `ADMIN`.
