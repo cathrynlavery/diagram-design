@@ -101,6 +101,7 @@ import re
 import sys
 import unicodedata
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -704,7 +705,7 @@ def check_plot(columns: list, findings: list, name: str) -> bool:
             )
             ok = False
     gutters = []
-    for left, right in zip(columns, columns[1:]):
+    for left, right in pairwise(columns):
         gap = right.x - left.right
         if gap < -EDGE_TOLERANCE:
             findings.append(

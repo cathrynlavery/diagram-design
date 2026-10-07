@@ -94,7 +94,7 @@ def _inflate(payload: str) -> str | None:
     """Undo draw.io's base64 + raw-deflate + URL-encoding pipeline."""
     try:
         raw = base64.b64decode(payload, validate=False)
-    except Exception:
+    except ValueError:
         return None
     for wbits in (-15, 15, 47):
         try:
@@ -103,8 +103,8 @@ def _inflate(payload: str) -> str | None:
             _fail(
                 f"decoded diagram exceeds the {MAX_XML_BYTES // (1024 * 1024)} MiB limit"
             )
-        except Exception:
-            continue
+        except zlib.error:
+            continue  # Invalid framing; try the next supported wrapper.
         # draw.io URL-encodes before deflating; unquote is a no-op if it didn't.
         return unquote(text)
     return None

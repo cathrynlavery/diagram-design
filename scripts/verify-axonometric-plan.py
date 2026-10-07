@@ -168,9 +168,10 @@ def verify_source(source: str, name: str) -> list[str]:
             if a is b:
                 continue
             sb = screen_box(origin, b["rect"], b["z"], b["z"] + b["h"])
-            if overlaps(sa, sb) and behind(a["rect"], b["rect"]) and not behind(b["rect"], a["rect"]):
-                if order[id(a["el"])] > order[id(b["el"])]:
-                    errors.append(f"{name}: {a['label']} is behind {b['label']} but painted after it")
+            if (overlaps(sa, sb) and behind(a["rect"], b["rect"])
+                    and not behind(b["rect"], a["rect"])
+                    and order[id(a["el"])] > order[id(b["el"])]):
+                errors.append(f"{name}: {a['label']} is behind {b['label']} but painted after it")
 
     # Tags: centred on their point, one per named room or building, never overlapping.
     tags = []

@@ -2,6 +2,14 @@
 target-version = "py310"
 output-format = "github"
 
+[tool.ruff.lint]
+ignore = [
+  # The existing printf-style fixtures and diagnostics are stable; conversion can change tuple formatting semantics.
+  "UP031",
+  # Repository scripts are invoked through Python in commands and CI, so executable mode is not required.
+  "EXE001",
+]
+
 [tool.ty.environment]
 python-version = "3.10"
 

@@ -100,6 +100,7 @@ import re
 import sys
 from collections.abc import Iterable
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -706,7 +707,7 @@ def stacked_order(layers: list) -> list:
 def check_stack(layers: list, findings: list, name: str) -> None:
     """Layers must tile: each bottom is the previous top; envelope centred."""
     ordered = stacked_order(layers)
-    for below, above in zip(ordered, ordered[1:]):
+    for below, above in pairwise(ordered):
         worst = None
         for i in range(len(below.top)):
             gap = above.bottom[i][1] - below.top[i][1]

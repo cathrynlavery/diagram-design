@@ -29,8 +29,8 @@ def git(root: Path, *args: str) -> str:
         ["git", *args],
         cwd=root,
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
+        check=False,
     )
     if result.returncode:
         detail = result.stderr.strip() or result.stdout.strip()

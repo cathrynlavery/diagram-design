@@ -31,7 +31,7 @@ SHIPPED = sorted(ASSETS.glob("example-exploded*.html"))
 
 def run(*args: str) -> tuple[int, str]:
     result = subprocess.run([sys.executable, str(CHECKER), *args], capture_output=True,
-                            text=True, encoding="utf-8", errors="replace")
+                            text=True, encoding="utf-8", errors="replace", check=False)
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 
 

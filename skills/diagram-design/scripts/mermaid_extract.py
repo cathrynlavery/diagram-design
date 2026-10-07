@@ -405,9 +405,8 @@ def _statement_complete(text: str) -> bool:
             quote = character
         elif character in "[({":
             stack.append(character)
-        elif character in "])}":
-            if stack and stack[-1] == pairs[character]:
-                stack.pop()
+        elif character in "])}" and stack and stack[-1] == pairs[character]:
+            stack.pop()
     return quote is None and not stack
 
 
@@ -908,7 +907,7 @@ def _parse_sequence(
                 target,
                 clean_label(label),
                 "dashed"
-                if token.startswith("--") or token.startswith("<<--")
+                if token.startswith(("--", "<<--"))
                 else "solid",
                 arrowhead,
                 bidirectional=token.startswith("<<"),
@@ -1218,14 +1217,14 @@ def digest(
                 f"## Diagram {diagram.index} — {diagram.kind}",
                 "",
                 f"- source layout: none (Mermaid is layout-free); direction: {diagram.direction}",
-                f"- nodes: {info['nodes_total']} total / {info['nodes_drawable']} drawable / "
-                f"{info['containers']} containers, depth {info['max_depth']}",
-                f"- edges: {info['edges_total']} ({info['edges_labeled']} labeled, "
-                f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}",
+                (f"- nodes: {info['nodes_total']} total / {info['nodes_drawable']} drawable / "
+                f"{info['containers']} containers, depth {info['max_depth']}"),
+                (f"- edges: {info['edges_total']} ({info['edges_labeled']} labeled, "
+                f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}"),
                 f"- shapes: {info['shapes']}",
                 f"- type candidates: {', '.join(info['type_candidates'])}",
-                f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
-                f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
+                (f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
+                f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)"),
             ]
         )
         if diagram.discarded["style_directives"] or diagram.discarded["click_handlers"]:

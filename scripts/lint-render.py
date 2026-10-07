@@ -433,8 +433,8 @@ def clipping_findings(page, survey):
             findings.append(
                 (
                     "unmeasurable",
-                    f"{entry['label']} sits inside scrolling {entry['blockedBy']}; "
-                    "clipping cannot be measured through it",
+                    (f"{entry['label']} sits inside scrolling {entry['blockedBy']}; "
+                    "clipping cannot be measured through it"),
                 )
             )
         chain = entry["chain"][:MAX_ANCESTOR_STAGES]
@@ -474,8 +474,8 @@ def clipping_findings(page, survey):
             findings.append(
                 (
                     "clipped",
-                    f"{where} paints outside its box: {spills} "
-                    f"({diff['count']} px of ink cut off at {scale:g}x)",
+                    (f"{where} paints outside its box: {spills} "
+                    f"({diff['count']} px of ink cut off at {scale:g}x)"),
                 )
             )
             # One report per svg is enough; deeper stages describe the same spill.
@@ -518,25 +518,25 @@ SVG_CASES = [
     ),
     (
         "marker-spill",
-        '<defs><marker id="a" markerWidth="30" markerHeight="30" refX="0" refY="5" overflow="visible">'
+        ('<defs><marker id="a" markerWidth="30" markerHeight="30" refX="0" refY="5" overflow="visible">'
         '<path d="M0,0 L30,5 L0,10 Z" fill="#000"/></marker></defs>'
-        '<line x1="100" y1="50" x2="199" y2="50" stroke="#000" marker-end="url(#a)"/>',
+        '<line x1="100" y1="50" x2="199" y2="50" stroke="#000" marker-end="url(#a)"/>'),
         "",
         None,
         True,
     ),
     (
         "filter-bleed",
-        '<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>'
-        '<rect x="165" y="10" width="30" height="20" fill="#000" filter="url(#b)"/>',
+        ('<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>'
+        '<rect x="165" y="10" width="30" height="20" fill="#000" filter="url(#b)"/>'),
         "",
         None,
         True,
     ),
     (
         "clip-path-keeps-it-safe",
-        '<clipPath id="c"><rect x="0" y="0" width="200" height="100"/></clipPath>'
-        '<rect x="150" y="10" width="400" height="30" fill="#000" clip-path="url(#c)"/>',
+        ('<clipPath id="c"><rect x="0" y="0" width="200" height="100"/></clipPath>'
+        '<rect x="150" y="10" width="400" height="30" fill="#000" clip-path="url(#c)"/>'),
         "",
         None,
         False,
@@ -1079,6 +1079,7 @@ def export_png_failures(context, label, html, recipe):
             run = subprocess.run(
                 [sys.executable, str(script), str(source), str(out), "1"],
                 capture_output=True, text=True, timeout=EXPORT_TIMEOUT,
+                check=False,
             )
         except subprocess.TimeoutExpired:
             return [f"{label}: template-export: the export.md recipe did not finish in {EXPORT_TIMEOUT}s"]
@@ -1441,6 +1442,7 @@ def self_test(context):
 def main():
     args = parse_args()
     try:
+        from playwright.sync_api import Error as PlaywrightError
         from playwright.sync_api import sync_playwright
     except ImportError:
         print(
@@ -1460,7 +1462,7 @@ def main():
     with sync_playwright() as playwright:
         try:
             browser = launch(playwright, args.fonts)
-        except Exception as error:
+        except PlaywrightError as error:
             print(
                 f"Could not launch a browser: {error}\n"
                 "  playwright install chromium\n"
@@ -1481,7 +1483,7 @@ def main():
             page = context.new_page()
             try:
                 findings = check(page, path)
-            except Exception as error:
+            except PlaywrightError as error:
                 findings = [("render-error", str(error).splitlines()[0])]
             finally:
                 page.close()

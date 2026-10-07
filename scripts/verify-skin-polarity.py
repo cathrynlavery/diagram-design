@@ -73,8 +73,10 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -127,13 +129,13 @@ TONE_ALT = "|".join(term[0] for term in TONE_TERMS)
 
 MAGNITUDE_TERMS = (
     (
-        r"largest|larger|biggest|bigger|greatest|greater|highest|higher|"
-        r"longest|longer|tallest|taller|most|more",
+        (r"largest|larger|biggest|bigger|greatest|greater|highest|higher|"
+        r"longest|longer|tallest|taller|most|more"),
         +1,
     ),
     (
-        r"smallest|smaller|fewest|fewer|lowest|lower|shortest|shorter|"
-        r"lesser|least|less",
+        (r"smallest|smaller|fewest|fewer|lowest|lower|shortest|shorter|"
+        r"lesser|least|less"),
         -1,
     ),
 )
@@ -441,7 +443,7 @@ def collect_members(source: str) -> dict[tuple[float, ...], list[Member]]:
                     rank = None
                 break
         # NaN compares unequal to itself and would corrupt every ordering test.
-        if rank is None or rank != rank:
+        if rank is None or math.isnan(rank):
             continue
         groups.setdefault(ink, []).append(Member(rank, alpha, ink, offset))
     return groups
@@ -449,7 +451,7 @@ def collect_members(source: str) -> dict[tuple[float, ...], list[Member]]:
 
 def direction(values, epsilon):
     """+1 strictly rising, -1 strictly falling, 0 neither."""
-    pairs = list(zip(values, values[1:]))
+    pairs = list(pairwise(values))
     if not pairs:
         return 0
     if all(later - earlier > epsilon for earlier, later in pairs):
@@ -606,9 +608,9 @@ def check(path):
         ink[1],
         ink[2],
         " -> ".join(f"{member.alpha:g}" for member in ramp),
-        int(round(paper[0])),
-        int(round(paper[1])),
-        int(round(paper[2])),
+        round(paper[0]),
+        round(paper[1]),
+        round(paper[2]),
     )
 
     for claim in claims:

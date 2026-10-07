@@ -436,7 +436,7 @@ def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str | None) 
             "the accent focal treatment is editorial and marks at most one bar; found "
             + ", ".join(bar.label for bar in focal)
         )
-    focal_set = set(id(bar) for bar in focal)
+    focal_set = {id(bar) for bar in focal}
     # Absolute check: the documented mapping is tint-for-increase and hollow
     # paper-for-decrease, both over the muted stroke. Comparing the two polarity
     # sets against each other cannot see a single-polarity walk, or one whose

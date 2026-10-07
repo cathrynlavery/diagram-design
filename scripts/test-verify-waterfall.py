@@ -30,6 +30,7 @@ def run(*args: str) -> tuple[int, str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 
@@ -127,8 +128,8 @@ def main() -> int:
             "non-numeric data-carry",
         ),
         (
-            "label stolen from elsewhere: the bar's own label is gone and a "
-            "decoy on the far side of the chart carries its number",
+            ("label stolen from elsewhere: the bar's own label is gone and a "
+            "decoy on the far side of the chart carries its number"),
             '<text x="448" y="179" fill="#4f5d75" font-size="8" '
             'font-family="\'Geist Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
             '<text x="5" y="5" fill="#4f5d75" font-size="8" '

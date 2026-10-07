@@ -27,8 +27,9 @@ import math
 import re
 import sys
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
-from typing import TypedDict
+from typing import ClassVar, TypedDict
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
@@ -69,7 +70,7 @@ class Part(TypedDict):
 
 
 class Tree(HTMLParser):
-    VOID = {"path", "line", "circle", "rect", "polygon", "ellipse", "meta", "link", "br", "img", "input", "stop"}
+    VOID: ClassVar[set[str]] = {"path", "line", "circle", "rect", "polygon", "ellipse", "meta", "link", "br", "img", "input", "stop"}
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -106,7 +107,7 @@ def corners(r):
 
 
 def outline_point(origin, r, theta, z, k=None):
-    k = int(math.floor(theta / 90)) % 4 if k is None else k
+    k = math.floor(theta / 90) % 4 if k is None else k
     cx, cy = corners(r)[k]
     t = math.radians(theta)
     x, y = cx + r[4] * math.cos(t), cy + r[4] * math.sin(t)
@@ -121,12 +122,12 @@ def walk_points(origin, r, a, b, z):
     step = 1 if rising else -1
     while (b - th) * step > 1e-9:
         nxt = min(b, (math.floor(th / 90) + 1) * 90) if rising else max(b, (math.ceil(th / 90) - 1) * 90)
-        k = int(math.floor((th + nxt) / 2 / 90)) % 4
+        k = math.floor((th + nxt) / 2 / 90) % 4
         pts.append(outline_point(origin, r, nxt, z, k))
         arcs.append(r[4] > 0)
         th = nxt
         if (b - th) * step > 1e-9:
-            pts.append(outline_point(origin, r, th, z, int(math.floor((th + step) / 90)) % 4))
+            pts.append(outline_point(origin, r, th, z, math.floor((th + step) / 90) % 4))
             arcs.append(False)
     return pts, arcs
 
@@ -277,7 +278,7 @@ def verify_source(source: str, name: str) -> list[str]:
             errors.append(f"{name}: level {k} parts sit at different z {sorted(zs)}; a level explodes together")
     if order and abs(levels[order[0]][0]["z"]) > TOL:
         errors.append(f"{name}: the bottom level must stay at z = 0; found {levels[order[0]][0]['z']}")
-    for k0, k1 in zip(order, order[1:]):
+    for k0, k1 in pairwise(order):
         top = levels[k0][0]["z"] + max(p["t"] for p in levels[k0])
         actual = levels[k1][0]["z"] - top
         if abs(actual - gap) > TOL:
@@ -332,7 +333,7 @@ def verify_source(source: str, name: str) -> list[str]:
     if len(columns) > 1:
         errors.append(f"{name}: labels sit in {len(columns)} columns {sorted(columns)}; use one aligned column")
     anchor_ys.sort()
-    for (ya, na), (yb, nb) in zip(anchor_ys, anchor_ys[1:]):
+    for (ya, na), (yb, nb) in pairwise(anchor_ys):
         if yb - ya < LABEL_PITCH - TOL:
             errors.append(f"{name}: labels {na!r} and {nb!r} are {yb - ya:.1f}px apart; the minimum is {LABEL_PITCH}")
 

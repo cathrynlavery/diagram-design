@@ -655,6 +655,7 @@ def run_cases(h: Harness) -> int:
         result = subprocess.run(
             [sys.executable, str(script)] + [str(p) for p in SHIPPED],
             capture_output=True, text=True,
+            check=False,
         )
         h.check(
             "%s skips all three shipped beeswarm files" % sibling,

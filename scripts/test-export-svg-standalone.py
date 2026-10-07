@@ -265,8 +265,8 @@ class ExportSvgStandaloneTests(unittest.TestCase):
                 "#example-it-state-root .zone-mask, #example-it-state-root .node-mask",
             ),
             "example-dp-security-matrix.html": (
-                "#example-dp-security-matrix-root .component-head, "
-                "#example-dp-security-matrix-root .component {",
+                ("#example-dp-security-matrix-root .component-head, "
+                "#example-dp-security-matrix-root .component {"),
                 "#example-dp-security-matrix-root .cell {",
             ),
             "example-process.html": ("#example-process-root text {",),

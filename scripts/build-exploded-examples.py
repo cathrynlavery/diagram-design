@@ -18,6 +18,7 @@ import argparse
 import math
 import sys
 from dataclasses import dataclass, field
+from itertools import pairwise
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -77,9 +78,9 @@ def draw_part(P, p: Part, sk, focal: bool, uid: str):
         out += [f'<path d="{outline(P, ir, z1)}" fill="{sk["base"]}"/>',
                 f'<path d="{outline(P, ir, z1)}" fill="{sk["cavity"]}"/>',
                 f'<clipPath id="{uid}-cavity"><path d="{outline(P, ir, z1)}"/></clipPath>',
-                f'<g clip-path="url(#{uid}-cavity)"><path d="{outline(P, ir, z0 + FLOOR)}" fill="{sk["base"]}"/>'
+                (f'<g clip-path="url(#{uid}-cavity)"><path d="{outline(P, ir, z0 + FLOOR)}" fill="{sk["base"]}"/>'
                 f'<path d="{outline(P, ir, z0 + FLOOR)}" fill="{sk["floor"]}"/>'
-                f'<path d="{outline(P, ir, z0 + FLOOR)}" fill="none" stroke="{inner}" stroke-width="0.8"/></g>',
+                f'<path d="{outline(P, ir, z0 + FLOOR)}" fill="none" stroke="{inner}" stroke-width="0.8"/></g>'),
                 f'<path d="{outline(P, ir, z1)}" fill="none" stroke="{inner}" stroke-width="0.8"/>',
                 f'<path d="{M(point(P, p.rect, 135, z1))} {walk(P, p.rect, 135, 315, z1)}" fill="none" stroke="{stroke}" stroke-width="1.2" stroke-linejoin="round"/>']
         return pr, out
@@ -230,7 +231,7 @@ def explode(parts, gap_k):
                         raise ValueError(f"leader of {parts[i].key} crosses {parts[j].key} on one level")
                     bad = True
         ys = sorted((pr["anchor"][1], lv[i], parts[i].key) for i, pr in enumerate(prs))
-        for (y1, l1, k1), (y2, l2, k2) in zip(ys, ys[1:]):
+        for (y1, l1, k1), (y2, l2, k2) in pairwise(ys):
             if y2 - y1 < LABEL_PITCH:
                 if l1 == l2:
                     raise ValueError(f"labels of {k1} and {k2} collide on one level")

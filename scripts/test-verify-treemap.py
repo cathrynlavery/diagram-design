@@ -37,6 +37,7 @@ def run(path: Path) -> tuple[int, str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 

@@ -157,6 +157,7 @@ def run(*args: str) -> subprocess.CompletedProcess:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
 
 

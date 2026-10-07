@@ -312,9 +312,9 @@ SYNTHETIC_POLICY_COMMANDS = [
     "python3 scripts/build-readme-thumbs.py --check",
     "python3 scripts/lint-render.py --self-test",
     "python3 scripts/lint-render.py --all",
-    "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
+    ("python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
     "skills/diagram-design/assets/icons.html "
-    "skills/diagram-design/references/primitive-icons.md",
+    "skills/diagram-design/references/primitive-icons.md"),
 ]
 
 SYNTHETIC_CI = """\
@@ -522,22 +522,22 @@ def self_test() -> list[str]:
             "CI gate missing from policy",
             synthetic_ci(EXTRA_GATE_STEP),
             SYNTHETIC_POLICY_COMMANDS,
-            "gates.local_commands omits gates that ci.yml runs: "
-            "python3 scripts/test-export-svg-standalone.py",
+            ("gates.local_commands omits gates that ci.yml runs: "
+            "python3 scripts/test-export-svg-standalone.py"),
         ),
         (
             "CI gate inside command substitution missing from policy",
             synthetic_ci(SUBSTITUTED_GATE_STEP),
             SYNTHETIC_POLICY_COMMANDS,
-            "gates.local_commands omits gates that ci.yml runs: "
-            "python3 scripts/test-export-wait.py",
+            ("gates.local_commands omits gates that ci.yml runs: "
+            "python3 scripts/test-export-wait.py"),
         ),
         (
             "policy command CI does not run",
             synthetic_ci(),
             SYNTHETIC_POLICY_COMMANDS + ["python3 scripts/test-retired.py"],
-            "gates.local_commands lists commands that ci.yml does not run: "
-            "python3 scripts/test-retired.py",
+            ("gates.local_commands lists commands that ci.yml does not run: "
+            "python3 scripts/test-retired.py"),
         ),
         (
             "policy drops the version gate",
@@ -550,15 +550,15 @@ def self_test() -> list[str]:
             synthetic_ci(),
             [c for c in SYNTHETIC_POLICY_COMMANDS if c != icons_command]
             + [icons_command.replace("--ignore-space-at-eol ", "")],
-            "gates.local_commands lists commands that ci.yml does not run: "
-            "python3 scripts/build-icons.py && git diff --exit-code",
+            ("gates.local_commands lists commands that ci.yml does not run: "
+            "python3 scripts/build-icons.py && git diff --exit-code"),
         ),
         (
             "unmapped CI command",
             synthetic_ci(UNMAPPED_STEP),
             SYNTHETIC_POLICY_COMMANDS,
-            "cannot map to a local gate (extend scripts/test-maintainer-policy.py): "
-            "bash scripts/check-something.sh",
+            ("cannot map to a local gate (extend scripts/test-maintainer-policy.py): "
+            "bash scripts/check-something.sh"),
         ),
         (
             "CI gate inside command substitution registered",
@@ -584,8 +584,8 @@ def self_test() -> list[str]:
             synthetic_ci(LOCKED_CLAUDE_STEP),
             SYNTHETIC_POLICY_COMMANDS
             + [
-                "npm ci --prefix .github/ci/node && "
-                ".github/ci/node/node_modules/.bin/claude plugin validate . --strict"
+                ("npm ci --prefix .github/ci/node && "
+                ".github/ci/node/node_modules/.bin/claude plugin validate . --strict")
             ],
             None,
         ),

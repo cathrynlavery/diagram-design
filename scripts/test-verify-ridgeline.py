@@ -74,6 +74,7 @@ def invoke(argv):
     result = subprocess.run(
         argv, capture_output=True, text=True,
         encoding="utf-8", errors="replace", env=CHILD_ENV,
+        check=False,
     )
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 

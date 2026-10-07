@@ -286,6 +286,7 @@ def skill_lf_pin_problem(root: Path) -> str | None:
             capture_output=True,
             text=True,
             env=env,
+            check=False,
         )
     if result.returncode != 0:
         return f"git check-attr failed: {result.stderr.strip()}"

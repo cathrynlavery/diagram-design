@@ -15,6 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import ClassVar
 from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -125,7 +126,7 @@ def google_fonts_families(url):
 class ResourceParser(HTMLParser):
     """Collect remote resource dependencies without executing the document."""
 
-    RESOURCE_ATTRS = {
+    RESOURCE_ATTRS: ClassVar[dict[str, tuple[str, ...]]] = {
         "base": ("href",),
         "link": ("href",),
         "script": ("src",),
@@ -161,11 +162,7 @@ class ResourceParser(HTMLParser):
         for name, value in data.items():
             compact = "".join(character for character in value if ord(character) > 32).casefold()
             if (
-                name.startswith("on")
-                or name == "srcdoc"
-                or tag == "base"
-                or compact.startswith("javascript:")
-                or compact.startswith("data:text/html")
+                name.startswith("on") or name == "srcdoc" or tag == "base" or compact.startswith(("javascript:", "data:text/html"))
             ):
                 self.executable.append((line, tag, name))
         for attr in self.RESOURCE_ATTRS.get(tag, ()):
@@ -271,9 +268,8 @@ class AccessibleSvgParser(HTMLParser):
 
         if self.svg_stack:
             parent = self.svg_stack[-1]
-            if len(self.element_stack) == parent.content_depth:
-                if parent.first_child is None:
-                    parent.first_child = tag
+            if len(self.element_stack) == parent.content_depth and parent.first_child is None:
+                parent.first_child = tag
             if element_id:
                 for svg in self.svg_stack:
                     svg.ids.add(element_id)

@@ -723,6 +723,7 @@ def test_ci_version_gate_executes() -> None:
                 capture_output=True,
                 env={**os.environ, "EVENT_NAME": "pull_request"},
                 text=True,
+                check=False,
             )
 
         plain = run_step()

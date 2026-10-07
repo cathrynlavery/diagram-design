@@ -231,7 +231,7 @@ def parse_cells(source: str) -> list[dict]:
             value = float(val_str)
         except ValueError:
             continue
-        if not (0.0 <= value < 1e9) or value != value:  # reject nan/inf/negative
+        if not 0.0 <= value < 1e9:  # reject nan/inf/negative
             continue
 
         fill = _attr(attrs_str, "fill") or ""

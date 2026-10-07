@@ -11,8 +11,8 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
-from typing import NoReturn
 from pathlib import Path
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parent.parent
 TYPE_SEQ = ROOT / "skills/diagram-design/references/type-sequence.md"
@@ -67,21 +67,19 @@ def main() -> int:
         body = path.read_text(encoding="utf-8")
         if "cold cache" not in body.lower() and "Article request" not in body:
             fail(f"{path.name} no longer looks like the cold-cache example")
-        if "ALT" in body and "example-sequence-oauth" not in path.name:
-            # cold-cache must not grow an ALT frame (special example only)
-            # allow the word only in unrelated comments; require no ALT operator tab content
-            if re.search(r">ALT<", body):
-                fail(f"{path.name} unexpectedly contains ALT fragment tab")
+        # Cold-cache must not grow an ALT frame; allow the word in unrelated comments.
+        if ("ALT" in body and "example-sequence-oauth" not in path.name
+                and re.search(r">ALT<", body)):
+            fail(f"{path.name} unexpectedly contains ALT fragment tab")
     ok("cold-cache sequence trio intact (no ALT tab)")
 
     for path in OAUTH:
         if not path.is_file():
             fail(f"oauth example missing: {path.name}")
         body = path.read_text(encoding="utf-8")
-        if ">ALT<" not in body and ">ALT</text>" not in body:
-            # tab text is ALT
-            if not re.search(r">\s*ALT\s*<", body):
-                fail(f"{path.name} missing ALT operator label")
+        if (">ALT<" not in body and ">ALT</text>" not in body
+                and not re.search(r">\s*ALT\s*<", body)):
+            fail(f"{path.name} missing ALT operator label")
         if "[token valid]" not in body:
             fail(f"{path.name} missing [token valid] guard")
         if "[else" not in body and "[else · 401]" not in body:
@@ -116,7 +114,7 @@ def main() -> int:
         str(LINT),
         *[str(p) for p in OAUTH],
     ]
-    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, check=False)
     print(proc.stdout, end="")
     if proc.stderr:
         print(proc.stderr, end="", file=sys.stderr)
@@ -132,6 +130,7 @@ def main() -> int:
         cwd=ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     print(proc2.stdout, end="")
     if proc2.returncode != 0:

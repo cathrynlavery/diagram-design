@@ -146,7 +146,8 @@ def run_snippet(snippet: str, src: Path, out: Path) -> str:
     sys.argv = ["export", str(src), str(out)]
     try:
         with contextlib.redirect_stderr(stderr):
-            exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})
+            # Executing the checked-in documentation snippet is the behavior under test.
+            exec(compile(snippet, str(EXPORT_DOC), "exec"), {"__name__": "export_snippet"})  # noqa: S102
     finally:
         sys.argv, sys.stderr = old_argv, old_stderr
     return stderr.getvalue()
@@ -235,7 +236,7 @@ def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
     out = tmp / "never.png"
     try:
         run_snippet(snippet, missing, out)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- assert that every non-timeout failure propagates
         if type(exc).__name__ == "TimeoutError":
             raise AssertionError(
                 "missing-source: goto failure surfaced as a TimeoutError; "

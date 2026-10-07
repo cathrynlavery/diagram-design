@@ -316,19 +316,19 @@ class ContractTests(unittest.TestCase):
     def test_cli_discovery_and_failures(self):
         env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
         for args in ([], ['--all']):
-            result = subprocess.run([sys.executable, str(CHECKER), *args], capture_output=True, text=True, env=env)
+            result = subprocess.run([sys.executable, str(CHECKER), *args], capture_output=True, text=True, env=env, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn('3 file(s)', result.stdout)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'diagram.html'
             path.write_text(GOOD, encoding='utf-8')
-            result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True, env=env)
+            result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True, env=env, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             path.write_text(GOOD.replace('data-signature="web:v1"', 'data-signature=""', 1), encoding='utf-8')
-            result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True, env=env)
+            result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True, env=env, check=False)
             self.assertEqual(result.returncode, 1)
             path.unlink()
-            result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True, env=env)
+            result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True, env=env, check=False)
             self.assertEqual(result.returncode, 2)
 
 

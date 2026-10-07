@@ -76,6 +76,7 @@ def git(root: Path, *args: str, data: bytes | None = None) -> bytes:
         ["git", "--literal-pathspecs", "-C", str(root), *args],
         input=data,
         capture_output=True,
+        check=False,
     )
     if result.returncode != 0:
         raise SystemExit(

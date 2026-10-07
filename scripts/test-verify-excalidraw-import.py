@@ -25,6 +25,7 @@ def run_verifier(root: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
 
 
