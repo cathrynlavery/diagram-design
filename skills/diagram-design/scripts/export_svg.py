@@ -23,6 +23,7 @@ The algorithm matches ``references/export.md``. No third-party deps.
 from __future__ import annotations
 
 import argparse
+import html as html_entities
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -140,6 +141,39 @@ def xmlify_attributes(svg: str) -> str:
         pos = stop
         if close_at == -1:
             break
+    return "".join(out)
+
+
+def normalize_html_entities(svg: str) -> str:
+    """Convert named HTML references to XML-safe text without decoding markup."""
+    opaque = re.compile(
+        r"<!--.*?-->|<!\[CDATA\[.*?\]\]>|"
+        r"(?P<opening><(?P<tag>style|script)\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>)"
+        r".*?</(?P=tag)\s*>", re.DOTALL | re.IGNORECASE,
+    )
+    named = re.compile(r"&[A-Za-z][A-Za-z0-9]+;")
+
+    def replace_entity(match: re.Match[str]) -> str:
+        original = match.group(0)
+        if original in ("&amp;", "&lt;", "&gt;", "&apos;", "&quot;"):
+            return original
+        decoded = html_entities.entities.html5.get(original[1:])
+        if decoded is None:
+            return original
+        return (html_entities.escape(decoded, quote=True)
+                .replace("\t", "&#9;").replace("\n", "&#10;").replace("\r", "&#13;"))
+
+    out: list[str] = []
+    pos = 0
+    for match in opaque.finditer(svg):
+        out.append(named.sub(replace_entity, svg[pos:match.start()]))
+        opening = match.group("opening")
+        if opening is not None:
+            out.append(named.sub(replace_entity, opening) + match.group(0)[len(opening):])
+        else:
+            out.append(match.group(0))
+        pos = match.end()
+    out.append(named.sub(replace_entity, svg[pos:]))
     return "".join(out)
 
 
@@ -483,7 +517,7 @@ def export_svg_document(html: str, source_path: Path) -> str:
     """Transform source HTML into a standalone SVG document string."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
-    svg = xmlify_attributes(extract_first_svg(html))
+    svg = normalize_html_entities(xmlify_attributes(extract_first_svg(html)))
     ensure_viewbox(svg)
     svg = ensure_xmlns(svg)
     opening = START_TAG_RE.match(svg)

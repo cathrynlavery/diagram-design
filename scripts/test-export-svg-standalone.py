@@ -250,6 +250,30 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn('#literal-root .paint[data-label="#original"]', svg)
         self.assertIn('#literal-root .paint { stroke:#0000ff }', svg)
 
+    def test_named_html_entities_retain_readable_text(self) -> None:
+        html = '<svg viewBox="0 0 40 40"><title>R&nbsp;D &copy;</title><desc>&LT;literal&GT;</desc>'
+        html += '<text data-label="&quot;A&nbsp;B&quot;">R&nbsp;D &amp;nbsp; &copy; &#160;</text></svg>'
+        result = self.mod.export_svg_document(html, Path("entities.html"))
+        root = ET.fromstring(result)
+        text = root.find("{http://www.w3.org/2000/svg}text")
+        self.assertEqual(text.text, "R\u00a0D &nbsp; © \u00a0")
+        self.assertEqual(text.get("data-label"), '"A\u00a0B"')
+        self.assertEqual(root.find("{http://www.w3.org/2000/svg}desc").text, "<literal>")
+        opaque = '<!-- &nbsp; --><![CDATA[&nbsp;]]><style>.label {content:"&nbsp;"}</style>'
+        self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
+        self.assertEqual(self.mod.normalize_html_entities('&notARealEntity;'), '&notARealEntity;')
+
+    def test_raw_text_opening_attributes_normalize_entities(self) -> None:
+        for tag in ("style", "script"):
+            raw = f'<{tag} title="Copyright &copy; > literal">raw &copy; content</{tag}>'
+            expected = f'<{tag} title="Copyright © > literal">raw &copy; content</{tag}>'
+            self.assertEqual(self.mod.normalize_html_entities(raw), expected)
+        html = '<svg viewBox="0 0 10 10"><style title="Copyright &copy; > literal">.label {fill:red}</style><rect class="label" width="10" height="10"/></svg>'
+        result = ET.fromstring(self.mod.export_svg_document(html, Path("style-attribute.html")))
+        style = result.find("{http://www.w3.org/2000/svg}style")
+        self.assertEqual(style.get("title"), "Copyright © > literal")
+        self.assertEqual(style.text, ".label {fill:red}")
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
