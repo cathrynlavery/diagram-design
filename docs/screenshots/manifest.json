@@ -285,8 +285,8 @@
       "slug": "medallion",
       "source": "skills/diagram-design/assets/example-medallion.html",
       "screenshot": "docs/screenshots/medallion.png",
-      "source_sha256": "e88a5b1f1f67a7bf6ad83c5144a7f79973a732f68972ba648ec81968579032eb",
-      "screenshot_sha256": "811dbce44a7bf9b7bbcdd0d3ea36389c83e23b49f81516e939f13661ac3e5ef4",
+      "source_sha256": "b80a92857cf422d50297b9eb5f0a532087af0e9d3ed9b13122409bbd230a6e4a",
+      "screenshot_sha256": "3e694cb2f244af555dd854887d54384f223d36034dcc0e46747cbed542f786dd",
       "width": 2400,
       "height": 1266
     },
