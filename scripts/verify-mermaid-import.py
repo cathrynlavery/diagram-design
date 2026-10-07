@@ -668,6 +668,40 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def check_state_descriptions(tmp: Path) -> None:
+    cases = (
+        ("idle : Waiting for message\nidle : Retrying previous request\n[*] --> idle\n", "Waiting for message\nRetrying previous request"),
+        ("[*] --> idle\nidle : Waiting for message\n", "Waiting for message"),
+        ("idle : idle\nidle : Next step\nidle --> [*]\n", "idle\nNext step"),
+        ('state "Idle display" as idle\nidle : Waiting for message\nidle --> [*]\n', "Idle display\nWaiting for message"),
+        ('idle : Waiting for message\nstate "Latest display" as idle\nidle --> [*]\n', "Latest display"),
+        ('idle : First\nidle : Second\nstate "idle" as idle\nidle --> [*]\n', "First\nSecond"),
+        ('idle : First\nidle : Second\nstate "" as idle\nidle --> [*]\n', "First\nSecond"),
+        ('idle : <br/>\nidle --> [*]\n', "idle"),
+    )
+    for index, (body, label) in enumerate(cases):
+        path = tmp / f"state-descriptions-{index}.mmd"
+        path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+        if node["label"] != label:
+            fail(f"state descriptions lost source-ordered text: {node['label']!r}")
+        if len(diagram["edges"]) != 1:
+            fail("state descriptions changed transition extraction")
+    # Exercise a large valid one-node import without copying its growing label
+    # for every line. The native benchmark is recorded separately; avoid a
+    # wall-clock assertion whose result would depend on CI host contention.
+    count = 4000
+    path = tmp / "state-descriptions-large.mmd"
+    lines = [f"description {index}" for index in range(count)]
+    path.write_text("stateDiagram-v2\n" + "".join(f"idle : {line}\n" for line in lines) + "idle --> [*]\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+    if node["label"] != "\n".join(lines) or len(diagram["edges"]) != 1:
+        fail("large repeated descriptions lost text or transitions")
+    ok("multiple state descriptions retain source order and ordinary transitions")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1039,6 +1073,7 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_state_descriptions(tmp)
         check_selection_before_parse(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)

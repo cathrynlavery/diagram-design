@@ -111,6 +111,7 @@ class Diagram:
         default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
     )
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
+    _state_descriptions: dict[str, list[str]] = field(default_factory=dict, init=False, repr=False)
 
     @property
     def node_map(self) -> dict[str, Node]:
@@ -128,6 +129,8 @@ class Diagram:
         if existing is not None:
             if label and (label != node_id or existing.label == existing.id):
                 existing.label = label
+                if label != node_id:
+                    self._state_descriptions.pop(node_id, None)
             if shape != "rect" or not existing.shape:
                 existing.shape = shape
             if parent is not None and existing.parent is None:
@@ -945,6 +948,8 @@ def _parse_state(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
     containers: list[str] = []
+    descriptions: dict[str, list[str]] = {}
+    pending_descriptions = diagram._state_descriptions
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
@@ -993,13 +998,24 @@ def _parse_state(
             continue
         description = re.match(r"^([A-Za-z_][\w.-]*)\s*:\s*(.+)$", text)
         if description:
-            diagram.add_node(
-                description.group(1), clean_label(description.group(2)), "state", parent
-            )
+            node_id, label = description.group(1), clean_label(description.group(2))
+            if node_id not in descriptions:
+                existing = diagram.node_map.get(node_id)
+                descriptions[node_id] = [existing.label] if existing and existing.label != node_id else []
+            descriptions[node_id].append(label)
+            diagram.add_node(node_id, label, "state", parent)
+            pending_descriptions[node_id] = descriptions[node_id]
             continue
         plain = re.match(r"^state\s+([\w.:-]+)$", text, re.I)
         if plain:
             diagram.add_node(plain.group(1), plain.group(1), "state", parent)
+
+    # Materialize each accumulated label once; later explicit aliases still win.
+    for node_id, parts in pending_descriptions.items():
+        label = "\n".join(parts)
+        if label:
+            diagram.node_map[node_id].label = label
+    pending_descriptions.clear()
 
 
 def _parse_er(
