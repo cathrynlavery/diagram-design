@@ -678,6 +678,8 @@ def check_state_descriptions(tmp: Path) -> None:
         ('idle : First\nidle : Second\nstate "idle" as idle\nidle --> [*]\n', "First\nSecond"),
         ('idle : First\nidle : Second\nstate "" as idle\nidle --> [*]\n', "First\nSecond"),
         ('idle : <br/>\nidle --> [*]\n', "idle"),
+        ('idle : First\nstate "Latest" as idle\nidle : Last\nidle --> [*]\n', "Latest\nLast"),
+        ('idle : First\nstate "idle" as idle\nidle : Last\nidle --> [*]\n', "First\nLast"),
     )
     for index, (body, label) in enumerate(cases):
         path = tmp / f"state-descriptions-{index}.mmd"

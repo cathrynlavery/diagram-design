@@ -975,6 +975,9 @@ def _parse_state(
         if alias:
             label, node_id, opening = alias.groups()
             diagram.add_node(node_id, clean_label(label), "container" if opening else "state", parent, container=bool(opening))
+            # A renaming alias discards earlier descriptions; later ones build on it.
+            if node_id not in pending_descriptions:
+                descriptions.pop(node_id, None)
             if opening:
                 containers.append(node_id)
             continue
