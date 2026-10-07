@@ -168,13 +168,21 @@ def _allowed_stylesheet(href: str) -> bool:
 
 
 def _style_property(attrs: dict[str, str], property_name: str) -> str | None:
+    # The last declaration wins, except that an !important declaration beats
+    # any later normal one, as in the CSS cascade.
     result: str | None = None
+    result_important = False
     for declaration in attrs.get("style", "").split(";"):
         if ":" not in declaration:
             continue
         name, raw_value = declaration.split(":", 1)
-        if name.strip().casefold() == property_name:
-            result = raw_value.split("!", 1)[0].strip().casefold()
+        if name.strip().casefold() != property_name:
+            continue
+        value, _, priority = raw_value.partition("!")
+        important = re.fullmatch(r"\s*important\s*", priority, re.I) is not None
+        if important or not result_important:
+            result = value.strip().casefold()
+            result_important = result_important or important
     return result
 
 

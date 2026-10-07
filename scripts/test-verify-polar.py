@@ -518,6 +518,14 @@ def main() -> int:
         VALID.replace('<body>', '<body><div style="display:none">').replace('</body>', '</div></body>'),
         "explicitly hidden",
     ))
+    for style in ("display:none!important; display:block",
+                  "display: none ! important ; display:block",
+                  "visibility:hidden !important; visibility:visible"):
+        cases.append((
+            f"inline important ancestor {style}",
+            VALID.replace('<body>', f'<body><div style="{style}">').replace('</body>', '</div></body>'),
+            "explicitly hidden",
+        ))
     cases.append((
         "child explicit inherit retains hidden visibility",
         VALID.replace('data-polar-category="c1"', 'data-polar-category="c1" visibility="hidden"')
@@ -552,6 +560,8 @@ def main() -> int:
             '<svg ', '<div hidden><br/></div><svg ', 1)),
         ("ordinary stylesheet layout", VALID.replace('<body>',
              '<head><style>body { display:flex; opacity:50%; visibility:visible; }</style></head><body>')),
+        ("important visible declaration wins", VALID.replace('<body>',
+             '<body><div style="display:block!important; display:none">').replace('</body>', '</div></body>')),
         ("percentage opacity remains visible", VALID.replace(
             'data-polar-category="c1"', 'data-polar-category="c1" opacity="50%"')),
         ("invalid opacity is ignored", VALID.replace(
