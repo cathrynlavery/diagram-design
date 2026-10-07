@@ -73,6 +73,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
 from pathlib import Path
@@ -101,8 +102,11 @@ PAPER_VAR_RE = re.compile(r"--color-paper\s*:\s*(?P<value>[^;}]+)", re.IGNORECAS
 # Copy a reader - or a screen reader - actually receives as a statement: rendered
 # SVG strings, the accessible description, and the editorial prose the full
 # variant wraps around the chart.
+COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# A complete inline comment must stay indivisible: its archived closing tags
+# cannot terminate the surrounding visible copy element.
 COPY_RE = re.compile(
-    r"<(?P<tag>text|desc|p|h1|h2|h3|h4|li|figcaption)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
+    r"<!--.*?-->|<(?P<tag>text|desc|p|h1|h2|h3|h4|li|figcaption)\b[^>]*>(?P<body>(?:<!--.*?-->|(?!<!--).)*?)</(?P=tag)>",
     re.IGNORECASE | re.DOTALL,
 )
 TAG_RE = re.compile(r"<[^>]+>")
@@ -238,7 +242,7 @@ def plain(body):
     inside it, would otherwise hide the claim from a substring search while a
     reader still receives the whole sentence.
     """
-    return " ".join(html.unescape(TAG_RE.sub("", body)).split())
+    return " ".join(html.unescape(TAG_RE.sub("", COMMENT_RE.sub("", body))).split())
 
 
 def excerpt(text):
@@ -319,6 +323,36 @@ def parse_fill(value):
     return parse_rgb(value) or parse_hex_fill(value)
 
 
+# A literal fill whose explicit opacity cannot be read. It is reported rather
+# than dropped, because dropping a ranked cell can hide a broken ramp.
+UNREADABLE = object()
+
+
+def painted_fill(attrs):
+    """Literal fill alpha after explicit SVG presentation opacity attributes.
+
+    CSS rules and inherited/group opacity remain outside this source checker.
+    Returns UNREADABLE when a literal fill carries an opacity that is not a
+    finite number.
+    """
+    parsed = parse_fill(attrs.get("fill", ""))
+    if parsed is None:
+        return None
+    ink, alpha = parsed
+    for name in ("fill-opacity", "opacity"):
+        if name not in attrs:
+            continue
+        token = attrs[name].strip()
+        try:
+            value = float(token[:-1]) / 100.0 if token.endswith("%") else float(token)
+        except ValueError:
+            return UNREADABLE
+        if not math.isfinite(value):
+            return UNREADABLE
+        alpha *= max(0.0, min(1.0, value))
+    return ink, alpha
+
+
 def srgb_to_linear(channel):
     ratio = channel / 255.0
     return ratio / 12.92 if ratio <= 0.04045 else ((ratio + 0.055) / 1.055) ** 2.4
@@ -368,7 +402,7 @@ def resolve_paper(source):
     return None
 
 
-def collect_members(source):
+def collect_members(source, unreadable=None):
     """Rank-bearing translucent fills, grouped by ink triple.
 
     A cell is painted twice - a paper mask, then the body - and the rank
@@ -385,6 +419,7 @@ def collect_members(source):
             name = attribute.group("name")
             if name not in attrs:  # browsers keep the first duplicate attribute
                 attrs[name] = attribute.group("value")
+        paint = painted_fill(attrs)
         signature = (
             match.group("tag").lower(),
             attrs.get("x"),
@@ -402,7 +437,7 @@ def collect_members(source):
         twinnable = any(value is not None for value in signature[1:])
         position = index_by_signature.get(signature) if twinnable else None
         if position is None:
-            merged.append([dict(attrs), match.start()])
+            merged.append([dict(attrs), match.start(), paint])
             if twinnable:
                 index_by_signature[signature] = len(merged) - 1
             continue
@@ -410,21 +445,22 @@ def collect_members(source):
         for name, value in attrs.items():
             # A translucent fill wins over the mask's opaque one, and a rank
             # attribute is adopted from whichever twin declared it.
-            parsed_fill = parse_fill(value) if name == "fill" else None
+            parsed_fill = paint if name == "fill" else None
             if name not in existing[0] or (
-                name == "fill" and parsed_fill is not None and 0.0 < parsed_fill[1] < 1.0
+                name == "fill"
+                and (
+                    parsed_fill is UNREADABLE
+                    or (parsed_fill is not None and 0.0 <= parsed_fill[1] < 1.0)
+                )
             ):
                 existing[0][name] = value
+                if name == "fill":
+                    existing[2] = paint
         existing[1] = min(existing[1], match.start())
 
     groups = {}
-    for attrs, offset in merged:
-        parsed = parse_fill(attrs.get("fill", ""))
+    for attrs, offset, parsed in merged:
         if parsed is None:
-            continue
-        ink, alpha = parsed
-        # A fully opaque fill is not a point on an opacity ramp.
-        if not 0.0 < alpha < 1.0:
             continue
         rank = None
         for name in RANK_ATTRS:
@@ -436,6 +472,15 @@ def collect_members(source):
                 break
         # NaN compares unequal to itself and would corrupt every ordering test.
         if rank is None or rank != rank:
+            continue
+        if parsed is UNREADABLE:
+            if unreadable is not None:
+                unreadable.append(offset)
+            continue
+        ink, alpha = parsed
+        # A zero-alpha ranked fill is still a point: it has paper contrast.
+        # A fully opaque fill is not a point on an opacity ramp.
+        if not 0.0 <= alpha < 1.0:
             continue
         groups.setdefault(ink, []).append(Member(rank, alpha, ink, offset))
     return groups
@@ -470,6 +515,8 @@ def classify_magnitude(word):
 def parse_claims(source):
     claims = []
     for match in COPY_RE.finditer(source):
+        if match.group("body") is None:  # An HTML comment is not a copy element.
+            continue
         copy = plain(match.group("body"))
         if not copy:
             continue
@@ -508,6 +555,8 @@ def find_unparsed(source, claims):
 
     unparsed = []
     for match in COPY_RE.finditer(source):
+        if match.group("body") is None:  # An HTML comment is not a copy element.
+            continue
         copy = plain(match.group("body"))
         if not copy:
             continue
@@ -552,7 +601,14 @@ def check(path):
             )
         return findings, True
 
-    groups = collect_members(source)
+    unreadable = []
+    groups = collect_members(source, unreadable)
+    for offset in unreadable:
+        findings.append(
+            "{}:{}: a ranked fill declares an unreadable fill-opacity or opacity, so "
+            "its contrast cannot be composited. Use a finite number or percentage, "
+            "or remove the attribute".format(path.name, line_of(source, offset))
+        )
     ramp = max(groups.values(), key=len) if groups else []
     if len(ramp) < MIN_RAMP_MEMBERS:
         for claim in claims:
