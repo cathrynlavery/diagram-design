@@ -282,6 +282,12 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         html += '<svg id="a&amp;b" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
         svg = self.mod.export_svg_document(html, Path("escaped.html"))
         self.assertIn("#escaped-root .paint { fill:#ff0000 }", svg)
+        # A legacy name HTML leaves literal in an attribute stays literal here too.
+        for source_id, css_id in (("x&copy2026", "x\\&copy2026"), ("n&#38;m", "n\\&m")):
+            html = f'<style>#{css_id} .paint {{ fill:#ff0000 }}</style>'
+            html += f'<svg id="{source_id}" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+            svg = self.mod.export_svg_document(html, Path("literal-id.html"))
+            self.assertIn("#literal-id-root .paint { fill:#ff0000 }", svg)
 
     def test_raw_text_opening_attributes_normalize_entities(self) -> None:
         for tag in ("style", "script"):

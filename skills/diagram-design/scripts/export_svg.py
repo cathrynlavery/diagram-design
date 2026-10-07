@@ -208,6 +208,25 @@ def normalize_html_entities(svg: str) -> str:
     return "".join(out)
 
 
+XML_REFERENCE_RE = re.compile(r"&(?:(amp|lt|gt|quot|apos)|#([0-9]+)|#[xX]([0-9A-Fa-f]+));")
+XML_NAMED = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
+
+
+def decode_xml_references(value: str) -> str:
+    """Decode XML references only, after normalize_html_entities has run.
+
+    Legacy HTML names that HTML leaves literal in attributes stay literal.
+    """
+    def replace(match: re.Match[str]) -> str:
+        name, decimal, hexadecimal = match.groups()
+        if name:
+            return XML_NAMED[name]
+        code = int(decimal) if decimal else int(hexadecimal, 16)
+        return chr(code) if 0 < code <= 0x10FFFF else match.group(0)
+
+    return XML_REFERENCE_RE.sub(replace, value)
+
+
 def ensure_xmlns(svg: str) -> str:
     if re.search(r'\bxmlns\s*=\s*["\']http://www\.w3\.org/2000/svg["\']', svg):
         return svg
@@ -575,7 +594,7 @@ def export_svg_document(html: str, source_path: Path) -> str:
     assert opening is not None
     # Compare the decoded ID: CSS escapes resolve to characters, not to markup.
     original_root_id = next(
-        (html_entities.unescape(attr.group(4)[1:-1]) for attr in TAG_ATTR_RE.finditer(opening.group(2))
+        (decode_xml_references(attr.group(4)[1:-1]) for attr in TAG_ATTR_RE.finditer(opening.group(2))
          if attr.group(2) == "id" and attr.group(4) is not None),
         "",
     )
