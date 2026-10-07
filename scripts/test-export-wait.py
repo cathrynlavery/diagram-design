@@ -230,6 +230,23 @@ def require_normal_load(snippet: str, tmp: Path) -> None:
     print("OK: normal load captures with no fallback warning")
 
 
+def require_encoded_paths(snippet: str, tmp: Path) -> None:
+    # Both characters are legal filename content, not a URL fragment/escape.
+    original = tmp / "normal-fixture.html"
+    for filename in ("diagram #1.html", "diagram %25.html", "diagram ?draft.html"):
+        # Question marks are not valid Windows filename characters.
+        if "?" in filename and sys.platform == "win32":
+            continue
+        source = tmp / filename
+        source.write_text(original.read_text(encoding="utf-8"), encoding="utf-8")
+        output = tmp / (filename + ".png")
+        stderr = run_snippet(snippet, source, output)
+        require_png(output, filename)
+        if stderr:
+            raise AssertionError(f"encoded-path capture emitted a warning: {stderr}")
+    print("OK: legal filename characters are encoded in the file URL")
+
+
 def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
     missing = tmp / "does-not-exist.html"
     out = tmp / "never.png"
@@ -259,6 +276,7 @@ def main() -> int:
         tmp = Path(raw_tmp)
         require_stalled_fallback(snippet, tmp)
         require_normal_load(snippet, tmp)
+        require_encoded_paths(snippet, tmp)
         require_other_errors_propagate(snippet, tmp)
     print("All export-wait cases passed.")
     return 0
