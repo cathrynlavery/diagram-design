@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Bash
   - Glob
+  - Agent
 ---
 
 Redraw the draw.io file at `$1` as a diagram in this skill's design system, following [`skills/diagram-design/references/import-drawio.md`](../skills/diagram-design/references/import-drawio.md) and [`skills/diagram-design/references/output-spec.md`](../skills/diagram-design/references/output-spec.md). Treat those references as the source of truth — don't reimplement the logic here.
@@ -40,6 +41,7 @@ Accepts `.drawio`, `.drawio.xml`, `.xml`, `.drawio.png`, and `.drawio.svg`.
 
 1. **No file provided** → ask which `.drawio` file. Don't guess.
 2. **Always locate the installed skill and run `<skill-dir>/scripts/drawio_extract.py` first.** Never assume the skill is under the current working directory, and never read a `.drawio` file directly — most are compressed, and the raw XML is noise.
+   - In Claude Code, use this plugin's `import-renderer` agent when available; follow the handoff in `SKILL.md` §11.
 3. **Extractor exits non-zero** → report its message verbatim and stop.
 4. **Digest shows 0 nodes** → the source is image-only or encrypted. Say so; ask for the original file. Don't invent content.
 5. **Multi-page file with no `--page`** → list the pages with their node/edge counts and ask which one.
