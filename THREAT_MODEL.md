@@ -10,6 +10,9 @@ Filesystem, process, and network restrictions depend on the agentic harness.
 Diagram Design does not provide a sandbox, cannot protect an already-compromised
 harness, and cannot narrow permissions that the operator intentionally grants.
 
+The current working directory is assumed to be trusted when diagram generation 
+begins.
+
 ## Security expectations
 
 ### Import and output pipeline

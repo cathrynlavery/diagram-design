@@ -22,6 +22,11 @@ fork-specific changes, or behavior that requires intended maintainer authority
 are not considered vulnerabilities. Submit availability-only fixes directly
 through the ordinary pull request process.
 
+Do not report symlink behavior involving an entry that was already present in
+the trusted current working directory when diagram generation began. A symlink
+issue is in scope only when an attacker can plant or replace the symlink during
+diagram generation.
+
 ## Private reporting of vulnerabilities
 
 Please use [GitHub private vulnerability reporting](https://github.com/cathrynlavery/diagram-design/security/advisories/new).
