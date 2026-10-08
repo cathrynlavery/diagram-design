@@ -46,8 +46,10 @@ def load_exporter():
     for anchor in (
         "except PlaywrightTimeoutError:",
         'page.evaluate("window.stop()")',
-        WARNING_ANCHOR,
         "NETWORK_IDLE_TIMEOUT_MS = 15_000",
+        "?motion=static",
+        "document.fonts.ready",
+        "[data-motion-root]",
     ):
         if anchor not in source:
             raise AssertionError(f"packaged exporter is missing required anchor {anchor!r}")
@@ -93,6 +95,43 @@ def run_export(exporter, src: Path, out: Path, **kwargs: int) -> str:
     return stderr.getvalue()
 
 
+def run_export_with_timeout(src: Path, out: Path) -> str:
+    """Run the packaged renderer with fast waits in a killable subprocess."""
+    runner = """
+import importlib.util
+import pathlib
+import sys
+
+spec = importlib.util.spec_from_file_location("diagram_export_png", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+module.rasterize(
+    pathlib.Path(sys.argv[2]),
+    pathlib.Path(sys.argv[3]),
+    2,
+    network_idle_timeout_ms=int(sys.argv[4]),
+    fallback_settle_ms=int(sys.argv[5]),
+)
+"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            runner,
+            str(EXPORT_PNG),
+            str(src),
+            str(out),
+            str(FAST_IDLE_TIMEOUT_MS),
+            str(FAST_SETTLE_MS),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=FALLBACK_BUDGET_SECONDS,
+    )
+    return result.stderr
+
+
 def require_png(out: Path, name: str) -> None:
     if not out.exists() or out.stat().st_size == 0:
         raise AssertionError(f"{name}: expected a non-empty screenshot at {out}")
@@ -117,7 +156,7 @@ def png_dimensions(out: Path) -> tuple[int, int]:
     return struct.unpack(">II", png[16:24])
 
 
-def require_stalled_fallback(exporter, tmp: Path) -> None:
+def require_stalled_fallback(tmp: Path) -> None:
     server = start_stall_server()
     try:
         port = server.server_address[1]
@@ -138,13 +177,7 @@ def require_stalled_fallback(exporter, tmp: Path) -> None:
         out = tmp / "stall-fixture.png"
 
         started = time.monotonic()
-        stderr = run_export(
-            exporter,
-            src,
-            out,
-            network_idle_timeout_ms=FAST_IDLE_TIMEOUT_MS,
-            fallback_settle_ms=FAST_SETTLE_MS,
-        )
+        stderr = run_export_with_timeout(src, out)
         elapsed = time.monotonic() - started
 
         require_png(out, "stalled-fallback")
@@ -167,10 +200,7 @@ def require_stalled_fallback(exporter, tmp: Path) -> None:
         server.server_close()
 
 
-def require_stalled_font_fallback(snippet: str, tmp: Path) -> None:
-    fast = snippet.replace("timeout=15000", FAST_IDLE_TIMEOUT).replace(
-        "wait_for_timeout(4000)", FAST_SETTLE
-    )
+def require_stalled_font_fallback(tmp: Path) -> None:
     font_requested = threading.Event()
 
     class FontStallHandler(_StallHandler):
@@ -195,12 +225,7 @@ def require_stalled_font_fallback(snippet: str, tmp: Path) -> None:
         )
         out = tmp / "stalled-font.png"
         started = time.monotonic()
-        result = subprocess.run(
-            [sys.executable, "-c", fast, str(src), str(out)],
-            capture_output=True, text=True, check=True,
-            timeout=FALLBACK_BUDGET_SECONDS,
-        )
-        stderr = result.stderr
+        stderr = run_export_with_timeout(src, out)
         elapsed = time.monotonic() - started
         if not font_requested.is_set():
             raise AssertionError("stalled-font: fixture never started its font download")
@@ -220,7 +245,7 @@ def require_stalled_font_fallback(snippet: str, tmp: Path) -> None:
         server.server_close()
 
 
-def require_normal_load(snippet: str, tmp: Path) -> None:
+def require_normal_load(exporter, tmp: Path) -> None:
     src = tmp / "normal-fixture.html"
     src.write_text(
         "<!doctype html>\n<html>\n<head>\n<meta charset='utf-8'>\n</head>\n<body>\n"
@@ -247,7 +272,7 @@ def require_normal_load(snippet: str, tmp: Path) -> None:
     print("OK: normal load captures with no fallback warning")
 
 
-def require_encoded_paths(snippet: str, tmp: Path) -> None:
+def require_encoded_paths(exporter, tmp: Path) -> None:
     # Both characters are legal filename content, not a URL fragment/escape.
     original = tmp / "normal-fixture.html"
     for filename in ("diagram #1.html", "diagram %25.html", "diagram ?draft.html"):
@@ -257,14 +282,14 @@ def require_encoded_paths(snippet: str, tmp: Path) -> None:
         source = tmp / filename
         source.write_text(original.read_text(encoding="utf-8"), encoding="utf-8")
         output = tmp / (filename + ".png")
-        stderr = run_snippet(snippet, source, output)
+        stderr = run_export(exporter, source, output)
         require_png(output, filename)
         if stderr:
             raise AssertionError(f"encoded-path capture emitted a warning: {stderr}")
     print("OK: legal filename characters are encoded in the file URL")
 
 
-def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
+def require_other_errors_propagate(exporter, tmp: Path) -> None:
     missing = tmp / "does-not-exist.html"
     out = tmp / "never.png"
     try:
@@ -281,20 +306,15 @@ def require_other_errors_propagate(snippet: str, tmp: Path) -> None:
 
 
 
-def require_static_motion_frame(snippet: str, tmp: Path) -> None:
+def require_static_motion_frame(exporter, tmp: Path) -> None:
     # Exercise the exact shipped controller, avoiding external font requests.
     source = (ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html").read_text(encoding="utf-8")
     source = re.sub(r"<link\b[^>]*>", "", source, flags=re.I)
     src = tmp / "motion-fixture.html"
     src.write_text(source, encoding="utf-8")
-    observed = snippet.replace(
-        "    svg.screenshot(path=out, omit_background=True)",
-        "    assert page.locator('[data-motion-root]').first.get_attribute('data-frame') == 'static', 'motion frame is incomplete'\n"
-        "    svg.screenshot(path=out, omit_background=True)",
-    )
     first, second = tmp / "motion-first.png", tmp / "motion-second.png"
-    run_snippet(observed, src, first)
-    run_snippet(observed, src, second)
+    run_export(exporter, src, first)
+    run_export(exporter, src, second)
     require_png(first, "static-motion")
     if first.read_bytes() != second.read_bytes():
         raise AssertionError("motion captures from the same static source are not identical")
@@ -305,7 +325,7 @@ def require_static_motion_frame(snippet: str, tmp: Path) -> None:
     src.write_text(broken, encoding="utf-8")
     never = tmp / "incomplete.png"
     try:
-        run_snippet(snippet, src, never)
+        run_export(exporter, src, never)
     except RuntimeError as exc:
         if "static" not in str(exc) or never.exists():
             raise AssertionError(f"incomplete motion frame failed incorrectly: {exc}")
@@ -323,12 +343,12 @@ def main() -> int:
     exporter = load_exporter()
     with tempfile.TemporaryDirectory(prefix="diagram-export-wait-") as raw_tmp:
         tmp = Path(raw_tmp)
-        require_stalled_fallback(snippet, tmp)
-        require_stalled_font_fallback(snippet, tmp)
-        require_normal_load(snippet, tmp)
-        require_encoded_paths(snippet, tmp)
-        require_other_errors_propagate(snippet, tmp)
-        require_static_motion_frame(snippet, tmp)
+        require_stalled_fallback(tmp)
+        require_stalled_font_fallback(tmp)
+        require_normal_load(exporter, tmp)
+        require_encoded_paths(exporter, tmp)
+        require_other_errors_propagate(exporter, tmp)
+        require_static_motion_frame(exporter, tmp)
     print("All export-wait cases passed.")
     return 0
 

@@ -36,7 +36,10 @@ def rasterize(
         browser = playwright.chromium.launch()
         try:
             page = browser.new_page(device_scale_factor=scale)
-            page.goto(src.resolve().as_uri(), wait_until="domcontentloaded")
+            page.goto(
+                src.resolve().as_uri() + "?motion=static",
+                wait_until="domcontentloaded",
+            )
             try:
                 page.wait_for_load_state("networkidle", timeout=network_idle_timeout_ms)
             except PlaywrightTimeoutError:
@@ -49,6 +52,11 @@ def rasterize(
                     "typography; the PNG may not match the intended fonts",
                     file=sys.stderr,
                 )
+            page.evaluate("document.fonts.ready")
+            if not page.locator("[data-motion-root]").evaluate_all(
+                "roots => roots.every(root => root.dataset.frame === 'static')"
+            ):
+                raise RuntimeError("motion export requires a complete static frame")
             svg = page.locator("svg").first
             # Release every clipping ancestor so a wide SVG is captured whole.
             svg.evaluate(
