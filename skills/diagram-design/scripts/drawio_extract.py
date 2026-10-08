@@ -418,6 +418,7 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
 
     # Pass 2: vertices (absolute geometry resolved after the pass).
     edge_label_parts: dict[str, list[str]] = {}
+    relative_offsets: dict[str, tuple[float, float]] = {}
     for cid in order:
         entry = raw[cid]
         cell = entry["cell"]
@@ -440,6 +441,9 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             continue
 
         geom = cell.find("mxGeometry")
+        if geom is not None and geom.get("relative") == "1":
+            offset = geom.find("mxPoint[@as='offset']")
+            relative_offsets[cid] = (_num(offset, "x"), _num(offset, "y"))
         node = Node(
             id=cid,
             label=clean_label(entry["value"]),
@@ -488,7 +492,12 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         px, py, pdepth = position
         while chain:
             current = chain.pop()
-            px, py, pdepth = current.x + px, current.y + py, pdepth + 1
+            dx, dy = current.x, current.y
+            parent = node_map.get(current.parent or "")
+            if parent is not None and current.id in relative_offsets:
+                ox, oy = relative_offsets[current.id]
+                dx, dy = dx * parent.w + ox, dy * parent.h + oy
+            px, py, pdepth = dx + px, dy + py, pdepth + 1
             if not math.isfinite(px) or not math.isfinite(py):
                 _fail(f"page {index}: geometry overflow")
             resolved_by_id[current.id] = (px, py, pdepth)
@@ -520,6 +529,10 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             label = " / ".join([p for p in ([label] + extra) if p])
         source = cell.get("source")
         target = cell.get("target")
+        start_head = style.get("startArrow", "none") not in ("none", "0", "")
+        end_head = style.get("endArrow", "classic") not in ("none", "0", "")
+        if start_head and not end_head:
+            source, target = target, source
         page.edges.append(
             Edge(
                 id=cid,
@@ -527,11 +540,8 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
                 target=target if target in node_map else None,
                 label=label,
                 dashed=style.get("dashed") == "1",
-                bidirectional=style.get("startArrow", "none")
-                not in ("none", "0", "")
-                and style.get("endArrow", "classic") not in ("none", "0"),
-                undirected=style.get("endArrow") in ("none", "0")
-                and style.get("startArrow", "none") in ("none", "0", ""),
+                bidirectional=start_head and end_head,
+                undirected=not start_head and not end_head,
                 style_name=style.get("shape", "")
                 or ("orthogonal" if style.get("edgeStyle") else ""),
                 waypoints=waypoints,
@@ -540,10 +550,17 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         )
 
     for edge in page.edges:
-        if edge.source and edge.source in node_map:
-            node_map[edge.source].out_degree += 1
-        if edge.target and edge.target in node_map:
-            node_map[edge.target].in_degree += 1
+        source, target = node_map.get(edge.source or ""), node_map.get(edge.target or "")
+        if edge.bidirectional or edge.undirected:
+            for endpoint in (source, target):
+                if endpoint is not None:
+                    endpoint.in_degree += 1
+                    endpoint.out_degree += 1
+        else:
+            if source is not None:
+                source.out_degree += 1
+            if target is not None:
+                target.in_degree += 1
 
     return page
 
@@ -577,6 +594,8 @@ def _has_cycle(nodes: list[Node], edges: list[Edge]) -> bool:
     for edge in edges:
         if edge.source and edge.target and edge.source in adjacency:
             adjacency[edge.source].append(edge.target)
+            if edge.bidirectional and edge.target in adjacency:
+                adjacency[edge.target].append(edge.source)
     WHITE, GREY, BLACK = 0, 1, 2
     color = {n.id: WHITE for n in nodes}
 
