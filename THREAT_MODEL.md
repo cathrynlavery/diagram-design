@@ -30,10 +30,11 @@ begins.
   exhaustion is an ordinary reliability defect, not a security issue. Submit
   availability-only fixes directly through the pull request process.
 - Untrusted source content handled by an `/import-*` command cannot introduce
-  active content into its output. `/export-diagram` likewise treats its input
-  as untrusted: it does not execute source-controlled behavior, and exported
-  artifacts retain no source-controlled scripts, event handlers, executable
-  URLs, unsafe CSS, or external resources.
+  active content into its output.
+- For untrusted standalone SVG input, the `--sanitize` path in
+  `scripts/export_svg.py` is the browser-content security boundary. An
+  export-stage XSS report must show that attacker-controlled active content
+  survives that sanitizer.
 - Generated files are static by default. Validation rejects JavaScript URLs,
   event handlers, unsafe CSS, and unapproved external resources. Animated
   diagrams may include only the repository's canonical motion script;
