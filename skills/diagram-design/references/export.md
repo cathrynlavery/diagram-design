@@ -121,7 +121,7 @@ passed detection: `python3 <tmp.py> <src.html> <out.png>` or
 
 ```python
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
-import sys, pathlib
+import os, sys, pathlib
 from urllib.parse import urlsplit, urlunsplit
 
 src, out = pathlib.Path(sys.argv[1]), sys.argv[2]
@@ -148,7 +148,7 @@ def request_allowed(request):
 
 with sync_playwright() as p:
     browser = p.chromium.launch(
-        chromium_sandbox=True,
+        chromium_sandbox=os.environ.get("DIAGRAM_EXPORT_CHROMIUM_SANDBOX", "1") != "0",
         args=["--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE fonts.googleapis.com, EXCLUDE fonts.gstatic.com"],
     )
     context = browser.new_context(
@@ -182,7 +182,7 @@ with sync_playwright() as p:
 
 If the `networkidle` wait times out (an allowed Google Fonts request stalled behind a proxy), the snippet cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally. The URL requests the complete static motion frame, waits for font readiness, and rejects a motion root that has not reached `data-frame="static"`; ordinary script-free diagrams need no motion root.
 
-The snippet still executes the source's inline controller JavaScript. Its browser launch therefore enables Chromium sandboxing explicitly, blocks service workers, downloads, permissions, CSP bypass and invalid TLS, and denies every request except the source document, embedded `data:` / `blob:` resources, and Google Fonts CSS/font files over HTTPS. Do not weaken those controls to render external assets; diagram HTML is required to remain self-contained apart from its declared Google Fonts.
+The snippet still executes the source's inline controller JavaScript. Its browser launch therefore enables Chromium sandboxing explicitly, blocks service workers, downloads, permissions, CSP bypass and invalid TLS, and denies every request except the source document, embedded `data:` / `blob:` resources, and Google Fonts CSS/font files over HTTPS. Do not weaken those controls to render external assets; diagram HTML is required to remain self-contained apart from its declared Google Fonts. A host whose kernel denies Chromium's sandbox setup may set `DIAGRAM_EXPORT_CHROMIUM_SANDBOX=0` only when it provides an equivalent outer sandbox; unsupported sandboxing fails closed by default.
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg.
 

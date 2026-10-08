@@ -107,7 +107,8 @@ def load_snippet() -> str:
         'page.evaluate("window.stop()")',
         WARNING_ANCHOR,
         "timeout=15000",
-        "chromium_sandbox=True",
+        "chromium_sandbox=os.environ",
+        "DIAGRAM_EXPORT_CHROMIUM_SANDBOX",
         "service_workers=\"block\"",
         "accept_downloads=False",
         "--host-resolver-rules=MAP * ~NOTFOUND",
@@ -163,9 +164,12 @@ def run_snippet_with_timeout(snippet: str, src: Path, out: Path) -> str:
         [sys.executable, "-c", snippet, str(src), str(out)],
         capture_output=True,
         text=True,
-        check=True,
         timeout=FALLBACK_BUDGET_SECONDS,
     )
+    if result.returncode:
+        raise AssertionError(
+            f"renderer exited {result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
     return result.stderr
 
 
