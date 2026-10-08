@@ -189,7 +189,7 @@ Type-specific anti-patterns live in each type reference linked in the guide.
 
 **Typography:** Instrument Serif for the H1 title and italic callouts, Geist sans 600 for node names, Geist Mono for sublabels, eyebrows, and arrow labels. Sizes, weights, and the font `<link>`: [style-guide.md § Typography](references/style-guide.md#typography); per-preset type ramp: [output-spec.md](references/output-spec.md).
 
-**Non-Latin labels** — extend the family: [Korean](references/style-guide.md#korean-labels), [Chinese](references/style-guide.md#traditional-chinese-labels), [Cyrillic](references/style-guide.md#cyrillic-labels).
+**Non-Latin labels** — extend the family: [Korean](references/style-guide.md#korean-labels), [Chinese](references/style-guide.md#traditional-chinese-labels), [Cyrillic](references/style-guide.md#cyrillic-labels), [Arabic (RTL)](references/style-guide.md#arabic-labels-rtl).
 
 **Mono is for technical content only** — never as a blanket "dev" font, and never JetBrains Mono.
 

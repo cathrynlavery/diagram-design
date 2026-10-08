@@ -649,6 +649,47 @@ def check_heading_syntax(verify) -> None:
     print("OK heading syntax: closing hashes stripped, fenced lines skipped")
 
 
+def check_arabic_rtl_support(verify) -> None:
+    """Style guide, SKILL.md, output-spec, and export must document Arabic/RTL contracts."""
+    style_guide = (ROOT / "skills/diagram-design/references/style-guide.md").read_text(
+        encoding="utf-8"
+    )
+    if "### Arabic labels (RTL)" not in style_guide:
+        raise AssertionError("style-guide.md is missing '### Arabic labels (RTL)' section")
+    for token in (
+        "Cairo",
+        "Noto Naskh Arabic",
+        "11px",
+        "joining script",
+        "register switch",
+        'text-anchor="start"',
+        "viewBox",
+        "assets/template-rtl.html",
+    ):
+        if token.lower() not in style_guide.lower():
+            raise AssertionError(f"style-guide.md Arabic section missing required concept {token!r}")
+
+    if not (ROOT / "skills/diagram-design/assets/template-rtl.html").is_file():
+        raise AssertionError("skills/diagram-design/assets/template-rtl.html template must exist")
+
+    skill = (ROOT / "skills/diagram-design/SKILL.md").read_text(encoding="utf-8")
+    if "references/style-guide.md#arabic-labels-rtl" not in skill:
+        raise AssertionError("SKILL.md must route to references/style-guide.md#arabic-labels-rtl")
+
+    output_spec = (ROOT / "skills/diagram-design/references/output-spec.md").read_text(
+        encoding="utf-8"
+    )
+    if "style-guide.md#arabic-labels-rtl" not in output_spec:
+        raise AssertionError("output-spec.md must link to style-guide.md#arabic-labels-rtl")
+
+    export = (ROOT / "skills/diagram-design/references/export.md").read_text(
+        encoding="utf-8"
+    )
+    if "Chromium" not in export or "Arabic" not in export:
+        raise AssertionError("export.md must document Chromium rasterizer requirement for Arabic/non-Latin")
+    print("OK Arabic/RTL: style guide, SKILL.md, output-spec, and export satisfy the RTL contract")
+
+
 # Spelled out here rather than read from the verifier, with the separator each
 # surface puts between presets: a surface dropped from the verifier's own list
 # must fail a test, not shrink it.
@@ -1854,6 +1895,7 @@ diagram-design/
     check_title_font_link(verify)
     check_style_guide_anchors(verify)
     check_heading_syntax(verify)
+    check_arabic_rtl_support(verify)
     check_size_preset_surfaces(verify)
     check_split_type_ramp(verify)
     check_split_routes(verify)

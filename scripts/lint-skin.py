@@ -80,6 +80,11 @@ ALLOWED_FONTS = {
     "serif",
     "monospace",
     "ui-monospace",
+    "cairo",
+    "noto naskh arabic",
+    "segoe ui",
+    "geeza pro",
+    "amiri",
 }
 CSS_FONT_KEYWORDS = {"inherit", "initial", "revert", "revert-layer", "unset"}
 

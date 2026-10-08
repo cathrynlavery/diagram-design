@@ -555,6 +555,30 @@ def main() -> int:
             "font-family: unsupported font family: Malgun Gothic Semilight",
             directory,
         )
+        ar_name_svg = VALID_SVG.replace("fixture-title", "ar-name-stack-title").replace(
+            "fixture-desc", "ar-name-stack-desc"
+        )
+        require_pass(
+            "ar-name-stack",
+            ar_name_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Cairo', 'Noto Naskh Arabic', 'Segoe UI', "
+                "'Geeza Pro', sans-serif\">مكتب فني</text>\n</svg>",
+            ),
+            directory,
+        )
+        ar_title_svg = VALID_SVG.replace("fixture-title", "ar-title-stack-title").replace(
+            "fixture-desc", "ar-title-stack-desc"
+        )
+        require_pass(
+            "ar-title-stack",
+            ar_title_svg.replace(
+                "</svg>",
+                "<text font-family=\"'Instrument Serif', 'Noto Naskh Arabic', "
+                "'Amiri', serif\">العنوان</text>\n</svg>",
+            ),
+            directory,
+        )
 
         spec = importlib.util.spec_from_file_location("build_icons", BUILD_ICONS)
         if spec is None or spec.loader is None:

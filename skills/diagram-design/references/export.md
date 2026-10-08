@@ -88,6 +88,10 @@ That script is the source of truth for the transform below (CSS carry-forward, d
 
 Tools that don't fetch remote fonts at import time (offline Illustrator, some Figma import paths, older SVG viewers) will substitute typography. The SVG renders correctly in any modern browser. For pixel-perfect portability, recommend the PNG export.
 
+### Non-Latin and RTL rendering caveat
+
+Chromium (via Playwright) is the required rasterizer for diagrams containing non-Latin and RTL scripts (Arabic, Hebrew, Korean, Chinese). Alternative rasterizers (such as WeasyPrint or MuPDF / `mutool`) lack proper OpenType text shaping inside SVG, rendering Arabic as disconnected or mirrored glyphs and miscalculating viewBox bounds. Verify non-Latin diagrams visually from the Chromium-generated PNG, never from extracted text or unsupported rasterizers.
+
 ## PNG export procedure
 
 Render **the original HTML** (not the extracted SVG) and screenshot only the `<svg>` element's bounding box. This keeps font loading reliable (already wired in the source HTML) while satisfying the "diagram only" rule. The PNG always has a **transparent background** (`omit_background=True`) so it can be placed on any slide or doc colour without a white halo. For motion-enabled HTML, append `?motion=static`, await `document.fonts.ready`, and assert the motion root has `data-frame="static"` before capture; never export at an arbitrary wall-clock delay.
