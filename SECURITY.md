@@ -22,6 +22,11 @@ fork-specific changes, or behavior that requires intended maintainer authority
 are not considered vulnerabilities. Submit availability-only fixes directly
 through the ordinary pull request process.
 
+Report vulnerabilities in third-party code, including Playwright and
+`py-svg-hush`, to that dependency's maintainers first. A separate report here
+is useful only when Diagram Design's integration independently violates a
+documented security expectation.
+
 Do not report symlink behavior involving an entry that was already present in
 the trusted current working directory when diagram generation began. A symlink
 issue is in scope only when an attacker can plant or replace the symlink during
