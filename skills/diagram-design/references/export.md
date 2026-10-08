@@ -115,9 +115,11 @@ Don't auto-install. The user asked for one feature, not a system change.
 
 ### Rasterize
 
-Run the packaged renderer from this skill's directory with the interpreter that
-passed detection: `python3 scripts/export_png.py <src.html> <out.png> [scale]`
-or `python scripts/export_png.py <src.html> <out.png> [scale]`.
+Keep the user's project directory as the working directory so relative input and
+output paths still resolve there. Invoke the packaged renderer by its absolute
+path under the resolved skill directory with the interpreter that passed
+detection: `python3 <skill-dir>/scripts/export_png.py <src.html> <out.png> [scale]`
+or `python <skill-dir>/scripts/export_png.py <src.html> <out.png> [scale]`.
 
 If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the helper cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally.
 
