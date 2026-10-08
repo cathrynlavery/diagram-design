@@ -520,30 +520,51 @@ def find_defs_ids(svg: str) -> list[str]:
     return found
 
 
+# Markup that can carry defs references: <style> blocks, tags (attribute
+# values), and comments, which may hold an optional commented-out block.
+# CDATA and <script> are matched so they are skipped, not rewritten.
+REFERENCE_REGION_RE = re.compile(
+    r"(?P<skip><!\[CDATA\[.*?\]\]>|<script\b.*?</script\s*>)"
+    r"|<!--.*?-->|<style\b[^>]*>.*?</style\s*>"
+    r"|<[A-Za-z/?!](?:[^>\"']|\"[^\"]*\"|'[^']*')*>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
 def namespace_defs_ids(svg: str, prefix: str) -> str:
-    """Prefix defs IDs and rewrite url(#…)/href="#…" references, longest first."""
+    """Prefix defs IDs and rewrite url(#…)/href="#…" references, longest first.
+
+    Only tags and <style> blocks are rewritten; visible text keeps its wording.
+    """
     ids = find_defs_ids(svg)
     if not ids:
         return svg
-    for old in sorted(ids, key=len, reverse=True):
-        new = f"{prefix}-{old}"
-        svg = re.sub(
-            rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
-            rf"\1{new}\2",
-            svg,
-        )
-        svg = re.sub(
-            rf"(?i:url)\(\s*(?P<quote>[\"']|&quot;|&apos;|)\s*#\s*"
-            rf"{re.escape(old)}\s*(?P=quote)\s*\)",
-            lambda match: f"url({match.group('quote')}#{new}{match.group('quote')})",
-            svg,
-        )
-        svg = re.sub(
-            rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
-            rf"\1#{new}\2",
-            svg,
-        )
-    return svg
+
+    def rewrite(region: str) -> str:
+        for old in sorted(ids, key=len, reverse=True):
+            new = f"{prefix}-{old}"
+            region = re.sub(
+                rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
+                rf"\1{new}\2",
+                region,
+            )
+            region = re.sub(
+                rf"(?i:url)\(\s*(?P<quote>[\"']|&quot;|&apos;|)\s*#\s*"
+                rf"{re.escape(old)}\s*(?P=quote)\s*\)",
+                lambda match: f"url({match.group('quote')}#{new}{match.group('quote')})",
+                region,
+            )
+            region = re.sub(
+                rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
+                rf"\1#{new}\2",
+                region,
+            )
+        return region
+
+    return REFERENCE_REGION_RE.sub(
+        lambda match: match.group(0) if match.group("skip") else rewrite(match.group(0)),
+        svg,
+    )
 
 
 def normalize_rgba_presentation_attrs(svg: str) -> str:

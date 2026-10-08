@@ -263,6 +263,21 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
         self.assertEqual(self.mod.normalize_html_entities('&notARealEntity;'), '&notARealEntity;')
 
+    def test_defs_reference_rewrite_leaves_visible_text_alone(self) -> None:
+        markup = ('<svg><defs><linearGradient id="paint"/></defs>'
+                  '<style>.a { fill:url("#paint") } .b { stroke:url(#paint) }</style>'
+                  '<rect fill="url(#paint)"/><use href="#paint"/>'
+                  '<text>Use url("#paint"), url(#paint) or href="#paint"</text>'
+                  '<title>id="paint"</title><!-- url(#paint) --></svg>')
+        result = self.mod.namespace_defs_ids(markup, "diagram")
+        self.assertIn('<linearGradient id="diagram-paint"/>', result)
+        self.assertIn('.a { fill:url("#diagram-paint") } .b { stroke:url(#diagram-paint) }', result)
+        self.assertIn('<rect fill="url(#diagram-paint)"/><use href="#diagram-paint"/>', result)
+        self.assertIn('<text>Use url("#paint"), url(#paint) or href="#paint"</text>', result)
+        self.assertIn('<title>id="paint"</title>', result)
+        # Comments are not visible text; a commented-out block stays consistent.
+        self.assertIn('<!-- url(#diagram-paint) -->', result)
+
     def test_legacy_entities_without_semicolon_follow_html_contexts(self) -> None:
         html = '<svg viewBox="0 0 40 40"><title>Copyright &copy 2026</title>'
         html += '<text data-label="&copy 2026">A&nbsp B &amp C &lt D</text></svg>'
