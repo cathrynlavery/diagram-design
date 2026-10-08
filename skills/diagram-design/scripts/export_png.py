@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import pathlib
 import sys
 
@@ -13,10 +14,20 @@ NETWORK_IDLE_TIMEOUT_MS = 15_000
 FALLBACK_SETTLE_MS = 4_000
 
 
+def exact_size_scale(value: str) -> float:
+    try:
+        scale = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("scale must be a number") from exc
+    if not math.isfinite(scale) or not 1 <= scale <= 4:
+        raise argparse.ArgumentTypeError("scale must be between 1 and 4")
+    return scale
+
+
 def rasterize(
     src: pathlib.Path,
     out: pathlib.Path,
-    scale: int = 2,
+    scale: float = 2,
     *,
     network_idle_timeout_ms: int = NETWORK_IDLE_TIMEOUT_MS,
     fallback_settle_ms: int = FALLBACK_SETTLE_MS,
@@ -53,7 +64,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("src", type=pathlib.Path, help="diagram HTML input")
     parser.add_argument("out", type=pathlib.Path, help="PNG output")
-    parser.add_argument("scale", nargs="?", type=int, choices=(1, 2, 3), default=2)
+    parser.add_argument("scale", nargs="?", type=exact_size_scale, default=2)
     args = parser.parse_args()
     rasterize(args.src, args.out, args.scale)
     return 0
