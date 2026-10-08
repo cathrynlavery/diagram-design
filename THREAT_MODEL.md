@@ -9,6 +9,8 @@ browser for PNG export.
 Filesystem, process, and network restrictions depend on the agentic harness.
 Diagram Design does not provide a sandbox, cannot protect an already-compromised
 harness, and cannot narrow permissions that the operator intentionally grants.
+Keep these limitations in mind when working with untrusted data that may contain
+prompt-injection vectors.
 
 The current working directory is assumed to be trusted when diagram generation 
 begins.
@@ -17,12 +19,10 @@ begins.
 
 ### Import and output pipeline
 
-- The agent does not interpret supported diagram files directly. It works from
-  the representation produced by the deterministic format extractor.
-- To reduce indirect prompt-injection risk during intermediate steps, the agent
-  sees only the strictly required extracted fields rather than the raw source;
-  extractors normalize and bound those values and discard links, directives,
-  styling, and other executable or irrelevant metadata.
+- The agent may convert untrusted Markdown, JSON, or extracted diagram content
+  into HTML, which may later be exported to SVG. The outputs must remain
+  harmless and must not contain active JavaScript or other input-controlled
+  executable browser behavior.
 - Deterministic tools treat fields as data: they do not execute, render, or
   fetch embedded content, and they resist injection and unintended file access.
 - Input, decompression, features, and output limits bound resource use.
