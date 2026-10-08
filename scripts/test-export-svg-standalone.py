@@ -140,6 +140,28 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIsNone(re.search(r"url\(#arrow\)", svg))
         self.assertIsNone(re.search(r"url\(#dots\)", svg))
 
+    def test_quoted_local_paint_urls_follow_namespaced_defs(self) -> None:
+        references = (
+            'url(#paint)', 'url("#paint")', "url('#paint')",
+            'url(  "#paint"  )', 'url(&quot;#paint&quot;)', 'url(&apos;#paint&apos;)',
+        )
+        for reference in references:
+            with self.subTest(reference=reference):
+                markup = '<svg><defs><linearGradient id="paint"/></defs>'
+                markup += '<rect style="fill: ' + reference.replace('"', '&quot;') + '"/>'
+                markup += '<style>.node { fill: ' + reference + '; }</style></svg>'
+                exported = self.mod.namespace_defs_ids(markup, "quoted")
+                self.assertIn('id="quoted-paint"', exported)
+                expected = reference.replace('#paint', '#quoted-paint').replace('  ', '')
+                self.assertIn(expected, exported)
+                self.assertIn(expected.replace('"', '&quot;'), exported)
+                self.assertEqual(exported.count('#quoted-paint'), 2)
+        untouched = '<svg><defs><linearGradient id="paint"/></defs>'
+        untouched += '<rect fill="url(#paint-other)" stroke="url(other.svg#paint)"/></svg>'
+        result = self.mod.namespace_defs_ids(untouched, "quoted")
+        self.assertIn('url(#paint-other)', result)
+        self.assertIn('url(other.svg#paint)', result)
+
     def test_light_and_dark_architecture_do_not_collide_when_inlined(self) -> None:
         light_src = ASSETS / "example-architecture.html"
         dark_src = ASSETS / "example-architecture-dark.html"
@@ -204,6 +226,109 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         ET.fromstring(svg)
 
+    def test_quoted_urls_preserve_delimiters_and_exact_fragment_case(self) -> None:
+        markup = '<svg><defs><linearGradient id="paint)"/></defs><style>.paint { fill:url("#paint)"); }</style></svg>'
+        result = self.mod.namespace_defs_ids(markup, "quoted")
+        self.assertIn('url("#quoted-paint)")', result)
+        markup = '<svg><defs><linearGradient id="A"/><linearGradient id="a"/></defs>'
+        markup += '<style>.paint { fill:URL("#a"); stroke:url("#A"); }</style><use HREF="#a"/></svg>'
+        result = self.mod.namespace_defs_ids(markup, "quoted")
+        self.assertIn('url("#quoted-a")', result)
+        self.assertIn('url("#quoted-A")', result)
+        self.assertIn('HREF="#quoted-a"', result)
+
+    def test_root_selector_retarget_preserves_literals_and_escapes(self) -> None:
+        selector = r"""#original .paint[data-label="#original"], [data-label='#original'], .\#original, #original-child, #original\:child, #originalé"""
+        expected = r"""#export-root .paint[data-label="#original"], [data-label='#original'], .\#original, #original-child, #original\:child, #originalé"""
+        self.assertEqual(self.mod.retarget_root_selector(selector, "original", "export-root"), expected)
+        escaped_quote = r' .paint[data-label="escaped\"#original"] #original'
+        self.assertEqual(self.mod.retarget_root_selector(escaped_quote, "original", "export-root"),
+                         r' .paint[data-label="escaped\"#original"] #export-root')
+        html = '<style>.paint[data-label="#original"] { fill:#00ff00 } #original .paint { stroke:#0000ff }</style>'
+        html += '<svg id="original" viewBox="0 0 40 40"><rect class="paint" data-label="#original" width="40" height="40"/></svg>'
+        svg = self.mod.export_svg_document(html, Path("literal.html"))
+        self.assertIn('#literal-root .paint[data-label="#original"]', svg)
+        self.assertIn('#literal-root .paint { stroke:#0000ff }', svg)
+
+    def test_named_html_entities_retain_readable_text(self) -> None:
+        html = '<svg viewBox="0 0 40 40"><title>R&nbsp;D &copy;</title><desc>&LT;literal&GT;</desc>'
+        html += '<text data-label="&quot;A&nbsp;B&quot;">R&nbsp;D &amp;nbsp; &copy; &#160;</text></svg>'
+        result = self.mod.export_svg_document(html, Path("entities.html"))
+        root = ET.fromstring(result)
+        text = root.find("{http://www.w3.org/2000/svg}text")
+        self.assertEqual(text.text, "R\u00a0D &nbsp; © \u00a0")
+        self.assertEqual(text.get("data-label"), '"A\u00a0B"')
+        self.assertEqual(root.find("{http://www.w3.org/2000/svg}desc").text, "<literal>")
+        opaque = '<!-- &nbsp; --><![CDATA[&nbsp;]]><style>.label {content:"&nbsp;"}</style>'
+        self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
+        self.assertEqual(self.mod.normalize_html_entities('&notARealEntity;'), '&notARealEntity;')
+
+    def test_defs_reference_rewrite_leaves_visible_text_alone(self) -> None:
+        markup = ('<svg><defs><linearGradient id="paint"/></defs>'
+                  '<style>.a { fill:url("#paint") } .b { stroke:url(#paint) }</style>'
+                  '<rect fill="url(#paint)"/><use href="#paint"/>'
+                  '<text>Use url("#paint"), url(#paint) or href="#paint"</text>'
+                  '<title>id="paint"</title><!-- url(#paint) --></svg>')
+        result = self.mod.namespace_defs_ids(markup, "diagram")
+        self.assertIn('<linearGradient id="diagram-paint"/>', result)
+        self.assertIn('.a { fill:url("#diagram-paint") } .b { stroke:url(#diagram-paint) }', result)
+        self.assertIn('<rect fill="url(#diagram-paint)"/><use href="#diagram-paint"/>', result)
+        self.assertIn('<text>Use url("#paint"), url(#paint) or href="#paint"</text>', result)
+        self.assertIn('<title>id="paint"</title>', result)
+        # Comments are not visible text; a commented-out block stays consistent.
+        self.assertIn('<!-- url(#diagram-paint) -->', result)
+
+    def test_legacy_entities_without_semicolon_follow_html_contexts(self) -> None:
+        html = '<svg viewBox="0 0 40 40"><title>Copyright &copy 2026</title>'
+        html += '<text data-label="&copy 2026">A&nbsp B &amp C &lt D</text></svg>'
+        root = ET.fromstring(self.mod.export_svg_document(html, Path("legacy.html")))
+        self.assertEqual(root.find("{http://www.w3.org/2000/svg}title").text, "Copyright \u00a9 2026")
+        text = root.find("{http://www.w3.org/2000/svg}text")
+        self.assertEqual(text.text, "A\u00a0 B & C < D")
+        self.assertEqual(text.get("data-label"), "\u00a9 2026")
+        # In attribute values HTML leaves a legacy name followed by an
+        # alphanumeric or "=" undecoded; text content decodes the prefix.
+        self.assertEqual(self.mod.normalize_html_entities('<a data-q="x&copy=1&notit">'),
+                         '<a data-q="x&copy=1&notit">')
+        self.assertEqual(self.mod.normalize_html_entities("<b>&notit</b>"), "<b>\u00acit</b>")
+
+    def test_escaped_root_id_keeps_retargeted_styles(self) -> None:
+        html = '<style>#a\\&b .paint { fill:#ff0000 }</style>'
+        html += '<svg id="a&amp;b" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+        svg = self.mod.export_svg_document(html, Path("escaped.html"))
+        self.assertIn("#escaped-root .paint { fill:#ff0000 }", svg)
+        # A legacy name HTML leaves literal in an attribute stays literal here too.
+        for source_id, css_id in (("x&copy2026", "x\\&copy2026"), ("n&#38;m", "n\\&m"),
+                                  ("a&#128;b", "a\u20acb"), ("c&#x80;d", "c\u20acd"), ("e&#38f", "e\\&f")):
+            html = f'<style>#{css_id} .paint {{ fill:#ff0000 }}</style>'
+            html += f'<svg id="{source_id}" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+            svg = self.mod.export_svg_document(html, Path("literal-id.html"))
+            self.assertIn("#literal-id-root .paint { fill:#ff0000 }", svg)
+
+    def test_raw_text_opening_attributes_normalize_entities(self) -> None:
+        for tag in ("style", "script"):
+            raw = f'<{tag} title="Copyright &copy; > literal">raw &copy; content</{tag}>'
+            expected = f'<{tag} title="Copyright © > literal">raw &copy; content</{tag}>'
+            self.assertEqual(self.mod.normalize_html_entities(raw), expected)
+        html = '<svg viewBox="0 0 10 10"><style title="Copyright &copy; > literal">.label {fill:red}</style><rect class="label" width="10" height="10"/></svg>'
+        result = ET.fromstring(self.mod.export_svg_document(html, Path("style-attribute.html")))
+        style = result.find("{http://www.w3.org/2000/svg}style")
+        self.assertEqual(style.get("title"), "Copyright © > literal")
+        self.assertEqual(style.text, ".label {fill:red}")
+
+    def test_new_defs_preserve_leading_accessible_title(self) -> None:
+        for asset in ("example-journey.html", "example-polar.html"):
+            source = ASSETS / asset
+            root = ET.fromstring(self.mod.export_svg_document(source.read_text(encoding="utf-8"), source))
+            self.assertEqual(root[0].tag, "{http://www.w3.org/2000/svg}title")
+            self.assertEqual(root[1].tag, "{http://www.w3.org/2000/svg}desc")
+        html = '<svg viewBox="0 0 40 40"><!-- before title --><title><![CDATA[Literal </title> text]]></title>'
+        html += '<desc>Keep description</desc><rect width="40" height="40"/></svg>'
+        root = ET.fromstring(self.mod.export_svg_document(html, Path("title.html")))
+        self.assertEqual(root[0].text, "Literal </title> text")
+        self.assertEqual(root[1].text, "Keep description")
+        self.assertEqual(root[2].tag, "{http://www.w3.org/2000/svg}defs")
+
     def test_cli_writes_default_path(self) -> None:
         source = ASSETS / "example-loop.html"
         with tempfile.TemporaryDirectory() as tmp:
@@ -231,6 +356,69 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn('fill="#2d3142" fill-opacity="0.10"', svg)
         self.assertIn('stroke="none"', svg)
         self.assertIn('id="rgba-demo-dots"', svg)
+
+    def test_compound_original_root_does_not_gain_an_ancestor(self) -> None:
+        for selector in ('.diagram#original .paint',
+                         'svg.diagram#original .paint',
+                         '[data-mode="active"]#original.diagram .paint'):
+            with self.subTest(selector=selector):
+                source = '<style>' + selector + ' {fill:#ff0000}</style>'
+                source += '<svg id="original" class="diagram" data-mode="active" viewBox="0 0 40 40">'
+                source += '<rect class="paint" width="40" height="40"/></svg>'
+                result = self.mod.export_svg_document(source, Path('compound.html'))
+                expected = selector.replace('#original', '#compound-root')
+                self.assertIn(expected + ' { fill:#ff0000 }', embedded_css(result))
+                self.assertNotIn('#compound-root ' + expected, embedded_css(result))
+
+    def test_hex_root_escape_retains_descendant_separator(self) -> None:
+        source = r'<style>.paint {fill:#00ff00} #\31  .paint {fill:#ff0000}</style>'
+        source += '<svg id="1" viewBox="0 0 40 40"><rect class="paint" width="40" height="40"/></svg>'
+        result = self.mod.export_svg_document(source, Path('single-hex.html'))
+        self.assertIn('#single-hex-root .paint { fill:#ff0000 }', embedded_css(result))
+        self.assertNotIn('#single-hex-root.paint', embedded_css(result))
+
+    def test_root_retarget_compares_whole_decoded_css_id_tokens(self) -> None:
+        cases = (
+            (r'#panel.v1 .paint', 'panel.v1', r'#panel.v1 .paint'),
+            (r'#panel\.v1 .paint', 'panel.v1', '#export-root .paint'),
+            (r'#panel\2e v1 .paint', 'panel.v1', '#export-root .paint'),
+            (r'#panel\00002Ev1 .paint', 'panel.v1', '#export-root .paint'),
+            (r'#panel\:v1 .paint', 'panel:v1', '#export-root .paint'),
+            (r'#panel\.v1-child .paint', 'panel.v1', r'#panel\.v1-child .paint'),
+            ('#123 .paint', '123', '#123 .paint'),
+            (r'#\31 23 .paint', '123', '#export-root .paint'),
+            (r'#\-123 .paint', '-123', '#export-root .paint'),
+            ('#-123 .paint', '-123', '#-123 .paint'),
+            ('#面板 .paint', '面板', '#export-root .paint'),
+        )
+        for selector, original, expected in cases:
+            with self.subTest(selector=selector):
+                self.assertEqual(self.mod.retarget_root_selector(selector, original, 'export-root'), expected)
+        self.assertEqual(self.mod.scope_selector('.paint[data-label="#export-root"]', 'export-root'),
+                         '#export-root .paint[data-label="#export-root"]')
+        self.assertEqual(self.mod.scope_selector('.paint:is(#export-root)', 'export-root'),
+                         '#export-root .paint:is(#export-root)')
+
+    def test_original_svg_root_selectors_follow_replaced_id(self) -> None:
+        for quote in ('"', "'"):
+            with self.subTest(quote=quote):
+                html = '<style>#original .paint {fill: #ff0000;} '
+                html += '#original-child {stroke: #00ff00;}</style>'
+                html += '<svg id=' + quote + 'original' + quote + ' viewBox="0 0 40 40">'
+                html += '<rect id="original-child" class="paint" width="40" height="40"/></svg>'
+                result = self.mod.export_svg_document(html, Path("renamed.html"))
+                css = embedded_css(result)
+                self.assertIn('#renamed-root .paint { fill: #ff0000; }', css)
+                self.assertIn('#original-child { stroke: #00ff00; }', css)
+                self.assertIn('id="original-child"', result)
+                self.assertNotIn('#original .paint', css)
+        # An unrelated attribute that contains the word id is not the root id.
+        source = '<style>#original .paint {fill: #f00;}</style>'
+        source += '<svg data-id="original" viewBox="0 0 10 10"><rect class="paint"/></svg>'
+        result = self.mod.export_svg_document(source, Path("data-id.html"))
+        self.assertIn('#original .paint', embedded_css(result))
+        self.assertIn('data-id="original"', result)
+        self.assertEqual(ET.fromstring(result).get('id'), 'data-id-root')
 
     def test_root_tokens_bind_to_svg_root(self) -> None:
         # Without the :root re-scope the tokens land on `#root :root`, which

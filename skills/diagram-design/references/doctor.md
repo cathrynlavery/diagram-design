@@ -41,7 +41,7 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
 - `fail` if version is below 3.10.
 
 2. Playwright availability for PNG export
-- Check whether Playwright import works in the active Python interpreter (`import playwright`).
+- Check whether Playwright import works in the active Python interpreter (`import playwright`); an optional package version attribute is not required.
 - Check whether Chromium is installed for Playwright (`playwright install --help` availability is sufficient for command presence; prefer also checking browser cache when practical).
 - If missing, mark `warn` and report that the host environment must provision
   an approved Playwright installation and compatible browser.

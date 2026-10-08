@@ -72,6 +72,7 @@ class DiagramParser(HTMLParser):
         self.styles: list[str] = []
         self.css_attributes: list[str] = []
         self.svgs: list[dict[str, object]] = []
+        self.ids: Counter[str] = Counter()
         self.unsafe: list[str] = []
         self.references: list[tuple[str, str, str]] = []
         self._svg_depth = 0
@@ -89,6 +90,8 @@ class DiagramParser(HTMLParser):
         data: dict[str, str] = {}
         for key, value in normalized_attrs:
             data.setdefault(key, value)
+        if data.get("id"):
+            self.ids[data["id"]] += 1
         if tag in {"base", "embed", "object", "iframe"}:
             self.unsafe.append(f"<{tag}> is not allowed in a diagram file")
         for key, value in normalized_attrs:
@@ -307,6 +310,9 @@ def check_svgs(parser: DiagramParser, errors: list[str]) -> None:
         desc_id = desc_attrs.get("id", "")
         if title_id in {"", "title"} or desc_id in {"", "desc"}:
             errors.append(f"svg {number} title/desc IDs must be diagram-prefixed, never bare")
+        for naming_id in dict.fromkeys((title_id, desc_id)):
+            if parser.ids[naming_id] > 1:
+                errors.append(f"duplicate accessible SVG naming ID {naming_id!r}")
         if labelled != [title_id, desc_id]:
             errors.append(f"svg {number} aria-labelledby must name title then desc")
 
