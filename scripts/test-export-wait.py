@@ -19,6 +19,7 @@ import contextlib
 import importlib.util
 import io
 import re
+import struct
 import subprocess
 import sys
 import tempfile
@@ -95,6 +96,25 @@ def run_export(exporter, src: Path, out: Path, **kwargs: int) -> str:
 def require_png(out: Path, name: str) -> None:
     if not out.exists() or out.stat().st_size == 0:
         raise AssertionError(f"{name}: expected a non-empty screenshot at {out}")
+
+
+def run_cli_without_scale(src: Path, out: Path) -> str:
+    run = subprocess.run(
+        [sys.executable, str(EXPORT_PNG), str(src), str(out)],
+        capture_output=True,
+        text=True,
+        timeout=FALLBACK_BUDGET_SECONDS,
+    )
+    if run.returncode != 0:
+        raise AssertionError(f"normal-load: packaged renderer failed\n{run.stderr}")
+    return run.stderr
+
+
+def png_dimensions(out: Path) -> tuple[int, int]:
+    png = out.read_bytes()
+    if not png.startswith(b"\x89PNG\r\n\x1a\n") or len(png) < 24:
+        raise AssertionError("normal-load: renderer did not produce a valid PNG header")
+    return struct.unpack(">II", png[16:24])
 
 
 def require_stalled_fallback(exporter, tmp: Path) -> None:
@@ -215,9 +235,13 @@ def require_normal_load(snippet: str, tmp: Path) -> None:
     )
     out = tmp / "normal-fixture.png"
 
-    stderr = run_export(exporter, src, out)
+    stderr = run_cli_without_scale(src, out)
 
     require_png(out, "normal-load")
+    if png_dimensions(out) != (800, 480):
+        raise AssertionError(
+            "normal-load: omitted CLI scale did not produce the default 2x dimensions"
+        )
     if WARNING_ANCHOR in stderr:
         raise AssertionError(f"normal-load: fallback warning fired unexpectedly\n{stderr}")
     print("OK: normal load captures with no fallback warning")
