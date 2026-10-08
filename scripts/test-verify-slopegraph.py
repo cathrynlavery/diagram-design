@@ -221,6 +221,19 @@ def main() -> int:
 
 
 def run_cases(h: Harness) -> int:
+
+    collapsed = document(''.join(
+        series(name, frm, to, y1=250, y2=250)
+        + labels(name, frm, to, y_from=250, y_to=250)
+        for name, frm, to in ROWS))
+    h.expect_finding("distinct values cannot collapse to a flat value axis",
+                     collapsed, "zero or non-finite scale")
+    inverted = document(''.join(
+        series(name, frm, to, y1=500-y(frm), y2=500-y(to))
+        + labels(name, frm, to, y_from=500-y(frm), y_to=500-y(to))
+        for name, frm, to in ROWS))
+    h.expect_clean("a finite nonzero inverted axis remains measurable", inverted)
+
     # ── Negative half: honest figures must stay silent ────────────────────
     h.expect_clean("an honest slopegraph reports nothing", honest(ROWS))
 

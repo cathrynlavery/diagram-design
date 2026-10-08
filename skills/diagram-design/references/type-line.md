@@ -39,7 +39,7 @@
 
 ## Variants
 
-- **Slopegraph:** exactly two states, several series, read as slope and rank change. Full spec below.
+- **Slopegraph:** exactly two states, several series, read as slope and rank change. Full spec below. Its shared quantitative scale must be finite and nonzero; a flat value axis cannot encode distinct values.
 - **Ridgeline:** one distribution per series, stacked with deliberate overlap on one shared amplitude. Full spec below.
 - **Streamgraph:** many periods, few layers, read as a total and its composition breathing. Full spec below.
 - **Bump chart:** rank movement across 3–6 ordered snapshots, position only. Full spec below.
