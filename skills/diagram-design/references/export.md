@@ -115,42 +115,15 @@ Don't auto-install. The user asked for one feature, not a system change.
 
 ### Rasterize
 
-Write the snippet below to a temp file and run it with the interpreter that
-passed detection: `python3 <tmp.py> <src.html> <out.png>` or
-`python <tmp.py> <src.html> <out.png>`:
+Run the packaged renderer from this skill's directory with the interpreter that
+passed detection: `python3 scripts/export_png.py <src.html> <out.png> [scale]`
+or `python scripts/export_png.py <src.html> <out.png> [scale]`.
 
-```python
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
-import sys, pathlib
-
-src, out = sys.argv[1], sys.argv[2]
-scale = int(sys.argv[3]) if len(sys.argv) > 3 else 2
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page(device_scale_factor=scale)
-    page.goto(f"file://{pathlib.Path(src).resolve()}", wait_until="domcontentloaded")
-    try:
-        page.wait_for_load_state("networkidle", timeout=15000)
-    except PlaywrightTimeoutError:
-        # proxied networks may stall webfont subrequests past any deadline;
-        # cancel the outstanding load so the capture below can't block on it again
-        page.evaluate("window.stop()")
-        page.wait_for_timeout(4000)
-        print("warning: webfont request stalled - captured with fallback typography; the PNG may not match the intended fonts", file=sys.stderr)
-    svg = page.locator("svg").first
-    # Release every clipping ancestor (local scroller, overflow:hidden chrome)
-    # so an SVG wider than its frame is captured whole.
-    svg.evaluate("el => { for (let a = el.parentElement; a; a = a.parentElement) a.style.setProperty('overflow', 'visible', 'important'); }")
-    svg.screenshot(path=out, omit_background=True)
-    browser.close()
-```
-
-If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the snippet cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally.
+If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the helper cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally.
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg.
 
-The overflow release matters for the wide presets. `min-width` equals the viewBox width (see [`output-spec.md`](output-spec.md)), so a `doc-wide` or `slide-16x9` SVG is 1280px inside a 1200px frame, and its `.diagram-container` scroller clips the last 80px on screen. The screenshot covers the SVG's box but not what an ancestor clipped, so without the release the PNG comes out full size with a blank right edge. This is the screen-side counterpart of the templates' `@media print` rule.
+The helper's overflow release matters for the wide presets. `min-width` equals the viewBox width (see [`output-spec.md`](output-spec.md)), so a `doc-wide` or `slide-16x9` SVG is 1280px inside a 1200px frame, and its `.diagram-container` scroller clips the last 80px on screen. The screenshot covers the SVG's box but not what an ancestor clipped, so without the release the PNG comes out full size with a blank right edge. This is the screen-side counterpart of the templates' `@media print` rule.
 
 ### Output naming
 
