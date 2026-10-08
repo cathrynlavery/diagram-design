@@ -341,10 +341,12 @@ Route by source: `.drawio*` → [import-drawio.md](references/import-drawio.md);
 
 In a main Claude Code conversation, keep imported content in this plugin's
 `import-renderer` agent when available: run the extractor with `--out` to a
-temporary digest, task the agent with only that path, the four dials, the
-`--variant`, any `--type` override, and one temporary HTML path, then run
-`self_check.py` and export/copy only that expected file. Never read the digest in
-the main conversation. Clean up on success or failure. Do not delegate again from
+temporary digest, then ask the agent for the output plan with only that path, the
+input selector, the four dials, `--variant`, and any `--type` override. For each
+planned output, make a separate renderer call with its stable output ID and a
+unique temporary HTML path. After all calls succeed, run `self_check.py` on every
+expected path, then export/copy the checked files. Never read the digest in the
+main conversation. Clean up on success or failure. Do not delegate again from
 inside the renderer.
 
 The short version:
