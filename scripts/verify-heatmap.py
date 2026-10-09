@@ -105,8 +105,12 @@ def _length_px(raw: str | None, field: str, errors: list[str] | None) -> float |
 
 
 def _attr(attrs_str: str, name: str) -> str | None:
-    m = re.search(r"\b" + re.escape(name) + r'\s*=\s*"([^"]*)"', attrs_str)
-    return m.group(1) if m else None
+    match = re.search(
+        r"(?<![\w:-])" + re.escape(name) + r"""\s*=\s*(["'])(.*?)\1""",
+        attrs_str,
+        re.DOTALL,
+    )
+    return match.group(2) if match else None
 
 
 def _is_accent(r: int, g: int, b: int) -> bool:
