@@ -178,7 +178,7 @@ The downsides are real. Output quality depends on the model you run it with, and
 
 ## Why I built it
 
-I write at [littlemight.com](https://littlemight.com) (and run [BestSelf.co](https://bestself.co) on the side). Every time I needed a diagram, whether an architecture sketch, a flowchart, or a pyramid of what matters most, I'd ask Claude and get back a generic rounded-box thing that looked nothing like the rest of the site. I'd either fight with Figma for 30 minutes or skip the diagram.
+I wanted diagrams I actually liked for my blog posts on [littlemight.com](https://littlemight.com). Every time I needed one, whether an architecture sketch, a flowchart, or a pyramid of what matters most, I'd ask Claude and get back a generic rounded-box thing that looked nothing like the rest of the site. I'd either fight with Figma for 30 minutes or skip the diagram.
 
 The model already understood the content. What it was missing was taste, so I wrote the taste down: one accent color for the one or two things that matter, 1px hairlines, no shadows, every coordinate on a 4px grid.
 
@@ -662,6 +662,12 @@ Contributions are welcome: new diagram types, import grammar support, examples, 
 
 ## About
 
-Made by **Cathryn Lavery**, founder of [BestSelf.co](https://bestself.co). I write about AI, entrepreneurship, and designing nice-looking things at [littlemight.com](https://littlemight.com), blog + newsletter.
+Made by **Cathryn Lavery**. I write about AI, entrepreneurship, and designing nice-looking things at [littlemight.com](https://littlemight.com), blog + newsletter.
+
+Other things I've made:
+
+- [ShipRank](https://shiprank.dev): a public leaderboard for lines shipped.
+- [The Non-Technical Technical Dictionary](https://nontechnical.dev): tech and AI terms explained in plain English, one analogy at a time.
+- [BestSelf.co](https://bestself.co): I own it, though I don't run it day to day.
 
 If this is useful, **star the repo** and come [say hi on X](https://x.com/cathrynlavery).
