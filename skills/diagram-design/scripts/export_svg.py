@@ -662,12 +662,16 @@ def main(argv: list[str] | None = None) -> int:
     try:
         html = source.read_text(encoding="utf-8")
         document = export_svg_document(html, source)
-    except ValueError as exc:
+    except (ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
     output = args.output if args.output is not None else source.with_suffix(".svg")
-    output.write_text(document, encoding="utf-8")
+    try:
+        output.write_text(document, encoding="utf-8")
+    except OSError as exc:
+        print(f"error: cannot write {output}: {exc}", file=sys.stderr)
+        return 2
     print(output)
     return 0
 

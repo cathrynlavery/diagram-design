@@ -7,6 +7,8 @@ the contract documented in references/export.md (issues #202 and #203).
 
 from __future__ import annotations
 
+import contextlib
+import io
 import importlib.util
 import re
 import sys
@@ -83,6 +85,17 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
+
+    def test_cli_reports_output_io_errors_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source.html"
+            source.write_text('<svg viewBox="0 0 10 10"><rect width="10" height="10"/></svg>', encoding="utf-8")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                result = self.mod.main([str(source), directory])
+            self.assertEqual(result, 2)
+            self.assertIn("error:", stderr.getvalue())
+            self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
