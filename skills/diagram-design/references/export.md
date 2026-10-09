@@ -31,8 +31,10 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
 **Prefer the packaged helper.** From this skill's directory run:
 
 ```
-python3 scripts/export_svg.py <html-file> [<out.svg>]
+python3 scripts/export_svg.py <html-file> [<out.svg>] [--system-fonts]
 ```
+
+`--system-fonts` skips the Google Fonts `@import` (step 5) so the SVG makes no network request; use it when the skin's font source is `system` (see [style-guide.md § Font source](style-guide.md#font-source)). The diagram CSS still carries over.
 
 That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
 

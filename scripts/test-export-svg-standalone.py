@@ -120,6 +120,18 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertIn("class=\"station\"", svg)
         self.assertIn("<style>", svg)
 
+    def test_system_fonts_export_makes_no_font_request(self) -> None:
+        source = ASSETS / "example-loop.html"
+        html = source.read_text(encoding="utf-8")
+        default = self.mod.export_svg_document(html, source)
+        self.assertIn("fonts.googleapis.com", default)
+        offline = self.mod.export_svg_document(html, source, system_fonts=True)
+        self.assertNotIn("fonts.googleapis.com", offline)
+        self.assertNotIn("@import", offline)
+        # The diagram CSS still ships, so class-styled marks keep their fills.
+        self.assertIn("#example-loop-root .station", offline)
+        ET.fromstring(offline.split("\n", 1)[1])
+
     def test_loop_export_namespaces_defs_ids_longest_first(self) -> None:
         source = ASSETS / "example-loop.html"
         svg = self.mod.export_svg_document(source.read_text(encoding="utf-8"), source)

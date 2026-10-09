@@ -423,7 +423,7 @@ def check_motion(parser: DiagramParser, source: str, errors: list[str]) -> None:
             errors.append("motion file needs a <noscript> explanation of the complete static frame")
 
 
-def verify(path: Path) -> list[str]:
+def verify(path: Path, offline: bool = False) -> list[str]:
     source = path.read_text(encoding="utf-8")
     parser = parsed_document(source)
     errors: list[str] = []
@@ -433,6 +433,10 @@ def verify(path: Path) -> list[str]:
         finding = reference_error(tag, rel, value)
         if finding:
             errors.append(finding)
+        elif offline and is_approved_google_fonts_stylesheet(value.strip()):
+            errors.append(
+                "offline: file loads Google Fonts; remove the font <link> to use system fonts"
+            )
     check_svgs(parser, errors)
     check_scripts(parser, errors)
     check_motion(parser, source, errors)
@@ -442,11 +446,16 @@ def verify(path: Path) -> list[str]:
 def main() -> int:
     argument_parser = argparse.ArgumentParser(description=__doc__)
     argument_parser.add_argument("files", nargs="+", type=Path)
+    argument_parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="also fail on the Google Fonts link, for system-font output that makes no network requests",
+    )
     args = argument_parser.parse_args()
     failed = False
     for path in args.files:
         try:
-            errors = verify(path)
+            errors = verify(path, offline=args.offline)
         except (OSError, UnicodeError) as exc:
             errors = [str(exc)]
         if errors:

@@ -476,12 +476,18 @@ def leading_accessibility_end(svg: str, pos: int) -> int:
         pos = close.end()
 
 
-def merge_style_into_defs(svg: str, style_css: str) -> str:
-    """Ensure one <defs> and place a <style> with fonts + diagram CSS first."""
-    style_inner = GOOGLE_FONTS_IMPORT
+def merge_style_into_defs(svg: str, style_css: str, system_fonts: bool = False) -> str:
+    """Ensure one <defs> and place a <style> with fonts + diagram CSS first.
+
+    With system_fonts the Google Fonts @import is left out, so the SVG makes no
+    network request and its font stacks fall through to installed faces.
+    """
+    parts = [] if system_fonts else [GOOGLE_FONTS_IMPORT]
     if style_css.strip():
-        style_inner = f"{GOOGLE_FONTS_IMPORT}\n      {style_css.strip()}"
-    style_tag = f"<style>{style_inner}</style>"
+        parts.append(style_css.strip())
+    if not parts:
+        return svg
+    style_tag = "<style>" + "\n      ".join(parts) + "</style>"
 
     defs_match = re.search(r"<defs\b[^>]*>", svg, re.IGNORECASE)
     if defs_match:
@@ -604,7 +610,7 @@ def assert_export_gate(svg: str) -> None:
         )
 
 
-def export_svg_document(html: str, source_path: Path) -> str:
+def export_svg_document(html: str, source_path: Path, system_fonts: bool = False) -> str:
     """Transform source HTML into a standalone SVG document string."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
@@ -621,7 +627,7 @@ def export_svg_document(html: str, source_path: Path) -> str:
     )
     svg = set_root_id(svg, root_id)
     diagram_css = diagram_css_from_html(html, root_id, original_root_id)
-    svg = merge_style_into_defs(svg, diagram_css)
+    svg = merge_style_into_defs(svg, diagram_css, system_fonts)
     svg = namespace_defs_ids(svg, slug)
     svg = normalize_rgba_presentation_attrs(svg)
     assert_export_gate(svg)
@@ -645,6 +651,11 @@ def main(argv: list[str] | None = None) -> int:
         nargs="?",
         help="Output .svg path (default: <source-stem>.svg next to the source)",
     )
+    parser.add_argument(
+        "--system-fonts",
+        action="store_true",
+        help="omit the Google Fonts @import so the SVG makes no network request",
+    )
     args = parser.parse_args(argv)
 
     source: Path = args.source
@@ -661,7 +672,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         html = source.read_text(encoding="utf-8")
-        document = export_svg_document(html, source)
+        document = export_svg_document(html, source, system_fonts=args.system_fonts)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
