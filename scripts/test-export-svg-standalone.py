@@ -84,6 +84,15 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_defs_namespace_preserves_id_and_href_metadata(self) -> None:
+        self.assertEqual(self.mod.find_defs_ids('<svg><defs><marker data-id="metadata"/></defs></svg>'), [])
+        markup = '<svg><defs><marker id="paint"/></defs><g data-id="paint" data-href="#paint"/><use href="#paint"/></svg>'
+        result = self.mod.namespace_defs_ids(markup, "diagram")
+        self.assertIn('data-id="paint"', result)
+        self.assertIn('data-href="#paint"', result)
+        self.assertIn('href="#diagram-paint"', result)
+        self.assertIn('id="diagram-paint"', result)
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())
