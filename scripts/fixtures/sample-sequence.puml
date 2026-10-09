@@ -1,0 +1,29 @@
+@startuml token-refresh
+skinparam sequenceArrowThickness 2
+skinparam ParticipantPadding 12
+skinparam backgroundColor #EEEEEE
+skinparam responseMessageBelowArrow true
+title Token refresh
+actor Client
+participant "Resource API" as api
+participant "Auth Service" as auth
+Client -> api : GET /orders
+activate api
+api --> Client : 200 body
+deactivate api
+== token expired ==
+alt token expired
+  api --> Client : 401
+  Client -> auth : POST /token
+  activate auth
+  auth --> Client : 200 access
+  deactivate auth
+  Client -> api : GET /orders retry
+  activate api
+  api --> Client : 200 body
+  deactivate api
+else token valid
+  api --> Client : 200 body
+end
+note right of api: keep the <b>cache</b> cold
+@enduml

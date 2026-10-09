@@ -41,7 +41,7 @@ fifteenth nearly did (#217); the sixteenth guards the ADR 0004 split:
    serif face, which Google Fonts also slices Cyrillic into, and the
    template's own font link must request it.
 15. Every surface that lists the size presets for selection — the SKILL.md
-   and README output-dial tables and the three import commands — must name
+   and README output-dial tables and the import commands — must name
    exactly the presets in the output-spec.md size table, in its order.
 16. Every SKILL.md section the ADR 0004 split thinned must keep the exact link
    to each block it moved out, or that content ships unreachable.
@@ -85,11 +85,13 @@ ROUTING_SURFACES = {
     Path("commands/import-drawio.md"): "references/import-drawio.md",
     Path("commands/import-mermaid.md"): "references/import-mermaid.md",
     Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
+    Path("commands/import-plantuml.md"): "references/import-plantuml.md",
     Path("commands/profile.md"): "references/profiles.md",
     Path("commands/doctor.md"): "references/doctor.md",
     Path("prompts/export-diagram.md"): "references/export.md",
     Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
     Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
+    Path("prompts/import-plantuml.md"): "references/import-plantuml.md",
     Path("prompts/profile.md"): "references/profiles.md",
     Path("prompts/doctor.md"): "references/doctor.md",
 }
@@ -102,6 +104,7 @@ SIZE_PRESET_SURFACES = {
     Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-excalidraw.md"): "- `--size` — any preset in `output-spec.md` §2:",
+    Path("commands/import-plantuml.md"): "- `--size` — any preset in `output-spec.md` §2:",
 }
 FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
 FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
@@ -122,6 +125,7 @@ REQUIRED_PACKAGED_RUNTIME_FILES = frozenset(
         "scripts/drawio_extract.py",
         "scripts/mermaid_extract.py",
         "scripts/excalidraw_extract.py",
+        "scripts/plantuml_extract.py",
         "scripts/export_svg.py",
         "assets/template.html",
         "assets/template-dark.html",
@@ -316,7 +320,7 @@ def readme_tree_tokens(markdown: str) -> list[str]:
     tokens: list[str] = []
     for block in blocks:
         tokens.extend(
-            re.findall(r"([A-Za-z0-9][A-Za-z0-9_.*-]*\.(?:md|html|py|yml|yaml|json|txt|mmd|drawio|png))", block)
+            re.findall(r"([A-Za-z0-9][A-Za-z0-9_.*-]*\.(?:md|html|py|yml|yaml|json|txt|mmd|drawio|png|puml|excalidraw))", block)
         )
     return tokens
 
@@ -603,6 +607,7 @@ COUNT_SURFACES = (
     Path("commands/import-drawio.md"),
     Path("commands/import-mermaid.md"),
     Path("commands/import-excalidraw.md"),
+    Path("commands/import-plantuml.md"),
     Path("README.md"),
 )
 

@@ -177,7 +177,7 @@ Droid tracks Git plugins by commit rather than the manifest's display version. T
 pi install https://github.com/cathrynlavery/diagram-design
 ```
 
-Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/import-excalidraw`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
+Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/import-excalidraw`, `/import-plantuml`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
 
 **Kiro:** Import the Agent Skill from the repository subdirectory URL:
 
@@ -197,7 +197,7 @@ npx skills add cathrynlavery/diagram-design
 
 When the selected roots resolve to more than one skills directory, the CLI asks for an installation method and recommends **Symlink**: one canonical copy, linked into each root, so a later update reaches all of them at once. Pass `--copy` for independent copies per host instead. A selection that resolves to a single directory is copied, because the distinction is immaterial there. Where symlinks are unavailable (Windows without Developer Mode) the CLI falls back to copies and reports which roots it copied.
 
-This is a standalone install, separate from every marketplace above: it does not follow marketplace updates automatically. Pull merged updates with `npx skills update diagram-design`. It also installs the Agent Skill only, so the `/export-diagram`, `/import-mermaid`, `/profile`, and `/doctor` command surfaces stay with the native packages. On a host that has one of the marketplaces above, prefer the marketplace.
+This is a standalone install, separate from every marketplace above: it does not follow marketplace updates automatically. Pull merged updates with `npx skills update diagram-design`. It also installs the Agent Skill only, so the `/export-diagram`, `/import-mermaid`, `/import-plantuml`, `/profile`, and `/doctor` command surfaces stay with the native packages. On a host that has one of the marketplaces above, prefer the marketplace.
 
 > **One-time migration:** an existing standalone `npx skills add` copy will not start following the Codex marketplace automatically. Remove that standalone copy, then use the Codex marketplace commands above. Likewise, uninstall a personal Cowork copy and reinstall Diagram Design from your organization's marketplace. Future marketplace version bumps then flow through each client's native update path.
 
@@ -325,9 +325,9 @@ Motion is optional and does not create another visual type. [`animation.md`](ski
 
 ---
 
-## Import from draw.io, Mermaid, or Excalidraw
+## Import from draw.io, Mermaid, Excalidraw, or PlantUML
 
-Already have diagrams in draw.io / diagrams.net, Mermaid, or Excalidraw? Point the skill at the source and it **redraws** them — same content, this design system, at whatever the destination needs.
+Already have diagrams in draw.io / diagrams.net, Mermaid, Excalidraw, or PlantUML? Point the skill at the source and it **redraws** them — same content, this design system, at whatever the destination needs.
 
 [![Redrawn from a .drawio file](docs/screenshots/thumbs/import-drawio.webp)](docs/screenshots/import-drawio.png)
 
@@ -340,13 +340,15 @@ Already have diagrams in draw.io / diagrams.net, Mermaid, or Excalidraw? Point t
 /diagram-design:import-mermaid README.md --diagram=all
 /diagram-design:import-mermaid architecture.mmd --size=slide-16x9 --detail=simplified
 /diagram-design:import-excalidraw whiteboard.excalidraw --size=slide-16x9 --detail=simplified
+/diagram-design:import-plantuml sequence.puml
+/diagram-design:import-plantuml classes.puml --size=slide-16x9 --detail=simplified
 ```
 
-Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, *"make this whiteboard sketch presentable"*, or *"この Mermaid をスライド用にきれいにして"*.
+Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, *"make this whiteboard sketch presentable"*, *"redraw this PlantUML sequence"*, or *"この Mermaid をスライド用にきれいにして"*.
 
 Reads the common containers draw.io writes — `.drawio`, `.drawio.xml`, `.drawio.png` (embedded diagram), and `.drawio.svg` — including compressed payloads that look like base64 garbage in an editor.
 For Mermaid, it accepts `.mmd`, `.mermaid`, and one or more fenced `mermaid` blocks in Markdown.
-For Excalidraw, it accepts `.excalidraw` and `.excalidraw.json` scene files (not `.excalidraw.png`/`.excalidraw.svg` exports). It parses text only: no rendering, JavaScript, browser, network, or followed click targets.
+For Excalidraw, it accepts `.excalidraw` and `.excalidraw.json` scene files (not `.excalidraw.png`/`.excalidraw.svg` exports). For PlantUML, it accepts `.puml`, `.plantuml`, `.pu`, and fenced `plantuml` / `puml` blocks in Markdown, for sequence and class diagrams only. It parses text only: no rendering, JavaScript, browser, network, PlantUML runtime, or followed click targets.
 
 ### The four dials
 
@@ -368,7 +370,7 @@ Dropped:   1 sticky note ("legacy path, to be retired") — unconnected in sourc
 Kept in full: the request path (Web/Mobile → Gateway → Orders → Postgres)
 ```
 
-What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, or Excalidraw's hand-drawn geometry. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagram-design/references/import-excalidraw.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
+What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, Excalidraw's hand-drawn geometry, or PlantUML skinparams. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagram-design/references/import-excalidraw.md), [`references/import-plantuml.md`](skills/diagram-design/references/import-plantuml.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
 
 ---
 
@@ -427,12 +429,14 @@ diagram-design/
 │   ├── import-drawio.md             — plugin draw.io import command
 │   ├── import-mermaid.md            — plugin Mermaid import command
 │   ├── import-excalidraw.md         — plugin Excalidraw import command
+│   ├── import-plantuml.md           — plugin PlantUML import command
 │   ├── profile.md                   — plugin client-profile command
 │   └── doctor.md                    — plugin environment diagnostics command
 ├── prompts/
 │   ├── export-diagram.md            — Pi `/export-diagram` prompt template
 │   ├── import-mermaid.md            — Pi Mermaid import prompt template
 │   ├── import-excalidraw.md         — Pi Excalidraw import prompt template
+│   ├── import-plantuml.md           — Pi PlantUML import prompt template
 │   ├── profile.md                   — Pi `/profile` prompt template
 │   └── doctor.md                    — Pi `/doctor` diagnostics prompt template
 ├── skills/
@@ -447,6 +451,7 @@ diagram-design/
 │       │   ├── import-drawio.md     — draw.io redraw procedure
 │       │   ├── import-mermaid.md    — Mermaid redraw procedure
 │       │   ├── import-excalidraw.md — Excalidraw redraw procedure
+│       │   ├── import-plantuml.md   — PlantUML redraw procedure
 │       │   ├── output-spec.md       — format × size × detail level
 │       │   ├── export.md            — SVG / PNG export + sizing
 │       │   ├── export-registry.md   — block-metadata JSON sidecar export
@@ -486,6 +491,7 @@ diagram-design/
 │       │   ├── drawio_extract.py    — draw.io → structured IR
 │       │   ├── mermaid_extract.py   — Mermaid → structured IR
 │       │   ├── excalidraw_extract.py — Excalidraw → structured IR
+│       │   ├── plantuml_extract.py  — PlantUML → structured IR
 │       │   └── self_check.py        — packaged output self-check (runs installed)
 │       └── assets/
 │           ├── index.html           — live gallery, tabbed
@@ -496,6 +502,7 @@ diagram-design/
 │           ├── example-import-drawio.html
 │           ├── example-import-mermaid.html
 │           ├── example-import-excalidraw.html
+│           ├── example-import-plantuml.html
 │           ├── example-policy-trace-animated.html
 │           └── example-sequence-oauth*.html
 ├── scripts/
@@ -520,7 +527,11 @@ diagram-design/
 │       ├── sample-readme-with-mermaid.md
 │       ├── sample-adversarial.mmd
 │       ├── sample-whiteboard.excalidraw
-│       └── sample-adversarial.excalidraw
+│       ├── sample-adversarial.excalidraw
+│       ├── sample-sequence.puml
+│       ├── sample-class.puml
+│       ├── sample-adversarial.puml
+│       └── sample-multi.puml
 ├── docs/cookbook.md                 — operator recipes for editable installs and common tasks
 ├── docs/adr/                        — short records of settled design decisions
 ├── docs/screenshots/                — full-resolution images + source-digest manifest.json
@@ -544,6 +555,9 @@ it covers all supported grammars, multi-block Markdown, adversarial labels, trus
 behavior, resource caps, named failures, and reference/command wiring.
 If you touch the Excalidraw import path, `python3 scripts/verify-excalidraw-import.py` must also
 pass — it covers scene parsing, bound labels, groups and frames, adversarial labels,
+trust-boundary behavior, resource caps, named failures, and reference/command wiring.
+If you touch the PlantUML import path, `python3 scripts/verify-plantuml-import.py` must also
+pass — it covers sequence and class grammars, multi-block files, adversarial labels,
 trust-boundary behavior, resource caps, named failures, and reference/command wiring.
 
 Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. The same script fails diagonal connectors, connectors that run along a node's border or attach at its corner, ports crowded closer than 12px, and arrows stacked on one trunk. `python3 scripts/test-verify-geometry.py` keeps that checker honest in both directions.
@@ -612,6 +626,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
+| "Redraw this PlantUML sequence for my deck" | `SKILL.md` + `references/import-plantuml.md` + `references/output-spec.md` + the chosen type's reference |
 | Routine static diagram-making (any visual type) | `SKILL.md` + that one type's reference, plus `references/primitives-core.md` or `references/layout-budget.md` only when it needs exact markup or a per-type budget row |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
