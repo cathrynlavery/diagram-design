@@ -721,6 +721,115 @@ def gallery_mobile_failures(context, gallery_path=None):
     return failures
 
 
+def gallery_navigation_failures(context):
+    """Exercise shipped gallery interactions over HTTP and opaque local-file origins."""
+    from playwright.sync_api import expect
+
+    failures = []
+    for mode in ("http", "file"):
+        for viewport in ({"width": 1600, "height": 1000}, {"width": 390, "height": 844}):
+            page = context.new_page()
+            page.set_viewport_size(viewport)
+            phase = "initial-state"
+            label = f"gallery-navigation-{mode}-{viewport['width']}"
+            runtime_errors = []
+            page.on("pageerror", lambda error: runtime_errors.append(str(error)))
+            try:
+                if mode == "http":
+                    # Fulfill only committed HTML assets in memory. No listener or
+                    # network exception is needed under the linter's isolation policy.
+                    def serve_gallery(route):
+                        name = urlparse(route.request.url).path.removeprefix("/")
+                        asset = ASSET_DIR / name
+                        if "/" in name or not name.endswith(".html") or not asset.is_file():
+                            route.abort()
+                            return
+                        route.fulfill(content_type="text/html", body=asset.read_bytes())
+
+                    page.route("http://gallery.test/*", serve_gallery)
+                    url = "http://gallery.test/index.html"
+                else:
+                    url = (ASSET_DIR / "index.html").as_uri()
+                page.goto(url, wait_until="load")
+                nav = page.locator("#diagram-nav")
+                toggle = page.locator("#nav-toggle")
+                search = page.locator("#diagram-search")
+                preview = page.locator("#preview")
+                expect(nav).to_be_visible()
+                expect(toggle).to_have_attribute("aria-expanded", "true")
+                expanded_height = preview.bounding_box()["height"]
+                # Confirm file:// actually exercises the inaccessible-document fallback.
+                accessible = page.evaluate("document.querySelector('#preview').contentDocument !== null")
+                assert accessible == (mode == "http"), "unexpected iframe origin accessibility"
+
+                phase = "preview-collapse-and-reopen"
+                for attempt in range(3):
+                    page.frame_locator("#preview").locator("body").click(position={"x": 24, "y": 24})
+                    expect(nav).to_be_hidden()
+                    expect(toggle).to_have_attribute("aria-expanded", "false")
+                    assert preview.bounding_box()["height"] > expanded_height, "collapse did not enlarge preview"
+                    expect(page.locator("#current-diagram")).to_be_visible()
+                    expect(page.locator("#variant-tabs")).to_be_visible()
+                    if mode == "http" and attempt == 0:
+                        # Retain iframe focus on reopen: the next click must be
+                        # handled by its pointer listener, not another window blur.
+                        toggle.evaluate("button => button.click()")
+                        assert page.evaluate("document.activeElement === document.querySelector('#preview')")
+                    else:
+                        toggle.click()
+                    expect(nav).to_be_visible()
+                    expect(toggle).to_have_attribute("aria-expanded", "true")
+
+                phase = "filtered-keyboard-navigation"
+                search.fill("scatter")
+                visible = page.locator("#type-tabs .tab:visible")
+                names = visible.evaluate_all("tabs => tabs.map(tab => tab.dataset.type)")
+                assert len(names) >= 3, "scatter filter did not expose related variants"
+                expect(page.locator('#type-tabs .tab.active')).to_be_hidden()
+                search.press("Tab")
+                expect(visible.first).to_be_focused()
+                for key, expected in (("ArrowRight", names[1]), ("ArrowLeft", names[0]),
+                                      ("ArrowLeft", names[-1]), ("ArrowRight", names[0])):
+                    page.keyboard.press(key)
+                    selected = page.locator(f'#type-tabs [data-type="{expected}"]')
+                    expect(selected).to_be_focused()
+                    expect(selected).to_have_attribute("aria-checked", "true")
+                    expect(preview).to_have_attribute("src", f"example-{expected}.html")
+
+                phase = "empty-search-and-recovery"
+                search.fill("no-matching-diagram-xyz")
+                expect(visible).to_have_count(0)
+                expect(page.locator("#empty-results")).to_be_visible()
+                search.fill("polar")
+                expect(page.locator("#empty-results")).to_be_hidden()
+                expect(visible).to_have_count(1)
+                with page.expect_event(
+                    "framenavigated",
+                    predicate=lambda frame: frame.parent_frame == page.main_frame
+                    and frame.url.endswith("/example-polar.html"),
+                ):
+                    visible.first.click()
+                expect(preview).to_have_attribute("src", "example-polar.html")
+                search.fill("")
+                expect(visible).to_have_count(page.locator("#type-tabs .tab").count())
+                expect(page.locator('#type-tabs [data-type="polar"]')).to_have_attribute("aria-checked", "true")
+
+                phase = "collapse-after-example-change"
+                page.frame_locator("#preview").locator("body").click(position={"x": 24, "y": 24})
+                expect(nav).to_be_hidden()
+                toggle.click()
+                search.focus()
+                search.press("Escape")
+                expect(nav).to_be_hidden()
+                expect(toggle).to_be_focused()
+                assert not runtime_errors, "; ".join(runtime_errors)
+            except Exception as error:
+                failures.append(f"{label}-{phase}: {str(error).splitlines()[0]}")
+            finally:
+                page.close()
+    return failures
+
+
 def waterfall_mobile_failures(context, waterfall_paths=None):
     """Keep waterfall labels readable while containing its wide plot locally."""
     paths = waterfall_paths or sorted(ASSET_DIR.glob("example-waterfall*.html"))
@@ -1235,6 +1344,10 @@ def self_test(context):
 
     checks += 1
     failures += gallery_mobile_failures(context)
+
+    # Same-origin iframe clicks and file:// focus fallback, desktop and mobile.
+    checks += 4
+    failures += gallery_navigation_failures(context)
 
     # The waterfall uses 8px SVG labels, so shrinking its 1000-unit canvas to
     # a phone width is not a responsive layout. Keep it readable and scroll it
