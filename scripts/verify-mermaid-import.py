@@ -1093,6 +1093,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
         check_files()
+        expect_error([str(FLOW), "--diagram", "²"], "--diagram must be an index")
         check_flowchart()
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)

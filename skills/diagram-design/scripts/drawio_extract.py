@@ -896,7 +896,7 @@ def select_pages(pages: list[Page], selector: str | None) -> list[Page]:
         return pages if len(pages) == 1 else pages[:1]
     if selector == "all":
         return pages
-    if selector.isdigit():
+    if selector.isdecimal():
         index = int(selector)
         match = [p for p in pages if p.index == index]
         if not match:

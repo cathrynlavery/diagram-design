@@ -1375,7 +1375,7 @@ def select_blocks(blocks: list[SourceBlock], selector: str | None) -> list[Sourc
         return blocks[:1]
     if selector == "all":
         return blocks
-    if selector.isdigit():
+    if selector.isdecimal():
         index = int(selector)
         selected = [block for block in blocks if block.index == index]
         if not selected:
