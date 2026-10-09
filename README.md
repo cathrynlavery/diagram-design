@@ -668,6 +668,6 @@ Other things I've made:
 
 - [ShipRank](https://shiprank.dev): a public leaderboard for lines shipped.
 - [The Non-Technical Technical Dictionary](https://nontechnical.dev): tech and AI terms explained in plain English, one analogy at a time.
-- [BestSelf.co](https://bestself.co): journals, planners and card decks for people who still plan on paper. I sold it to private equity and later bought it back.
+- [BestSelf.co](https://bestself.co): the SELF Journal and other paper tools for getting things done. Started on Kickstarter in 2015, sold to private equity in 2022, bought back 14 months later ([the story](https://www.littlemight.com/100-days-lessons-from-buying-my-business-back-from-private-equity/)).
 
 If this is useful, **star the repo** and come [say hi on X](https://x.com/cathrynlavery).
