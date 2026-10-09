@@ -50,7 +50,7 @@ ASSET_DIR = ROOT / "skills/diagram-design/assets"
 CELL_RE = re.compile(r"<rect\b(?P<attrs>[^>]*)/?>", re.IGNORECASE)
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
 CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*)/?>", re.IGNORECASE)
-ATTR_RE = re.compile(r'(?P<name>[\w:-]+)="(?P<value>[^"]*)"')
+ATTR_RE = re.compile(r'''(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)''', re.DOTALL)
 ROTATE_RE = re.compile(r"rotate\(\s*(?P<deg>-?[\d.]+)")
 TAG_RE = re.compile(r"<[^>]+>")
 # A cell states its size one of two ways, and the two must not be confused: a

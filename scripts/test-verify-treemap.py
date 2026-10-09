@@ -99,6 +99,11 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
 
+        quoted = re.sub(r'="([^"<>]*)"', lambda match: "='" + match.group(1) + "'", source)
+        code, output = run(write(directory, "single-quotes.html", quoted))
+        if code != 0:
+            failures.append(f"single-quoted equivalent treemap was rejected: {output}")
+
         # 1. Every shipped Latin example must pass untouched, proving the
         #    Unicode estimator did not move the calibrated Latin baseline.
         shipped_clean = True
