@@ -84,6 +84,16 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_viewbox_must_belong_to_svg_root(self) -> None:
+        for markup in (
+            '<svg><symbol viewBox="0 0 10 10"/></svg>',
+            '<svg data-viewBox="0 0 10 10"/>',
+            '<svg viewbox="0 0 10 10"/>',
+        ):
+            with self.subTest(markup=markup), self.assertRaisesRegex(ValueError, "viewBox"):
+                self.mod.ensure_viewbox(markup)
+        self.mod.ensure_viewbox('<svg viewBox="0 0 10 10"/>')
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())
