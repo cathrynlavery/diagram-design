@@ -139,6 +139,10 @@ def main() -> int:
             if code != 0:
                 failures.append(f"{label}: shipped example failed:\n  {output.strip()}")
 
+        single_quoted = re.sub(r'="([^"<>]*)"', lambda match: "='" + match.group(1) + "'", original)
+        case(failures, d, "P-single-quotes.html", single_quoted, original, True,
+             "single-quoted attributes retain the same heatmap semantics")
+
         # ── Negative: mutations that must be rejected ─────────────────────────
 
         # N1: two focal cells
