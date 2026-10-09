@@ -1089,9 +1089,19 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_import_regression(tmp: Path) -> None:
+    path = tmp / "supported-form.mmd"
+    path.write_text('erDiagram\nINDEPENDENT\nCUSTOMER ||--o{ ORDER : places\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if set(nodes) != {"INDEPENDENT", "CUSTOMER", "ORDER"} or nodes["INDEPENDENT"]["shape"] != "table":
+        fail("Standalone ER entity was discarded")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
+        check_import_regression(tmp)
         check_files()
         check_flowchart()
         check_shape_and_edge_vocabulary(tmp)
