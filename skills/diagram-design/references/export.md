@@ -69,17 +69,70 @@ That script is the source of truth for the transform below (CSS carry-forward, d
    ```python
    import re
 
-   svg = re.sub(
-       r'(fill|stroke)="rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)"',
-       lambda m: '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
-           m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), m.group(5)
-       ),
-       svg,
+
+   START_TAG_RE = re.compile(
+       r"<([A-Za-z][\w:.-]*)"
+       r"((?:\s+[^\s\"'<>/=]+(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?)*)"
+       r"(\s*/?)>"
    )
-   svg = re.sub(r'(fill|stroke)="transparent"', r'\1="none"', svg)
+
+
+   TAG_ATTR_RE = re.compile(
+       r"(\s+)([^\s\"'<>/=]+)(?:(\s*=\s*)(\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?"
+   )
+
+
+   RGBA_ATTR_RE = re.compile(
+       r"""(fill|stroke)\s*=\s*(?P<quote>['"])rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)(?P=quote)"""
+   )
+
+
+   TRANSPARENT_ATTR_RE = re.compile(r"""(fill|stroke)\s*=\s*(?P<quote>['"])transparent(?P=quote)""")
+
+
+   REFERENCE_REGION_RE = re.compile(
+       r"(?P<skip><!\[CDATA\[.*?\]\]>|<script\b.*?</script\s*>)"
+       r"|<!--.*?-->|<style\b[^>]*>.*?</style\s*>"
+       r"|<[A-Za-z/?!](?:[^>\"']|\"[^\"]*\"|'[^']*')*>",
+       re.IGNORECASE | re.DOTALL,
+   )
+
+
+   def normalize_rgba_presentation_attrs(svg: str) -> str:
+       """Split rgba()/transparent presentation attrs for strict SVG 1.1 importers."""
+
+       def repl(match: re.Match[str]) -> str:
+           prop, _quote, r, g, b, a = match.groups()
+           return '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
+               prop, int(r), int(g), int(b), a
+           )
+
+       def normalize_attribute(attribute: re.Match[str]) -> str:
+           raw = attribute.group(0)
+           value = raw.lstrip()
+           color = RGBA_ATTR_RE.fullmatch(value)
+           if color is not None:
+               return attribute.group(1) + repl(color)
+           transparent = TRANSPARENT_ATTR_RE.fullmatch(value)
+           if transparent is not None:
+               return attribute.group(1) + f'{transparent.group(1)}="none"'
+           return raw
+
+       def normalize_region(region: re.Match[str]) -> str:
+           raw = region.group(0)
+           tag = START_TAG_RE.fullmatch(raw)
+           if tag is None:
+               return raw
+           attributes = TAG_ATTR_RE.sub(normalize_attribute, tag.group(2))
+           return f"<{tag.group(1)}{attributes}{tag.group(3)}>"
+
+       return REFERENCE_REGION_RE.sub(normalize_region, svg)
+
+
+   svg = normalize_rgba_presentation_attrs(svg)
    ```
 
-   The `\s*` around each channel tolerates a spaced `rgba(45, 49, 66, 0.03)` as well as the compact `rgba(45,49,66,0.03)` the templates normally use; `\d*\.?\d+` accepts an alpha value with or without a leading zero (both `0.03` and `.03` appear in shipped tokens). Matching is scoped to the `fill="..."` / `stroke="..."` presentation attribute. Class-styled diagrams may still carry `rgba(...)` inside the embedded `<style>` block via custom properties (e.g. `--accent-tint`); that form is correct in browsers and in Figma/Illustrator, and is out of scope for this presentation-attribute pass. (A brand's onboarded palette in `style-guide.md` could in principle add a third notation such as `hsl()`; none exists in any shipped token today, so this pass doesn't handle it — extend the regex if one is ever introduced.)
+   The `\s*` around each channel tolerates a spaced `rgba(45, 49, 66, 0.03)` as well as the compact `rgba(45,49,66,0.03)` the templates normally use; `\d*\.?\d+` accepts an alpha value with or without a leading zero (both `0.03` and `.03` appear in shipped tokens). Visible text, comments, and attributes such as `data-fill` retain their original wording. Both single-quoted and double-quoted SVG attributes are normalized, including XML whitespace around the equals sign. Matching is scoped to the `fill="..."` / `stroke="..."` presentation attribute. Class-styled diagrams may still carry `rgba(...)` inside the embedded `<style>` block via custom properties (e.g. `--accent-tint`); that form is correct in browsers and in Figma/Illustrator, and is out of scope for this presentation-attribute pass. (A brand's onboarded palette in `style-guide.md` could in principle add a third notation such as `hsl()`; none exists in any shipped token today, so this pass doesn't handle it — extend the regex if one is ever introduced.)
 8. **Gate:** if the exported SVG still contains `class=` but no diagram CSS rules, stop and fix the CSS carry step — that fragment will render as black boxes. A fonts-only `<style>` (Google Fonts `@import` with no rules) does **not** satisfy the gate.
 9. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
 10. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
