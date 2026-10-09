@@ -134,6 +134,76 @@ def main() -> int:
         0,
     )
 
+    # Shapes inside <defs> are definitions, not painted nodes (#306): the
+    # prototype below sits at the mask's coordinates in its local space, and
+    # only its <use> instance is painted, clear of the mask.
+    check(
+        "node prototype inside defs does not clip a mask",
+        document(
+            '<rect x="50" y="80" width="80" height="12" rx="2" fill="#f5f5f5"/>'
+            '<defs><g id="node-prototype">'
+            '<rect x="100" y="70" width="100" height="60" rx="6" fill="#fff"/>'
+            "</g></defs>"
+            '<use href="#node-prototype" x="300" y="200"/>'
+        ),
+        0,
+    )
+    # The same prototype in a <symbol> is likewise definition-only.
+    check(
+        "node prototype inside a symbol does not clip a mask",
+        document(
+            '<rect x="50" y="80" width="80" height="12" rx="2" fill="#f5f5f5"/>'
+            '<symbol id="node-prototype">'
+            '<rect x="100" y="70" width="100" height="60" rx="6" fill="#fff"/>'
+            "</symbol>"
+        ),
+        0,
+    )
+    # A rect inside <defs> is not a painted label mask either.
+    check(
+        "mask-shaped rect inside defs is not a mask",
+        document('<defs><rect x="240" y="80" width="48" height="12" rx="2"/></defs>' + node),
+        0,
+    )
+    # A tag mentioned inside a comment is not markup. The shipped template
+    # explains its optional <pattern> in a comment inside <defs>; counting
+    # that mention as an opening tag would leave the definition span open
+    # to the end of the file and disable the check for everything after it.
+    check(
+        "comment mentioning a pattern tag does not disable later checks",
+        document(
+            "<!-- OPTIONAL: dot-pattern background. Uncomment the <pattern> "
+            "and the second <rect> below for the dotted paper look. -->"
+            '<defs><pattern id="dots" width="22" height="22">'
+            '<circle cx="1" cy="1" r="1"/></pattern></defs>'
+            '<rect x="240" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>'
+            + node
+        ),
+        1,
+    )
+    # A closing tag inside a comment does not close a real container either:
+    # the prototype stays a definition and still does not clip.
+    check(
+        "commented closing tag does not end a definition early",
+        document(
+            '<rect x="50" y="80" width="80" height="12" rx="2" fill="#f5f5f5"/>'
+            "<defs><!-- </defs> -->"
+            '<rect x="100" y="70" width="100" height="60" rx="6" fill="#fff"/>'
+            "</defs>"
+        ),
+        0,
+    )
+
+    # An ordinary painted group is not a definition: its node still clips.
+    check(
+        "node inside a painted group still clips a mask",
+        document(
+            '<rect x="240" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>'
+            f"<g>{node}</g>"
+        ),
+        1,
+    )
+
     # Connector routing. A stroked node; arrows carry a marker to count.
     stroked = '<rect x="100" y="60" width="160" height="64" rx="6" fill="#fff" stroke="#2d3142"/>'
     arrow = 'fill="none" stroke="#4f5d75" marker-end="url(#arrow)"'
@@ -144,6 +214,13 @@ def main() -> int:
         "connector riding a node's top border",
         document(f'<path d="M 180,60 H 332 Q 340,60 340,52 V 20" {arrow}/>' + stroked),
         1,
+    )
+    # The same border ride against a stroked prototype inside <defs> is not a
+    # finding: the definition is not a painted node (#306).
+    check(
+        "connector along a defs prototype border is not a border ride",
+        document(f'<path d="M 180,60 H 332 Q 340,60 340,52 V 20" {arrow}/><defs>{stroked}</defs>'),
+        0,
     )
     check(
         "connector leaving the side edge at its own port",

@@ -24,6 +24,11 @@ Shape heuristics follow the shipped templates:
   at the same glyph count.
 * A mask fully contained in a node is a badge chip (`EXT`, `EDGE`, `ORIG`) and
   is legal.
+* Shapes inside a definition-only container (`<defs>`, `<symbol>`, `<marker>`
+  and the other non-rendering containers listed in NONRENDERING) are not
+  painted where they are defined, so they are excluded from both checks. A
+  `<use>` instance is what paints them, and resolving instances is out of
+  scope here: the rendered lint is the paint check for those.
 
 It also checks connector routing (references/primitives-core.md rule 1). A
 connector is a `<path>` or `<line>` that carries an arrow marker; a node, for
@@ -101,9 +106,72 @@ class Rect:
         return f"({self.x:g},{self.y:g} {self.w:g}x{self.h:g})"
 
 
+# Containers whose contents are never painted where they appear: they define
+# shapes, masks, markers and metadata for use elsewhere. The same set as
+# verify-architecture-delta.py's NONRENDERING. Tag names are lowercased, so
+# `clipPath` appears as `clippath`.
+NONRENDERING = {
+    "defs", "symbol", "clippath", "mask", "pattern", "marker",
+    "template", "script", "style", "title", "desc", "metadata",
+}
+
+ANY_TAG_RE = re.compile(
+    r"<(?P<close>/?)(?P<tag>[a-zA-Z][\w:-]*)\b[^>]*?(?P<empty>/?)>",
+    re.IGNORECASE,
+)
+
+COMMENT_RE = re.compile(r"<!--.*?-->|<!--.*", re.DOTALL)
+
+
+def blank_comments(source: str) -> str:
+    """Blank out HTML comments, preserving length and line numbers.
+
+    Comment text is not markup: a tag mentioned inside a comment must not
+    open or close a container for any scan. The shipped template explains
+    its optional `<pattern>` inside a comment; counting that mention as a
+    real opening tag would leave the definition span (and the connector
+    stack) open to the end of the file and silently disable both checks
+    for every diagram built from the template.
+    """
+
+    return COMMENT_RE.sub(lambda match: re.sub(r"[^\n]", " ", match.group(0)), source)
+
+
+def definition_spans(source: str) -> list[tuple[int, int]]:
+    """Source intervals covered by a definition-only container.
+
+    A stack counts nesting, including a container nested inside a painted
+    group or another container. An unclosed container runs to the end of the
+    source, matching how a browser would keep its contents unpainted.
+    """
+
+    spans: list[tuple[int, int]] = []
+    depth = 0
+    start = 0
+    for match in ANY_TAG_RE.finditer(source):
+        if match.group("tag").lower() not in NONRENDERING:
+            continue
+        if match.group("close"):
+            if depth:
+                depth -= 1
+                if not depth:
+                    spans.append((start, match.end()))
+        elif not match.group("empty"):
+            if not depth:
+                start = match.start()
+            depth += 1
+    if depth:
+        spans.append((start, len(source)))
+    return spans
+
+
 def parse_rects(source: str) -> list[Rect]:
+    source = blank_comments(source)
+    spans = definition_spans(source)
     rects: list[Rect] = []
     for match in RECT_RE.finditer(source):
+        if any(begin <= match.start() < end for begin, end in spans):
+            continue  # defined here, painted elsewhere (or never)
         rects.append(
             Rect(
                 float(match.group("x")),
@@ -134,7 +202,9 @@ def contained(inner: Rect, outer: Rect) -> bool:
 
 
 TAG_RE = re.compile(
-    r"<(?P<close>/?)(?P<tag>g|svg|rect|path|line)\b(?P<attrs>[^>]*?)(?P<empty>/?)>",
+    r"<(?P<close>/?)(?P<tag>g|svg|rect|path|line|defs|symbol|clippath|mask|pattern"
+    r"|marker|template|script|style|title|desc|metadata)\b"
+    r"(?P<attrs>[^>]*?)(?P<empty>/?)>",
     re.IGNORECASE,
 )
 TRANSLATE_RE = re.compile(
@@ -337,19 +407,27 @@ def shapes(source: str):
     Offsets accumulate `translate()` on enclosing groups, so panels drawn with
     the same local coordinates (architecture delta snapshots) are compared in
     canvas space. Under any other transform, or inside a nested `<svg>` icon,
-    the offset is None and the element is left out of connector checks.
+    the offset is None and the element is left out of connector checks. The
+    same applies inside a definition-only container (NONRENDERING): its
+    contents are not painted where they are defined.
     """
 
+    source = blank_comments(source)
     stack: list[Offset | None] = []
     for match in TAG_RE.finditer(source):
         tag, attrs = match.group("tag").lower(), match.group("attrs")
-        if tag in {"g", "svg"}:
+        if tag in {"g", "svg"} or tag in NONRENDERING:
             if match.group("close"):
                 if stack:
                     stack.pop()
             elif not match.group("empty"):
-                nested_svg = tag == "svg" and bool(stack)
-                stack.append(None if nested_svg else translation(attrs))
+                if tag in NONRENDERING:
+                    # Defined here, painted elsewhere (or never): a None frame
+                    # leaves the contents out of every painted-shape check.
+                    stack.append(None)
+                else:
+                    nested_svg = tag == "svg" and bool(stack)
+                    stack.append(None if nested_svg else translation(attrs))
             continue
         frame: Offset | None = (0.0, 0.0)
         for step in stack + [translation(attrs)]:
