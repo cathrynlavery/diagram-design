@@ -360,6 +360,16 @@ jobs:
         id: waterfall_tests
         run: python scripts/test-verify-waterfall.py
 
+      - name: Verify service-blueprint visibility line and stage grid
+        if: always()
+        id: service_blueprint
+        run: python scripts/verify-service-blueprint.py --all
+
+      - name: Verify service-blueprint checker
+        if: always()
+        id: service_blueprint_tests
+        run: python scripts/test-verify-service-blueprint.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline
@@ -559,6 +569,8 @@ jobs:
           echo "| Sankey Checker | ${{ steps.sankey_tests.outcome == 'success' && '✅ Passed' || (steps.sankey_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Waterfall Running-Total Conservation | ${{ steps.waterfall.outcome == 'success' && '✅ Passed' || (steps.waterfall.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Waterfall Checker | ${{ steps.waterfall_tests.outcome == 'success' && '✅ Passed' || (steps.waterfall_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service Blueprint Visibility Line & Grid | ${{ steps.service_blueprint.outcome == 'success' && '✅ Passed' || (steps.service_blueprint.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service Blueprint Checker | ${{ steps.service_blueprint_tests.outcome == 'success' && '✅ Passed' || (steps.service_blueprint_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Ridgeline Shared Amplitude | ${{ steps.ridgeline.outcome == 'success' && '✅ Passed' || (steps.ridgeline.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

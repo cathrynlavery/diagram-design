@@ -55,6 +55,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max components / links (wardley) | 9 / 12, 2 movement arrows |
 | Max columns / cards (kanban) | 5 / 12 total, 4 per column |
 | Max stages / rows (user journey) | 6 / 3, 2 pain markers |
+| Max stages / layers (service blueprint) | 6 stages; required customer / frontstage / backstage; optional evidence / support; 1 focal cell |
 | Max zones / nodes / paths (deployment) | 3 / 6 / 8, 9 artifacts |
 | Max nodes / edges (dependency) | 9 / 14, 4 ranks, 1 cycle |
 | Max classes / relationships (UML class) | 7 / 8, 5 members per compartment |
