@@ -61,9 +61,8 @@ layer. ``--fonts`` excludes exactly the two Google Fonts hostnames from the
 resolver block and allows them only over HTTPS on an exact hostname match.
 ``--self-test`` proves the isolation against a local listener.
 
-One check sits outside that browser: ``--all`` and ``--self-test`` run the PNG
-rasterize snippet from ``references/export.md`` in a subprocess, the way the doc
-tells a user to, on local fixtures (the shipped templates re-drawn at a wide
+One check sits outside that browser: ``--all`` and ``--self-test`` run the
+packaged PNG renderer in a subprocess, the way the doc tells a user to, on local fixtures (the shipped templates re-drawn at a wide
 preset, with every remote ``<link>`` removed). That subprocess's Chromium is not
 under the resolver block, which is why the fixtures carry no remote references.
 
@@ -93,7 +92,7 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
-EXPORT_DOC = ROOT / "skills/diagram-design/references/export.md"
+EXPORT_PNG = ROOT / "skills/diagram-design/scripts/export_png.py"
 
 VIEWPORT = {"width": 1600, "height": 1000}
 TOLERANCE = 1.0  # px of slop before page overflow counts, absorbs subpixel layout
@@ -1040,15 +1039,6 @@ async ([src, probe, viewBoxWidth]) => {
 """
 
 
-def export_recipe():
-    """The PNG rasterize snippet from export.md, found by heading, not position."""
-    text = EXPORT_DOC.read_text(encoding="utf-8")
-    match = re.search(r"^### Rasterize[ \t]*\n(.*?)^```python\n(.*?)^```", text, re.M | re.S)
-    if match is None or re.search(r"^#{1,3} ", match.group(1), re.M):
-        return None
-    return match.group(2)
-
-
 def wide_preset_fixture(html):
     """Re-draw a template at the widest preset the way output-spec.md says:
     viewBox and min-width both at the preset width, plus a probe node at the
@@ -1066,27 +1056,24 @@ def wide_preset_fixture(html):
     return re.sub(r"<link\b[^>]*\bhref=\"https?://[^>]*>", "", html)
 
 
-def export_png_failures(context, label, html, recipe):
-    """Run export.md's rasterize recipe on ``html`` exactly as the doc says
-    (snippet in a temp file, ``python <tmp.py> <src.html> <out.png> 1``) and
+def export_png_failures(context, label, html):
+    """Run the packaged PNG renderer on ``html`` exactly as the doc says and
     report a PNG that is not the full viewBox width or does not paint the probe."""
     with tempfile.TemporaryDirectory() as directory:
         directory_path = Path(directory)
-        script = directory_path / "rasterize.py"
         source = directory_path / "wide-preset.html"
         out = directory_path / "wide-preset.png"
-        script.write_text(recipe, encoding="utf-8")
         source.write_text(html, encoding="utf-8")
         try:
             run = subprocess.run(
-                [sys.executable, str(script), str(source), str(out), "1"],
+                [sys.executable, str(EXPORT_PNG), str(source), str(out), "1"],
                 capture_output=True, text=True, timeout=EXPORT_TIMEOUT,
             )
         except subprocess.TimeoutExpired:
-            return [f"{label}: template-export: the export.md recipe did not finish in {EXPORT_TIMEOUT}s"]
+            return [f"{label}: template-export: the packaged renderer did not finish in {EXPORT_TIMEOUT}s"]
         if run.returncode != 0 or not out.is_file():
             tail = (run.stderr.strip().splitlines() or ["no output"])[-1]
-            return [f"{label}: template-export: the export.md recipe failed: {tail}"]
+            return [f"{label}: template-export: the packaged renderer failed: {tail}"]
         png = out.read_bytes()
     page = context.new_page()
     try:
@@ -1115,14 +1102,12 @@ def template_export_failures(context, template_paths=None):
 
     min-width equal to the viewBox width makes a 1280 SVG wider than the 1200px
     frame, so the local scroller (and the terminal's overflow:hidden chrome)
-    clips it on screen. The rasterize recipe screenshots the SVG's box, and
+    clips it on screen. The packaged renderer screenshots the SVG's box, and
     whatever an ancestor clipped is simply not in the PNG: full size, blank on
-    the right, no error. This runs the recipe from export.md itself, so the
-    check follows the doc rather than a copy of it.
+    the right, no error. This runs the packaged helper named by export.md.
     """
-    recipe = export_recipe()
-    if recipe is None:
-        return [f"{display_path(EXPORT_DOC)}: template-export: no ```python block under ### Rasterize"]
+    if not EXPORT_PNG.is_file():
+        return [f"{display_path(EXPORT_PNG)}: template-export: packaged renderer is missing"]
     paths = template_paths or sorted(ASSET_DIR.glob("template*.html"))
     failures = []
     for path in paths:
@@ -1134,7 +1119,7 @@ def template_export_failures(context, template_paths=None):
                 "(needs one viewBox=\"0 0 W H\" and one `min-width: Wpx`)"
             )
             continue
-        failures += export_png_failures(context, shown_path, fixture, recipe)
+        failures += export_png_failures(context, shown_path, fixture)
     return failures
 
 
@@ -1405,9 +1390,8 @@ def self_test(context):
     # frame, held in a local scroller, must come out whole, and a probe node that
     # really is cut off (clip-path, which export does not release) must be reported.
     checks += 2
-    recipe = export_recipe()
-    if recipe is None:
-        failures.append("template-export: no python snippet under ### Rasterize in export.md")
+    if not EXPORT_PNG.is_file():
+        failures.append("template-export: packaged PNG renderer is missing")
     else:
         wide_page = (
             '<!DOCTYPE html><html><style>body{{margin:0;padding:32px;background:#f5f5f5}}'
@@ -1421,18 +1405,17 @@ def self_test(context):
             + "</svg></div></div></body></html>"
         )
         scroller_failures = export_png_failures(
-            context, "template-export-scroller-fixture", wide_page.format(clip=""), recipe
+            context, "template-export-scroller-fixture", wide_page.format(clip="")
         )
         if scroller_failures:
             failures.append(
-                f"template-export-scroller-fixture: the recipe clipped a {WIDE_PRESET[0]}-wide SVG held in a "
+                f"template-export-scroller-fixture: the renderer clipped a {WIDE_PRESET[0]}-wide SVG held in a "
                 "local scroller: " + "; ".join(scroller_failures)
             )
         clipped_failures = export_png_failures(
             context,
             "template-export-clipped-fixture",
             wide_page.format(clip=' style="clip-path:inset(0 160px 0 0)"'),
-            recipe,
         )
         if not any("is missing from the PNG" in f for f in clipped_failures):
             failures.append("template-export-clipped-fixture: a cut-off probe node was not reported")
