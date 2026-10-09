@@ -84,6 +84,13 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_viewbox_has_four_finite_values_and_positive_extents(self) -> None:
+        for value in ("0 0 0 10", "0 0 -10 10", "0 0 nan 10", "0 0 1e309 10", "0 0 10", "0,,0,10,10", "٠ ٠ ١٠ ١٠"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "viewBox"):
+                self.mod.ensure_viewbox(f'<svg viewBox="{value}"/>')
+        for value in ("-10,+10,100.5,50", "0 0 1e2 1e-2", "&#48; &#48; 10 10"):
+            self.mod.ensure_viewbox(f'<svg viewBox="{value}"/>')
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())

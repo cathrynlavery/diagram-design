@@ -23,6 +23,7 @@ The algorithm matches ``references/export.md``. No third-party deps.
 from __future__ import annotations
 
 import argparse
+import math
 import html as html_entities
 import re
 import sys
@@ -234,8 +235,18 @@ def ensure_xmlns(svg: str) -> str:
 
 
 def ensure_viewbox(svg: str) -> None:
-    if not re.search(r"\bviewBox\s*=", svg, re.IGNORECASE):
+    match = re.search(r"""\bviewBox\s*=\s*(["'])(.*?)\1""", svg, re.IGNORECASE | re.DOTALL)
+    if match is None:
         raise ValueError("SVG is missing a viewBox; refuse to guess")
+    value = decode_xml_references(match.group(2)).strip()
+    number = r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
+    separator = r"(?:\s*,\s*|\s+)"
+    parsed = re.fullmatch(separator.join([f"({number})"] * 4), value)
+    if parsed is None:
+        raise ValueError("SVG viewBox must contain four finite numbers")
+    coordinates = [float(token) for token in parsed.groups()]
+    if not all(math.isfinite(token) for token in coordinates) or min(coordinates[2:]) <= 0:
+        raise ValueError("SVG viewBox must be finite with positive width and height")
 
 
 def set_root_id(svg: str, root_id: str) -> str:
