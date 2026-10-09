@@ -1,0 +1,15 @@
+@startuml
+!includeurl https://example.invalid/remote.puml
+participant Ghost
+Ghost -> Ghost : should not parse when selected
+@enduml
+
+@startuml
+class Box {
+  + id: String
+}
+class Lid {
+  + hinge: Boolean
+}
+Box <|-- Lid
+@enduml

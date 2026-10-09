@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 44 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 44 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -50,6 +50,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | draw.io import path (real extractor vs fixtures + docs sync) | `python3 scripts/verify-drawio-import.py && python3 scripts/test-verify-drawio-import.py` |
 | Mermaid import path (grammars, adversarial input, caps, docs sync) | `python3 scripts/verify-mermaid-import.py` |
 | Excalidraw import path (scenes, adversarial input, caps, docs sync) | `python3 scripts/verify-excalidraw-import.py && python3 scripts/test-verify-excalidraw-import.py` |
+| PlantUML import path (sequence/class, adversarial input, caps, docs sync) | `python3 scripts/verify-plantuml-import.py && python3 scripts/test-verify-plantuml-import.py` |
 | Optional motion contract (fallbacks, controls, budgets, determinism) | `python3 scripts/test-verify-motion.py` |
 | Doctor diagnostics contract (env checks, script presence, routing wiring) | `python3 scripts/verify-doctor.py` |
 | Doctor diagnostics adversarial tests | `python3 scripts/test-verify-doctor.py` |
@@ -140,6 +141,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-mermaid-import.py \
   && python3 scripts/verify-excalidraw-import.py \
   && python3 scripts/test-verify-excalidraw-import.py \
+  && python3 scripts/verify-plantuml-import.py \
+  && python3 scripts/test-verify-plantuml-import.py \
   && python3 scripts/test-verify-motion.py \
   && python3 scripts/verify-doctor.py \
   && python3 scripts/test-verify-doctor.py \
@@ -275,8 +278,9 @@ git diff --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-d
 - draw.io: `skills/diagram-design/scripts/drawio_extract.py` — must pass `scripts/verify-drawio-import.py`, which drives the extractor against `scripts/fixtures/sample-architecture.drawio` in all four container formats (raw XML, deflate+base64, PNG-embedded, SVG-embedded).
 - Mermaid: `skills/diagram-design/scripts/mermaid_extract.py` — must pass `scripts/verify-mermaid-import.py`, which covers every supported grammar, multi-block Markdown, adversarial labels, trust-boundary behavior, resource caps, and named failures.
 - Excalidraw: `skills/diagram-design/scripts/excalidraw_extract.py` — must pass `scripts/verify-excalidraw-import.py`, which covers scene parsing, bound labels, groups and frames, adversarial labels, trust-boundary behavior, resource caps, and named failures.
+- PlantUML: `skills/diagram-design/scripts/plantuml_extract.py` — must pass `scripts/verify-plantuml-import.py`, which covers sequence and class grammars, multi-block files, adversarial labels, trust-boundary behavior, resource caps, and named failures.
 
-All three scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
+All four scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
 
 Documentation and wiring must stay in sync: the import references, `SKILL.md` §11, the slash commands in `commands/`, and the Pi prompt templates in `prompts/` each describe the same flows. The verifiers check this — keep both sides updated in one PR.
 
