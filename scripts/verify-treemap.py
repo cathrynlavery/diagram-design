@@ -294,6 +294,7 @@ def parse_claim(text: str) -> tuple[float | None, float | None]:
 
 def check(path: Path) -> list[str]:
     source = path.read_text(encoding="utf-8")
+    source = re.sub(r"<!--.*?-->", lambda match: "\n" * match.group(0).count("\n"), source, flags=re.DOTALL)
     findings: list[str] = []
     parse_findings: list[str] = []
     cells = parse_cells(source, parse_findings)

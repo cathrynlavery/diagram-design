@@ -99,6 +99,12 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
 
+        archived = re.sub(r'<rect\b[^>]*>',
+                          lambda match: "<!-- " + match.group(0) + " -->", source)
+        code, output = run(write(directory, "archived-cells.html", archived))
+        if code == 0 or "parseable treemap cells" not in output:
+            failures.append("commented-out data-share cells were treated as drawn geometry")
+
         # 1. Every shipped Latin example must pass untouched, proving the
         #    Unicode estimator did not move the calibrated Latin baseline.
         shipped_clean = True
