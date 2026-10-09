@@ -84,6 +84,30 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_rgba_normalization_clamps_channels_and_alpha(self) -> None:
+        for value, paint, opacity in (
+            ("rgba(300,0,0,0.5)", "#ff0000", "0.5"),
+            ("rgba(-12,300,10,0.5)", "#00ff0a", "0.5"),
+            ("rgba(45,49,66,-0.1)", "#2d3142", "0"),
+            ("rgba(45,49,66,1.5)", "#2d3142", "1"),
+        ):
+            with self.subTest(value=value):
+                normalized = self.mod.normalize_rgba_presentation_attrs(f'<svg><rect fill="{value}"/></svg>')
+                rect = ET.fromstring(normalized)[0]
+                self.assertEqual(rect.get("fill"), paint)
+                self.assertEqual(rect.get("fill-opacity"), opacity)
+
+    def test_manual_paint_recipe_retains_css_clamping(self) -> None:
+        section = EXPORT_MD.read_text(encoding="utf-8").split("7. Normalize colors", 1)[1]
+        match = re.search(r"```python\n(.*?)\n   ```", section, re.DOTALL)
+        self.assertIsNotNone(match)
+        recipe = "\n".join(line[3:] if line.startswith("   ") else line for line in match.group(1).splitlines())
+        for svg in ('<svg><rect fill="rgba(300,-10,20,2)"/></svg>', '<svg><rect stroke="rgba(-4,1,2,-.5)"/></svg>'):
+            with self.subTest(svg=svg):
+                namespace = {"svg": svg}
+                exec(recipe, namespace)
+                self.assertEqual(namespace["svg"], self.mod.normalize_rgba_presentation_attrs(svg))
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())

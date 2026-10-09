@@ -69,17 +69,34 @@ That script is the source of truth for the transform below (CSS carry-forward, d
    ```python
    import re
 
-   svg = re.sub(
-       r'(fill|stroke)="rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)"',
-       lambda m: '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
-           m.group(1), int(m.group(2)), int(m.group(3)), int(m.group(4)), m.group(5)
-       ),
-       svg,
+
+   RGBA_ATTR_RE = re.compile(
+       r'(fill|stroke)="rgba\(\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)"'
    )
-   svg = re.sub(r'(fill|stroke)="transparent"', r'\1="none"', svg)
+
+
+   TRANSPARENT_ATTR_RE = re.compile(r'(fill|stroke)="transparent"')
+
+
+   def normalize_rgba_presentation_attrs(svg: str) -> str:
+       """Split rgba()/transparent presentation attrs for strict SVG 1.1 importers."""
+
+       def repl(match: re.Match[str]) -> str:
+           prop, r, g, b, a = match.groups()
+           return '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
+               prop, max(0, min(255, int(r))), max(0, min(255, int(g))),
+               max(0, min(255, int(b))), a if 0 <= float(a) <= 1 else "0" if float(a) < 0 else "1"
+           )
+
+       svg = RGBA_ATTR_RE.sub(repl, svg)
+       svg = TRANSPARENT_ATTR_RE.sub(r'\1="none"', svg)
+       return svg
+
+
+   svg = normalize_rgba_presentation_attrs(svg)
    ```
 
-   The `\s*` around each channel tolerates a spaced `rgba(45, 49, 66, 0.03)` as well as the compact `rgba(45,49,66,0.03)` the templates normally use; `\d*\.?\d+` accepts an alpha value with or without a leading zero (both `0.03` and `.03` appear in shipped tokens). Matching is scoped to the `fill="..."` / `stroke="..."` presentation attribute. Class-styled diagrams may still carry `rgba(...)` inside the embedded `<style>` block via custom properties (e.g. `--accent-tint`); that form is correct in browsers and in Figma/Illustrator, and is out of scope for this presentation-attribute pass. (A brand's onboarded palette in `style-guide.md` could in principle add a third notation such as `hsl()`; none exists in any shipped token today, so this pass doesn't handle it — extend the regex if one is ever introduced.)
+   Channels and alpha are clamped to the CSS ranges 0–255 and 0–1 so out-of-range rgba values retain their browser paint when converted. The `\s*` around each channel tolerates a spaced `rgba(45, 49, 66, 0.03)` as well as the compact `rgba(45,49,66,0.03)` the templates normally use; `\d*\.?\d+` accepts an alpha value with or without a leading zero (both `0.03` and `.03` appear in shipped tokens). Matching is scoped to the `fill="..."` / `stroke="..."` presentation attribute. Class-styled diagrams may still carry `rgba(...)` inside the embedded `<style>` block via custom properties (e.g. `--accent-tint`); that form is correct in browsers and in Figma/Illustrator, and is out of scope for this presentation-attribute pass. (A brand's onboarded palette in `style-guide.md` could in principle add a third notation such as `hsl()`; none exists in any shipped token today, so this pass doesn't handle it — extend the regex if one is ever introduced.)
 8. **Gate:** if the exported SVG still contains `class=` but no diagram CSS rules, stop and fix the CSS carry step — that fragment will render as black boxes. A fonts-only `<style>` (Google Fonts `@import` with no rules) does **not** satisfy the gate.
 9. Prepend `<?xml version="1.0" encoding="UTF-8"?>\n` so the file is well-formed XML.
 10. Write to `<basename>.svg` next to the source (e.g. `example-architecture.html` → `example-architecture.svg`). Honour an explicit output path if the user provides one.
