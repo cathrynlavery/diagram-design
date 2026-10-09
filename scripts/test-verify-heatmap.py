@@ -139,6 +139,17 @@ def main() -> int:
             if code != 0:
                 failures.append(f"{label}: shipped example failed:\n  {output.strip()}")
 
+        commented_transform = original.replace('</style>', '/* archived experiment\n transform: translateX(12px);\n */\n</style>', 1)
+        case(failures, d, "P-commented-transform.html", commented_transform, original, True,
+             "a CSS comment cannot move verified geometry")
+
+        archived_style = original.replace('</style>', '</style><!-- <style>rect { transform: translateX(12px); }</style> -->', 1)
+        case(failures, d, "P-archived-style.html", archived_style, original, True,
+             "an HTML comment cannot activate archived CSS")
+        live_transform = original.replace('</style>', 'rect {/**/transform: translateX(12px); }\n</style>', 1)
+        case(failures, d, "N-comment-prefixed-transform.html", live_transform, original, False,
+             "a CSS comment before a property cannot hide an active transform")
+
         # ── Negative: mutations that must be rejected ─────────────────────────
 
         # N1: two focal cells

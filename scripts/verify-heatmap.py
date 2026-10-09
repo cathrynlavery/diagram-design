@@ -329,9 +329,12 @@ def check_file(path: Path) -> list[str]:
     except OSError as exc:
         return [f"{path.name}: cannot read: {exc}"]
 
+    source = COMMENT_RE.sub("", source)
+
     # CSS-moves-geometry check.
     for style_body in STYLE_RE.findall(source):
-        m = CSS_MOVES_MARK_RE.search(style_body)
+        live_css = re.sub(r"/\*.*?\*/", " ", style_body, flags=re.DOTALL)
+        m = CSS_MOVES_MARK_RE.search(live_css)
         if m:
             errors.append(
                 f"{path.name}: CSS property '{m.group('prop')}' can move verified "
