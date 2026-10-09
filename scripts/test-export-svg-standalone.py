@@ -84,6 +84,15 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_reusable_defs_shapes_are_namespaced(self) -> None:
+        for tag in ("g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "text", "image", "use"):
+            with self.subTest(tag=tag):
+                markup = f'<svg><defs><{tag} id="shape"/></defs><use href="#shape"/><use xlink:href="#shape"/></svg>'
+                result = self.mod.namespace_defs_ids(markup, "diagram")
+                self.assertIn('id="diagram-shape"', result)
+                self.assertIn('href="#diagram-shape"', result)
+                self.assertIn('xlink:href="#diagram-shape"', result)
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())

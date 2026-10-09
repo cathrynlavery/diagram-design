@@ -80,6 +80,17 @@ DEFS_ID_TAGS = (
     "clipPath",
     "mask",
     "symbol",
+    "g",
+    "path",
+    "rect",
+    "circle",
+    "ellipse",
+    "line",
+    "polyline",
+    "polygon",
+    "text",
+    "image",
+    "use",
 )
 
 STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.DOTALL)
