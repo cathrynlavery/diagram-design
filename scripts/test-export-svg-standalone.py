@@ -341,6 +341,11 @@ class ExportSvgStandaloneTests(unittest.TestCase):
             body = out.read_text(encoding="utf-8")
             self.assertIn("#example-loop-root .station", body)
 
+    def test_commented_defs_do_not_rename_live_ids(self) -> None:
+        svg = '<svg aria-labelledby="name"><title id="name">Title</title><!-- <defs><marker id="name"/></defs> --></svg>'
+        self.assertEqual(self.mod.find_defs_ids(svg), [])
+        self.assertEqual(self.mod.namespace_defs_ids(svg, "demo"), svg)
+
     def test_rgba_presentation_attrs_still_split(self) -> None:
         html = """<!DOCTYPE html><html><body>
         <svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg" role="img"

@@ -501,7 +501,8 @@ def merge_style_into_defs(svg: str, style_css: str) -> str:
 
 def find_defs_ids(svg: str) -> list[str]:
     """IDs on referenceable elements living under <defs>."""
-    defs_blocks = re.findall(r"<defs\b[^>]*>(.*?)</defs>", svg, re.IGNORECASE | re.DOTALL)
+    live_svg = re.sub(r"<!--.*?-->", "", svg, flags=re.DOTALL)
+    defs_blocks = re.findall(r"<defs\b[^>]*>(.*?)</defs>", live_svg, re.IGNORECASE | re.DOTALL)
     if not defs_blocks:
         return []
     tag_alt = "|".join(DEFS_ID_TAGS)
