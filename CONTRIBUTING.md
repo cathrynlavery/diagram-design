@@ -40,6 +40,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
 | Animated-example structure and accessibility | `python3 scripts/verify-semantic-motion.py --example-only` |
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
+| Skin token contrast: every text token clears 4.5:1 and every essential mark 3:1 on paper, light and dark, with translucent tokens composited first | `python3 scripts/test-verify-contrast.py && python3 scripts/verify-contrast.py` |
 | Rendered-layout checker and shipped examples/templates | `python3 scripts/lint-render.py --self-test && python3 scripts/lint-render.py --all` |
 | Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
 | Heatmap monotone opacity ramp, complete N×M grid, ≤1 focal cell | `python3 scripts/test-verify-heatmap.py && python3 scripts/verify-heatmap.py --all` |
@@ -59,8 +60,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Export snippet's stalled-webfont fallback (window.stop on timeout, warning, normal load) | `python3 scripts/test-export-wait.py` (requires Playwright; skips without it) |
 | Screenshot freshness checker behaves (CRLF checkout, real source drift, raw PNG digests) | `python3 scripts/test-verify-screenshot-freshness.py` |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
-| Packaged output self-check behaves (pass + adversarial cases) | `python3 scripts/test-self-check.py` |
-| Standalone SVG export carries CSS and namespaces defs IDs | `python3 scripts/test-export-svg-standalone.py` |
+| Packaged output self-check behaves (pass + adversarial cases, including `--offline`) | `python3 scripts/test-self-check.py` |
+| Standalone SVG export carries CSS, namespaces defs IDs, and honors `--system-fonts` | `python3 scripts/test-export-svg-standalone.py` |
 | Label masks are never clipped by a node painted after them; connectors stay orthogonal, off node borders, corners, and each other, and on their own ports | `python3 scripts/verify-geometry.py --all` |
 | Label geometry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-geometry.py` |
 | Architecture delta snapshots preserve identity, ledger coverage, signatures, positions, and relationship endpoints | `python3 scripts/verify-architecture-delta.py --all` |
@@ -149,6 +150,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-screenshot-freshness.py \
   && python3 scripts/test-build-readme-thumbs.py \
   && python3 scripts/build-readme-thumbs.py --check \
+  && python3 scripts/test-verify-contrast.py \
+  && python3 scripts/verify-contrast.py \
   && python3 scripts/test-self-check.py \
   && python3 scripts/test-export-svg-standalone.py \
   && python3 scripts/verify-geometry.py --all \
@@ -216,6 +219,52 @@ Do **not** add a file to `scripts/lint-skin-baseline.txt` to get your example th
 
 ---
 
+## How the gates work
+
+This section used to live in the README. It explains what the main gates measure and why, so a failure makes sense before you try to fix it.
+
+### Skin lint and the accessible SVG contract
+
+Before submitting a new example, run `python3 scripts/lint-skin.py <your-new-example.html>`. The repository-wide check `python3 scripts/lint-skin.py --all --baseline` covers examples and templates and must stay green. The linter's `a11y` category rejects diagram SVGs without a resolving accessible name, an empty or misplaced title/description, or unsafe bare `title` / `desc` IDs. It also pins the exact reviewed motion controller and rejects remote assets, CSS `@import`, non-fragment CSS `url()`, and executable attributes such as `onclick` or `srcdoc`.
+
+CI separately verifies semantic routing, animated-example structure, animated skin, every shipped motion asset, and adversarial mutations of the controller contract, and it reports later gate outcomes even when an earlier gate fails. Both motion verifiers exempt root SVGs marked `aria-hidden="true"` from diagram naming checks; decorative icons never replace the required accessible diagram.
+
+### Geometry and data-encoding gates
+
+Label placement is gated geometrically: `python3 scripts/verify-geometry.py --all` fails CI when a label mask overlaps a node declared later in the document, because the node fill would clip the text at render time. The same script fails diagonal connectors, connectors that run along a node's border or attach at its corner, ports crowded closer than 12px, and arrows stacked on one trunk. Label masks and nodes are compared in canvas coordinates after supported enclosing or element `translate()` transforms, so separate snapshot panels do not overlap merely because they reuse local coordinates.
+
+Treemaps get a second geometric gate, because their whole claim is that area *is* the encoding. `verify-treemap.py` measures area error as a relative figure, since an absolute one passes exactly the small cells most likely to be wrong. Waterfalls get the same treatment for the running total, and Sankey, polar, heatmap, marimekko and the Line and Scatter variants each have their own encoding verifier. Diagrams using the traceable block decomposition pattern get a structural gate (`verify-block-registry.py`) so the `--registry` JSON export cannot misrepresent the tree it describes. Every verifier has a `test-verify-*.py` partner that keeps it honest in both directions.
+
+### Docs sync
+
+`python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a support path is not shipped inside the skill package, or a command/prompt surface drifts from its routed reference. It also holds the type count in one place: commands may not state a count at all, and any count the README states must equal the number of `references/type-*.md` files. The gallery gives each type one number, 01 to N in document order, and every other example is a lettered variant (`04a`, `04b`) placed directly after its type. `python3 scripts/test-verify-docs-sync.py` exercises these checks adversarially.
+
+The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest.
+
+### Render lint
+
+`lint-skin.py` reads the source. `lint-render.py` renders it: headless Chromium reports what actually got painted, which catches content cut off by the SVG viewport, collapsed SVGs, horizontal page overflow, missing local assets and JS errors. Both run in CI on every pull request.
+
+```bash
+pip install playwright && playwright install chromium   # same dep as PNG export
+python3 scripts/lint-render.py --self-test              # checks the checks
+python3 scripts/lint-render.py --all                   # examples and templates
+python3 scripts/lint-render.py <your-new-example.html>
+python3 scripts/lint-render.py --fonts --all           # measure with the real webfonts
+```
+
+Clipping is measured by paint, not geometry. `getBoundingClientRect()` on an SVG child ignores stroke width, markers and filter bleed, and knows nothing about `clip-path` or `overflow: visible`, so it both misses real clipping and invents clipping that isn't there. Instead each SVG is screenshot as authored and again with its `overflow` released, and the two are diffed: ink that appears outside was being cut off. Releases are staged (the SVG alone, then each clipping ancestor) so a wrapper release can't mask spill at the SVG's own edge, and an SVG authored `overflow: visible` inside a clipping wrapper is still checked. `--self-test` asserts all of that on 23 cases, over half of them cases that must *not* be flagged, and it also asserts the DOM is byte-identical after measuring.
+
+There are no golden images, so there is nothing to re-record and no PNGs in the repo for this gate. Network is cut at the browser's resolver, which covers WebSockets and anything else that bypasses request routing, with request routing as a second layer; `--fonts` excludes exactly the two Google Fonts hostnames and allows them only over HTTPS. Since the oracle is pixels, CI pins Playwright and its Chromium build rather than installing whatever is newest.
+
+**Font metrics differ between the default run and `--fonts`.** With network blocked (the default, and what CI runs), text is laid out in the fallback faces, not Instrument Serif and Geist. That is deterministic and machine-independent, which is what a linter needs, and it is also exactly what a diagram looks like in system-font mode. Run `--fonts --all` locally when you care whether real webfont text fits its box.
+
+### CI
+
+All pull requests and pushes run these gates on Linux, Windows, and macOS through GitHub Actions (`.github/workflows/ci.yml`). Pixel-based gates run on one Linux leg only, because antialiasing and font fallback differ per OS.
+
+---
+
 ## The accessible SVG contract (a11y)
 
 Every diagram `<svg>` must satisfy the contract enforced by the linter:
@@ -255,7 +304,7 @@ Settled policies live as short records in `docs/adr/` — one pinned motion cont
 
 1. Write `skills/diagram-design/references/type-<name>.md` — layout conventions, anti-patterns, and a worked pattern for that type. Mirror an existing reference's structure.
 2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` — `verify-docs-sync.py` fails if the description loses or lacks a type's lexical hook.
-3. Add the three example variants (see above) and register them in the gallery (`assets/index.html`) — `verify-docs-sync.py` fails on any shipped example the gallery can't reach.
+3. Add the three example variants (see above) and register them in the gallery (`assets/index.html`) with the next type number; extra examples of an existing type go directly after it as lettered variants (`data-parent-type`, eyebrow `04a`). `verify-docs-sync.py` fails on any shipped example the gallery can't reach and on any numbered tab without a matching `type-*.md`.
 4. Run the full gate suite — new examples are linted automatically by `--all`.
 
 ## Changing the icon set
