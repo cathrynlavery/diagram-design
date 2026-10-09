@@ -6,14 +6,14 @@
 
 Vertical stack, top to bottom, for one persona:
 
-- **Stage headers** — 5 equal columns, 200px wide, 24px gutters (max 6 stages). Each column: a Geist Mono 8px uppercase tracked eyebrow (`STAGE 1` … `STAGE 5`) over the stage name in Geist sans 12px weight 600, both centered on the column.
-- **Sentiment band (the differentiator)** — a 160px-tall plot area directly under the headers. 3 horizontal reference hairlines at `rule` 0.10 opacity mark the levels `HIGH` / `NEUTRAL` / `LOW` — Geist Mono 8px `muted`, anchored `end` in a 64px left margin. **Never emoji, never `writing-mode` vertical text for these labels.** A smooth `muted` 1.5px polyline runs through one `r=5` dot per stage, each value snapped to one of five ordinal levels (`HIGH`, `MED-HIGH`, `NEUTRAL`, `MED-LOW`, `LOW`) — only the three that are actually used need a labeled hairline. The trough stage's dot and its incoming segment are `accent`; everything else on the curve is `muted`.
-- **Content rows** — up to 3 labelled bands below the sentiment band, each with a Geist Mono 8px uppercase row label sitting in the left margin (same column as the sentiment level labels, never rotated):
-  - `ACTIONS` — what the user does, Geist sans 12px, one short line per stage.
-  - `TOUCHPOINTS` — the surface the action happens on (email, app, docs…), Geist Mono 9px `muted`.
+- **Stage headers** — 5 equal columns, 200px wide, 24px gutters (max 6 stages). Each column: an `eyebrow`-role 8px uppercase tracked eyebrow (`STAGE 1` … `STAGE 5`) over the stage name in the `node-name` role, 12px, weight 600, both centered on the column.
+- **Sentiment band (the differentiator)** — a 160px-tall plot area directly under the headers. 3 horizontal reference hairlines at `rule` 0.10 opacity mark the levels `HIGH` / `NEUTRAL` / `LOW` — `eyebrow` role 8px `muted`, anchored `end` in a 64px left margin. **Never emoji, never `writing-mode` vertical text for these labels.** A smooth `muted` 1.5px polyline runs through one `r=5` dot per stage, each value snapped to one of five ordinal levels (`HIGH`, `MED-HIGH`, `NEUTRAL`, `MED-LOW`, `LOW`) — only the three that are actually used need a labeled hairline. The trough stage's dot and its incoming segment are `accent`; everything else on the curve is `muted`.
+- **Content rows** — up to 3 labelled bands below the sentiment band, each with an `eyebrow`-role 8px uppercase row label sitting in the left margin (same column as the sentiment level labels, never rotated):
+  - `ACTIONS` — what the user does, `node-name` family 12px, one short line per stage.
+  - `TOUCHPOINTS` — the surface the action happens on (email, app, docs…), `sublabel` role 9px `muted`.
   - An optional third row for a metric or owner, same treatment as touchpoints.
   Rows are separated by hairlines that span the full plot width (from the left margin edge to the last stage's right edge).
-- **Pain markers** — on stages where sentiment drops, a small dashed-stroke tag box (`rx=2`, `accent @ 0.50` stroke dashed `3,3`, no fill or a faint accent tint) sits under that stage's actions cell, with a Geist Mono 8px label naming the friction. Max 2 per diagram, and only on the trough — tagging every stage erases the signal.
+- **Pain markers** — on stages where sentiment drops, a small dashed-stroke tag box (`rx=2`, `accent @ 0.50` stroke dashed `3,3`, no fill or a faint accent tint) sits under that stage's actions cell, with an `arrow-label`-role 8px label naming the friction. Max 2 per diagram, and only on the trough — tagging every stage erases the signal.
 - **Legend** — horizontal strip at the bottom per the global rule (hairline separator above, 160–180px between entries): three keys, in order — the sentiment line, the trough-stage highlight, and the pain-marker tag. The trough key is not optional: the dip is the finding, so the reader needs the highlight named.
 
 ## Connector note

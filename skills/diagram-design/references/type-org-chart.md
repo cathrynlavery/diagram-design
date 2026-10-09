@@ -10,8 +10,8 @@ Use **Org Chart** instead of **Tree** when the nodes are people, agents, teams, 
 - Tier 2 nodes are responsible owners or specialists. If there are more than 8 specialists, group them under pod nodes instead of making one giant row.
 - Use orthogonal connectors: vertical drop from parent → horizontal bus → vertical drops to children. No diagonal lines.
 - Each node should answer three questions when space allows:
-  1. **Name** — human-readable role/person/agent in Geist sans.
-  2. **How to invoke** — Slack handle, queue, issue prefix, or trigger in Geist Mono.
+  1. **Name** — human-readable role/person/agent in the `node-name` role.
+  2. **How to invoke** — Slack handle, queue, issue prefix, or trigger in the `sublabel` role.
   3. **Scope** — 2–4 terse ownership words, not a paragraph.
 - Show non-Slack / not-yet-live owners with dashed optional styling rather than hiding them. Missing routes are operationally important.
 - Put escalation / approval rules in a small side callout or footer strip, not as extra org nodes.

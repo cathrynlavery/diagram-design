@@ -4,12 +4,14 @@ Routed from SKILL.md §6. SKILL.md keeps the six connector rules as one line eac
 
 Type-specialized primitives (lifeline, activation bar, region) live in the relevant type reference linked in SKILL.md §3.
 
+Snippets here and in every type reference name colors and fonts by role, never by value: `{ink}`, `{muted}`, `{paper}`, `{accent}`, `{link}`, `{soft}` for colors, `{ink @ 0.10}` for a role at an opacity, and `{title}`, `{node-name}`, `{sublabel}`, `{eyebrow}`, `{arrow-label}`, `{callout}` for font families. Resolve each against the active skin in [`style-guide.md`](style-guide.md) before emitting: `{ink @ 0.10}` becomes the `ink` color as `rgba(r,g,b,0.10)`, and `{sublabel}` becomes that role's full family stack. Uppercase names (`X`, `FILL`, `STROKE`) are geometry and per-node values you compute.
+
 ## Background
 
 **Default: clean paper, no dot pattern.** Single `<rect>` filled with `paper`. Don't wrap the diagram in a secondary container background — the diagram sits directly on the page.
 
 ```svg
-<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect width="100%" height="100%" fill="{paper}"/>
 ```
 
 **Optional: dotted paper variant.** When a long-form editorial diagram benefits from textured ground (essays, hero diagrams on a dedicated page), opt in by adding the `dots` pattern and a second rect:
@@ -17,10 +19,10 @@ Type-specialized primitives (lifeline, activation bar, region) live in the relev
 ```svg
 <defs>
   <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-    <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+    <circle cx="1" cy="1" r="0.9" fill="{ink @ 0.10}"/>
   </pattern>
 </defs>
-<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect width="100%" height="100%" fill="{paper}"/>
 <rect width="100%" height="100%" fill="url(#dots)" opacity="0.6"/>
 ```
 
@@ -30,21 +32,21 @@ Don't use the dot pattern when the diagram sits inside a product page, slide, or
 
 ```svg
 <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-  <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+  <polygon points="0 0, 8 3, 0 6" fill="{muted}"/>
 </marker>
 <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-  <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+  <polygon points="0 0, 8 3, 0 6" fill="{accent}"/>
 </marker>
 <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-  <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+  <polygon points="0 0, 8 3, 0 6" fill="{link}"/>
 </marker>
 ```
 
 | Arrow | Stroke | When |
 |---|---|---|
-| Default | muted `#4f5d75` | Internal, generic |
-| Accent | coral `#eb6c36` | Primary / highlighted / headline |
-| Link-blue | `#2e5aa8` | HTTP/API calls, external systems |
+| Default | `muted` | Internal, generic |
+| Accent | `accent` | Primary / highlighted / headline |
+| Link-blue | `link` | HTTP/API calls, external systems |
 | Dashed | `stroke-dasharray="5,4"` + any color | Optional, passive, return, async |
 
 **Draw arrows before boxes** so z-order puts lines behind nodes.
@@ -79,19 +81,19 @@ These six rules are **non-negotiable**. Run the pre-output checklist (SKILL.md �
 
 ```svg
 <!-- 1. Opaque paper mask — prevents arrows bleeding through transparent fills -->
-<rect x="X" y="Y" width="W" height="H" rx="6" fill="#f5f5f5"/>
+<rect x="X" y="Y" width="W" height="H" rx="6" fill="{paper}"/>
 <!-- 2. Styled box -->
 <rect x="X" y="Y" width="W" height="H" rx="6" fill="FILL" stroke="STROKE" stroke-width="1"/>
 <!-- 3. Rectangular type tag (rx=2, NOT a pill) -->
 <rect x="X+8" y="Y+6" width="28" height="12" rx="2" fill="transparent" stroke="STROKE@0.40" stroke-width="0.8"/>
-<text x="X+22" y="Y+15" fill="STROKE@0.8" font-size="7" font-family="'Geist Mono', monospace"
+<text x="X+22" y="Y+15" fill="STROKE@0.8" font-size="7" font-family="{eyebrow}"
       text-anchor="middle" letter-spacing="0.08em">API</text>
-<!-- 4. Node name (Geist sans — human-readable) -->
-<text x="CX" y="CY+2" fill="#2d3142" font-size="12" font-weight="600"
-      font-family="'Geist', sans-serif" text-anchor="middle">Node Name</text>
-<!-- 5. Technical sublabel (Geist Mono) -->
-<text x="CX" y="CY+18" fill="#4f5d75" font-size="9"
-      font-family="'Geist Mono', monospace" text-anchor="middle">tech:port</text>
+<!-- 4. Node name (node-name role, sans: human-readable) -->
+<text x="CX" y="CY+2" fill="{ink}" font-size="12" font-weight="600"
+      font-family="{node-name}" text-anchor="middle">Node Name</text>
+<!-- 5. Technical sublabel (sublabel role, mono) -->
+<text x="CX" y="CY+18" fill="{muted}" font-size="9"
+      font-family="{sublabel}" text-anchor="middle">tech:port</text>
 ```
 
 ## Arrow labels — always mask, always with margin
@@ -100,9 +102,9 @@ Every arrow label needs an opaque rect behind it. Without one it bleeds through 
 
 ```svg
 <!-- Mask sits 14px above the arrow (8px text height + 6px gap). Stroke is at ARROW_Y. -->
-<rect x="MID_X-18" y="ARROW_Y-20" width="36" height="12" rx="2" fill="#f5f5f5"/>
-<text x="MID_X" y="ARROW_Y-11" fill="#7a8399" font-size="8"
-      font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WRITE</text>
+<rect x="MID_X-18" y="ARROW_Y-20" width="36" height="12" rx="2" fill="{paper}"/>
+<text x="MID_X" y="ARROW_Y-11" fill="{soft}" font-size="8"
+      font-family="{arrow-label}" text-anchor="middle" letter-spacing="0.06em">WRITE</text>
 ```
 
 Rules:
@@ -112,7 +114,7 @@ Rules:
 - Never `writing-mode` vertical.
 - For vertical segments, place the label to the side (not on the line) with the same 6–10px horizontal gap.
 
-**Font substitution.** Don't estimate per-character widths — use the `style-guide.md` budget (0.60em sans / 0.62em mono per char). A production run sized mono labels at ~0.47em/char and clipped twice; the calibrated budget fits both Geist Mono and the common substituted mono faces (Menlo, Courier New, Monaco, all ≈0.60em). Previews via `rsvg`/`inkscape` can't fetch the injected Google Fonts, so verify with `python3 <repo-root>/scripts/verify-geometry.py` — it checks masks against later-painted nodes, not text fit; holding the budget is yours.
+**Font substitution.** Don't estimate per-character widths — use the `style-guide.md` budget (0.60em sans / 0.62em mono per char). A production run sized mono labels at ~0.47em/char and clipped twice; the calibrated budget fits both the default skin's mono face (Geist Mono) and the common substituted mono faces (Menlo, Courier New, Monaco, all ≈0.60em). Previews via `rsvg`/`inkscape` can't fetch the injected Google Fonts, so verify with `python3 <repo-root>/scripts/verify-geometry.py` — it checks masks against later-painted nodes, not text fit; holding the budget is yours.
 
 ## Legend — horizontal strip at the bottom
 
@@ -120,8 +122,8 @@ Rules:
 
 ```svg
 <line x1="30" y1="LEGEND_Y-8" x2="VIEWBOX_W-30" y2="LEGEND_Y-8"
-      stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-<text x="30" y="LEGEND_Y+8" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace"
+      stroke="{ink @ 0.10}" stroke-width="0.8"/>
+<text x="30" y="LEGEND_Y+8" fill="{muted}" font-size="8" font-family="{eyebrow}"
       letter-spacing="0.14em">LEGEND</text>
 <!-- Items — horizontal row, ~160px apart -->
 ```

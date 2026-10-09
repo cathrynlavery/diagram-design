@@ -87,9 +87,9 @@ All three examples use `viewBox="0 0 1000 520"`, center `(500, 230)`, and `R = 1
 - Category spokes: center to `R`, 0.8 px rule stroke, no arrowhead.
 - Non-focal value rays: 2 px muted stroke; endpoint marker radius 4.
 - Focal value ray: 2.4 px accent stroke; endpoint marker radius 5.
-- Ring labels: `0.2 × max` through `1.0 × max` on the first axis only, Geist Mono 8 px; the example therefore shows `20, 40, 60, 80, 100`.
-- Category labels: at `R + 28`, Geist Sans 11 px semibold, horizontal and upright.
-- Numeric labels: at `R + 44`, Geist Mono 8 px, including the unit in the chart subtitle rather than repeating it eight times.
+- Ring labels: `0.2 × max` through `1.0 × max` on the first axis only, `arrow-label` role 8 px; the example therefore shows `20, 40, 60, 80, 100`.
+- Category labels: at `R + 28`, `node-name` role 11 px semibold, horizontal and upright.
+- Numeric labels: at `R + 44`, `arrow-label` role 8 px, including the unit in the chart subtitle rather than repeating it eight times.
 - Label anchor: `middle` within 15 degrees of vertical, `start` on the right half, and `end` on the left half.
 - Drawing order: background, rings, spokes, scale labels, non-focal rays, focal ray, endpoint markers, category labels, numeric labels, legend/source note.
 
