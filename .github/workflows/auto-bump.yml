@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: read # gh api reads release labels from merged pull requests
     outputs:
       should_bump: ${{ steps.guard.outputs.should_bump }}
       source_sha: ${{ steps.guard.outputs.source_sha }}
@@ -74,16 +74,17 @@ jobs:
         id: part
         env:
           GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
           SOURCE_SHA: ${{ steps.guard.outputs.source_sha }}
         shell: bash
         run: |
           set -euo pipefail
           last_bump=$(python3 scripts/plugin_version_history.py last-bump "$SOURCE_SHA")
 
-          part=patch
+          part="patch"
           while IFS= read -r commit; do
             labels=$(gh api \
-              "repos/${{ github.repository }}/commits/${commit}/pulls" \
+              "repos/${REPOSITORY}/commits/${commit}/pulls" \
               --jq '[.[].labels[].name] | join(" ")')
             case " $labels " in
               *" release:major "*)
@@ -346,7 +347,7 @@ jobs:
       - name: Push the validated bump to protected main
         if: steps.fresh.outputs.matches == 'true'
         env:
-          AUTO_BUMP_TOKEN: ${{ secrets.AUTO_BUMP_TOKEN }}
+          AUTO_BUMP_TOKEN: ${{ secrets.AUTO_BUMP_TOKEN }} # zizmor: ignore[secrets-outside-env] exposed only to the final validated push step
         shell: bash
         run: |
           set -euo pipefail

@@ -10,10 +10,11 @@ is derived from the workflow's ``run:`` steps with these rules:
   inside ``$(...)`` or an ``if`` branch. ``python`` is spelled ``python3``
   locally.
 - Shell glue is not a gate: the commands in ``SHELL_GLUE`` install or print
-  tools (``pip install``, ``playwright install``, ``python -c``, ``echo``) or
+  tools (``playwright install``, ``python -c``, ``echo``) or
   steer control flow (``if``/``then``/``else``/``fi``, ``[``, ``git
   rev-parse``, ``exit``). The list is read off the run lines ci.yml has.
-- A line starting with ``npx`` is one gate (the Claude plugin validator).
+- A line starting with ``npx`` or the locked local Claude executable is one
+  gate (the Claude plugin validator).
 - A ``git diff ... --exit-code`` line checks what the command before it in
   the same step generated, so it joins that command with ``&&`` (the
   build-icons freshness gate). Backslash continuations are joined first.
@@ -104,6 +105,7 @@ SHELL_GLUE = (
     ("esac",),
     ("[",),
     ("git", "rev-parse"),
+    ("npm", "ci"),
     ("pip", "install"),
     ("python", "-m", "pip", "install"),
     ("playwright", "install"),
@@ -121,11 +123,13 @@ RUN_KEY = re.compile(r"^(?P<prefix>\s*(?:-\s+)?)run:\s*(?P<value>.*?)\s*$")
 PYTHON_SCRIPT = re.compile(
     r"(?<![\w./-])python3?\s+(?P<script>[\w./-]+\.py)(?P<args>(?:[ \t]+[^\s;&|()<>]+)*)"
 )
+UV_RUN = re.compile(r"\buv run --locked --project \.github/ci/python\s+")
 
 
 def normalize(command: str) -> str:
     """Canonical form of a policy entry: CI spelling, version gate collapsed."""
     command = " ".join(command.split())
+    command = re.sub(r"^npm ci --prefix \.github/ci/node && ", "", command)
     command = re.sub(r"^python(?=\s)", "python3", command)
     return VERSION_GATE if command == LOCAL_VERSION_GATE else command
 
@@ -238,13 +242,14 @@ def ci_gates(workflow: str) -> tuple[set[str], list[str]]:
     for block in run_blocks(workflow):
         commands: list[str] = []
         for line in logical_lines(block):
+            line = UV_RUN.sub("", line)
             if line.startswith("git diff") and "--exit-code" in line:
                 if commands:
                     commands[-1] = f"{commands[-1]} && {line}"
                 else:
                     commands.append(line)
                 continue
-            if line.startswith("npx "):
+            if line.startswith(("npx ", ".github/ci/node/node_modules/.bin/claude ")):
                 commands.append(line)
                 continue
             commands.extend(match.group(0) for match in PYTHON_SCRIPT.finditer(line))
@@ -431,6 +436,18 @@ CASE_GUARDED_STEP = """
           echo "$out" | grep -q "All export-wait cases passed"
 """
 
+UV_PREFIXED_STEP = """
+      - name: Verify browser-backed export
+        run: |
+          uv run --locked --project .github/ci/python playwright install --with-deps chromium
+          uv run --locked --project .github/ci/python python scripts/test-export-svg-standalone.py
+"""
+
+LOCKED_CLAUDE_STEP = """
+      - name: Validate Claude marketplace package with locked executable
+        run: .github/ci/node/node_modules/.bin/claude plugin validate . --strict
+"""
+
 UNMAPPED_STEP = """
       - name: Verify something with a shell script
         run: bash scripts/check-something.sh
@@ -556,6 +573,23 @@ def self_test() -> list[str]:
             "CI gate behind a case guard registered",
             synthetic_ci(CASE_GUARDED_STEP),
             SYNTHETIC_POLICY_COMMANDS + ["python3 scripts/test-export-wait.py"],
+            None,
+        ),
+        (
+            "uv-prefixed gate registered",
+            synthetic_ci(UV_PREFIXED_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + ["python3 scripts/test-export-svg-standalone.py"],
+            None,
+        ),
+        (
+            "locked Claude executable registered",
+            synthetic_ci(LOCKED_CLAUDE_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + [
+                "npm ci --prefix .github/ci/node && "
+                ".github/ci/node/node_modules/.bin/claude plugin validate . --strict"
+            ],
             None,
         ),
         (

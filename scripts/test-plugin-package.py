@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -720,6 +721,7 @@ def test_ci_version_gate_executes() -> None:
                 [bash, "--noprofile", "--norc", "-eo", "pipefail", str(step)],
                 cwd=root,
                 capture_output=True,
+                env={**os.environ, "EVENT_NAME": "pull_request"},
                 text=True,
             )
 
