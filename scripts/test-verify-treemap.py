@@ -485,6 +485,25 @@ def main() -> int:
         else:
             print("OK: every hosted percentage claim must agree")
 
+        # Commas separating a magnitude from a percentage are punctuation,
+        # while grouped digits remain one complete number.
+        for label, claim, expected_pass, expected_finding in (
+            ("comma-matching", "4.78B,59% of world", True, ""),
+            ("comma-scientific-matching", "4.78B,5.9e1% of world", True, ""),
+            ("comma-conflicting", "4.78B,99% of world", False, "is labelled 99%"),
+            ("comma-second-conflicting", "4.78B · 59%,99% of world", False, "conflicting percentage claims"),
+            ("comma-grouped-number", "4.78B,1,059% of world", False, "is labelled 1059%"),
+            ("comma-negative-number", "4.78B,-59% of world", False, "is labelled -59%"),
+        ):
+            changed = source.replace("4.78B · 59% of world", claim, 1)
+            code, output = run(write(directory, f"{label}.html", changed))
+            if (code == 0) != expected_pass or (
+                not expected_pass and expected_finding not in output
+            ):
+                failures.append(f"{label}: unexpected percentage result: {output.strip()}")
+            else:
+                print(f"OK: {label} keeps complete percentage claims")
+
         # 15. Explicit metadata outranks both sides of the decorative-rect
         #     heuristic. A declared cell cannot disappear merely because a bad
         #     edit makes it implausibly wide or tall.
@@ -540,6 +559,28 @@ def main() -> int:
                 failures.append(f"{label} geometry lacked an explicit finding: {output.strip()}")
             else:
                 print(f"OK: {label} data-share geometry fails closed")
+
+
+    with tempfile.TemporaryDirectory() as directory:
+        d = Path(directory)
+        for label, claim, expect_pass, finding in (
+            ("negative", "-59%", False, "labelled -59%"),
+            ("unicode-minus", "\u221259%", False, "labelled -59%"),
+            ("scientific", "5.9e1%", True, ""),
+            ("positive-sign", "+59%", True, ""),
+            ("leading-decimal", ".590e2%", True, ""),
+            ("wrong-exponent", "5.9e2%", False, "labelled 590%"),
+            ("signed-conflict", "59% and -59%", False, "conflicting percentage claims"),
+            ("non-finite-claim", "1e400%", False, "must be finite numeric"),
+        ):
+            changed = source.replace("59% of world", claim + " of world")
+            code, output = run(write(d, "percentage-" + label + ".html", changed))
+            if changed == source or (code == 0) != expect_pass:
+                failures.append(f"{label} percentage behaved incorrectly: {output.strip()}")
+            elif finding and finding not in output:
+                failures.append(f"{label} percentage lacked its finding: {output.strip()}")
+            else:
+                print(f"OK: {label} percentage is read as one complete numeric claim")
 
     for failure in failures:
         print(f"FAIL: {failure}")
