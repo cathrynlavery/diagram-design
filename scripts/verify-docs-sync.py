@@ -22,8 +22,9 @@ fifteenth nearly did (#217); the sixteenth guards the ADR 0004 split:
    a literal file shipped inside the skill package.
 9. Import command surfaces must route to the visual-type taxonomy instead of
    hardcoding a count that becomes stale when a type is added. README is the
-   same surface by another route — it carries the count in prose a user reads
-   before installing — so it is held to the same rule.
+   same surface by another route: it carries the count in prose a user reads
+   before installing, so any count it states must equal the number of shipped
+   type-*.md references.
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
@@ -239,17 +240,23 @@ def check_gallery(errors: list[str]) -> None:
         if f"example-{name}.html" not in on_disk:
             errors.append(f"gallery tab {name!r} points at a missing example-{name}.html")
     # Parse eyebrow numbers and parent-type bindings from tab buttons.
-    # Variants (data-parent-type) may share their declared parent's eyebrow
-    # number; independent (non-variant) types must be unique and form a
-    # contiguous ascending 01..N sequence in document order.
+    # Independent tabs carry a bare number and form a contiguous ascending
+    # 01..N sequence in document order. A variant (data-parent-type) carries
+    # its parent's number plus a letter (04a, 04b), sits directly after its
+    # parent, and its letters run a, b, c in document order, so no two tabs
+    # ever show the same label and a variant cannot drift away from its type.
     tab_eyebrows: dict[str, str] = {}  # data-type → eyebrow number
+    tab_suffixes: dict[str, str] = {}  # data-type → variant letter ("" if none)
     tab_parents: dict[str, str] = {}   # data-type → data-parent-type
-    for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)</span>', source):
-        attrs, eyebrow = m.group(1), m.group(2)
+    document_order: list[str] = []
+    for m in re.finditer(r'<button([^>]*)>\s*<span class="eyebrow">(\d+)([a-z]?)</span>', source):
+        attrs, eyebrow, suffix = m.group(1), m.group(2), m.group(3)
         tm = re.search(r'data-type="([^"]+)"', attrs)
         pm = re.search(r'data-parent-type="([^"]+)"', attrs)
         if tm:
             tab_eyebrows[tm.group(1)] = eyebrow
+            tab_suffixes[tm.group(1)] = suffix
+            document_order.append(tm.group(1))
             if pm:
                 tab_parents[tm.group(1)] = pm.group(1)
     # Enforce uniqueness among independent (non-variant) types.
@@ -259,6 +266,11 @@ def check_gallery(errors: list[str]) -> None:
         if t in tab_parents:
             continue
         independent_order.append((t, num))
+        if tab_suffixes[t]:
+            errors.append(
+                f"gallery tab {t!r} is an independent type but its eyebrow "
+                f"{num + tab_suffixes[t]!r} carries a variant letter"
+            )
         if num in seen_eyebrows:
             errors.append(
                 f"gallery has duplicate eyebrow number {num!r} on independent types "
@@ -290,6 +302,29 @@ def check_gallery(errors: list[str]) -> None:
                 f"gallery tab {t!r} has eyebrow {tab_eyebrows.get(t)!r} but its "
                 f"parent {parent!r} uses {tab_eyebrows[parent]!r}; they must match"
             )
+    # Enforce variant placement and lettering: each variant follows its parent
+    # (or a sibling) directly, and the letters run a, b, c in document order.
+    current_parent: str | None = None
+    next_letter = "a"
+    for t in document_order:
+        if t not in tab_parents:
+            current_parent, next_letter = t, "a"
+            continue
+        parent = tab_parents[t]
+        if parent not in tab_eyebrows:
+            continue
+        if parent != current_parent:
+            errors.append(
+                f"gallery tab {t!r} is a variant of {parent!r} but sits under "
+                f"{current_parent!r}; move it directly after its parent"
+            )
+            continue
+        if tab_suffixes[t] != next_letter:
+            errors.append(
+                f"gallery tab {t!r} has eyebrow {tab_eyebrows[t] + tab_suffixes[t]!r}; "
+                f"the next variant of {parent!r} must be {tab_eyebrows[parent] + next_letter!r}"
+            )
+        next_letter = chr(ord(tab_suffixes[t] or next_letter) + 1)
     # Detect data-single types so we can skip the three-variant check for them.
     single_types: set[str] = set()
     for btn in re.finditer(r"<button[^>]+>", source):
@@ -309,6 +344,30 @@ def check_gallery(errors: list[str]) -> None:
                     f"gallery tab {name!r} is missing {fname}; "
                     "add the variant or mark the tab data-single"
                 )
+
+
+def check_gallery_type_parity(errors: list[str], gallery: Path, references: Path) -> None:
+    """Every numbered (independent) gallery tab is one shipped visual type.
+
+    The gallery's last ordinal is the type count a reader sees, so it must be
+    the same count as the type-*.md references: one numbered tab per type,
+    and every other example a lettered variant of the type it draws.
+    """
+    source = gallery.read_text(encoding="utf-8")
+    independent = set()
+    for m in re.finditer(r"<button([^>]*)>\s*<span class=\"eyebrow\">\d+[a-z]?</span>", source):
+        attrs = m.group(1)
+        tm = re.search(r'data-type="([^"]+)"', attrs)
+        if tm and "data-parent-type=" not in attrs:
+            independent.add(tm.group(1))
+    shipped = {path.stem[len("type-"):] for path in references.glob("type-*.md")}
+    for name in sorted(independent - shipped):
+        errors.append(
+            f"gallery numbers {name!r} as a visual type but no type-{name}.md ships; "
+            "make it a variant (data-parent-type) of the type it draws"
+        )
+    for name in sorted(shipped - independent):
+        errors.append(f"visual type {name!r} has no numbered gallery tab")
 
 
 def readme_tree_tokens(markdown: str) -> list[str]:
@@ -607,8 +666,23 @@ COUNT_SURFACES = (
 )
 
 
+# README is the one surface allowed to state the count, because a reader
+# deciding whether to install wants the number. It is held to the shipped
+# count instead: every numeral README attaches to the taxonomy must equal the
+# number of type-*.md references, so adding a type without updating README
+# fails here rather than leaving the number stale. Commands stay count-free.
+VERIFIED_COUNT_SURFACES = frozenset({Path("README.md")})
+TYPE_REFERENCE_GLOB = "skills/diagram-design/references/type-*.md"
+
+
+def shipped_type_count(root: Path) -> int:
+    return len(list(root.glob(TYPE_REFERENCE_GLOB)))
+
+
 def check_type_counts(errors: list[str], root: Path) -> None:
-    """No routing surface may write the visual-type count as a numeral."""
+    """No command may write the visual-type count as a numeral; README may
+    only write the shipped count."""
+    shipped = shipped_type_count(root)
     for relative in COUNT_SURFACES:
         path = root / relative
         if not path.is_file():
@@ -618,6 +692,16 @@ def check_type_counts(errors: list[str], root: Path) -> None:
         for match in HARDCODED_COUNT_RE.finditer(text):
             number = text.count("\n", 0, match.start()) + 1
             phrase = " ".join(match.group(0).split())
+            if relative in VERIFIED_COUNT_SURFACES:
+                stated = [int(n) for n in re.findall(r"\d+", match.group(0))]
+                if stated and all(n == shipped for n in stated):
+                    continue
+                errors.append(
+                    f"{relative.as_posix()}:{number} states the visual-type count "
+                    f"({phrase!r}) but {shipped} type references ship; "
+                    f"use {shipped} or drop the number"
+                )
+                continue
             errors.append(
                 f"{relative.as_posix()}:{number} hardcodes the visual-type count "
                 f"({phrase!r}); point at SKILL.md \u00a73 instead so adding a type "
@@ -1592,6 +1676,7 @@ def main() -> int:
     check_manifest_descriptions(errors, ROOT)
     check_factory_install_surface(errors, ROOT)
     check_gallery(errors)
+    check_gallery_type_parity(errors, GALLERY, SKILL.parent / "references")
     check_readme_tree(errors)
     check_skill_reference_links(
         errors,
