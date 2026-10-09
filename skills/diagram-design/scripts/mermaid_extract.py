@@ -1002,7 +1002,7 @@ def _parse_state(
                 _fail(f"malformed edge at line {line_number}")
             diagram.add_edge(source, target, clean_label(label))
             continue
-        description = re.match(r"^([A-Za-z_][\w.-]*)\s*:\s*(.+)$", text)
+        description = re.match(r"^([\w.-]+)\s*:\s*(.+)$", text)
         if description:
             node_id, label = description.group(1), clean_label(description.group(2))
             if node_id not in descriptions:
