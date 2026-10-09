@@ -89,12 +89,16 @@ def _nice_magnitude(value: float) -> float:
         return 0.0
     exponent = math.floor(math.log10(magnitude))
     base = 10.0 ** exponent
+    if base == 0.0:
+        # The next representable subnormal is already the smallest safe bound.
+        return magnitude
     for step in (1.0, 2.0, 2.5, 5.0, 10.0):
         candidate = step * base
         # Bounds must enclose the data even when its unit is much smaller
         # than a fixed epsilon. The ladder already provides outward rounding.
         if candidate >= magnitude:
-            return candidate
+            # A finite input must not gain an infinite bound from the ladder.
+            return candidate if math.isfinite(candidate) else magnitude
     return 10.0 * base
 
 
@@ -134,7 +138,12 @@ def scale(value: float, floor: float, ceiling: float) -> float:
     span = ceiling - floor
     if span <= 0:
         raise DomainError("non-positive span %r" % (span,))
-    return PLOT_X0 + (float(value) - floor) / span * PLOT_WIDTH
+    if math.isinf(span):
+        # Halving first avoids overflow when finite bounds have opposite signs.
+        ratio = (float(value) / 2 - floor / 2) / (ceiling / 2 - floor / 2)
+    else:
+        ratio = (float(value) - floor) / span
+    return PLOT_X0 + ratio * PLOT_WIDTH
 
 
 def is_truncated(values, floor: float, ceiling: float) -> bool:
