@@ -504,19 +504,20 @@ def find_defs_ids(svg: str) -> list[str]:
     defs_blocks = re.findall(r"<defs\b[^>]*>(.*?)</defs>", svg, re.IGNORECASE | re.DOTALL)
     if not defs_blocks:
         return []
-    tag_alt = "|".join(DEFS_ID_TAGS)
-    pattern = re.compile(
-        rf"<(?:{tag_alt})\b[^>]*\bid\s*=\s*[\"']([^\"']+)[\"']",
-        re.IGNORECASE,
-    )
     found: list[str] = []
     seen: set[str] = set()
     for block in defs_blocks:
-        for match in pattern.finditer(block):
-            ident = match.group(1)
-            if ident not in seen:
-                seen.add(ident)
-                found.append(ident)
+        for region in REFERENCE_REGION_RE.finditer(block):
+            tag = START_TAG_RE.fullmatch(region.group(0))
+            if tag is None or tag.group(1).lower() not in {name.lower() for name in DEFS_ID_TAGS}:
+                continue
+            for attribute in TAG_ATTR_RE.finditer(tag.group(2)):
+                if attribute.group(2) != "id" or attribute.group(4) is None:
+                    continue
+                ident = attribute.group(4)[1:-1]
+                if ident not in seen:
+                    seen.add(ident)
+                    found.append(ident)
     return found
 
 
@@ -544,7 +545,7 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
         for old in sorted(ids, key=len, reverse=True):
             new = f"{prefix}-{old}"
             region = re.sub(
-                rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
+                rf'((?<![\w:-])id\s*=\s*[\'"]){re.escape(old)}([\'"])',
                 rf"\1{new}\2",
                 region,
             )
@@ -555,7 +556,7 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
                 region,
             )
             region = re.sub(
-                rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
+                rf"""((?<![\w:-])(?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
                 rf"\1#{new}\2",
                 region,
             )
