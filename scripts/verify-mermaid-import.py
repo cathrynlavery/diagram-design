@@ -1089,11 +1089,27 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_bidirectional_analysis(tmp: Path) -> None:
+    source = tmp / "bidirectional.mmd"
+    source.write_text("flowchart LR\nA <--> B\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    analysis = diagram["analysis"]
+    if not analysis["has_cycle"]:
+        fail("bidirectional links must contribute their reverse edge to cycle analysis")
+    for node in diagram["nodes"]:
+        if (node["in_degree"], node["out_degree"]) != (1, 1):
+            fail("bidirectional links must contribute both inbound and outbound degrees")
+    if analysis["entry_points"] or analysis["terminals"]:
+        fail("a bidirectional pair has no one-way entry point or terminal")
+    ok("bidirectional flowchart analysis preserves both directions")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
         check_files()
         check_flowchart()
+        check_bidirectional_analysis(tmp)
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)

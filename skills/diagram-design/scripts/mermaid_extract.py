@@ -1099,6 +1099,11 @@ def _finalize_degrees(diagram: Diagram) -> None:
             nodes[edge.source].out_degree += 1
         if edge.target in nodes:
             nodes[edge.target].in_degree += 1
+        if edge.bidirectional:
+            if edge.source in nodes:
+                nodes[edge.source].in_degree += 1
+            if edge.target in nodes:
+                nodes[edge.target].out_degree += 1
 
 
 def _has_cycle(nodes: list[Node], edges: list[Edge]) -> bool:
@@ -1106,6 +1111,8 @@ def _has_cycle(nodes: list[Node], edges: list[Edge]) -> bool:
     for edge in edges:
         if edge.source in adjacency and edge.target in adjacency:
             adjacency[edge.source].append(edge.target)
+            if edge.bidirectional:
+                adjacency[edge.target].append(edge.source)
     WHITE, GREY, BLACK = 0, 1, 2
     colors = {node.id: WHITE for node in nodes}
 
