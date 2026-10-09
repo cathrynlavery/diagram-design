@@ -84,6 +84,14 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_defs_references_compare_decoded_xml_ids(self) -> None:
+        markup = '<svg><defs><linearGradient id="A&#38;B"/></defs><use href="#A&amp;B"/><rect fill="url(#A&#x26;B)"/></svg>'
+        result = self.mod.namespace_defs_ids(markup, "diagram")
+        root = ET.fromstring(result)
+        self.assertEqual(root[0][0].get("id"), "diagram-A&B")
+        self.assertEqual(root[1].get("href"), "#diagram-A&B")
+        self.assertEqual(root[2].get("fill"), "url(#diagram-A&B)")
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())

@@ -513,7 +513,7 @@ def find_defs_ids(svg: str) -> list[str]:
     seen: set[str] = set()
     for block in defs_blocks:
         for match in pattern.finditer(block):
-            ident = match.group(1)
+            ident = decode_xml_references(match.group(1))
             if ident not in seen:
                 seen.add(ident)
                 found.append(ident)
@@ -531,6 +531,17 @@ REFERENCE_REGION_RE = re.compile(
 )
 
 
+def xml_id_pattern(value: str) -> str:
+    names = {"&": "amp", "<": "lt", ">": "gt", '"': "quot", "'": "apos"}
+    pieces = []
+    for char in value:
+        forms = [re.escape(char), rf"&#0*{ord(char)};", rf"&#[xX]0*(?i:{ord(char):x});"]
+        if char in names:
+            forms.append("&" + names[char] + ";")
+        pieces.append("(?:" + "|".join(forms) + ")")
+    return "".join(pieces)
+
+
 def namespace_defs_ids(svg: str, prefix: str) -> str:
     """Prefix defs IDs and rewrite url(#…)/href="#…" references, longest first.
 
@@ -542,21 +553,22 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
 
     def rewrite(region: str) -> str:
         for old in sorted(ids, key=len, reverse=True):
-            new = f"{prefix}-{old}"
+            new = html_entities.escape(f"{prefix}-{old}", quote=True)
+            old_pattern = xml_id_pattern(old)
             region = re.sub(
-                rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
-                rf"\1{new}\2",
+                rf'(\bid\s*=\s*[\'"]){old_pattern}([\'"])',
+                lambda match: match.group(1) + new + match.group(2),
                 region,
             )
             region = re.sub(
                 rf"(?i:url)\(\s*(?P<quote>[\"']|&quot;|&apos;|)\s*#\s*"
-                rf"{re.escape(old)}\s*(?P=quote)\s*\)",
+                rf"{old_pattern}\s*(?P=quote)\s*\)",
                 lambda match: f"url({match.group('quote')}#{new}{match.group('quote')})",
                 region,
             )
             region = re.sub(
-                rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
-                rf"\1#{new}\2",
+                rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{old_pattern}(['"])""",
+                lambda match: match.group(1) + "#" + new + match.group(2),
                 region,
             )
         return region
