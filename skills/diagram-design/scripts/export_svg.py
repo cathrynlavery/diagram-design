@@ -23,6 +23,7 @@ The algorithm matches ``references/export.md``. No third-party deps.
 from __future__ import annotations
 
 import argparse
+import html as html_entities
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -143,6 +144,89 @@ def xmlify_attributes(svg: str) -> str:
     return "".join(out)
 
 
+# HTML named references that browsers decode even without a trailing semicolon.
+LEGACY_ENTITY_NAMES = tuple(name for name in html_entities.entities.html5 if not name.endswith(";"))
+
+
+def normalize_html_entities(svg: str) -> str:
+    """Convert named HTML references to XML-safe text without decoding markup."""
+    opaque = re.compile(
+        r"<!--.*?-->|<!\[CDATA\[.*?\]\]>|"
+        r"(?P<opening><(?P<tag>style|script)\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>)"
+        r".*?</(?P=tag)\s*>", re.DOTALL | re.IGNORECASE,
+    )
+    # Terminated names first; then HTML's legacy names, which also decode
+    # without a semicolon (longest first, so "&notin" is not read as "&not").
+    named = re.compile(
+        r"&(?:[A-Za-z][A-Za-z0-9]+;|(?P<legacy>"
+        + "|".join(sorted((re.escape(name) for name in LEGACY_ENTITY_NAMES), key=len, reverse=True))
+        + r"))"
+    )
+    tag = re.compile(r"<[A-Za-z/!?](?:[^>\"']|\"[^\"]*\"|'[^']*')*>")
+
+    def replace_entity(match: re.Match[str], in_attribute: bool = False) -> str:
+        original = match.group(0)
+        if original in ("&amp;", "&lt;", "&gt;", "&apos;", "&quot;"):
+            return original
+        if match.group("legacy") is not None:
+            following = match.string[match.end() : match.end() + 1]
+            # HTML leaves these undecoded inside attribute values.
+            if in_attribute and (following == "=" or following.isalnum()):
+                return original
+            decoded = html_entities.entities.html5[match.group("legacy")]
+        else:
+            decoded = html_entities.entities.html5.get(original[1:])
+        if decoded is None:
+            return original
+        return (html_entities.escape(decoded, quote=True)
+                .replace("\t", "&#9;").replace("\n", "&#10;").replace("\r", "&#13;"))
+
+    def replace_in_attribute(match: re.Match[str]) -> str:
+        return replace_entity(match, in_attribute=True)
+
+    def normalize_region(region: str) -> str:
+        parts: list[str] = []
+        cursor = 0
+        for token in tag.finditer(region):
+            parts.append(named.sub(replace_entity, region[cursor : token.start()]))
+            parts.append(named.sub(replace_in_attribute, token.group(0)))
+            cursor = token.end()
+        parts.append(named.sub(replace_entity, region[cursor:]))
+        return "".join(parts)
+
+    out: list[str] = []
+    pos = 0
+    for match in opaque.finditer(svg):
+        out.append(normalize_region(svg[pos:match.start()]))
+        opening = match.group("opening")
+        if opening is not None:
+            out.append(named.sub(replace_in_attribute, opening) + match.group(0)[len(opening):])
+        else:
+            out.append(match.group(0))
+        pos = match.end()
+    out.append(normalize_region(svg[pos:]))
+    return "".join(out)
+
+
+XML_REFERENCE_RE = re.compile(r"&(?:(amp|lt|gt|quot|apos);|#[0-9]+;?|#[xX][0-9A-Fa-f]+;?)")
+XML_NAMED = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
+
+
+def decode_xml_references(value: str) -> str:
+    """Decode the references left after normalize_html_entities has run.
+
+    Numeric references follow HTML (so &#128; is the euro sign); legacy names
+    that HTML leaves literal in attributes stay literal.
+    """
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(1)
+        if name:
+            return XML_NAMED[name]
+        return html_entities.unescape(match.group(0))
+
+    return XML_REFERENCE_RE.sub(replace, value)
+
+
 def ensure_xmlns(svg: str) -> str:
     if re.search(r'\bxmlns\s*=\s*["\']http://www\.w3\.org/2000/svg["\']', svg):
         return svg
@@ -155,17 +239,23 @@ def ensure_viewbox(svg: str) -> None:
 
 
 def set_root_id(svg: str, root_id: str) -> str:
-    """Put `id="{root_id}"` on the opening <svg> tag (replace any existing id)."""
+    """Put the scoped ID on the actual root id attribute, preserving other data."""
+    opening = START_TAG_RE.match(svg)
+    assert opening is not None
+    name, attrs, end = opening.groups()
+    replaced = False
 
-    def repl(match: re.Match[str]) -> str:
-        tag = match.group(0)
-        if re.search(r"\bid\s*=", tag, re.IGNORECASE):
-            tag = re.sub(r'\bid\s*=\s*("[^"]*"|\'[^\']*\')', f'id="{root_id}"', tag, count=1)
-        else:
-            tag = tag[:-1] + f' id="{root_id}">'
-        return tag
+    def replace_attr(attr: re.Match[str]) -> str:
+        nonlocal replaced
+        if attr.group(2) != "id":
+            return attr.group(0)
+        replaced = True
+        return f'{attr.group(1)}id="{root_id}"'
 
-    return re.sub(r"<svg\b[^>]*>", repl, svg, count=1, flags=re.IGNORECASE)
+    attrs = TAG_ATTR_RE.sub(replace_attr, attrs)
+    if not replaced:
+        attrs += f' id="{root_id}"'
+    return f"<{name}{attrs}{end}>" + svg[opening.end():]
 
 
 def is_chrome_selector(selector: str) -> bool:
@@ -175,6 +265,84 @@ def is_chrome_selector(selector: str) -> bool:
     return all(
         part.lower() == "svg" or CHROME_SELECTOR_RE.match(part) is not None for part in parts
     )
+
+
+def css_escape(text: str, pos: int) -> tuple[str, int] | None:
+    """Read one CSS identifier escape, including its optional hex terminator."""
+    end = pos + 1
+    if end == len(text) or text[end] in "\n\r\f":
+        return None
+    start = end
+    while end < min(start + 6, len(text)) and text[end] in "0123456789abcdefABCDEF":
+        end += 1
+    if end == start:
+        return text[end], end + 1
+    code = int(text[start:end], 16)
+    value = chr(code) if 0 < code <= 0x10FFFF and not 0xD800 <= code <= 0xDFFF else "\ufffd"
+    if end < len(text) and text[end] in " \t\n\r\f":
+        end += 2 if text[end:end + 2] == "\r\n" else 1
+    return value, end
+
+
+def css_id_token(text: str, pos: int) -> tuple[str, int] | None:
+    """Read a whole valid CSS ID selector after '#', decoding identifier escapes."""
+    def starts_name(index: int) -> bool:
+        char = text[index:index + 1]
+        return bool(char) and (char in "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                               or ord(char) >= 128
+                               or (char == "\\" and css_escape(text, index) is not None))
+
+    if not starts_name(pos) and not (text[pos:pos + 1] == "-"
+            and (starts_name(pos + 1) or text[pos + 1:pos + 2] == "-")):
+        return None
+    out: list[str] = []
+    while pos < len(text):
+        char = text[pos]
+        if char == "\\":
+            escaped = css_escape(text, pos)
+            if escaped is None:
+                break
+            value, pos = escaped
+            out.append(value)
+        elif char in "_-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" or ord(char) >= 128:
+            out.append(char)
+            pos += 1
+        else:
+            break
+    return "".join(out), pos
+
+
+def root_bound_compound(selector: str, root_id: str) -> bool:
+    """Whether the first compound names this root outside attributes/functions."""
+    pos = 0
+    depth = 0
+    quote = ""
+    while pos < len(selector):
+        char = selector[pos]
+        if char == "\\":
+            escaped = css_escape(selector, pos)
+            pos = escaped[1] if escaped else pos + 1
+            continue
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char in "[(":
+            depth += 1
+        elif char in "])":
+            depth -= 1
+        elif depth == 0 and (char.isspace() or char in ">+~"):
+            break
+        elif depth == 0 and char == "#":
+            token = css_id_token(selector, pos + 1)
+            if token:
+                value, pos = token
+                if value == root_id:
+                    return True
+                continue
+        pos += 1
+    return False
 
 
 def scope_selector(selector: str, root_id: str) -> str:
@@ -187,6 +355,9 @@ def scope_selector(selector: str, root_id: str) -> str:
             # `:root { … }` and rare `:root .x` → bind tokens to the SVG root.
             remainder = part[len(":root") :].strip()
             scoped.append(f"#{root_id}" + (f" {remainder}" if remainder else ""))
+        elif root_bound_compound(part, root_id):
+            # A compound such as `.diagram#root` already names the SVG itself.
+            scoped.append(part)
         elif part.startswith("#"):
             # Already an ID selector — leave alone (title/desc IDs stay global).
             scoped.append(part)
@@ -221,7 +392,41 @@ def escape_css_for_xml(css: str) -> str:
     return css.replace("&", "&amp;").replace("<", "&lt;")
 
 
-def diagram_css_from_html(html: str, root_id: str) -> str:
+def retarget_root_selector(selector: str, original_id: str, root_id: str) -> str:
+    """Retarget whole decoded ID tokens, preserving unrelated escapes and literals."""
+    out: list[str] = []
+    quote = ""
+    pos = 0
+    while pos < len(selector):
+        char = selector[pos]
+        if char == "\\":
+            escaped = css_escape(selector, pos)
+            end = escaped[1] if escaped else pos + 1
+            out.append(selector[pos:end])
+            pos = end
+            continue
+        if quote:
+            out.append(char)
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+            out.append(char)
+        elif char == "#":
+            token = css_id_token(selector, pos + 1)
+            if token:
+                value, end = token
+                out.append(f"#{root_id}" if value == original_id else selector[pos:end])
+                pos = end
+                continue
+            out.append(char)
+        else:
+            out.append(char)
+        pos += 1
+    return "".join(out)
+
+
+def diagram_css_from_html(html: str, root_id: str, original_root_id: str = "") -> str:
     """Filter page <style> rules down to diagram rules, scoped under root_id."""
     kept: list[str] = []
     for block in STYLE_BLOCK_RE.findall(html):
@@ -229,7 +434,12 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
         # (`/* Tokens */ :root` is not recognised as `:root`).
         block = CSS_COMMENT_RE.sub("", block)
         for match in RULE_RE.finditer(block):
-            selector = " ".join(match.group(1).split())
+            selector = match.group(1).strip()
+            if original_root_id:
+                selector = retarget_root_selector(selector, original_root_id, root_id)
+            # Retarget before collapsing whitespace: a hex escape consumes one
+            # terminator, so a second space may be the descendant combinator.
+            selector = " ".join(selector.split())
             body = match.group(2).strip()
             if not selector or not body:
                 continue
@@ -245,6 +455,27 @@ def diagram_css_from_html(html: str, root_id: str) -> str:
     return "\n      ".join(kept)
 
 
+def leading_accessibility_end(svg: str, pos: int) -> int:
+    """Keep leading title/desc and comments ahead of a newly inserted defs."""
+    token = re.compile(r"<!--.*?-->|<title\b[^>]*>|<desc\b[^>]*>", re.DOTALL | re.IGNORECASE)
+    while True:
+        start = re.match(r"\s*", svg[pos:])
+        assert start is not None
+        next_pos = pos + start.end()
+        opening = token.match(svg, next_pos)
+        if opening is None:
+            return pos
+        if opening.group(0).startswith("<!--"):
+            pos = opening.end()
+            continue
+        name = "title" if opening.group(0).lower().startswith("<title") else "desc"
+        endings = re.compile(rf"<!--.*?-->|<!\[CDATA\[.*?\]\]>|</{name}\s*>", re.DOTALL | re.IGNORECASE)
+        close = next((match for match in endings.finditer(svg, opening.end()) if match.group(0).startswith("</")), None)
+        if close is None:
+            return pos
+        pos = close.end()
+
+
 def merge_style_into_defs(svg: str, style_css: str) -> str:
     """Ensure one <defs> and place a <style> with fonts + diagram CSS first."""
     style_inner = GOOGLE_FONTS_IMPORT
@@ -257,11 +488,10 @@ def merge_style_into_defs(svg: str, style_css: str) -> str:
         insert_at = defs_match.end()
         return svg[:insert_at] + "\n      " + style_tag + svg[insert_at:]
 
-    # No defs yet — insert one right after the opening svg tag (after title/desc
-    # would also be fine; putting defs first keeps markers available).
+    # Keep the authored first-child title/desc ahead of a newly created defs.
     open_match = re.match(r"<svg\b[^>]*>", svg, re.IGNORECASE)
     assert open_match is not None
-    insert_at = open_match.end()
+    insert_at = leading_accessibility_end(svg, open_match.end())
     return (
         svg[:insert_at]
         + f"\n  <defs>\n      {style_tag}\n  </defs>"
@@ -290,31 +520,51 @@ def find_defs_ids(svg: str) -> list[str]:
     return found
 
 
+# Markup that can carry defs references: <style> blocks, tags (attribute
+# values), and comments, which may hold an optional commented-out block.
+# CDATA and <script> are matched so they are skipped, not rewritten.
+REFERENCE_REGION_RE = re.compile(
+    r"(?P<skip><!\[CDATA\[.*?\]\]>|<script\b.*?</script\s*>)"
+    r"|<!--.*?-->|<style\b[^>]*>.*?</style\s*>"
+    r"|<[A-Za-z/?!](?:[^>\"']|\"[^\"]*\"|'[^']*')*>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
 def namespace_defs_ids(svg: str, prefix: str) -> str:
-    """Prefix defs IDs and rewrite url(#…)/href="#…" references, longest first."""
+    """Prefix defs IDs and rewrite url(#…)/href="#…" references, longest first.
+
+    Only tags and <style> blocks are rewritten; visible text keeps its wording.
+    """
     ids = find_defs_ids(svg)
     if not ids:
         return svg
-    for old in sorted(ids, key=len, reverse=True):
-        new = f"{prefix}-{old}"
-        svg = re.sub(
-            rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
-            rf"\1{new}\2",
-            svg,
-        )
-        svg = re.sub(
-            rf"url\(\s*#\s*{re.escape(old)}\s*\)",
-            f"url(#{new})",
-            svg,
-            flags=re.IGNORECASE,
-        )
-        svg = re.sub(
-            rf"""((?:xlink:)?href\s*=\s*['"])#{re.escape(old)}(['"])""",
-            rf"\1#{new}\2",
-            svg,
-            flags=re.IGNORECASE,
-        )
-    return svg
+
+    def rewrite(region: str) -> str:
+        for old in sorted(ids, key=len, reverse=True):
+            new = f"{prefix}-{old}"
+            region = re.sub(
+                rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
+                rf"\1{new}\2",
+                region,
+            )
+            region = re.sub(
+                rf"(?i:url)\(\s*(?P<quote>[\"']|&quot;|&apos;|)\s*#\s*"
+                rf"{re.escape(old)}\s*(?P=quote)\s*\)",
+                lambda match: f"url({match.group('quote')}#{new}{match.group('quote')})",
+                region,
+            )
+            region = re.sub(
+                rf"""((?i:(?:xlink:)?href)\s*=\s*['"])#{re.escape(old)}(['"])""",
+                rf"\1#{new}\2",
+                region,
+            )
+        return region
+
+    return REFERENCE_REGION_RE.sub(
+        lambda match: match.group(0) if match.group("skip") else rewrite(match.group(0)),
+        svg,
+    )
 
 
 def normalize_rgba_presentation_attrs(svg: str) -> str:
@@ -358,11 +608,19 @@ def export_svg_document(html: str, source_path: Path) -> str:
     """Transform source HTML into a standalone SVG document string."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
-    svg = xmlify_attributes(extract_first_svg(html))
+    svg = normalize_html_entities(xmlify_attributes(extract_first_svg(html)))
     ensure_viewbox(svg)
     svg = ensure_xmlns(svg)
+    opening = START_TAG_RE.match(svg)
+    assert opening is not None
+    # Compare the decoded ID: CSS escapes resolve to characters, not to markup.
+    original_root_id = next(
+        (decode_xml_references(attr.group(4)[1:-1]) for attr in TAG_ATTR_RE.finditer(opening.group(2))
+         if attr.group(2) == "id" and attr.group(4) is not None),
+        "",
+    )
     svg = set_root_id(svg, root_id)
-    diagram_css = diagram_css_from_html(html, root_id)
+    diagram_css = diagram_css_from_html(html, root_id, original_root_id)
     svg = merge_style_into_defs(svg, diagram_css)
     svg = namespace_defs_ids(svg, slug)
     svg = normalize_rgba_presentation_attrs(svg)

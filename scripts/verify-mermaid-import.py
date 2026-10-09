@@ -668,6 +668,64 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def check_state_descriptions(tmp: Path) -> None:
+    cases = (
+        ("idle : Waiting for message\nidle : Retrying previous request\n[*] --> idle\n", "Waiting for message\nRetrying previous request"),
+        ("[*] --> idle\nidle : Waiting for message\n", "Waiting for message"),
+        ("idle : idle\nidle : Next step\nidle --> [*]\n", "idle\nNext step"),
+        ('state "Idle display" as idle\nidle : Waiting for message\nidle --> [*]\n', "Idle display\nWaiting for message"),
+        ('idle : Waiting for message\nstate "Latest display" as idle\nidle --> [*]\n', "Latest display"),
+        ('idle : First\nidle : Second\nstate "idle" as idle\nidle --> [*]\n', "First\nSecond"),
+        ('idle : First\nidle : Second\nstate "" as idle\nidle --> [*]\n', "First\nSecond"),
+        ('idle : <br/>\nidle --> [*]\n', "idle"),
+        ('idle : First\nstate "Latest" as idle\nidle : Last\nidle --> [*]\n', "Latest\nLast"),
+        ('idle : First\nstate "idle" as idle\nidle : Last\nidle --> [*]\n', "First\nLast"),
+    )
+    for index, (body, label) in enumerate(cases):
+        path = tmp / f"state-descriptions-{index}.mmd"
+        path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+        if node["label"] != label:
+            fail(f"state descriptions lost source-ordered text: {node['label']!r}")
+        if len(diagram["edges"]) != 1:
+            fail("state descriptions changed transition extraction")
+    # Exercise a large valid one-node import without copying its growing label
+    # for every line. The native benchmark is recorded separately; avoid a
+    # wall-clock assertion whose result would depend on CI host contention.
+    count = 4000
+    path = tmp / "state-descriptions-large.mmd"
+    lines = [f"description {index}" for index in range(count)]
+    path.write_text("stateDiagram-v2\n" + "".join(f"idle : {line}\n" for line in lines) + "idle --> [*]\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+    if node["label"] != "\n".join(lines) or len(diagram["edges"]) != 1:
+        fail("large repeated descriptions lost text or transitions")
+    ok("multiple state descriptions retain source order and ordinary transitions")
+
+
+def check_named_composite_states(tmp: Path) -> None:
+    for declaration, expected in (("state \"Processing request\" as processing {", "Processing request"), ("state processing {", "processing")):
+        path = tmp / "named-composite.mmd"
+        path.write_text("stateDiagram-v2\n" + declaration + "\n[*] --> queued\nqueued --> done\n}\nprocessing --> [*]\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node for node in diagram["nodes"]}
+        parent = nodes.get("processing")
+        if parent is None or parent["label"] != expected or not parent["container"]:
+            fail("named composite state lost its ID, label or container")
+        for child in ("queued", "done"):
+            if (nodes[child]["parent"], nodes[child]["depth"]) != ("processing", 1):
+                fail("named composite state lost child membership")
+        if diagram["analysis"]["containers"] != 1 or len(diagram["edges"]) != 3:
+            fail("named composite state changed transitions or container counts")
+    path.write_text('stateDiagram-v2\nstate "Waiting for work" as Waiting\nWaiting --> [*]\n', encoding="utf-8")
+    diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "Waiting")
+    if node["label"] != "Waiting for work" or node["container"]:
+        fail("ordinary quoted state alias changed")
+    ok("named composite states retain aliases, child membership and transitions")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1039,6 +1097,8 @@ def main() -> int:
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
+        check_state_descriptions(tmp)
+        check_named_composite_states(tmp)
         check_selection_before_parse(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)

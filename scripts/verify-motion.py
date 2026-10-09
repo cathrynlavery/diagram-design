@@ -469,9 +469,11 @@ def verify(path: Path) -> list[str]:
     if mode == "loop" and len(parser.items) > 2:
         errors.append("loop mode may contain at most one semantic item and one decorative token")
 
-    if not parser.svgs:
+    checkable = [svg for svg in parser.svgs
+                 if str(svg["attrs"].get("aria-hidden", "")).casefold() != "true"]
+    if not checkable:
         errors.append("motion document needs an accessible SVG")
-    for number, svg in enumerate(parser.svgs, 1):
+    for number, svg in enumerate(checkable, 1):
         attrs = svg["attrs"]
         assert isinstance(attrs, dict)
         if attrs.get("role") != "img":

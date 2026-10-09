@@ -337,12 +337,73 @@ def main() -> int:
             "dark focal value text fails 4.5:1 contrast against the actual dark underlay",
         )
 
+
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for factor in (250_000_000, 1_000_000_000, 10_000_000_000):
+            scaled = re.sub(r'data-value="(\d+)"',
+                            lambda m: 'data-value="%d"' % (int(m.group(1)) * factor),
+                            original)
+            code, output = run(write(d, f"billion-counts-{factor}.html", scaled))
+            if code != 0:
+                failures.append(f"finite counts scaled by {factor} were rejected: {output.strip()}")
+        for invalid in ("nan", "inf", "-1", "1e400"):
+            changed = original.replace('data-value="4"', f'data-value="{invalid}"', 1)
+            code, output = run(write(d, "invalid-value.html", changed))
+            if code == 0 or "expected 30 cells" not in output or "Traceback" in output:
+                failures.append(f"invalid {invalid} did not retain grid completeness finding: {output.strip()}")
+        print("OK: billion-scale counts preserve the grid; non-finite/negative values remain findings")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for original_source, label in ((original, "light"),
+                                       (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            pixel_lengths = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"',
+                                   lambda m: f'{m.group(1)}="{m.group(2)}px"', original_source)
+            code, output = run(write(d, f"pixel-lengths-{label}.html", pixel_lengths))
+            if code != 0:
+                failures.append(f"equivalent pixel lengths {label} were rejected: {output.strip()}")
+        # Supported coordinate syntax must not bypass the contrast comparison.
+        for template, theme in ((original, "light"),
+                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            bad_contrast = template.replace('x="578" y="149" fill="#111111"',
+                                            'x="578" y="149" fill="#ffffff"', 1)
+            for notation in ("px", "exponent-px"):
+                def length(match: re.Match[str]) -> str:
+                    number = match.group(2)
+                    if notation == "exponent-px":
+                        number = f"{float(number):.4e}"
+                    return f'{match.group(1)}="{number}px"'
+                changed = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"', length, bad_contrast)
+                code, output = run(write(d, f"bad-contrast-{theme}-{notation}.html", changed))
+                if code == 0 or "below WCAG AA" not in output or "Traceback" in output:
+                    failures.append(f"{theme}/{notation} bypassed contrast failure: {output.strip()}")
+        for length in ("520%", "unknown", "nan", "1e400px"):
+            changed = original.replace(FOCAL_CELL, FOCAL_CELL.replace('x="520"', f'x="{length}"'), 1)
+            code, output = run(write(d, "unsupported-length.html", changed))
+            if code == 0 or "focal-text contrast measurement" not in output or "Traceback" in output:
+                failures.append(f"unsupported length {length!r} lacked a named finding: {output.strip()}")
+        print("OK: equivalent pixel lengths pass; unsupported/non-finite lengths are named findings")
+
+    # Translucent foregrounds compose against the cell beneath them, not paper.
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for template, theme in ((original, "light"),
+                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            for alpha, expected_pass in (("0.8", True), ("0.2", False)):
+                changed = template.replace('x="578" y="149" fill="#111111"',
+                                           f'x="578" y="149" fill="rgba(17,17,17,{alpha})"', 1)
+                code, output = run(write(d, f"alpha-{theme}-{alpha}.html", changed))
+                if (code == 0) != expected_pass or (not expected_pass and "below WCAG AA" not in output):
+                    failures.append(f"alpha foreground {theme}/{alpha} unexpected result: {output.strip()}")
+        print("OK: translucent AA foregrounds pass; weak-alpha text still fails in both themes")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print(f"OK — {13 + 3} cases ({3} positive, {13} negative), all passed.")
+    print("OK — every heatmap verifier case passed.")
     return 0
 
 

@@ -61,7 +61,7 @@ Not for: a third value that is really a category (use the focal accent or facet 
 
 **Area encodes the third value — never radius.** Radius-proportional sizing squares the claim: a 6× value reads as 36× the ink. `scripts/verify-bubble.py` gates it, along with the two axis scales.
 
-- **One linear scale per axis, every bubble on it.** A bubble nudged aside because two crowd each other reads as a different number; crowded bubbles are data, and the honest fixes are a hairline of separation (which the largest-first rule provides) or fewer items — never a moved centre.
+- **One finite, nonzero linear scale per axis, every bubble on it.** A bubble nudged aside because two crowd each other reads as a different number; crowded bubbles are data, and the honest fixes are a hairline of separation (which the largest-first rule provides) or fewer items — never a moved centre.
 - **Axes include zero, or the source line states the bounds.** A bubble's position is read against the origin in a way a slopegraph's is not. No log scale without saying so — and area next to a log axis is a reading most audiences get wrong, so prefer not at all.
 - **Omitted items are counted in the footnote.** A bubble chart with the inconvenient giant quietly missing is the same lie as a truncated axis.
 - **A non-positive magnitude cannot be a bubble.** Area has no sign; omit the item and say so.
@@ -69,7 +69,7 @@ Not for: a third value that is really a category (use the focal accent or facet 
 
 #### Declaring the values
 
-**Every drawn quantity is bound to an attribute stating the value it encodes.** The data circle carries all three values; the paper underlay is scenery and carries nothing.
+**Every drawn quantity is bound to an attribute stating the value it encodes.** A zero-slope value axis collapses distinct values to one position and is rejected, including in the beeswarm variant. The data circle carries all three values; the paper underlay is scenery and carries nothing.
 
 ```svg
 <!-- A bubble: position from two shared linear scales, area from the size.

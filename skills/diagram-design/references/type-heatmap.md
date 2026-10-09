@@ -58,7 +58,7 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 ## Declaring the values
 
-**Every drawn cell is bound to its row, column, and value.** The paper underlay carries nothing. The data rect carries all three.
+**Every drawn cell is bound to its row, column, and value.** Declared data values are finite and nonnegative; unsigned counts may exceed one billion. NaN, infinity, and negative values are rejected rather than weakening grid completeness. The paper underlay carries nothing. The data rect carries all three.
 
 | Binding | Without it |
 |---|---|
@@ -68,5 +68,9 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 | `data-focal="true"` on the focal rect | The focal cell is counted as a non-focal cell with an unexplained accent fill. |
 
 `scripts/verify-heatmap.py` enforces the complete `rows × cols` grid, the monotone fill ramp on non-focal cells, and at most one focal cell. It does **not** verify cell geometry (position, width, height) because both axes are categorical — position encodes "which row/column", and that is carried by the label, not by a scale the checker can measure against.
+
+Focal-text contrast measurement accepts finite unitless and explicit `px` coordinates. Unsupported relative units or malformed lengths produce a named measurement finding, never a traceback; this does not add a quantitative cell-geometry check.
+
+Focal-text contrast composites translucent foreground text against the resolved focal-cell fill before measuring WCAG AA. The 4.5:1 minimum applies to that foreground/background pair in both themes.
 
 **No `transform` on any verified element.** Bake any coordinate offsets directly into `x`/`y` attributes.

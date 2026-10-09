@@ -199,7 +199,7 @@ def check_playwright(python_cmd: str | None) -> CheckResult:
             fix="Provision an approved Playwright renderer after resolving Python, then re-run this check.",
         )
 
-    import_probe = run_command([python_cmd, "-c", "import playwright; print(playwright.__version__)"])
+    import_probe = run_command([python_cmd, "-c", "import playwright"])
     if import_probe.returncode != 0:
         return CheckResult(
             name="Playwright PNG export readiness",

@@ -500,7 +500,9 @@ def measure(page):
 def check(page, path):
     findings = []
     watch(page, findings)
-    page.goto(path.resolve().as_uri(), wait_until="load")
+    # CSS animation disabling does not stop the controller's JavaScript timer.
+    # Both overflow captures must observe the same complete diagram.
+    page.goto(path.resolve().as_uri() + "?motion=static", wait_until="load")
     return measure(page) + findings
 
 
@@ -1204,6 +1206,32 @@ def self_test(context):
 
     checks += 1
     failures += network_isolation_failures(context)
+
+    # Exercise the real reveal controller through the public file entry point.
+    # Its timers must stay stopped throughout the paired clipping screenshots.
+    for asset in ("example-exploded-phone-animated.html", "example-axonometric-plan-coffee-shop-animated.html"):
+        checks += 1
+        motion_page = context.new_page()
+        try:
+            findings = check(motion_page, ASSET_DIR / asset)
+            state = motion_page.locator("[data-motion-root]").first.evaluate(
+                "el => [el.dataset.frame, el.dataset.motionState, el.dataset.stepCurrent === el.dataset.stepCount]"
+            )
+            if findings or state != ["static", "static", True]:
+                failures.append(f"{asset}: static capture failed: {state}, {findings}")
+        finally:
+            motion_page.close()
+
+    checks += 1
+    with tempfile.TemporaryDirectory() as directory:
+        clipped_path = Path(directory) / "static-clipped.html"
+        clipped_path.write_text(fixture_html(SVG_CASES[0][1]), encoding="utf-8")
+        clipped_page = context.new_page()
+        try:
+            if not any(category == "clipped" for category, _ in check(clipped_page, clipped_path)):
+                failures.append("static file entry point stopped detecting actual clipping")
+        finally:
+            clipped_page.close()
 
     checks += 1
     failures += gallery_mobile_failures(context)
