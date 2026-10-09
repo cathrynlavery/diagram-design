@@ -309,6 +309,15 @@ def check(path: Path) -> list[str]:
 
     for m in TEXT_RE.finditer(source):
         attrs = {a.group("name"): a.group("value") for a in ATTR_RE.finditer(m.group("attrs"))}
+        try:
+            coordinates = [float(attrs[key]) for key in ("x", "y") if key in attrs]
+            font_size = float(attrs.get("font-size", "12"))
+        except ValueError:
+            # Preserve the existing conservative skip for unsupported SVG length formats.
+            continue
+        if not all(math.isfinite(value) for value in coordinates) or not math.isfinite(font_size) or font_size <= 0:
+            findings.append(f"{path.name}:{line_of(source, m.start())}: expected finite label geometry and a positive font-size")
+            continue
         box = label_box(attrs, m.group("body"))
         if box is None:
             continue
