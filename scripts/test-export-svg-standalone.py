@@ -84,6 +84,13 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_nested_namespace_does_not_replace_root_namespace(self) -> None:
+        markup = '<svg viewBox="0 0 10 10"><g xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></g></svg>'
+        result = self.mod.ensure_xmlns(markup)
+        self.assertEqual(ET.fromstring(result).tag, "{http://www.w3.org/2000/svg}svg")
+        with self.assertRaisesRegex(ValueError, "root namespace"):
+            self.mod.ensure_xmlns('<svg xmlns="https://example.invalid/other"/>')
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())

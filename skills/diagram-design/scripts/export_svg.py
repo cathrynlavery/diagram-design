@@ -228,8 +228,15 @@ def decode_xml_references(value: str) -> str:
 
 
 def ensure_xmlns(svg: str) -> str:
-    if re.search(r'\bxmlns\s*=\s*["\']http://www\.w3\.org/2000/svg["\']', svg):
-        return svg
+    opening = START_TAG_RE.match(svg)
+    if opening is None or opening.group(1) != "svg":
+        raise ValueError("cannot identify SVG root namespace")
+    for attribute in TAG_ATTR_RE.finditer(opening.group(2)):
+        if attribute.group(2) == "xmlns":
+            value = attribute.group(4)
+            if value is not None and decode_xml_references(value[1:-1]) == "http://www.w3.org/2000/svg":
+                return svg
+            raise ValueError("SVG root namespace must be http://www.w3.org/2000/svg")
     return re.sub(r"<svg\b", '<svg xmlns="http://www.w3.org/2000/svg"', svg, count=1)
 
 
