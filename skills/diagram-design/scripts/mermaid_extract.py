@@ -1015,6 +1015,10 @@ def _parse_state(
         plain = re.match(r"^state\s+([\w.:-]+)$", text, re.I)
         if plain:
             diagram.add_node(plain.group(1), plain.group(1), "state", parent)
+            continue
+        if text != "--" and re.fullmatch(r"[\w.:-]+", text):
+            if text not in diagram.node_map:
+                diagram.add_node(text, text, "state", parent)
 
     # Materialize each accumulated label once; later explicit aliases still win.
     for node_id, parts in pending_descriptions.items():
