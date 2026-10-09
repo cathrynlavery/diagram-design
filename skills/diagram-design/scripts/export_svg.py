@@ -234,8 +234,12 @@ def ensure_xmlns(svg: str) -> str:
 
 
 def ensure_viewbox(svg: str) -> None:
-    if not re.search(r"\bviewBox\s*=", svg, re.IGNORECASE):
-        raise ValueError("SVG is missing a viewBox; refuse to guess")
+    opening = START_TAG_RE.match(svg)
+    if opening is not None:
+        for attribute in TAG_ATTR_RE.finditer(opening.group(2)):
+            if attribute.group(2) == "viewBox" and attribute.group(4) is not None:
+                return
+    raise ValueError("SVG root is missing a viewBox; refuse to guess")
 
 
 def set_root_id(svg: str, root_id: str) -> str:
