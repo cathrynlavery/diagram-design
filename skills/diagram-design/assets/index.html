@@ -43,15 +43,15 @@
       }
 
       .topbar {
-        padding: 1rem 1.25rem 0.625rem;
+        padding: 0.875rem 1.25rem;
         border-bottom: 1px solid var(--rule);
         flex: 0 0 auto;
       }
       .title-row {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.625rem;
         gap: 1rem;
       }
       .title-row h1 {
@@ -63,14 +63,14 @@
       }
       .title-row .meta {
         font-family: var(--mono);
-        font-size: 0.66rem;
+        font-size: 0.75rem;
         letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--muted);
       }
       .title-row .open-raw {
         font-family: var(--mono);
-        font-size: 0.66rem;
+        font-size: 0.75rem;
         letter-spacing: 0.06em;
         color: var(--muted);
         text-decoration: none;
@@ -94,8 +94,11 @@
       }
       .tabs.variants {
         margin-bottom: 0;
-        padding-top: 0.5rem;
-        border-top: 1px solid var(--rule);
+        padding: 0;
+        border: 0;
+        flex-wrap: nowrap;
+        flex: 0 1 auto;
+        gap: 0.25rem;
       }
       .tab {
         font-family: var(--sans);
@@ -127,7 +130,7 @@
         display: inline-block;
         margin-right: 0.25rem;
         font-family: var(--mono);
-        font-size: 0.56rem;
+        font-size: 0.6875rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: inherit;
@@ -138,7 +141,7 @@
         display: inline-block;
         margin-left: 0.35rem;
         font-family: var(--mono);
-        font-size: 0.54rem;
+        font-size: 0.6875rem;
         letter-spacing: 0.12em;
         color: var(--accent);
         vertical-align: 1px;
@@ -163,36 +166,87 @@
         display: block;
       }
 
+      [hidden] { display: none !important; }
+      main { min-height: 0; }
+      .brand, .header-actions, .controls, .catalog-tools {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+      }
+      .header-actions { gap: 0.5rem; }
+      .nav-toggle { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+      .nav-toggle svg { width: 16px; height: 16px; }
+      .nav-toggle[aria-expanded="true"] { background: var(--paper-2); color: var(--ink); }
+      .controls { justify-content: space-between; gap: 1rem; }
+      .current-diagram { font-size: 0.8125rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .catalog { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--rule); }
+      .catalog-tools { justify-content: space-between; margin-bottom: 0.625rem; }
+      .search-label { display: flex; align-items: center; gap: 0.625rem; font-size: 0.75rem; min-width: 0; }
+      #diagram-search {
+        width: min(20rem, 45vw);
+        padding: 0.5rem 0.625rem;
+        border: 1px solid var(--rule-strong);
+        border-radius: 4px;
+        background: transparent;
+        font: 0.8125rem var(--sans);
+        color: var(--ink);
+        caret-color: var(--accent);
+      }
+      #diagram-search::placeholder { color: var(--muted); }
+      .catalog-hint, .empty-results { font-size: 0.75rem; color: var(--muted); }
+      #type-tabs {
+        max-height: min(10rem, 22vh);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--rule-strong) var(--paper);
+        margin: 0;
+        padding: 2px 0.5rem 2px 2px;
+      }
+      #type-tabs .tab { text-align: left; max-width: 100%; overflow-wrap: anywhere; }
+      .empty-results { padding: 0.75rem 0; }
+      :is(button, a, input):focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      ::selection { background: var(--ink); color: var(--paper); }
       @media (max-width: 640px) {
-        #type-tabs {
-          flex-wrap: nowrap;
-          overflow-x: auto;
-          overscroll-behavior-inline: contain;
-          padding-bottom: 0.25rem;
-          scrollbar-width: thin;
-        }
-        #type-tabs .tab {
-          flex: 0 0 auto;
-        }
+        .topbar { padding: 0.75rem; }
+        .title-row { flex-wrap: wrap; gap: 0.625rem; }
+        .brand { flex: 1 1 auto; }
+        .title-row h1 { font-size: 1.35rem; }
+        .title-row .meta { display: none; }
+        .header-actions { margin-left: auto; }
+        .controls { flex-wrap: wrap; gap: 0.5rem; }
+        .current-diagram { flex-basis: 100%; }
+        .tabs.variants { flex-wrap: wrap; max-width: 100%; }
+        .catalog-hint { display: none; }
+        .search-label { width: 100%; }
+        #diagram-search { flex: 1; width: 0; }
+        #type-tabs { max-height: min(8rem, 18vh); }
       }
     </style>
   </head>
   <body>
     <header class="topbar">
       <div class="title-row">
+        <div class="brand">
+          <button class="tab nav-toggle" id="nav-toggle" type="button" aria-expanded="true" aria-controls="diagram-nav">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            Diagrams
+          </button>
         <h1>
           Diagram Design
           <span
             class="meta"
             style="
               font-family: var(--mono);
-              font-size: 0.66rem;
+              font-size: 0.75rem;
               margin-left: 0.5rem;
             "
             >· gallery</span
           >
         </h1>
-        <div style="display: flex; gap: 0.5rem">
+        </div>
+        <div class="header-actions">
           <a class="open-raw" href="icons.html" target="_blank" rel="noopener"
             >icon library ↗</a
           >
@@ -207,6 +261,26 @@
         </div>
       </div>
 
+      <div class="controls">
+        <p class="current-diagram" id="current-diagram">Architecture</p>
+        <div
+          class="tabs variants"
+          id="variant-tabs"
+          role="radiogroup"
+          aria-label="Variant"
+        >
+          <button class="tab active" data-variant="">Minimal light</button>
+          <button class="tab" data-variant="-dark">Minimal dark</button>
+          <button class="tab" data-variant="-full">Full editorial</button>
+        </div>
+      </div>
+      <nav class="catalog" id="diagram-nav" aria-label="Diagram catalog">
+        <div class="catalog-tools">
+          <label class="search-label" for="diagram-search">Find a diagram
+            <input id="diagram-search" type="search" placeholder="Search diagrams…" autocomplete="off" />
+          </label>
+          <span class="catalog-hint">Click the preview to hide navigation</span>
+        </div>
       <div class="tabs" id="type-tabs" role="radiogroup" aria-label="Diagram type">
         <button class="tab active" data-type="architecture">
           <span class="eyebrow">01</span>Architecture
@@ -444,16 +518,8 @@
         </button>
       </div>
 
-      <div
-        class="tabs variants"
-        id="variant-tabs"
-        role="radiogroup"
-        aria-label="Variant"
-      >
-        <button class="tab active" data-variant="">Minimal light</button>
-        <button class="tab" data-variant="-dark">Minimal dark</button>
-        <button class="tab" data-variant="-full">Full editorial</button>
-      </div>
+        <p class="empty-results" id="empty-results" role="status" hidden>No diagrams found. Try another search.</p>
+      </nav>
     </header>
 
     <main>
@@ -469,10 +535,57 @@
       const iframe = document.getElementById("preview");
       const openRaw = document.getElementById("open-raw");
 
+      const nav = document.getElementById("diagram-nav");
+      const navToggle = document.getElementById("nav-toggle");
+      const search = document.getElementById("diagram-search");
+      const typeTabs = [...document.querySelectorAll("#type-tabs .tab")];
+      const diagramName = (tab) => [...tab.childNodes]
+        .filter((node) => node.nodeType === Node.TEXT_NODE)
+        .map((node) => node.textContent).join("").trim();
+
+      function setNavigation(open) {
+        nav.hidden = !open;
+        navToggle.setAttribute("aria-expanded", String(open));
+      }
+      navToggle.addEventListener("click", () => setNavigation(nav.hidden));
+      nav.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          setNavigation(false);
+          navToggle.focus();
+        }
+      });
+      function filterDiagrams() {
+        const query = search.value.trim().toLowerCase();
+        typeTabs.forEach((tab) => {
+          tab.hidden = !diagramName(tab).toLowerCase().includes(query);
+        });
+        const visible = typeTabs.filter((tab) => !tab.hidden);
+        // Keep one visible option reachable with Tab even if selection is filtered out.
+        const focusable = visible.find((tab) => tab.dataset.type === state.type) || visible[0];
+        typeTabs.forEach((tab) => { tab.tabIndex = tab === focusable ? 0 : -1; });
+        document.getElementById("empty-results").hidden = visible.length > 0;
+      }
+      search.addEventListener("input", filterDiagrams);
+      document.querySelector("main").addEventListener("pointerdown", () => setNavigation(false));
+      iframe.addEventListener("load", () => {
+        try {
+          // Iframe events do not bubble to the gallery. Bind after each example load.
+          iframe.contentDocument.addEventListener("pointerdown", () => setNavigation(false));
+        } catch {
+          // Local file previews may have an opaque origin; focus is handled below.
+        }
+      });
+      window.addEventListener("blur", () => {
+        if (document.activeElement === iframe) setNavigation(false);
+      });
+
       function update() {
         const activeType = [...document.querySelectorAll("#type-tabs .tab")].find(
           (tab) => tab.dataset.type === state.type,
         );
+        const name = diagramName(activeType);
+        document.getElementById("current-diagram").textContent = name;
+        iframe.title = `${name} preview`;
         const single = activeType && activeType.hasAttribute("data-single");
         const variantTabs = document.querySelectorAll("#variant-tabs .tab");
         if (single) state.variant = "";
@@ -493,10 +606,11 @@
         const src = `example-${state.type}${state.variant}.html`;
         iframe.src = src;
         openRaw.href = src;
-        const selectedTabs = document.querySelectorAll('[role="radio"][aria-checked="true"]');
+        filterDiagrams();
+        const selectedTabs = document.querySelectorAll('#variant-tabs [role="radio"][aria-checked="true"]');
         iframe.setAttribute(
           "aria-labelledby",
-          [...selectedTabs].map((tab) => tab.id).join(" "),
+          ["current-diagram", ...[...selectedTabs].map((tab) => tab.id)].join(" "),
         );
       }
 
@@ -517,13 +631,13 @@
 
         container.addEventListener("click", (e) => {
           const btn = e.target.closest(".tab");
-          if (!btn) return;
+          if (!btn || btn.disabled) return;
           activate(btn);
         });
         container.addEventListener("keydown", (e) => {
           const current = e.target.closest('[role="radio"]');
           if (!current || !container.contains(current)) return;
-          const enabledTabs = tabs.filter((tab) => !tab.disabled);
+          const enabledTabs = tabs.filter((tab) => !tab.disabled && !tab.hidden);
           const index = enabledTabs.indexOf(current);
           let next;
           if (e.key === "ArrowRight" || e.key === "ArrowDown") {
