@@ -210,12 +210,27 @@ def clean_label(value: str) -> str:
         text = text[1:-1]
     text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
     text = re.sub(r"<[^>]+>", "", text)
-    text = re.sub(r"(?<!&)#(quot|apos|amp|lt|gt);", r"&\1;", text)
-    text = html.unescape(text)
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
     text = re.sub(r"__(.*?)__", r"\1", text)
     text = re.sub(r"(?<!\w)[*_](.*?)[*_](?!\w)", r"\1", text)
     text = text.replace("\\\"", '"').replace("\\'", "'")
+
+    def entity_reference(match: re.Match[str]) -> str:
+        entity = match.group(1)
+        if entity.isdecimal():
+            try:
+                codepoint = int(entity, 10)
+            except ValueError:
+                return match.group(0)
+            if not 0 < codepoint <= 0x10FFFF or 0xD800 <= codepoint <= 0xDFFF:
+                return match.group(0)
+            return f"&#{entity};"
+        if entity + ";" in html.entities.html5:
+            return f"&{entity};"
+        return match.group(0)
+
+    text = re.sub(r"(?<!&)#([0-9]+|[A-Za-z][A-Za-z0-9]*);", entity_reference, text)
+    text = html.unescape(text)
     return "\n".join(part.strip() for part in text.splitlines()).strip()
 
 
