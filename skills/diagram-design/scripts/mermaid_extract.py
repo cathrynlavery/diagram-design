@@ -1029,8 +1029,8 @@ def _parse_er(
 ) -> None:
     current: Node | None = None
     relationship = re.compile(
-        r"^([A-Za-z_][\w.-]*)\s+(\S*(?:--|\.\.)\S*)\s+"
-        r"([A-Za-z_][\w.-]*)\s*(?::\s*(.*))?$"
+        r"^([\w.-]+)\s+(\S*(?:--|\.\.)\S*)\s+"
+        r"([\w.-]+)\s*(?::\s*(.*))?$"
     )
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
@@ -1045,7 +1045,7 @@ def _parse_er(
         if direction_match and current is None:
             diagram.direction = direction_match.group(1).upper()
             continue
-        entity = re.match(r"^([A-Za-z_][\w.-]*)\s*\{$", text)
+        entity = re.match(r"^([\w.-]+)\s*\{$", text)
         if entity:
             current = diagram.add_node(entity.group(1), entity.group(1), "table")
             continue

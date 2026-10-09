@@ -1089,9 +1089,19 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_import_regression(tmp: Path) -> None:
+    path = tmp / "supported-form.mmd"
+    path.write_text('erDiagram\n订单 {\n string 编号\n}\n客户 ||--o{ 订单 : 下单\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if set(nodes) != {"订单", "客户"} or nodes["订单"]["fields"] != ["string 编号"] or len(payload["edges"]) != 1:
+        fail("ER Unicode identifiers or their attributes/relationships were lost")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
+        check_import_regression(tmp)
         check_files()
         check_flowchart()
         check_shape_and_edge_vocabulary(tmp)
