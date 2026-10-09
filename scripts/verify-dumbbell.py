@@ -20,9 +20,9 @@ against this module rather than the other way round.
    carry "which series" and "which pair". WCAG 1.4.11 asks 3:1 of a graphical
    object required to understand the content, and shape redundancy does not
    waive it: a reader still has to see the solid mark's boundary and the line
-   joining the pair. Accent-on-paper is 2.86:1 skin-wide and cannot carry that,
-   so the boundary is carried by a stroke and the connector by an alpha that
-   clears 3:1 in both themes. The thresholds are checked here against the tokens
+   joining the pair. The default accent clears it (4.71:1 light, 5.21:1 dark),
+   but an onboarded accent may not, so the boundary is carried by an ink stroke
+   and the connector by an alpha that clears 3:1 in both themes. The thresholds are checked here against the tokens
    the reference actually documents, so the two cannot drift apart.
 
 The check FAILS CLOSED. A reference this cannot parse, or a token it cannot

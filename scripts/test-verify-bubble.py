@@ -104,7 +104,7 @@ def honest_block(rows=None, focal: str = "Edge") -> str:
     body = ""
     for name, x, y, size in sorted(BUBBLES if rows is None else rows,
                                    key=lambda row: -row[3]):
-        stroke = "#eb6c36" if name == focal else "#4f5d75"
+        stroke = "#bf4520" if name == focal else "#4f5d75"
         body += bubble(name, x, y, size, stroke=stroke)
     return body
 
@@ -358,7 +358,7 @@ def run_cases(h: Harness) -> int:
 
     # ── Focal discipline ──────────────────────────────────────────────────
     two_accents = honest_block() + bubble("Rogue", 250, 2.5, 300,
-                                          stroke="#eb6c36")
+                                          stroke="#bf4520")
     h.expect_finding(
         "a second accent bubble is reported — one focal claim per figure",
         document(two_accents, TICKS),

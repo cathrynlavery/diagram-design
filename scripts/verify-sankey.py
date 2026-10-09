@@ -414,7 +414,7 @@ def fill_alpha(value: str) -> tuple[float | None, str | None]:
     """Alpha of a CSS colour, or a reason it cannot be read. None means opaque.
 
     Written once, for every syntax, because writing it per-syntax is how this
-    file came to reject `rgb(235 108 54 / 0.16)` while accepting `#eb6c3600`.
+    file came to reject `rgb(191 69 32 / 0.16)` while accepting `#bf452000`.
     """
     colour = value.strip().lower()
     if not colour:

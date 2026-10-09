@@ -162,6 +162,14 @@ jobs:
         id: skin
         run: python scripts/lint-skin.py --all --baseline
 
+      - name: Verify skin token contrast
+        if: always()
+        id: contrast
+        shell: bash
+        run: |
+          python scripts/test-verify-contrast.py
+          python scripts/verify-contrast.py
+
       - name: Verify quantitative polar chart
         if: always()
         id: polar
@@ -523,6 +531,7 @@ jobs:
           echo "| Devicon Normalization | ${{ steps.devicon.outcome == 'success' && '✅ Passed' || (steps.devicon.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mojibake Repair Utility | ${{ steps.mojibake.outcome == 'success' && '✅ Passed' || (steps.mojibake.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skin Token Contrast | ${{ steps.contrast.outcome == 'success' && '✅ Passed' || (steps.contrast.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Heatmap Monotone Ramp & Grid | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Heatmap Checker | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

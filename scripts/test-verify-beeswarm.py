@@ -52,7 +52,7 @@ TAIL = "</svg></body></html>\n"
 MID, PITCH, R = 230, 10, 4
 
 INK = "rgba(45,49,66,0.55)"
-ACCENT_FILL = "rgba(235,108,54,0.55)"
+ACCENT_FILL = "rgba(191,69,32,0.55)"
 
 
 def cx(value: float) -> float:
@@ -79,7 +79,7 @@ def dot(value: float, row: int = 0, name=None, drawn_cx=None, drawn_cy=None,
 
 
 def focal(value: float, row: int = 0, name=None, **kw) -> str:
-    return dot(value, row, name, fill=ACCENT_FILL, stroke="#eb6c36", **kw)
+    return dot(value, row, name, fill=ACCENT_FILL, stroke="#bf4520", **kw)
 
 
 def label(name: str, x: float, y: float = 150, text=None,

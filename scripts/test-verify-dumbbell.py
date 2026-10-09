@@ -166,9 +166,9 @@ def test_rejected_treatments_are_caught():
     ok(contrast(hairline, "#f5f5f5") < 3.0,
        "the original 25%% hairline connector is correctly under 3:1")
     ok(contrast("#eb6c36", "#f5f5f5") < 3.0,
-       "an unstroked accent endpoint is correctly under 3:1 on light paper")
+       "the retired accent #eb6c36 is correctly under 3:1 on light paper")
     ok(contrast("#7a8399", "#f5f5f5") < 4.5,
-       "the soft token is correctly under 4.5:1 and unusable for text")
+       "the retired soft #7a8399 is correctly under 4.5:1 and unusable for text")
 
 
 def test_checker_fails_closed_on_a_stripped_reference(tmp_path: Path):

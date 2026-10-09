@@ -486,9 +486,9 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
       --color-paper-2: #ececec;
       --color-ink:     #2d3142;
       --color-muted:   #4f5d75;
-      --color-soft:    #7a8399;
+      --color-soft:    #5a6580;
       --color-rule:    rgba(45,49,66,0.12);
-      --color-accent:  #eb6c36;
+      --color-accent:  #bf4520;
       --font-sans:     'Geist', system-ui, sans-serif;
       --font-serif:    'Instrument Serif', serif;
       --font-mono:     'Geist Mono', ui-monospace, monospace;

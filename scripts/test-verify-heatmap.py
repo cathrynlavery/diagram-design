@@ -50,7 +50,7 @@ CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 # Anchors — literal excerpts of the shipped light example.
 FOCAL_CELL = (
     'data-row="payments" data-col="S4" data-value="47" data-focal="true" '
-    'x="520" y="124" width="116" height="56" fill="rgba(235,108,54,0.85)"'
+    'x="520" y="124" width="116" height="56" fill="rgba(191,69,32,0.85)"'
 )
 FIRST_NONFOCAL = (
     'data-row="auth" data-col="S1" data-value="4" '
@@ -144,7 +144,7 @@ def main() -> int:
         # N1: two focal cells
         second_focal = FIRST_NONFOCAL.replace(
             'fill="rgba(45,49,66,0.29)"',
-            'data-focal="true" fill="rgba(235,108,54,0.85)"',
+            'data-focal="true" fill="rgba(191,69,32,0.85)"',
         )
         case(
             failures,
@@ -388,9 +388,11 @@ def main() -> int:
     # Translucent foregrounds compose against the cell beneath them, not paper.
     with tempfile.TemporaryDirectory() as tmp:
         d = Path(tmp)
-        for template, theme in ((original, "light"),
-                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
-            for alpha, expected_pass in (("0.8", True), ("0.2", False)):
+        # The light focal cell (accent #bf4520 at 0.85) leaves solid #111111 at
+        # 4.64:1, so only a nearly opaque translucent ink still clears 4.5:1 there.
+        for template, theme, passing_alpha in ((original, "light", "0.98"),
+                                               (GOOD_DARK.read_text(encoding="utf-8"), "dark", "0.8")):
+            for alpha, expected_pass in ((passing_alpha, True), ("0.2", False)):
                 changed = template.replace('x="578" y="149" fill="#111111"',
                                            f'x="578" y="149" fill="rgba(17,17,17,{alpha})"', 1)
                 code, output = run(write(d, f"alpha-{theme}-{alpha}.html", changed))

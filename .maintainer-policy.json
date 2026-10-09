@@ -48,6 +48,8 @@
       "python3 scripts/test-build-icons-devicon.py",
       "python3 scripts/test-fix-mojibake.py",
       "python3 scripts/lint-skin.py --all --baseline",
+      "python3 scripts/test-verify-contrast.py",
+      "python3 scripts/verify-contrast.py",
       "python3 scripts/lint-render.py --self-test",
       "python3 scripts/lint-render.py --all",
       "python3 scripts/test-verify-polar.py",

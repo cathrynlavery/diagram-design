@@ -670,7 +670,7 @@ def check_docs_and_wiring() -> None:
     example = EXAMPLE.read_text(encoding="utf-8")
     if 'viewBox="0 0 960 600"' not in example:
         fail("worked example does not use the doc-inline viewBox")
-    if example.count("#eb6c36") > 4:
+    if example.count("#bf4520") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
     if '<div class="diagram-container">' not in example or "overflow-x:auto" not in example:
         fail("worked example must contain its wide SVG in a local horizontal scroller")

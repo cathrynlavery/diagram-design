@@ -221,7 +221,7 @@ def main() -> int:
     check(
         "unstroked fill rect is not a node",
         document(
-            '<rect x="100" y="60" width="160" height="64" fill="rgba(235,108,54,0.04)"/>'
+            '<rect x="100" y="60" width="160" height="64" fill="rgba(191,69,32,0.04)"/>'
             f'<line x1="100" y1="40" x2="100" y2="200" {arrow}/>'
         ),
         0,

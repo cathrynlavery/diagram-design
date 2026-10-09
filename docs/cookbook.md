@@ -105,7 +105,7 @@ On Windows, `python` is the usual interpreter; the skill also accepts `python3` 
 
 Work in the **project that will own the HTML**, not inside `skills/diagram-design/assets/` unless you are contributing an example.
 
-1. **Style-guide gate** ([SKILL.md §0](../skills/diagram-design/SKILL.md)). If the working copy is still shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#eb6c36`), the agent must pause and offer onboarding, a profile, or an explicit default. Skip the gate when a valid `.diagram-design` marker selects a profile (including `profile: default`).
+1. **Style-guide gate** ([SKILL.md §0](../skills/diagram-design/SKILL.md)). If the working copy is still shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#bf4520`), the agent must pause and offer onboarding, a profile, or an explicit default. Skip the gate when a valid `.diagram-design` marker selects a profile (including `profile: default`).
 2. **Confirm before drawing** ([SKILL.md §3](../skills/diagram-design/SKILL.md)): visual type, optional semantic pattern, size preset, and what the complexity budget will cut.
 3. **Load** the matching `references/type-*.md` before writing SVG. If a semantic pattern applies, load [`semantic-patterns.md`](../skills/diagram-design/references/semantic-patterns.md) first.
 4. **Write** a self-contained HTML file in the project (for example `docs/diagrams/<name>.html`). Do not silently overwrite gallery examples.

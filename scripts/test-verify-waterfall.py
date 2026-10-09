@@ -97,14 +97,14 @@ def main() -> int:
         ),
         (
             "bridge lie: a bridge is stretched past its two running levels",
-            '<rect x="688" y="146" width="96" height="50" fill="rgba(235,108,54,0.12)"',
-            '<rect x="688" y="146" width="96" height="70" fill="rgba(235,108,54,0.12)"',
+            '<rect x="688" y="146" width="96" height="50" fill="rgba(191,69,32,0.12)"',
+            '<rect x="688" y="146" width="96" height="70" fill="rgba(191,69,32,0.12)"',
             "shared scale puts",
         ),
         (
             "bridge top lie: its bottom stays at the correct running level",
-            '<rect x="688" y="146" width="96" height="50" fill="rgba(235,108,54,0.12)"',
-            '<rect x="688" y="136" width="96" height="60" fill="rgba(235,108,54,0.12)"',
+            '<rect x="688" y="146" width="96" height="50" fill="rgba(191,69,32,0.12)"',
+            '<rect x="688" y="136" width="96" height="60" fill="rgba(191,69,32,0.12)"',
             "top edge drawn",
         ),
         (
@@ -191,7 +191,7 @@ def main() -> int:
         (
             "second accent bar: the focal treatment repeats",
             '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
-            '<rect x="256" y="131" width="96" height="61" fill="rgba(235,108,54,0.12)" stroke="#eb6c36"',
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(191,69,32,0.12)" stroke="#bf4520"',
             "at most one bar",
         ),
         (

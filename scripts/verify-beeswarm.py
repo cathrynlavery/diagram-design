@@ -183,7 +183,7 @@ DECLARES_VALUE_RE = re.compile(r"\bdata-value\s*=", re.IGNORECASE)
 # by, and an accent FILL on a muted-stroked dot already fails the one-ink
 # rule instead.
 ACCENT_RE = re.compile(
-    r"#eb6c36\b|#f08a59\b|rgba\(\s*235\s*,\s*108\s*,\s*54\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
 

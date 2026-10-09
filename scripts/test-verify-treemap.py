@@ -390,8 +390,8 @@ def main() -> int:
 
         asia_body = (
             '<rect x="40" y="40" width="532" height="380" rx="2" '
-            'data-share="59.04" fill="rgba(235,108,54,0.16)" '
-            'stroke="#eb6c36" stroke-width="1.5"/>'
+            'data-share="59.04" fill="rgba(191,69,32,0.16)" '
+            'stroke="#bf4520" stroke-width="1.5"/>'
         )
         triplicated = source.replace(asia_body, f"{asia_body}\n      {asia_body}", 1)
         if triplicated == source:

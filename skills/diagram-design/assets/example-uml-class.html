@@ -11,7 +11,7 @@
       --color-paper:   #f5f5f5;
       --color-ink:     #2d3142;
       --color-muted:   #4f5d75;
-      --color-accent:  #eb6c36;
+      --color-accent:  #bf4520;
       --font-sans:     'Geist', system-ui, sans-serif;
       --font-serif:    'Instrument Serif', serif;
       --font-mono:     'Geist Mono', ui-monospace, monospace;
@@ -80,9 +80,9 @@
 
       <!-- Relationships (drawn before boxes) -->
       <!-- Card realizes PaymentMethod -->
-      <line x1="480" y1="240" x2="480" y2="140" stroke="#eb6c36" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
+      <line x1="480" y1="240" x2="480" y2="140" stroke="#bf4520" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
       <!-- BankTransfer realizes PaymentMethod -->
-      <line x1="760" y1="240" x2="760" y2="140" stroke="#eb6c36" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
+      <line x1="760" y1="240" x2="760" y2="140" stroke="#bf4520" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#uml-triangle)"/>
       <!-- PaymentService depends on PaymentMethod -->
       <line x1="320" y1="100" x2="420" y2="100" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#uml-open)"/>
       <!-- Order composed of OrderLine -->
@@ -107,11 +107,11 @@
       <text x="760" y="557" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
 
       <!-- Class: PaymentMethod (interface, focal) -->
-      <rect x="420" y="40" width="360" height="100" rx="6" fill="rgba(235,108,54,0.04)" stroke="#eb6c36" stroke-width="1"/>
-      <rect x="420" y="40" width="360" height="40" rx="6" fill="rgba(235,108,54,0.10)"/>
-      <rect x="420" y="72" width="360" height="8" fill="rgba(235,108,54,0.10)"/>
-      <line x1="420" y1="80" x2="780" y2="80" stroke="rgba(235,108,54,0.40)" stroke-width="1"/>
-      <text x="600" y="56" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">«interface»</text>
+      <rect x="420" y="40" width="360" height="100" rx="6" fill="rgba(191,69,32,0.04)" stroke="#bf4520" stroke-width="1"/>
+      <rect x="420" y="40" width="360" height="40" rx="6" fill="rgba(191,69,32,0.10)"/>
+      <rect x="420" y="72" width="360" height="8" fill="rgba(191,69,32,0.10)"/>
+      <line x1="420" y1="80" x2="780" y2="80" stroke="rgba(191,69,32,0.40)" stroke-width="1"/>
+      <text x="600" y="56" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">«interface»</text>
       <text x="600" y="72" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PaymentMethod</text>
       <text x="436" y="100" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">+ authorize(amount: Money): AuthResult</text>
       <text x="436" y="120" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">+ capture(ref: String): void</text>

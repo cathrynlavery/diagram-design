@@ -164,7 +164,7 @@ HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 # STROKE because the fill is a translucent tint the paper shows through; the
 # stroke is the mark's edge and the thing a reader identifies the accent by.
 ACCENT_RE = re.compile(
-    r"#eb6c36\b|#f08a59\b|rgba\(\s*235\s*,\s*108\s*,\s*54\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
 
