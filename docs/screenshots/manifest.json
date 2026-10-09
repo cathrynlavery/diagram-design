@@ -363,6 +363,15 @@
       "height": 1110
     },
     {
+      "slug": "service-blueprint",
+      "source": "skills/diagram-design/assets/example-service-blueprint.html",
+      "screenshot": "docs/screenshots/service-blueprint.png",
+      "source_sha256": "0264624cde447438c5081c771be6aa4f87aa74bfae50a9168695102203c2e299",
+      "screenshot_sha256": "f232ff645f6495f375001dafbce698b309f74692c217b2c2970eef1adb25f1a2",
+      "width": 2560,
+      "height": 1442
+    },
+    {
       "slug": "deployment",
       "source": "skills/diagram-design/assets/example-deployment.html",
       "screenshot": "docs/screenshots/deployment.png",

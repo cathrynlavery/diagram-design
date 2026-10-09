@@ -2,6 +2,8 @@
 
 **Best for:** what a person does across the stages of an experience and how it *feels* at each one. The sentiment curve is the load-bearing element — without it this is just a process diagram with extra rows, so if you can't name a sentiment for every stage, use **Process** or **Timeline** instead.
 
+**Not this type:** frontstage vs backstage on a shared stage grid, with a line of visibility → **Service blueprint** (`type-service-blueprint.md`). A blueprint is a census of what the customer can see versus what the service hides; it has no sentiment curve.
+
 ## Layout conventions
 
 Vertical stack, top to bottom, for one persona:

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trial to paid — what the customer never sees · Service blueprint</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1280px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Service blueprint · Diagram Design</p>
+    <h1>Trial to paid — what the customer never sees</h1>
+
+    <div class="diagram-container">
+    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="service-blueprint-title service-blueprint-desc">
+      <title id="service-blueprint-title">Trial to paid — what the customer never sees</title>
+      <desc id="service-blueprint-desc">Service blueprint of a trial-to-paid path across five stages, with customer and frontstage actions above a line of visibility and a focal backstage dunning-job timeout under Hit the limit.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+        </pattern>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+      <rect x="96" y="272" width="1104" height="120" fill="rgba(45,49,66,0.03)"/>
+      <rect x="96" y="24" width="208" height="48" fill="none" data-stage="sign-up"/>
+      <text x="200" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">STAGE 1</text>
+      <text x="200" y="60" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Sign up</text>
+      <rect x="320" y="24" width="208" height="48" fill="none" data-stage="activate"/>
+      <text x="424" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">STAGE 2</text>
+      <text x="424" y="60" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Activate</text>
+      <rect x="544" y="24" width="208" height="48" fill="none" data-stage="hit-limit"/>
+      <text x="648" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">STAGE 3</text>
+      <text x="648" y="60" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Hit the limit</text>
+      <rect x="768" y="24" width="208" height="48" fill="none" data-stage="upgrade"/>
+      <text x="872" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">STAGE 4</text>
+      <text x="872" y="60" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Upgrade</text>
+      <rect x="992" y="24" width="208" height="48" fill="none" data-stage="invoice"/>
+      <text x="1096" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">STAGE 5</text>
+      <text x="1096" y="60" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">First invoice</text>
+      <line x1="96" y1="196" x2="1200" y2="196" stroke="rgba(45,49,66,0.18)" stroke-width="1" data-role="interaction"/>
+      <line x1="96" y1="268" x2="1200" y2="268" stroke="rgba(45,49,66,0.55)" stroke-width="2" data-role="visibility"/>
+      <line x1="96" y1="340" x2="1200" y2="340" stroke="rgba(45,49,66,0.18)" stroke-width="1" data-role="internal-interaction"/>
+      <g data-layer="evidence">
+        <text x="88" y="107" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.12em">EVIDENCE</text>
+        <rect x="96" y="80" width="208" height="48" rx="4" fill="#ffffff"/>
+        <rect x="96" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="sign-up" data-name="Welcome email"/>
+        <text x="200" y="108" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Welcome email</text>
+        <rect x="320" y="80" width="208" height="48" rx="4" fill="#ffffff"/>
+        <rect x="320" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="activate" data-name="Product UI"/>
+        <text x="424" y="108" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Product UI</text>
+        <rect x="544" y="80" width="208" height="48" rx="4" fill="#ffffff"/>
+        <rect x="544" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Paywall"/>
+        <text x="648" y="108" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Paywall</text>
+        <rect x="768" y="80" width="208" height="48" rx="4" fill="#ffffff"/>
+        <rect x="768" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="upgrade" data-name="Checkout form"/>
+        <text x="872" y="108" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Checkout form</text>
+        <rect x="992" y="80" width="208" height="48" rx="4" fill="#ffffff"/>
+        <rect x="992" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="invoice" data-name="PDF invoice"/>
+        <text x="1096" y="108" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">PDF invoice</text>
+      </g>
+      <g data-layer="customer">
+        <text x="88" y="163" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.12em">CUSTOMER</text>
+        <rect x="96" y="128" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="96" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="sign-up" data-name="Create account"/>
+        <text x="200" y="164" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Create account</text>
+        <rect x="320" y="128" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="320" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="activate" data-name="Use product"/>
+        <text x="424" y="164" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Use product</text>
+        <rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>
+        <text x="648" y="164" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Retry payment</text>
+        <rect x="768" y="128" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="768" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="upgrade" data-name="Pick plan"/>
+        <text x="872" y="164" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Pick plan</text>
+        <rect x="992" y="128" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="992" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="invoice" data-name="Read bill"/>
+        <text x="1096" y="164" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Read bill</text>
+      </g>
+      <g data-layer="frontstage">
+        <text x="88" y="235" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.12em">FRONTSTAGE</text>
+        <rect x="96" y="200" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="96" y="200" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="sign-up" data-name="Welcome"/>
+        <text x="200" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Welcome</text>
+        <rect x="320" y="200" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="320" y="200" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="activate" data-name="In-app nags"/>
+        <text x="424" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">In-app nags</text>
+        <rect x="544" y="200" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="544" y="200" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Pay modal"/>
+        <text x="648" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Pay modal</text>
+        <rect x="768" y="200" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="768" y="200" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="upgrade" data-name="Checkout"/>
+        <text x="872" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Checkout</text>
+        <rect x="992" y="200" width="208" height="64" rx="4" fill="#ffffff"/>
+        <rect x="992" y="200" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="invoice" data-name="Receipt"/>
+        <text x="1096" y="236" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Receipt</text>
+      </g>
+      <g data-layer="backstage">
+        <text x="88" y="307" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.12em">BACKSTAGE</text>
+        <rect x="96" y="272" width="208" height="64" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="sign-up" data-name="CRM write"/>
+        <text x="200" y="308" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">CRM write</text>
+        <rect x="320" y="272" width="208" height="64" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="activate" data-name="Usage meter"/>
+        <text x="424" y="308" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Usage meter</text>
+        <rect x="544" y="272" width="208" height="64" rx="4" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1" data-stage="hit-limit" data-name="dunning-job timeout" data-focal="true"/>
+        <text x="648" y="300" fill="#eb6c36" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle" font-weight="600">dunning-job timeout</text>
+        <text x="648" y="318" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dunning-job · 4h</text>
+        <rect x="768" y="272" width="208" height="64" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="upgrade" data-name="Tax calc"/>
+        <text x="872" y="308" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Tax calc</text>
+        <rect x="992" y="272" width="208" height="64" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="invoice" data-name="Ledger"/>
+        <text x="1096" y="308" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Ledger</text>
+      </g>
+      <g data-layer="support">
+        <text x="88" y="371" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.12em">SUPPORT</text>
+        <rect x="96" y="344" width="208" height="48" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="sign-up" data-name="Email"/>
+        <text x="200" y="372" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Email</text>
+        <rect x="320" y="344" width="208" height="48" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="activate" data-name="Analytics"/>
+        <text x="424" y="372" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Analytics</text>
+        <rect x="544" y="344" width="208" height="48" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="hit-limit" data-name="Card processor"/>
+        <text x="648" y="372" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">Card processor</text>
+        <rect x="768" y="344" width="208" height="48" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="upgrade" data-name="—"/>
+        <text x="872" y="372" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">—</text>
+        <rect x="992" y="344" width="208" height="48" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="invoice" data-name="GL"/>
+        <text x="1096" y="372" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif" text-anchor="middle">GL</text>
+      </g>
+      <line x1="96" y1="448" x2="1200" y2="448" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="96" y="468" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <line x1="96" y1="492" x2="124" y2="492" stroke="rgba(45,49,66,0.55)" stroke-width="2"/>
+      <text x="132" y="496" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Line of visibility</text>
+      <rect x="280" y="484" width="16" height="10" rx="2" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="304" y="494" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Backstage layer</text>
+      <rect x="456" y="484" width="16" height="10" rx="2" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="480" y="494" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal cell · timeout</text>
+    </svg>
+    </div>
+  </div>
+</body>
+</html>

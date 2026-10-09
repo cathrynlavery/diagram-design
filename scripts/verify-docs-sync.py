@@ -65,7 +65,7 @@ ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
 LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
 OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design/references/output-spec.md"
 VARIANTS = ("", "-dark", "-full")
-VISUAL_TYPE_COUNT = 44
+VISUAL_TYPE_COUNT = 45
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
 PLUGIN_DESCRIPTION_MAX = 500
 # Types whose selection-table name differs from its description vocabulary.
@@ -78,6 +78,8 @@ DESCRIPTION_ALIASES = {
     "exploded axonometric": "exploded",
     "axonometric plan": "plan",
     "user journey": "journey",
+    "service blueprint": "blueprint",
+    "dependency graph": "dependency",
 }
 DISCOVERY_HOOKS = ("lifecycle phase",)
 ROUTING_SURFACES = {
