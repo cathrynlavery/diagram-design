@@ -120,6 +120,9 @@ def main() -> int:
                 print(f"OK: {label} retains the declared name")
 
     cases = {
+        "duplicate path data follows browser first value": (
+            once(r'(<path\b[^>]*?)\bd="', r'\1d="M0 0 L0 1 Z" d="', stack),
+            "silhouette"),
         "silhouette vertex moved": (
             once(r'(data-role="silhouette" d="M )(-?\d+(?:\.\d+)?)', bump_first_number, stack),
             "silhouette vertex 0"),
