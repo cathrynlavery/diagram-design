@@ -34,7 +34,7 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
 python3 scripts/export_svg.py <html-file> [<out.svg>]
 ```
 
-That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
+The viewport must contain four finite SVG numbers with positive width and height; empty or disabled viewports are refused. That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
 
 ### Manual algorithm (what the helper does)
 
