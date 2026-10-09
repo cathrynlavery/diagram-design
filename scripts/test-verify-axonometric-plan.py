@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from decimal import Decimal
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-axonometric-plan.py"
@@ -106,6 +107,21 @@ def main() -> int:
     first_box = re.search(r'<g data-box [^>]*>.*?</g>', office, re.S).group(0)
     booth_tag = re.search(r'<g data-role="tag" data-name="Booth".*?</g>', office, re.S).group(0)
 
+    # Inline SVG spans style the label without changing its visible name.
+    with tempfile.TemporaryDirectory(prefix="verify-label-spans-") as tmp:
+        for label, replacement in (
+            ("styled span", '<tspan font-weight="600">Open office</tspan>'),
+            ("mixed nested span text", 'Open <tspan>of<tspan>fi</tspan>ce</tspan>'),
+            ("undrawn title and desc", 'Open office<title>Open office tag</title><desc>Desks</desc>'),
+        ):
+            path = Path(tmp) / "label-span.html"
+            path.write_text(office.replace(">Open office</text>", ">" + replacement + "</text>", 1), encoding="utf-8")
+            code, output = run(str(path))
+            if code != 0:
+                failures.append(f"{label} failed: {output}")
+            else:
+                print(f"OK: {label} retains the declared name")
+
     cases = {
         "silhouette vertex moved": (
             once(r'(data-box [^>]*><path data-role="silhouette" d="M )(-?\d+(?:\.\d+)?)', shift(3), office),
@@ -163,6 +179,27 @@ def main() -> int:
                 failures.append(f"mutation {name!r} failed for the wrong reason (wanted {expect!r}):\n{output}")
             else:
                 print(f"OK: fails on {name}")
+
+    # Standard SVG numeric spellings do not change the projected silhouette.
+    with tempfile.TemporaryDirectory(prefix="silhouette-numeric-") as tmp:
+        original = (ASSETS / "example-axonometric-plan-coffee-shop.html").read_text(encoding="utf-8")
+        for signed in (False, True):
+            def reencode_path(match):
+                def number(token):
+                    text = token.group(0)
+                    if text in ("0", "1"):
+                        return text  # SVG arc flags are single digits, not numbers.
+                    encoded = format(Decimal(text), "E")
+                    return ("+" if signed and not encoded.startswith("-") else "") + encoded
+                return match.group(1) + re.sub(r"-?\d+(?:\.\d+)?", number, match.group(2)) + match.group(3)
+            encoded = re.sub(r'(<path\b[^>]*?\bd=")([^"]+)(")', reencode_path, original)
+            path = Path(tmp) / "numeric.html"
+            path.write_text(encoded, encoding="utf-8")
+            code, output = run(str(path))
+            if code:
+                failures.append(f"valid scientific path spelling (signed={signed}) rejected: {output}")
+            else:
+                print(f"OK: scientific path spelling, signed={signed}")
 
     code, _ = run()
     if code != 2:

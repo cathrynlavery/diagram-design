@@ -58,6 +58,22 @@ def main() -> int:
     static = STATIC_EXAMPLE.read_text(encoding="utf-8")
     animated = EXAMPLE.read_text(encoding="utf-8")
 
+    for location, markup in (
+        ("heading before SVG", '<h2 id="architecture-title">Monthly traffic summary</h2>'),
+        ("description duplicate", '<p id="architecture-desc">Unrelated description</p>'),
+    ):
+        check_fail(location, static.replace("<body>", "<body>" + markup, 1),
+                   "duplicate accessible SVG naming ID")
+    check_fail(
+        "heading after SVG", static.replace("</body>",
+            '<h2 id="architecture-title">Monthly traffic summary</h2></body>', 1),
+        "duplicate accessible SVG naming ID",
+    )
+    check_source_pass("distinct heading ID", static.replace("<body>",
+        '<body><h2 id="monthly-summary">Monthly traffic summary</h2>', 1))
+    check_source_pass("unreferenced duplicate IDs", static.replace("<body>",
+        '<body><span id="unused">One</span><span id="unused">Two</span>', 1))
+
     check_fail(
         "executable attribute",
         static.replace("<body>", '<body onload="fetch(1)">', 1),

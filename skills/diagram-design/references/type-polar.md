@@ -109,7 +109,7 @@ The minimal examples use the full 1000×520 canvas. The full-editorial example p
 - 4–8 categories.
 - Exactly one quantitative series.
 - At most one focal category.
-- Five grid rings and one numeric value label per category.
+- Five grid rings and one numeric value label per category. Numeric labels must be visible through their ancestors: ancestor `display="none"` and zero opacity suppress descendants, while an explicit child `visibility="visible"` can restore inherited hidden visibility.
 - Static output only; split or change type rather than adding interaction or another encoding.
 
 ## When not to use

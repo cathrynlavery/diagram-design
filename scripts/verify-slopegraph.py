@@ -625,6 +625,15 @@ def check_scale(series: list, findings: list, name: str) -> None:
     left_fit = fit(left)
     right_fit = fit(right)
 
+    if any(slope is not None and
+           (slope == 0 or not all(map(math.isfinite, (slope, intercept))))
+           for slope, intercept in (left_fit, right_fit)):
+        findings.append(
+            "%s:%d: a value axis has a zero or non-finite scale — distinct "
+            "values must map to distinct finite positions" % (name, line)
+        )
+        return
+
     if left_fit[0] is not None and right_fit[0] is not None:
         slope_drift = abs(left_fit[0] - right_fit[0]) * span
         if slope_drift > SCALE_TOLERANCE:

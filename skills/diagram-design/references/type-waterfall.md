@@ -58,6 +58,7 @@ Endpoint positions round to the nearest integer pixel and never snap to the 4px 
 
 ## Waterfall honesty rules
 
+- **Decimal declarations conserve exactly.** Fractional budgets use exact decimal arithmetic for totals, carries, and printed-value identity; geometry retains its pixel-rounding allowance. A binary floating point accumulation error must not reject a reconciled dollar-and-cent walk, and an actual decimal discrepancy is still a failure.
 - **The running total must conserve.** Start + every signed bridge = each subtotal and the end total, exactly — the declared `data-value`s must reconcile before geometry is even considered. A waterfall that doesn't add up is not approximately right, it is wrong.
 - **Bridges span exactly their two running levels.** Each bar's drawn top and bottom must sit where the shared scale puts the running totals before and after it (±0.75px for integer rounding). Stretching one bridge "for legibility" moves money that doesn't exist.
 - **Every carry sits at the level it transports,** spanning its full gap, and declares that value. A carry drawn at the wrong height reconnects the walk to a different total.
