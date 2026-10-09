@@ -54,6 +54,13 @@ class Element:
             yield from child.walk()
 
 
+def first_attributes(attrs):
+    result = {}
+    for name, value in attrs:
+        result.setdefault(name, value if value is not None else "")
+    return result
+
+
 class Tree(HTMLParser):
     VOID = {"path", "line", "circle", "rect", "polygon", "ellipse", "meta", "link", "br", "img", "input", "stop"}
 
@@ -63,13 +70,13 @@ class Tree(HTMLParser):
         self.cur = self.root
 
     def handle_starttag(self, tag, attrs):
-        el = Element(tag, {k: (v if v is not None else "") for k, v in attrs}, self.cur)
+        el = Element(tag, first_attributes(attrs), self.cur)
         self.cur.children.append(el)
         if tag not in self.VOID:
             self.cur = el
 
     def handle_startendtag(self, tag, attrs):
-        el = Element(tag, {k: (v if v is not None else "") for k, v in attrs}, self.cur)
+        el = Element(tag, first_attributes(attrs), self.cur)
         self.cur.children.append(el)
 
     def handle_endtag(self, tag):
