@@ -86,9 +86,9 @@ STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.D
 SVG_BLOCK_RE = re.compile(r"<svg\b[^>]*>.*?</svg>", re.IGNORECASE | re.DOTALL)
 RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}", re.DOTALL)
 RGBA_ATTR_RE = re.compile(
-    r'(fill|stroke)="rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)"'
+    r"""(fill|stroke)\s*=\s*(?P<quote>['"])rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)(?P=quote)"""
 )
-TRANSPARENT_ATTR_RE = re.compile(r'(fill|stroke)="transparent"')
+TRANSPARENT_ATTR_RE = re.compile(r"""(fill|stroke)\s*=\s*(?P<quote>['"])transparent(?P=quote)""")
 
 
 def slug_for(path: Path) -> str:
@@ -571,14 +571,31 @@ def normalize_rgba_presentation_attrs(svg: str) -> str:
     """Split rgba()/transparent presentation attrs for strict SVG 1.1 importers."""
 
     def repl(match: re.Match[str]) -> str:
-        prop, r, g, b, a = match.groups()
+        prop, _quote, r, g, b, a = match.groups()
         return '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
             prop, int(r), int(g), int(b), a
         )
 
-    svg = RGBA_ATTR_RE.sub(repl, svg)
-    svg = TRANSPARENT_ATTR_RE.sub(r'\1="none"', svg)
-    return svg
+    def normalize_attribute(attribute: re.Match[str]) -> str:
+        raw = attribute.group(0)
+        value = raw.lstrip()
+        color = RGBA_ATTR_RE.fullmatch(value)
+        if color is not None:
+            return attribute.group(1) + repl(color)
+        transparent = TRANSPARENT_ATTR_RE.fullmatch(value)
+        if transparent is not None:
+            return attribute.group(1) + f'{transparent.group(1)}="none"'
+        return raw
+
+    def normalize_region(region: re.Match[str]) -> str:
+        raw = region.group(0)
+        tag = START_TAG_RE.fullmatch(raw)
+        if tag is None:
+            return raw
+        attributes = TAG_ATTR_RE.sub(normalize_attribute, tag.group(2))
+        return f"<{tag.group(1)}{attributes}{tag.group(3)}>"
+
+    return REFERENCE_REGION_RE.sub(normalize_region, svg)
 
 
 def has_diagram_stylesheet(svg: str) -> bool:

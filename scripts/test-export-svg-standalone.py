@@ -84,6 +84,51 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_color_normalization_preserves_non_attribute_content(self) -> None:
+        literal = 'fill="rgba(45,49,66,0.1)"'
+        markup = f'<svg><!-- {literal} --><text>{literal}</text><rect data-{literal} fill="rgba(45,49,66,0.1)"/></svg>'
+        normalized = self.mod.normalize_rgba_presentation_attrs(markup)
+        self.assertIn(f'<!-- {literal} -->', normalized)
+        self.assertIn(f'<text>{literal}</text>', normalized)
+        self.assertIn(f'data-{literal}', normalized)
+        root = ET.fromstring(normalized)
+        self.assertEqual(root[1].get("fill"), "#2d3142")
+        self.assertEqual(root[1].get("fill-opacity"), "0.1")
+
+    def test_single_quoted_presentation_colors_are_normalized(self) -> None:
+        markup = "<svg><rect fill='rgba(45, 49, 66, .10)' stroke='transparent'/></svg>"
+        normalized = self.mod.normalize_rgba_presentation_attrs(markup)
+        root = ET.fromstring(normalized)
+        self.assertEqual(root[0].get("fill"), "#2d3142")
+        self.assertEqual(root[0].get("fill-opacity"), ".10")
+        self.assertEqual(root[0].get("stroke"), "none")
+        self.assertNotIn("rgba(", normalized)
+
+    def test_single_quoted_color_normalization_preserves_non_attributes(self) -> None:
+        markup = "<svg><!-- fill='rgba(1,2,3,.5)' --><text>stroke='transparent'</text><rect data-fill='rgba(1,2,3,.5)' fill = 'rgba(1,2,3,.5)'/></svg>"
+        normalized = self.mod.normalize_rgba_presentation_attrs(markup)
+        root = ET.fromstring(normalized)
+        self.assertEqual(root[0].text, "stroke='transparent'")
+        self.assertEqual(root[1].get("data-fill"), "rgba(1,2,3,.5)")
+        self.assertEqual(root[1].get("fill"), "#010203")
+        self.assertEqual(root[1].get("fill-opacity"), ".5")
+        self.assertIn("<!-- fill='rgba(1,2,3,.5)' -->", normalized)
+
+    def test_manual_paint_recipe_matches_helper(self) -> None:
+        section = EXPORT_MD.read_text(encoding="utf-8").split("7. Normalize colors", 1)[1]
+        match = re.search(r"```python\n(.*?)\n   ```", section, re.DOTALL)
+        self.assertIsNotNone(match)
+        recipe = "\n".join(line[3:] if line.startswith("   ") else line for line in match.group(1).splitlines())
+        for svg in (
+            "<svg><rect fill = 'rgba(1,2,3,.5)' stroke='transparent'/></svg>",
+            "<svg><text>stroke='transparent'</text><rect data-fill='rgba(1,2,3,.5)'/></svg>",
+            '<svg><!-- fill="rgba(1,2,3,.5)" --><rect fill="rgba(1,2,3,.5)"/></svg>',
+        ):
+            with self.subTest(svg=svg):
+                namespace = {"svg": svg}
+                exec(recipe, namespace)
+                self.assertEqual(namespace["svg"], self.mod.normalize_rgba_presentation_attrs(svg))
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())
@@ -340,6 +385,12 @@ class ExportSvgStandaloneTests(unittest.TestCase):
             self.assertTrue(out.is_file())
             body = out.read_text(encoding="utf-8")
             self.assertIn("#example-loop-root .station", body)
+
+    def test_quoted_paint_with_xml_attribute_spacing(self) -> None:
+        result = self.mod.normalize_rgba_presentation_attrs("<svg><rect fill = 'rgba(1,2,3,0.5)' stroke \n= 'transparent'/></svg>")
+        self.assertIn('fill="#010203"', result)
+        self.assertIn('fill-opacity="0.5"', result)
+        self.assertIn('stroke="none"', result)
 
     def test_rgba_presentation_attrs_still_split(self) -> None:
         html = """<!DOCTYPE html><html><body>
