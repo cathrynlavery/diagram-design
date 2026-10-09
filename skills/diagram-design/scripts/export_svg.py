@@ -543,6 +543,18 @@ def namespace_defs_ids(svg: str, prefix: str) -> str:
     def rewrite(region: str) -> str:
         for old in sorted(ids, key=len, reverse=True):
             new = f"{prefix}-{old}"
+            if region.lower().startswith("<style"):
+                escaped_new = "".join(
+                    char if char.isalnum() or char in "_-" or ord(char) >= 128
+                    else f"\\{ord(char):x} " if ord(char) < 32 or ord(char) == 127
+                    else "\\" + char
+                    for char in new
+                )
+                region = RULE_RE.sub(
+                    lambda rule: retarget_root_selector(rule.group(1), old, escaped_new)
+                    + "{" + rule.group(2) + "}",
+                    region,
+                )
             region = re.sub(
                 rf'(\bid\s*=\s*[\'"]){re.escape(old)}([\'"])',
                 rf"\1{new}\2",
