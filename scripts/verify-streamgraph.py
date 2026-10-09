@@ -156,6 +156,7 @@ DIGIT_RE = re.compile(r"\d")
 # live markup is held to the contract even when the parser finds no complete
 # layer - that is check_source's fail-closed case, not a skip.
 DECLARES_LAYER_RE = re.compile(r"\bdata-layer\s*=", re.IGNORECASE)
+DECLARES_VALUES_RE = re.compile(r"\bdata-values\s*=", re.IGNORECASE)
 # Path grammar: absolute M/C/L/Z and numbers only. Relative commands, arcs,
 # shorthand curves and H/V would need a transform stack this checker refuses
 # to half-implement; a partial parse looks like coverage without being it.
@@ -417,12 +418,21 @@ def looks_like_streamgraph(path: Path, source: str) -> bool:
     the contract even if it declares nothing parseable - that combination is
     the fail-closed case, not a pass. HTML comments are not markup, so a
     commented-out draft of a layer cannot pull another example type into
-    scope; a mangled tag whose bytes still say `data-layer=` can, and then
-    the parser finding no complete layer is exactly what is reported.
+    scope; a mangled tag whose bytes still say `data-layer=` and
+    `data-values=` can, and then the parser finding no complete layer is
+    exactly what is reported.
+
+    `data-layer` alone is not the signal. Service-blueprint rows reuse that
+    attribute for customer / frontstage / backstage groups, which are not
+    stacked bands. The streamgraph data contract is `data-layer` together with
+    `data-values` (the numeric series each band declares).
     """
+    if path.name.startswith("example-service-blueprint"):
+        return False
     if path.name.startswith("example-streamgraph"):
         return True
-    if DECLARES_LAYER_RE.search(HTML_COMMENT_RE.sub(" ", source)):
+    live = HTML_COMMENT_RE.sub(" ", source)
+    if DECLARES_LAYER_RE.search(live) and DECLARES_VALUES_RE.search(live):
         return True
     described = named_text(parse_document(source))
     return "streamgraph" in described or "stream graph" in described

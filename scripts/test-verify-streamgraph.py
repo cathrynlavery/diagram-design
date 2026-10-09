@@ -317,8 +317,13 @@ def run_cases(h):
     )
 
     # The detector must not drag the other example types into scope.
+    # Service blueprint reuses data-layer on row groups; those files must
+    # stay out of scope because they never declare data-values.
     for other in ("example-line.html", "example-slopegraph.html",
-                  "example-sankey.html", "example-treemap.html"):
+                  "example-sankey.html", "example-treemap.html",
+                  "example-service-blueprint.html",
+                  "example-service-blueprint-dark.html",
+                  "example-service-blueprint-full.html"):
         path = ROOT / "skills/diagram-design/assets" / other
         if path.exists():
             h.expect_out_of_scope(
