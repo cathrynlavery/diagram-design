@@ -114,6 +114,43 @@ def main() -> int:
         0,
     )
 
+    # Definitions are reusable geometry, not paint at their local coordinates.
+    mask = '<rect x="50" y="80" width="80" height="12" fill="#fff"/>'
+    prototype = '<rect x="100" y="70" width="100" height="60" fill="#eee" stroke="#000"/>'
+    check("unpainted reusable node cannot clip a mask", document(mask
+        + '<defs><g id="prototype">' + prototype + '</g></defs>'
+        + '<use href="#prototype" x="300"/>'), 0)
+    for container in ("symbol", "marker", "pattern", "clipPath", "mask"):
+        check(f"{container} definition is not a painted node", document(mask
+            + f'<{container} id="definition">' + prototype + f'</{container}>'), 0)
+    check("painted rectangle after definitions is still checked", document(mask
+        + '<defs><g id="prototype">' + prototype + '</g></defs>' + prototype), 1)
+    check("commented definition opening cannot hide painted nodes", document(mask
+        + '<!-- Reusable shapes can be placed under <defs>. -->' + prototype), 1)
+    check("commented definition close cannot expose prototypes", document(mask
+        + '<defs><!-- Close this section with </defs>. -->' + prototype + '</defs>'), 0)
+    check("commented definition wrapper cannot alter paint custody", document(mask
+        + '<!-- <defs><g>prototype</g></defs> -->' + prototype), 1)
+    check("ordinary painted group is still checked", document(mask + '<g>' + prototype + '</g>'), 1)
+    check("self-closing definitions do not hide following paint", document(mask + '<defs/>' + prototype), 1)
+    for quote in ('"', "'"):
+        for container in ("defs", "symbol", "marker", "pattern", "clipPath", "mask"):
+            quoted = f"<{container} data-note={quote}a > b{quote}/>"
+            check(f"quoted {container} self-close cannot hide following node ({quote})",
+                document(mask + quoted + prototype), 1)
+        check(f"quoted definition attribute keeps prototypes unpainted ({quote})",
+            document(mask + f"<defs data-note={quote}a > b{quote}>" + prototype + '</defs>'), 0)
+        check(f"quoted painted group preserves following connector ({quote})", document(
+            f"<g data-note={quote}a > b{quote}/>"
+            + '<path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/>'), 1)
+    check("nested definition containers keep prototypes unpainted", document(mask
+        + '<defs><symbol id="prototype">' + prototype + '</symbol></defs>'), 0)
+    check("painted group after nested definitions is still checked", document(mask
+        + '<defs><symbol id="prototype">' + prototype + '</symbol></defs><g>'
+        + prototype + '</g>'), 1)
+    check("connector prototypes are not painted arrows", document(
+        '<defs><path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/></defs>'), 0)
+
     # A long mono plate (128px, as shipped in example-sequence-oauth.html) or a
     # wide CJK label plate must be recognized as a mask and checked like any other.
     check(
