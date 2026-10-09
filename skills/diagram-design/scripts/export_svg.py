@@ -101,11 +101,21 @@ def slug_for(path: Path) -> str:
     return slug
 
 
+def mask_opaque_html(source: str, *, styles: bool = False) -> str:
+    tags = "script|style"
+    pattern = re.compile(r"<!--.*?-->|<(?P<raw>" + tags + r")\b[^>]*>.*?</(?P=raw)\s*>", re.IGNORECASE | re.DOTALL)
+    def mask(match: re.Match[str]) -> str:
+        if not styles and (match.group("raw") or "").lower() == "style":
+            return match.group(0)
+        return " " * len(match.group(0))
+    return pattern.sub(mask, source)
+
+
 def extract_first_svg(html: str) -> str:
-    match = SVG_BLOCK_RE.search(html)
+    match = SVG_BLOCK_RE.search(mask_opaque_html(html, styles=True))
     if not match:
         raise ValueError("no <svg> block found in source")
-    return match.group(0)
+    return html[match.start():match.end()]
 
 
 def _xml_start_tag(match: re.Match[str]) -> str:
@@ -429,7 +439,7 @@ def retarget_root_selector(selector: str, original_id: str, root_id: str) -> str
 def diagram_css_from_html(html: str, root_id: str, original_root_id: str = "") -> str:
     """Filter page <style> rules down to diagram rules, scoped under root_id."""
     kept: list[str] = []
-    for block in STYLE_BLOCK_RE.findall(html):
+    for block in STYLE_BLOCK_RE.findall(mask_opaque_html(html)):
         # A comment before a rule would otherwise become part of its selector
         # (`/* Tokens */ :root` is not recognised as `:root`).
         block = CSS_COMMENT_RE.sub("", block)

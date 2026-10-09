@@ -84,6 +84,25 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_export_uses_live_svg_and_live_styles(self) -> None:
+        html = '<!-- <svg viewBox="0 0 1 1"></svg> --><script>const sample = "<svg viewBox=\"0 0 2 2\"></svg>";</script>'
+        html += '<!-- <style>.paint {fill:red;}</style> -->'
+        html += '<style>.paint {fill:blue;}</style><svg viewBox="0 0 10 10"><!-- archived </svg> --><rect class="paint" width="10" height="10"/></svg>'
+        document = self.mod.export_svg_document(html, Path("live.html"))
+        root = ET.fromstring(document)
+        self.assertEqual(root.get("viewBox"), "0 0 10 10")
+        self.assertIn("fill:blue", document)
+        self.assertNotIn("fill:red", document)
+        self.assertIn("<!-- archived </svg> -->", document)
+
+    def test_live_css_comment_markers_and_strings_are_preserved(self) -> None:
+        css = '.x { fill:red; /* <!-- */ stroke:blue; /* --> */ } .x::before { content:"<!-- note -->"; }'
+        html = f'<style>{css}</style><svg viewBox="0 0 10 10"><rect class="x" width="10" height="10"/></svg>'
+        root = ET.fromstring(self.mod.export_svg_document(html, Path("live-style.html")))
+        styles = "".join(element.text or "" for element in root.iter() if element.tag.endswith("}style"))
+        self.assertIn("stroke:blue", styles)
+        self.assertIn('content:"<!-- note -->"', styles)
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())
