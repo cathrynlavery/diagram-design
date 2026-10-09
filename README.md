@@ -668,6 +668,6 @@ Other things I've made:
 
 - [ShipRank](https://shiprank.dev): a public leaderboard for lines shipped.
 - [The Non-Technical Technical Dictionary](https://nontechnical.dev): tech and AI terms explained in plain English, one analogy at a time.
-- [BestSelf.co](https://bestself.co): I own it, though I don't run it day to day.
+- [BestSelf.co](https://bestself.co): journals, planners and card decks for people who still plan on paper. I sold it to private equity and later bought it back.
 
 If this is useful, **star the repo** and come [say hi on X](https://x.com/cathrynlavery).
