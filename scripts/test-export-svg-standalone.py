@@ -84,6 +84,18 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_css_gate_ignores_non_class_and_empty_attributes(self) -> None:
+        for markup in (
+            '<svg data-class="metadata"><rect fill="#fff"/></svg>',
+            '<svg><!-- class="archived" --><rect fill="#fff"/></svg>',
+            '<svg class="  "><rect fill="#fff"/></svg>',
+            '<svg><text>class="example"</text></svg>',
+        ):
+            with self.subTest(markup=markup):
+                self.mod.assert_export_gate(markup)
+        with self.assertRaisesRegex(ValueError, "no diagram CSS"):
+            self.mod.assert_export_gate('<svg><rect class="paint"/></svg>')
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())
