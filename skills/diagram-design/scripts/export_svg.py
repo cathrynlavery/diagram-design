@@ -86,7 +86,7 @@ STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.D
 SVG_BLOCK_RE = re.compile(r"<svg\b[^>]*>.*?</svg>", re.IGNORECASE | re.DOTALL)
 RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}", re.DOTALL)
 RGBA_ATTR_RE = re.compile(
-    r'(fill|stroke)="rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d*\.?\d+)\s*\)"'
+    r'(fill|stroke)="rgba\(\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*,\s*([+-]?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)"'
 )
 TRANSPARENT_ATTR_RE = re.compile(r'(fill|stroke)="transparent"')
 
@@ -573,7 +573,8 @@ def normalize_rgba_presentation_attrs(svg: str) -> str:
     def repl(match: re.Match[str]) -> str:
         prop, r, g, b, a = match.groups()
         return '{0}="#{1:02x}{2:02x}{3:02x}" {0}-opacity="{4}"'.format(
-            prop, int(r), int(g), int(b), a
+            prop, max(0, min(255, int(r))), max(0, min(255, int(g))),
+            max(0, min(255, int(b))), a if 0 <= float(a) <= 1 else "0" if float(a) < 0 else "1"
         )
 
     svg = RGBA_ATTR_RE.sub(repl, svg)
