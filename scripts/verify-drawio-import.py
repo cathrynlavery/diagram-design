@@ -795,10 +795,21 @@ def check_docs() -> None:
     ok("references, SKILL.md wiring, and slash command are consistent")
 
 
+def check_unicode_page_names() -> None:
+    extractor = load_extractor_module()
+    page = extractor.Page(id="page", name="²", index=0)
+    if extractor.select_pages([page], "²") != [page]:
+        fail("non-decimal numeric characters must remain valid page names")
+    if extractor.select_pages([page], "٠") != [page]:
+        fail("decimal Unicode selectors must remain supported")
+    ok("page selection distinguishes decimal indexes from Unicode names")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-drawio-") as tmp_dir:
         tmp = Path(tmp_dir)
         check_files()
+        check_unicode_page_names()
         check_parse_raw()
         check_arrow_directions(tmp)
         check_relative_geometry(tmp)
