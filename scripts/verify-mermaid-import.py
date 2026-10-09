@@ -202,6 +202,32 @@ def check_flowchart() -> None:
     ok("flowchart parses: shapes, subgraphs, labels, cycle, budgets, tables")
 
 
+def check_entity_label_codes(tmp: Path) -> None:
+    source = tmp / "entity-labels.mmd"
+    source.write_text(
+        'flowchart LR\n'
+        'A["#35; #9829; #copy;"] -->|"#35; #9829; #copy;"| B["&#35; &#9829; &copy;"]\n'
+        'C["#amp;copy; &amp;copy; #35;copy; #unknown; #0; #1114112;"]\n'
+        'D["Use #42;value#42; &ast;html&ast; #60;br#62;"] -->|"#42;edge#42;"| E["*markup*"]\n',
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in diagram["nodes"]}
+    for node_id in ("A", "B"):
+        if nodes[node_id]["label"] != "# ♥ ©":
+            fail(f"entity codes lost in node {node_id}: {nodes[node_id]['label']!r}")
+    if diagram["edges"][0]["label"] != "# ♥ ©":
+        fail("Mermaid numeric/named entity codes lost in an edge label")
+    expected = "&copy; &copy; #copy; #unknown; #0; #1114112;"
+    if nodes["C"]["label"] != expected:
+        fail(f"entity labels were decoded twice or unknown codes changed: {nodes['C']['label']!r}")
+    if nodes["D"]["label"] != "Use *value* *html* <br>":
+        fail("encoded label characters were interpreted as Markdown or HTML markup")
+    if nodes["E"]["label"] != "markup" or diagram["edges"][1]["label"] != "*edge*":
+        fail("literal entity characters and actual label markup were confused")
+    ok("Mermaid decimal/named entity labels decode once in nodes and edges")
+
+
 def check_shape_and_edge_vocabulary(tmp: Path) -> None:
     extractor = load_extractor_module()
     expected_shapes = {
@@ -1094,6 +1120,7 @@ def main() -> int:
         tmp = Path(directory)
         check_files()
         check_flowchart()
+        check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)
