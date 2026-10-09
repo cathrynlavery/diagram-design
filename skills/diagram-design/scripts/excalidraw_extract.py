@@ -218,7 +218,10 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
             continue
         live.append(element)
 
-    by_id = {element["id"]: element for element in live}
+    foldable_ids = {
+        element["id"] for element in live
+        if element.get("type") in NODE_SHAPES or element.get("type") in EDGE_TYPES
+    }
 
     # Pass 1: fold bound text into its container (node label or edge label).
     bound_labels: dict[str, list[str]] = {}
@@ -226,7 +229,7 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         if element.get("type") != "text":
             continue
         container = element.get("containerId")
-        if isinstance(container, str) and container in by_id:
+        if isinstance(container, str) and container in foldable_ids:
             text = clean_label(element.get("text"))
             if text:
                 bound_labels.setdefault(container, []).append(text)
@@ -244,7 +247,7 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         if kind in EDGE_TYPES:
             continue
         if kind == "text":
-            if isinstance(element.get("containerId"), str) and element["containerId"] in by_id:
+            if isinstance(element.get("containerId"), str) and element["containerId"] in foldable_ids:
                 continue  # folded into its container in pass 1
             shape, label = "text", clean_label(element.get("text"))
         elif kind in CONTAINER_TYPES:
