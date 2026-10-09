@@ -1089,11 +1089,28 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_node_shape_updates(tmp: Path) -> None:
+    flow = tmp / "shape-updates.mmd"
+    flow.write_text("flowchart LR\nA{Decision}\nA[Work]\nA --> B\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "A")
+    if node["shape"] != "rect" or node["label"] != "Work":
+        fail("an explicit rectangle declaration must replace the earlier diamond")
+    state = tmp / "fork-reference.mmd"
+    state.write_text("stateDiagram-v2\nstate Fork <<fork>>\nFork --> Done\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(state), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "Fork")
+    if node["shape"] != "fork":
+        fail("a bare transition endpoint must preserve the declared fork shape")
+    ok("node declarations update shapes while bare references preserve them")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
         check_files()
         check_flowchart()
+        check_node_shape_updates(tmp)
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
         check_markdown_and_grammars(tmp)

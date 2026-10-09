@@ -121,7 +121,7 @@ class Diagram:
         self,
         node_id: str,
         label: str = "",
-        shape: str = "rect",
+        shape: str = "",
         parent: str | None = None,
         container: bool = False,
     ) -> Node:
@@ -131,7 +131,7 @@ class Diagram:
                 existing.label = label
                 if label != node_id:
                     self._state_descriptions.pop(node_id, None)
-            if shape != "rect" or not existing.shape:
+            if shape:
                 existing.shape = shape
             if parent is not None and existing.parent is None:
                 existing.parent = parent
@@ -144,7 +144,7 @@ class Diagram:
         node = Node(
             id=node_id,
             label=label or node_id,
-            shape=shape,
+            shape=shape or "rect",
             parent=parent,
             depth=self._depth_for(parent),
             container=container,
@@ -590,7 +590,7 @@ def _parse_node_expression(expression: str) -> tuple[str, str, str] | None:
     node_id = match.group(1)
     rest = text[match.end() :].strip()
     if not rest:
-        return node_id, node_id, "rect"
+        return node_id, node_id, ""
     expanded = _parse_expanded_attributes(rest)
     if expanded is not None:
         label, shape = expanded
@@ -940,7 +940,12 @@ def _state_endpoint(
     if parsed is None:
         return None
     node_id, label, shape = parsed
-    diagram.add_node(node_id, label, "state" if shape == "rect" else shape, parent)
+    if not shape:
+        existing = diagram.node_map.get(node_id)
+        shape = existing.shape if existing is not None else "state"
+    elif shape == "rect":
+        shape = "state"
+    diagram.add_node(node_id, label, shape, parent)
     return node_id
 
 
