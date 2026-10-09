@@ -51,6 +51,7 @@ from __future__ import annotations
 import argparse
 import math
 import re
+import html
 import sys
 from pathlib import Path
 
@@ -106,7 +107,7 @@ def _length_px(raw: str | None, field: str, errors: list[str] | None) -> float |
 
 def _attr(attrs_str: str, name: str) -> str | None:
     m = re.search(r"\b" + re.escape(name) + r'\s*=\s*"([^"]*)"', attrs_str)
-    return m.group(1) if m else None
+    return html.unescape(m.group(1)) if m else None
 
 
 def _is_accent(r: int, g: int, b: int) -> bool:

@@ -541,6 +541,14 @@ def main() -> int:
             else:
                 print(f"OK: {label} data-share geometry fails closed")
 
+    with tempfile.TemporaryDirectory() as tmp:
+        encoded = re.sub(r'(\b(?:x|y|width|height|data-value|data-share)="[^"<>]*)[0-9]',
+                         lambda match: match.group(0)[:-1] + f"&#{ord(match.group(0)[-1])};",
+                         GOOD.read_text(encoding="utf-8"))
+        code, output = run(write(Path(tmp), "encoded-attributes.html", encoded))
+        if code != 0:
+            failures.append(f"XML-encoded numeric attributes rejected: {output.strip()}")
+
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:

@@ -398,6 +398,14 @@ def main() -> int:
                     failures.append(f"alpha foreground {theme}/{alpha} unexpected result: {output.strip()}")
         print("OK: translucent AA foregrounds pass; weak-alpha text still fails in both themes")
 
+    with tempfile.TemporaryDirectory() as tmp:
+        encoded = re.sub(r'(\b(?:x|y|width|height|data-value|data-share)="[^"<>]*)[0-9]',
+                         lambda match: match.group(0)[:-1] + f"&#{ord(match.group(0)[-1])};",
+                         GOOD.read_text(encoding="utf-8"))
+        code, output = run(write(Path(tmp), "encoded-attributes.html", encoded))
+        if code != 0:
+            failures.append(f"XML-encoded numeric attributes rejected: {output.strip()}")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
