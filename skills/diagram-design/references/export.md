@@ -34,7 +34,7 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
 python3 scripts/export_svg.py <html-file> [<out.svg>]
 ```
 
-That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
+The class-without-style gate inspects nonempty actual `class` attributes; comments, visible text, empty class values, and `data-class` metadata do not require a stylesheet. That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
 
 ### Manual algorithm (what the helper does)
 

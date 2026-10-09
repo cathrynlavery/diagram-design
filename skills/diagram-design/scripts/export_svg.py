@@ -597,7 +597,15 @@ def assert_export_gate(svg: str) -> None:
     A fonts-only <style> (Google Fonts @import with no rules) does not count —
     class-based fills would still render as black boxes.
     """
-    if re.search(r"\bclass\s*=", svg) and not has_diagram_stylesheet(svg):
+    uses_classes = False
+    for region in REFERENCE_REGION_RE.finditer(svg):
+        tag = START_TAG_RE.fullmatch(region.group(0))
+        if tag is None:
+            continue
+        for attribute in TAG_ATTR_RE.finditer(tag.group(2)):
+            if attribute.group(2) == "class" and attribute.group(4) is not None:
+                uses_classes |= bool(decode_xml_references(attribute.group(4)[1:-1]).strip())
+    if uses_classes and not has_diagram_stylesheet(svg):
         raise ValueError(
             "exported SVG uses class= but has no diagram CSS rules; class-based "
             "fills would render as black boxes. Carry the page CSS into the SVG."
