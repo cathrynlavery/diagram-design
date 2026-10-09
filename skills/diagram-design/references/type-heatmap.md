@@ -2,6 +2,8 @@
 
 **Best for:** cross-tabulated data where *which row × column combination stands out* is the story. Use when the reader needs to scan a full matrix at once — not compare individual bars or trace a trend line — and one cell (or a cluster of cells) is editorially distinct from the field. Common uses: CI failure rate by service and sprint, support ticket volume by team and week, confusion matrix for a classifier, correlation coefficients across many variables.
 
+The CSS geometry guard ignores comments; active transform declarations still fail.
+
 ## Layout conventions
 
 - **Plot area:** left 160px (row labels), top 64px (column labels), right 40px, bottom 120px (legend area); inside `0 0 1000 500` viewBox.
