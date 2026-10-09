@@ -84,6 +84,15 @@ class ExportSvgStandaloneTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.mod = load_helper()
 
+    def test_defs_id_selectors_follow_namespaced_ids(self) -> None:
+        markup = '<svg><defs><linearGradient id="abc"><stop/></linearGradient></defs><style>#abc stop { stop-color:#abc; } #abc-other { fill:#fff; }</style></svg>'
+        result = self.mod.namespace_defs_ids(markup, "diagram")
+        self.assertIn('#diagram-abc stop { stop-color:#abc; }', result)
+        self.assertIn('#abc-other { fill:#fff; }', result)
+        escaped = r'<svg><defs><linearGradient id="paint.v1"/></defs><style>#paint\.v1 stop { stop-color:#fff; }</style></svg>'
+        result = self.mod.namespace_defs_ids(escaped, "diagram")
+        self.assertIn(r'#diagram-paint\.v1 stop', result)
+
     def test_helper_and_docs_exist(self) -> None:
         self.assertTrue(HELPER.is_file())
         self.assertTrue(EXPORT_MD.is_file())
