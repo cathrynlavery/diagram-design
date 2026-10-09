@@ -155,7 +155,7 @@ def parse_cells(source: str, findings: list[str] | None = None) -> list[Box]:
     """
     seen: list[Box] = []
     for m in CELL_RE.finditer(source):
-        attrs = {a.group("name"): a.group("value") for a in ATTR_RE.finditer(m.group("attrs"))}
+        attrs = {a.group("name"): html.unescape(a.group("value")) for a in ATTR_RE.finditer(m.group("attrs"))}
         has_share_metadata = "data-share" in attrs
         if attrs.get("rx") != "2" and not has_share_metadata:
             continue
@@ -308,7 +308,7 @@ def check(path: Path) -> list[str]:
     labels: dict[int, list[str]] = {index: [] for index in range(len(cells))}
 
     for m in TEXT_RE.finditer(source):
-        attrs = {a.group("name"): a.group("value") for a in ATTR_RE.finditer(m.group("attrs"))}
+        attrs = {a.group("name"): html.unescape(a.group("value")) for a in ATTR_RE.finditer(m.group("attrs"))}
         box = label_box(attrs, m.group("body"))
         if box is None:
             continue
@@ -350,7 +350,7 @@ def check(path: Path) -> list[str]:
     # one-letter text can fit while the surrounding disc still crosses a cell
     # boundary, so circles need their own containment check.
     for m in CIRCLE_RE.finditer(source):
-        attrs = {a.group("name"): a.group("value") for a in ATTR_RE.finditer(m.group("attrs"))}
+        attrs = {a.group("name"): html.unescape(a.group("value")) for a in ATTR_RE.finditer(m.group("attrs"))}
         try:
             cx = float(attrs["cx"])
             cy = float(attrs["cy"])
