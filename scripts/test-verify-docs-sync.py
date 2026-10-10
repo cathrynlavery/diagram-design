@@ -1493,6 +1493,10 @@ diagram-design/
 
         counted = root / "commands"
         counted.mkdir(parents=True, exist_ok=True)
+        for relative in verify.COUNT_SURFACES[4:]:
+            surface = root / relative
+            surface.parent.mkdir(parents=True, exist_ok=True)
+            surface.write_text("See the shipped visual types.\n", encoding="utf-8")
         drawio = counted / "import-drawio.md"
         mermaid = counted / "import-mermaid.md"
         excalidraw = counted / "import-excalidraw.md"
@@ -1584,6 +1588,21 @@ diagram-design/
         if len(errors) != 1 or "commands/import-mermaid.md" not in errors[0]:
             raise AssertionError(f"a command may not state even the shipped count: {errors}")
         mermaid.write_text(routed, encoding="utf-8")
+        for relative in verify.COUNT_SURFACES[4:]:
+            surface = root / relative
+            surface.write_text("The skill draws 4 visual types.\n", encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if len(errors) != 1 or relative.as_posix() not in errors[0]:
+                raise AssertionError(f"a stale count in {relative} was not reported: {errors}")
+            surface.write_text("See the shipped visual types.\n", encoding="utf-8")
+        skill_surface = root / "skills/diagram-design/SKILL.md"
+        skill_surface.write_text("See §3 visual-type guide.\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"a section number was mistaken for a type count: {errors}")
+        skill_surface.write_text("See the shipped visual types.\n", encoding="utf-8")
         for path in references.glob("type-shipped-*.md"):
             path.unlink()
 

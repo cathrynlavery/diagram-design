@@ -237,7 +237,9 @@ Treemaps get a second geometric gate, because their whole claim is that area *is
 
 ### Docs sync
 
-`python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a support path is not shipped inside the skill package, or a command/prompt surface drifts from its routed reference. It also holds the type count in one place: commands may not state a count at all, and any count the README states must equal the number of `references/type-*.md` files. The gallery gives each type one number, 01 to N in document order, and every other example is a lettered variant (`04a`, `04b`) placed directly after its type. `python3 scripts/test-verify-docs-sync.py` exercises these checks adversarially.
+`python3 scripts/verify-docs-sync.py` fails CI if the SKILL.md description loses a type's lexical hook, the gallery can't reach a shipped example, the README tree names a file that doesn't exist, a relative reference link is broken, a support path is not shipped inside the skill package, or a command/prompt surface drifts from its routed reference. It also holds the type count in one place: commands may not state a count at all, and counts in reader-facing docs must equal the number of `references/type-*.md` files. The gallery gives each type one number, 01 to N in document order, and every other example is a lettered variant (`04a`, `04b`) placed directly after its type. `python3 scripts/test-verify-docs-sync.py` exercises these checks adversarially.
+
+The same count check covers this guide, `SKILL.md`, and the current onboarding and semantic-pattern references. Historical changelog entries and ADRs keep the count that was accurate when they were written. After a new type merges, a maintainer must also update the repository's GitHub About description and [Cathryn's profile README](https://github.com/cathrynlavery/cathrynlavery/blob/main/README.md); those live in GitHub and a separate repository, outside this CI check.
 
 The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest.
 
@@ -306,6 +308,7 @@ Settled policies live as short records in `docs/adr/` — one pinned motion cont
 2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` — `verify-docs-sync.py` fails if the description loses or lacks a type's lexical hook.
 3. Add the three example variants (see above) and register them in the gallery (`assets/index.html`) with the next type number; extra examples of an existing type go directly after it as lettered variants (`data-parent-type`, eyebrow `04a`). `verify-docs-sync.py` fails on any shipped example the gallery can't reach and on any numbered tab without a matching `type-*.md`.
 4. Run the full gate suite — new examples are linted automatically by `--all`.
+5. After merge, the maintainer updates the GitHub About description and Cathryn's profile README to the new count, then checks both live pages. Contributors do not need write access to those surfaces.
 
 ## Changing the icon set
 

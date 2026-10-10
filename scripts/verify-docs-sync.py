@@ -21,10 +21,9 @@ fifteenth nearly did (#217); the sixteenth guards the ADR 0004 split:
 8. Every support path a strict skill bundler can extract from SKILL.md must be
    a literal file shipped inside the skill package.
 9. Import command surfaces must route to the visual-type taxonomy instead of
-   hardcoding a count that becomes stale when a type is added. README is the
-   same surface by another route: it carries the count in prose a user reads
-   before installing, so any count it states must equal the number of shipped
-   type-*.md references.
+   hardcoding a count that becomes stale when a type is added. Counts in the
+   README, contribution guide, skill, and current references must equal the
+   number of shipped type-*.md references.
 10. The High-Level reproducibility checklist must agree with its canvas formula
    and retain sequential numbering.
 11. The canonical dark Line example must keep the dark-skin tokens and canvas.
@@ -652,7 +651,7 @@ _COUNT_CONTEXT = r"visual|catalog|gallery|render(?:er|ing)?|example|shipped|stat
 _COUNT_SENTENCE = rf"[^.!?\n]*\b(?:{_COUNT_CONTEXT})\b"
 HARDCODED_COUNT_RE = re.compile(
     r"one\s+of\s+(?:the\s+)?\d+\b"
-    r"|\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
+    r"|(?<!§)\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
     r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b"
     rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\b\d+-type\b"
     rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\ball\s+\d+\s+diagrams?\b",
@@ -663,15 +662,16 @@ COUNT_SURFACES = (
     Path("commands/import-mermaid.md"),
     Path("commands/import-excalidraw.md"),
     Path("README.md"),
+    Path("CONTRIBUTING.md"),
+    Path("skills/diagram-design/SKILL.md"),
+    Path("skills/diagram-design/references/onboarding.md"),
+    Path("skills/diagram-design/references/semantic-patterns.md"),
 )
 
 
-# README is the one surface allowed to state the count, because a reader
-# deciding whether to install wants the number. It is held to the shipped
-# count instead: every numeral README attaches to the taxonomy must equal the
-# number of type-*.md references, so adding a type without updating README
-# fails here rather than leaving the number stale. Commands stay count-free.
-VERIFIED_COUNT_SURFACES = frozenset({Path("README.md")})
+# Reader-facing docs may state the count, but it must match the shipped type
+# references. Import commands stay count-free and route to SKILL.md instead.
+VERIFIED_COUNT_SURFACES = frozenset(COUNT_SURFACES[3:])
 TYPE_REFERENCE_GLOB = "skills/diagram-design/references/type-*.md"
 
 
@@ -680,8 +680,7 @@ def shipped_type_count(root: Path) -> int:
 
 
 def check_type_counts(errors: list[str], root: Path) -> None:
-    """No command may write the visual-type count as a numeral; README may
-    only write the shipped count."""
+    """Commands stay count-free; reader-facing docs use the shipped count."""
     shipped = shipped_type_count(root)
     for relative in COUNT_SURFACES:
         path = root / relative
