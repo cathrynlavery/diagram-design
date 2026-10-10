@@ -44,14 +44,14 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
-def manifest(version: str, codex: bool = False) -> dict:
+def manifest(version: str, native_skills: bool = False) -> dict:
     payload = {
         "name": PLUGIN_NAME,
         "description": "Create editorial diagrams.",
         "version": version,
         "author": {"name": "Cathryn Lavery"},
     }
-    if codex:
+    if native_skills:
         payload["skills"] = "./skills/"
     return payload
 
@@ -71,7 +71,13 @@ def seed_package(
     root: Path, version: str = "1.2.3", include_factory: bool = True
 ) -> None:
     write_json(root / ".claude-plugin/plugin.json", manifest(version))
-    write_json(root / ".codex-plugin/plugin.json", manifest(version, codex=True))
+    write_json(
+        root / ".codex-plugin/plugin.json",
+        manifest(version, native_skills=True),
+    )
+    qoder = manifest(version, native_skills=True)
+    qoder["commands"] = "./commands/"
+    write_json(root / ".qoder-plugin/plugin.json", qoder)
     if include_factory:
         seed_factory(root, version)
     write_json(
@@ -138,14 +144,21 @@ def package_repo(include_factory: bool = True) -> Iterator[Path]:
 
 
 def set_versions(
-    root: Path, claude: str, codex: str, factory: Optional[str] = None
+    root: Path,
+    claude: str,
+    codex: str,
+    factory: Optional[str] = None,
+    qoder: Optional[str] = None,
 ) -> None:
     if factory is None:
         factory = codex
+    if qoder is None:
+        qoder = codex
     for relative, version in (
         (Path(".claude-plugin/plugin.json"), claude),
         (Path(".codex-plugin/plugin.json"), codex),
         (Path(".factory-plugin/plugin.json"), factory),
+        (Path(".qoder-plugin/plugin.json"), qoder),
     ):
         payload = json.loads((root / relative).read_text(encoding="utf-8"))
         payload["version"] = version
@@ -248,6 +261,14 @@ def test_verifier() -> None:
         )
 
     with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4", qoder="1.2.5")
+        expect_failure(
+            "Qoder version drift",
+            VERIFY.verify_package(root, "HEAD"),
+            "versions must match",
+        )
+
+    with package_repo() as root:
         set_versions(root, "1.2", "1.2")
         expect_failure(
             "malformed versions",
@@ -327,6 +348,57 @@ def test_verifier() -> None:
             "Factory manifest deletion",
             VERIFY.verify_package(root, "HEAD"),
             "could not read",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        (root / ".qoder-plugin/plugin.json").unlink()
+        expect_failure(
+            "Qoder manifest deletion",
+            VERIFY.verify_package(root, "HEAD"),
+            "could not read",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        qoder_path = root / ".qoder-plugin/plugin.json"
+        qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
+        qoder["commands"] = "./missing-commands/"
+        write_json(qoder_path, qoder)
+        expect_failure(
+            "missing Qoder command surface",
+            VERIFY.verify_package(root, "HEAD"),
+            "Qoder manifest commands",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        alternate = root / "alternate-skills" / PLUGIN_NAME
+        alternate.mkdir(parents=True)
+        (alternate / "SKILL.md").write_text("---\nname: diagram-design\n---\n")
+        qoder_path = root / ".qoder-plugin/plugin.json"
+        qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
+        qoder["skills"] = "./alternate-skills/"
+        write_json(qoder_path, qoder)
+        expect_failure(
+            "non-canonical Qoder skill surface",
+            VERIFY.verify_package(root, "HEAD"),
+            "Qoder manifest skills must resolve to skills/",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        alternate = root / "alternate-commands"
+        alternate.mkdir()
+        (alternate / "doctor.md").write_text("Run diagnostics.\n", encoding="utf-8")
+        qoder_path = root / ".qoder-plugin/plugin.json"
+        qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
+        qoder["commands"] = "./alternate-commands/"
+        write_json(qoder_path, qoder)
+        expect_failure(
+            "non-canonical Qoder command surface",
+            VERIFY.verify_package(root, "HEAD"),
+            "Qoder manifest commands must resolve to commands/",
         )
 
     with package_repo() as root:

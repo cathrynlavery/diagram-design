@@ -1,0 +1,27 @@
+{
+  "name": "diagram-design",
+  "description": "Architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar, loop, nested, tree, org chart, layer stack, exploded/plan, Venn, pyramid/funnel, bar, waterfall, treemap, heatmap, line, Gantt, scatter, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, journey, deployment, dependency graph, UML class, story map, DB schema, lifecycle phases.",
+  "version": "2.6.73",
+  "author": {
+    "name": "Cathryn Lavery",
+    "url": "https://github.com/cathrynlavery"
+  },
+  "homepage": "https://diagramdesign.dev",
+  "repository": "https://github.com/cathrynlavery/diagram-design",
+  "license": "MIT",
+  "keywords": [
+    "diagrams",
+    "svg",
+    "architecture",
+    "flowchart",
+    "visualization",
+    "editorial",
+    "drawio",
+    "mermaid",
+    "import",
+    "animation",
+    "semantic-patterns"
+  ],
+  "commands": "./commands/",
+  "skills": "./skills/"
+}
