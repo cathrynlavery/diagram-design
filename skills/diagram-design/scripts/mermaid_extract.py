@@ -635,20 +635,28 @@ def _edge_operators(text: str) -> list[_Operator]:
     # `A<--yes-->B` or `A o--yes--o B`. The spaced form consumes exactly one
     # whitespace character next to each operator; any further padding falls
     # inside the label span, which `clean_label` strips, so the operator
-    # boundaries are never ambiguous. For the dash and equals forms, the
-    # compact label may not contain whitespace, and the operator characters
-    # themselves may not open one (keeping `A----->B` unlabeled and
-    # `A --o B --> C` two separate links). The dotted form's closing operator
-    # always opens with a literal `.`, which a dash/equals label can't
-    # produce, so its compact label may contain internal whitespace (as in
-    # `A-.next candidate.->B`) without that ambiguity.
+    # boundaries are never ambiguous.
+    #
+    # A compact dash or equals label may contain whitespace, including the
+    # blanks the mask writes over brackets, so `A==a b==>B` and `A--f(x)-->B`
+    # stay one labeled link. `-`, `=`, `.`, or `>` immediately after the
+    # opening still continues an unlabeled operator (`A----->B`). Mermaid's
+    # lexer always reads `x` or `o` immediately after `--` or `==` as that
+    # link's arrowhead, so a compact label cannot start with either letter:
+    # `A--x marks-->B`, `A--x marks -->B`, and `A--orders-->B` are two links
+    # through a `marks` or `rders` node, like `A --o B --> C`. Mermaid
+    # rejects `A--x(a)-->B` outright. A spaced label (`A-- x marks -->B`)
+    # is unaffected. The dotted form's closing operator always opens with a
+    # literal `.`, so its compact label may contain internal whitespace and
+    # start with `x` or `o` (as in `A-.x y.->B`).
     text_edge = re.compile(
         r"(?P<opening>"
         r"<(?:--|==)"
         r"|(?<![\w.:-])[xo](?:--|==)"
         r"|(?:--|==)"
         r")"
-        r"(?:\s(?P<spaced>.+?)\s|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
+        r"(?![-=.>xo])"
+        r"(?:\s(?P<spaced>.+?)\s|(?P<compact>[^|<>]+?))"
         r"(?P<closing>-{2,}>|--[xo]|=+>|={2,}|-{3,})"
     )
     dotted_edge = re.compile(
@@ -698,10 +706,15 @@ def _edge_operators(text: str) -> list[_Operator]:
             occupied.append((operator_start, match.end()))
 
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}"
+        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|={2,}[xo]|-+\.-+|={3,}|-{3,}"
     )
     for match in pattern.finditer(mask):
-        if any(start <= match.start() < end for start, end in occupied):
+        # Overlap, not just a contained start. An unlabeled token can begin
+        # before a labeled operator and end inside it — `Ao-.x y.->B` offers
+        # `o-.x` to `[xo][-=.]+[xo]`, one character ahead of the `-.x y.->`
+        # span already claimed above. Keeping both cuts the line into
+        # segments that no longer reconstruct it.
+        if any(match.start() < end and start < match.end() for start, end in occupied):
             continue
         token = match.group()
         end = match.end()
