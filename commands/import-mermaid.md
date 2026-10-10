@@ -32,7 +32,7 @@ Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` block
 - `--detail` — `faithful` (≤24 nodes, zoned), `balanced` (≤12), `simplified` (≤7).
 - `--audience` — `engineer`, `mixed`, `executive`. Governs wording, not element count.
 - `--type` — force a diagram type instead of inferring it.
-- `--diagram` — diagram index or `all` (one file per block). An index fails only if that block fails; other blocks that cannot be parsed are listed as `unparsed` in the header. `all` fails if any block fails.
+- `--diagram` — diagram index or `all` (one file per block). Only selected blocks are parsed: the header gives their kind and node/edge counts and lists every other block as `[N] not selected`. Rerun with another index to inspect that block. `all` fails if any block fails.
 - `--variant` — `light`, `dark`, or `full` editorial template.
 - `--output` — output base path; the extension is appended per format.
 
@@ -41,7 +41,7 @@ Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` block
 1. **No file provided** → ask which Mermaid or Markdown file. Don't guess.
 2. **Locate the installed skill and run `<skill-dir>/scripts/mermaid_extract.py` first.** Never assume the skill is under the current working directory.
 3. **Extractor exits non-zero** → report its message verbatim and stop.
-4. **Multi-block file with no `--diagram`** → list blocks with kinds and node/edge counts and ask which one.
+4. **Multi-block file with no `--diagram`** → report diagram 0's kind and node/edge counts plus the `[N] not selected` entries. If the user wants another block, ask for its index and rerun with `--diagram N` to inspect it.
 5. **Requested detail is impossible at the requested size** → say so before drawing and propose overview + detail outputs.
 6. **`--detail=faithful` above 9 nodes** → zone the layout; above 24 nodes, split into overview + detail files.
 7. **Never render Mermaid or carry over its computed layout, theme, classes, or fonts.** Redraw content in the project's `style-guide.md` skin.

@@ -93,9 +93,9 @@ The extractor reports 9 IR nodes (7 drawable plus 2 containers) and 7 edges; the
 
 ## Multi-block files
 
-Markdown is the Mermaid analogue of multi-page draw.io. The header lists every fenced block with grammar and node/edge counts. A block that was not selected and cannot be parsed is listed as `[N] unparsed: <reason>` instead of failing the run; select it to get the exit-2 error.
+Markdown is the Mermaid analogue of multi-page draw.io. The header lists each selected fenced block with its grammar and node/edge counts and every unselected block as `[N] not selected`. Unselected source is not parsed; rerun with `--diagram N` to inspect that block and obtain its kind, counts, or exit-2 error.
 
-- With no `--diagram`, inspect diagram 0 and ask which block if the user did not identify one.
+- With no `--diagram`, inspect diagram 0, report the `[N] not selected` entries, and ask for another index if the user did not identify the block they need.
 - If the block you need fails, the others stay reachable with `--diagram N`. Report the failure verbatim and do not redraw that block.
 - `--diagram all` creates one independently type-selected output per block, named `<base>-<index>.html`.
 - Do not merge blocks onto one canvas unless asked. Adjacent blocks frequently use different grammars.
