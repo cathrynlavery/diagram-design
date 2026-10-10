@@ -16,6 +16,7 @@ MANIFEST_PATHS = (
     Path(".claude-plugin/plugin.json"),
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
+    Path(".qoder-plugin/plugin.json"),
 )
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
@@ -41,6 +42,14 @@ def git(root: Path, *args: str) -> str:
 def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
     versions = []
     for relative in MANIFEST_PATHS:
+        exists = subprocess.run(
+            ["git", "cat-file", "-e", f"{ref}:{relative.as_posix()}"],
+            cwd=root,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if exists.returncode != 0:
+            continue
         raw = git(root, "show", f"{ref}:{relative.as_posix()}")
         try:
             payload = json.loads(raw)
@@ -56,6 +65,8 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
                 f"{relative} at {ref} has an invalid version: {version!r}"
             )
         versions.append(version)
+    if not versions:
+        raise VersionHistoryError(f"no plugin manifests found at {ref}")
     if len(set(versions)) != 1:
         rendered = ", ".join(
             f"{path}={version}" for path, version in zip(MANIFEST_PATHS, versions)
@@ -67,7 +78,7 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
 
 
 def versions_changed(root: Path, before: str, after: str) -> bool:
-    return versions_at(root, before) != versions_at(root, after)
+    return versions_at(root, before)[0] != versions_at(root, after)[0]
 
 
 def first_parent(root: Path, commit: str) -> str | None:

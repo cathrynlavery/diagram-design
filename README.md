@@ -1,6 +1,6 @@
 # Diagram Design
 
-An agent skill for Claude Code, Codex, Copilot, Cursor and more that draws editorial diagrams as one self-contained HTML+SVG file, in your brand, with design rules baked in.
+An agent skill for Claude Code, Codex, Qoder, Copilot, Cursor and more that draws editorial diagrams as one self-contained HTML+SVG file, in your brand, with design rules baked in.
 44 diagram types. No shadows. No Mermaid slop. Project site: [diagramdesign.dev](https://diagramdesign.dev)
 
 [![A prompt typed into an agent session becomes a finished architecture diagram, then a generic first-pass diagram is redrawn in an editorial style](docs/hero/demo.gif)](https://diagramdesign.dev)
@@ -18,7 +18,7 @@ The agent picks the type, states its plan, and writes one `.html` file you can o
 
 ## Install
 
-Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
+Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, Qoder, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
 
 ```bash
 npx skills add cathrynlavery/diagram-design
@@ -66,6 +66,33 @@ codex plugin add diagram-design@diagram-design
 ```
 
 Codex refreshes configured Git marketplaces at startup. To fetch immediately, run `codex plugin marketplace upgrade diagram-design` and start a new session.
+
+</details>
+
+<details>
+<summary><b>Qoder</b></summary>
+
+Clone the repository, validate the native plugin, and install it locally:
+
+```bash
+git clone https://github.com/cathrynlavery/diagram-design.git
+qoder plugins validate ./diagram-design
+qoder plugins install ./diagram-design
+qoder plugins list
+```
+
+Qoder loads the canonical `skills/diagram-design/` tree and the shared command
+definitions directly; no Qoder-specific copy is maintained. For Qoder IDE,
+build a bounded ZIP from the tracked plugin surfaces and import it through
+**Extensions → Plugins → Add Plugins → Upload Plugin**:
+
+```bash
+git -C diagram-design archive --format=zip \
+  --output=../diagram-design-qoder.zip HEAD \
+  .qoder-plugin commands skills LICENSE
+```
+
+Start a new task after installing or updating the plugin.
 
 </details>
 
@@ -473,6 +500,7 @@ diagram-design/
 ├── .claude-plugin/                   # Claude marketplace + plugin manifest
 ├── .codex-plugin/                    # Codex plugin manifest
 ├── .factory-plugin/                  # Factory Droid marketplace + plugin manifest
+├── .qoder-plugin/                    # Qoder native plugin manifest
 ├── commands/
 │   ├── export-diagram.md             # plugin export command
 │   ├── import-drawio.md              # plugin draw.io import command

@@ -4,7 +4,7 @@
 
 ## Context
 
-Every pull request used to be required to increment the synchronized Claude, Codex, and Factory manifest versions before merge. Because all open branches edited the same three version lines, every merge to `main` instantly put every other open PR into merge conflict; with ~17 community PRs open, a single squash-merge forced seventeen rebase-and-rebump rounds, and the next merge invalidated them all again. The bump requirement served release integrity — installs resolve from `main`, so each new tip needs a version greater than the last — but serialized all contribution on three shared lines.
+Every pull request used to be required to increment the synchronized Claude, Codex, Factory, and Qoder manifest versions before merge. Because all open branches edited the same manifest version lines, every merge to `main` instantly put every other open PR into merge conflict; with ~17 community PRs open, a single squash-merge forced seventeen rebase-and-rebump rounds, and the next merge invalidated them all again. The bump requirement served release integrity — installs resolve from `main`, so each new tip needs a version greater than the last — but serialized all contribution on shared version lines.
 
 ## Decision
 

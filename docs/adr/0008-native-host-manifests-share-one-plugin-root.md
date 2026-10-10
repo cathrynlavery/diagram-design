@@ -8,9 +8,9 @@ Diagram Design serves Claude Code, Codex, Pi, and Factory Droid. Factory can tra
 
 ## Decision
 
-Claude, Codex, and Factory each receive the smallest native manifest and marketplace metadata their host needs. Every marketplace resolves to the repository root, where all three hosts reuse `skills/diagram-design/` and `commands/` without duplication. Pi continues to use the same root package surfaces.
+Claude, Codex, Factory, and Qoder each receive the smallest native manifest their host needs. Every marketplace resolves to the repository root, where all four hosts reuse `skills/diagram-design/` and `commands/` without duplication. Pi continues to use the same root package surfaces.
 
-The three native plugin manifests carry identical shared identity, description, version, author, repository, license, and keyword metadata. The package verifier rejects drift, deletion, unsafe marketplace paths, or a version that does not advance from the base ref. A newly tracked native manifest may be absent at the base ref only during bootstrap: its current metadata and version must match the established manifests, and those established manifests must advance.
+The four native plugin manifests carry identical shared identity, description, version, author, repository, license, and keyword metadata. The package verifier rejects drift, deletion, unsafe marketplace paths, or a version that does not advance from the base ref. A newly tracked native manifest may be absent at the base ref only during bootstrap: its current metadata and version must match the established manifests, and those established manifests must advance.
 
 ## Consequences
 

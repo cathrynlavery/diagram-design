@@ -28,7 +28,7 @@ See [README.md](README.md) for the full picture, including the design system and
 
 Every validation gate below must pass before a PR is ready. They also run automatically as GitHub Actions CI (`.github/workflows/ci.yml`).
 
-**Do not bump the plugin version in your PR.** The Claude, Codex, and Factory manifest versions are bumped automatically on `main` after each merge by the Auto Version Bump workflow (`.github/workflows/auto-bump.yml`, ADR 0009), so pull requests must leave all three `plugin.json` versions untouched — CI rejects any change to them. This keeps open PRs from conflicting with each other on every merge. If your change warrants more than a patch release, say so in the PR description and the maintainer will apply the `release:minor` or `release:major` label before merging; the label selects the bump size. (`scripts/bump-plugin-version.py` still exists for the workflow and the maintainer — contributors never need to run it.)
+**Do not bump the plugin version in your PR.** The Claude, Codex, Factory, and Qoder manifest versions are bumped automatically on `main` after each merge by the Auto Version Bump workflow (`.github/workflows/auto-bump.yml`, ADR 0009), so pull requests must leave all four `plugin.json` versions untouched — CI rejects any change to them. This keeps open PRs from conflicting with each other on every merge. If your change warrants more than a patch release, say so in the PR description and the maintainer will apply the `release:minor` or `release:major` label before merging; the label selects the bump size. (`scripts/bump-plugin-version.py` still exists for the workflow and the maintainer — contributors never need to run it.)
 
 | What it checks | Command |
 |---|---|

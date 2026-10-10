@@ -29,6 +29,7 @@ MANIFEST_PATHS = {
     "Claude": Path(".claude-plugin/plugin.json"),
     "Codex": Path(".codex-plugin/plugin.json"),
     "Factory": Path(".factory-plugin/plugin.json"),
+    "Qoder": Path(".qoder-plugin/plugin.json"),
 }
 CLAUDE_MARKETPLACE = Path(".claude-plugin/marketplace.json")
 CODEX_MARKETPLACE = Path(".agents/plugins/marketplace.json")
@@ -298,13 +299,29 @@ def verify_marketplaces(root: Path, errors: list[str]) -> None:
         errors.append("packaged commands are missing from the shared plugin root")
 
 
-def verify_codex_skill_path(root: Path, codex_manifest: dict[str, Any], errors: list[str]) -> None:
-    skills_root = resolve_local_path(root, codex_manifest.get("skills"), "Codex manifest skills", errors)
+def verify_native_skill_path(
+    root: Path, label: str, manifest: dict[str, Any], errors: list[str]
+) -> None:
+    skills_root = resolve_local_path(
+        root, manifest.get("skills"), f"{label} manifest skills", errors
+    )
     if skills_root is None:
         return
     skill = skills_root / PLUGIN_NAME / "SKILL.md"
     if not skill.is_file():
-        errors.append(f"Codex skills path does not contain {PLUGIN_NAME}/SKILL.md")
+        errors.append(f"{label} skills path does not contain {PLUGIN_NAME}/SKILL.md")
+
+
+def verify_qoder_commands(
+    root: Path, qoder_manifest: dict[str, Any], errors: list[str]
+) -> None:
+    commands_root = resolve_local_path(
+        root, qoder_manifest.get("commands"), "Qoder manifest commands", errors
+    )
+    if commands_root is None:
+        return
+    if not any(commands_root.glob("*.md")):
+        errors.append("Qoder commands path contains no command definitions")
 
 
 def valid_double_quoted_yaml_scalar(value: str) -> bool:
@@ -471,7 +488,9 @@ def verify_package(root: Path, base_ref: str | None, mode: str = "increase") -> 
         verify_versions(root, base_ref, manifests, errors, mode)
         verify_manifest_identity(manifests, errors)
         verify_skill_metadata_version(root, manifests, errors)
-        verify_codex_skill_path(root, manifests["Codex"], errors)
+        verify_native_skill_path(root, "Codex", manifests["Codex"], errors)
+        verify_native_skill_path(root, "Qoder", manifests["Qoder"], errors)
+        verify_qoder_commands(root, manifests["Qoder"], errors)
     verify_marketplaces(root, errors)
     return errors
 
@@ -521,7 +540,7 @@ def main() -> int:
         "current-only": "current tree",
     }[mode]
     print(
-        f"OK plugin package ({detail}): Claude, Codex, and Factory {versions}, "
+        f"OK plugin package ({detail}): Claude, Codex, Factory, and Qoder {versions}, "
         f"marketplace paths, and packaged skill"
     )
     return 0
