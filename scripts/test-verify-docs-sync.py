@@ -1602,6 +1602,16 @@ diagram-design/
         verify.check_type_counts(errors, root)
         if errors:
             raise AssertionError(f"a section number was mistaken for a type count: {errors}")
+        skill_surface.write_text("### Visual-type guide (3)\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"the shipped guide heading count was rejected: {errors}")
+        skill_surface.write_text("### Visual-type guide (4)\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if len(errors) != 1 or "SKILL.md" not in errors[0]:
+            raise AssertionError(f"a stale guide heading count was not reported: {errors}")
         skill_surface.write_text("See the shipped visual types.\n", encoding="utf-8")
         for path in references.glob("type-shipped-*.md"):
             path.unlink()

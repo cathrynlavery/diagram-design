@@ -626,15 +626,13 @@ def check_factory_install_surface(errors: list[str], root: Path) -> None:
 # adds a type, and is the one file such a PR has no reason to open. Both import
 # commands were left at 27 while the selection table moved on.
 # The phrasing varies, so match the count rather than the one sentence it went
-# stale in. Four forms carry it: the bare count standing in for the table
+# stale in. Direct forms include the bare count standing in for the table
 # (`one of the 27`), a count attached to the taxonomy noun with room for
-# adjectives between, in either order (`28 visual types`, `28 supported visual
-# diagram types`, `28 types of visual diagrams`), a count bound to the noun as
-# a hyphenated modifier (`39-type catalog`), and a count quantifying the whole
-# set (`all 39 diagrams`). The first three insist on that noun so an unrelated
-# quantity — `accepts 2 file types` — is not rejected by a gate about the
-# visual taxonomy. The last two are checked only in a sentence with a nearby
-# visual-taxonomy cue (`catalog`, `gallery`, `render`, `shipped`, and so on),
+# adjectives between (`28 supported visual diagram types`, `28 types of visual
+# diagrams`), and the selection heading (`Visual-type guide (44)`). Contextual
+# forms include a hyphenated modifier (`39-type catalog`) and a count of the
+# whole set (`all 39 diagrams`). They require a nearby visual-taxonomy cue
+# (`catalog`, `gallery`, `render`, `shipped`, and so on),
 # so ordinary prose such as `a 10-type taxonomy` and `all 12 diagrams in the
 # appendix` remains valid while the README's stale phrases stay covered.
 #
@@ -653,6 +651,7 @@ HARDCODED_COUNT_RE = re.compile(
     r"one\s+of\s+(?:the\s+)?\d+\b"
     r"|(?<!§)\b\d+\s+(?:[\w-]+\s+){0,2}?(?:visual|diagram)[\s-]+types?\b"
     r"|\b\d+\s+types?\s+of\s+(?:[\w-]+\s+){0,2}?diagrams?\b"
+    r"|\bvisual-type\s+guide\s*\(\s*\d+\s*\)"
     rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\b\d+-type\b"
     rf"|(?={_COUNT_SENTENCE})[^.!?\n]*?\ball\s+\d+\s+diagrams?\b",
     re.IGNORECASE,
