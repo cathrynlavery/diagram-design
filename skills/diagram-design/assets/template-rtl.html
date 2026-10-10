@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>قالب مخطط الاتجاه من اليمين إلى اليسار</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Cairo:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Cairo', 'Noto Naskh Arabic', 'Segoe UI', 'Geeza Pro', sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Naskh Arabic', 'Amiri', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      direction: ltr;
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      direction: rtl;
+      text-align: right;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: normal;
+      text-transform: none;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      direction: rtl;
+      text-align: right;
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: normal;
+      line-height: 1.25;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">مخطط تدفق العمل · Diagram Design RTL</p>
+    <h1>مسار المراجعة والاعتماد الفني</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 600" direction="rtl" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="template-rtl-title template-rtl-desc">
+        <title id="template-rtl-title">مخطط تدفق العمل بنمط RTL</title>
+        <desc id="template-rtl-desc">مخطط يوضح مسار تدفق المراجعة والاعتماد الفني من اليمين إلى اليسار.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- Connectors drawn first, flowing right to left (largest x to smaller x) -->
+        <line x1="660" y1="280" x2="590" y2="280" stroke="#4f5d75" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="370" y1="280" x2="300" y2="280" stroke="#4f5d75" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Arrow label masks (16px high) and labels (11px sans weight 500) -->
+        <rect x="597" y="252" width="56" height="16" rx="3" fill="#f5f5f5"/>
+        <text x="625" y="264" text-anchor="middle" font-family="'Cairo', 'Noto Naskh Arabic', sans-serif" font-size="11" font-weight="500" fill="#4f5d75">إرسال</text>
+
+        <rect x="307" y="252" width="56" height="16" rx="3" fill="#f5f5f5"/>
+        <text x="335" y="264" text-anchor="middle" font-family="'Cairo', 'Noto Naskh Arabic', sans-serif" font-size="11" font-weight="500" fill="#4f5d75">تدقيق</text>
+
+        <!-- Nodes drawn after lines -->
+        <!-- Step 1: Rightmost node (x=660 to 880) -->
+        <rect x="660" y="236" width="220" height="88" rx="6" fill="#ffffff" stroke="#4f5d75" stroke-width="1"/>
+        <text x="864" y="270" text-anchor="start" font-family="'Cairo', 'Noto Naskh Arabic', 'Segoe UI', 'Geeza Pro', sans-serif" font-size="14" font-weight="600" fill="#2d3142">مكتب فني</text>
+        <text x="864" y="294" text-anchor="start" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" font-weight="500" fill="#4f5d75">LET_CG_012</text>
+
+        <!-- Step 2: Middle node (x=370 to 590) -->
+        <rect x="370" y="236" width="220" height="88" rx="6" fill="#ffffff" stroke="#4f5d75" stroke-width="1"/>
+        <text x="574" y="270" text-anchor="start" font-family="'Cairo', 'Noto Naskh Arabic', 'Segoe UI', 'Geeza Pro', sans-serif" font-size="14" font-weight="600" fill="#2d3142">تدقيق الجودة</text>
+        <text x="574" y="294" text-anchor="start" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" font-weight="500" fill="#4f5d75">QA/QC</text>
+
+        <!-- Step 3: Leftmost node (x=80 to 300) -->
+        <rect x="80" y="236" width="220" height="88" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5"/>
+        <text x="284" y="270" text-anchor="start" font-family="'Cairo', 'Noto Naskh Arabic', 'Segoe UI', 'Geeza Pro', sans-serif" font-size="14" font-weight="600" fill="#2d3142">الاعتماد النهائي</text>
+        <text x="284" y="294" text-anchor="start" font-family="'Geist Mono', ui-monospace, monospace" font-size="11" font-weight="500" fill="#eb6c36">APPR_FINAL</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

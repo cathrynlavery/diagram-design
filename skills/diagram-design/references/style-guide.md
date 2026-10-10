@@ -182,6 +182,25 @@ Counting by script is still the trap. `Шкаф ODF-2` is four Cyrillic letters,
 
 **Preserve printed labels.** A label the reader matches against a physical thing — a cabinet, a splice closure, a port map — carries the exact printed string. Don't transliterate it and don't re-case it; if one has to sit in an uppercase slot such as an eyebrow, drop the transform for that label rather than re-case the printed string. `Шкаф ODF-2` stays `Шкаф ODF-2`, not `Shkaf ODF-2`.
 
+### Arabic labels (RTL)
+
+Geist and Instrument Serif carry no Arabic glyphs; Geist Mono has neither Arabic coverage nor a monospaced Arabic advance. An Arabic `<text>` element extends its own family — never swap the skin:
+
+```svg
+<text font-family="'Cairo', 'Noto Naskh Arabic', 'Segoe UI', 'Geeza Pro', sans-serif">مكتب فني</text>
+```
+
+Local system faces (`Segoe UI` on Windows, `Geeza Pro` on macOS) follow the standard web faces for offline viewing. Page titles need an Arabic serif/naskh face — `'Instrument Serif', 'Noto Naskh Arabic', 'Amiri', serif` — or a mixed Latin/Arabic title resolves Arabic through the generic system serif and the two styles clash.
+
+**Width budget.** Arabic is a cursive, joining script: a glyph's advance varies depending on whether it is isolated, initial, medial, or final, and ligatures alter total run length. The fixed per-character advance formula used for Korean or Cyrillic cannot be applied per character. In practice, measure text in the browser or hold a generous width budget: allow at least 0.75em per character at the target font size plus 16px horizontal box padding, and round the bounding box up to the next multiple of 4.
+
+Four rules follow from Arabic script and RTL layout metrics:
+
+- **Floor of 11px.** Arabic counters close up and diacritics become illegible below ~11px on screen. Treat 11px as the absolute floor. If an Arabic name doesn't fit at 11px, cut the name — don't shrink the type.
+- **Arrow labels, eyebrows, and legend text switch register.** Those slots are 7–8px Geist Mono, uppercase and tracked, which Arabic has neither a face nor legibility for. An Arabic label in one of those slots becomes 11px sans at weight 500 with no tracking (`letter-spacing: normal`) and no uppercase transform (`text-transform: none`). Its mask rect grows to match (16px tall, width from the budget above, still rounded to a multiple of 4). Latin labels in the same diagram keep the mono treatment.
+- **Bidi rules and Latin islands.** Coded sublabels (`LET_CG_012`, `QA/QC`, `FAT/SAT/UAT`, `23 05 23.11`) reorder against Arabic context, neutral punctuation (`()`, `:`, `/`, `—`) mirrors, and space-separated digit runs can invert order. Keep Latin sublabels in Geist Mono on their own `<text>` line rather than inline with Arabic text. Keep one number per node label, or join digit runs with non-breaking spaces (U+00A0 or `&#160;`) so they form a single LTR run. Authors must write strings in normal logical order — never manually reverse Arabic characters in markup, as modern bidi rendering engines handle shaping and ordering automatically.
+- **RTL layout and coordinates.** Setting `dir="rtl"` on `<html>` and `direction="rtl"` on `<svg>` informs the renderer of text direction, but does not move drawn coordinates. A process or flow running right-to-left must be drawn with the first step at the largest `x` coordinate and successive steps advancing toward smaller `x`. The SVG `viewBox` is never inverted or mirrored — it retains standard `0 0 W H` coordinates. For nodes aligned against a right edge or margin, use `text-anchor="start"` at the right inset. (In SVG with `direction="rtl"`, `text-anchor="start"` anchors text at its logical start on the right edge, advancing leftward into the node. In contrast, `text-anchor="end"` anchors the logical end, which would place text to the right of the anchor and spill outside the node's right border.) Arrow labels sit centered above horizontal connector segments. A starter RTL template is available at `assets/template-rtl.html`.
+
 ---
 
 ## Stroke, radius, spacing
