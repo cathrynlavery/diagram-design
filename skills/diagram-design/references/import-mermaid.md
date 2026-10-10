@@ -125,3 +125,10 @@ Markdown is the Mermaid analogue of multi-page draw.io. The header lists every f
 | One-to-one node mapping regardless of budget | A faithful wiring dump is not an editorial diagram |
 | Dropping sequence fragments or ER cardinality | Those structures carry meaning, not styling |
 | Silently dropping content | Every import ships a fidelity ledger |
+
+Bare state declarations are retained even when disconnected from transitions.
+
+Multiline state note bodies are annotation text, not state declarations or
+transitions. Their contents are excluded from the structural digest through
+`end note`; single-line `note left of` / `note right of` annotations do not
+consume the next state. Note text is not retained in the state digest.

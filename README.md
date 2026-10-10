@@ -410,6 +410,10 @@ The point isn't conversion, it's **fitting the output to where it's going**. Sam
 | **Detail** | `faithful` (≤24 nodes, zoned) · `balanced` (≤12) · `simplified` (≤7) | How much of the source survives, via a fixed degrade ladder: decorations, then duplicates, then leaf clusters, then infrastructure. |
 | **Audience** | `engineer` · `mixed` · `executive` | The *wording*, not the count. `Auth Service / JWT · RS256 · :8443` → `Auth Service / token check` → `Sign-in`. |
 
+Mermaid state import retains disconnected bare states and their existing special
+shapes. Multiline state note bodies are excluded from the structural digest;
+parsing resumes after `end note`. State note text is not retained.
+
 Every import ends with a **fidelity ledger** listing what got merged, collapsed, or dropped. You know the source; you'd notice anyway.
 
 ```
