@@ -300,13 +300,21 @@ def verify_marketplaces(root: Path, errors: list[str]) -> None:
 
 
 def verify_native_skill_path(
-    root: Path, label: str, manifest: dict[str, Any], errors: list[str]
+    root: Path,
+    label: str,
+    manifest: dict[str, Any],
+    errors: list[str],
+    canonical: Path | None = None,
 ) -> None:
     skills_root = resolve_local_path(
         root, manifest.get("skills"), f"{label} manifest skills", errors
     )
     if skills_root is None:
         return
+    if canonical is not None and skills_root != (root / canonical).resolve():
+        errors.append(
+            f"{label} manifest skills must resolve to {canonical.as_posix()}/"
+        )
     skill = skills_root / PLUGIN_NAME / "SKILL.md"
     if not skill.is_file():
         errors.append(f"{label} skills path does not contain {PLUGIN_NAME}/SKILL.md")
@@ -320,6 +328,8 @@ def verify_qoder_commands(
     )
     if commands_root is None:
         return
+    if commands_root != (root / "commands").resolve():
+        errors.append("Qoder manifest commands must resolve to commands/")
     if not any(commands_root.glob("*.md")):
         errors.append("Qoder commands path contains no command definitions")
 
@@ -489,7 +499,9 @@ def verify_package(root: Path, base_ref: str | None, mode: str = "increase") -> 
         verify_manifest_identity(manifests, errors)
         verify_skill_metadata_version(root, manifests, errors)
         verify_native_skill_path(root, "Codex", manifests["Codex"], errors)
-        verify_native_skill_path(root, "Qoder", manifests["Qoder"], errors)
+        verify_native_skill_path(
+            root, "Qoder", manifests["Qoder"], errors, Path("skills")
+        )
         verify_qoder_commands(root, manifests["Qoder"], errors)
     verify_marketplaces(root, errors)
     return errors

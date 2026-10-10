@@ -373,6 +373,36 @@ def test_verifier() -> None:
 
     with package_repo() as root:
         set_versions(root, "1.2.4", "1.2.4")
+        alternate = root / "alternate-skills" / PLUGIN_NAME
+        alternate.mkdir(parents=True)
+        (alternate / "SKILL.md").write_text("---\nname: diagram-design\n---\n")
+        qoder_path = root / ".qoder-plugin/plugin.json"
+        qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
+        qoder["skills"] = "./alternate-skills/"
+        write_json(qoder_path, qoder)
+        expect_failure(
+            "non-canonical Qoder skill surface",
+            VERIFY.verify_package(root, "HEAD"),
+            "Qoder manifest skills must resolve to skills/",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        alternate = root / "alternate-commands"
+        alternate.mkdir()
+        (alternate / "doctor.md").write_text("Run diagnostics.\n", encoding="utf-8")
+        qoder_path = root / ".qoder-plugin/plugin.json"
+        qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
+        qoder["commands"] = "./alternate-commands/"
+        write_json(qoder_path, qoder)
+        expect_failure(
+            "non-canonical Qoder command surface",
+            VERIFY.verify_package(root, "HEAD"),
+            "Qoder manifest commands must resolve to commands/",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
         skill = root / "skills" / PLUGIN_NAME / "SKILL.md"
         skill.write_text(
             f'---\nname: {PLUGIN_NAME}\n---\n\nExample only:\nversion: "1.2"\n',
