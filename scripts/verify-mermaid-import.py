@@ -1089,9 +1089,67 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_import_regression(tmp: Path) -> None:
+    path = tmp / "supported-form.mmd"
+    path.write_text('stateDiagram-v2\nDisconnected\n[*] --> Active\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if "Disconnected" not in nodes or nodes["Disconnected"]["shape"] != "state":
+        fail("Standalone bare state was discarded")
+    concurrent = tmp / "concurrency.mmd"
+    concurrent.write_text('stateDiagram-v2\nstate Active {\nA --> B\n--\nC --> D\n}\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(concurrent), "--json"]))["diagrams"][0]
+    if "--" in {node["id"] for node in payload["nodes"]}:
+        fail("The documented concurrency separator became a phantom state")
+
+    # Note bodies are annotation text, even when they resemble diagram syntax.
+    for side in ("left", "right"):
+        note = tmp / f"state-note-{side}.mmd"
+        note.write_text(
+            "stateDiagram-v2\nstate Group {\nstate Idle\n"
+            f"note {side} of Idle\nDisconnected\nstate Phantom\n"
+            "Ghost --> Imaginary\n}\nIdle: false description\nend note\n"
+            "Active\n}\nOutside\n",
+            encoding="utf-8",
+        )
+        payload = json.loads(run_extract([str(note), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node for node in payload["nodes"]}
+        if set(nodes) != {"Group", "Idle", "Active", "Outside"} or payload["edges"]:
+            fail(f"A {side} state note body became diagram structure")
+        if nodes["Idle"]["label"] != "Idle" or nodes["Active"]["parent"] != "Group":
+            fail(f"A {side} state note body altered labels or container membership")
+        if nodes["Outside"]["parent"] is not None:
+            fail("Parsing did not resume after the note and composite state")
+
+    notes = tmp / "state-notes-adjacent-inline.mmd"
+    notes.write_text(
+        "stateDiagram-v2\nstate Idle\nnote left of Idle\nGhost\nend note\n"
+        "note right of Idle\nPhantom\nend note\n"
+        "note left of Idle: inline annotation\n"
+        "note right of Idle: inline annotation\nActive\nnote\nend\nnotebook\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(notes), "--json"]))["diagrams"][0]
+    if {node["id"] for node in payload["nodes"]} != {"Idle", "Active", "note", "end", "notebook"}:
+        fail("State note boundaries swallowed real states or retained annotation bodies")
+
+    special = tmp / "state-special-bare.mmd"
+    special.write_text(
+        "stateDiagram-v2\nstate Decision <<choice>>\nDecision\n"
+        "state Fork <<fork>>\nFork\nstate Join <<join>>\nJoin\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(special), "--json"]))["diagrams"][0]
+    shapes = {node["id"]: node["shape"] for node in payload["nodes"]}
+    if shapes != {"Decision": "choice", "Fork": "fork", "Join": "join"}:
+        fail("A repeated bare declaration replaced a special state shape")
+    ok("bare states retain shapes and exclude multiline state note bodies")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
+        check_import_regression(tmp)
         check_files()
         check_flowchart()
         check_shape_and_edge_vocabulary(tmp)
