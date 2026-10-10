@@ -104,3 +104,5 @@ Two of these rules live in a formula rather than a drawing, so they are executab
 - `assets/example-bar.html` — minimal light
 - `assets/example-bar-dark.html` — minimal dark
 - `assets/example-bar-full.html` — full editorial
+
+Dumbbell domain resolution retains finite bounds for representable subnormal and extreme values. If the next nice ladder step would overflow, the finite extreme is used; opposite-sign extreme domains are scaled without overflowing their span.
