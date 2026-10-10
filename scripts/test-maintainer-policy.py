@@ -14,6 +14,7 @@ is derived from the workflow's ``run:`` steps with these rules:
   steer control flow (``if``/``then``/``else``/``fi``, ``[``, ``git
   rev-parse``, ``exit``). The list is read off the run lines ci.yml has.
 - A line starting with ``npx`` is one gate (the Claude plugin validator).
+- A ``node --test ...`` invocation is one gate (the DSH host-adapter suite).
 - A ``git diff ... --exit-code`` line checks what the command before it in
   the same step generated, so it joins that command with ``&&`` (the
   build-icons freshness gate). Backslash continuations are joined first.
@@ -52,6 +53,7 @@ EXPECTED_MANIFESTS = {
 
 REQUIRED_COMMANDS = {
     "python3 scripts/test-maintainer-policy.py",
+    "node --test test/*.test.mjs",
     "python3 scripts/test-verify-semantic-motion.py",
     "python3 scripts/test-verify-sequence-oauth.py",
     "python3 scripts/test-verify-doctor.py",
@@ -121,6 +123,7 @@ RUN_KEY = re.compile(r"^(?P<prefix>\s*(?:-\s+)?)run:\s*(?P<value>.*?)\s*$")
 PYTHON_SCRIPT = re.compile(
     r"(?<![\w./-])python3?\s+(?P<script>[\w./-]+\.py)(?P<args>(?:[ \t]+[^\s;&|()<>]+)*)"
 )
+NODE_TEST = re.compile(r"(?<![\w./-])node\s+--test\s+(?P<args>[^;&|()<>]+)")
 
 
 def normalize(command: str) -> str:
@@ -248,7 +251,8 @@ def ci_gates(workflow: str) -> tuple[set[str], list[str]]:
                 commands.append(line)
                 continue
             commands.extend(match.group(0) for match in PYTHON_SCRIPT.finditer(line))
-            rest = PYTHON_SCRIPT.sub("", line)
+            commands.extend(match.group(0).strip() for match in NODE_TEST.finditer(line))
+            rest = NODE_TEST.sub("", PYTHON_SCRIPT.sub("", line))
             if "scripts/" in rest or not all(map(is_glue, split_commands(rest))):
                 unmapped.append(line)
         gates.update(gate for gate in map(ci_gate, commands) if gate is not None)

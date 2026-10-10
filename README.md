@@ -132,6 +132,21 @@ Copy or symlink `skills/diagram-design/` to `.opencode/skills/diagram-design` in
 </details>
 
 <details>
+<summary><b>DeepSeek Harness</b></summary>
+
+```bash
+dsh plugin --profile <profile> add github:cathrynlavery/diagram-design
+```
+
+The plugin installs the skill, its references, and the six slash commands as one package, and `dsh plugin` picks up merged releases the same way the marketplace hosts do. Ask for a diagram in natural language, or run `/doctor`, `/export-diagram`, `/import-drawio`, `/import-mermaid`, `/import-excalidraw`, and `/profile` (the four file commands accept a dropped attachment) — DSH resolves a skill name from the same `SKILL.md` description every other host uses. The plugin hands the model a short router and points it at the installed skill directory, so nothing is fetched at runtime and nothing in `skills/diagram-design/` is copied or modified. The import and export procedures run the packaged Python helpers, so `python3` must be on `PATH`.
+
+Verified against DeepSeek Harness `0.2.0-rc.2`.
+
+DeepSeek Harness also scans `~/.agents/skills`, so symlinking the inner skill there works without the plugin — use that route for editable work (see Editable install below). If both are present, the installed plugin wins, and editing a linked copy will not change what the model receives until the copy is removed or the plugin is removed.
+
+</details>
+
+<details>
 <summary><b>Editable install</b> (customize the style guide in a clone)</summary>
 
 Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Saved profiles in `~/.diagram-design/profiles/` survive updates, and projects with a `.diagram-design` marker are unaffected. Clone the repo and install the local path if you plan to customize the working style guide directly:
@@ -142,10 +157,14 @@ git clone git@github.com:cathrynlavery/diagram-design.git ~/code/diagram-design
 # Pi: register the checkout as a local package
 pi install ~/code/diagram-design
 
+# DeepSeek Harness: register the checkout as a plugin layer
+dsh plugin --profile <profile> add ~/code/diagram-design
+
 # Claude Code: symlink the inner skill
 ln -s ~/code/diagram-design/skills/diagram-design ~/.claude/skills/diagram-design
 
 # Other Agent Skills hosts: create only the roots you use
+# DeepSeek Harness reads ~/.agents/skills and ~/.dsh/skills, so the link below covers it
 mkdir -p ~/.agents/skills ~/.cursor/skills ~/.cline/skills ~/.kiro/skills ~/.config/opencode/skills ~/.copilot/skills
 ln -s ~/code/diagram-design/skills/diagram-design ~/.agents/skills/diagram-design
 ln -s ~/code/diagram-design/skills/diagram-design ~/.cursor/skills/diagram-design
@@ -155,7 +174,7 @@ ln -s ~/code/diagram-design/skills/diagram-design ~/.config/opencode/skills/diag
 ln -s ~/code/diagram-design/skills/diagram-design ~/.copilot/skills/diagram-design
 ```
 
-The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, Cursor, and other Agent Skills-compatible tools use the same files.
+The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, Cursor, DeepSeek Harness, and other Agent Skills-compatible tools use the same files.
 
 </details>
 
@@ -473,6 +492,10 @@ diagram-design/
 ├── .claude-plugin/                   # Claude marketplace + plugin manifest
 ├── .codex-plugin/                    # Codex plugin manifest
 ├── .factory-plugin/                  # Factory Droid marketplace + plugin manifest
+├── package.json                       # DeepSeek Harness bundle (dsh.bundle.patch)
+├── cordis.patch.yml                   # DeepSeek Harness profile row
+├── index.js                           # DeepSeek Harness skill provider and commands
+├── lib/                               # provider, router body and command bodies
 ├── commands/
 │   ├── export-diagram.md             # plugin export command
 │   ├── import-drawio.md              # plugin draw.io import command

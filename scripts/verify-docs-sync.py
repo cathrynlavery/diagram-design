@@ -105,6 +105,9 @@ SIZE_PRESET_SURFACES = {
 }
 FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
 FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
+# DeepSeek Harness has no directory manifest: its native metadata is the
+# root package.json, whose dsh.bundle.patch points at cordis.patch.yml.
+DSH_MANIFEST = Path("package.json")
 SUPPORT_DIRECTORIES = frozenset(
     {"references", "templates", "scripts", "assets", "examples"}
 )
@@ -1424,6 +1427,7 @@ MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/marketplace.json"), ("description",)),
     (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
     (FACTORY_MANIFEST, ("description",)),
+    (DSH_MANIFEST, ("description",)),
 )
 
 
