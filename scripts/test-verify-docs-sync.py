@@ -1493,6 +1493,10 @@ diagram-design/
 
         counted = root / "commands"
         counted.mkdir(parents=True, exist_ok=True)
+        for relative in verify.COUNT_SURFACES[4:]:
+            surface = root / relative
+            surface.parent.mkdir(parents=True, exist_ok=True)
+            surface.write_text("See the shipped visual types.\n", encoding="utf-8")
         drawio = counted / "import-drawio.md"
         mermaid = counted / "import-mermaid.md"
         excalidraw = counted / "import-excalidraw.md"
@@ -1557,6 +1561,61 @@ diagram-design/
         if errors:
             raise AssertionError(f"a count-free README failed: {errors}")
 
+        # README may state the count only when it equals the shipped number of
+        # type references, so the number a reader sees cannot go stale.
+        references = root / "skills/diagram-design/references"
+        references.mkdir(parents=True, exist_ok=True)
+        for index in range(3):
+            (references / f"type-shipped-{index}.md").write_text("# t\n", encoding="utf-8")
+        for exact in (
+            "3 editorial diagram types for Claude Code.\n",
+            "All 3 visual types ship in three static variants.\n",
+        ):
+            readme.write_text(readme_routed + exact, encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if errors:
+                raise AssertionError(f"the shipped README count was rejected for {exact!r}: {errors}")
+        readme.write_text(readme_routed + "4 editorial diagram types for Claude Code.\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if len(errors) != 1 or "but 3 type references ship" not in errors[0]:
+            raise AssertionError(f"a README count off by one was not reported: {errors}")
+        readme.write_text(readme_routed, encoding="utf-8")
+        mermaid.write_text(routed + "The skill draws 3 visual types.\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if len(errors) != 1 or "commands/import-mermaid.md" not in errors[0]:
+            raise AssertionError(f"a command may not state even the shipped count: {errors}")
+        mermaid.write_text(routed, encoding="utf-8")
+        for relative in verify.COUNT_SURFACES[4:]:
+            surface = root / relative
+            surface.write_text("The skill draws 4 visual types.\n", encoding="utf-8")
+            errors = []
+            verify.check_type_counts(errors, root)
+            if len(errors) != 1 or relative.as_posix() not in errors[0]:
+                raise AssertionError(f"a stale count in {relative} was not reported: {errors}")
+            surface.write_text("See the shipped visual types.\n", encoding="utf-8")
+        skill_surface = root / "skills/diagram-design/SKILL.md"
+        skill_surface.write_text("See §3 visual-type guide.\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"a section number was mistaken for a type count: {errors}")
+        skill_surface.write_text("### Visual-type guide (3)\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if errors:
+            raise AssertionError(f"the shipped guide heading count was rejected: {errors}")
+        skill_surface.write_text("### Visual-type guide (4)\n", encoding="utf-8")
+        errors = []
+        verify.check_type_counts(errors, root)
+        if len(errors) != 1 or "SKILL.md" not in errors[0]:
+            raise AssertionError(f"a stale guide heading count was not reported: {errors}")
+        skill_surface.write_text("See the shipped visual types.\n", encoding="utf-8")
+        for path in references.glob("type-shipped-*.md"):
+            path.unlink()
+
         for stale in (
             "39 editorial diagram types for Claude Code.\n",
             "All 39 visual types ship in three static variants.\n",
@@ -1570,7 +1629,7 @@ diagram-design/
             if (
                 len(errors) != 1
                 or "README.md" not in errors[0]
-                or "hardcodes the visual-type count" not in errors[0]
+                or "states the visual-type count" not in errors[0]
             ):
                 raise AssertionError(
                     f"a hardcoded README count was not reported for {stale!r}: {errors}"
@@ -1741,15 +1800,15 @@ diagram-design/
         line_trio = ["example-line.html", "example-line-dark.html", "example-line-full.html"]
         ridge_trio = ["example-ridgeline.html", "example-ridgeline-dark.html", "example-ridgeline-full.html"]
 
-        # 7. Variant sharing its parent's eyebrow is allowed (no error).
-        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01", parent="line"))
+        # 7. Variant carrying its parent's number plus a letter is allowed (no error).
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01a", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if any("eyebrow" in e or "parent" in e for e in errs):
             raise AssertionError(f"valid parent/variant reuse raised error: {errs}")
         print("OK gallery: variant sharing parent eyebrow is allowed")
 
         # 8. Variant with wrong eyebrow number is caught.
-        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "99", parent="line"))
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "99a", parent="line"))
         errs = run_gallery_check(html, line_trio + ridge_trio)
         if not any("ridgeline" in e and "eyebrow" in e for e in errs):
             raise AssertionError(f"variant with wrong eyebrow not caught: {errs}")
@@ -1768,10 +1827,10 @@ diagram-design/
             "example-state-lifecycle-full.html",
         ]
 
-        # 10. Lifecycle is a complete State variant and reuses eyebrow 01.
+        # 10. Lifecycle is a complete State variant labelled 01a.
         html = make_gallery_html(
             make_tab("state", "01"),
-            make_tab("state-lifecycle", "01", parent="state"),
+            make_tab("state-lifecycle", "01a", parent="state"),
         )
         errs = run_gallery_check(html, [
             "example-state.html",
@@ -1815,12 +1874,77 @@ diagram-design/
             make_tab("bar", "01"),
             make_tab("waterfall", "02"),
             make_tab("line", "03"),
-            make_tab("ridgeline", "03", parent="line"),
+            make_tab("ridgeline", "03a", parent="line"),
         )
         errs = run_gallery_check(html, trio_files + ridge_trio)
         if any("contiguous ascending" in e or "duplicate eyebrow" in e for e in errs):
             raise AssertionError(f"contiguous sequence with variants raised error: {errs}")
         print("OK gallery: contiguous ascending independent ordinals pass")
+
+        # 14. A variant without its letter repeats its parent's label and is caught.
+        html = make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01", parent="line"))
+        errs = run_gallery_check(html, line_trio + ridge_trio)
+        if not any("ridgeline" in e and "'01a'" in e for e in errs):
+            raise AssertionError(f"unlettered variant not caught: {errs}")
+        print("OK gallery: unlettered variant caught")
+
+        # 15. A variant stranded under another type is caught (the stray Line
+        # variants that once sat after Marimekko).
+        html = make_gallery_html(
+            make_tab("line", "01"),
+            make_tab("bar", "02"),
+            make_tab("ridgeline", "01a", parent="line"),
+        )
+        errs = run_gallery_check(html, line_trio + ridge_trio + trio_files)
+        if not any("ridgeline" in e and "directly after its parent" in e for e in errs):
+            raise AssertionError(f"stranded variant not caught: {errs}")
+        print("OK gallery: variant away from its parent caught")
+
+        # 16. Repeated variant letters are caught.
+        stream_trio = ["example-streamgraph.html", "example-streamgraph-dark.html", "example-streamgraph-full.html"]
+        html = make_gallery_html(
+            make_tab("line", "01"),
+            make_tab("ridgeline", "01a", parent="line"),
+            make_tab("streamgraph", "01a", parent="line"),
+        )
+        errs = run_gallery_check(html, line_trio + ridge_trio + stream_trio)
+        if not any("streamgraph" in e and "'01b'" in e for e in errs):
+            raise AssertionError(f"repeated variant letter not caught: {errs}")
+        print("OK gallery: repeated variant letter caught")
+
+        # 17. An independent tab may not carry a variant letter.
+        html = make_gallery_html(make_tab("line", "01a"))
+        errs = run_gallery_check(html, line_trio)
+        if not any("carries a variant letter" in e for e in errs):
+            raise AssertionError(f"lettered independent tab not caught: {errs}")
+        print("OK gallery: lettered independent tab caught")
+
+        # 18. Numbered tabs and type references must be the same set.
+        refs = gal_dir / "references"
+        refs.mkdir()
+        (refs / "type-line.md").write_text("", encoding="utf-8")
+        (refs / "type-bar.md").write_text("", encoding="utf-8")
+        gallery_file.write_text(
+            make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "01a", parent="line"), make_tab("bar", "02")),
+            encoding="utf-8",
+        )
+        errs = []
+        verify.check_gallery_type_parity(errs, gallery_file, refs)
+        if errs:
+            raise AssertionError(f"matching gallery and type references failed: {errs}")
+        gallery_file.write_text(
+            make_gallery_html(make_tab("line", "01"), make_tab("ridgeline", "02")),
+            encoding="utf-8",
+        )
+        errs = []
+        verify.check_gallery_type_parity(errs, gallery_file, refs)
+        if sorted(errs) != sorted([
+            "gallery numbers 'ridgeline' as a visual type but no type-ridgeline.md ships; "
+            "make it a variant (data-parent-type) of the type it draws",
+            "visual type 'bar' has no numbered gallery tab",
+        ]):
+            raise AssertionError(f"gallery and type references drift not caught: {errs}")
+        print("OK gallery: numbered tabs match the shipped type references")
 
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-assets-") as asset_tmp:
         tmp_skill_dir = Path(asset_tmp)
@@ -1863,7 +1987,7 @@ diagram-design/
         "strict-bundler packaging, "
         "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
-        "split routing, and gallery guards (parent/variant model, contiguous ordinals)"
+        "split routing, and gallery guards (parent/variant model, contiguous ordinals, variant letters, type parity)"
     )
     return 0
 

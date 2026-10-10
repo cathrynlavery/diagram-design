@@ -6,22 +6,22 @@
 
 - **Plot area margins:** left 80px, bottom 60px, top 40px, right 40px — inside `0 0 1000 500` viewBox.
 - **Point count:** 5–30 points. Fewer → just describe the relationship in prose; more → bin into a density contour.
-- **Axes:** X at y=420 (baseline), Y at x=80. Both use Geist Mono 8px gridline labels. Gridlines 4–6 per axis at equal intervals.
+- **Axes:** X at y=420 (baseline), Y at x=80. Both use `arrow-label` role 8px gridline labels. Gridlines 4–6 per axis at equal intervals.
 - **Point shape:** `<circle>` r=5 for standard points, r=6 for focal. Focal point in `accent` fill. Others in `muted @ 0.20` fill + `muted` stroke.
-- **Labels on points (optional):** Geist Mono 8px next to a point. Use a paper-fill rect mask behind the label. Label at most 2–3 points; not all.
-- **Trend line (optional):** `<line>` from lower-left to upper-right, stroke `rgba(45,49,66,0.25)` dashed 4,3. Never force a perfect fit — only add if the trend is visually obvious.
-- **Quadrant dividers (optional):** light dashed lines at the median x and y to split into quadrants. Label each quadrant in Geist Mono 8px, muted.
+- **Labels on points (optional):** `arrow-label` role 8px next to a point. Use a paper-fill rect mask behind the label. Label at most 2–3 points; not all.
+- **Trend line (optional):** `<line>` from lower-left to upper-right, stroke `ink @ 0.25` dashed 4,3. Never force a perfect fit — only add if the trend is visually obvious.
+- **Quadrant dividers (optional):** light dashed lines at the median x and y to split into quadrants. Label each quadrant in the `arrow-label` role at 8px, `muted`.
 
 ### Point pattern
 
 ```svg
 <!-- Non-focal point — paper mask + circle -->
-<circle cx="X" cy="Y" r="5" fill="#f5f5f5"/>
-<circle cx="X" cy="Y" r="5" fill="rgba(79,93,117,0.20)" stroke="#4f5d75" stroke-width="1"/>
+<circle cx="X" cy="Y" r="5" fill="{paper}"/>
+<circle cx="X" cy="Y" r="5" fill="{muted @ 0.20}" stroke="{muted}" stroke-width="1"/>
 
 <!-- Focal point -->
-<circle cx="X" cy="Y" r="6" fill="#f5f5f5"/>
-<circle cx="X" cy="Y" r="6" fill="rgba(235,108,54,0.15)" stroke="#eb6c36" stroke-width="1.2"/>
+<circle cx="X" cy="Y" r="6" fill="{paper}"/>
+<circle cx="X" cy="Y" r="6" fill="{accent @ 0.15}" stroke="{accent}" stroke-width="1.2"/>
 ```
 
 ## Anti-patterns
@@ -43,10 +43,10 @@ Not for: a third value that is really a category (use the focal accent or facet 
 - **Same plot frame as the parent:** margins left 80, bottom 60, top 40, right 40 inside `0 0 1000 500`; X rule at `y=420`, Y rule at `x=80`; gridlines at the parent's positions; legend on the house rhythm (rule `y=462`, `LEGEND` at `478`, keys at `490`).
 - **Item count:** 5–15. Below 5 the leave-one-out scale check has nothing to hold onto and a table says it better; above 15 the areas start stacking and the reading degrades to a density cloud — which is the parent's contour territory, not this.
 - **Radius from area:** `r = K·√value` for one constant K across the figure, sized so the largest bubble stays inside the plot (the shipped example uses `K = 1.4` on requests-per-second, giving 10.8–42px). State the area scale in the source line.
-- **Bound axis ticks:** every tick carries `data-tick` (axis) and `data-value` (the number it prints). 4–6 per axis at equal intervals, Geist Mono 8px, same placement as the parent.
+- **Bound axis ticks:** every tick carries `data-tick` (axis) and `data-value` (the number it prints). 4–6 per axis at equal intervals, `arrow-label` role 8px, same placement as the parent.
 - **Paper underlay per bubble**, same radius, painted immediately beneath — the translucent fill must not show gridlines through itself, because the fill's job is to read as one solid area.
 - **Draw order: largest first.** A small bubble painted early is buried under a later giant and its area is unreadable. `verify-bubble.py` checks paint order on every overlapping pair.
-- **Labels:** the focal bubble plus at most 2–3 outliers a reader will look for, Geist Mono 8px small-caps on a paper mask, each bound to its bubble with `data-name`. Never all of them.
+- **Labels:** the focal bubble plus at most 2–3 outliers a reader will look for, `arrow-label` role 8px small-caps on a paper mask, each bound to its bubble with `data-name`. Never all of them.
 - **4px grid** applies to the designed constants — axis rules, gridlines, tick baselines, legend rows. Bubble centres and radii are data-scaled and exempt; snapping them would move the data.
 
 #### Colour
@@ -54,14 +54,14 @@ Not for: a third value that is really a category (use the focal accent or facet 
 - **One accent bubble, and an `ink` opacity ramp for everything else** — never a hue per item. Every labelled bubble is named where it sits, so hue would re-encode what the labels already carry.
 - **The accent marks the editorially focal item, not the biggest or the worst single number.** In the shipped example it marks the service whose *combination* is the risk: near-peak volume on the worst error rate.
 - **The ramp runs faintest-on-largest** (0.14 on the largest fill up to 0.35 on the smallest in the shipped example). This is ink-mass compensation, not an encoding: a giant bubble at the same opacity as a small one dominates the page by area alone, so opacity scales down as area scales up and every bubble ends up with comparable visual weight. Tone is **not** a fourth variable — the legend must say which end of the ramp is which, in skin-neutral terms ("faintest fill is the largest bubble" survives both skins; "darkest" ships false on one of them).
-- **Every bubble keeps a `muted` stroke** (6.11:1 on light paper, 7.07:1 on dark) — the fills sit at opacities well under 3:1, so the stroke is what carries WCAG 1.4.11 for the mark's edge. The focal bubble's accent stroke measures 2.86:1 on light paper; as with the focal bar, line and slopegraph, its data is carried redundantly — position, label, and the legend naming it in words — and the accent adds only *which bubble is focal*.
+- **Every bubble keeps a `muted` stroke** (6.11:1 on light paper, 7.07:1 on dark) — the fills sit at opacities well under 3:1, so the stroke is what carries WCAG 1.4.11 for the mark's edge. The focal bubble's accent stroke measures 4.71:1 on light paper with the default skin and may measure less on an onboarded one; as with the focal bar, line and slopegraph, its data is carried redundantly — position, label, and the legend naming it in words — and the accent adds only *which bubble is focal*.
 - **Labels stay `ink` or `muted`**, including the focal one. Accent text at 8px misses AA on light paper.
 
 #### Honest-data rule
 
 **Area encodes the third value — never radius.** Radius-proportional sizing squares the claim: a 6× value reads as 36× the ink. `scripts/verify-bubble.py` gates it, along with the two axis scales.
 
-- **One linear scale per axis, every bubble on it.** A bubble nudged aside because two crowd each other reads as a different number; crowded bubbles are data, and the honest fixes are a hairline of separation (which the largest-first rule provides) or fewer items — never a moved centre.
+- **One finite, nonzero linear scale per axis, every bubble on it.** A bubble nudged aside because two crowd each other reads as a different number; crowded bubbles are data, and the honest fixes are a hairline of separation (which the largest-first rule provides) or fewer items — never a moved centre.
 - **Axes include zero, or the source line states the bounds.** A bubble's position is read against the origin in a way a slopegraph's is not. No log scale without saying so — and area next to a log axis is a reading most audiences get wrong, so prefer not at all.
 - **Omitted items are counted in the footnote.** A bubble chart with the inconvenient giant quietly missing is the same lie as a truncated axis.
 - **A non-positive magnitude cannot be a bubble.** Area has no sign; omit the item and say so.
@@ -69,21 +69,21 @@ Not for: a third value that is really a category (use the focal accent or facet 
 
 #### Declaring the values
 
-**Every drawn quantity is bound to an attribute stating the value it encodes.** The data circle carries all three values; the paper underlay is scenery and carries nothing.
+**Every drawn quantity is bound to an attribute stating the value it encodes.** A zero-slope value axis collapses distinct values to one position and is rejected, including in the beeswarm variant. The data circle carries all three values; the paper underlay is scenery and carries nothing.
 
 ```svg
 <!-- A bubble: position from two shared linear scales, area from the size.
      x = 80 + 1.76·ms, y = 420 - 95·pct, r = 1.4·√(req/s) -->
-<circle cx="537.6" cy="154" r="38.6" fill="#f5f5f5"/>
+<circle cx="537.6" cy="154" r="38.6" fill="{paper}"/>
 <circle data-name="Payments" data-x="260" data-y="2.8" data-size="760"
         cx="537.6" cy="154" r="38.6"
-        fill="rgba(235,108,54,0.15)" stroke="#eb6c36" stroke-width="1.2"/>
+        fill="{accent @ 0.15}" stroke="{accent}" stroke-width="1.2"/>
 
 <!-- Its label, bound to the bubble it names -->
-<text data-name="Payments" data-role="label" x="538" y="108" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PAYMENTS</text>
+<text data-name="Payments" data-role="label" x="538" y="108" fill="{ink}" font-size="8" font-family="{arrow-label}" text-anchor="middle" letter-spacing="0.06em">PAYMENTS</text>
 
 <!-- An axis tick, bound to the number it prints -->
-<text data-tick="x" data-value="300" x="608" y="440" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">300</text>
+<text data-tick="x" data-value="300" x="608" y="440" fill="{muted}" font-size="8" font-family="{arrow-label}" text-anchor="middle">300</text>
 ```
 
 What each binding buys, and what it costs to omit:
@@ -119,10 +119,10 @@ Not for: two variables (that is the parent scatter); comparing distributions acr
 
 #### Layout conventions
 
-- **One value axis, horizontal, at the parent's baseline** (`y=420` inside `0 0 1000 500`, plot margins left 80, right 40), with 4–6 bound ticks at equal intervals in Geist Mono 8px and **vertical gridlines only** — the swarm axis has no scale to grid, and a horizontal rule through the band would invite reading the packing offsets as values.
+- **One value axis, horizontal, at the parent's baseline** (`y=420` inside `0 0 1000 500`, plot margins left 80, right 40), with 4–6 bound ticks at equal intervals in the `arrow-label` role at 8px and **vertical gridlines only** — the swarm axis has no scale to grid, and a horizontal rule through the band would invite reading the packing offsets as values.
 - **Dot count: 20–300**, one dot per item, all at one radius (the shipped example uses `r=4`). Both ends of the budget are enforced by `scripts/verify-beeswarm.py`.
 - **Greedy dodge around a midline** (`y=230` in the shipped example): each dot takes the first free slot alternating above/below at a fixed pitch of `2r+2`. The dodge is packing, not data — any collision-free arrangement is legitimate, and the algorithm is not part of the contract.
-- **Labels: the focal dot plus the outliers a reader will look for, at most 6.** Geist Mono 8px small-caps on a paper mask, one tier per label, alternating sides of the band, each tied to its dot by an unbound hairline leader and bound to it with `data-name`.
+- **Labels: the focal dot plus the outliers a reader will look for, at most 6.** `arrow-label` role 8px small-caps on a paper mask, one tier per label, alternating sides of the band, each tied to its dot by an unbound hairline leader and bound to it with `data-name`.
 - **4px grid** applies to the designed constants — the axis rule, gridlines, tick baselines, legend rows. Dot positions are data-scaled on the value axis and packing-scaled on the swarm axis, and both are exempt; snapping them would move the data.
 
 #### Colour
@@ -147,16 +147,16 @@ Not for: two variables (that is the parent scatter); comparing distributions acr
 ```svg
 <!-- A dot: position on the shared value scale, x = 80 + 2·ms. The cy is
      packing only. -->
-<circle data-value="90" cx="260" cy="250" r="4" fill="rgba(45,49,66,0.55)" stroke="#4f5d75" stroke-width="0.75"/>
+<circle data-value="90" cx="260" cy="250" r="4" fill="{ink @ 0.55}" stroke="{muted}" stroke-width="0.75"/>
 
 <!-- The focal dot — named, accented, same radius as everyone -->
-<circle data-value="431" data-name="req-4c1f" cx="942" cy="230" r="4" fill="rgba(235,108,54,0.55)" stroke="#eb6c36" stroke-width="1.2"/>
+<circle data-value="431" data-name="req-4c1f" cx="942" cy="230" r="4" fill="{accent @ 0.55}" stroke="{accent}" stroke-width="1.2"/>
 
 <!-- Its label, bound to the dot it names -->
-<text data-name="req-4c1f" data-role="label" x="942" y="120" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REQ-4C1F</text>
+<text data-name="req-4c1f" data-role="label" x="942" y="120" fill="{ink}" font-size="8" font-family="{arrow-label}" text-anchor="middle" letter-spacing="0.06em">REQ-4C1F</text>
 
 <!-- An axis tick, bound to the number it prints -->
-<text data-tick="x" data-value="200" x="480" y="440" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">200</text>
+<text data-tick="x" data-value="200" x="480" y="440" fill="{muted}" font-size="8" font-family="{arrow-label}" text-anchor="middle">200</text>
 ```
 
 What each binding buys, and what it costs to omit:

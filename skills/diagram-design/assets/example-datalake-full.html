@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#7a8399; --color-rule:rgba(45,49,66,0.12); --color-accent:#eb6c36; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    :root { --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#5a6580; --color-rule:rgba(45,49,66,0.12); --color-accent:#bf4520; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
     body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
     .container { max-width: 1200px; margin: 0 auto; }
     .header { margin-bottom: 2.5rem; }
@@ -54,7 +54,7 @@
             <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
           </marker>
           <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+            <polygon points="0 0, 8 3, 0 6" fill="#bf4520"/>
           </marker>
         </defs>
 
@@ -63,13 +63,13 @@
 
         <rect x="4"   y="32" width="160" height="200" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
         <rect x="176" y="32" width="160" height="200" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-        <rect x="380" y="32" width="184" height="160" rx="8" fill="rgba(235,108,54,0.04)" stroke="rgba(235,108,54,0.20)" stroke-width="0.8"/>
+        <rect x="380" y="32" width="184" height="160" rx="8" fill="rgba(191,69,32,0.04)" stroke="rgba(191,69,32,0.20)" stroke-width="0.8"/>
         <rect x="600" y="32" width="168" height="200" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
         <rect x="804" y="32" width="164" height="280" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
 
         <text x="84"  y="44" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">SOURCES</text>
         <text x="256" y="44" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">INGEST</text>
-        <text x="472" y="44" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">DATA LAKE</text>
+        <text x="472" y="44" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">DATA LAKE</text>
         <text x="688" y="44" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">QUERY</text>
         <text x="876" y="44" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.16em" text-anchor="middle">CONSUME</text>
 
@@ -77,17 +77,17 @@
         <line x1="152" y1="192" x2="187" y2="192" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
         <path d="M 324,80 H 350 Q 358,80 358,88 V 112 Q 358,120 366,120 H 391" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
         <path d="M 324,200 H 350 Q 358,200 358,192 V 168 Q 358,160 366,160 H 391" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 553,128 H 576 Q 584,128 584,120 V 96 Q 584,88 592,88 H 615" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <path d="M 553,128 H 576 Q 584,128 584,120 V 96 Q 584,88 592,88 H 615" fill="none" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
         <path d="M 553,152 H 576 Q 584,152 584,160 V 180 Q 584,188 592,188 H 615" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
         <rect x="586" y="102" width="28" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="600" y="111" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SQL</text>
-        <path d="M 760,76 H 784 Q 788,76 788,68 H 815" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 760,100 H 780 Q 788,100 788,108 V 148 Q 788,156 796,156 H 815" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 760,180 H 782 Q 788,180 788,168 H 815" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 760,204 H 780 Q 788,204 788,212 V 232 Q 788,240 796,240 H 815" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <text x="600" y="111" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SQL</text>
+        <line x1="760" y1="88" x2="815" y2="88" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <path d="M 688,116 V 132 Q 688,140 696,140 H 876 Q 884,140 884,148 V 152" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <line x1="760" y1="180" x2="815" y2="180" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+        <path d="M 688,220 V 232 Q 688,240 696,240 H 876 Q 884,240 884,244" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
         <path d="M 884,300 V 312 Q 884,320 876,320 H 480 Q 472,320 472,312 V 180" fill="none" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
         <rect x="660" y="314" width="36" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="678" y="323" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WRITE</text>
+        <text x="678" y="323" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WRITE</text>
 
         <rect x="16" y="60" width="136" height="56" rx="6" fill="#f5f5f5"/>
         <rect x="16" y="60" width="136" height="56" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
@@ -134,14 +134,14 @@
         <text x="256" y="218" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">DAG scheduling</text>
 
         <rect x="392" y="100" width="160" height="80" rx="8" fill="#f5f5f5"/>
-        <rect x="392" y="100" width="160" height="80" rx="8" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
-        <rect x="400" y="106" width="36" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
-        <text x="418" y="115" fill="rgba(235,108,54,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
-        <svg x="460" y="108" width="24" height="24" viewBox="0 0 24 24" fill="#eb6c36" aria-hidden="true">
+        <rect x="392" y="100" width="160" height="80" rx="8" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1.2"/>
+        <rect x="400" y="106" width="36" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.50)" stroke-width="0.8"/>
+        <text x="418" y="115" fill="rgba(191,69,32,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+        <svg x="460" y="108" width="24" height="24" viewBox="0 0 24 24" fill="#bf4520" aria-hidden="true">
           <path d="M13.2072.006c-.6216-.0478-1.2.1943-1.6211.582a2.15 2.15 0 0 0-.0938 3.0352l3.4082 3.5507a3.042 3.042 0 0 1-.664 4.6875l-.463.2383V7.2853a15.4198 15.4198 0 0 0-8.0174 10.4862v.0176l6.5487-3.3281v7.621L13.7794 24V13.6817l.8965-.4629a4.4432 4.4432 0 0 0 1.2207-7.0292l-3.371-3.5254a.7489.7489 0 0 1 .037-1.0547.7522.7522 0 0 1 1.0567.0371l.4668.4863-.006.0059 4.0704 4.2441a.0566.0566 0 0 0 .082 0 .06.06 0 0 0 0-.0703l-3.1406-5.1425-.1484.1425.1484-.1445C14.4945.3926 13.8287.0538 13.2072.006Zm-.9024 9.8652v2.9941l-4.1523 2.1484a13.9787 13.9787 0 0 1 2.7676-3.9277 14.1784 14.1784 0 0 1 1.3847-1.2148z"/>
         </svg>
-        <text x="472" y="148" fill="#eb6c36" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MinIO</text>
-        <text x="472" y="164" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.75">Object store · S3-API</text>
+        <text x="472" y="148" fill="#bf4520" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MinIO</text>
+        <text x="472" y="164" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.75">Object store · S3-API</text>
 
         <rect x="616" y="60" width="144" height="56" rx="6" fill="#f5f5f5"/>
         <rect x="616" y="60" width="144" height="56" rx="6" fill="white" stroke="rgba(45,49,66,0.25)" stroke-width="1"/>
@@ -198,7 +198,7 @@
 
         <line x1="40" y1="432" x2="960" y2="432" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
         <text x="40" y="448" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-        <rect x="40" y="460" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1.2"/>
+        <rect x="40" y="460" width="20" height="12" rx="3" fill="rgba(191,69,32,0.10)" stroke="#bf4520" stroke-width="1.2"/>
         <text x="68" y="471" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">MinIO data lake (focal)</text>
         <rect x="220" y="460" width="20" height="12" rx="3" fill="white" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
         <text x="248" y="471" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Ingest · query tools</text>
@@ -206,7 +206,7 @@
         <text x="428" y="471" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">BI · notebooks · pipelines</text>
         <line x1="648" y1="462" x2="668" y2="462" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
         <text x="676" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Write-back path (batch)</text>
-        <line x1="820" y1="462" x2="840" y2="462" stroke="#eb6c36" stroke-width="1.2"/>
+        <line x1="820" y1="462" x2="840" y2="462" stroke="#bf4520" stroke-width="1.2"/>
         <text x="848" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Primary query path</text>
       </svg>
     </div>

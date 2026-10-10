@@ -12,11 +12,11 @@
       --paper-2: #ececec;
       --ink: #2d3142;
       --muted: #4f5d75;
-      --soft: #7a8399;
+      --soft: #5a6580;
       --rule: rgba(45,49,66,0.12);
       --rule-strong: rgba(45,49,66,0.30);
-      --accent: #eb6c36;
-      --accent-tint: rgba(235,108,54,0.08);
+      --accent: #bf4520;
+      --accent-tint: rgba(191,69,32,0.08);
       --sans: 'Geist', system-ui, sans-serif;
       --serif: 'Instrument Serif', serif;
       --mono: 'Geist Mono', ui-monospace, monospace;
@@ -198,7 +198,7 @@
             <path d="M 0 1 L 10 5 L 0 9 z" fill="#2d3142" />
           </marker>
           <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 1 L 10 5 L 0 9 z" fill="#eb6c36" />
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#bf4520" />
           </marker>
         </defs>
 
@@ -212,9 +212,9 @@
         <text x="76" y="148" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Identity: dev_alice (mTLS)</text>
 
         <!-- Node: Unauthorized Attacker -->
-        <rect x="60" y="325" width="200" height="72" rx="6" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
-        <text x="76" y="357" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
-        <text x="76" y="377" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
+        <rect x="60" y="325" width="200" height="72" rx="6" fill="#ffffff" stroke="#bf4520" stroke-width="1.5" />
+        <text x="76" y="357" fill="#bf4520" font-family="'Geist', sans-serif" font-size="14" font-weight="600">Unauthorized Attacker</text>
+        <text x="76" y="377" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="11">Bypass Attempt (No Key)</text>
 
         <!-- Base Layout: Trust Zone 2 - Corporate CI/CD & Governance -->
         <rect x="330" y="40" width="380" height="490" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1" />
@@ -231,9 +231,9 @@
         <text x="370" y="258" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="11">Policy: OPA Signature &amp; Vulnerability Scan</text>
 
         <!-- Node: Boundary Firewall & WAF (Left side x=350..560) -->
-        <rect x="350" y="325" width="210" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
-        <text x="366" y="355" fill="#eb6c36" font-family="'Geist', sans-serif" font-size="13" font-weight="600">Boundary Firewall &amp; WAF</text>
-        <text x="366" y="375" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="10.5" font-weight="600">Status: × BLOCKED</text>
+        <rect x="350" y="325" width="210" height="72" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1.5" />
+        <text x="366" y="355" fill="#bf4520" font-family="'Geist', sans-serif" font-size="13" font-weight="600">Boundary Firewall &amp; WAF</text>
+        <text x="366" y="375" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="10.5" font-weight="600">Status: × BLOCKED</text>
 
         <!-- Node: Audit Log Service -->
         <rect x="350" y="435" width="340" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1.5" />
@@ -275,19 +275,19 @@
 
         <!-- STEP 3: Security Gate Approval → Production Gateway → Database Deployment -->
         <g data-motion-item data-step="3" aria-label="Step 3: Security gate verifies OPA policy, approves artifact, and deploys via Production API Gateway to Isolated Core Database">
-          <!-- Gate ✓ PASS → Production API Gateway (diagonal: gate right edge to gateway left edge) -->
-          <path d="M 690 230 L 780 132" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
-          <rect x="700" y="166" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
-          <text x="732" y="179" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
+          <!-- Gate ✓ PASS → Production API Gateway (elbow through the gutter between zones at x=735) -->
+          <path d="M 690 248 H 727 Q 735 248 735 240 V 140 Q 735 132 743 132 H 780" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
+          <rect x="702.5" y="181" width="65" height="18" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1" />
+          <text x="735" y="194" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9" font-weight="600">✓ PASS</text>
           <!-- Production API Gateway → Isolated Core Database (vertical: gateway bottom to db top) -->
           <path d="M 940 168 L 940 210" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
         </g>
 
         <!-- STEP 4: Unauthorized Bypass Attempt Blocked at Boundary Firewall -->
         <g data-motion-item data-step="4" aria-label="Step 4: Unauthorized attacker connection attempt is blocked at trust boundary firewall">
-          <path d="M 260 361 L 350 361" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
-          <rect x="272" y="345" width="65" height="18" rx="3" fill="#ffffff" stroke="#eb6c36" stroke-width="1" />
-          <text x="304" y="358" text-anchor="middle" fill="#eb6c36" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600">BYPASS</text>
+          <path d="M 260 361 L 350 361" fill="none" stroke="#bf4520" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
+          <rect x="272" y="345" width="65" height="18" rx="3" fill="#ffffff" stroke="#bf4520" stroke-width="1" />
+          <text x="304" y="358" text-anchor="middle" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="8.5" font-weight="600">BYPASS</text>
         </g>
 
         <!-- STEP 5: Audit Log & SIEM Security Monitoring Record -->
@@ -295,7 +295,7 @@
           <!-- Gate Audit Trail (Runs cleanly down the right side x=620, clear of Firewall node x=350..560!) -->
           <path d="M 620 286 L 620 435" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
           <!-- WAF Audit Trail (Runs directly down x=455 into Audit Log) -->
-          <path d="M 455 397 L 455 435" fill="none" stroke="#eb6c36" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
+          <path d="M 455 397 L 455 435" fill="none" stroke="#bf4520" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arrow-accent)" />
           <!-- SOC Monitoring Link (Data flows FROM Audit Log TO SOC for real-time monitoring) -->
           <path d="M 690 471 L 780 471" fill="none" stroke="#2d3142" stroke-width="2" marker-end="url(#arrow-ink)" />
           <!-- Audit Badge Chip -->
@@ -310,7 +310,7 @@
           <text x="73" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Authorized Paved Road</text>
 
           <!-- Flow Line 2: Blocked Bypass Attempt -->
-          <line x1="225" y1="584" x2="250" y2="584" stroke="#eb6c36" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow-accent)" />
+          <line x1="225" y1="584" x2="250" y2="584" stroke="#bf4520" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#arrow-accent)" />
           <text x="258" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Blocked Bypass Attempt</text>
 
           <!-- Box 1: Paved Road Node -->
@@ -318,11 +318,11 @@
           <text x="447" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Paved Road Node</text>
 
           <!-- Box 2: Attacker Node (White Fill + Orange Border) -->
-          <rect x="565" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#eb6c36" stroke-width="1.5" />
+          <rect x="565" y="577" width="16" height="12" rx="2" fill="#ffffff" stroke="#bf4520" stroke-width="1.5" />
           <text x="587" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Attacker Node</text>
 
           <!-- Box 3: Firewall Blocked Node (Orange Tint Fill + Orange Border) -->
-          <rect x="690" y="577" width="16" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.5" />
+          <rect x="690" y="577" width="16" height="12" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1.5" />
           <text x="712" y="588" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="9.5">Firewall Blocked</text>
 
           <!-- Box 4: Action / Status Chip (White Chip + Solid Border) -->

@@ -101,6 +101,21 @@ def test_identical_and_tiny_values():
     ok(ceiling > floor, "sub-unit magnitudes still yield a usable domain")
 
 
+def test_small_domains_round_outward():
+    for values in ([4e-13, 9e-13], [-9e-13, -4e-13],
+                   [-4e-13, 9e-13], [0, 9e-13], [-9e-13, 0],
+                   [4e-100, 9e-100], [1e-13, 1e-13]):
+        floor, ceiling = resolve_domain(values)
+        ok(floor <= min(values) <= max(values) <= ceiling,
+           "small values %r remain inside the outward-rounded domain" % (values,))
+        ok(all(verify_dumbbell.PLOT_X0 <= scale(value, floor, ceiling)
+               <= verify_dumbbell.PLOT_X0 + verify_dumbbell.PLOT_WIDTH
+               for value in values),
+           "small values %r map inside the prescribed plot" % (values,))
+    ok(resolve_domain([4e-13, 9e-13]) == (0.0, 1e-12),
+       "small positive data chooses the first enclosing ladder magnitude")
+
+
 def test_empty_and_non_finite_rejected():
     """The other polarity: garbage in must raise, not return a silent domain."""
     for label, values in (("empty input", []),
@@ -151,9 +166,9 @@ def test_rejected_treatments_are_caught():
     ok(contrast(hairline, "#f5f5f5") < 3.0,
        "the original 25%% hairline connector is correctly under 3:1")
     ok(contrast("#eb6c36", "#f5f5f5") < 3.0,
-       "an unstroked accent endpoint is correctly under 3:1 on light paper")
+       "the retired accent #eb6c36 is correctly under 3:1 on light paper")
     ok(contrast("#7a8399", "#f5f5f5") < 4.5,
-       "the soft token is correctly under 4.5:1 and unusable for text")
+       "the retired soft #7a8399 is correctly under 4.5:1 and unusable for text")
 
 
 def test_checker_fails_closed_on_a_stripped_reference(tmp_path: Path):
@@ -187,6 +202,7 @@ def main() -> int:
     test_zero_touching_domains()
     test_sign_cases_resolve()
     test_identical_and_tiny_values()
+    test_small_domains_round_outward()
     test_empty_and_non_finite_rejected()
     test_truncated_bounds_are_detected()
     test_scaling_preserves_gap_ratios()

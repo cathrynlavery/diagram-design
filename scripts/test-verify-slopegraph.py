@@ -221,6 +221,19 @@ def main() -> int:
 
 
 def run_cases(h: Harness) -> int:
+
+    collapsed = document(''.join(
+        series(name, frm, to, y1=250, y2=250)
+        + labels(name, frm, to, y_from=250, y_to=250)
+        for name, frm, to in ROWS))
+    h.expect_finding("distinct values cannot collapse to a flat value axis",
+                     collapsed, "zero or non-finite scale")
+    inverted = document(''.join(
+        series(name, frm, to, y1=500-y(frm), y2=500-y(to))
+        + labels(name, frm, to, y_from=500-y(frm), y_to=500-y(to))
+        for name, frm, to in ROWS))
+    h.expect_clean("a finite nonzero inverted axis remains measurable", inverted)
+
     # ── Negative half: honest figures must stay silent ────────────────────
     h.expect_clean("an honest slopegraph reports nothing", honest(ROWS))
 
@@ -582,7 +595,7 @@ def run_cases(h: Harness) -> int:
         "axis rules and legend swatches without data-series are skipped silently",
         document(honest_rows_block()
                  + '  <line x1="320" y1="40" x2="320" y2="420" stroke="#2d3142"/>\n'
-                   '  <line x1="40" y1="492" x2="64" y2="492" stroke="#eb6c36"/>\n'),
+                   '  <line x1="40" y1="492" x2="64" y2="492" stroke="#bf4520"/>\n'),
     )
 
     for label in ("left", "right"):

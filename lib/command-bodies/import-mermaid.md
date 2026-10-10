@@ -19,7 +19,9 @@ Defaults
   visual types listed in `SKILL.md` §3.
 
 Flags: `--format`, `--size`, `--detail`, `--audience`, `--type`, `--diagram`, `--variant`,
-`--output`. Their values and the size presets are in `references/output-spec.md`.
+`--output`. Their values and the size presets are in `references/output-spec.md`. A `--diagram`
+index fails only if that block fails; other blocks that cannot be parsed are listed as `unparsed`
+in the header. `--diagram=all` fails if any block fails.
 
 Required behaviour
 

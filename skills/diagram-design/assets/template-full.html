@@ -14,11 +14,11 @@
       --color-paper-2:     #ececec;
       --color-ink:         #2d3142;
       --color-muted:       #4f5d75;
-      --color-soft:        #7a8399;
+      --color-soft:        #5a6580;
       --color-rule:        rgba(45,49,66,0.12);
       --color-rule-solid:  rgba(79,93,117,0.25);
-      --color-accent:      #eb6c36;
-      --color-accent-tint: rgba(235,108,54,0.08);
+      --color-accent:      #bf4520;
+      --color-accent-tint: rgba(191,69,32,0.08);
       --color-link:        #2e5aa8;
       --font-sans:   'Geist', system-ui, sans-serif;
       --font-serif:  'Instrument Serif', 'Noto Serif', 'Noto Serif KR', 'Times New Roman', serif;
@@ -203,7 +203,7 @@
 
           <!-- Arrow: coral (accent — primary / highlighted flows) -->
           <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+            <polygon points="0 0, 8 3, 0 6" fill="#bf4520"/>
           </marker>
 
           <!-- Arrow: link-blue (#2e5aa8 — HTTP/API / external calls) -->
@@ -233,13 +233,13 @@
 
         <!-- Auth / security flow (dashed coral) -->
         <path d="M 80 140 L 80 200 Q 80 218 98 218 L 200 218 Q 218 218 218 236 L 218 276"
-              fill="none" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="5,4"
+              fill="none" stroke="#bf4520" stroke-width="1.2" stroke-dasharray="5,4"
               marker-end="url(#arrow-accent)"/>
-        <text x="148" y="212" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">JWT</text>
+        <text x="148" y="212" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">JWT</text>
 
         <!-- Primary data flow (coral) -->
-        <line x1="620" y1="305" x2="696" y2="305" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
-        <text x="655" y="297" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TLS</text>
+        <line x1="620" y1="305" x2="696" y2="305" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <text x="655" y="297" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TLS</text>
 
 
         <!-- =================================================================
@@ -250,19 +250,19 @@
 
         <!-- ── External / User ──────────────────────────────────────── -->
         <rect x="30" y="278" width="100" height="54" rx="6" fill="#f5f5f5"/>
-        <rect x="30" y="278" width="100" height="54" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+        <rect x="30" y="278" width="100" height="54" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
         <!-- Rectangular type tag (not rounded — brand rule) -->
-        <rect x="38" y="284" width="26" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.4)" stroke-width="0.8"/>
-        <text x="51" y="293" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+        <rect x="38" y="284" width="26" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.4)" stroke-width="0.8"/>
+        <text x="51" y="293" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
         <!-- Main label -->
         <text x="80" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Users</text>
         <text x="80" y="323" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Browser / Mobile</text>
 
         <!-- ── Security / Auth ──────────────────────────────────────── -->
         <rect x="30" y="78" width="100" height="56" rx="6" fill="#f5f5f5"/>
-        <rect x="30" y="78" width="100" height="56" rx="6" fill="rgba(235,108,54,0.06)" stroke="rgba(235,108,54,0.50)" stroke-width="1"/>
-        <rect x="38" y="84" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
-        <text x="52" y="93" fill="rgba(235,108,54,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">AUTH</text>
+        <rect x="30" y="78" width="100" height="56" rx="6" fill="rgba(191,69,32,0.06)" stroke="rgba(191,69,32,0.50)" stroke-width="1"/>
+        <rect x="38" y="84" width="28" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.40)" stroke-width="0.8"/>
+        <text x="52" y="93" fill="rgba(191,69,32,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">AUTH</text>
         <text x="80" y="110" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Auth Provider</text>
         <text x="80" y="125" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">OAuth 2.0</text>
 
@@ -276,7 +276,7 @@
         <!-- Faded mono watermark numeral (background) -->
         <text x="294" y="323" fill="rgba(45,49,66,0.06)" font-size="40" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="end">01</text>
         <rect x="206" y="284" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
-        <text x="218" y="293" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CDN</text>
+        <text x="218" y="293" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CDN</text>
         <text x="254" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">CloudFront</text>
         <text x="254" y="323" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">AWS CDN</text>
 
@@ -285,21 +285,21 @@
         <rect x="198" y="378" width="112" height="102" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
         <text x="294" y="468" fill="rgba(45,49,66,0.06)" font-size="40" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="end">02</text>
         <rect x="206" y="384" width="22" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
-        <text x="217" y="393" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">S3</text>
+        <text x="217" y="393" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">S3</text>
         <text x="254" y="408" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S3 Buckets</text>
         <text x="254" y="426" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">bucket-assets</text>
         <text x="254" y="440" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">bucket-uploads</text>
-        <text x="254" y="466" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OAI PROTECTED</text>
+        <text x="254" y="466" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">OAI PROTECTED</text>
 
         <!-- ── Security group boundary ───────────────────────────────── -->
-        <rect x="348" y="264" width="120" height="80" rx="6" fill="transparent" stroke="rgba(235,108,54,0.45)" stroke-width="1" stroke-dasharray="4,4"/>
-        <text x="356" y="278" fill="rgba(235,108,54,0.7)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SG · :443</text>
+        <rect x="348" y="264" width="120" height="80" rx="6" fill="transparent" stroke="rgba(191,69,32,0.45)" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="356" y="278" fill="rgba(191,69,32,0.7)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SG · :443</text>
 
         <!-- ── Load Balancer (inside security group) ──────────────────── -->
         <rect x="358" y="282" width="100" height="54" rx="6" fill="#f5f5f5"/>
         <rect x="358" y="282" width="100" height="54" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
         <rect x="366" y="288" width="22" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
-        <text x="377" y="297" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LB</text>
+        <text x="377" y="297" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LB</text>
         <text x="408" y="311" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Load Balancer</text>
         <text x="408" y="326" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">HTTPS :443</text>
 
@@ -321,9 +321,9 @@
 
         <!-- ── Frontend / UI ─────────────────────────────────────────── -->
         <rect x="198" y="518" width="200" height="112" rx="6" fill="#f5f5f5"/>
-        <rect x="198" y="518" width="200" height="112" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-        <rect x="206" y="524" width="22" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
-        <text x="217" y="533" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">UI</text>
+        <rect x="198" y="518" width="200" height="112" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+        <rect x="206" y="524" width="22" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.50)" stroke-width="0.8"/>
+        <text x="217" y="533" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">UI</text>
         <text x="298" y="550" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Web App</text>
         <text x="298" y="567" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">React + TypeScript</text>
         <text x="298" y="581" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Astro SSG</text>
@@ -337,7 +337,7 @@
              ================================================================= -->
         <text x="510" y="544" fill="#2d3142" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.12em">LEGEND</text>
 
-        <rect x="510" y="558" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <rect x="510" y="558" width="14" height="10" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
         <text x="530" y="567" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Frontend / UI</text>
 
         <rect x="510" y="576" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
@@ -349,20 +349,20 @@
         <rect x="510" y="612" width="14" height="10" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
         <text x="530" y="621" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Database</text>
 
-        <rect x="510" y="630" width="14" height="10" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+        <rect x="510" y="630" width="14" height="10" rx="2" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
         <text x="530" y="639" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">External / User</text>
 
         <!-- Arrow types -->
         <line x1="510" y1="655" x2="524" y2="655" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
         <text x="530" y="659" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">HTTP / API call</text>
 
-        <line x1="510" y1="671" x2="524" y2="671" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-accent)"/>
+        <line x1="510" y1="671" x2="524" y2="671" stroke="#bf4520" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-accent)"/>
         <text x="530" y="675" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Auth flow</text>
 
         <line x1="510" y1="687" x2="524" y2="687" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
         <text x="530" y="691" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Internal connection</text>
 
-        <rect x="510" y="698" width="14" height="10" rx="2" fill="transparent" stroke="rgba(235,108,54,0.45)" stroke-width="1" stroke-dasharray="3,3"/>
+        <rect x="510" y="698" width="14" height="10" rx="2" fill="transparent" stroke="rgba(191,69,32,0.45)" stroke-width="1" stroke-dasharray="3,3"/>
         <text x="530" y="707" fill="#4f5d75" font-size="9" font-family="'Geist', sans-serif">Security group</text>
 
       </svg>

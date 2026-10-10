@@ -8,8 +8,8 @@
 - **Cell size:** 116px wide × 56px tall, gap 4px. Maximum grid: 6 columns × 5 rows within the viewBox; smaller grids scale the cells up to fill the space.
 - **Row count:** 3–7. Fewer → a table says it with less ink; more → the cells shrink below readability at the minimum viewBox width.
 - **Column count:** 3–8. Same constraint: 8 × 116 = 928px exceeds the available 800px at this viewBox, so either reduce columns or reduce cell width proportionally (minimum cell width 80px).
-- **Axes:** row labels right-aligned in the left gutter (Geist Mono 9px, `text-anchor="end"`, x=148); column labels centered above each column (Geist Mono 9px, `text-anchor="middle"`); axis titles in Geist Mono 7px small-caps rotated/positioned in the margins.
-- **Value text (optional):** Geist Mono 8px centered inside each cell. Flip text color to paper when fill opacity ≥ 0.40 (the ink ramp becomes dark enough to carry white); keep ink text below that threshold.
+- **Axes:** row labels right-aligned in the left gutter (`sublabel` role 9px, `text-anchor="end"`, x=148); column labels centered above each column (`sublabel` role 9px, `text-anchor="middle"`); axis titles in the `eyebrow` role 7px small-caps rotated/positioned in the margins.
+- **Value text (optional):** `arrow-label` role 8px centered inside each cell. Flip text color to paper when fill opacity ≥ 0.40 (the ink ramp becomes dark enough to carry white); keep ink text below that threshold.
 
 ### Cell pattern
 
@@ -17,18 +17,18 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 ```svg
 <!-- Paper underlay — no data attributes, scenery only -->
-<rect x="160" y="64" width="116" height="56" fill="#f5f5f5"/>
+<rect x="160" y="64" width="116" height="56" fill="{paper}"/>
 
 <!-- Data cell — all three bindings required -->
 <rect data-row="auth" data-col="S1" data-value="4"
       x="160" y="64" width="116" height="56"
-      fill="rgba(45,49,66,0.29)"/>
+      fill="{ink @ 0.29}"/>
 
 <!-- Focal cell — data-focal="true" required, uses accent fill -->
-<rect x="520" y="124" width="116" height="56" fill="#f5f5f5"/>
+<rect x="520" y="124" width="116" height="56" fill="{paper}"/>
 <rect data-row="payments" data-col="S4" data-value="47" data-focal="true"
       x="520" y="124" width="116" height="56"
-      fill="rgba(235,108,54,0.85)" stroke="#eb6c36" stroke-width="1.2"/>
+      fill="{accent @ 0.85}" stroke="{accent}" stroke-width="1.2"/>
 ```
 
 ## The fill ramp
@@ -58,7 +58,7 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 
 ## Declaring the values
 
-**Every drawn cell is bound to its row, column, and value.** The paper underlay carries nothing. The data rect carries all three.
+**Every drawn cell is bound to its row, column, and value.** Declared data values are finite and nonnegative; unsigned counts may exceed one billion. NaN, infinity, and negative values are rejected rather than weakening grid completeness. The paper underlay carries nothing. The data rect carries all three.
 
 | Binding | Without it |
 |---|---|
@@ -68,5 +68,9 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 | `data-focal="true"` on the focal rect | The focal cell is counted as a non-focal cell with an unexplained accent fill. |
 
 `scripts/verify-heatmap.py` enforces the complete `rows × cols` grid, the monotone fill ramp on non-focal cells, and at most one focal cell. It does **not** verify cell geometry (position, width, height) because both axes are categorical — position encodes "which row/column", and that is carried by the label, not by a scale the checker can measure against.
+
+Focal-text contrast measurement accepts finite unitless and explicit `px` coordinates. Unsupported relative units or malformed lengths produce a named measurement finding, never a traceback; this does not add a quantitative cell-geometry check.
+
+Focal-text contrast composites translucent foreground text against the resolved focal-cell fill before measuring WCAG AA. The 4.5:1 minimum applies to that foreground/background pair in both themes.
 
 **No `transform` on any verified element.** Bake any coordinate offsets directly into `x`/`y` attributes.

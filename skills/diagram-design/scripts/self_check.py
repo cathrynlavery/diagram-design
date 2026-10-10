@@ -72,6 +72,7 @@ class DiagramParser(HTMLParser):
         self.styles: list[str] = []
         self.css_attributes: list[str] = []
         self.svgs: list[dict[str, object]] = []
+        self.ids: Counter[str] = Counter()
         self.unsafe: list[str] = []
         self.references: list[tuple[str, str, str]] = []
         self._svg_depth = 0
@@ -89,6 +90,8 @@ class DiagramParser(HTMLParser):
         data: dict[str, str] = {}
         for key, value in normalized_attrs:
             data.setdefault(key, value)
+        if data.get("id"):
+            self.ids[data["id"]] += 1
         if tag in {"base", "embed", "object", "iframe"}:
             self.unsafe.append(f"<{tag}> is not allowed in a diagram file")
         for key, value in normalized_attrs:
@@ -307,6 +310,9 @@ def check_svgs(parser: DiagramParser, errors: list[str]) -> None:
         desc_id = desc_attrs.get("id", "")
         if title_id in {"", "title"} or desc_id in {"", "desc"}:
             errors.append(f"svg {number} title/desc IDs must be diagram-prefixed, never bare")
+        for naming_id in dict.fromkeys((title_id, desc_id)):
+            if parser.ids[naming_id] > 1:
+                errors.append(f"duplicate accessible SVG naming ID {naming_id!r}")
         if labelled != [title_id, desc_id]:
             errors.append(f"svg {number} aria-labelledby must name title then desc")
 
@@ -417,7 +423,7 @@ def check_motion(parser: DiagramParser, source: str, errors: list[str]) -> None:
             errors.append("motion file needs a <noscript> explanation of the complete static frame")
 
 
-def verify(path: Path) -> list[str]:
+def verify(path: Path, offline: bool = False) -> list[str]:
     source = path.read_text(encoding="utf-8")
     parser = parsed_document(source)
     errors: list[str] = []
@@ -427,6 +433,10 @@ def verify(path: Path) -> list[str]:
         finding = reference_error(tag, rel, value)
         if finding:
             errors.append(finding)
+        elif offline and is_approved_google_fonts_stylesheet(value.strip()):
+            errors.append(
+                "offline: file loads Google Fonts; remove the font <link> to use system fonts"
+            )
     check_svgs(parser, errors)
     check_scripts(parser, errors)
     check_motion(parser, source, errors)
@@ -436,11 +446,16 @@ def verify(path: Path) -> list[str]:
 def main() -> int:
     argument_parser = argparse.ArgumentParser(description=__doc__)
     argument_parser.add_argument("files", nargs="+", type=Path)
+    argument_parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="also fail on the Google Fonts link, for system-font output that makes no network requests",
+    )
     args = argument_parser.parse_args()
     failed = False
     for path in args.files:
         try:
-            errors = verify(path)
+            errors = verify(path, offline=args.offline)
         except (OSError, UnicodeError) as exc:
             errors = [str(exc)]
         if errors:

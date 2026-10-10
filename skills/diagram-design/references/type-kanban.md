@@ -5,8 +5,8 @@
 ## Layout conventions
 
 - **Up to 5 vertical columns of equal width (240px), 32px gutters.** Column background is `ink @ 0.02`; no column border.
-- **Header band per column:** column name in Geist sans 12px weight 600, anchored left. A right-anchored **WIP chip** — a rectangular tag (`rx=2`, **never** a pill) holding `n/limit` in Geist Mono 8px — or bare `n` on a queue or terminal column, which carries no limit. Every in-process column states one. A hairline `rule` separator sits directly under the header band, full column width.
-- **Cards:** the §6 node-box pattern ([primitives-core.md](primitives-core.md#node-box--full-pattern)) at `rx=6`, column width minus 16px padding on each side, 56px tall, 12px vertical gap between cards. Content: title in Geist sans 12px weight 600, and a Geist Mono 9px `muted` sublabel line for `TICKET-ID · owner` (e.g. `AVA-214 · nadia`).
+- **Header band per column:** column name in the `node-name` role, 12px, weight 600, anchored left. A right-anchored **WIP chip** — a rectangular tag (`rx=2`, **never** a pill) holding `n/limit` in the `eyebrow` role at 8px — or bare `n` on a queue or terminal column, which carries no limit. Every in-process column states one. A hairline `rule` separator sits directly under the header band, full column width.
+- **Cards:** the §6 node-box pattern ([primitives-core.md](primitives-core.md#node-box--full-pattern)) at `rx=6`, column width minus 16px padding on each side, 56px tall, 12px vertical gap between cards. Content: title in the `node-name` role, 12px, weight 600, and a `sublabel`-role 9px `muted` sublabel line for `TICKET-ID · owner` (e.g. `AVA-214 · nadia`).
 - **Drawing order:** background → column fills → header text + WIP chips → header rules → cards (each: box, then left accent bar if blocked, then title, then sublabel) → legend.
 
 ## Card states — the type's semantic vocabulary

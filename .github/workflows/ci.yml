@@ -165,6 +165,14 @@ jobs:
         id: skin
         run: python scripts/lint-skin.py --all --baseline
 
+      - name: Verify skin token contrast
+        if: always()
+        id: contrast
+        shell: bash
+        run: |
+          python scripts/test-verify-contrast.py
+          python scripts/verify-contrast.py
+
       - name: Verify quantitative polar chart
         if: always()
         id: polar
@@ -413,6 +421,36 @@ jobs:
         id: architecture_delta_tests
         run: python scripts/test-verify-architecture-delta.py
 
+      - name: Verify exploded examples match their builder
+        if: always()
+        id: exploded_build
+        run: python scripts/build-exploded-examples.py --check
+
+      - name: Verify exploded axonometric geometry
+        if: always()
+        id: exploded
+        run: python scripts/verify-exploded.py --all
+
+      - name: Verify exploded axonometric checker
+        if: always()
+        id: exploded_tests
+        run: python scripts/test-verify-exploded.py
+
+      - name: Verify axonometric plan examples match their builder
+        if: always()
+        id: axo_plan_build
+        run: python scripts/build-axonometric-plan-examples.py --check
+
+      - name: Verify axonometric plan geometry and tags
+        if: always()
+        id: axo_plan
+        run: python scripts/verify-axonometric-plan.py --all
+
+      - name: Verify axonometric plan checker
+        if: always()
+        id: axo_plan_tests
+        run: python scripts/test-verify-axonometric-plan.py
+
       - name: Verify tone claims against the ramps they describe
         if: always()
         id: skin_polarity
@@ -440,6 +478,23 @@ jobs:
           pip install "playwright==${PLAYWRIGHT_VERSION}"
           playwright install --with-deps chromium
           python -c "import importlib.metadata as m; print('playwright', m.version('playwright'))"
+
+      # The export snippet's browser contract, enforced where Playwright and
+      # Chromium are already installed (stalled load, normal load, and
+      # non-timeout errors propagating must all hold).
+      - name: Verify export snippet stalled-load fallback
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: export_wait
+        shell: bash
+        run: |
+          # Playwright is installed on this leg, so a SKIP means the browser
+          # contract silently went unverified -- treat it as a failure.
+          out="$(python scripts/test-export-wait.py)"
+          echo "$out"
+          case "$out" in
+            SKIP:*) echo "::error::export-wait tests skipped despite Playwright being installed" && exit 1 ;;
+          esac
+          echo "$out" | grep -q "All export-wait cases passed"
 
       # The checks before the sweep: a broken linter must not be able to report
       # a clean repository.
@@ -479,6 +534,7 @@ jobs:
           echo "| Devicon Normalization | ${{ steps.devicon.outcome == 'success' && '✅ Passed' || (steps.devicon.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Mojibake Repair Utility | ${{ steps.mojibake.outcome == 'success' && '✅ Passed' || (steps.mojibake.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skin Token Contrast | ${{ steps.contrast.outcome == 'success' && '✅ Passed' || (steps.contrast.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Heatmap Monotone Ramp & Grid | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Heatmap Checker | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
@@ -525,8 +581,15 @@ jobs:
           echo "| Beeswarm Checker | ${{ steps.beeswarm_tests.outcome == 'success' && '✅ Passed' || (steps.beeswarm_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Architecture Delta Checker | ${{ steps.architecture_delta_tests.outcome == 'success' && '✅ Passed' || (steps.architecture_delta_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exploded Examples Match Builder | ${{ steps.exploded_build.outcome == 'success' && '✅ Passed' || (steps.exploded_build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exploded Axonometric Geometry | ${{ steps.exploded.outcome == 'success' && '✅ Passed' || (steps.exploded.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Exploded Axonometric Checker | ${{ steps.exploded_tests.outcome == 'success' && '✅ Passed' || (steps.exploded_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Axonometric Plan Examples Match Builder | ${{ steps.axo_plan_build.outcome == 'success' && '✅ Passed' || (steps.axo_plan_build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Axonometric Plan Geometry & Tags | ${{ steps.axo_plan.outcome == 'success' && '✅ Passed' || (steps.axo_plan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Axonometric Plan Checker | ${{ steps.axo_plan_tests.outcome == 'success' && '✅ Passed' || (steps.axo_plan_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tone Claim vs Ramp Polarity | ${{ steps.skin_polarity.outcome == 'success' && '✅ Passed' || (steps.skin_polarity.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Skin Polarity Checker | ${{ steps.skin_polarity_tests.outcome == 'success' && '✅ Passed' || (steps.skin_polarity_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Export Snippet Stalled-Load Fallback | ${{ steps.export_wait.outcome == 'success' && '✅ Passed' || (steps.export_wait.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY

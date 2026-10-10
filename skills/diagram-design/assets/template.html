@@ -11,7 +11,7 @@
       --color-paper:   #f5f5f5;   /* white-smoke */
       --color-ink:     #2d3142;   /* jet-black */
       --color-muted:   #4f5d75;   /* blue-slate */
-      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --color-accent:  #bf4520;   /* burnt-tangerine */
       --font-sans:     'Geist', system-ui, sans-serif;
       --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
       --font-mono:     'Geist Mono', ui-monospace, monospace;
@@ -54,7 +54,7 @@
       margin-bottom: 1.5rem;
     }
 
-    svg { width: 100%; min-width: 1000px; display: block; }
+    svg { width: 100%; min-width: 960px; display: block; }
     /* Paper has no scrollbar, so the local scroller would clip instead of
        scroll. Let the diagram scale down to the sheet: smaller but whole
        beats sharp but cut off. Must come after the svg rule above - a media
@@ -72,12 +72,12 @@
 
     <!-- Replace [diagram-slug] with a unique slug for this diagram before export. -->
     <div class="diagram-container">
-      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="[diagram-slug]-title [diagram-slug]-desc">
+      <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="[diagram-slug]-title [diagram-slug]-desc">
         <title id="[diagram-slug]-title">[Diagram title]</title>
         <desc id="[diagram-slug]-desc">[One sentence describing what the diagram shows]</desc>
         <defs>
           <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
           <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
 
           <!-- OPTIONAL: dot-pattern background. Uncomment the <pattern> and the second <rect> below if you want the dotted paper look. -->

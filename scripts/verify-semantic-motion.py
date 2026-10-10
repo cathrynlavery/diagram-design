@@ -28,7 +28,7 @@ ANIMATION = ROOT / "skills/diagram-design/references/animation.md"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
 ADR_0002 = ROOT / "docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md"
 MAX_SKILL_BYTES = 40_000
-VISUAL_TYPE_COUNT = 42
+VISUAL_TYPE_COUNT = 44
 
 PATTERN_NAMES = (
     "Fan-in queue / bottleneck",
@@ -145,7 +145,7 @@ class ContractParser(HTMLParser):
                 if not allowed_font:
                     self.remote_assets.append((tag, value))
 
-        if tag == "svg":
+        if tag == "svg" and self._svg_depth == 0:
             self._svg_depth = 1
             self._current_svg = {
                 "attrs": data,
@@ -495,10 +495,12 @@ def verify_example(path: Path = EXAMPLE) -> list[str]:
     if steps != [1, 2, 3, 4, 5]:
         errors.append(f"policy steps must be exactly [1, 2, 3, 4, 5]; found {steps}")
 
-    if len(parser.svgs) != 1:
-        errors.append(f"expected one SVG; found {len(parser.svgs)}")
+    checkable = [svg for svg in parser.svgs
+                 if str(svg["attrs"].get("aria-hidden", "")).casefold() != "true"]
+    if len(checkable) != 1:
+        errors.append(f"expected one accessible SVG; found {len(checkable)}")
     else:
-        svg = parser.svgs[0]
+        svg = checkable[0]
         attrs = svg["attrs"]
         title = svg["title"]
         desc = svg["desc"]

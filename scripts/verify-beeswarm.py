@@ -183,7 +183,7 @@ DECLARES_VALUE_RE = re.compile(r"\bdata-value\s*=", re.IGNORECASE)
 # by, and an accent FILL on a muted-stroked dot already fails the one-ink
 # rule instead.
 ACCENT_RE = re.compile(
-    r"#eb6c36\b|#f08a59\b|rgba\(\s*235\s*,\s*108\s*,\s*54\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
 
@@ -543,6 +543,12 @@ def check_scale(dots: list, findings: list, source: str, name: str):
         return None, None
 
     slope, intercept = fit(points)
+    if slope == 0 or not all(map(math.isfinite, (slope, intercept))):
+        findings.append(
+            "%s: the value axis has a zero or non-finite scale — distinct "
+            "values must map to distinct finite positions" % name
+        )
+        return None, None
     if len(points) >= 4:
         for index, (value, drawn) in enumerate(points):
             peers = points[:index] + points[index + 1:]

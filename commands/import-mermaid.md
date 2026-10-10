@@ -32,7 +32,7 @@ Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` block
 - `--detail` — `faithful` (≤24 nodes, zoned), `balanced` (≤12), `simplified` (≤7).
 - `--audience` — `engineer`, `mixed`, `executive`. Governs wording, not element count.
 - `--type` — force a diagram type instead of inferring it.
-- `--diagram` — diagram index or `all` (one file per block).
+- `--diagram` — diagram index or `all` (one file per block). An index fails only if that block fails; other blocks that cannot be parsed are listed as `unparsed` in the header. `all` fails if any block fails.
 - `--variant` — `light`, `dark`, or `full` editorial template.
 - `--output` — output base path; the extension is appended per format.
 

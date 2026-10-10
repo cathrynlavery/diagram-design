@@ -52,7 +52,7 @@ TAIL = "</svg></body></html>\n"
 MID, PITCH, R = 230, 10, 4
 
 INK = "rgba(45,49,66,0.55)"
-ACCENT_FILL = "rgba(235,108,54,0.55)"
+ACCENT_FILL = "rgba(191,69,32,0.55)"
 
 
 def cx(value: float) -> float:
@@ -79,7 +79,7 @@ def dot(value: float, row: int = 0, name=None, drawn_cx=None, drawn_cy=None,
 
 
 def focal(value: float, row: int = 0, name=None, **kw) -> str:
-    return dot(value, row, name, fill=ACCENT_FILL, stroke="#eb6c36", **kw)
+    return dot(value, row, name, fill=ACCENT_FILL, stroke="#bf4520", **kw)
 
 
 def label(name: str, x: float, y: float = 150, text=None,
@@ -223,6 +223,21 @@ class Harness:
 
 
 def run_cases(h: Harness) -> int:
+
+    separated = ''.join(dot(i * 10, drawn_cy=150 + i * 10) for i in range(24))
+    h.expect_clean("a separated value axis remains measurable", document(separated, TICKS))
+    collapsed = ''.join(dot(i * 10, drawn_cx=500, drawn_cy=150 + i * 10)
+                        for i in range(24))
+    collapsed_ticks = ''.join(tick(value, position=500) for value in (0, 100, 200, 400))
+    h.expect_finding("distinct values cannot share a zero scale despite legal dodge",
+                     document(collapsed, collapsed_ticks), "zero or non-finite scale")
+    inverted = ''.join(dot(i * 10, drawn_cx=1000 - cx(i * 10), drawn_cy=150 + i * 10)
+                       for i in range(24))
+    inverted_ticks = ''.join(tick(value, position=1000 - cx(value))
+                             for value in (0, 100, 200, 400))
+    h.expect_clean("a finite nonzero inverted axis remains measurable",
+                   document(inverted, inverted_ticks))
+
     # ── Positive polarity: honest figures pass ────────────────────────────
     for path in SHIPPED:
         found = verify.check(path)

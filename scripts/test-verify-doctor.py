@@ -6,6 +6,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -200,6 +201,37 @@ def main() -> int:
             if python_cmd is not None:
                 raise AssertionError(f"expected no python command, got {python_cmd!r}")
         print("OK: an empty PATH fails without naming a command")
+
+        # Exercise the probe through a real subprocess against Playwright's
+        # import contract: the package need not expose a __version__ attribute.
+        fake_package = root / "import-probe" / "playwright"
+        touch(fake_package / "__init__.py", "# No __version__ attribute.\n")
+        browser_path = root / "import-probe" / "chromium"
+        touch(browser_path)
+        touch(fake_package / "sync_api.py", (
+            "from types import SimpleNamespace\n"
+            "class sync_playwright:\n"
+            "    def __enter__(self):\n"
+            f"        return SimpleNamespace(chromium=SimpleNamespace(executable_path={str(browser_path)!r}))\n"
+            "    def __exit__(self, *args): pass\n"
+        ))
+        original_pythonpath = os.environ.get("PYTHONPATH")
+        os.environ["PYTHONPATH"] = str(fake_package.parent)
+        try:
+            expect_status(verify.check_playwright(sys.executable), verify.PASS,
+                          "Playwright is installed and Chromium is present")
+            browser_path.unlink()
+            expect_status(verify.check_playwright(sys.executable), verify.WARN,
+                          "Chromium is not ready")
+            touch(fake_package / "__init__.py", "raise ModuleNotFoundError('playwright unavailable')\n")
+            expect_status(verify.check_playwright(sys.executable), verify.WARN,
+                          "Playwright package is not available")
+        finally:
+            if original_pythonpath is None:
+                os.environ.pop("PYTHONPATH", None)
+            else:
+                os.environ["PYTHONPATH"] = original_pythonpath
+        print("OK: real import probe does not require Playwright version metadata")
 
         summary_checks = [
             verify.CheckResult("a", verify.PASS, "ok"),

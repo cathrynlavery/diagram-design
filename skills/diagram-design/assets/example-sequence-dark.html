@@ -75,7 +75,7 @@
             <polygon points="0 0, 8 3, 0 6" fill="#f08a59"/>
           </marker>
           <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#6a95d8"/>
+            <polygon points="0 0, 8 3, 0 6" fill="#739fdf"/>
           </marker>
         </defs>
 
@@ -107,7 +107,7 @@
              ================================================================= -->
 
         <!-- M1: Reader → Cloudflare  (HTTPS request · link-blue) -->
-        <line x1="128" y1="176" x2="352" y2="176" stroke="#6a95d8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="128" y1="176" x2="352" y2="176" stroke="#739fdf" stroke-width="1.2" marker-end="url(#arrow-link)"/>
 
         <!-- M2: Cloudflare → Astro  (cache miss · muted) -->
         <line x1="352" y1="232" x2="580" y2="232" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -130,7 +130,7 @@
 
         <!-- M1 label -->
         <rect x="188" y="160" width="104" height="12" rx="2" fill="#2d3142"/>
-        <text x="240" y="170" fill="#6a95d8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GET /ARTICLES/SLUG</text>
+        <text x="240" y="170" fill="#739fdf" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GET /ARTICLES/SLUG</text>
 
         <!-- M2 label -->
         <rect x="416" y="216" width="100" height="12" rx="2" fill="#2d3142"/>
@@ -159,9 +159,9 @@
 
         <!-- Actor 1: Reader (external / soft) -->
         <rect x="56" y="72" width="144" height="56" rx="6" fill="#2d3142"/>
-        <rect x="56" y="72" width="144" height="56" rx="6" fill="rgba(191,192,192,0.10)" stroke="#8e98ac" stroke-width="1"/>
+        <rect x="56" y="72" width="144" height="56" rx="6" fill="rgba(191,192,192,0.10)" stroke="#949eb2" stroke-width="1"/>
         <rect x="64" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(142,140,131,0.40)" stroke-width="0.8"/>
-        <text x="78" y="89" fill="#8e98ac" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+        <text x="78" y="89" fill="#949eb2" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
         <text x="128" y="104" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reader</text>
         <text x="128" y="119" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Browser</text>
 
@@ -169,7 +169,7 @@
         <rect x="280" y="72" width="144" height="56" rx="6" fill="#2d3142"/>
         <rect x="280" y="72" width="144" height="56" rx="6" fill="rgba(245,245,245,0.03)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
         <rect x="288" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.22)" stroke-width="0.8"/>
-        <text x="304" y="89" fill="#8e98ac" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EDGE</text>
+        <text x="304" y="89" fill="#949eb2" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EDGE</text>
         <text x="352" y="104" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cloudflare</text>
         <text x="352" y="119" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pages · cache</text>
 
@@ -185,7 +185,7 @@
         <rect x="728" y="72" width="144" height="56" rx="6" fill="#2d3142"/>
         <rect x="728" y="72" width="144" height="56" rx="6" fill="rgba(245,245,245,0.02)" stroke="rgba(245,245,245,0.22)" stroke-width="1" stroke-dasharray="4,3"/>
         <rect x="736" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.22)" stroke-width="0.8"/>
-        <text x="750" y="89" fill="#8e98ac" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ASY</text>
+        <text x="750" y="89" fill="#949eb2" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ASY</text>
         <text x="800" y="104" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Analytics</text>
         <text x="800" y="119" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Beacon · async</text>
 
@@ -205,7 +205,7 @@
         <text x="200" y="548" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Activation</text>
 
         <!-- Item 3: Request arrow (link-blue) -->
-        <line x1="308" y1="546" x2="336" y2="546" stroke="#6a95d8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="308" y1="546" x2="336" y2="546" stroke="#739fdf" stroke-width="1.2" marker-end="url(#arrow-link)"/>
         <text x="344" y="548" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">HTTP request</text>
 
         <!-- Item 4: Return / async (muted dashed) -->

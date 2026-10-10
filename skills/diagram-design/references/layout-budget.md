@@ -34,6 +34,8 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max org chart depth | 4 |
 | Max org chart nodes | 12 |
 | Max layers (layer stack) | 6 |
+| Max parts / levels / focal parts (exploded axonometric) | 5 / 5 / 1, three detail levels |
+| Max tagged rooms or buildings / boxes / focal (axonometric plan) | 8 / 40 / 1 |
 | Max circles (venn) | 3 |
 | Max layers (pyramid) | 6 |
 | Max radar axes | 5 |
@@ -63,10 +65,10 @@ If you exceed, split into two diagrams (overview + detail).
 
 ### Page layout
 
-1. **Header** — eyebrow (Geist Mono), title (Instrument Serif), optional subtitle (Geist muted).
+1. **Header** — `eyebrow` role, `title` role, optional subtitle (`node-name` family, `muted`).
 2. **Diagram container** — default: **clean, borderless**, no background — the SVG sits directly on the page paper. Optional *framed* variant (for card-heavy layouts or hero placements): `paper-2` bg + 1px `rule` border + 8px radius + `1.5rem` padding + `overflow-x: auto`.
 3. **Summary cards** — 2–3 col grid with *varied* widths (e.g., `1.1fr 1fr 0.9fr`).
-4. **Footer** — colophon in Geist Mono, muted, hairline top border.
+4. **Footer** — colophon in the `sublabel` role, `muted`, hairline top border.
 
 ## Summary Card Pattern
 
@@ -86,7 +88,7 @@ Don't use 3 identical generic cards. Vary the treatment:
 Rules:
 
 - `background: #ffffff` (not paper — slight lift without shadow)
-- `border: 1px solid rgba(45,49,66,0.12)`
+- `border: 1px solid` the `rule` color
 - `border-radius: 6px`, `padding: 1.25rem`
 - **No `box-shadow`**
 - Card dots: 7px, `border-radius: 50%` — ink / muted / coral / link / soft variants

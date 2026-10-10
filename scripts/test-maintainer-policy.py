@@ -73,6 +73,12 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-skin-polarity.py",
     "python3 scripts/verify-architecture-delta.py --all",
     "python3 scripts/test-verify-architecture-delta.py",
+    "python3 scripts/build-exploded-examples.py --check",
+    "python3 scripts/verify-exploded.py --all",
+    "python3 scripts/test-verify-exploded.py",
+    "python3 scripts/build-axonometric-plan-examples.py --check",
+    "python3 scripts/verify-axonometric-plan.py --all",
+    "python3 scripts/test-verify-axonometric-plan.py",
     "python3 scripts/lint-render.py --self-test",
     "python3 scripts/lint-render.py --all",
 }

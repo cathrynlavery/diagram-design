@@ -20,9 +20,9 @@ against this module rather than the other way round.
    carry "which series" and "which pair". WCAG 1.4.11 asks 3:1 of a graphical
    object required to understand the content, and shape redundancy does not
    waive it: a reader still has to see the solid mark's boundary and the line
-   joining the pair. Accent-on-paper is 2.86:1 skin-wide and cannot carry that,
-   so the boundary is carried by a stroke and the connector by an alpha that
-   clears 3:1 in both themes. The thresholds are checked here against the tokens
+   joining the pair. The default accent clears it (4.71:1 light, 5.21:1 dark),
+   but an onboarded accent may not, so the boundary is carried by an ink stroke
+   and the connector by an alpha that clears 3:1 in both themes. The thresholds are checked here against the tokens
    the reference actually documents, so the two cannot drift apart.
 
 The check FAILS CLOSED. A reference this cannot parse, or a token it cannot
@@ -91,7 +91,9 @@ def _nice_magnitude(value: float) -> float:
     base = 10.0 ** exponent
     for step in (1.0, 2.0, 2.5, 5.0, 10.0):
         candidate = step * base
-        if candidate >= magnitude - 1e-12:
+        # Bounds must enclose the data even when its unit is much smaller
+        # than a fixed epsilon. The ladder already provides outward rounding.
+        if candidate >= magnitude:
             return candidate
     return 10.0 * base
 
@@ -188,6 +190,10 @@ def check_domain_rules():
         ("crossing zero", [-20, 5, 40, -3]),
         ("single identical pair", [7, 7]),
         ("tiny magnitudes", [0.0004, 0.0009]),
+        ("small positive magnitudes", [4e-13, 9e-13]),
+        ("small negative magnitudes", [-9e-13, -4e-13]),
+        ("small crossing-zero magnitudes", [-4e-13, 9e-13]),
+        ("small zero-touching magnitudes", [0, 9e-13]),
     ]
     for label, values in cases:
         try:

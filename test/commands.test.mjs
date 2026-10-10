@@ -332,7 +332,7 @@ const BEHAVIOUR_LITERALS = {
   'doctor': ['--strict', '--json', 'read-only', 'references/doctor.md'],
   'export-diagram': ['device_scale_factor=2', 'assets/index.html', 'data-block-id', '1, 2, 3'],
   'import-drawio': ['drawio_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'balanced', 'mixed', 'light'],
-  'import-mermaid': ['mermaid_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'untrusted'],
+  'import-mermaid': ['mermaid_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'untrusted', 'unparsed'],
   'import-excalidraw': ['excalidraw_extract.py', 'doc-inline', '960 600', '9 nodes', '24 nodes', 'freedraw'],
   'profile': ['switch', 'marker', '.diagram-design'],
 }

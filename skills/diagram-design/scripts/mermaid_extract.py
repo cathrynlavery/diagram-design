@@ -62,9 +62,12 @@ def _configure_stdout_utf8() -> None:
         reconfigure(encoding="utf-8", errors="strict")
 
 
+class ExtractError(Exception):
+    """An input the extractor refuses. `main()` reports it and exits 2."""
+
+
 def _fail(message: str) -> NoReturn:
-    print(f"mermaid_extract: {message}", file=sys.stderr)
-    raise SystemExit(2)
+    raise ExtractError(message)
 
 
 @dataclass
@@ -108,6 +111,7 @@ class Diagram:
         default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
     )
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
+    _state_descriptions: dict[str, list[str]] = field(default_factory=dict, init=False, repr=False)
 
     @property
     def node_map(self) -> dict[str, Node]:
@@ -125,6 +129,8 @@ class Diagram:
         if existing is not None:
             if label and (label != node_id or existing.label == existing.id):
                 existing.label = label
+                if label != node_id:
+                    self._state_descriptions.pop(node_id, None)
             if shape != "rect" or not existing.shape:
                 existing.shape = shape
             if parent is not None and existing.parent is None:
@@ -942,6 +948,8 @@ def _parse_state(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
     containers: list[str] = []
+    descriptions: dict[str, list[str]] = {}
+    pending_descriptions = diagram._state_descriptions
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
@@ -963,9 +971,15 @@ def _parse_state(
             diagram.add_node(node_id, node_id, "container", parent, container=True)
             containers.append(node_id)
             continue
-        alias = re.match(r'^state\s+"(.*?)"\s+as\s+([\w.:-]+)$', text, re.I)
+        alias = re.match(r'^state\s+"(.*?)"\s+as\s+([\w.:-]+)\s*(\{)?$', text, re.I)
         if alias:
-            diagram.add_node(alias.group(2), clean_label(alias.group(1)), "state", parent)
+            label, node_id, opening = alias.groups()
+            diagram.add_node(node_id, clean_label(label), "container" if opening else "state", parent, container=bool(opening))
+            # A renaming alias discards earlier descriptions; later ones build on it.
+            if node_id not in pending_descriptions:
+                descriptions.pop(node_id, None)
+            if opening:
+                containers.append(node_id)
             continue
         stereotype = re.match(
             r"^state\s+([\w.:-]+)\s+<<(fork|join|choice)>>$", text, re.I
@@ -990,13 +1004,24 @@ def _parse_state(
             continue
         description = re.match(r"^([A-Za-z_][\w.-]*)\s*:\s*(.+)$", text)
         if description:
-            diagram.add_node(
-                description.group(1), clean_label(description.group(2)), "state", parent
-            )
+            node_id, label = description.group(1), clean_label(description.group(2))
+            if node_id not in descriptions:
+                existing = diagram.node_map.get(node_id)
+                descriptions[node_id] = [existing.label] if existing and existing.label != node_id else []
+            descriptions[node_id].append(label)
+            diagram.add_node(node_id, label, "state", parent)
+            pending_descriptions[node_id] = descriptions[node_id]
             continue
         plain = re.match(r"^state\s+([\w.:-]+)$", text, re.I)
         if plain:
             diagram.add_node(plain.group(1), plain.group(1), "state", parent)
+
+    # Materialize each accumulated label once; later explicit aliases still win.
+    for node_id, parts in pending_descriptions.items():
+        label = "\n".join(parts)
+        if label:
+            diagram.node_map[node_id].label = label
+    pending_descriptions.clear()
 
 
 def _parse_er(
@@ -1185,19 +1210,28 @@ def _escape_table(text: str) -> str:
     return _escape_markdown(text.replace("\n", " ⏎ "))
 
 
+def _block_summary(block: SourceBlock, selected: list[Diagram]) -> str:
+    """One header entry. A block that was not selected is parsed only to
+    describe it, so a failure there is listed instead of ending the run."""
+    diagram = next((item for item in selected if item.index == block.index), None)
+    if diagram is None:
+        try:
+            diagram = parse_block(block)
+        except ExtractError as error:
+            return f"[{block.index}] unparsed: {_escape_markdown(str(error))}"
+    return f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
+
+
 def digest(
     path: Path,
-    diagrams: list[Diagram],
+    blocks: list[SourceBlock],
     selected: list[Diagram],
     max_rows: int,
 ) -> str:
     output = [f"# Mermaid IR — {path.name}", ""]
     output.append(
-        f"{len(diagrams)} diagram(s): "
-        + ", ".join(
-            f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
-            for diagram in diagrams
-        )
+        f"{len(blocks)} diagram(s): "
+        + ", ".join(_block_summary(block, selected) for block in blocks)
     )
     for diagram in selected:
         info = analyze(diagram)
@@ -1309,11 +1343,11 @@ def digest(
     return "\n".join(output)
 
 
-def to_json(path: Path, diagrams: list[Diagram], selected: list[Diagram]) -> str:
+def to_json(path: Path, blocks: list[SourceBlock], selected: list[Diagram]) -> str:
     return json.dumps(
         {
             "source": str(path),
-            "diagrams_total": len(diagrams),
+            "diagrams_total": len(blocks),
             "diagrams": [
                 {
                     "index": diagram.index,
@@ -1335,21 +1369,30 @@ def to_json(path: Path, diagrams: list[Diagram], selected: list[Diagram]) -> str
     )
 
 
-def select_diagrams(diagrams: list[Diagram], selector: str | None) -> list[Diagram]:
+def select_blocks(blocks: list[SourceBlock], selector: str | None) -> list[SourceBlock]:
+    """Pick blocks before parsing, so a bad block fails only when selected."""
     if selector is None:
-        return diagrams[:1]
+        return blocks[:1]
     if selector == "all":
-        return diagrams
+        return blocks
     if selector.isdigit():
         index = int(selector)
-        selected = [diagram for diagram in diagrams if diagram.index == index]
+        selected = [block for block in blocks if block.index == index]
         if not selected:
-            _fail(f"no diagram with index {index} (have 0..{len(diagrams) - 1})")
+            _fail(f"no diagram with index {index} (have 0..{len(blocks) - 1})")
         return selected
     _fail("--diagram must be an index or 'all'")
 
 
 def main(argv: list[str] | None = None) -> int:
+    try:
+        return _run(argv)
+    except ExtractError as error:
+        print(f"mermaid_extract: {error}", file=sys.stderr)
+        raise SystemExit(2) from None
+
+
+def _run(argv: list[str] | None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("file", help=".mmd, .mermaid, or Markdown with mermaid fences")
     parser.add_argument(
@@ -1371,12 +1414,11 @@ def main(argv: list[str] | None = None) -> int:
     if not path.is_file():
         _fail(f"{path}: no such file")
     blocks = load_blocks(path)
-    diagrams = [parse_block(block) for block in blocks]
-    selected = select_diagrams(diagrams, args.diagram)
+    selected = [parse_block(block) for block in select_blocks(blocks, args.diagram)]
     output = (
-        to_json(path, diagrams, selected)
+        to_json(path, blocks, selected)
         if args.json
-        else digest(path, diagrams, selected, args.max_rows)
+        else digest(path, blocks, selected, args.max_rows)
     )
     if args.out:
         try:

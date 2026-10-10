@@ -425,6 +425,26 @@ def check_errors_and_limits(tmp: Path) -> None:
     no_elements.write_text('{"type": "excalidraw"}', encoding="utf-8")
     expect_error([str(no_elements)], "scene has no elements array")
 
+    duplicate_id = tmp / "duplicate-id.excalidraw"
+    duplicate_id.write_text(
+        scene(
+            "duplicate-id",
+            [
+                {"id": "same", "type": "rectangle"},
+                {"id": "same", "type": "rectangle"},
+                {
+                    "id": "label",
+                    "type": "text",
+                    "containerId": "same",
+                    "text": "amplified label",
+                },
+            ],
+        ),
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_error([str(duplicate_id), *output_args], "duplicate element id")
+
     malformed_type = tmp / "malformed-type.excalidraw"
     malformed_type.write_text(
         scene("malformed-type", [{"id": "bad", "type": []}]),
@@ -650,7 +670,7 @@ def check_docs_and_wiring() -> None:
     example = EXAMPLE.read_text(encoding="utf-8")
     if 'viewBox="0 0 960 600"' not in example:
         fail("worked example does not use the doc-inline viewBox")
-    if example.count("#eb6c36") > 4:
+    if example.count("#bf4520") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
     if '<div class="diagram-container">' not in example or "overflow-x:auto" not in example:
         fail("worked example must contain its wide SVG in a local horizontal scroller")

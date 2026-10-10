@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -57,6 +58,22 @@ def main() -> int:
 
     static = STATIC_EXAMPLE.read_text(encoding="utf-8")
     animated = EXAMPLE.read_text(encoding="utf-8")
+
+    for location, markup in (
+        ("heading before SVG", '<h2 id="architecture-title">Monthly traffic summary</h2>'),
+        ("description duplicate", '<p id="architecture-desc">Unrelated description</p>'),
+    ):
+        check_fail(location, static.replace("<body>", "<body>" + markup, 1),
+                   "duplicate accessible SVG naming ID")
+    check_fail(
+        "heading after SVG", static.replace("</body>",
+            '<h2 id="architecture-title">Monthly traffic summary</h2></body>', 1),
+        "duplicate accessible SVG naming ID",
+    )
+    check_source_pass("distinct heading ID", static.replace("<body>",
+        '<body><h2 id="monthly-summary">Monthly traffic summary</h2>', 1))
+    check_source_pass("unreferenced duplicate IDs", static.replace("<body>",
+        '<body><span id="unused">One</span><span id="unused">Two</span>', 1))
 
     check_fail(
         "executable attribute",
@@ -236,6 +253,25 @@ def main() -> int:
         animated.replace('data-step-count="5"', 'data-step-count="٥"', 1),
         "ASCII decimal",
     )
+
+    # --offline: system-font output must make no network request, so the one
+    # remote stylesheet the default contract allows becomes a failure.
+    if module.verify(STATIC_EXAMPLE, offline=False):
+        failures.append("offline off: the Google Fonts link must still pass by default")
+    offline_errors = module.verify(STATIC_EXAMPLE, offline=True)
+    if not any("offline: file loads Google Fonts" in error for error in offline_errors):
+        failures.append(f"offline: Google Fonts link not rejected, got {offline_errors}")
+    else:
+        print("OK: offline mode rejects the Google Fonts link")
+    system_font = re.sub(r'<link[^>]*fonts\.googleapis\.com[^>]*>', "", static)
+    with tempfile.TemporaryDirectory() as scratch:
+        candidate = Path(scratch) / "candidate.html"
+        candidate.write_text(system_font, encoding="utf-8")
+        errors = module.verify(candidate, offline=True)
+    if errors:
+        failures.append(f"offline: a system-font file should pass, got {errors}")
+    else:
+        print("OK: offline mode passes a file without the font link")
 
     if failures:
         for failure in failures:
