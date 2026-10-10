@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Deterministic tests for the export snippet's stalled-load fallback.
+"""Deterministic tests for the documented Playwright renderer.
 
 Drives the exact python snippet shipped in
 skills/diagram-design/references/export.md against local fixtures:
 
-- a stalled stylesheet request is cancelled with window.stop(), the snippet
-  warns about fallback typography, and capture completes quickly;
-- an actual stalled font download is cancelled and font readiness finishes;
+- unapproved network requests are denied before they reach a local listener;
+- the allowlist distinguishes the source and intended fonts from private or
+  sibling resources;
 - a normal load captures cleanly with no warning;
 - non-timeout errors are not swallowed by the fallback.
 
@@ -107,6 +107,11 @@ def load_snippet() -> str:
         'page.evaluate("window.stop()")',
         WARNING_ANCHOR,
         "timeout=15000",
+        "chromium_sandbox=os.environ",
+        "DIAGRAM_EXPORT_CHROMIUM_SANDBOX",
+        "service_workers=\"block\"",
+        "accept_downloads=False",
+        "--host-resolver-rules=MAP * ~NOTFOUND",
     ):
         if anchor not in snippet:
             raise AssertionError(
@@ -154,112 +159,125 @@ def run_snippet(snippet: str, src: Path, out: Path) -> str:
     return stderr.getvalue()
 
 
+def run_snippet_with_timeout(snippet: str, src: Path, out: Path) -> str:
+    result = subprocess.run(
+        [sys.executable, "-c", snippet, str(src), str(out)],
+        capture_output=True,
+        text=True,
+        timeout=FALLBACK_BUDGET_SECONDS,
+    )
+    if result.returncode:
+        raise AssertionError(
+            f"renderer exited {result.returncode}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+    return result.stderr
+
+
 def require_png(out: Path, name: str) -> None:
     if not out.exists() or out.stat().st_size == 0:
         raise AssertionError(f"{name}: expected a non-empty screenshot at {out}")
 
 
-def require_stalled_fallback(snippet: str, tmp: Path) -> None:
+def require_unapproved_network_blocked(snippet: str, tmp: Path) -> None:
     fast = snippet.replace("timeout=15000", FAST_IDLE_TIMEOUT).replace(
         "wait_for_timeout(4000)", FAST_SETTLE
     )
-    if fast == snippet:
-        raise AssertionError("could not shorten the snippet's production waits for the test")
 
-    server = start_stall_server()
+    requested = threading.Event()
+
+    class CanaryHandler(_StallHandler):
+        def do_GET(self) -> None:  # noqa: N802 - stdlib naming
+            requested.set()
+            super().do_GET()
+
+    server = start_stall_server(CanaryHandler)
     try:
         port = server.server_address[1]
-        src = tmp / "stall-fixture.html"
+        sibling = tmp / "secret.txt"
+        sibling.write_text("sibling-file-canary", encoding="utf-8")
+        src = tmp / "network-canary.html"
         src.write_text(
             "<!doctype html>\n<html>\n<head>\n<meta charset='utf-8'>\n"
             f"<link rel='stylesheet' href='http://127.0.0.1:{port}/stall.css'>\n"
             "</head>\n<body>\n"
             "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' "
             "width='400' height='240' role='img' aria-labelledby='stall-title'>\n"
-            "<title id='stall-title'>Stall fixture diagram</title>\n"
+            "<title id='stall-title'>Network canary diagram</title>\n"
             "<rect width='400' height='240' fill='#ffffff'/>\n"
             "<text x='200' y='124' text-anchor='middle' font-family='sans-serif' "
-            "font-size='24' fill='#111111'>stall fixture</text>\n"
-            "</svg>\n</body>\n</html>\n",
+            "font-size='24' fill='#111111'>network canary</text>\n"
+            "</svg>\n<script>\n"
+            f"const target = '127.0.0.1:{port}';\n"
+            "try { new WebSocket('ws://' + target + '/ws'); } catch (e) {}\n"
+            "try { fetch('http://' + target + '/fetch').catch(() => {}); } catch (e) {}\n"
+            "try { new EventSource('http://' + target + '/sse'); } catch (e) {}\n"
+            "const img = new Image(); img.src = 'http://' + target + '/image';\n"
+            f"fetch({sibling.as_uri()!r}).catch(() => {{}});\n"
+            "</script>\n</body>\n</html>\n",
             encoding="utf-8",
         )
-        out = tmp / "stall-fixture.png"
+        out = tmp / "network-canary.png"
 
         started = time.monotonic()
-        stderr = run_snippet(fast, src, out)
+        stderr = run_snippet_with_timeout(fast, src, out)
         elapsed = time.monotonic() - started
 
-        require_png(out, "stalled-fallback")
-        if WARNING_ANCHOR not in stderr:
-            raise AssertionError(
-                f"stalled-fallback: expected a {WARNING_ANCHOR!r} warning on stderr\n{stderr}"
-            )
+        require_png(out, "network-canary")
+        if requested.wait(timeout=0.25):
+            raise AssertionError("network-canary: unapproved loopback request escaped")
+        if WARNING_ANCHOR in stderr:
+            raise AssertionError(f"network-canary: blocked request stalled the renderer\n{stderr}")
         if elapsed > FALLBACK_BUDGET_SECONDS:
             raise AssertionError(
-                f"stalled-fallback: capture took {elapsed:.1f}s, over the "
-                f"{FALLBACK_BUDGET_SECONDS:.0f}s budget - window.stop() did not "
-                "release the stalled load"
+                f"network-canary: capture took {elapsed:.1f}s, over the "
+                f"{FALLBACK_BUDGET_SECONDS:.0f}s budget"
             )
-        print(
-            f"OK: stalled stylesheet cancels via window.stop(), warns, "
-            f"and captures in {elapsed:.1f}s"
-        )
+        print(f"OK: unapproved loopback request is blocked in {elapsed:.1f}s")
     finally:
         server.shutdown()
         server.server_close()
 
 
-def require_stalled_font_fallback(snippet: str, tmp: Path) -> None:
-    fast = snippet.replace("timeout=15000", FAST_IDLE_TIMEOUT).replace(
-        "wait_for_timeout(4000)", FAST_SETTLE
-    )
-    font_requested = threading.Event()
-
-    class FontStallHandler(_StallHandler):
-        def do_GET(self) -> None:  # noqa: N802 - stdlib naming
-            if self.path == "/stall.woff2":
-                font_requested.set()
-            super().do_GET()
-
-    server = start_stall_server(FontStallHandler)
+def require_request_policy(snippet: str, tmp: Path) -> None:
+    prelude = snippet.split("with sync_playwright()", 1)[0]
+    old_argv = sys.argv
+    sys.argv = ["export", str(tmp / "diagram #1.html"), str(tmp / "out.png")]
+    scope: dict[str, object] = {}
     try:
-        port = server.server_address[1]
-        src = tmp / "stalled-font.html"
-        src.write_text(
-            "<!doctype html><meta charset='utf-8'><style>"
-            "@font-face{font-family:OwnedStalledFont;src:url("
-            f"http://127.0.0.1:{port}/stall.woff2) format('woff2')}}"
-            "</style><svg xmlns='http://www.w3.org/2000/svg' "
-            "viewBox='0 0 400 240' width='400' height='240'>"
-            "<text x='20' y='120' font-family='OwnedStalledFont,sans-serif'>"
-            "stalled font fixture</text></svg>",
-            encoding="utf-8",
-        )
-        out = tmp / "stalled-font.png"
-        started = time.monotonic()
-        result = subprocess.run(
-            [sys.executable, "-c", fast, str(src), str(out)],
-            capture_output=True, text=True, check=True,
-            timeout=FALLBACK_BUDGET_SECONDS,
-        )
-        stderr = result.stderr
-        elapsed = time.monotonic() - started
-        if not font_requested.is_set():
-            raise AssertionError("stalled-font: fixture never started its font download")
-        require_png(out, "stalled-font")
-        if not out.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
-            raise AssertionError("stalled-font: output is not a PNG")
-        if WARNING_ANCHOR not in stderr:
-            raise AssertionError(f"stalled-font: fallback warning did not fire\n{stderr}")
-        if elapsed > FALLBACK_BUDGET_SECONDS:
-            raise AssertionError(
-                f"stalled-font: capture took {elapsed:.1f}s, over the "
-                f"{FALLBACK_BUDGET_SECONDS:.0f}s budget after font cancellation"
-            )
-        print(f"OK: actual stalled font cancels, fonts.ready finishes, and PNG captures in {elapsed:.1f}s")
+        exec(compile(prelude, str(EXPORT_DOC), "exec"), scope)
     finally:
-        server.shutdown()
-        server.server_close()
+        sys.argv = old_argv
+    request_allowed = scope["request_allowed"]
+    source_uri = (tmp / "diagram #1.html").resolve().as_uri()
+
+    def request(url: str, kind: str):
+        return type("Request", (), {"url": url, "resource_type": kind})()
+
+    allowed = {
+        (source_uri, "document"),
+        (source_uri + "?motion=static", "document"),
+        ("data:image/svg+xml,%3Csvg/%3E", "image"),
+        ("blob:null/id", "image"),
+        ("https://fonts.googleapis.com/css2?family=Geist", "stylesheet"),
+        ("https://fonts.gstatic.com/s/geist/v1/font.woff2", "font"),
+    }
+    denied = {
+        ((tmp / "secret.txt").resolve().as_uri(), "image"),
+        ("http://fonts.googleapis.com/css2?family=Geist", "stylesheet"),
+        ("https://fonts.googleapis.com.evil.test/css2", "stylesheet"),
+        ("https://fonts.googleapis.com:444/css2", "stylesheet"),
+        ("https://fonts.googleapis.com/css2", "script"),
+        ("https://fonts.gstatic.com:444/s/geist/v1/font.woff2", "font"),
+        ("https://fonts.gstatic.com/s/geist/v1/font.ttf", "font"),
+        ("https://127.0.0.1/private", "fetch"),
+        ("http://169.254.169.254/latest/meta-data", "fetch"),
+        ("ws://127.0.0.1/socket", "websocket"),
+    }
+    if any(not request_allowed(request(url, kind)) for url, kind in allowed):
+        raise AssertionError("request-policy: allowed request was denied")
+    if any(request_allowed(request(url, kind)) for url, kind in denied):
+        raise AssertionError("request-policy: prohibited request was allowed")
+    print("OK: request policy allows only the source, embedded data, and HTTPS Google Fonts")
 
 
 def require_normal_load(snippet: str, tmp: Path) -> None:
@@ -352,18 +370,19 @@ def require_static_motion_frame(snippet: str, tmp: Path) -> None:
     print("OK: motion exports show the complete static frame, repeat identically, and reject incomplete roots")
 
 def main() -> int:
+    require_block_selection()
+    snippet = load_snippet()
+    compile(snippet, str(EXPORT_DOC), "exec")
     try:
         import playwright  # noqa: F401
     except ImportError:
         print("SKIP: playwright is not installed; export snippet tests skipped")
         return 0
 
-    require_block_selection()
-    snippet = load_snippet()
     with tempfile.TemporaryDirectory(prefix="diagram-export-wait-") as raw_tmp:
         tmp = Path(raw_tmp)
-        require_stalled_fallback(snippet, tmp)
-        require_stalled_font_fallback(snippet, tmp)
+        require_unapproved_network_blocked(snippet, tmp)
+        require_request_policy(snippet, tmp)
         require_normal_load(snippet, tmp)
         require_encoded_paths(snippet, tmp)
         require_other_errors_propagate(snippet, tmp)

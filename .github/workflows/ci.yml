@@ -482,6 +482,8 @@ jobs:
       - name: Verify export snippet stalled-load fallback
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         id: export_wait
+        env:
+          DIAGRAM_EXPORT_CHROMIUM_SANDBOX: "0" # hosted runner is the outer sandbox
         shell: bash
         run: |
           # Playwright is installed on this leg, so a SKIP means the browser
@@ -498,11 +500,15 @@ jobs:
       - name: Verify render linter checks
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         id: render_selftest
+        env:
+          DIAGRAM_EXPORT_CHROMIUM_SANDBOX: "0" # inherited by export subprocesses
         run: python scripts/lint-render.py --self-test
 
       - name: Run render linter
         if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         id: render
+        env:
+          DIAGRAM_EXPORT_CHROMIUM_SANDBOX: "0" # inherited by export subprocesses
         run: python scripts/lint-render.py --all
 
       - name: Verify generated icon assets
