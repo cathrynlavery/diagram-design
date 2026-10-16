@@ -298,7 +298,7 @@ The model already understood the content. What it was missing was taste, so I wr
 </tr>
 </table>
 
-Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble and beeswarm; Treemap covers marimekko.
+Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble and beeswarm; Treemap covers marimekko; Dependency covers arc diagram.
 
 Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagram-design/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagram-design/references/type-architecture.md).
 
