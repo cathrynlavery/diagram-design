@@ -20,7 +20,7 @@ Forty-five visual types. Semantic patterns describe behavior; type references de
 
 Do not silently ship default-skinned diagrams into a branded project.
 
-First resolve any project `.diagram-design` marker per [`references/profiles.md`](references/profiles.md); a successfully resolved marker selects its profile and bypasses this gate. That reference owns failures, the protected default, and save behavior.
+First resolve any project `.diagram-design` marker per [`references/profiles.md`](references/profiles.md); a successfully resolved marker selects its profile and bypasses this gate. The marker may be a file, or a directory with `current-profile` and local profiles. That reference owns failures, the protected default, and save behavior.
 
 Open [`references/style-guide.md`](references/style-guide.md) and check the default tokens. If they are still the shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#bf4520`), **pause and ask the user**:
 
