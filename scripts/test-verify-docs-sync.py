@@ -551,6 +551,77 @@ def split_route_error(heading: str, target: str) -> str:
     )
 
 
+def check_export_surface_parity(verify) -> None:
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-export-") as temp_dir:
+        fake_root = Path(temp_dir)
+        fake_cmd = fake_root / "commands/export-diagram.md"
+        fake_prompt = fake_root / "prompts/export-diagram.md"
+        fake_cmd.parent.mkdir(parents=True)
+        fake_prompt.parent.mkdir(parents=True)
+
+        fake_cmd.write_text(
+            (ROOT / "commands/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        fake_prompt.write_text(
+            (ROOT / "prompts/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+        errors: list[str] = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if errors:
+            raise AssertionError(f"shipped export surfaces failed: {errors}")
+
+        broken_cmd = fake_cmd.read_text(encoding="utf-8").replace(
+            "Both `--svg-only` and `--png-only` supplied",
+            "Both format flags supplied",
+        )
+        fake_cmd.write_text(broken_cmd, encoding="utf-8")
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if not any("commands/export-diagram.md" in err for err in errors):
+            raise AssertionError(f"missing commands/export-diagram.md parity error: {errors}")
+        print("OK export surface parity: missing command rule caught")
+
+        fake_cmd.write_text(
+            (ROOT / "commands/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        broken_prompt = fake_prompt.read_text(encoding="utf-8").replace(
+            "Both `--svg-only` and `--png-only` supplied",
+            "Both format flags supplied",
+        )
+        fake_prompt.write_text(broken_prompt, encoding="utf-8")
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if not any("prompts/export-diagram.md" in err for err in errors):
+            raise AssertionError(f"missing prompts/export-diagram.md parity error: {errors}")
+        print("OK export surface parity: missing prompt rule caught")
+
+        fake_prompt.write_text(
+            (ROOT / "prompts/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        fake_cmd.unlink()
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if errors != ["export surface is missing: commands/export-diagram.md"]:
+            raise AssertionError(f"missing commands/export-diagram.md was not caught: {errors}")
+        print("OK export surface parity: missing commands file caught")
+
+        fake_cmd.write_text(
+            (ROOT / "commands/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        fake_prompt.unlink()
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if errors != ["export surface is missing: prompts/export-diagram.md"]:
+            raise AssertionError(f"missing prompts/export-diagram.md was not caught: {errors}")
+        print("OK export surface parity: missing prompts file caught")
+
+
 def check_split_routes(verify) -> None:
     """Each SKILL.md section the ADR 0004 split thinned still routes to its content."""
     skill = verify.SKILL.read_text(encoding="utf-8")
@@ -2031,6 +2102,7 @@ diagram-design/
     check_size_preset_surfaces(verify)
     check_split_type_ramp(verify)
     check_split_routes(verify)
+    check_export_surface_parity(verify)
 
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "
