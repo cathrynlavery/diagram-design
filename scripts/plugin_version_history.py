@@ -16,7 +16,9 @@ MANIFEST_PATHS = (
     Path(".claude-plugin/plugin.json"),
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
+    Path(".qoder-plugin/plugin.json"),
 )
+QODER_MANIFEST_PATH = Path(".qoder-plugin/plugin.json")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
@@ -38,9 +40,50 @@ def git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def qoder_predates_manifest(root: Path, ref: str) -> bool:
+    """Return whether ref is from before Qoder's manifest entered its history."""
+    additions = git(
+        root,
+        "log",
+        "--all",
+        "--diff-filter=A",
+        "--format=%H",
+        "--",
+        QODER_MANIFEST_PATH.as_posix(),
+    ).splitlines()
+    if not additions:
+        return False
+    introduction = additions[-1]
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", introduction, ref],
+        cwd=root,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode == 0:
+        return False
+    if result.returncode == 1:
+        return True
+    detail = result.stderr.strip()
+    raise VersionHistoryError(
+        f"could not compare Qoder manifest introduction with {ref}: {detail}"
+    )
+
+
 def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
-    versions = []
+    entries: list[tuple[Path, str]] = []
     for relative in MANIFEST_PATHS:
+        exists = subprocess.run(
+            ["git", "cat-file", "-e", f"{ref}:{relative.as_posix()}"],
+            cwd=root,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if exists.returncode != 0:
+            if relative == QODER_MANIFEST_PATH and qoder_predates_manifest(root, ref):
+                continue
+            raise VersionHistoryError(f"{relative} is missing at {ref}")
         raw = git(root, "show", f"{ref}:{relative.as_posix()}")
         try:
             payload = json.loads(raw)
@@ -55,19 +98,22 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
             raise VersionHistoryError(
                 f"{relative} at {ref} has an invalid version: {version!r}"
             )
-        versions.append(version)
+        entries.append((relative, version))
+    if not entries:
+        raise VersionHistoryError(f"no plugin manifests found at {ref}")
+    versions = tuple(version for _, version in entries)
     if len(set(versions)) != 1:
         rendered = ", ".join(
-            f"{path}={version}" for path, version in zip(MANIFEST_PATHS, versions)
+            f"{path}={version}" for path, version in entries
         )
         raise VersionHistoryError(
             f"manifest versions at {ref} are not synchronized: {rendered}"
         )
-    return tuple(versions)
+    return versions
 
 
 def versions_changed(root: Path, before: str, after: str) -> bool:
-    return versions_at(root, before) != versions_at(root, after)
+    return versions_at(root, before)[0] != versions_at(root, after)[0]
 
 
 def first_parent(root: Path, commit: str) -> str | None:

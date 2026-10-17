@@ -48,7 +48,7 @@ The agent picks the type, states its plan, and writes one `.html` file you can o
 
 ## Install
 
-Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
+Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, Qoder, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
 
 ```bash
 npx skills add cathrynlavery/diagram-design
@@ -96,6 +96,33 @@ codex plugin add diagram-design@diagram-design
 ```
 
 Codex refreshes configured Git marketplaces at startup. To fetch immediately, run `codex plugin marketplace upgrade diagram-design` and start a new session.
+
+</details>
+
+<details>
+<summary><b>Qoder</b></summary>
+
+Clone the repository, validate the native plugin, and install it locally:
+
+```bash
+git clone https://github.com/cathrynlavery/diagram-design.git
+qoder plugins validate ./diagram-design
+qoder plugins install ./diagram-design
+qoder plugins list
+```
+
+Qoder loads the canonical `skills/diagram-design/` tree and the shared command
+definitions directly; no Qoder-specific copy is maintained. For Qoder IDE,
+build a bounded ZIP from the tracked plugin surfaces and import it through
+**Extensions → Plugins → Add Plugins → Upload Plugin**:
+
+```bash
+git -C diagram-design archive --format=zip \
+  --output=../diagram-design-qoder.zip HEAD \
+  .qoder-plugin commands skills LICENSE
+```
+
+Start a new task after installing or updating the plugin.
 
 </details>
 
@@ -505,6 +532,7 @@ diagram-design/
 ├── .claude-plugin/                   # Claude marketplace + plugin manifest
 ├── .codex-plugin/                    # Codex plugin manifest
 ├── .factory-plugin/                  # Factory Droid marketplace + plugin manifest
+├── .qoder-plugin/                    # Qoder native plugin manifest
 ├── commands/
 │   ├── export-diagram.md             # plugin export command
 │   ├── import-drawio.md              # plugin draw.io import command
