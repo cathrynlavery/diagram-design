@@ -101,6 +101,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Bump checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bump.py` |
 | Beeswarm dots sit exactly at their values on one shared scale with no overprint | `python3 scripts/verify-beeswarm.py --all` |
 | Beeswarm checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-beeswarm.py` |
+| Quoted CSS data is not read as a geometry declaration by any verifier (pass + adversarial cases) | `python3 scripts/test-css-string-scan.py` |
 | Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
@@ -205,6 +206,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-bump.py \
   && python3 scripts/verify-beeswarm.py --all \
   && python3 scripts/test-verify-beeswarm.py \
+  && python3 scripts/test-css-string-scan.py \
   && python3 scripts/verify-skin-polarity.py --all \
   && python3 scripts/test-verify-skin-polarity.py \
   && python3 scripts/test-export-wait.py

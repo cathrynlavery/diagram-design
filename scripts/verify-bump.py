@@ -124,6 +124,32 @@ FOCAL_WIDTH, PLAIN_WIDTH = 2.4, 1.2
 ACCENTS = {"#bf4520", "#f08a59"}   # light and dark skin accent tokens
 
 
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token) and an escaped
+# character are consumed first and kept as written. A string that never closes on
+# its line is kept as well - a line feed, carriage return or form feed ends it - so
+# the checker still fails closed on it. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`).
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string blanked, same length and lines."""
+    blanked = CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group("string") else found.group(),
+        css,
+    )
+    return css if "\\" in blanked or html.unescape(css) != css else blanked
+
+
 class Series:
     __slots__ = ("name", "ranks", "points", "stroke", "width", "offset")
 
@@ -304,7 +330,7 @@ def transform_carrier(attrs: dict):
         return "transform=%r" % attrs["transform"]
     style = attrs.get("style")
     if style is not None:
-        found = CSS_MOVES_MARK_RE.search(style)
+        found = CSS_MOVES_MARK_RE.search(blank_css_strings(style))
         if found is not None:
             return "style=%r (the %s property)" % (
                 style,
@@ -382,7 +408,7 @@ def check_transforms(source: str, findings: list, name: str) -> None:
         check_element(match.start(), attrs, what)
 
     for match in STYLE_RE.finditer(source):
-        found = CSS_MOVES_MARK_RE.search(match.group("body"))
+        found = CSS_MOVES_MARK_RE.search(blank_css_strings(match.group("body")))
         if found:
             findings.append(
                 "%s:%d: a CSS `%s` declaration — this checker cannot tell "
