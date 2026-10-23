@@ -190,6 +190,12 @@ def main() -> int:
         "static part positioned by style": (
             once(r'(data-part="logic")', r'\1 style="transform:translateY(-8px)"', stack),
             "carries a style attribute"),
+        "css transform on a silhouette": (
+            once(r'(data-role="silhouette")', r'\1 style="transform:translate(4px,0)"', stack),
+            "a CSS transform moves projected geometry"),
+        "comment-prefixed css transform on a silhouette": (
+            once(r'(data-role="silhouette")', r'\1 style="/**/transform: translate(4px)"', stack),
+            "a CSS transform moves projected geometry"),
     }
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -203,6 +209,22 @@ def main() -> int:
                 failures.append(f"mutation {name!r} failed for the wrong reason (wanted {expect!r}):\n{output}")
             else:
                 print(f"OK: fails on {name}")
+
+    # A custom property may store the characters "transform:" without moving
+    # the silhouette. The same file with a real declaration is a case above.
+    with tempfile.TemporaryDirectory(prefix="quoted-css-transform-") as tmp:
+        quoted = once(
+            r'(data-role="silhouette")',
+            r'''\1 style="--note: 'literal;transform:translate(999px)'"''',
+            stack,
+        )
+        path = Path(tmp) / "quoted.html"
+        path.write_text(quoted, encoding="utf-8")
+        code, output = run(str(path))
+        if code != 0:
+            failures.append(f"quoted transform text was read as a declaration:\n{output}")
+        else:
+            print("OK: quoted transform text is not a declaration")
 
     # Standard SVG numeric spellings do not change the projected silhouette.
     with tempfile.TemporaryDirectory(prefix="silhouette-numeric-") as tmp:

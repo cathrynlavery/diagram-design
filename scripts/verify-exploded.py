@@ -13,7 +13,7 @@ and fails when the drawing and the declaration disagree:
   extreme, or crosses another part; labels outside one column, closer than
   36px, or longer than two words;
 - more than one focal part, a trace line that is not vertical and dashed, an
-  SVG transform anywhere in the figure, a part with two labels, or an
+  SVG or CSS transform anywhere in the figure, a part with two labels, or an
   animated part whose lift is not its exploded z minus its closed z.
 
     python3 scripts/verify-exploded.py --all
@@ -34,6 +34,22 @@ ASSETS = ROOT / "skills/diagram-design/assets"
 TOL = 0.05
 LABEL_PITCH = 36
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+# Quoted custom properties and comments are not declarations. A quoted
+# "transform:" must not hide a later real one, and an unclosed quote stays
+# visible so the declaration still fails.
+CSS_NONCODE_RE = re.compile(
+    r'''"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|/\*.*?(?:\*/|$)''',
+    re.DOTALL,
+)
+STYLE_TRANSFORM_RE = re.compile(
+    r"(?:^|[{;])\s*(?:-(?:webkit|moz|ms|o)-)?transform\s*:",
+    re.IGNORECASE,
+)
+
+
+def style_declares_transform(style: str) -> bool:
+    live = CSS_NONCODE_RE.sub(lambda found: re.sub(r"[^\n]", " ", found.group()), style)
+    return STYLE_TRANSFORM_RE.search(live) is not None
 
 
 class Element:
@@ -369,10 +385,13 @@ def verify_source(source: str, name: str) -> list[str]:
             if not el.attrs.get("stroke-dasharray"):
                 errors.append(f"{name}: trace line must be dashed")
 
-    # 6. Geometry comes from coordinates alone: no SVG transform anywhere in the figure.
+    # 6. Geometry comes from coordinates alone: no SVG or CSS transform in the figure.
     for el in [fig, *fig.walk()]:
         if "transform" in el.attrs:
             errors.append(f"{name}: <{el.tag}> carries transform={el.attrs['transform']!r}; position comes from projected coordinates")
+        style = el.attrs.get("style", "")
+        if style_declares_transform(style):
+            errors.append(f"{name}: <{el.tag}> carries style={style!r}; a CSS transform moves projected geometry")
 
     # 7. Animated parts lift by exactly their explode distance.
     for p in parts:
