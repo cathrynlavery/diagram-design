@@ -59,6 +59,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max stages / layers (service blueprint) | 6 stages; required customer / frontstage / backstage; optional evidence / support; 1 focal cell |
 | Max zones / nodes / paths (deployment) | 3 / 6 / 8, 9 artifacts |
 | Max nodes / edges (dependency) | 9 / 14, 4 ranks, 1 cycle |
+| Max nodes / arcs (arc diagram) | 9 / 14, 1 focal arc |
 | Max classes / relationships (UML class) | 7 / 8, 5 members per compartment |
 | Max activities / slices / cards (story map) | 5 / 3 / 12 |
 | Max tables / columns / FKs (db schema) | 5 / 8 shown / 6 |

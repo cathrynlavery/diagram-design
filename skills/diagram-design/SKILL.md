@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
+description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph (arc diagram), UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
 license: MIT
 metadata:
   version: "2.6"
@@ -125,7 +125,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | What a person does across stages of an experience, and how it feels | **User journey** | [type-journey.md](references/type-journey.md) |
 | What the customer does vs what the service hides, across stages, with a line of visibility | **Service blueprint** | [type-service-blueprint.md](references/type-service-blueprint.md) |
 | Where software runs — zones, hosts, artifacts, replicas, ports | **Deployment** | [type-deployment.md](references/type-deployment.md) |
-| What depends on what, with fan-in and cycles a tree cannot express | **Dependency graph** | [type-dependency.md](references/type-dependency.md) |
+| What depends on what, with fan-in and cycles a tree cannot express; arc diagram (nodes on a line, height is skip-span) variant | **Dependency graph** | [type-dependency.md](references/type-dependency.md) |
 | Classes with operations, inheritance, composition (other UML routes elsewhere) | **UML class** | [type-uml-class.md](references/type-uml-class.md) |
 | Narrative backbone sliced into releases, with the cut line | **Story map** | [type-story-map.md](references/type-story-map.md) |
 | Physical tables: SQL types, constraints, indexes, column-level FKs | **Database schema** | [type-db-schema.md](references/type-db-schema.md) |

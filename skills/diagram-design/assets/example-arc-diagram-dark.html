@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout still imports Auth · Arc diagram · dark</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:  #2d3142;
+      --color-ink:    #f5f5f5;
+      --color-muted:  #bfc0c0;
+      --color-accent: #f08a59;
+      --font-sans:    'Geist', system-ui, sans-serif;
+      --font-serif:   'Instrument Serif', serif;
+      --font-mono:    'Geist Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1.5rem; }
+    svg { width: 100%; min-width: 760px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Arc diagram · Diagram Design</p>
+    <h1>Checkout still imports Auth</h1>
+
+    <!-- Seat rail at y=400, pitch 140px from x=80. Arc height is the seat
+         count it skips: a neighbour is a semicircle of r=70, a five-seat
+         skip is r=350. scripts/verify-arc-diagram.py derives the pitch
+         from the nodes and flags any arc whose radius disagrees. -->
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="arc-diagram-dark-title arc-diagram-dark-desc">
+      <title id="arc-diagram-dark-title">Checkout still imports Auth</title>
+      <desc id="arc-diagram-dark-desc">Arc diagram of seven packages on one baseline; arc height encodes how many seats an import skips. Checkout sits at the far end and still imports Auth — the tallest arc, spanning five seats.</desc>
+      <defs>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="#2d3142"/>
+      <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+      <text x="500" y="456" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">PACKAGES, LEFT TO RIGHT · ARC HEIGHT IS HOW MANY SEATS THE IMPORT SKIPS</text>
+      <line x1="80" y1="400" x2="920" y2="400" stroke="rgba(245,245,245,0.25)" stroke-width="1"/>
+
+      <!-- Span 3, then span 2, then neighbours, then the focal skip on top. -->
+      <path data-from="Gateway" data-to="Search" data-span="3"
+            d="M 80,400 A 210,210 0 0 1 500,400"
+            fill="none" stroke="rgba(245,245,245,0.28)" stroke-width="1.2"/>
+      <path data-from="Auth" data-to="Search" data-span="2"
+            d="M 220,400 A 140,140 0 0 1 500,400"
+            fill="none" stroke="rgba(245,245,245,0.28)" stroke-width="1.2"/>
+      <path data-from="Gateway" data-to="Auth" data-span="1"
+            d="M 80,400 A 70,70 0 0 1 220,400"
+            fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <path data-from="Auth" data-to="Catalog" data-span="1"
+            d="M 220,400 A 70,70 0 0 1 360,400"
+            fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <path data-from="Catalog" data-to="Search" data-span="1"
+            d="M 360,400 A 70,70 0 0 1 500,400"
+            fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <path data-from="Search" data-to="Billing" data-span="1"
+            d="M 500,400 A 70,70 0 0 1 640,400"
+            fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <path data-from="Billing" data-to="Ledger" data-span="1"
+            d="M 640,400 A 70,70 0 0 1 780,400"
+            fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <path data-from="Ledger" data-to="Checkout" data-span="1"
+            d="M 780,400 A 70,70 0 0 1 920,400"
+            fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <path data-from="Checkout" data-to="Auth" data-span="5"
+            d="M 220,400 A 350,350 0 0 1 920,400"
+            fill="none" stroke="#f08a59" stroke-width="1.6"/>
+
+      <circle cx="80" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Gateway" cx="80" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Gateway" x="80" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Gateway</text>
+      <circle cx="220" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Auth" cx="220" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Auth" x="220" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Auth</text>
+      <circle cx="360" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Catalog" cx="360" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Catalog" x="360" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Catalog</text>
+      <circle cx="500" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Search" cx="500" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Search" x="500" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Search</text>
+      <circle cx="640" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Billing" cx="640" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Billing" x="640" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Billing</text>
+      <circle cx="780" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Ledger" cx="780" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Ledger" x="780" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Ledger</text>
+      <circle cx="920" cy="400" r="6" fill="#2d3142"/>
+      <circle data-name="Checkout" cx="920" cy="400" r="6" fill="rgba(245,245,245,0.55)" stroke="#bfc0c0" stroke-width="0.75"/>
+      <text data-name="Checkout" x="920" y="428" fill="#f5f5f5" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Checkout</text>
+
+      <line x1="40" y1="462" x2="960" y2="462" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
+      <text x="40" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <text x="960" y="478" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em" text-anchor="end">HEIGHT = SEATS SKIPPED</text>
+      <line x1="48" y1="489" x2="64" y2="489" stroke="#f08a59" stroke-width="1.6"/>
+      <text x="72" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Checkout → Auth · five seats, the import that will hurt a split</text>
+      <line x1="520" y1="489" x2="536" y2="489" stroke="rgba(245,245,245,0.45)" stroke-width="1.2"/>
+      <text x="544" y="494" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">neighbour · one seat</text>
+    </svg>
+  </div>
+</body>
+</html>
