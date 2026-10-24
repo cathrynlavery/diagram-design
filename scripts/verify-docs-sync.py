@@ -200,6 +200,27 @@ def check_onboarding_user_verification(errors: list[str], markdown: str) -> None
         )
 
 
+def check_profile_repository_contract(errors: list[str], markdown: str) -> None:
+    """Keep repository-local profile resolution and its trust boundary explicit."""
+    text = normalized(markdown)
+    required = (
+        "<project-root>/.diagram-design/current-profile",
+        ".diagram-design/profiles/<slug>.md",
+        "resolve `.diagram-design/profiles/<slug>.md` first",
+        "~/.diagram-design/profiles/<slug>.md",
+        "For `profile: default` from either marker source",
+        "Never resolve `.diagram-design/profiles/default.md`",
+        "untrusted repository data",
+        "save` and `update` write only to `~/.diagram-design/profiles/`",
+    )
+    for phrase in required:
+        if phrase.casefold() not in text:
+            errors.append(
+                "profiles.md lost repository-local profile contract phrase "
+                f"{phrase!r}"
+            )
+
+
 def check_line_dark_skin(errors: list[str], source: str) -> None:
     """The dark Line example must not silently drift back to the light skin."""
     required = (
@@ -1801,6 +1822,12 @@ def main() -> int:
     )
     check_onboarding_user_verification(
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
+    )
+    check_profile_repository_contract(
+        errors,
+        (ROOT / "skills/diagram-design/references/profiles.md").read_text(
+            encoding="utf-8"
+        ),
     )
     check_line_dark_skin(errors, LINE_DARK_EXAMPLE.read_text(encoding="utf-8"))
     check_loop_station_origin(
