@@ -115,6 +115,8 @@ class Diagram:
     edges: list[Edge] = field(default_factory=list)
     fragments: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # Sequence `autonumber` directives: step numbers are content, prose cites them.
+    autonumber: list[dict[str, Any]] = field(default_factory=list)
     discarded: dict[str, int] = field(
         default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
     )
@@ -941,6 +943,17 @@ def _parse_sequence(
             continue
         if lowered.startswith(("activate ", "deactivate ", "+", "-")):
             continue
+        numbering = re.match(r"^autonumber(?:\s+(off)|\s+(\d+)(?:\s+(\d+))?)?$", text, re.I)
+        if numbering:
+            off, start, step = numbering.groups()
+            entry = {"line": line_number, "off": bool(off)}
+            if not off:
+                try:
+                    entry.update(start=int(start or 1), step=int(step or 1))
+                except ValueError:  # past Python's int-from-string digit limit
+                    _fail(f"autonumber value exceeds integer limits at line {line_number}")
+            diagram.autonumber.append(entry)
+            continue
         if lowered.startswith("note "):
             _, separator, note = text.partition(":")
             diagram.notes.append(clean_label(note if separator else text[5:]))
@@ -1371,6 +1384,12 @@ def digest(
                 f"{item['kind']}({_fragment_digest(item)})" for item in diagram.fragments
             )
             output.append(f"- fragments: {fragments}")
+        if diagram.autonumber:
+            numbering = "; ".join(
+                "off" if item["off"] else f"from {item['start']}, step {item['step']}"
+                for item in diagram.autonumber
+            )
+            output.append(f"- autonumber: {numbering}")
         if diagram.notes:
             output.append(
                 f"- notes: {'; '.join(_escape_markdown(note) for note in diagram.notes[:6])}"
@@ -1467,6 +1486,7 @@ def to_json(path: Path, blocks: list[SourceBlock], selected: list[Diagram]) -> s
                     "discarded": diagram.discarded,
                     "fragments": diagram.fragments,
                     "notes": diagram.notes,
+                    "autonumber": diagram.autonumber,
                     "nodes": [asdict(node) for node in diagram.nodes],
                     "edges": [asdict(edge) for edge in diagram.edges],
                 }
