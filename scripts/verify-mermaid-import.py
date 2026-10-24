@@ -1364,6 +1364,41 @@ def check_spaced_pipe_labels(tmp: Path) -> None:
     ok("pipe labels may follow whitespace after the link operator")
 
 
+def check_edge_ids(tmp: Path) -> None:
+    flow = tmp / "edge-ids.mmd"
+    flow.write_text(
+        "flowchart LR\n  A e1@==>|go| B\n  B e2@-.-> C\n  e2@{ animate: true }\n"
+        "  e1@{ curve: linear }\n  X@{ label: \"Real\" }\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    nodes = sorted(node["id"] for node in diagram["nodes"])
+    if nodes != ["A", "B", "C", "X"]:
+        fail(f"edge IDs and their property statements must not become nodes: {nodes!r}")
+    edges = [(edge["source"], edge["target"], edge["label"], edge["style"]) for edge in diagram["edges"]]
+    if edges != [("A", "B", "go", "thick"), ("B", "C", "", "dashed")]:
+        fail(f"an edge ID before the operator must not change the edge: {edges!r}")
+    ok("Mermaid edge IDs and edge property statements are ignored")
+
+    for name, source, label, arrowhead in [
+        ("circle", "A e3@o--o B", "", "circle"),
+        ("cross", "A e4@x--x B", "", "cross"),
+        ("pipe", "A -->|retry@-1| B", "retry@-1", "arrow"),
+        ("spaced", "A -- retry@-1 --> B", "retry@-1", "arrow"),
+        ("pipe-operator", "A -->|retry@--> next| B", "retry@--> next", "arrow"),
+    ]:
+        flow.write_text("flowchart LR\n  " + source + "\n", encoding="utf-8")
+        result = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        edge = result["edges"][0]
+        if edge["label"] != label or edge["arrowhead"] != arrowhead:
+            fail(f"edge ID parsing changed {name}: {edge!r}")
+    flow.write_text("flowchart LR\n subgraph Retry retry@-1\n A --> B\n end\n", encoding="utf-8")
+    result = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    if result["nodes"][0]["label"] != "Retry retry@-1":
+        fail("edge ID parsing changed an unquoted subgraph title")
+    ok("edge IDs cover circle/cross operators without changing literal labels or titles")
+
+
 def check_unicode_state_regression(tmp: Path) -> None:
     path = tmp / "unicode-state.mmd"
     path.write_text('stateDiagram-v2\n待机 : 等待输入\n待机 --> 完成\n', encoding="utf-8")
@@ -1499,6 +1534,7 @@ def main() -> int:
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
         check_flowchart_header_statements(tmp)
+        check_edge_ids(tmp)
         check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)

@@ -777,6 +777,28 @@ def _endpoint_group(
 STYLE_DIRECTIVES = ("style ", "classDef ", "class ", "linkStyle ")
 
 
+_EDGE_ID = re.compile(r"(?<![\w.:@-])([A-Za-z_][\w-]*)@")
+
+
+def _strip_edge_ids(text: str) -> tuple[str, list[str]]:
+    """Drop Mermaid v11.6+ edge IDs (`A e1@--> B`) and return the IDs found."""
+    mask = _top_level_mask(text)
+    operator_starts = {operator.start for operator in _edge_operators(text)}
+    ids: list[str] = []
+    pieces: list[str] = []
+    cursor = 0
+    for match in _EDGE_ID.finditer(mask):
+        if match.end() not in operator_starts:
+            continue
+        pieces.append(text[cursor : match.start()])
+        cursor = match.end()
+        ids.append(match.group(1))
+    if not ids:
+        return text, ids
+    pieces.append(text[cursor:])
+    return "".join(pieces), ids
+
+
 def _discard_nonsemantic(diagram: Diagram, text: str) -> bool:
     lowered = text.casefold()
     if any(lowered.startswith(prefix.casefold()) for prefix in STYLE_DIRECTIVES):
@@ -793,12 +815,17 @@ def _parse_flowchart(
 ) -> None:
     containers: list[str] = []
     invisible_links = 0
+    edge_ids: set[str] = set()
     for line_number, raw in _logical_statements(lines[header_position + 1 :]):
         text = raw.strip()
         if not text:
             continue
         lowered = text.casefold()
         if _discard_nonsemantic(diagram, text):
+            continue
+        id_match = re.match(r"^([A-Za-z_][\w-]*)@\{", text)
+        if id_match and id_match.group(1) in edge_ids:
+            # `e1@{ animate: true }` styles an edge, not a node.
             continue
         if lowered.startswith("direction "):
             if not containers:
@@ -823,6 +850,8 @@ def _parse_flowchart(
                 containers.pop()
             continue
 
+        text, found_ids = _strip_edge_ids(text)
+        edge_ids.update(found_ids)
         operators = _edge_operators(text)
         parent = containers[-1] if containers else None
         if operators:
