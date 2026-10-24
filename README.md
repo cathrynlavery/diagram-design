@@ -337,6 +337,15 @@ Axonometric plan uses the same projection for one floor or one site: walls cut a
 
 **Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 45; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
+### Before/after example
+
+A plain weekly ops page, before and after `diagram-design`: a Kanban board in the full-editorial variant with the default skin, one blocked card as the only accent, WIP chips, a bottom legend, and three summary cards of varied widths.
+
+- Before: https://skill-fixture-before.theroost.dev
+- After: https://diagram-design-after.theroost.dev
+
+_Illustrative, community-contributed example; not an official demo or benchmark._
+
 ---
 
 ## Onboarding: make it look like *your* brand
