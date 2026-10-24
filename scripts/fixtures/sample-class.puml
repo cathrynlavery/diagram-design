@@ -1,0 +1,21 @@
+@startuml accounts
+skinparam classAttributeIconSize 0
+abstract class Account {
+  {abstract} + id: String
+  + balance(): Money
+}
+class Ledger {
+  - entries: List
+  + post(entry: Entry): void
+}
+interface Store {
+  + read(id: String): Account
+}
+class Entry {
+  - amount: Money
+  - bookedAt: Date
+}
+Account <|-- Ledger
+Ledger "1" *-- "many" Entry : posts
+Ledger --> Store
+@enduml
