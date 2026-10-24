@@ -12,7 +12,7 @@ To generate your own from a website URL, see [`onboarding.md`](onboarding.md).
 
 ### Semantic roles
 
-Every token is referred to by **semantic role**, not by its hex value. Type references (`type-*.md`) and SKILL.md say `accent`, not `#f7591f`.
+Every token is referred to by **semantic role**, not by its hex value. Type references (`type-*.md`) and SKILL.md say `accent`, not `#bf4520`.
 
 | Role | Purpose | Default (light) | Default (dark) |
 |---|---|---|---|
@@ -29,8 +29,6 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 | `link` | HTTP/API calls, external arrows | `#2e5aa8` | `#739fdf` |
 
 > **Brand palette source:** this skin maps to a five-color brand palette: `jet-black #2d3142`, `silver #bfc0c0`, `white-smoke #f5f5f5`, `atomic-tangerine`, `blue-slate #4f5d75`. The light `accent` is not the raw brand tangerine. Raw atomic-tangerine reads 2.86:1 on `paper`, too faint for an arrow or a label, so the skin uses `#bf4520`, the same hue darkened until it clears 4.5:1 as text. The `soft`, `rule`, and `link` tokens are derived (a darker slate, ink at opacity, and a saturated variant in the blue-slate hue family) to cover roles the brand palette doesn't name directly. Every derived value is held to the contrast contract below.
-
-> **Note:** The pre-baked example HTML files in `assets/` were built under an earlier skin. Regenerating them against the current `style-guide.md` is a v5.1 task. New diagrams the skill produces will use the tokens above.
 
 ### Contrast contract
 
@@ -50,7 +48,7 @@ Every token must clear the threshold for each role it plays, against the backgro
 
 ### Inversion rule (light → dark)
 
-Any `rgba(28,25,23, X)` in light becomes `rgba(250,247,242, X)` in dark. Same opacities, RGB flipped. The accent gets a slight hue-shift brighter to read on dark paper.
+Any `rgba(45,49,66, X)` in light becomes `rgba(245,245,245, X)` in dark. Same opacities, RGB flipped. The accent gets a slight hue-shift brighter to read on dark paper.
 
 ### Series palette (multi-series chart types only)
 
