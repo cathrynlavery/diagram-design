@@ -15,6 +15,7 @@ Exit: 0 clean, 1 contract findings, 2 unreadable input/usage.
 from __future__ import annotations
 
 import argparse
+import html
 import math
 import re
 import sys
@@ -41,6 +42,32 @@ EPS = 1e-6
 ENDPOINT_TOLERANCE = 2.0
 MAX_COORDINATE = 1e7
 NONRENDERING = {"defs", "symbol", "clippath", "mask", "pattern", "marker", "template", "script", "style", "title", "desc", "metadata"}
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token) and an escaped
+# character are consumed first and kept as written. A string that never closes on
+# its line is kept as well - a line feed, carriage return or form feed ends it - so
+# the checker still fails closed on it. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`).
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string blanked, same length and lines."""
+    blanked = CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group("string") else found.group(),
+        css,
+    )
+    return css if "\\" in blanked or html.unescape(css) != css else blanked
 
 
 @dataclass(eq=False)
@@ -321,7 +348,7 @@ def check_source(path: Path, source: str) -> list[str]:
         if "transform" in node.attrs and node not in snapshots:
             fail(node, "only snapshot translations may transform verified geometry")
         inline = clean_css(node.attrs.get("style", ""))
-        if "\\" in inline or CSS_MOVES.search(inline):
+        if "\\" in inline or CSS_MOVES.search(clean_css(blank_css_strings(node.attrs.get("style", "")))):
             fail(node, "CSS geometry overrides or escaped inline CSS are unsupported")
         if node.tag in {"animate", "animatemotion", "animatetransform", "set", "use", "foreignobject"}:
             fail(node, f"{node.tag} is unsupported in a static architecture delta")
@@ -341,7 +368,7 @@ def check_source(path: Path, source: str) -> list[str]:
     for style in [node for node in scanner.nodes if node.tag == "style"]:
         css = clean_css(style.text())
         # CSS escapes could disguise transform or geometry property names.
-        if "\\" in css or CSS_MOVES.search(css):
+        if "\\" in css or CSS_MOVES.search(clean_css(blank_css_strings(style.text()))):
             fail(style, "CSS geometry overrides or escaped CSS are unsupported")
         for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
             if css_hides(declarations) and any(

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from math import cos, hypot, isfinite, pi, radians, sin
 from pathlib import Path
+import html
 import re
 import sys
 from typing import Sequence
@@ -42,6 +43,32 @@ SAFE_HTML_STYLE_TARGETS = frozenset({
 })
 CSS_RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
 CSS_COMBINATOR = re.compile(r"\s+|[>+~]")
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token) and an escaped
+# character are consumed first and kept as written. A string that never closes on
+# its line is kept as well - a line feed, carriage return or form feed ends it - so
+# the checker still fails closed on it. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`).
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string blanked, same length and lines."""
+    blanked = CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group("string") else found.group(),
+        css,
+    )
+    return css if "\\" in blanked or html.unescape(css) != css else blanked
 
 
 @dataclass
@@ -106,7 +133,8 @@ def _geometry_tolerance(radius: float | None) -> float:
 
 def _contains_geometry_css(css: str) -> bool:
     without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    return "\\" in without_comments or CSS_GEOMETRY_PROPERTY.search(without_comments) is not None
+    without_strings = re.sub(r"/\*.*?\*/", "", blank_css_strings(css), flags=re.DOTALL)
+    return "\\" in without_comments or CSS_GEOMETRY_PROPERTY.search(without_strings) is not None
 
 
 def _contains_stylesheet_loading(css: str) -> bool:

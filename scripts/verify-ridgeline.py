@@ -99,6 +99,7 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
+import html
 import re
 import sys
 from html.parser import HTMLParser
@@ -185,6 +186,32 @@ MARK_TAGS = ("path", "line")                  # outlines and their baseline rule
 
 
 # === PARSING =================================================================
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token) and an escaped
+# character are consumed first and kept as written. A string that never closes on
+# its line is kept as well - a line feed, carriage return or form feed ends it - so
+# the checker still fails closed on it. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`).
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string blanked, same length and lines."""
+    blanked = CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group("string") else found.group(),
+        css,
+    )
+    return css if "\\" in blanked or html.unescape(css) != css else blanked
 
 
 class Element:
@@ -385,7 +412,7 @@ def css_moves_mark(css: str):
     newlines up to the property names the right line.
     """
     stripped = CSS_COMMENT_RE.sub(
-        lambda found: re.sub(r"[^\n]", " ", found.group()), css)
+        lambda found: re.sub(r"[^\n]", " ", found.group()), blank_css_strings(css))
     return CSS_MOVES_MARK_RE.search(stripped)
 
 
