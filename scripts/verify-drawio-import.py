@@ -400,6 +400,39 @@ def check_bom_prefixed(tmp: Path) -> None:
     ok("UTF-8 BOM-prefixed raw XML and bare compressed payload parse like their unprefixed input")
 
 
+def check_plain_angle_brackets(tmp: Path) -> None:
+    # XML decoding turns &lt; into a real "<" before label cleanup. A plain
+    # label such as List<String> or "a < b > c" is text, not a tag; HTML
+    # wrappers and comments still have to flatten.
+    source = tmp / "angle-brackets.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="generic" value="List&lt;String&gt;" vertex="1" parent="1">'
+        '<mxGeometry width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="compare" value="a &lt; b &gt; c" vertex="1" parent="1">'
+        '<mxGeometry x="100" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="html" value="&lt;div&gt;&lt;b&gt;List&amp;lt;String&amp;gt;&lt;/b&gt;&lt;br&gt;kept&lt;/div&gt;" vertex="1" parent="1">'
+        '<mxGeometry x="200" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="comment" value="&lt;!-- secret --&gt;visible" vertex="1" parent="1">'
+        '<mxGeometry x="300" width="80" height="40" as="geometry"/></mxCell>'
+        "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    nodes = {
+        node["id"]: node["label"]
+        for node in json.loads(run_extract([str(source), "--json"]))["pages"][0]["nodes"]
+    }
+    if nodes.get("generic") != "List<String>":
+        fail(f"plain generic label was stripped: {nodes.get('generic')!r}")
+    if nodes.get("compare") != "a < b > c":
+        fail(f"plain comparison label was stripped: {nodes.get('compare')!r}")
+    if nodes.get("html") != "List<String>\nkept":
+        fail(f"HTML label was not flattened: {nodes.get('html')!r}")
+    if nodes.get("comment") != "visible":
+        fail(f"HTML comment leaked into the label: {nodes.get('comment')!r}")
+    ok("plain angle brackets stay in labels and HTML tags still flatten")
+
+
 def check_hidden_cells(tmp: Path) -> None:
     # visible="0" on a cell, a group, or a layer hides it in draw.io; the import must not resurrect it.
     def vertex(cid: str, parent: str, x: int, extra: str = "") -> str:
@@ -890,6 +923,7 @@ def main() -> int:
         check_nested_geometry(tmp)
         check_nested_relative_geometry(tmp)
         check_bom_prefixed(tmp)
+        check_plain_angle_brackets(tmp)
         check_hidden_cells(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)

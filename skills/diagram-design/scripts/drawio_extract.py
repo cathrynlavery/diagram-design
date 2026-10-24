@@ -195,7 +195,17 @@ def load_mxfile(path: Path) -> str:
 # --------------------------------------------------------------------------
 
 BR_RE = re.compile(r"<br\s*/?>|</p\s*>|</div\s*>", re.IGNORECASE)
-TAG_RE = re.compile(r"<[^>]+>")
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# Tags draw.io actually writes. `List<String>` and `a < b > c` are text, and a
+# catch-all `<[^>]+>` scan deletes them after XML decoding turns `&lt;` into `<`.
+_HTML_TAG = (
+    "a|b|blockquote|br|code|del|div|em|font|h[1-6]|hr|i|img|ins|li|mark|ol|p|pre|"
+    "s|small|span|strike|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul|wbr"
+)
+TAG_RE = re.compile(
+    rf"</?(?:{_HTML_TAG})\b[^>]*>|</?[A-Za-z][\w-]*:[\w:-]*[^>]*>",
+    re.IGNORECASE,
+)
 
 
 def parse_style(style: str | None) -> dict[str, str]:
@@ -215,7 +225,8 @@ def clean_label(value: str | None) -> str:
     """draw.io labels are often HTML fragments; flatten to plain text lines."""
     if not value:
         return ""
-    text = BR_RE.sub("\n", value)
+    text = HTML_COMMENT_RE.sub("", value)
+    text = BR_RE.sub("\n", text)
     text = TAG_RE.sub("", text)
     text = html.unescape(text)
     text = text.replace("\xa0", " ")
