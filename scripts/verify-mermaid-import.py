@@ -591,11 +591,22 @@ A --> B
         fail("leading Mermaid frontmatter was not skipped before grammar detection")
     if "Checkout" in digest or "forest" in digest:
         fail("frontmatter config leaked into the digest")
+    if "- discarded: 0 style directives, 0 click handlers, 1 config directives" not in digest:
+        fail("discarded frontmatter config was not counted in the digest")
+
+    directives = tmp / "init-directives.mmd"
+    directives.write_text(
+        '%%{init: {"theme": "dark"}}%%\nflowchart LR\nA --> B\n%%{\n  init: {"theme": "forest"}\n}%%\n',
+        encoding="utf-8",
+    )
+    counted = json.loads(run_extract([str(directives), "--json"]))["diagrams"][0]["discarded"]
+    if counted["config_directives"] != 2:
+        fail(f"%%{{init}}%% directives were not counted: {counted}")
 
     unterminated = tmp / "unterminated-frontmatter.mmd"
     unterminated.write_text("---\ntitle: Broken\nflowchart LR\nA --> B\n", encoding="utf-8")
     expect_error([str(unterminated)], "not a Mermaid file")
-    ok("frontmatter is skipped, and an unterminated block still fails specifically")
+    ok("frontmatter and %%{init}%% are skipped and counted, and an unterminated block still fails specifically")
 
 
 def check_outer_markdown_fences(tmp: Path) -> None:
@@ -901,7 +912,7 @@ def check_adversarial(tmp: Path) -> None:
             fail(f"chained/multi-target edge missing: {pair}")
     if not any(edge["label"] == "label --> remains text" for edge in edges):
         fail("arrow text inside a quoted edge label was split as syntax")
-    if diagram["discarded"] != {"style_directives": 4, "click_handlers": 1}:
+    if diagram["discarded"] != {"style_directives": 4, "click_handlers": 1, "config_directives": 1}:
         fail(f"discard counts wrong: {diagram['discarded']}")
     serialized = json.dumps(payload)
     if "example.invalid" in serialized:

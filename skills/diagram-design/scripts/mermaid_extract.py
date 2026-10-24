@@ -116,7 +116,7 @@ class Diagram:
     fragments: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     discarded: dict[str, int] = field(
-        default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
+        default_factory=lambda: {"style_directives": 0, "click_handlers": 0, "config_directives": 0}
     )
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
     _state_descriptions: dict[str, list[str]] = field(default_factory=dict, init=False, repr=False)
@@ -317,11 +317,13 @@ def _frontmatter_end(lines: list[str]) -> int:
     return -1
 
 
-def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
+def _prepared_lines(block: SourceBlock) -> tuple[list[tuple[int, str]], int]:
+    """Blank out comments and config, returning the lines and the number of config directives."""
     prepared: list[tuple[int, str]] = []
     in_directive = False
     lines = block.text.splitlines()
     frontmatter_end = _frontmatter_end(lines)
+    config_directives = 1 if frontmatter_end >= 0 else 0
     for offset, raw in enumerate(lines):
         line_number = block.source_line + offset
         stripped = raw.strip()
@@ -336,6 +338,7 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         if stripped.startswith("%%{"):
+            config_directives += 1
             if "}%%" not in stripped:
                 in_directive = True
             prepared.append((line_number, ""))
@@ -344,7 +347,7 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         prepared.append((line_number, raw.rstrip()))
-    return prepared
+    return prepared, config_directives
 
 
 def _kind_and_direction(
@@ -1161,7 +1164,7 @@ def _parse_er(
 
 
 def parse_block(block: SourceBlock) -> Diagram:
-    lines = _prepared_lines(block)
+    lines, config_directives = _prepared_lines(block)
     kind, direction, header_position = _kind_and_direction(lines)
     if kind == "flowchart":
         # `graph TD; A-->B;` is valid: statements may follow the header's
@@ -1173,6 +1176,7 @@ def parse_block(block: SourceBlock) -> Diagram:
             lines[header_position] = (line_number, header[: rest.end()])
             lines.insert(header_position + 1, (line_number, tail[1:]))
     diagram = Diagram(block.index, kind, block.source_line, direction=direction)
+    diagram.discarded["config_directives"] = config_directives
     if kind == "flowchart":
         _parse_flowchart(diagram, lines, header_position)
     elif kind == "sequenceDiagram":
@@ -1361,10 +1365,11 @@ def digest(
                 f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
             ]
         )
-        if diagram.discarded["style_directives"] or diagram.discarded["click_handlers"]:
+        if any(diagram.discarded.values()):
             output.append(
                 f"- discarded: {diagram.discarded['style_directives']} style directives, "
-                f"{diagram.discarded['click_handlers']} click handlers"
+                f"{diagram.discarded['click_handlers']} click handlers, "
+                f"{diagram.discarded['config_directives']} config directives"
             )
         if diagram.fragments:
             fragments = ", ".join(
