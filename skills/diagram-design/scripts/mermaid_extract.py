@@ -818,8 +818,9 @@ def _edge_operators(text: str) -> list[_Operator]:
             occupied.append((operator_start, match.end()))
 
     # A dotted link grows by dots: `-.->`, `-..->`, `-...->` and `-.-`, `-..-`.
+    # A single dash before x/o belongs to a node id such as `node-x`.
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.+-+>|=+>|-+(?:>|x|o)|-+\.+-+|={3,}|-{3,}|~{3,}"
+        r"[xo][-=.]{2,}[xo]|<[-=.]+>|-+\.+-+>|=+>|-+>|-{2,}[xo]|-+\.+-+|={3,}|-{3,}|~{3,}"
     )
     for match in pattern.finditer(mask):
         if any(start <= match.start() < end for start, end in occupied):
@@ -972,7 +973,8 @@ def _parse_flowchart(
                             operator.undirected,
                         )
             continue
-        if re.search(r"(?:--|==|-.).*?(?:>|x|o|-)", _top_level_mask(text)):
+        # A spaced `-x`/`=o` token is a one-character link Mermaid rejects.
+        if re.search(r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo](?!\S)", _top_level_mask(text)):
             _fail(f"malformed edge at line {line_number}")
         parsed = _parse_node_expression(text)
         if parsed is not None:

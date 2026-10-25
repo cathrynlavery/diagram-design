@@ -1465,8 +1465,54 @@ def check_edge_ids(tmp: Path) -> None:
     if result["nodes"][0]["label"] != "Retry retry@-1":
         fail("edge ID parsing changed an unquoted subgraph title")
     ok("edge IDs cover circle/cross operators without changing literal labels or titles")
+def check_hyphenated_node_ids(tmp: Path) -> None:
+    # Mermaid keeps a single `-` inside a node id; only `--`, `==` and the
+    # dotted `-.` forms open a link, so a hyphenated id is never an edge.
+    flow = tmp / "hyphenated-ids.mmd"
+    for declaration, node_id, label in (
+        ("user-profile", "user-profile", "user-profile"),
+        ("api-proxy", "api-proxy", "api-proxy"),
+        ("user-profile[User profile]", "user-profile", "User profile"),
+        ("user-onboarding", "user-onboarding", "user-onboarding"),
+        ("node-x", "node-x", "node-x"),
+        ("x-o", "x-o", "x-o"),
+        ("info-only", "info-only", "info-only"),
+    ):
+        flow.write_text(f"flowchart LR\n  {declaration}\n  A --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node["label"] for node in diagram["nodes"]}
+        edges = [(edge["source"], edge["target"]) for edge in diagram["edges"]]
+        if nodes != {node_id: label, "A": "A", "B": "B"} or edges != [("A", "B")]:
+            fail(f"standalone {declaration!r} must stay one unconnected node: {nodes!r} {edges!r}")
 
+    for source in ("user-option", "api-xray", "my-object", "box-office"):
+        flow.write_text(f"flowchart LR\n{source} --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        edges = [(edge["source"], edge["target"], edge["arrowhead"]) for edge in diagram["edges"]]
+        if sorted(node["id"] for node in diagram["nodes"]) != sorted([source, "B"]) or edges != [
+            (source, "B", "arrow")
+        ]:
+            fail(f"{source!r} was split into an edge instead of staying one node: {edges!r}")
 
+    flow.write_text(
+        "flowchart LR\nuser-option --o api-xray\nnode-x x--x box-office\n", encoding="utf-8"
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    edges = [
+        (edge["source"], edge["target"], edge["arrowhead"], edge["bidirectional"])
+        for edge in diagram["edges"]
+    ]
+    if edges != [
+        ("user-option", "api-xray", "circle", False),
+        ("node-x", "box-office", "cross", True),
+    ]:
+        fail(f"real circle/cross links between hyphenated ids changed: {edges!r}")
+
+    # Mermaid rejects a spaced single-dash or single-equals x/o operator.
+    for broken in ("A -->", "A --x", "user-profile -->", "A -x B", "A -o B", "A =o B", "A -x"):
+        flow.write_text(f"flowchart LR\n{broken}\n", encoding="utf-8")
+        expect_error([str(flow)], "malformed edge at line 2")
+    ok("hyphenated flowchart node ids stay whole; only real link operators split them")
 def check_unicode_state_regression(tmp: Path) -> None:
     path = tmp / "unicode-state.mmd"
     path.write_text('stateDiagram-v2\n待机 : 等待输入\n待机 --> 完成\n', encoding="utf-8")
@@ -1714,6 +1760,7 @@ def main() -> int:
         check_node_shape_updates(tmp)
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
+        check_hyphenated_node_ids(tmp)
         check_flowchart_header_statements(tmp)
         check_edge_ids(tmp)
         check_entity_label_codes(tmp)
