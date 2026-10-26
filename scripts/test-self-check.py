@@ -59,6 +59,56 @@ def main() -> int:
     static = STATIC_EXAMPLE.read_text(encoding="utf-8")
     animated = EXAMPLE.read_text(encoding="utf-8")
 
+    # Document completeness: truncation, mojibake and unbalanced markup must all fail.
+    # The negative controls below are valid HTML that the balance count must not flag.
+    def check_mutation_fail(
+        label: str, find: str, replace: str, needle: str, limit: int = 1
+    ) -> None:
+        if find not in static:
+            failures.append(f"{label}: fixture has no {find!r} to mutate")
+            return
+        check_fail(label, static.replace(find, replace, limit), needle)
+
+    def check_mutation_pass(label: str, find: str, replace: str, limit: int = 1) -> None:
+        if find not in static:
+            failures.append(f"{label}: fixture has no {find!r} to mutate")
+            return
+        check_source_pass(label, static.replace(find, replace, limit))
+
+    check_fail("truncated document", static[: len(static) // 2], "does not end with </html>")
+    check_fail("mojibake", "\ufffd" + static, "U+FFFD")
+    check_mutation_fail("dropped closing tag", "</text>", "", "<text> opens")
+    check_mutation_fail("swapped closing tag", "</div>", "</span>", "<div> opens")
+    check_mutation_fail("stray closing tag", "</body>", "</body></span>", "<span> opens")
+    check_mutation_fail("unclosed span", "<body>", "<body><span>tip", "<span> opens")
+    check_mutation_fail("incomplete shell", "</html>", "", "does not end with </html>")
+    # Titles and text areas are RCDATA: tag names in them are text, not elements.
+    check_mutation_pass("tag names in a page title", "<title>", "<title>Using <span> and <div> labels in ")
+    check_mutation_pass("tag names in a textarea", "<body>", "<body><textarea>Using <span> labels</textarea>")
+    check_mutation_pass("trailing comment after the html end tag", "</html>", "</html>\n<!-- generated -->")
+    check_mutation_pass("space before the html end tag's >", "</html>", "</html >")
+    check_mutation_pass("newline inside the html end tag", "</html>", "</html\n>")
+    check_mutation_fail("unclosed textarea", "<body>", "<body><textarea>x", "is never closed")
+    check_mutation_pass("optional end tag", "</p>", "")
+    check_mutation_pass("optional head end tag", "</head>", "")
+    check_mutation_pass("optional body end tag", "</body>", "")
+    check_mutation_pass("void element", "<body>", "<body><br>")
+    check_mutation_pass(
+        "opening tag text in an attribute",
+        "<body>",
+        '<body><span title="<div>">tip</span>',
+    )
+    check_mutation_pass(
+        "closing tag text in an attribute",
+        "<body>",
+        '<body><span title="</div>">tip</span>',
+    )
+    check_mutation_pass(
+        "markup and an unclosed CSS comment in a stylesheet",
+        "</style>",
+        "/* <!-- */ .probe { fill: red }</style>",
+    )
+
     for location, markup in (
         ("heading before SVG", '<h2 id="architecture-title">Monthly traffic summary</h2>'),
         ("description duplicate", '<p id="architecture-desc">Unrelated description</p>'),

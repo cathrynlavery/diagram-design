@@ -7,7 +7,9 @@ Ships inside the skill so an installed agent can verify its own output:
 
 Checks the accessible-SVG contract, the single-file safety rules (no remote
 assets beyond the approved Google Fonts stylesheet, no executable attributes,
-no scripts other than the one canonical motion controller), painted content
+no scripts other than the one canonical motion controller), document
+completeness (a truncated or mojibake file is rejected rather than passed),
+painted content
 staying inside each SVG's viewBox, and — when motion markup is present — the
 structural motion contract. This is a distilled
 subset of the repository gates (`lint-skin.py`, `verify-motion.py`), which
@@ -63,6 +65,33 @@ SVG_NUMBER = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
 SVG_NUMBER_RE = re.compile(SVG_NUMBER)
 SVG_PLAIN_NUMBER_RE = re.compile(rf"^\s*{SVG_NUMBER}\s*$")
 TRANSLATE_RE = re.compile(rf"^\s*translate\(\s*({SVG_NUMBER})(?:[\s,]+({SVG_NUMBER}))?\s*\)\s*$")
+REPLACEMENT_CHAR = "\ufffd"
+# Container elements whose end tag HTML requires, so an unmatched count is real damage: a
+# file that stops mid-element, a dropped </text>, a stray </span>. Void elements and the
+# optional-end-tag elements (html, head, body, p, li, ...) stay out, so valid HTML cannot
+# trip the count; the closing </html> of the generated shell is checked separately.
+PAIRED_CONTAINER_TAGS = (
+    "title",
+    "desc",
+    "div",
+    "section",
+    "main",
+    "article",
+    "header",
+    "footer",
+    "figure",
+    "figcaption",
+    "svg",
+    "g",
+    "defs",
+    "pattern",
+    "marker",
+    "style",
+    "script",
+    "span",
+    "text",
+    "tspan",
+)
 # Their children are not painted where they are declared, or use another coordinate system.
 UNPAINTED_TAGS = {
     "defs",
@@ -502,6 +531,101 @@ def canonical_controller() -> str:
     return normalized_controller("".join(body))
 
 
+class BalanceParser(HTMLParser):
+    """Counts start and end tags as parsed, so attribute values and CDATA stay opaque.
+
+    Reading the raw source with a regular expression instead would count tag-like text
+    inside a quoted attribute or a stylesheet as markup, and report an imbalance the
+    document does not have. A self-closing tag arrives as both a start and an end tag,
+    so it balances itself.
+
+    Titles and text areas are RCDATA: `<title>Using <span> labels</title>` is literal
+    text, not a span element. `HTMLParser` only separates RCDATA from markup from
+    Python 3.13 on, so on the versions the skill supports the inner tag arrives here as
+    a real one; this class ignores markup until the matching end tag instead.
+    """
+
+    RCDATA_ELEMENTS = ("title", "textarea")
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.opens: Counter[str] = Counter()
+        self.closes: Counter[str] = Counter()
+        self.rcdata = ""
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if self.rcdata:
+            return
+        self.opens[tag] += 1
+        if tag in self.RCDATA_ELEMENTS:
+            self.rcdata = tag
+
+    def handle_endtag(self, tag: str) -> None:
+        if self.rcdata:
+            if tag == self.rcdata:
+                self.rcdata = ""
+                self.closes[tag] += 1
+            return
+        self.closes[tag] += 1
+
+
+def ends_with_shell_close(source: str) -> bool:
+    """True when the last markup in the document is `</html>`.
+
+    HTML allows comments and whitespace after the `</html>` end tag, so stripping only
+    whitespace would reject valid files; a document that really stopped early has no
+    closing tag left once trailing comments are removed.
+    """
+    tail = source.rstrip()
+    while True:
+        start = tail.rfind("<!--")
+        if start < 0:
+            break
+        end = tail.find("-->", start + 4)
+        if end < 0 or tail[end + 3 :].strip():
+            break
+        tail = tail[:start].rstrip()
+    return re.search(r"</html\s*>\Z", tail, re.IGNORECASE) is not None
+
+
+def check_document_completeness(source: str, errors: list[str]) -> None:
+    """Reject a document that is not whole: truncation, mojibake, unbalanced markup.
+
+    The other checks read a document's contents; none of them notices that the document
+    stopped early. A generated file that was cut off mid-write still satisfies the
+    accessible-SVG contract for the part that survived, so this check reads the shape of
+    the whole file instead.
+    """
+    if not ends_with_shell_close(source):
+        errors.append("document does not end with </html>; the file looks truncated")
+
+    replacements = source.count(REPLACEMENT_CHAR)
+    if replacements:
+        line = source[: source.index(REPLACEMENT_CHAR)].count("\n") + 1
+        errors.append(
+            f"contains {replacements} U+FFFD replacement character(s), first on line {line}:"
+            " the file has mojibake or a truncated multi-byte character"
+        )
+
+    parser = BalanceParser()
+    parser.feed(source)
+    parser.close()
+    if parser.rcdata:
+        # Everything after an unterminated RCDATA element is text, so the tag counts
+        # below describe the damage rather than the cause; report the cause alone.
+        errors.append(
+            f"<{parser.rcdata}> is never closed; the rest of the document reads as its text"
+        )
+        return
+    for tag in PAIRED_CONTAINER_TAGS:
+        opens, closes = parser.opens[tag], parser.closes[tag]
+        if opens != closes:
+            errors.append(
+                f"<{tag}> opens {opens} time(s) and closes {closes} time(s);"
+                " the document is not balanced"
+            )
+
+
 def check_svgs(parser: DiagramParser, errors: list[str]) -> None:
     checkable = [
         svg
@@ -678,6 +802,7 @@ def verify(path: Path, offline: bool = False) -> list[str]:
     parser = parsed_document(source)
     errors: list[str] = []
     errors.extend(parser.unsafe)
+    check_document_completeness(source, errors)
     check_css_references(parser, errors)
     for tag, rel, value in parser.references:
         finding = reference_error(tag, rel, value)

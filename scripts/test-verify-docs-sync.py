@@ -604,6 +604,42 @@ def check_export_surface_parity(verify) -> None:
             (ROOT / "prompts/export-diagram.md").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+        # #474: the produce-both Defaults bullet once listed the single-format flags.
+        for fake, name in ((fake_cmd, "commands"), (fake_prompt, "prompts")):
+            shipped = fake.read_text(encoding="utf-8")
+            fake.write_text(
+                shipped.replace(
+                    "only `--scale`/`--output`",
+                    "`--svg-only`/`--png-only`/`--scale`/`--output`",
+                ),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_export_surface_parity(errors, fake_root)
+            expected = (
+                f"{name}/export-diagram.md Defaults lists --svg-only, --png-only among "
+                "the cases that produce both .svg and .png; each restricts output to "
+                "its one format"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{name} single-format flags in Defaults not caught: {errors}")
+            print(f"OK export surface parity: {name} Defaults listing --svg-only caught")
+
+            fake.write_text(
+                re.sub(r"^- .*produce\W+both.*\n", "", shipped, flags=re.MULTILINE | re.IGNORECASE),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_export_surface_parity(errors, fake_root)
+            expected = (
+                f"{name}/export-diagram.md Defaults has no bullet saying when both "
+                ".svg and .png are produced"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{name} missing produce-both bullet not caught: {errors}")
+            print(f"OK export surface parity: {name} missing produce-both bullet caught")
+            fake.write_text(shipped, encoding="utf-8")
+
         fake_cmd.unlink()
         errors = []
         verify.check_export_surface_parity(errors, fake_root)
