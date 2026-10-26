@@ -591,11 +591,22 @@ A --> B
         fail("leading Mermaid frontmatter was not skipped before grammar detection")
     if "Checkout" in digest or "forest" in digest:
         fail("frontmatter config leaked into the digest")
+    if "- discarded: 0 style directives, 0 click handlers, 1 config directives" not in digest:
+        fail("discarded frontmatter config was not counted in the digest")
+
+    directives = tmp / "init-directives.mmd"
+    directives.write_text(
+        '%%{init: {"theme": "dark"}}%%\nflowchart LR\nA --> B\n%%{\n  init: {"theme": "forest"}\n}%%\n',
+        encoding="utf-8",
+    )
+    counted = json.loads(run_extract([str(directives), "--json"]))["diagrams"][0]["discarded"]
+    if counted["config_directives"] != 2:
+        fail(f"%%{{init}}%% directives were not counted: {counted}")
 
     unterminated = tmp / "unterminated-frontmatter.mmd"
     unterminated.write_text("---\ntitle: Broken\nflowchart LR\nA --> B\n", encoding="utf-8")
     expect_error([str(unterminated)], "not a Mermaid file")
-    ok("frontmatter is skipped, and an unterminated block still fails specifically")
+    ok("frontmatter and %%{init}%% are skipped and counted, and an unterminated block still fails specifically")
 
 
 def check_outer_markdown_fences(tmp: Path) -> None:
@@ -901,7 +912,7 @@ def check_adversarial(tmp: Path) -> None:
             fail(f"chained/multi-target edge missing: {pair}")
     if not any(edge["label"] == "label --> remains text" for edge in edges):
         fail("arrow text inside a quoted edge label was split as syntax")
-    if diagram["discarded"] != {"style_directives": 4, "click_handlers": 1}:
+    if diagram["discarded"] != {"style_directives": 4, "click_handlers": 1, "config_directives": 1}:
         fail(f"discard counts wrong: {diagram['discarded']}")
     serialized = json.dumps(payload)
     if "example.invalid" in serialized:
@@ -998,6 +1009,33 @@ def check_sequence_digest_regions(tmp: Path) -> None:
     if expected not in run_extract([str(scene)]).splitlines():
         fail("digest drops the else/and/option regions of sequence fragments")
     ok("digest lists the else/and/option regions of sequence fragments")
+
+
+def check_sequence_autonumber(tmp: Path) -> None:
+    scene = tmp / "sequence-autonumber.mmd"
+    scene.write_text(
+        "sequenceDiagram\nautonumber\nA->>B: one\nautonumber 10 5\nA->>B: ten\n"
+        "autonumber off\nA->>B: plain\nAutoNumber 3\nA->>B: three\n",
+        encoding="utf-8",
+    )
+    expected = "- autonumber: from 1, step 1; from 10, step 5; off; from 3, step 1"
+    if expected not in run_extract([str(scene)]).splitlines():
+        fail("digest drops sequence autonumber directives")
+    diagram = json.loads(run_extract([str(scene), "--json"]))["diagrams"][0]
+    if diagram["autonumber"][1] != {"line": 4, "off": False, "start": 10, "step": 5}:
+        fail(f"autonumber start/step not kept in the IR: {diagram['autonumber']}")
+    if len(diagram["edges"]) != 4:
+        fail("autonumber lines changed the parsed messages")
+    widest = tmp / "sequence-autonumber-widest.mmd"
+    widest.write_text(f"sequenceDiagram\nautonumber {'9' * 15} {'9' * 15}\nA->>B: one\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(widest), "--json"]))["diagrams"][0]
+    if diagram["autonumber"][0] != {"line": 2, "off": False, "start": 10**15 - 1, "step": 10**15 - 1}:
+        fail(f"15-digit autonumber start not kept: {diagram['autonumber']}")
+    for name, numbers in (("start", "9" * 16), ("step", f"1 {'9' * 16}"), ("huge", "9" * 5000)):
+        source = tmp / f"sequence-autonumber-{name}.mmd"
+        source.write_text(f"sequenceDiagram\nautonumber {numbers}\nA->>B: one\n", encoding="utf-8")
+        expect_error([str(source)], "autonumber value exceeds 15 digits at line 2")
+    ok("sequence autonumber directives are kept with their start and step")
 
 
 def check_sequence_grammar_forms(tmp: Path) -> None:
@@ -1364,6 +1402,41 @@ def check_spaced_pipe_labels(tmp: Path) -> None:
     ok("pipe labels may follow whitespace after the link operator")
 
 
+def check_edge_ids(tmp: Path) -> None:
+    flow = tmp / "edge-ids.mmd"
+    flow.write_text(
+        "flowchart LR\n  A e1@==>|go| B\n  B e2@-.-> C\n  e2@{ animate: true }\n"
+        "  e1@{ curve: linear }\n  X@{ label: \"Real\" }\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    nodes = sorted(node["id"] for node in diagram["nodes"])
+    if nodes != ["A", "B", "C", "X"]:
+        fail(f"edge IDs and their property statements must not become nodes: {nodes!r}")
+    edges = [(edge["source"], edge["target"], edge["label"], edge["style"]) for edge in diagram["edges"]]
+    if edges != [("A", "B", "go", "thick"), ("B", "C", "", "dashed")]:
+        fail(f"an edge ID before the operator must not change the edge: {edges!r}")
+    ok("Mermaid edge IDs and edge property statements are ignored")
+
+    for name, source, label, arrowhead in [
+        ("circle", "A e3@o--o B", "", "circle"),
+        ("cross", "A e4@x--x B", "", "cross"),
+        ("pipe", "A -->|retry@-1| B", "retry@-1", "arrow"),
+        ("spaced", "A -- retry@-1 --> B", "retry@-1", "arrow"),
+        ("pipe-operator", "A -->|retry@--> next| B", "retry@--> next", "arrow"),
+    ]:
+        flow.write_text("flowchart LR\n  " + source + "\n", encoding="utf-8")
+        result = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        edge = result["edges"][0]
+        if edge["label"] != label or edge["arrowhead"] != arrowhead:
+            fail(f"edge ID parsing changed {name}: {edge!r}")
+    flow.write_text("flowchart LR\n subgraph Retry retry@-1\n A --> B\n end\n", encoding="utf-8")
+    result = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    if result["nodes"][0]["label"] != "Retry retry@-1":
+        fail("edge ID parsing changed an unquoted subgraph title")
+    ok("edge IDs cover circle/cross operators without changing literal labels or titles")
+
+
 def check_unicode_state_regression(tmp: Path) -> None:
     path = tmp / "unicode-state.mmd"
     path.write_text('stateDiagram-v2\n待机 : 等待输入\n待机 --> 完成\n', encoding="utf-8")
@@ -1499,6 +1572,7 @@ def main() -> int:
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
         check_flowchart_header_statements(tmp)
+        check_edge_ids(tmp)
         check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
@@ -1512,6 +1586,7 @@ def main() -> int:
         check_sequence_grammar_forms(tmp)
         check_sequence_highlight_nesting_regression(tmp)
         check_sequence_digest_regions(tmp)
+        check_sequence_autonumber(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()
