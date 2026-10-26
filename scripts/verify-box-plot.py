@@ -45,7 +45,12 @@ Ten invariants:
    Fill and stroke are read from the attribute, the inline style and class
    rules, on the series group, any nested group, and every shape inside
    it: underlay, box, median, whiskers, caps, outliers and any path. Hex
-   may carry alpha; rgb() counts as rgba().
+   may carry alpha; rgb() counts as rgba(); hsl()/hsla() is converted and
+   held to the accent within whole-number rounding; var() resolves through
+   every custom property the document declares, unscoped. A rule's class,
+   id and attribute selectors tie it to the series that carry them; a rule
+   naming only types, `*` or pseudo-classes that paints the accent reaches
+   every series.
 
 8. BOUND LABELS - each series carries exactly one <text data-name> whose
    data-name and printed text both match the series, on the series' row
@@ -61,7 +66,9 @@ Ten invariants:
    class, id or attribute reaches a box. Backslash escapes, stylesheet
    links other than the font link, `<use>`, `<set>`/`<animate*>` and a
    nested `<svg>` viewport are refused. A series inside `<defs>` is not
-   the series that gets drawn.
+   the series that gets drawn, and neither is a bound mark hidden by
+   display, visibility or opacity (attribute or inline style) on itself,
+   its series group or a group around it.
 
 10. FAIL CLOSED - a file that presents as a box plot but yields fewer than
    three series on three distinct medians is a finding, never a pass. Three
@@ -83,6 +90,7 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
+import colorsys
 import html
 import math
 import re
@@ -167,6 +175,22 @@ ACCENT_RE = re.compile(
     r"rgba?\(\s*191\s*,\s*69\s*,\s*32\b|"
     r"rgba?\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
+)
+ACCENT_RGBS = ((191, 69, 32), (240, 138, 89))
+HSL_RE = re.compile(
+    r"hsla?\(\s*([-+]?[\d.]+)(deg|grad|rad|turn)?[\s,]+([\d.]+)%?[\s,]+([\d.]+)%?",
+    re.IGNORECASE,
+)
+HUE_DEGREES = {"deg": 1.0, "grad": 0.9, "rad": 180 / math.pi, "turn": 360.0}
+# Every whole-number hsl() spelling of either accent (each part rounded up
+# or down) converts to within 4.1 of it on a 0-255 channel.
+HSL_TOLERANCE = 4.5
+VAR_REF_RE = re.compile(r"var\(\s*(--[\w-]+)", re.IGNORECASE)
+CUSTOM_PROP_RE = re.compile(r"(?<![\w-])(--[\w-]+)\s*:\s*([^;{}<>\"']*)")
+COMPOUND_RE = re.compile(r"(?:\[[^\]]*\]|\([^)]*\)|[^\s>+~\[\]()])+")
+ATTR_SELECTOR_RE = re.compile(
+    r"\[\s*([\w:-]+)\s*(?:([~|^$*]?=)\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s\]\"']+)))?"
+    r"\s*([a-zA-Z]?)\s*\]"
 )
 MARK_ROLES = {"box", "median", "whisker-lo", "whisker-hi", "cap"}
 
@@ -505,12 +529,101 @@ NEGATION_RE = re.compile(r":not\([^()]*\)", re.IGNORECASE)
 FUNCTIONAL_PSEUDO_RE = re.compile(r":[\w-]+\(")
 
 
-def class_paints(source: str) -> dict:
-    """Required classes -> fill/stroke values from a rule that names them.
+def literal_accent(value: str) -> bool:
+    """Does this paint spell the accent as hex, rgb() or hsl()?"""
+    if ACCENT_RE.search(value):
+        return True
+    for found in HSL_RE.finditer(value):
+        hue, sat, light = (number(found.group(index)) for index in (1, 3, 4))
+        if None in (hue, sat, light):
+            continue
+        hue *= HUE_DEGREES[(found.group(2) or "deg").lower()]
+        rgb = [255 * part for part in colorsys.hls_to_rgb(
+            hue / 360 % 1, min(light, 100) / 100, min(sat, 100) / 100)]
+        if any(max(abs(a - b) for a, b in zip(rgb, accent)) <= HSL_TOLERANCE
+               for accent in ACCENT_RGBS):
+            return True
+    return False
 
-    Each key is the frozenset of classes one compound selector requires, so
-    `.series.focal rect` paints only under an element carrying both classes.
-    `("stroke", <classes>)` keys hold the stroke values alone.
+
+def accent_properties(source: str) -> set:
+    """Custom properties whose value is, or refers on to, the accent.
+
+    Declarations are read from the whole document, stylesheet and inline
+    style alike, with no scoping: a name set to the accent anywhere counts
+    everywhere it is used. A var() fallback is part of the value, so it is
+    read too.
+    """
+    accent, used_by = set(), {}
+    for found in CUSTOM_PROP_RE.finditer(source):
+        name, value = found.group(1), found.group(2)
+        if literal_accent(value):
+            accent.add(name)
+        for used in VAR_REF_RE.findall(value):
+            used_by.setdefault(used, []).append(name)
+    queue = list(accent)
+    while queue:
+        for name in used_by.get(queue.pop(), ()):
+            if name not in accent:
+                accent.add(name)
+                queue.append(name)
+    return accent
+
+
+def is_accent(value: str, accent_vars: set) -> bool:
+    return literal_accent(value) or any(
+        name in accent_vars for name in VAR_REF_RE.findall(value))
+
+
+def compound_requirement(compound: str):
+    """What an element must carry for one compound selector to match it.
+
+    Classes stay bare names; `#id` and `[attr]` / `[attr=value]` become
+    tokens that element_tokens() produces. Ids and values compare lowercased
+    and any operator other than `=` reads as presence, so a misread only
+    widens the match. None: the compound names nothing an element carries
+    (a type, `*`, a pseudo-class). frozenset(): not modelled, so it matches
+    every element.
+    """
+    # A negation never adds a requirement, so dropping it can only widen
+    # what the rule paints.
+    positive = NEGATION_RE.sub("", compound)
+    if FUNCTIONAL_PSEUDO_RE.search(positive):
+        # :is(), :where(), :has() and the like are not modelled. Fail
+        # closed: the paint reaches every element.
+        return frozenset()
+    bare = re.sub(r"\[[^\]]*\]", " ", positive)
+    tokens = set(re.findall(r"\.([\w-]+)", bare))
+    tokens.update("#" + name.lower() for name in re.findall(r"#([\w-]+)", bare))
+    for bracket in re.findall(r"\[[^\]]*\]", positive):
+        parsed = ATTR_SELECTOR_RE.fullmatch(bracket)
+        if parsed is None:
+            return frozenset()
+        name = parsed.group(1).lower()
+        value = next((part for part in parsed.group(3, 4, 5) if part is not None), None)
+        if parsed.group(2) == "=" and not parsed.group(6) and value is not None:
+            tokens.add("[%s=%s]" % (name, value.lower()))
+        else:
+            tokens.add("[%s]" % name)
+    return frozenset(tokens) if tokens else None
+
+
+def element_tokens(attrs: dict) -> set:
+    tokens = set(attrs.get("class", "").split())
+    if "id" in attrs:
+        tokens.add("#" + attrs["id"].lower())
+    for name, value in attrs.items():
+        tokens.update(("[%s]" % name, "[%s=%s]" % (name, value.lower())))
+    return tokens
+
+
+def class_paints(source: str, accent_vars: set) -> dict:
+    """Required tokens -> fill/stroke values from a rule that names them.
+
+    Each key is the frozenset of classes, ids and attributes one compound
+    selector requires, so `.series.focal rect` paints only under an element
+    carrying both classes and `[data-name="Auth"] rect` only under Auth.
+    `("stroke", <tokens>)` keys hold the stroke values alone.
     """
     found = {}
     for match in STYLE_RE.finditer(source):
@@ -520,8 +633,7 @@ def class_paints(source: str) -> dict:
             if not paints:
                 continue
             for alternative in rule.group(1).split(","):
-                compounds = [part for part in re.split(r"[\s>+~]+", alternative.strip())
-                             if part]
+                compounds = COMPOUND_RE.findall(alternative)
                 if not compounds:
                     continue
                 subject = compounds[-1]
@@ -532,23 +644,19 @@ def class_paints(source: str) -> dict:
                 # .hot, so an ancestor compound counts as well as the
                 # subject's. A compound such as `.series.focal` only matches
                 # an element that carries every class it names.
-                strokes = STROKE_DECL_RE.findall(rule.group(2))
-                for compound in compounds:
-                    # A negation never adds a requirement, so dropping it
-                    # can only widen what the rule paints.
-                    positive = NEGATION_RE.sub("", compound)
-                    if FUNCTIONAL_PSEUDO_RE.search(positive):
-                        # :is(), :where(), :has() and the like are not
-                        # modelled. Fail closed: the paint reaches every
-                        # element, so a hidden accent cannot slip through.
-                        required = frozenset()
-                    else:
-                        required = frozenset(re.findall(r"\.([\w-]+)", positive))
-                        if not required:
-                            continue
-                    found.setdefault(required, []).extend(paints)
-                    found.setdefault(("stroke", required), []).extend(
-                        value.strip() for value in strokes)
+                fills = paints
+                strokes = [value.strip() for value in STROKE_DECL_RE.findall(rule.group(2))]
+                required_sets = [required for required in map(compound_requirement, compounds)
+                                 if required is not None]
+                if not required_sets:
+                    # Only types, `*` and pseudo-classes: nothing ties the
+                    # rule to one series, so an accent it sets reaches all.
+                    required_sets = [frozenset()]
+                    fills = [value for value in fills if is_accent(value, accent_vars)]
+                    strokes = [value for value in strokes if is_accent(value, accent_vars)]
+                for required in required_sets:
+                    found.setdefault(required, []).extend(fills)
+                    found.setdefault(("stroke", required), []).extend(strokes)
     return found
 
 
@@ -600,13 +708,13 @@ def class_stroke_rules(source: str) -> list:
 
 
 def matching_class_paints(attrs: dict, paints: dict, stroke: bool) -> list:
-    classes = set(attrs.get("class", "").split())
+    tokens = element_tokens(attrs)
     values = []
     for key, found in paints.items():
         required = key[1] if isinstance(key, tuple) else key
         if isinstance(key, tuple) != stroke:
             continue
-        if required <= classes:
+        if required <= tokens:
             values.extend(found)
     return values
 
@@ -627,8 +735,8 @@ def stroke_paints(attrs: dict, paints: dict) -> list:
     return values
 
 
-def wears_accent(attrs: dict, paints: dict) -> bool:
-    return any(ACCENT_RE.search(value) for value in element_paints(attrs, paints))
+def wears_accent(attrs: dict, paints: dict, accent_vars: set) -> bool:
+    return any(is_accent(value, accent_vars) for value in element_paints(attrs, paints))
 
 
 def figure_paper(source: str):
@@ -643,14 +751,14 @@ def figure_paper(source: str):
     return None
 
 
-def hides(attrs: dict) -> bool:
+def hides(attrs: dict, opacities=("opacity", "fill-opacity", "stroke-opacity")) -> bool:
     if "hidden" in attrs:
         return True
     if attrs.get("visibility", "").strip().lower() in {"hidden", "collapse"}:
         return True
     if attrs.get("display", "").strip().lower() == "none":
         return True
-    for key in ("opacity", "fill-opacity", "stroke-opacity"):
+    for key in opacities:
         raw = attrs.get(key)
         if raw is None:
             continue
@@ -663,7 +771,7 @@ def hides(attrs: dict) -> bool:
             return True
         if prop == "visibility" and raw in {"hidden", "collapse"}:
             return True
-        if prop.endswith("opacity"):
+        if prop in opacities:
             value = number(raw.rstrip("%"))
             if value is not None and value <= 0:
                 return True
@@ -726,12 +834,17 @@ def view_x_span(source: str) -> tuple:
 
 
 def parse_series(source: str, findings: list, name: str) -> list:
-    paints = class_paints(source)
+    accent_vars = accent_properties(source)
+    paints = class_paints(source, accent_vars)
     stroke_rules = class_stroke_rules(source)
     paper = figure_paper(source)
     hidden = nonrendering_spans(source)
     series = []
     groups = groups_of(source)
+    # Groups that stop everything inside them drawing. Only whole-element
+    # opacity counts here: a box with fill-opacity 0 still draws its stroke.
+    hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
+              for group in groups if hides(attrs_of(group.group("attrs")), ("opacity",))]
     svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
@@ -789,6 +902,7 @@ def parse_series(source: str, findings: list, name: str) -> list:
                     "exactly one, and an extra mark shows a value the checker "
                     "never reads" % (where, attrs["data-name"], count, role)
                 )
+        drawn = True
         for mark in OPEN_TAG_RE.finditer(body):
             mattrs = attrs_of(mark.group("attrs"))
             if not ({"data-role", "data-outlier", "data-name"} & set(mattrs)):
@@ -799,6 +913,18 @@ def parse_series(source: str, findings: list, name: str) -> list:
                 findings.append(
                     "%s:%d: series %r has a bound <%s> inside a non-rendering "
                     "container, so the checker reads a mark that is never drawn"
+                    % (name, line_of(source, body_at + mark.start()),
+                       attrs["data-name"], mark.group("tag").lower())
+                )
+            # The series group's own span is in `hiding` when it hides itself.
+            if drawn and {"data-role", "data-outlier"} & set(mattrs) and (
+                    hides(mattrs, ("opacity",))
+                    or inside_span(body_at + mark.start(), hiding)):
+                drawn = False
+                findings.append(
+                    "%s:%d: series %r has a bound <%s> hidden by display, "
+                    "visibility or opacity on the mark or a group around it, "
+                    "so the checker reads a mark that is never drawn"
                     % (name, line_of(source, body_at + mark.start()),
                        attrs["data-name"], mark.group("tag").lower())
                 )
@@ -834,8 +960,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
         # Paint inherits, so the series <g> itself and any nested group
         # count, and so does any shape the series draws, not only the
         # rect/line/circle marks bound above.
-        accent = wears_accent(attrs, paints) or any(
-            wears_accent(attrs_of(mark.group("attrs")), paints)
+        accent = wears_accent(attrs, paints, accent_vars) or any(
+            wears_accent(attrs_of(mark.group("attrs")), paints, accent_vars)
             for mark in OPEN_TAG_RE.finditer(body)
             if mark.group("tag").lower() not in NON_MARK_TAGS
         )

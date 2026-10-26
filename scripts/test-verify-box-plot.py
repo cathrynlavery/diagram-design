@@ -161,6 +161,29 @@ def prepend_style(css: str) -> str:
 A_LABEL = '<text data-name="A" x="148" y="84" text-anchor="end">A</text>'
 A_BOX = 'data-role="box" x="200"'
 
+AUTH_G = '<g data-name="Auth"'
+AUTH_BOX = ('<rect data-role="box" x="196" y="64.0" width="20" height="32" rx="2" '
+            'fill="rgba(45,49,66,0.15)" stroke="#4f5d75" stroke-width="1"/>')
+CHECKOUT_BOX = ('<rect data-role="box" x="320" y="200.0" width="240" height="32" '
+                'rx="2" fill="rgba(191,69,32,0.12)" stroke="#bf4520"')
+
+
+def shipped_with(*swaps: tuple, index: int = 0) -> str:
+    """A shipped example with each (old, new) swap applied exactly once."""
+    source = SHIPPED[index].read_text(encoding="utf-8")
+    for old, new in swaps:
+        assert source.count(old) == 1, "fixture anchor %r is not unique" % old
+        source = source.replace(old, new)
+    return source
+
+
+def auth_fill(paint: str) -> tuple:
+    return AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"', paint, 1)
+
+
+def styled(css: str) -> tuple:
+    return "  </style>", "    %s\n  </style>" % css
+
 
 def document(*blocks: str) -> str:
     return HEAD + "".join(blocks) + TAIL
@@ -995,6 +1018,89 @@ def run_cases(h: Harness) -> int:
         ).replace("  <g ", "  <style>.outer g{stroke:#4f5d75}</style>\n  <g ", 1),
         1, "paper mask",
     )
+
+    h.expect_findings(
+        "a class selector listed after a type-only one still repaints a paper mask",
+        papered.replace(
+            '<circle data-outlier="B"',
+            mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>line, .m{stroke:#4f5d75}</style>\n  <g ", 1),
+        1, "paper mask",
+    )
+
+    # The accent and visibility as a browser resolves them, on the shipped
+    # example's muted Auth series: var(), hsl(), id and attribute selectors,
+    # and display/visibility/opacity on the series or a mark.
+    for title, swaps in (
+        ("an inline var(--color-accent) fill",
+         [(AUTH_BOX, AUTH_BOX.replace("/>", ' style="fill:var(--color-accent)"/>'))]),
+        ("a var() chained to the accent through another custom property",
+         [auth_fill('fill="var(--color-focus)"'),
+          ("--color-accent: #bf4520;",
+           "--color-accent: #bf4520;\n      --color-focus: var(--color-accent);")]),
+        ("an hsl() spelling of the accent", [auth_fill('fill="hsl(14,71%,44%)"')]),
+        ("an hsla() spelling one rounding step off the accent",
+         [auth_fill('fill="hsla(13, 72%, 43%, 0.12)"')]),
+        ("a space-separated hsl() with a turn hue",
+         [auth_fill('fill="hsl(0.0388turn 71% 44% / 0.12)"')]),
+        ("an attribute selector", [styled('[data-name="Auth"] rect{fill:#bf4520}')]),
+        ("an id selector",
+         [styled("#auth rect{fill:#bf4520}"), (AUTH_G, '<g id="auth" data-name="Auth"')]),
+        ("a descendant attribute selector",
+         [styled('g[data-name="Auth"] [data-role="box"]{fill:#bf4520}')]),
+        ("a prefix attribute selector painting var(--color-accent)",
+         [styled('[data-name^="Au"] rect{stroke:var(--color-accent)}')]),
+    ):
+        h.expect_findings(
+            "%s on a muted series is one finding" % title,
+            shipped_with(*swaps), 1, "at most one focal",
+        )
+    h.expect_findings(
+        "an hsl() spelling of the dark accent on a muted series is one finding",
+        shipped_with(
+            ('x="196" y="64.0" width="20" height="32" rx="2" fill="rgba(245,245,245,0.14)"',
+             'x="196" y="64.0" width="20" height="32" rx="2" fill="hsl(20,83%,64%)"'),
+            index=1),
+        1, "at most one focal",
+    )
+    h.expect_named(
+        "a type selector painting the accent cannot be held to one series and "
+        "is a finding",
+        shipped_with(styled("rect{fill:#bf4520}")),
+        "at most one focal",
+    )
+    for title, swaps in (
+        ('display="none" on the series group', [(AUTH_G, '<g display="none" data-name="Auth"')]),
+        ('visibility="hidden" on the series group',
+         [(AUTH_G, '<g visibility="hidden" data-name="Auth"')]),
+        ('style="display:none" on the series group',
+         [(AUTH_G, '<g style="display:none" data-name="Auth"')]),
+        ('style="visibility:hidden" on the box',
+         [(AUTH_BOX, AUTH_BOX.replace("/>", ' style="visibility:hidden"/>'))]),
+        ('opacity="0" on the box', [(AUTH_BOX, AUTH_BOX.replace("/>", ' opacity="0"/>'))]),
+        ('display="none" on a wrapper group',
+         [(AUTH_G, '<g display="none">\n      <g data-name="Auth"'),
+          ('      <g data-name="Catalog"', '      </g>\n      <g data-name="Catalog"')]),
+    ):
+        h.expect_findings(
+            "a series hidden by %s is one finding" % title,
+            shipped_with(*swaps), 1, "never drawn",
+        )
+    for title, swaps in (
+        ("the focal series painted through var(--color-accent)",
+         [(CHECKOUT_BOX, CHECKOUT_BOX.replace(
+             'fill="rgba(191,69,32,0.12)" stroke="#bf4520"',
+             'fill="var(--color-accent)" fill-opacity="0.12" stroke="var(--color-accent)"'))]),
+        ("an attribute selector painting only the focal series",
+         [styled('[data-name="Checkout"] rect{stroke:var(--color-accent)}')]),
+        ("a muted box stroked through var(--color-muted)",
+         [(AUTH_BOX, AUTH_BOX.replace('stroke="#4f5d75"', 'stroke="var(--color-muted)"'))]),
+        ("a muted hsl() fill", [auth_fill('fill="hsl(218,19%,38%)"')]),
+        ("a type selector painting a muted stroke", [styled("line{stroke:#4f5d75}")]),
+        ("a series group that states visibility and a nonzero opacity",
+         [(AUTH_G, '<g visibility="visible" opacity="0.9" data-name="Auth"')]),
+    ):
+        h.expect_clean("%s passes" % title, shipped_with(*swaps))
 
     h.expect_out_of_scope(
         "data-value on a <circle> never claims a file — the beeswarm contract",
