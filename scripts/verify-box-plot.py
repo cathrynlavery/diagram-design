@@ -42,15 +42,17 @@ Ten invariants:
    centre, painted only with the paper colour.
 
 7. AT MOST ONE ACCENT SERIES - one focal claim per figure, on either skin.
-   Fill and stroke are read from the attribute, the inline style and class
-   rules, on the series group, any nested group, and every shape inside
-   it: underlay, box, median, whiskers, caps, outliers and any path. Hex
-   may carry alpha; rgb() counts as rgba(); hsl()/hsla() is converted and
-   held to the accent within whole-number rounding; var() resolves through
-   every custom property the document declares, unscoped. A rule's class,
-   id and attribute selectors tie it to the series that carry them; a rule
-   naming only types, `*` or pseudo-classes that paints the accent reaches
-   every series.
+   Fill and stroke are read from the attribute, the inline style and
+   <style> rules, on the series group, any nested group, and every shape
+   inside it: underlay, box, median, whiskers, caps, outliers and any
+   path, and on any group, the <svg> or page element around the series,
+   since paint inherits. Hex may carry alpha; rgb() counts as rgba();
+   hsl()/hsla() is converted and held to the accent within whole-number
+   rounding; var() resolves through every custom property the document
+   declares, unscoped. A rule counts on an element its selector matches:
+   the subject by type, class, id and attribute, every other compound on
+   a strict ancestor, in order. A type-only rule reaches every element of
+   that type.
 
 8. BOUND LABELS - each series carries exactly one <text data-name> whose
    data-name and printed text both match the series, on the series' row
@@ -622,8 +624,9 @@ def element_tokens(attrs: dict) -> set:
 def class_paints(source: str, accent_vars: set) -> dict:
     """Required tokens -> fill/stroke values from a rule that names them.
 
-    Each key is the frozenset of classes, ids and attributes one compound
-    selector requires, so `.series.focal rect` paints only under an element
+    Read for paper masks; the accent check uses selector_rules(). Each key
+    is the frozenset of classes, ids and attributes one compound selector
+    requires, so `.series.focal rect` paints only under an element
     carrying both classes and `[data-name="Auth"] rect` only under Auth.
     `("stroke", <tokens>)` keys hold the stroke values alone.
     """
@@ -651,8 +654,8 @@ def class_paints(source: str, accent_vars: set) -> dict:
                 required_sets = [required for required in map(compound_requirement, compounds)
                                  if required is not None]
                 if not required_sets:
-                    # Only types, `*` and pseudo-classes: nothing ties the
-                    # rule to one series, so an accent it sets reaches all.
+                    # Only types, `*` and pseudo-classes: an accent it sets
+                    # may reach any paper mask.
                     required_sets = [frozenset()]
                     fills = [value for value in fills if is_accent(value, accent_vars)]
                     strokes = [value for value in strokes if is_accent(value, accent_vars)]
@@ -737,8 +740,10 @@ def stroke_paints(attrs: dict, paints: dict) -> list:
     return values
 
 
-def wears_accent(attrs: dict, paints: dict, accent_vars: set) -> bool:
-    return any(is_accent(value, accent_vars) for value in element_paints(attrs, paints))
+def wears_accent(tag: str, attrs: dict, chain: list, accent_vars: set, rules: list) -> bool:
+    """Accent from the element's own attribute or inline style, or a <style> rule selecting it."""
+    return any(is_accent(value, accent_vars) for value in element_paints(attrs, {})) \
+        or css_matches(tag, element_tokens(attrs), chain, rules)
 
 
 def figure_paper(source: str):
@@ -810,43 +815,58 @@ def svg_ancestors(source: str) -> list:
     return stack + [("svg", attrs_of(svg.group("attrs")) if svg else {})]
 
 
-def stylesheet_hides(source: str) -> list:
-    """(type, subject tokens, tokens around) for each selector of a hiding rule.
+def compound_kind(compound: str) -> tuple:
+    """(type or None, required tokens) for one compound selector."""
+    typed = re.match(r"[A-Za-z][\w-]*", compound)
+    return (typed.group().lower() if typed else None,
+            compound_requirement(compound) or frozenset())
+
+
+def selector_rules(source: str, wanted) -> list:
+    """(type, subject tokens, ancestors) for each selector of a rule `wanted` accepts.
 
     The subject compound must match the element itself, by type when it
-    names one; every other compound must match some element around it, in
-    any order, and a sibling combinator drops them. Each simplification
-    only widens what the rule hides. A subject naming only a type, `*` or
+    names one. `ancestors` holds (type, tokens) for every other compound,
+    outermost first, and they must match the element's strict ancestors in
+    that order. `>` reads as any ancestor and a sibling combinator drops
+    them; both only widen the match. A subject naming only a type, `*` or
     pseudo-classes matches every element of that type.
     """
     rules = []
     for match in STYLE_RE.finditer(source):
         css = blank_css_comments(match.group("body"))
         for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
-            if not declares_hidden(rule.group(2), ("opacity",)):
+            if not wanted(rule.group(2)):
                 continue
             for alternative in rule.group(1).split(","):
-                compounds = COMPOUND_RE.findall(alternative)
-                if not compounds:
+                kinds = [compound_kind(compound) for compound in COMPOUND_RE.findall(alternative)]
+                if not kinds:
                     continue
-                typed = re.match(r"[A-Za-z][\w-]*", compounds[-1])
-                subject = compound_requirement(compounds[-1]) or frozenset()
                 siblings = re.search(r"[+~]", re.sub(r"\[[^\]]*\]|\([^)]*\)", "", alternative))
-                around = [] if siblings else [
-                    required for required in map(compound_requirement, compounds[:-1])
-                    if required]
-                rules.append((typed.group().lower() if typed else None, subject, around))
+                ancestors = [] if siblings else [
+                    kind for kind in kinds[:-1] if kind != (None, frozenset())]
+                rules.append(kinds[-1] + (ancestors,))
     return rules
 
 
-def css_hidden(tag: str, attrs: dict, around: list, rules: list) -> bool:
-    """Does a stylesheet hiding rule reach this element? `around`: tokens of its ancestors."""
-    if not rules:
-        return False
-    tokens = element_tokens(attrs)
-    return any((kind is None or kind == tag) and subject <= tokens
-               and all(any(required <= other for other in around) for required in needs)
-               for kind, subject, needs in rules)
+def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
+    """Does a rule select this element? `chain`: (tag, tokens) of its strict ancestors, outermost first."""
+    for kind, subject, ancestors in rules:
+        if kind not in (None, tag) or not subject <= tokens:
+            continue
+        # Nearest matching ancestor first, walking outwards, which finds a
+        # match for a chain of descendant combinators whenever one exists.
+        index = len(chain)
+        for need_kind, need in reversed(ancestors):
+            while index:
+                index -= 1
+                if need_kind in (None, chain[index][0]) and need <= chain[index][1]:
+                    break
+            else:
+                break
+        else:
+            return True
+    return False
 
 
 def positioned_tspan(body: str) -> bool:
@@ -912,28 +932,38 @@ def parse_series(source: str, findings: list, name: str) -> list:
     hidden = nonrendering_spans(source)
     series = []
     groups = groups_of(source)
-    hide_rules = stylesheet_hides(source)
-    outer = svg_ancestors(source)
-    outer_tokens = [element_tokens(attrs) for _tag, attrs in outer]
-    # Hiding the <svg> or a page element around it hides every series. Only
-    # whole-element opacity counts: a box with fill-opacity 0 still draws
-    # its stroke.
+    # fail closed: no cascade, so a later rule that restores visibility does not clear a hide
+    hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)))
+    accent_rules = selector_rules(source, lambda css: any(
+        is_accent(value, accent_vars) for value in declared_paints(css)))
+    page = svg_ancestors(source)
+    outer = [(tag, element_tokens(attrs)) for tag, attrs in page]
+    # Hiding or painting the <svg> or a page element around it reaches every
+    # series. Only whole-element opacity counts: a box with fill-opacity 0
+    # still draws its stroke.
     page_hidden = any(hides(attrs, ("opacity",))
-                      or css_hidden(tag, attrs, outer_tokens, hide_rules)
-                      for tag, attrs in outer)
-    around, stack = {}, []
+                      or css_matches(tag, outer[index][1], outer[:index], hide_rules)
+                      for index, (tag, attrs) in enumerate(page))
+    page_accent = any(wears_accent(tag, attrs, outer[:index], accent_vars, accent_rules)
+                      for index, (tag, attrs) in enumerate(page))
+    # Each group's strict ancestors, outermost first, and whether it or one
+    # of them wears the accent, which every series inside inherits.
+    around, accented, stack = {}, {}, []
     for group in groups:
         while stack and stack[-1][0] <= group.start():
             stack.pop()
-        around[group.start()] = outer_tokens + [tokens for _end, tokens in stack]
+        gattrs = attrs_of(group.group("attrs"))
+        around[group.start()] = outer + [entry for _end, entry, _accent in stack]
+        accented[group.start()] = (stack[-1][2] if stack else page_accent) or wears_accent(
+            "g", gattrs, around[group.start()], accent_vars, accent_rules)
         stack.append((group.body_at() + len(group.group("body")),
-                      element_tokens(attrs_of(group.group("attrs")))))
+                      ("g", element_tokens(gattrs)), accented[group.start()]))
     # Groups that stop everything inside them drawing.
     hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
               for group in groups
               if hides(attrs_of(group.group("attrs")), ("opacity",))
-              or css_hidden("g", attrs_of(group.group("attrs")), around[group.start()],
-                            hide_rules)]
+              or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
+                             around[group.start()], hide_rules)]
     svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
@@ -993,10 +1023,15 @@ def parse_series(source: str, findings: list, name: str) -> list:
                 )
         drawn = True
         body_end = body_at + len(body)
-        series_around = around[match.start()] + [element_tokens(attrs)]
+        series_chain = around[match.start()] + [("g", element_tokens(attrs))]
         inner = [(group.body_at(), group.body_at() + len(group.group("body")),
-                  element_tokens(attrs_of(group.group("attrs"))))
+                  ("g", element_tokens(attrs_of(group.group("attrs")))))
                  for group in groups if body_at <= group.start() < body_end]
+
+        def chain_at(offset: int) -> list:
+            """Strict ancestors of the element starting at `offset`, outermost first."""
+            return series_chain + [entry for start, end, entry in inner if start <= offset < end]
+
         for mark in OPEN_TAG_RE.finditer(body):
             mattrs = attrs_of(mark.group("attrs"))
             if not ({"data-role", "data-outlier", "data-name"} & set(mattrs)):
@@ -1015,10 +1050,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
             if drawn and {"data-role", "data-outlier"} & set(mattrs) and (
                     page_hidden or hides(mattrs, ("opacity",))
                     or inside_span(at, hiding)
-                    or css_hidden(mark.group("tag").lower(), mattrs,
-                                  series_around + [tokens for start, end, tokens in inner
-                                                   if start <= at < end],
-                                  hide_rules)):
+                    or css_matches(mark.group("tag").lower(), element_tokens(mattrs),
+                                   chain_at(at), hide_rules)):
                 drawn = False
                 findings.append(
                     "%s:%d: series %r has a bound <%s> hidden by display, "
@@ -1057,11 +1090,12 @@ def parse_series(source: str, findings: list, name: str) -> list:
                 continue
             caps.append(tuple(cap_xs))
         cy = box_nums[1] + box_nums[3] / 2.0
-        # Paint inherits, so the series <g> itself and any nested group
-        # count, and so does any shape the series draws, not only the
-        # rect/line/circle marks bound above.
-        accent = wears_accent(attrs, paints, accent_vars) or any(
-            wears_accent(attrs_of(mark.group("attrs")), paints, accent_vars)
+        # Paint inherits, so the series <g> itself, any group or page element
+        # around it and any nested group count, and so does any shape the
+        # series draws, not only the rect/line/circle marks bound above.
+        accent = accented[match.start()] or any(
+            wears_accent(mark.group("tag").lower(), attrs_of(mark.group("attrs")),
+                         chain_at(body_at + mark.start()), accent_vars, accent_rules)
             for mark in OPEN_TAG_RE.finditer(body)
             if mark.group("tag").lower() not in NON_MARK_TAGS
         )

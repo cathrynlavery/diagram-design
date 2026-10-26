@@ -1128,6 +1128,35 @@ def run_cases(h: Harness) -> int:
     ):
         h.expect_clean("%s passes" % title, shipped_with(styled(css)))
 
+    # Every compound left of the subject must match a strict ancestor, in
+    # order: never the element itself, a sibling or a descendant.
+    for title, css, count, needle in (
+        ("body .frame{display:none} (a real ancestor)", "body .frame{display:none}",
+         5, "never drawn"),
+        ('svg > g[data-name="Auth"]{display:none} (its real parent)',
+         'svg > g[data-name="Auth"]{display:none}', 1, "never drawn"),
+        (".frame rect painting the accent (an ancestor outside the svg)",
+         ".frame rect{fill:#bf4520}", 1, "at most one focal"),
+        ('[role="img"] [data-name="Auth"] rect painting the accent',
+         '[role="img"] [data-name="Auth"] rect{fill:#bf4520}', 1, "at most one focal"),
+    ):
+        h.expect_findings(
+            "a rule %s is %d finding(s)" % (title, count),
+            shipped_with(styled(css)), count, needle,
+        )
+    for title, css in (
+        (".frame .frame{display:none} (no .frame around the .frame)",
+         ".frame .frame{display:none}"),
+        ('g g[data-name="Auth"]{display:none} (no <g> around Auth)',
+         'g g[data-name="Auth"]{display:none}'),
+        ('[data-name="Auth"] [data-name="Auth"] rect painting the accent',
+         '[data-name="Auth"] [data-name="Auth"] rect{fill:#bf4520}'),
+        ('g [data-name="Auth"] rect painting the accent (no <g> around Auth)',
+         'g [data-name="Auth"] rect{fill:#bf4520}'),
+    ):
+        h.expect_clean("a rule %s matches nothing and passes" % title,
+                       shipped_with(styled(css)))
+
     h.expect_out_of_scope(
         "data-value on a <circle> never claims a file — the beeswarm contract",
         "<svg role='img'><title>t</title><desc>A beeswarm of requests.</desc>"
