@@ -195,7 +195,17 @@ def load_mxfile(path: Path) -> str:
 # --------------------------------------------------------------------------
 
 BR_RE = re.compile(r"<br\s*/?>|</p\s*>|</div\s*>", re.IGNORECASE)
-TAG_RE = re.compile(r"<[^>]+>")
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+# Tags draw.io actually writes. `List<String>` and `a < b > c` are text, and a
+# catch-all `<[^>]+>` scan deletes them after XML decoding turns `&lt;` into `<`.
+_HTML_TAG = (
+    "a|b|blockquote|br|code|del|div|em|font|h[1-6]|hr|i|img|ins|li|mark|ol|p|pre|"
+    "s|small|span|strike|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul|wbr"
+)
+TAG_RE = re.compile(
+    rf"</?(?:{_HTML_TAG})\b[^>]*>|</?[A-Za-z][\w-]*:[\w:-]*[^>]*>",
+    re.IGNORECASE,
+)
 
 
 def parse_style(style: str | None) -> dict[str, str]:
@@ -211,13 +221,16 @@ def parse_style(style: str | None) -> dict[str, str]:
     return out
 
 
-def clean_label(value: str | None) -> str:
-    """draw.io labels are often HTML fragments; flatten to plain text lines."""
+def clean_label(value: str | None, *, is_html: bool = False) -> str:
+    """Flatten HTML-enabled cells; preserve angle brackets in plain labels."""
     if not value:
         return ""
-    text = BR_RE.sub("\n", value)
-    text = TAG_RE.sub("", text)
-    text = html.unescape(text)
+    text = value
+    if is_html:
+        text = HTML_COMMENT_RE.sub("", text)
+        text = BR_RE.sub("\n", text)
+        text = TAG_RE.sub("", text)
+        text = html.unescape(text)
     text = text.replace("\xa0", " ")
     lines = [re.sub(r"[ \t]+", " ", ln).strip() for ln in text.split("\n")]
     return "\n".join(ln for ln in lines if ln).strip()
@@ -457,7 +470,7 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
         )
         if parent_is_edge or "edgeLabel" in style:
             if parent:
-                text = clean_label(entry["value"])
+                text = clean_label(entry["value"], is_html=style.get("html") == "1")
                 if text:
                     edge_label_parts.setdefault(parent, []).append(text)
             continue
@@ -468,7 +481,7 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             relative_offsets[cid] = (_num(offset, "x"), _num(offset, "y"))
         node = Node(
             id=cid,
-            label=clean_label(entry["value"]),
+            label=clean_label(entry["value"], is_html=style.get("html") == "1"),
             shape=classify_shape(style),
             parent=parent,
             x=_num(geom, "x"),
@@ -545,7 +558,7 @@ def parse_page(diagram: ET.Element, index: int) -> Page:
             waypoints = len(
                 [p for p in geom.findall(".//mxPoint") if p.get("as") is None]
             )
-        label = clean_label(entry["value"])
+        label = clean_label(entry["value"], is_html=style.get("html") == "1")
         extra = edge_label_parts.get(cid, [])
         if extra:
             label = " / ".join([p for p in ([label] + extra) if p])

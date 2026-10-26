@@ -30,6 +30,8 @@ Absolute IR geometry resolves relative child vertices using their parent width/h
 
 Cells hidden in draw.io (`visible="0"` on a cell, a group, or a layer) are not part of the diagram: the extractor skips them together with everything parented beneath them, so hidden drafts never reach the digest or the IR.
 
+HTML in a label is flattened (`<b>`, `<div>`, `<br>`, comments). Angle brackets that are not those tags stay, so `List<String>` and `a < b > c` reach the digest as written.
+
 Each import is limited to 100 direct `<diagram>` pages and 10,000 direct children under a page's `<root>`. The extractor exits with `page limit exceeded (max 100)` or `page N: cell limit exceeded (max 10000)`, respectively. If either limit is reached, split the source into smaller draw.io files and retry.
 
 Options worth knowing:
