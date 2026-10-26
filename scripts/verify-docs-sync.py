@@ -1752,8 +1752,34 @@ def check_title_fallback_order(errors: list[str], root: Path) -> None:
             )
 
 
+EXPORT_DEFAULTS = re.compile(r"^## Defaults\n(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
+PRODUCE_BOTH = re.compile(r"produce\s+\**both\b", re.IGNORECASE)
+
+
+def export_defaults_error(name: str, text: str) -> str | None:
+    """Why an export surface's produce-both Defaults bullet is wrong, or None."""
+    section = EXPORT_DEFAULTS.search(text)
+    bullets = re.findall(r"^- (.*)$", section.group(1), re.MULTILINE) if section else []
+    for bullet in bullets:
+        match = PRODUCE_BOTH.search(bullet)
+        if not match:
+            continue
+        flags = [flag for flag in ("--svg-only", "--png-only") if flag in bullet[: match.start()]]
+        if flags:
+            return (
+                f"{name} Defaults lists {', '.join(flags)} among the cases that produce "
+                "both .svg and .png; each restricts output to its one format"
+            )
+        return None
+    return f"{name} Defaults has no bullet saying when both .svg and .png are produced"
+
+
 def check_export_surface_parity(errors: list[str], root: Path) -> None:
-    """commands/export-diagram.md and prompts/export-diagram.md must both carry the mutual-exclusion rule."""
+    """commands/export-diagram.md and prompts/export-diagram.md must both carry the mutual-exclusion rule.
+
+    Neither may list `--svg-only` or `--png-only` among the cases its Defaults
+    says produce both formats, since each flag emits only its own format (#474).
+    """
     command_path = root / "commands/export-diagram.md"
     prompt_path = root / "prompts/export-diagram.md"
     if not command_path.is_file():
@@ -1773,6 +1799,13 @@ def check_export_surface_parity(errors: list[str], root: Path) -> None:
         errors.append(
             "prompts/export-diagram.md missing `--svg-only` and `--png-only` mutual-exclusion rule"
         )
+    for name, text in (
+        ("commands/export-diagram.md", command_text),
+        ("prompts/export-diagram.md", prompt_text),
+    ):
+        problem = export_defaults_error(name, text)
+        if problem:
+            errors.append(problem)
 
 
 def main() -> int:
