@@ -1102,6 +1102,32 @@ def run_cases(h: Harness) -> int:
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
 
+    # A <style> rule hides as surely as an attribute. Rules tied to one
+    # series count against it; type-only rules count against every series
+    # they could reach, and so does a rule hiding an element around the svg.
+    for title, swaps, count in (
+        ('[data-name="Auth"]{display:none}',
+         [styled('[data-name="Auth"]{display:none}')], 1),
+        ("#auth{display:none} on the series id",
+         [styled("#auth{display:none}"), (AUTH_G, '<g id="auth" data-name="Auth"')], 1),
+        ('[data-name="Auth"] rect{visibility:hidden}',
+         [styled('[data-name="Auth"] rect{visibility:hidden}')], 1),
+        ('[data-name="Auth"] line{display:none !important}',
+         [styled('[data-name="Auth"] line{display:none !important}')], 1),
+        ("a type-only g{opacity:0}", [styled("g{opacity:0}")], 5),
+        (".frame{display:none} on the page element around the svg",
+         [styled(".frame{display:none}")], 5),
+    ):
+        h.expect_findings(
+            "a stylesheet rule %s is %d never-drawn finding(s)" % (title, count),
+            shipped_with(*swaps), count, "never drawn",
+        )
+    for title, css in (
+        ("a hiding rule on a class used only outside the svg", ".eyebrow{display:none}"),
+        ("a type-only hiding rule no chart element can match", "p{opacity:0}"),
+    ):
+        h.expect_clean("%s passes" % title, shipped_with(styled(css)))
+
     h.expect_out_of_scope(
         "data-value on a <circle> never claims a file — the beeswarm contract",
         "<svg role='img'><title>t</title><desc>A beeswarm of requests.</desc>"

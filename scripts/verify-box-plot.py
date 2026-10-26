@@ -67,8 +67,10 @@ Ten invariants:
    links other than the font link, `<use>`, `<set>`/`<animate*>` and a
    nested `<svg>` viewport are refused. A series inside `<defs>` is not
    the series that gets drawn, and neither is a bound mark hidden by
-   display, visibility or opacity (attribute or inline style) on itself,
-   its series group or a group around it.
+   display, visibility or opacity on itself, a group around it, the <svg>
+   or a page element around that. An attribute, an inline style and a
+   <style> rule all count; a rule's selector is held to the element it
+   names, and a type-only rule reaches every element of that type.
 
 10. FAIL CLOSED - a file that presents as a box plot but yields fewer than
    three series on three distinct medians is a finding, never a pass. Three
@@ -765,8 +767,14 @@ def hides(attrs: dict, opacities=("opacity", "fill-opacity", "stroke-opacity")) 
         value = number(str(raw).strip().rstrip("%"))
         if value is not None and value <= 0:
             return True
-    for match in HIDE_DECL_RE.finditer(blank_css_comments(attrs.get("style", ""))):
-        prop, raw = match.group(1).lower(), match.group(2).strip().lower()
+    return declares_hidden(blank_css_comments(attrs.get("style", "")), opacities)
+
+
+def declares_hidden(css: str, opacities) -> bool:
+    """Does this declaration block set display:none, visibility:hidden or an opacity of 0?"""
+    for match in HIDE_DECL_RE.finditer(css):
+        prop = match.group(1).lower()
+        raw = match.group(2).split("!")[0].strip().lower()
         if prop == "display" and raw == "none":
             return True
         if prop == "visibility" and raw in {"hidden", "collapse"}:
@@ -776,6 +784,69 @@ def hides(attrs: dict, opacities=("opacity", "fill-opacity", "stroke-opacity")) 
             if value is not None and value <= 0:
                 return True
     return False
+
+
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+             "meta", "source", "track", "wbr"}
+ANY_TAG_RE = re.compile(
+    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>")
+
+
+def svg_ancestors(source: str) -> list:
+    """(tag, attrs) for the first <svg> and every element open around it."""
+    found = re.search(r"<svg\b", source, re.IGNORECASE)
+    if found is None:
+        return []
+    stack = []
+    for tag in ANY_TAG_RE.finditer(source, 0, found.start()):
+        name = tag.group("tag").lower()
+        if tag.group("close"):
+            if any(open_name == name for open_name, _attrs in stack):
+                while stack.pop()[0] != name:
+                    pass
+        elif not tag.group("selfclose") and name not in VOID_TAGS:
+            stack.append((name, attrs_of(tag.group("attrs"))))
+    svg = ANY_TAG_RE.match(source, found.start())
+    return stack + [("svg", attrs_of(svg.group("attrs")) if svg else {})]
+
+
+def stylesheet_hides(source: str) -> list:
+    """(type, subject tokens, tokens around) for each selector of a hiding rule.
+
+    The subject compound must match the element itself, by type when it
+    names one; every other compound must match some element around it, in
+    any order, and a sibling combinator drops them. Each simplification
+    only widens what the rule hides. A subject naming only a type, `*` or
+    pseudo-classes matches every element of that type.
+    """
+    rules = []
+    for match in STYLE_RE.finditer(source):
+        css = blank_css_comments(match.group("body"))
+        for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
+            if not declares_hidden(rule.group(2), ("opacity",)):
+                continue
+            for alternative in rule.group(1).split(","):
+                compounds = COMPOUND_RE.findall(alternative)
+                if not compounds:
+                    continue
+                typed = re.match(r"[A-Za-z][\w-]*", compounds[-1])
+                subject = compound_requirement(compounds[-1]) or frozenset()
+                siblings = re.search(r"[+~]", re.sub(r"\[[^\]]*\]|\([^)]*\)", "", alternative))
+                around = [] if siblings else [
+                    required for required in map(compound_requirement, compounds[:-1])
+                    if required]
+                rules.append((typed.group().lower() if typed else None, subject, around))
+    return rules
+
+
+def css_hidden(tag: str, attrs: dict, around: list, rules: list) -> bool:
+    """Does a stylesheet hiding rule reach this element? `around`: tokens of its ancestors."""
+    if not rules:
+        return False
+    tokens = element_tokens(attrs)
+    return any((kind is None or kind == tag) and subject <= tokens
+               and all(any(required <= other for other in around) for required in needs)
+               for kind, subject, needs in rules)
 
 
 def positioned_tspan(body: str) -> bool:
@@ -841,10 +912,28 @@ def parse_series(source: str, findings: list, name: str) -> list:
     hidden = nonrendering_spans(source)
     series = []
     groups = groups_of(source)
-    # Groups that stop everything inside them drawing. Only whole-element
-    # opacity counts here: a box with fill-opacity 0 still draws its stroke.
+    hide_rules = stylesheet_hides(source)
+    outer = svg_ancestors(source)
+    outer_tokens = [element_tokens(attrs) for _tag, attrs in outer]
+    # Hiding the <svg> or a page element around it hides every series. Only
+    # whole-element opacity counts: a box with fill-opacity 0 still draws
+    # its stroke.
+    page_hidden = any(hides(attrs, ("opacity",))
+                      or css_hidden(tag, attrs, outer_tokens, hide_rules)
+                      for tag, attrs in outer)
+    around, stack = {}, []
+    for group in groups:
+        while stack and stack[-1][0] <= group.start():
+            stack.pop()
+        around[group.start()] = outer_tokens + [tokens for _end, tokens in stack]
+        stack.append((group.body_at() + len(group.group("body")),
+                      element_tokens(attrs_of(group.group("attrs")))))
+    # Groups that stop everything inside them drawing.
     hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
-              for group in groups if hides(attrs_of(group.group("attrs")), ("opacity",))]
+              for group in groups
+              if hides(attrs_of(group.group("attrs")), ("opacity",))
+              or css_hidden("g", attrs_of(group.group("attrs")), around[group.start()],
+                            hide_rules)]
     svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
@@ -903,6 +992,11 @@ def parse_series(source: str, findings: list, name: str) -> list:
                     "never reads" % (where, attrs["data-name"], count, role)
                 )
         drawn = True
+        body_end = body_at + len(body)
+        series_around = around[match.start()] + [element_tokens(attrs)]
+        inner = [(group.body_at(), group.body_at() + len(group.group("body")),
+                  element_tokens(attrs_of(group.group("attrs"))))
+                 for group in groups if body_at <= group.start() < body_end]
         for mark in OPEN_TAG_RE.finditer(body):
             mattrs = attrs_of(mark.group("attrs"))
             if not ({"data-role", "data-outlier", "data-name"} & set(mattrs)):
@@ -917,14 +1011,20 @@ def parse_series(source: str, findings: list, name: str) -> list:
                        attrs["data-name"], mark.group("tag").lower())
                 )
             # The series group's own span is in `hiding` when it hides itself.
+            at = body_at + mark.start()
             if drawn and {"data-role", "data-outlier"} & set(mattrs) and (
-                    hides(mattrs, ("opacity",))
-                    or inside_span(body_at + mark.start(), hiding)):
+                    page_hidden or hides(mattrs, ("opacity",))
+                    or inside_span(at, hiding)
+                    or css_hidden(mark.group("tag").lower(), mattrs,
+                                  series_around + [tokens for start, end, tokens in inner
+                                                   if start <= at < end],
+                                  hide_rules)):
                 drawn = False
                 findings.append(
                     "%s:%d: series %r has a bound <%s> hidden by display, "
-                    "visibility or opacity on the mark or a group around it, "
-                    "so the checker reads a mark that is never drawn"
+                    "visibility or opacity (an attribute, inline style or "
+                    "<style> rule) on the mark or an element around it, so the "
+                    "checker reads a mark that is never drawn"
                     % (name, line_of(source, body_at + mark.start()),
                        attrs["data-name"], mark.group("tag").lower())
                 )
