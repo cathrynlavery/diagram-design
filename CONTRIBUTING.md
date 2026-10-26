@@ -38,6 +38,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Manifest versions untouched and synchronized; valid marketplace paths; packaged skill | `python3 scripts/verify-plugin-package.py --require-no-bump origin/main` |
 | Claude marketplace and plugin schema, with warnings treated as errors | `claude plugin validate . --strict` |
 | Accessible SVG contract (unit tests for the a11y linter) | `python3 scripts/test-lint-a11y.py` |
+| No HTML comment in the skill trips the Hermes Agent install scanner's `html_comment_injection` rule (#482) | `python3 scripts/test-install-scan.py` |
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
 | Animated-example structure and accessibility | `python3 scripts/verify-semantic-motion.py --example-only` |
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
@@ -136,6 +137,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-plugin-package.py --require-no-bump origin/main \
   && claude plugin validate . --strict \
   && python3 scripts/test-lint-a11y.py \
+  && python3 scripts/test-install-scan.py \
   && python3 scripts/verify-semantic-motion.py --markdown-only \
   && python3 scripts/verify-semantic-motion.py --example-only \
   && python3 scripts/verify-motion.py --shipped \
