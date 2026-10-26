@@ -188,8 +188,8 @@ def check_whiteboard() -> None:
 
 
 def check_nested_groups(tmp: Path) -> None:
-    # Excalidraw appends a new group id, so the last id is only the tightest
-    # group. Members of that inner group still belong to each outer group.
+    # Excalidraw orders ids deepest to shallowest: the inner group comes first.
+    # Members of that inner group still belong to each outer group.
     board = tmp / "nested-groups.excalidraw"
     board.write_text(
         scene(
@@ -202,7 +202,7 @@ def check_nested_groups(tmp: Path) -> None:
                     "y": 0,
                     "width": 40,
                     "height": 40,
-                    "groupIds": ["outer", "inner"],
+                    "groupIds": ["inner", "outer"],
                 },
                 {
                     "id": "b",
@@ -211,7 +211,7 @@ def check_nested_groups(tmp: Path) -> None:
                     "y": 0,
                     "width": 40,
                     "height": 40,
-                    "groupIds": ["outer", "inner"],
+                    "groupIds": ["inner", "outer"],
                 },
                 {
                     "id": "c",

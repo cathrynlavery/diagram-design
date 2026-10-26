@@ -476,9 +476,8 @@ def analyze(scene: Scene) -> dict[str, Any]:
         if container.children
         and all(not scene.node_map[child].children for child in container.children)
     ]
-    # Excalidraw appends group ids, so the last one is only the tightest group.
-    # A node in both still belongs to the outer group; dropping that id hides
-    # the cluster the author actually drew around the inner pair.
+    # Excalidraw orders group ids from deepest to shallowest (inner to outer).
+    # Count every membership: selecting either endpoint alone loses a cluster.
     group_members: dict[str, list[Node]] = {}
     for node in nodes:
         seen_groups: set[str] = set()
