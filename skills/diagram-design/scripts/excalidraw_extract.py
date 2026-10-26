@@ -476,10 +476,16 @@ def analyze(scene: Scene) -> dict[str, Any]:
         if container.children
         and all(not scene.node_map[child].children for child in container.children)
     ]
+    # Excalidraw orders group ids from deepest to shallowest (inner to outer).
+    # Count every membership: selecting either endpoint alone loses a cluster.
     group_members: dict[str, list[Node]] = {}
     for node in nodes:
-        if node.groups:
-            group_members.setdefault(node.groups[-1], []).append(node)
+        seen_groups: set[str] = set()
+        for group_id in node.groups:
+            if not group_id or group_id in seen_groups:
+                continue
+            seen_groups.add(group_id)
+            group_members.setdefault(group_id, []).append(node)
     for group_id, members in group_members.items():
         if len(members) < 2:
             continue
