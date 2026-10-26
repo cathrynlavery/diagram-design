@@ -226,6 +226,31 @@ def main() -> int:
         else:
             print("OK: quoted transform text is not a declaration")
 
+    # Declaration parsing must follow CSS escapes and nesting, rather than
+    # treating text stored in a custom property as active declarations.
+    css_cases = [
+        (r"\74 ransform:translate(4px)", True),
+        (r"tr\000061nsform:translate(4px)", True),
+        ("translate:4px 0", True),
+        ("rotate:3deg", True),
+        ("scale:1.1", True),
+        ("--note:{transform:translate(999px)}", False),
+        ("--note:{a:1; transform:translate(999px)}; fill:red", False),
+        ("--note:{transform:none}; rotate:3deg", True),
+        ("--note:func(transform:translate(999px)); fill:red", False),
+    ]
+    with tempfile.TemporaryDirectory(prefix="css-declarations-") as tmp:
+        for index, (style, moves) in enumerate(css_cases):
+            source = once(r'(data-role="silhouette")',
+                          lambda match: match.group(0) + f' style="{style}"', stack)
+            path = Path(tmp) / f"declaration-{index}.html"
+            path.write_text(source, encoding="utf-8")
+            code, output = run(str(path))
+            if bool(code) != moves or (moves and "a CSS transform moves" not in output):
+                failures.append(f"CSS declaration {style!r} expected moves={moves}:\n{output}")
+            else:
+                print(f"OK: CSS declaration moves={moves}: {style}")
+
     # Standard SVG numeric spellings do not change the projected silhouette.
     with tempfile.TemporaryDirectory(prefix="silhouette-numeric-") as tmp:
         original = (ASSETS / "example-exploded-phone.html").read_text(encoding="utf-8")
