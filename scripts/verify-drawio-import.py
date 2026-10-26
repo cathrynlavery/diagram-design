@@ -84,7 +84,7 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     source.write_text(
         """<mxfile><diagram name="日本語">
 <mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<mxCell id="2" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
+<mxCell id="2" style="html=1;" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
 <mxGeometry x="0" y="0" width="120" height="60" as="geometry"/>
 </mxCell></root></mxGraphModel></diagram></mxfile>""",
         encoding="utf-8",
@@ -411,13 +411,27 @@ def check_plain_angle_brackets(tmp: Path) -> None:
         '<mxGeometry width="80" height="40" as="geometry"/></mxCell>'
         '<mxCell id="compare" value="a &lt; b &gt; c" vertex="1" parent="1">'
         '<mxGeometry x="100" width="80" height="40" as="geometry"/></mxCell>'
-        '<mxCell id="html" value="&lt;div&gt;&lt;b&gt;List&amp;lt;String&amp;gt;&lt;/b&gt;&lt;br&gt;kept&lt;/div&gt;" vertex="1" parent="1">'
+        '<mxCell id="html" style="html=1;" value="&lt;div&gt;&lt;b&gt;List&amp;lt;String&amp;gt;&lt;/b&gt;&lt;br&gt;kept&lt;/div&gt;" vertex="1" parent="1">'
         '<mxGeometry x="200" width="80" height="40" as="geometry"/></mxCell>'
-        '<mxCell id="comment" value="&lt;!-- secret --&gt;visible" vertex="1" parent="1">'
+        '<mxCell id="comment" style="html=1;" value="&lt;!-- secret --&gt;visible" vertex="1" parent="1">'
         '<mxGeometry x="300" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="u" value="List&lt;U&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="cpp" value="std::vector&lt;std::string&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="url" value="see &lt;https://x.io&gt; now" vertex="1" parent="1"/>'
+        '<mxCell id="plainhtml" style="html=0;" value="&lt;b&gt;literal&lt;/b&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="e" edge="1" value="List&lt;U&gt;" parent="1" source="generic" target="compare"/>'
+        '<mxCell id="el" vertex="1" parent="e" value="std::vector&lt;std::string&gt;"/>'
         "</root></mxGraphModel>",
         encoding="utf-8",
     )
+    payload = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    for node_id, expected in {"u": "List<U>", "cpp": "std::vector<std::string>",
+                              "url": "see <https://x.io> now", "plainhtml": "<b>literal</b>"}.items():
+        actual = next(node["label"] for node in payload["nodes"] if node["id"] == node_id)
+        if actual != expected:
+            fail(f"plain label {node_id} changed: {actual!r} != {expected!r}")
+    if payload["edges"][0]["label"] != "List<U> / std::vector<std::string>":
+        fail(f"plain edge or edge-child label changed: {payload['edges']!r}")
     nodes = {
         node["id"]: node["label"]
         for node in json.loads(run_extract([str(source), "--json"]))["pages"][0]["nodes"]
