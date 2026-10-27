@@ -310,7 +310,7 @@ LEGACY_ENTITY_NAMES = tuple(name for name in html_entities.entities.html5 if not
 
 
 def normalize_html_entities(svg: str) -> str:
-    """Convert named HTML references to XML-safe text without decoding markup."""
+    """Convert HTML references to XML-safe text without decoding markup."""
     opaque = re.compile(
         r"<!--.*?-->|<!\[CDATA\[.*?\]\]>|"
         r"(?P<opening><(?P<tag>style|script)\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>)"
@@ -318,8 +318,8 @@ def normalize_html_entities(svg: str) -> str:
     )
     # Terminated names first; then HTML's legacy names, which also decode
     # without a semicolon (longest first, so "&notin" is not read as "&not").
-    named = re.compile(
-        r"&(?:[A-Za-z][A-Za-z0-9]+;|(?P<legacy>"
+    references = re.compile(
+        r"&(?:(?P<numeric>#[xX][0-9A-Fa-f]+;?|#[0-9]+;?)|[A-Za-z][A-Za-z0-9]+;|(?P<legacy>"
         + "|".join(sorted((re.escape(name) for name in LEGACY_ENTITY_NAMES), key=len, reverse=True))
         + r"))"
     )
@@ -329,7 +329,21 @@ def normalize_html_entities(svg: str) -> str:
         original = match.group(0)
         if original in ("&amp;", "&lt;", "&gt;", "&apos;", "&quot;"):
             return original
-        if match.group("legacy") is not None:
+        if match.group("numeric") is not None:
+            number = original[2:].rstrip(";")
+            hexadecimal = number.startswith(("x", "X"))
+            digits = (number[1:] if hexadecimal else number).lstrip("0") or "0"
+            # Avoid Python's integer-string limit for arbitrarily long input.
+            codepoint = int(digits, 16 if hexadecimal else 10) if len(digits) <= 8 else 0x110000
+            if codepoint == 0 or 0xD800 <= codepoint <= 0xDFFF or codepoint > 0x10FFFF:
+                decoded = "\ufffd"
+            elif 0x80 <= codepoint <= 0x9F:
+                decoded = html_entities.unescape(f"&#{codepoint};")
+            else:
+                # unescape() drops some controls/noncharacters that HTML keeps.
+                # XML-inexpressible characters must fail validation, not vanish.
+                decoded = chr(codepoint)
+        elif match.group("legacy") is not None:
             following = match.string[match.end() : match.end() + 1]
             # HTML leaves these undecoded inside attribute values.
             if in_attribute and (following == "=" or following.isalnum()):
@@ -349,10 +363,10 @@ def normalize_html_entities(svg: str) -> str:
         parts: list[str] = []
         cursor = 0
         for token in tag.finditer(region):
-            parts.append(named.sub(replace_entity, region[cursor : token.start()]))
-            parts.append(named.sub(replace_in_attribute, token.group(0)))
+            parts.append(references.sub(replace_entity, region[cursor : token.start()]))
+            parts.append(references.sub(replace_in_attribute, token.group(0)))
             cursor = token.end()
-        parts.append(named.sub(replace_entity, region[cursor:]))
+        parts.append(references.sub(replace_entity, region[cursor:]))
         return "".join(parts)
 
     out: list[str] = []
@@ -361,7 +375,7 @@ def normalize_html_entities(svg: str) -> str:
         out.append(normalize_region(svg[pos:match.start()]))
         opening = match.group("opening")
         if opening is not None:
-            out.append(named.sub(replace_in_attribute, opening) + match.group(0)[len(opening):])
+            out.append(references.sub(replace_in_attribute, opening) + match.group(0)[len(opening):])
         else:
             out.append(match.group(0))
         pos = match.end()
