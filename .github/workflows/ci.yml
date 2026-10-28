@@ -389,6 +389,16 @@ jobs:
         id: service_blueprint_tests
         run: python scripts/test-verify-service-blueprint.py
 
+      - name: Verify requirement traceability IDs, links, and gaps
+        if: always()
+        id: requirement_traceability
+        run: python scripts/verify-requirement-traceability.py --all
+
+      - name: Verify requirement traceability checker
+        if: always()
+        id: requirement_traceability_tests
+        run: python scripts/test-verify-requirement-traceability.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline
