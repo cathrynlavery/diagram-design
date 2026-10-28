@@ -85,7 +85,6 @@ CLASS_DECL_RE = re.compile(
     r"^\s*(?:abstract\s+)?(?:class|interface|enum)\b",
     re.I,
 )
-SEQ_DECL_RE = re.compile(r"^\s*(?:participant|actor)\b", re.I)
 CLASS_REL_RE = re.compile(r"<\|--|-\|>|\*--|o--|<\|\.\.|\.\.\|>")
 SEQ_ARROW_RE = re.compile(r"(->>|<<-|<->|-->|<--|<-|->)")
 # One whole arrow, matched at a candidate position. Sequence arrows are a
@@ -123,6 +122,7 @@ LIFELINE_KINDS = {
     "collections": "lifeline",
     "queue": "lifeline",
 }
+SEQ_DECL_RE = re.compile(rf"^\s*(?:{'|'.join(LIFELINE_KINDS)})\b", re.I)
 CLASSIFIER_KINDS = {
     "class": "class",
     "abstract class": "abstract",
@@ -272,14 +272,14 @@ class Diagram:
         the one class with that bare name; an ambiguous bare name fails.
         """
         key = token.strip()
-        if key in self._nodes_by_id:
-            return key
-        if key in self._aliases:
-            return self._aliases[key]
         for package in reversed(scope or []):
             qualified = f"{package}.{key}"
             if qualified in self._nodes_by_id:
                 return qualified
+        if key in self._nodes_by_id:
+            return key
+        if key in self._aliases:
+            return self._aliases[key]
         matches = self._bare_names.get(key, [])
         if len(matches) > 1:
             _fail(
@@ -1004,7 +1004,7 @@ def _parse_classifier_header(
 
 def _parse_participant(text: str, line_number: int = 0) -> tuple[str, str, str, str] | None:
     match = re.match(
-        r"^(participant|actor|boundary|control|entity|database|collections|queue)\s+(.+)$",
+        rf"^({'|'.join(LIFELINE_KINDS)})\s+(.+)$",
         text,
         re.I,
     )

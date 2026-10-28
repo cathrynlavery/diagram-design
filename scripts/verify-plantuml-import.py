@@ -332,6 +332,28 @@ def check_review_regressions(tmp: Path) -> None:
     ok("review regressions: timeline positions, declaration tails, case, packages, styling, braces, comments, stereotypes")
 
 
+def check_scope_and_lifeline_kinds(tmp: Path) -> None:
+    """An enclosing package wins over a top-level name; every lifeline kind marks a sequence."""
+    diagram = extract_json(
+        write_puml(
+            tmp,
+            "scope-first.puml",
+            "class A\npackage p {\n  class A\n  class B\n  A --> B\n  note right of A : local\n}",
+        )
+    )
+    pairs = [(edge["source"], edge["target"]) for edge in diagram["edges"]]
+    if pairs != [("p.A", "p.B")]:
+        fail(f"a top-level name shadowed the enclosing package: {pairs}")
+    notes = [(item["text"], item["participants"]) for item in diagram["note_details"]]
+    if notes != [("local", ["p.A"])]:
+        fail(f"a package note attached to the top-level class: {notes}")
+    for kind in ("boundary", "control", "entity", "database", "collections", "queue"):
+        diagram = extract_json(write_puml(tmp, f"decl-{kind}.puml", f"{kind} DB\nnote over DB: persisted"))
+        if [node["id"] for node in diagram["nodes"]] != ["DB"]:
+            fail(f"`{kind}` declaration did not import as a sequence lifeline: {diagram['nodes']}")
+    ok("package scope wins over top-level names, and every lifeline kind marks a sequence")
+
+
 def check_kind_detection_skips_bodies(tmp: Path) -> None:
     """Note, legend, and class bodies are text, not statements, when picking the kind."""
     diagram = extract_json(
@@ -1451,6 +1473,7 @@ def main() -> int:
         check_generics_survive(tmp)
         check_cardinality_ends(tmp)
         check_note_placement(tmp)
+        check_scope_and_lifeline_kinds(tmp)
         check_activation_shortcuts(tmp)
         check_whole_arrows(tmp)
         check_command_word_messages(tmp)
