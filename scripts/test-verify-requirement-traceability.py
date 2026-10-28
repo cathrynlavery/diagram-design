@@ -31,6 +31,9 @@ def main() -> None:
         ('data-trace-rel="satisfies"', 'data-trace-rel="unknown"', "unknown relationship"),
         ('data-trace-missing="true"', 'data-trace-missing="false"', "source does not resolve"),
         ('>REQ-01</text>', '>REQ-99</text>', "is not printed"),
+        ('>REQ-01</text>', '>Unprinted</text><desc>REQ-01</desc>', "is not printed"),
+        ('>REQ-01</text>', '>Unprinted</text><defs><text>REQ-01</text></defs>', "is not printed"),
+        ('data-diagram-role="coverage-gap"', 'display="none" data-diagram-role="coverage-gap"', "needs a visible gap label"),
         ('data-source-ref="Review brief §1"', 'data-source-ref="Review brief §9"', "source reference does not match"),
         ('>Review brief §1</text>', '>Uncited</text>', "source citation is not printed"),
     )
