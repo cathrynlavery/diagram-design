@@ -270,6 +270,42 @@ def run_cases(h: Harness) -> int:
         "fill=",
     )
 
+    reversed_d = "M %g,%g A %g,%g 0 0 1 %g,%g" % (x_of(2), Y, PITCH, PITCH, x_of(0), Y)
+    h.expect_named(
+        "an arc drawn right to left is a finding",
+        honest(arc("A", "C", 2, 0, 2, d=reversed_d)),
+        "right to left",
+    )
+
+    h.expect_named(
+        "an import path missing data-span is a finding",
+        honest().replace('data-from="B" data-to="C" data-span="1" ',
+                         'data-from="B" data-to="C" ', 1),
+        "missing data-span",
+    )
+
+    h.expect_named(
+        "a label without a readable x is a finding",
+        honest().replace('<text data-name="B" x="%g" ' % x_of(1),
+                         '<text data-name="B" ', 1),
+        "no readable x",
+    )
+
+    for title, paint in (
+        ("a CSS-variable stroke is a finding", 'stroke="var(--color-accent)"'),
+        ("a currentColor stroke is a finding", 'stroke="currentColor"'),
+        ("a class-painted arc is a finding", 'stroke="%s" class="accent"' % INK),
+        ("an inline-style stroke is a finding", 'stroke="%s" style="stroke: %s"' % (INK, ACCENT)),
+    ):
+        h.expect_named(
+            title,
+            honest().replace('d="M %g,%g A %g,%g 0 0 1 %g,%g" fill="none" stroke="%s"'
+                             % (x_of(1), Y, PITCH / 2, PITCH / 2, x_of(2), Y, INK),
+                             'd="M %g,%g A %g,%g 0 0 1 %g,%g" fill="none" %s'
+                             % (x_of(1), Y, PITCH / 2, PITCH / 2, x_of(2), Y, paint), 1),
+            "paint the checker cannot read",
+        )
+
     uneven = honest().replace(
         node("C", 2),
         node("C", 2, cx=x_of(2) + 40),
@@ -328,13 +364,16 @@ def run_cases(h: Harness) -> int:
 
     sentinel = ROOT / "example-arc-diagram-fixture.html"
     existed = sentinel.exists()
-    if not existed:
-        sentinel.write_text("KEEP ME\n", encoding="utf-8")
+    if existed:
+        original = sentinel.read_bytes()
+    else:
+        original = b"KEEP ME\n"
+        sentinel.write_bytes(original)
     try:
         h.run(honest())
         h.check(
             "a pre-existing file sharing a fixture name is never touched",
-            sentinel.exists() and sentinel.read_text(encoding="utf-8") == "KEEP ME\n",
+            sentinel.exists() and sentinel.read_bytes() == original,
             "%s was overwritten or deleted by the harness" % sentinel,
         )
     finally:

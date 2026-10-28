@@ -96,6 +96,11 @@ ATTR_RE = re.compile(
     re.DOTALL,
 )
 DECLARES_SPAN_RE = re.compile(r"\bdata-span\s*=", re.IGNORECASE)
+DECLARES_ARC_RE = re.compile(r"\bdata-(?:span|from|to)\s*=", re.IGNORECASE)
+LITERAL_PAINT_RE = re.compile(
+    r"^\s*(?:#[0-9a-f]{3,8}|rgba?\([^()]*\)|[a-z]+)\s*$", re.IGNORECASE
+)
+UNREADABLE_PAINT = {"currentcolor", "inherit", "initial", "unset", "revert", "context-stroke"}
 ACCENT_RE = re.compile(
     r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|"
     r"rgba\(\s*240\s*,\s*138\s*,\s*89\b",
@@ -308,7 +313,9 @@ def parse_arcs(source: str, findings: list, name: str) -> list:
     arcs = []
     for match in PATH_RE.finditer(source):
         raw = match.group("attrs")
-        if not DECLARES_SPAN_RE.search(raw):
+        # A path that binds any endpoint or span is an import; only fully
+        # unbound paths are decorative.
+        if not DECLARES_ARC_RE.search(raw):
             continue
         attrs = attrs_of(raw)
         where = "%s:%d" % (name, line_of(source, match.start()))
@@ -356,6 +363,31 @@ def parse_arcs(source: str, findings: list, name: str) -> list:
                 "%s: arc %s→%s has sweep=0 — sweep 1 rises above the "
                 "baseline; sweep 0 draws the import under the seats"
                 % (where, attrs["data-from"], attrs["data-to"])
+            )
+            continue
+        if nums["x1"] >= nums["x2"]:
+            findings.append(
+                "%s: arc %s→%s is drawn right to left (x1=%g, x2=%g) — with "
+                "sweep 1 that bulges below the rail; draw every arc from its "
+                "left seat to its right seat"
+                % (where, attrs["data-from"], attrs["data-to"], nums["x1"], nums["x2"])
+            )
+            continue
+        stroke = attrs.get("stroke")
+        unreadable = (
+            stroke is None
+            or not LITERAL_PAINT_RE.match(stroke)
+            or stroke.strip().casefold() in UNREADABLE_PAINT
+            or "stroke" in attrs.get("style", "").casefold()
+            or "class" in attrs
+        )
+        if unreadable:
+            findings.append(
+                "%s: arc %s→%s has paint the checker cannot read (stroke=%r%s) "
+                "— set a literal stroke color on the path, with no class or "
+                "style, so the one-accent rule can be checked"
+                % (where, attrs["data-from"], attrs["data-to"], stroke,
+                   ", class/style set" if ("class" in attrs or "style" in attrs) else "")
             )
             continue
         fill = (attrs.get("fill") or "").strip().casefold()
@@ -419,7 +451,12 @@ def check_names(nodes: list, source: str, findings: list, name: str) -> dict:
                 "%s: label for %r prints %r — the visible text has to match "
                 "the binding" % (name, node_name, body)
             )
-        if x is not None and abs(x - node.cx) > COORD_TOLERANCE:
+        if x is None:
+            findings.append(
+                "%s: label for %r has no readable x — without one the browser "
+                "places it at x=0, not under its node" % (name, node_name)
+            )
+        elif abs(x - node.cx) > COORD_TOLERANCE:
             findings.append(
                 "%s: label for %r sits at x=%g, off the node at x=%g"
                 % (name, node_name, x, node.cx)
