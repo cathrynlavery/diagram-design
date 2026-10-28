@@ -48,7 +48,7 @@ The agent picks the type, states its plan, and writes one `.html` file you can o
 
 ## Install
 
-Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
+Works with any host that reads Agent Skills, including Cursor, Claude Code, Codex, Qoder, GitHub Copilot, Gemini CLI, Cline, Windsurf and Amp:
 
 ```bash
 npx skills add cathrynlavery/diagram-design
@@ -96,6 +96,33 @@ codex plugin add diagram-design@diagram-design
 ```
 
 Codex refreshes configured Git marketplaces at startup. To fetch immediately, run `codex plugin marketplace upgrade diagram-design` and start a new session.
+
+</details>
+
+<details>
+<summary><b>Qoder</b></summary>
+
+Clone the repository, validate the native plugin, and install it locally:
+
+```bash
+git clone https://github.com/cathrynlavery/diagram-design.git
+qoder plugins validate ./diagram-design
+qoder plugins install ./diagram-design
+qoder plugins list
+```
+
+Qoder loads the canonical `skills/diagram-design/` tree and the shared command
+definitions directly; no Qoder-specific copy is maintained. For Qoder IDE,
+build a bounded ZIP from the tracked plugin surfaces and import it through
+**Extensions → Plugins → Add Plugins → Upload Plugin**:
+
+```bash
+git -C diagram-design archive --format=zip \
+  --output=../diagram-design-qoder.zip HEAD \
+  .qoder-plugin commands skills LICENSE
+```
+
+Start a new task after installing or updating the plugin.
 
 </details>
 
@@ -303,7 +330,7 @@ The model already understood the content. What it was missing was taste, so I wr
 </tr>
 </table>
 
-Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble and beeswarm; Treemap covers marimekko.
+Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko.
 
 Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagram-design/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagram-design/references/type-architecture.md).
 
@@ -491,7 +518,7 @@ Or just ask in natural language:
 "Save my-diagram.html as PNG."
 ```
 
-- **SVG** extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator. Pass `--system-fonts` to skip the font import for offline use.
+- **SVG** extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator. Animation bindings follow namespaced keyframes even when property names use CSS escapes. Pass `--system-fonts` to skip the font import for offline use.
 - **PNG** rasterizes the diagram via Playwright at 2× by default. One-time setup: `pip install playwright && playwright install chromium`.
 
 Both formats are diagram-only: editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagram-design/references/export.md`](skills/diagram-design/references/export.md) for the full procedure.
@@ -512,6 +539,7 @@ diagram-design/
 ├── .claude-plugin/                   # Claude marketplace + plugin manifest
 ├── .codex-plugin/                    # Codex plugin manifest
 ├── .factory-plugin/                  # Factory Droid marketplace + plugin manifest
+├── .qoder-plugin/                    # Qoder native plugin manifest
 ├── commands/
 │   ├── export-diagram.md             # plugin export command
 │   ├── import-drawio.md              # plugin draw.io import command
@@ -582,6 +610,7 @@ diagram-design/
 │       │   ├── type-sbgn.md
 │       │   ├── type-scatter.md
 │       │   ├── type-sequence.md
+│       │   ├── type-service-blueprint.md
 │       │   ├── type-state.md
 │       │   ├── type-story-map.md
 │       │   ├── type-swimlane.md
@@ -597,6 +626,7 @@ diagram-design/
 │       │   ├── mermaid_extract.py    # Mermaid → structured IR
 │       │   ├── excalidraw_extract.py  # Excalidraw → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
+│       │   ├── export_png.py         # Playwright PNG renderer
 │       │   └── self_check.py         # packaged output self-check (runs installed)
 │       └── assets/
 │           ├── index.html            # live gallery, tabbed

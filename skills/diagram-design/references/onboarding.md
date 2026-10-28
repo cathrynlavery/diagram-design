@@ -6,9 +6,9 @@ Takes about 60 seconds.
 
 Three source methods are supported. Jump to the relevant section:
 
-- [§ URL](#url) — fetch a live website
-- [§ Skill](#skill) — read an installed Agent Skill that carries design tokens
-- [§ Folder](#folder) — read a local design-system directory (CSS, JSON, Markdown)
+- [§ URL](#-url) — fetch a live website
+- [§ Skill](#-skill) — read an installed Agent Skill that carries design tokens
+- [§ Folder](#-folder) — read a local design-system directory (CSS, JSON, Markdown)
 
 ---
 

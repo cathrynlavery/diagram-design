@@ -51,6 +51,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max series (line chart) | 5 |
 | Max tasks (Gantt) | 12 |
 | Max points (scatter plot) | 30 |
+| Max series / outliers (box plot) | 8 / 8, 1 focal series |
 | Max stages / nodes / flows (sankey) | 3 / 8 / 12 |
 | Max categories (fishbone) | 6 bones, 3 sub-causes each |
 | Max components / links (wardley) | 9 / 12, 2 movement arrows |

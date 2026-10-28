@@ -34,7 +34,7 @@ If the user explicitly asks for "a screenshot of the whole page including the ca
 python3 scripts/export_svg.py <html-file> [<out.svg>] [--system-fonts]
 ```
 
-`--system-fonts` skips the Google Fonts `@import` (step 5) so the SVG makes no network request; use it when the skin's font source is `system` (see [style-guide.md § Font source](style-guide.md#font-source)). The diagram CSS still carries over.
+`--system-fonts` skips the Google Fonts `@import` and carried `@font-face` declarations (step 5) so the SVG makes no network request; use it when the skin's font source is `system` (see [style-guide.md § Font source](style-guide.md#font-source)). The diagram CSS still carries over.
 
 Source read and output write failures return exit 2 with an error diagnostic. The viewport must contain four finite SVG numbers with positive width and height; empty or disabled viewports are refused. The class-without-style gate inspects nonempty actual `class` attributes; comments, visible text, empty class values, and `data-class` metadata do not require a stylesheet. Export selects a live SVG and carries live style blocks; HTML comments and script literals do not contribute diagrams or CSS. The selected SVG ends at its own closing tag, so nested icon `<svg>` elements stay inside it. Comments inside the selected SVG remain intact, except that XML forbids `--` inside a comment and a comment ending in `-`: each `--` becomes `- -` and a trailing `-` gets a space. That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
 
@@ -51,6 +51,7 @@ Source read and output write failures return exit 2 with an error diagnostic. Th
    - Set `id="<slug>-root"` on the opening `<svg>` tag, where `<slug>` is the source basename without extension (e.g. `example-loop.html` → `example-loop`). This ID scopes carried CSS so several inlined figures do not leak rules into each other. When replacing an existing SVG root ID, retarget whole CSS ID tokens for that root in the carried CSS, including escaped identifier spellings; compound selectors such as `.diagram#original` remain bound to the root without adding another ancestor. Descendant IDs and quoted selector values remain unchanged; an unescaped dot belongs to a class selector, not to the ID token.
 4. **Carry page CSS into the SVG.** Class-styled diagrams (the loop family, process, medallion, data-flow, and others) declare fills and type in the page `<style>` block — `.station`, `.hub`, `.node-name`, and so on. Extracting the bare `<svg>` without those rules yields black boxes. Copy the page's diagram rules into a `<style>` inside `<defs>`, then:
    - Unwrap CDATA sections in SVG stylesheet text before parsing rules, then strip real CSS comments, so neither XML delimiters nor a comment becomes part of a selector. Preserve comment-looking text inside quoted strings and escapes: `[data-label="net/*retained*/revenue"]` must still match the original attribute value. Keep CDATA content as raw text rather than XML-decoding it; the carried copy is XML-escaped below. The original embedded stylesheet stays in the SVG. CDATA-looking text in an HTML stylesheet remains literal, including inside SVG `foreignObject`, `desc`, or `title` elements. A nested `<svg>` inside HTML switches back to SVG stylesheet handling.
+   - Keep diagram rules inside their original `@media` conditions, including nested conditions; print-only paint must not become screen paint. Keyframe bodies remain intact; ordinary identifier names (also quoted) and matching stylesheet/inline `animation` or `animation-name` bindings are prefixed with the SVG root ID so inlined figures cannot share an animation name. Inline style character references are decoded once before inspecting CSS names and escaped once when written as XML; declaration comments are preserved. A custom property's `{ … }` value is token data and stays literal, including any `animation` text inside it. Duration variables with a literal animation name remain supported. Escaped/complex names, unresolved variable animation names, ambiguous shorthand keyword names, SVG-local animation stylesheets, and nested ordinary-rule animation declarations bound to renamed keyframes are refused explicitly rather than silently retargeted. These unsupported animation cases return exit 2 without writing an SVG. Block at-rules containing ordinary rules, including `@layer` and `@container`, retain their grouping and scoped paint. Unsupported declaration-only blocks are dropped with a warning; stray closing braces between rules are ignored, matching browser CSS recovery.
    - Re-scope `:root { … }` custom properties onto `#<slug>-root` so the figure keeps its own tokens.
    - Start selectors that begin at the `<svg>` element at the root instead: `svg .zone` becomes `#<slug>-root .zone` and `svg text` becomes `#<slug>-root text`. The exported root element is the `<svg>` itself, so `#<slug>-root svg .zone` would match nothing.
    - Split selector lists only at top-level commas. Preserve quoted and escaped attribute values, function arguments, and meaningful whitespace while scoping.
@@ -309,58 +310,17 @@ Don't auto-install. The user asked for one feature, not a system change.
 
 ### Rasterize
 
-Write the snippet below to a temp file and run it with the interpreter that
-passed detection: `python3 <tmp.py> <src.html> <out.png>` or
-`python <tmp.py> <src.html> <out.png>`:
+Keep the user's project directory as the working directory so relative input and
+output paths still resolve there. Invoke the packaged renderer by its absolute
+path under the resolved skill directory with the interpreter that passed
+detection: `python3 <skill-dir>/scripts/export_png.py <src.html> <out.png> [scale]`
+or `python <skill-dir>/scripts/export_png.py <src.html> <out.png> [scale]`.
 
-```python
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
-import sys, pathlib, math
-
-src, out = sys.argv[1], sys.argv[2]
-scale = float(sys.argv[3]) if len(sys.argv) > 3 else 2
-if not math.isfinite(scale) or not 1 <= scale <= 4:
-    raise ValueError("PNG scale must be a finite number between 1 and 4")
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page(device_scale_factor=scale)
-    page.goto(pathlib.Path(src).resolve().as_uri() + "?motion=static", wait_until="domcontentloaded")
-    try:
-        page.wait_for_load_state("networkidle", timeout=15000)
-    except PlaywrightTimeoutError:
-        # proxied networks may stall webfont subrequests past any deadline;
-        # cancel the outstanding load so the capture below can't block on it again
-        page.evaluate("window.stop()")
-        page.wait_for_timeout(4000)
-        print("warning: webfont request stalled - captured with fallback typography; the PNG may not match the intended fonts", file=sys.stderr)
-    page.evaluate("document.fonts.ready")
-    if not page.locator("[data-motion-root]").evaluate_all(
-        "roots => roots.every(root => root.dataset.frame === 'static')"
-    ):
-        raise RuntimeError("motion export requires a complete static frame")
-    svg = page.locator("svg").first
-    # Capture at one CSS pixel per viewBox unit before applying the multiplier.
-    svg.evaluate("""el => {
-        const box = el.viewBox.baseVal;
-        if (![box.width, box.height].every(n => Number.isFinite(n) && n > 0))
-            throw new Error('PNG export requires a nonzero finite viewBox');
-        for (const [axis, size] of [['width', box.width], ['height', box.height]])
-            for (const prefix of ['', 'min-', 'max-'])
-                el.style.setProperty(prefix + axis, size + 'px', 'important');
-    }""")
-    # Release every clipping ancestor (local scroller, overflow:hidden chrome)
-    # so an SVG wider than its frame is captured whole.
-    svg.evaluate("el => { for (let a = el.parentElement; a; a = a.parentElement) a.style.setProperty('overflow', 'visible', 'important'); }")
-    svg.screenshot(path=out, omit_background=True)
-    browser.close()
-```
-
-If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the snippet cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally. The URL requests the complete static motion frame, waits for font readiness, and rejects a motion root that has not reached `data-frame="static"`; ordinary script-free diagrams need no motion root.
+If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the helper cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally. The helper requests the complete static motion frame, waits for font readiness, and rejects a motion root that has not reached `data-frame="static"`; ordinary script-free diagrams need no motion root.
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg. Fractional scales such as `1.25` are also accepted within the documented 1–4 range for exact pixel sizes.
 
-The overflow release matters for the wide presets. `min-width` equals the viewBox width (see [`output-spec.md`](output-spec.md)), so a `doc-wide` or `slide-16x9` SVG is 1280px inside a 1200px frame, and its `.diagram-container` scroller clips the last 80px on screen. The screenshot covers the SVG's box but not what an ancestor clipped, so without the release the PNG comes out full size with a blank right edge. This is the screen-side counterpart of the templates' `@media print` rule.
+The helper's overflow release matters for the wide presets. `min-width` equals the viewBox width (see [`output-spec.md`](output-spec.md)), so a `doc-wide` or `slide-16x9` SVG is 1280px inside a 1200px frame, and its `.diagram-container` scroller clips the last 80px on screen. The screenshot covers the SVG's box but not what an ancestor clipped, so without the release the PNG comes out full size with a blank right edge. This is the screen-side counterpart of the templates' `@media print` rule.
 
 ### Output naming
 
@@ -406,4 +366,11 @@ If the target aspect ratio doesn't match the `viewBox` aspect ratio, say so and 
 - Auto-emits `.svg` or `.png` alongside HTML generation. Manual on every call.
 - Embeds an HTML wrapper (cards, headers) into the SVG via `foreignObject`. Too fragile across renderers.
 
+The exporter preserves `@font-face` and scopes ordinary rules within block at-rules such as `@supports`, `@media`, `@layer`, and `@container` without flattening their conditions. Groups containing only keyframes or font faces are also retained, including nested groups, so references outside the group keep their definitions. Declaration-only unsupported blocks are dropped with a warning rather than aborting the export. System-font mode continues to omit custom font-face declarations. Semicolons inside parenthesized CSS functions, including unquoted data URLs, remain value text instead of ending a statement.
+
+CSS grouping rules are scanned once and preserved without recursively rescanning nested bodies. Exports deeper than 1,024 nested CSS blocks fail with a clear diagnostic (CLI exit 2) before writing output.
+
+`@scope` groups containing ordinary paint rules are refused with a clear exit-2 diagnostic before output is written; definition-only scopes retain their keyframes and font faces. `@layer` order statements remain in source order with their layer blocks, including inside grouping rules, so cascade priority is preserved.
 The exporter keeps optional defs in comments namespaced so they can be uncommented later. Only referenceable defs element types have their IDs renamed; live titles and other elements retain their IDs and accessibility references.
+
+Animation property names are compared after CSS escape decoding, while their authored spelling is preserved. Page styles and inline attributes keep their binding to namespaced keyframes, including `anim\61 tion` and vendor-prefixed properties. Nested animation declarations and SVG-local animation stylesheets remain unsupported and fail clearly, including escaped property names.

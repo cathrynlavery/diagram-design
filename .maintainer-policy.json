@@ -19,6 +19,10 @@
       {
         "path": ".factory-plugin/plugin.json",
         "json_pointer": "/version"
+      },
+      {
+        "path": ".qoder-plugin/plugin.json",
+        "json_pointer": "/version"
       }
     ],
     "require_synchronized": true,
@@ -47,6 +51,7 @@
       "python3 scripts/test-build-icons-quoted-attributes.py",
       "python3 scripts/test-build-icons-devicon.py",
       "python3 scripts/test-fix-mojibake.py",
+      "python3 scripts/test-install-scan.py",
       "python3 scripts/lint-skin.py --all --baseline",
       "python3 scripts/test-verify-contrast.py",
       "python3 scripts/verify-contrast.py",
@@ -112,6 +117,8 @@
       "python3 scripts/test-verify-bump.py",
       "python3 scripts/verify-beeswarm.py --all",
       "python3 scripts/test-verify-beeswarm.py",
+      "python3 scripts/verify-box-plot.py --all",
+      "python3 scripts/test-verify-box-plot.py",
       "python3 scripts/verify-skin-polarity.py --all",
       "python3 scripts/test-verify-skin-polarity.py",
       "python3 scripts/test-export-wait.py",
@@ -121,8 +128,8 @@
     ],
     "required_check_names": [],
     "review": {
-      "provider": "none",
-      "minimum_score": "",
+      "provider": "greptile",
+      "minimum_score": "4",
       "require_same_head": true
     },
     "require_current_base": true,
