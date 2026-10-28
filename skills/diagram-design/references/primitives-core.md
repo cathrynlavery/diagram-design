@@ -51,7 +51,7 @@ Don't use the dot pattern when the diagram sits inside a product page, slide, or
 
 **Draw arrows before boxes** so z-order puts lines behind nodes.
 
-The geometry source gate excludes shapes inside definition-only containers (`defs`, `symbol`, `marker`, `pattern`, `clipPath`, `mask`) because those shapes do not paint at their local coordinates. It does not resolve `<use>` instances; check referenced drawings with rendered lint and visual review. Inert HTML comments and `>` inside quoted tag attributes do not alter definition custody.
+The geometry source gate excludes shapes inside definition-only containers (`defs`, `symbol`, `marker`, `pattern`, `clipPath`, `mask`) because those shapes do not paint at their local coordinates. It does not resolve `<use>` instances; check referenced drawings with rendered lint and visual review. Inert HTML comments and `>` inside quoted tag attributes do not alter definition custody. The gate reads single- and double-quoted SVG attributes.
 
 ## Mandatory connector rules
 

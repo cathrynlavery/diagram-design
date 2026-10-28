@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
+description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm, box plot), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, or database schema diagrams as HTML/SVG/PNG, with .drawio, Mermaid, and .excalidraw import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
 license: MIT
 metadata:
   version: "2.6"
@@ -111,7 +111,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Cross-tabulated data; fill encodes value per cell | **Heatmap** | [type-heatmap.md](references/type-heatmap.md) |
 | Continuous trends over time, change between exactly two states (slopegraph), one distribution per series (ridgeline), or rank movement across several snapshots (bump) | **Line chart** | [type-line.md](references/type-line.md) |
 | Tasks and phases on a timeline | **Gantt** | [type-gantt.md](references/type-gantt.md) |
-| Correlation or distribution of two variables; bubble (three variables) and beeswarm (one variable, dot per item) variants | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
+| Correlation or distribution of two variables; bubble (three variables), beeswarm (one variable, dot per item), and box plot (five-number summary per group) variants | **Scatter plot** | [type-scatter.md](references/type-scatter.md) |
 | End-to-end data stack on a container cluster | **High-Level** | [type-high-level.md](references/type-high-level.md) |
 | Multi-actor sequential process with data handoffs | **Process** | [type-process.md](references/type-process.md) |
 | Multi-tier data storage with quality levels and access policies | **Medallion** | [type-medallion.md](references/type-medallion.md) |

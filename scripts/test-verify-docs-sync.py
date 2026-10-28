@@ -145,12 +145,22 @@ TITLE_ORDER = "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'"
 
 
 def mutate(path: Path, old: str, new: str) -> bytes:
-    """Replace *old* once in *path* and return the original bytes."""
+    """Replace *old* once in *path* and return the original bytes.
+
+    Fixtures are authored in LF, but only SKILL.md is pinned to LF in .gitattributes,
+    so a Windows checkout with ``core.autocrlf=true`` hands these files back as CRLF.
+    Retry the search on a newline-normalised copy, and write the result back in the
+    file's own line endings so the mutation stays confined to the needle.
+    """
     original = path.read_bytes()
     text = original.decode("utf-8")
-    if old not in text:
+    if old in text:
+        path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+        return original
+    normalised = text.replace("\r\n", "\n")
+    if old not in normalised:
         raise AssertionError(f"{path.name} no longer contains {old!r}; update the fixture")
-    path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+    path.write_bytes(normalised.replace(old, new, 1).replace("\n", "\r\n").encode("utf-8"))
     return original
 
 
@@ -550,6 +560,44 @@ def split_route_error(heading: str, target: str) -> str:
         f"SKILL.md {heading!r} no longer routes to {target}; the ADR 0004 split "
         "moved that content there, so it would ship unreachable"
     )
+
+
+def check_mutate_line_endings() -> None:
+    """A CRLF fixture mutates in place, restores its original bytes, and rejects a stale needle."""
+    fixture = b"# Title\r\n\r\n### 4px grid\r\nbody\r\n"
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-mutate-") as temporary:
+        path = Path(temporary) / "layout-budget.md"
+        path.write_bytes(fixture)
+
+        returned = mutate(path, "### 4px grid\n", "### Grid\n")
+
+        if returned != fixture:
+            raise AssertionError("mutate() must return the unmutated bytes")
+        mutated = path.read_bytes()
+        if b"### Grid\r\n" not in mutated:
+            raise AssertionError("the CRLF fixture was not mutated")
+        if b"### 4px grid" in mutated:
+            raise AssertionError("the needle survived the mutation")
+        if b"\n" in mutated.replace(b"\r\n", b""):
+            raise AssertionError("the mutation rewrote the fixture's line endings")
+
+        lf_path = Path(temporary) / "lf.md"
+        lf_fixture = b"# Title\n\n### 4px grid\nbody\n"
+        lf_path.write_bytes(lf_fixture)
+        if mutate(lf_path, "### 4px grid\n", "### Grid\n") != lf_fixture:
+            raise AssertionError("mutate() must return an LF fixture's original bytes")
+        if lf_path.read_bytes() != b"# Title\n\n### Grid\nbody\n":
+            raise AssertionError("the LF fixture was not mutated in place")
+
+        try:
+            mutate(path, "### never present\n", "### Grid\n")
+        except AssertionError as error:
+            if "no longer contains" not in str(error):
+                raise AssertionError(f"a stale needle raised an unrelated error: {error}") from error
+        else:
+            raise AssertionError("a stale needle must still raise")
+
+    print("OK mutate: a CRLF fixture mutates in place and a stale needle still raises")
 
 
 def check_export_surface_parity(verify) -> None:
@@ -2207,6 +2255,7 @@ diagram-design/
     check_heading_syntax(verify)
     check_size_preset_surfaces(verify)
     check_split_type_ramp(verify)
+    check_mutate_line_endings()
     check_split_routes(verify)
     check_export_surface_parity(verify)
 
@@ -2215,7 +2264,8 @@ diagram-design/
         "strict-bundler packaging, "
         "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
-        "split routing, and gallery guards (parent/variant model, contiguous ordinals, variant letters, type parity)"
+        "split routing, the CRLF fixture fallback in the fixture helper, and gallery guards "
+        "(parent/variant model, contiguous ordinals, variant letters, type parity)"
     )
     return 0
 

@@ -126,6 +126,7 @@ TAG_RE = re.compile(
     r"<!--[\s\S]*?-->|<(?P<close>/?)(?P<tag>g|svg|defs|symbol|marker|pattern|clipPath|mask|rect|path|line)\b(?P<attrs>(?:\"[^\"]*\"|'[^']*'|[^'\">])*?)(?P<empty>/?)>",
     re.IGNORECASE,
 )
+ATTR_RE = re.compile(r'''([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|[^\s>]*))?''')
 TRANSLATE_RE = re.compile(
     r"^\s*translate\(\s*([-+]?[\d.]+)(?:[\s,]+([-+]?[\d.]+))?\s*\)\s*$"
 )
@@ -148,8 +149,10 @@ SMALL_EDGE = 48.0  # ...meaning an edge shorter than this
 
 
 def attribute(attrs: str, name: str) -> str | None:
-    match = re.search(rf'(?<![\w-]){re.escape(name)}\s*=\s*"([^"]*)"', attrs)
-    return match.group(1) if match else None
+    for match in ATTR_RE.finditer(attrs):
+        if match.group(1) == name:
+            return match.group(2) if match.group(2) is not None else match.group(3)
+    return None
 
 
 def number(attrs: str, name: str) -> float | None:
