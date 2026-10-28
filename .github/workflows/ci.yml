@@ -439,6 +439,11 @@ jobs:
         id: box_plot_tests
         run: python scripts/test-verify-box-plot.py
 
+      - name: Verify quoted CSS data is not read as geometry
+        if: always()
+        id: css_string_scan
+        run: python scripts/test-css-string-scan.py
+
       - name: Verify architecture delta snapshots and ledger
         if: always()
         id: architecture_delta
@@ -621,6 +626,7 @@ jobs:
           echo "| Beeswarm Checker | ${{ steps.beeswarm_tests.outcome == 'success' && '✅ Passed' || (steps.beeswarm_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Box-Plot Five-Number Geometry | ${{ steps.box_plot.outcome == 'success' && '✅ Passed' || (steps.box_plot.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Box-Plot Checker | ${{ steps.box_plot_tests.outcome == 'success' && '✅ Passed' || (steps.box_plot_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Quoted CSS Data Scan | ${{ steps.css_string_scan.outcome == 'success' && '✅ Passed' || (steps.css_string_scan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Checker | ${{ steps.architecture_delta_tests.outcome == 'success' && '✅ Passed' || (steps.architecture_delta_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Containment Scopes | ${{ steps.architecture_containment.outcome == 'success' && '✅ Passed' || (steps.architecture_containment.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
