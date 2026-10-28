@@ -189,6 +189,15 @@ Copy or symlink `skills/diagram-design/` to `.opencode/skills/diagram-design` in
 </details>
 
 <details>
+<summary><b>Troubleshooting an install</b></summary>
+
+If PNG export silently fails or the skill won't load after installing, run the doctor: `/diagram-design:doctor` in Claude Code or Codex, `/doctor` in Pi, or ask `run diagram-design doctor` in any host. It is read-only (it never installs packages or edits files) and prints a one-shot `Next actions` list.
+
+The doctor is host-aware. It auto-detects the host it runs under, or you can force a profile with `--host claude-code|cowork|codex|cursor|pi`. Beyond the Python and Playwright+Chromium checks for PNG export, it detects how Diagram Design was installed (marketplace, git, or copied) and prints the matching update or reinstall recipe from this section; advises confirming the active marketplace plugin version against the installed `SKILL.md` `metadata.version`; warns when a Pi git install tracks an unpinned branch; and, under Cowork, checks that the install goes through a private organization mirror rather than the public repository. Add `--strict` to turn warnings into a failing exit and `--json` for a machine-readable report. The full contract lives in [`references/doctor.md`](skills/diagram-design/references/doctor.md).
+
+</details>
+
+<details>
 <summary><b>Editable install</b> (customize the style guide in a clone)</summary>
 
 Managed installs are convenient, but changes to `references/style-guide.md` may be replaced by package updates. Saved profiles in `~/.diagram-design/profiles/` survive updates, and projects with a `.diagram-design` marker are unaffected. Clone the repo and install the local path if you plan to customize the working style guide directly:
