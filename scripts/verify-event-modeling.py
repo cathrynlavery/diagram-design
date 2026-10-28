@@ -17,7 +17,44 @@ LINKS = {"emits": ("command", "event"), "projects": ("event", "read-model")}
 
 
 def visible(element: ET.Element) -> str:
-    return " ".join(" ".join(element.itertext()).split())
+    """Read SVG text while excluding metadata and hidden descendants."""
+    chunks: list[str] = []
+
+    def walk(node: ET.Element, in_text: bool = False) -> None:
+        tag = node.tag.rsplit("}", 1)[-1]
+        style = {
+            key.strip().casefold(): value.strip().casefold()
+            for key, separator, value in (
+                part.partition(":") for part in node.attrib.get("style", "").split(";")
+            )
+            if key and separator
+        }
+        if (
+            tag in {"defs", "title", "desc"}
+            or node.attrib.get("aria-hidden") == "true"
+            or "hidden" in node.attrib
+            or node.attrib.get("display") == "none"
+            or node.attrib.get("visibility") == "hidden"
+            or node.attrib.get("opacity") in {"0", "0.0"}
+            or node.attrib.get("fill") in {"none", "transparent"}
+            or node.attrib.get("fill-opacity") in {"0", "0.0"}
+            or style.get("display") == "none"
+            or style.get("visibility") == "hidden"
+            or style.get("opacity") in {"0", "0.0"}
+            or style.get("fill") in {"none", "transparent"}
+            or style.get("fill-opacity") in {"0", "0.0"}
+        ):
+            return
+        in_text = in_text or tag == "text"
+        if in_text and node.text:
+            chunks.append(node.text)
+        for child in node:
+            walk(child, in_text)
+            if in_text and child.tail:
+                chunks.append(child.tail)
+
+    walk(element)
+    return " ".join(" ".join(chunks).split())
 
 
 def check(path: Path) -> list[str]:
@@ -45,6 +82,8 @@ def check(path: Path) -> list[str]:
         stage_ids.add(stage_id)
         if stage.attrib.get("data-stage-order") != str(index):
             errors.append(f"{stage_id}: stage order must be {index}")
+        if stage.attrib.get("data-diagram-role") != "timeframe":
+            errors.append(f"{stage_id}: stage role must be timeframe")
         elements = {kind: [] for kind in KINDS}
         links = {rel: [] for rel in LINKS}
         for element in stage.iter():
@@ -54,6 +93,8 @@ def check(path: Path) -> list[str]:
                     errors.append(f"{stage_id}: unknown kind {kind!r}")
                     continue
                 elements[kind].append(element)
+                if element.attrib.get("data-diagram-role") != kind:
+                    errors.append(f"{stage_id}: {kind} node role must be {kind}")
                 element_id = element.attrib.get("data-event-id", "").strip()
                 if not element_id.startswith(KINDS[kind]) or element_id in global_ids:
                     errors.append(f"{stage_id}: invalid or duplicate {kind} ID {element_id!r}")
@@ -74,6 +115,8 @@ def check(path: Path) -> list[str]:
             if len(found) != 1:
                 errors.append(f"{stage_id}: expected one {rel} link")
                 continue
+            if found[0].attrib.get("data-diagram-role") != "event-link":
+                errors.append(f"{stage_id}: {rel} link role must be event-link")
             if len(elements[from_kind]) != 1 or len(elements[to_kind]) != 1:
                 continue
             from_id = elements[from_kind][0].attrib.get("data-event-id", "")
