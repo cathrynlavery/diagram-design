@@ -65,6 +65,7 @@ Not for: a node with many parents that need rank rows (that is the parent depend
 - **One baseline, one pitch.** A node off the rail, or a seat that is a different width from its neighbours, makes two spans of the same count draw at two heights.
 - **`data-span` equals `|i−j|`.** Declaring 2 for a five-seat skip, or drawing a neighbour at a skip's radius, is the type's unforgivable error.
 - **Endpoints are the named nodes.** A path that names Auth and Checkout but lands on Catalog is a different import.
+- **Direction reads off the rail.** Every muted arc runs left to right: its left seat imports its right one, so order the rail by import direction and say so in the caption. The one import against the rail is the accent arc, with a small accent arrowhead on the package it imports. Arrowheads on every arc would pile up at shared seats, where each arc lands vertically.
 
 #### Declaring the values
 
@@ -87,7 +88,7 @@ What each binding buys, and what it costs to omit:
 | `data-from` / `data-to` | A path that names two packages but lands on two others still looks like their import. |
 | `data-name` on the node circle and its label | Two labels exchanged along the rail rename both packages, with every span still correct in isolation. |
 
-`scripts/verify-arc-diagram.py` derives the pitch from the nodes, requires a rising semicircle whose radius matches both the endpoint distance and `pitch · span / 2`, refuses a second accent arc, and checks every bound label against the node it names; `scripts/test-verify-arc-diagram.py` proves each check in both polarities and pins the sibling scope treaty in both directions.
+`scripts/verify-arc-diagram.py` derives the pitch from the nodes, requires a rising semicircle whose radius matches both the endpoint distance and `pitch · span / 2`, refuses a second accent arc or a muted arc that imports leftward, and checks every bound label against the node it names; `scripts/test-verify-arc-diagram.py` proves each check in both polarities and pins the sibling scope treaty in both directions.
 
 **Nothing may position a mark except its own attributes.** The checker reads raw `cx`/`d`/`x`, so anything applied afterwards invalidates the check that passed. Every carrier is refused — the `transform` attribute, an inline `style="…"`, and a rule in a `<style>` block — on a node, on an arc, on a bound label, or on an ancestor `<g>`/`<svg>`. Bake the offset into the coordinates.
 

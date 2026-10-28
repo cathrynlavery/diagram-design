@@ -530,6 +530,13 @@ def check_geometry(nodes: list, arcs: list, findings: list, name: str) -> None:
                 "apart — span is |i−j| on the rail"
                 % (where, arc.frm, arc.to, arc.span, expected_span)
             )
+        if not arc.accent and index[arc.frm] > index[arc.to]:
+            findings.append(
+                "%s: muted arc %s→%s imports leftward — ordinary arcs read "
+                "left to right (the left seat imports the right one), so an "
+                "import against the rail must be the accent arc with an "
+                "arrowhead at the package it imports" % (where, arc.frm, arc.to)
+            )
         left = min(by_name[arc.frm].cx, by_name[arc.to].cx)
         right = max(by_name[arc.frm].cx, by_name[arc.to].cx)
         ends = sorted([arc.x1, arc.x2])

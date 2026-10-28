@@ -222,6 +222,21 @@ def run_cases(h: Harness) -> int:
     )
 
     h.expect_findings(
+        "a muted arc that imports leftward is one finding",
+        honest().replace(
+            'data-from="C" data-to="D"', 'data-from="D" data-to="C"', 1,
+        ),
+        1, "imports leftward",
+    )
+
+    h.expect_clean(
+        "the accent arc may import leftward",
+        honest().replace(
+            'data-from="A" data-to="E"', 'data-from="E" data-to="A"', 1,
+        ),
+    )
+
+    h.expect_findings(
         "sweep 0 draws the import under the seats",
         honest().replace(
             arc("A", "C", 2, 0, 2),
