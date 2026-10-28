@@ -1126,6 +1126,9 @@ def run_cases(h: Harness) -> int:
          [(AUTH_WHISKER_LO, AUTH_WHISKER_LO.replace(
              'stroke="rgba(45,49,66,0.55)"', 'stroke="#4f5d75"').replace(
              "/>", ' style="stroke:transparent"/>'))]),
+        ('style="stroke:#2d3142; stroke:none !important" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:#2d3142; stroke:none !important"/>'))]),
     ):
         h.expect_findings(
             "a bound mark with %s is one finding" % title,
@@ -1156,6 +1159,18 @@ def run_cases(h: Harness) -> int:
         ("a width this checker cannot read is held to paint",
          [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"',
                                             'stroke-width="calc(1px + 1px)"'))]),
+        ("a median whose !important stroke beats a later stroke:none",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:#2d3142 !important; stroke:none"/>'))]),
+        ("a median whose later !important stroke beats stroke:none",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:none; stroke:#2d3142 !important"/>'))]),
+        ("a median whose last !important declaration wins",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:none !important; stroke:#2d3142 !important"/>'))]),
+        ("a median whose ! important wins with a space after the bang",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:#2d3142 ! important; stroke:none"/>'))]),
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
     h.expect_clean(

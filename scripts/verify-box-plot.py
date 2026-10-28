@@ -547,12 +547,18 @@ def stated_value(attrs: dict, prop: str):
     """The value this element states for one paint property, inline style last.
 
     An inline style overrides the presentation attribute, so the style's last
-    declaration wins; with no style declaration the attribute stands.
+    declaration wins, unless an earlier declaration is `!important`: then only
+    a later `!important` can take the property from it. With no style
+    declaration the attribute stands.
     """
-    value = attrs.get(prop)
+    value, important = attrs.get(prop), False
     for match in re.finditer(r"(?:^|[{;])\s*%s\s*:\s*([^;{}]+)" % re.escape(prop),
                              blank_css_comments(attrs.get("style", "")), re.IGNORECASE):
-        value = match.group(1).split("!")[0]
+        declared = match.group(1)
+        priority = re.search(r"!\s*important\s*$", declared, re.IGNORECASE)
+        if important and priority is None:
+            continue
+        value, important = declared.split("!")[0], priority is not None
     return value.strip().lower() if value is not None else None
 
 
