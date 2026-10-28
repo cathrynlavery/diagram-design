@@ -1113,6 +1113,48 @@ class ExportSvgStandaloneTests(unittest.TestCase):
         self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
         self.assertEqual(self.mod.normalize_html_entities('&notARealEntity;'), '&notARealEntity;')
 
+    def test_numeric_html_references_preserve_browser_text_and_attributes(self) -> None:
+        cases = (
+            ('&#128;', '€'), ('&#x80;', '€'), ('&#X80', '€'),
+            ('&#130;', '‚'), ('&#159;', 'Ÿ'), ('&#129;', '\u0081'),
+            ('&#65z', 'Az'), ('&#x41g', 'Ag'), ('&#65=1', 'A=1'),
+            ('&#0;', '\ufffd'), ('&#xD800;', '\ufffd'),
+            ('&#1114112;', '\ufffd'), ('&#x110000;', '\ufffd'),
+            ('&#' + '9' * 5000 + ';', '\ufffd'),
+            ('&#' + '0' * 5000 + '128;', '€'),
+            ('&#x1F600;', '😀'), ('&#127;', '\x7f'), ('&#xFDD0;', '\ufdd0'),
+            ('&#9;&#10;&#13;', '\t\n\r'),
+            ('&#38;#128;', '&#128;'), ('&amp;#128;', '&#128;'),
+            ('&#60;text&#62;', '<text>'), ('&#34;&#39;', '\"\''),
+        )
+        for encoded, expected in cases:
+            with self.subTest(encoded=encoded[:40]):
+                html = ('<svg viewBox="0 0 240 80">'
+                        f'<title>{encoded}</title><desc>{encoded}</desc>'
+                        f'<text data-label="{encoded}">{encoded}</text></svg>')
+                root = ET.fromstring(self.mod.export_svg_document(html, Path('numeric.html')))
+                for name in ('title', 'desc', 'text'):
+                    self.assertEqual(root.find('{http://www.w3.org/2000/svg}' + name).text, expected)
+                self.assertEqual(root.find('{http://www.w3.org/2000/svg}text').get('data-label'), expected)
+
+    def test_numeric_references_leave_opaque_bodies_and_decode_opening_attributes(self) -> None:
+        opaque = '<!-- &#128; --><![CDATA[&#x80;]]>'
+        self.assertEqual(self.mod.normalize_html_entities(opaque), opaque)
+        for tag in ('style', 'script'):
+            raw = f'<{tag} title="&#128; > &#65">raw &#128; &#x80</{tag}>'
+            expected = f'<{tag} title="€ > A">raw &#128; &#x80</{tag}>'
+            self.assertEqual(self.mod.normalize_html_entities(raw), expected)
+        html = '<svg viewBox="0 0 20 20"><text><![CDATA[&#128;]]></text></svg>'
+        root = ET.fromstring(self.mod.export_svg_document(html, Path('cdata-numeric.html')))
+        self.assertEqual(root.find('{http://www.w3.org/2000/svg}text').text, '&#128;')
+
+    def test_numeric_xml_inexpressible_characters_fail_instead_of_disappearing(self) -> None:
+        for encoded in ('&#1;', '&#xB;', '&#xFFFE;', '&#xFFFF;'):
+            with self.subTest(encoded=encoded):
+                html = f'<svg viewBox="0 0 20 20"><text>A{encoded}B</text></svg>'
+                with self.assertRaisesRegex(ValueError, 'XML'):
+                    self.mod.export_svg_document(html, Path('invalid-numeric.html'))
+
     def test_defs_reference_rewrite_leaves_visible_text_alone(self) -> None:
         markup = ('<svg><defs><linearGradient id="paint"/></defs>'
                   '<style>.a { fill:url("#paint") } .b { stroke:url(#paint) }</style>'
