@@ -38,6 +38,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Manifest versions untouched and synchronized; valid marketplace paths; packaged skill | `python3 scripts/verify-plugin-package.py --require-no-bump origin/main` |
 | Claude marketplace and plugin schema, with warnings treated as errors | `claude plugin validate . --strict` |
 | Accessible SVG contract (unit tests for the a11y linter) | `python3 scripts/test-lint-a11y.py` |
+| No HTML comment in the skill trips the Hermes Agent install scanner's `html_comment_injection` rule (#482) | `python3 scripts/test-install-scan.py` |
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
 | Animated-example structure and accessibility | `python3 scripts/verify-semantic-motion.py --example-only` |
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
@@ -102,6 +103,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Bump checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bump.py` |
 | Beeswarm dots sit exactly at their values on one shared scale with no overprint | `python3 scripts/verify-beeswarm.py --all` |
 | Beeswarm checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-beeswarm.py` |
+| Box-plot five-number summaries sit on one shared scale, ordered, with outliers outside the whiskers | `python3 scripts/verify-box-plot.py --all` |
+| Box-plot checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-box-plot.py` |
 | Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
@@ -137,6 +140,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-plugin-package.py --require-no-bump origin/main \
   && claude plugin validate . --strict \
   && python3 scripts/test-lint-a11y.py \
+  && python3 scripts/test-install-scan.py \
   && python3 scripts/verify-semantic-motion.py --markdown-only \
   && python3 scripts/verify-semantic-motion.py --example-only \
   && python3 scripts/verify-motion.py --shipped \
@@ -208,6 +212,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-bump.py \
   && python3 scripts/verify-beeswarm.py --all \
   && python3 scripts/test-verify-beeswarm.py \
+  && python3 scripts/verify-box-plot.py --all \
+  && python3 scripts/test-verify-box-plot.py \
   && python3 scripts/verify-skin-polarity.py --all \
   && python3 scripts/test-verify-skin-polarity.py \
   && python3 scripts/test-export-wait.py
@@ -227,6 +233,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-bubble.py`:** a bubble is drawn off the shared axis scale its peers describe, its radius disagrees with the one area constant (`r = K·√size`), a second bubble wears the accent, an overlapping smaller bubble is painted under a larger one, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never nudge a bubble to open up space, because crowded bubbles mean the values really are close.
 - **`verify-bump.py`:** a vertex sits off the rank grid the figure itself declares, a snapshot's ranks are not a permutation of 1..N, a segment curves or arrives by a relative command, or an endpoint label is missing a coordinate, drawn inboard of the end it names, or off the gutter its peers share. Fix the geometry or the declaration, never the label — and never nudge a vertex off its row to dodge a label collision, because a rank between two ranks is not a rank.
 - **`verify-beeswarm.py`:** a dot is drawn off the shared value scale its peers describe, two dots declaring one value sit at two positions, a pair overprints instead of dodging, a second radius or a second non-focal fill appears, a second dot wears the accent, two dots share a `data-name` (or one is empty), anything positions a mark from CSS (`transform`, `translate`/`rotate`/`scale`, a geometry property, a motion path) by any carrier — attribute, inline `style`, or `<style>` rule, or a bound label/tick disagrees with the mark it names. Fix the geometry, never the binding — and never move a dot along the value axis to open up space, because crowding is data and the dodge is the only honest resolution.
+- **`verify-box-plot.py`:** a box, median, whisker or outlier is drawn off the shared value scale its peers describe, the five-number order is broken, an outlier sits inside the whiskers or the Tukey fences, a category label names the wrong series, a second series wears the accent, two series share a `data-name`, anything positions a mark from CSS, or a bound tick disagrees with the mark it names. Fix the geometry, never the binding — and never move a box along the value axis to open up space, because crowded boxes mean the summaries really are close.
 - **`verify-skin-polarity.py`:** a legend key or caption names the ramp's direction by lightness (`darker is larger`) in a file whose ramp composites the other way. `ink` is a role, not a colour — it resolves near-black on light paper and near-white on dark — so one set of opacities runs darker as it strengthens in the light skin and lighter in the dark one. Name the direction by contrast against the paper (`stronger contrast is larger`), which survives the skin swap, and ship the same sentence in every variant; never invert the word for one file. The gate also fails closed on a claim it cannot substantiate — no resolvable paper colour, fewer than three rank-bearing ramp members, or a ramp that is not strictly ordered — and on wording it cannot parse: a tone word within six words of a magnitude word that no supported sentence form binds. Rephrase that as `<tone> <is|means|represents> <magnitude>` (`stronger contrast is larger`), because a claim the gate cannot read is a claim nothing checks.
 - **`verify-geometry.py`:** a label mask overlaps a node declared later in the document, so the node fill clips the label at render time. Move the label to a free segment of its connector — keep the 6–10px gap from the stroke required by SKILL.md §6, and do not shrink the mask to sneak under the check. It also fails an arrowed connector with a diagonal straight segment, a segment lying on a node's border, an endpoint within 8px of a node corner, a port closer to another on the same edge than rule 4 allows (12px, or 8px on an edge under 48px), a straight run stacked on another connector, or path data it cannot parse. Reroute the connector so it leaves each box perpendicular to the edge it starts on, from its own port; do not drop the marker or the node stroke to get past the check.
 - **`verify-architecture-delta.py`:** a stable ID, snapshot membership, status, signature, position, endpoint, or ledger target disagrees with the declared migration. Follow `type-architecture-delta.md`: record every changed object in the center ledger, retain unchanged positions on matching grids, and distinguish CHANGED, MOVED, and REWIRED by what actually differs. Fix the diagram and metadata together; never suppress the ledger entry to hide an unaccounted change.

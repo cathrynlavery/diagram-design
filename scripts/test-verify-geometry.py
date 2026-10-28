@@ -87,6 +87,18 @@ def main() -> int:
         document('<rect x="240" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>' + node),
         1,
     )
+    check(
+        "single-quoted mask clipped by a single-quoted node",
+        document("<rect x='240' y='80' width='48' height='12' fill='#f5f5f5'/>"
+                 "<rect x='100' y='60' width='160' height='64' fill='#eee'/>"),
+        1,
+    )
+    check(
+        "attribute-like text inside a value does not replace real coordinates",
+        document("<rect data-note=\"x='10' y='10'\" x='240' y='80' width='48' height='12' fill='#fff'/>"
+                 + node),
+        1,
+    )
     # Same geometry, but the node is painted first, so the label stays on top.
     check(
         "mask over an earlier node is legal",
@@ -123,6 +135,8 @@ def main() -> int:
     translated_mask = '<rect x="350" y="80" width="80" height="12" fill="#fff"/>'
     check("translated mask is clipped in canvas space", document(
         '<g transform="translate(-200 0)">' + translated_mask + '</g>' + panel_node), 1)
+    check("single-quoted group translation is applied", document(
+        "<g transform='translate(-200 0)'>" + translated_mask + '</g>' + panel_node), 1)
     check("nested translations accumulate", document(
         '<g transform="translate(-100 0)"><g transform="translate(-100 0)">'
         + translated_mask + '</g></g>' + panel_node), 1)
@@ -211,6 +225,33 @@ def main() -> int:
     check(
         "diagonal connector",
         document(f'<line x1="10" y1="10" x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "single-quoted diagonal connector",
+        document("<line x1='10' y1='10' x2='60' y2='40' "
+                 "stroke='#4f5d75' marker-end='url(#arrow)'/>"),
+        1,
+    )
+    check(
+        "diagonal connector with adjacent attributes",
+        document(f'<line x1="10" y1="10"x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "diagonal connector with slash between attributes",
+        document(f'<line x1="10" y1="10"/x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "attribute-like coordinates inside an unusual name are ignored",
+        document(f'<line @click=" x1=\'10\' y1=\'10\' x2=\'60\' y2=\'10\'" '
+                 f'x1="10" y1="10" x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "single-quoted arrowed path",
+        document("<path d='M 10 10 L 60 40' stroke='#4f5d75' marker-end='url(#arrow)'/>"),
         1,
     )
     check(
