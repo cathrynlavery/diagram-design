@@ -187,6 +187,56 @@ def check_whiteboard() -> None:
     ok("whiteboard parses: shapes, frames, bound labels, groups, cycle, ledger")
 
 
+def check_nested_groups(tmp: Path) -> None:
+    # Excalidraw orders ids deepest to shallowest: the inner group comes first.
+    # Members of that inner group still belong to each outer group.
+    board = tmp / "nested-groups.excalidraw"
+    board.write_text(
+        scene(
+            "nested-groups",
+            [
+                {
+                    "id": "a",
+                    "type": "rectangle",
+                    "x": 0,
+                    "y": 0,
+                    "width": 40,
+                    "height": 40,
+                    "groupIds": ["inner", "outer"],
+                },
+                {
+                    "id": "b",
+                    "type": "rectangle",
+                    "x": 50,
+                    "y": 0,
+                    "width": 40,
+                    "height": 40,
+                    "groupIds": ["inner", "outer"],
+                },
+                {
+                    "id": "c",
+                    "type": "rectangle",
+                    "x": 100,
+                    "y": 0,
+                    "width": 40,
+                    "height": 40,
+                    "groupIds": ["outer"],
+                },
+            ],
+        ),
+        encoding="utf-8",
+    )
+    groups = {
+        group["id"]: group["children"]
+        for group in json.loads(run_extract([str(board), "--json"]))["scene"]["analysis"][
+            "collapsible_groups"
+        ]
+    }
+    if groups.get("inner") != 2 or groups.get("outer") != 3:
+        fail(f"nested Excalidraw groups were not both reported: {groups}")
+    ok("nested groups keep the outer cluster and the inner cluster")
+
+
 def check_bindings_and_shapes(tmp: Path) -> None:
     board = tmp / "bindings.excalidraw"
     board.write_text(
@@ -773,6 +823,7 @@ def main() -> int:
         check_json_nesting_diagnostic(tmp)
         check_unimported_container_text(tmp)
         check_whiteboard()
+        check_nested_groups(tmp)
         check_bindings_and_shapes(tmp)
         check_arrow_directions(tmp)
         check_bidirectional_cycle(tmp)

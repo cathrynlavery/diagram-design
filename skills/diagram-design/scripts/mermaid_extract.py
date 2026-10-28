@@ -36,6 +36,10 @@ MAX_EDGES = 5000
 # with others. Real statements are a few hundred characters at most; the cap
 # keeps per-statement parsing work bounded.
 MAX_STATEMENT_CHARS = 4096
+# Sequence `autonumber` start and step. Mermaid numbers steps with JS numbers,
+# which stay exact up to 15 digits. Checking the length first also keeps the
+# error the same on Pythons with and without an int-from-string digit limit.
+MAX_AUTONUMBER_DIGITS = 15
 SUPPORTED_KINDS = "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram"
 UNSUPPORTED_KINDS = {
     "pie",
@@ -115,8 +119,10 @@ class Diagram:
     edges: list[Edge] = field(default_factory=list)
     fragments: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # Sequence `autonumber` directives: step numbers are content, prose cites them.
+    autonumber: list[dict[str, Any]] = field(default_factory=list)
     discarded: dict[str, int] = field(
-        default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
+        default_factory=lambda: {"style_directives": 0, "click_handlers": 0, "config_directives": 0}
     )
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
     _state_descriptions: dict[str, list[str]] = field(default_factory=dict, init=False, repr=False)
@@ -317,11 +323,13 @@ def _frontmatter_end(lines: list[str]) -> int:
     return -1
 
 
-def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
+def _prepared_lines(block: SourceBlock) -> tuple[list[tuple[int, str]], int]:
+    """Blank out comments and config, returning the lines and the number of config directives."""
     prepared: list[tuple[int, str]] = []
     in_directive = False
     lines = block.text.splitlines()
     frontmatter_end = _frontmatter_end(lines)
+    config_directives = 1 if frontmatter_end >= 0 else 0
     for offset, raw in enumerate(lines):
         line_number = block.source_line + offset
         stripped = raw.strip()
@@ -336,6 +344,7 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         if stripped.startswith("%%{"):
+            config_directives += 1
             if "}%%" not in stripped:
                 in_directive = True
             prepared.append((line_number, ""))
@@ -344,7 +353,7 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         prepared.append((line_number, raw.rstrip()))
-    return prepared
+    return prepared, config_directives
 
 
 def _kind_and_direction(
@@ -777,6 +786,28 @@ def _endpoint_group(
 STYLE_DIRECTIVES = ("style ", "classDef ", "class ", "linkStyle ")
 
 
+_EDGE_ID = re.compile(r"(?<![\w.:@-])([A-Za-z_][\w-]*)@")
+
+
+def _strip_edge_ids(text: str) -> tuple[str, list[str]]:
+    """Drop Mermaid v11.6+ edge IDs (`A e1@--> B`) and return the IDs found."""
+    mask = _top_level_mask(text)
+    operator_starts = {operator.start for operator in _edge_operators(text)}
+    ids: list[str] = []
+    pieces: list[str] = []
+    cursor = 0
+    for match in _EDGE_ID.finditer(mask):
+        if match.end() not in operator_starts:
+            continue
+        pieces.append(text[cursor : match.start()])
+        cursor = match.end()
+        ids.append(match.group(1))
+    if not ids:
+        return text, ids
+    pieces.append(text[cursor:])
+    return "".join(pieces), ids
+
+
 def _discard_nonsemantic(diagram: Diagram, text: str) -> bool:
     lowered = text.casefold()
     if any(lowered.startswith(prefix.casefold()) for prefix in STYLE_DIRECTIVES):
@@ -793,12 +824,17 @@ def _parse_flowchart(
 ) -> None:
     containers: list[str] = []
     invisible_links = 0
+    edge_ids: set[str] = set()
     for line_number, raw in _logical_statements(lines[header_position + 1 :]):
         text = raw.strip()
         if not text:
             continue
         lowered = text.casefold()
         if _discard_nonsemantic(diagram, text):
+            continue
+        id_match = re.match(r"^([A-Za-z_][\w-]*)@\{", text)
+        if id_match and id_match.group(1) in edge_ids:
+            # `e1@{ animate: true }` styles an edge, not a node.
             continue
         if lowered.startswith("direction "):
             if not containers:
@@ -823,6 +859,8 @@ def _parse_flowchart(
                 containers.pop()
             continue
 
+        text, found_ids = _strip_edge_ids(text)
+        edge_ids.update(found_ids)
         operators = _edge_operators(text)
         parent = containers[-1] if containers else None
         if operators:
@@ -940,6 +978,19 @@ def _parse_sequence(
                 semantic_depth -= 1
             continue
         if lowered.startswith(("activate ", "deactivate ", "+", "-")):
+            continue
+        numbering = re.match(r"^autonumber(?:\s+(off)|\s+(\d+)(?:\s+(\d+))?)?$", text, re.I)
+        if numbering:
+            off, start, step = numbering.groups()
+            entry = {"line": line_number, "off": bool(off)}
+            if not off:
+                if any(len(value or "") > MAX_AUTONUMBER_DIGITS for value in (start, step)):
+                    _fail(
+                        f"autonumber value exceeds {MAX_AUTONUMBER_DIGITS} digits "
+                        f"at line {line_number}"
+                    )
+                entry.update(start=int(start or 1), step=int(step or 1))
+            diagram.autonumber.append(entry)
             continue
         if lowered.startswith("note "):
             _, separator, note = text.partition(":")
@@ -1161,9 +1212,19 @@ def _parse_er(
 
 
 def parse_block(block: SourceBlock) -> Diagram:
-    lines = _prepared_lines(block)
+    lines, config_directives = _prepared_lines(block)
     kind, direction, header_position = _kind_and_direction(lines)
+    if kind == "flowchart":
+        # `graph TD; A-->B;` is valid: statements may follow the header's
+        # semicolon on the same line, so keep them as the first statement.
+        line_number, header = lines[header_position]
+        rest = re.match(r"^\s*(?:flowchart|graph)\s+(?:TD|TB|LR|RL|BT)\b", header, re.I)
+        tail = header[rest.end() :].lstrip() if rest else ""
+        if tail.startswith(";"):
+            lines[header_position] = (line_number, header[: rest.end()])
+            lines.insert(header_position + 1, (line_number, tail[1:]))
     diagram = Diagram(block.index, kind, block.source_line, direction=direction)
+    diagram.discarded["config_directives"] = config_directives
     if kind == "flowchart":
         _parse_flowchart(diagram, lines, header_position)
     elif kind == "sequenceDiagram":
@@ -1313,6 +1374,16 @@ def _block_summary(block: SourceBlock, selected: list[Diagram]) -> str:
     return f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
 
 
+# The keyword that opens each extra region of a fragment: `else` in alt, `and` in par, `option` in critical.
+REGION_KEYWORDS = {"alt": "else", "par": "and", "critical": "option"}
+
+
+def _fragment_digest(item: dict[str, Any]) -> str:
+    keyword = REGION_KEYWORDS.get(item["kind"], "else")
+    parts = [item["label"] or "unlabeled"] + [f"{keyword}: {region or 'unlabeled'}" for region in item["regions"]]
+    return " | ".join(_escape_table(part) for part in parts)
+
+
 def digest(
     path: Path,
     blocks: list[SourceBlock],
@@ -1342,17 +1413,23 @@ def digest(
                 f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
             ]
         )
-        if diagram.discarded["style_directives"] or diagram.discarded["click_handlers"]:
+        if any(diagram.discarded.values()):
             output.append(
                 f"- discarded: {diagram.discarded['style_directives']} style directives, "
-                f"{diagram.discarded['click_handlers']} click handlers"
+                f"{diagram.discarded['click_handlers']} click handlers, "
+                f"{diagram.discarded['config_directives']} config directives"
             )
         if diagram.fragments:
             fragments = ", ".join(
-                f"{item['kind']}({_escape_markdown(item['label'] or 'unlabeled')})"
-                for item in diagram.fragments
+                f"{item['kind']}({_fragment_digest(item)})" for item in diagram.fragments
             )
             output.append(f"- fragments: {fragments}")
+        if diagram.autonumber:
+            numbering = "; ".join(
+                "off" if item["off"] else f"from {item['start']}, step {item['step']}"
+                for item in diagram.autonumber
+            )
+            output.append(f"- autonumber: {numbering}")
         if diagram.notes:
             output.append(
                 f"- notes: {'; '.join(_escape_markdown(note) for note in diagram.notes[:6])}"
@@ -1449,6 +1526,7 @@ def to_json(path: Path, blocks: list[SourceBlock], selected: list[Diagram]) -> s
                     "discarded": diagram.discarded,
                     "fragments": diagram.fragments,
                     "notes": diagram.notes,
+                    "autonumber": diagram.autonumber,
                     "nodes": [asdict(node) for node in diagram.nodes],
                     "edges": [asdict(edge) for edge in diagram.edges],
                 }

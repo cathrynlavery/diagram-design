@@ -13,7 +13,7 @@ and fails when the drawing and the declaration disagree:
   extreme, or crosses another part; labels outside one column, closer than
   36px, or longer than two words;
 - more than one focal part, a trace line that is not vertical and dashed, an
-  SVG transform anywhere in the figure, a part with two labels, or an
+  SVG or CSS transform anywhere in the figure, a part with two labels, or an
   animated part whose lift is not its exploded z minus its closed z.
 
     python3 scripts/verify-exploded.py --all
@@ -34,6 +34,73 @@ ASSETS = ROOT / "skills/diagram-design/assets"
 TOL = 0.05
 LABEL_PITCH = 36
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+# Scan declaration boundaries before decoding escapes: escaped punctuation,
+# strings, comments and nested custom-property blocks do not delimit CSS.
+CSS_ESCAPE_RE = re.compile(r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])")
+STYLE_TRANSFORM_RE = re.compile(
+    r"(?:-(?:webkit|moz|ms|o)-)?transform|translate|rotate|scale", re.IGNORECASE
+)
+
+
+def decode_css_escape(match: re.Match) -> str:
+    token = match.group()[1:]
+    if token[0] not in "0123456789abcdefABCDEF":
+        return token
+    value = int(token.strip(), 16)
+    return chr(value) if 0 < value <= 0x10ffff and not 0xd800 <= value <= 0xdfff else "\ufffd"
+
+
+def style_declares_transform(style: str) -> bool:
+    nesting = []
+    property_text = []
+    in_value = False
+    index = 0
+    while index < len(style):
+        char = style[index]
+        if style.startswith("/*", index):
+            if not in_value:
+                property_text.append(" ")
+            close = style.find("*/", index + 2)
+            index = len(style) if close < 0 else close + 2
+            continue
+        if char == "\\":
+            escape = CSS_ESCAPE_RE.match(style, index)
+            if escape:
+                if not in_value:
+                    property_text.append(escape.group())
+                index = escape.end()
+                continue
+        if char in "\"'":
+            quote = char
+            if not in_value:
+                property_text.append(char)  # A string cannot be a property name.
+            index += 1
+            while index < len(style):
+                if style[index] == "\\":
+                    index += 2
+                elif style[index] == quote:
+                    index += 1
+                    break
+                else:
+                    index += 1
+            continue
+        if char in "({[":
+            nesting.append(char)
+        elif char in ")}]" and nesting:
+            if nesting[-1] == {")": "(", "}": "{", "]": "["}[char]:
+                nesting.pop()
+        elif not nesting and char == ":" and not in_value:
+            name = CSS_ESCAPE_RE.sub(decode_css_escape, "".join(property_text)).strip()
+            if STYLE_TRANSFORM_RE.fullmatch(name):
+                return True
+            in_value = True
+        elif not nesting and char == ";":
+            property_text = []
+            in_value = False
+        elif not in_value:
+            property_text.append(char)
+        index += 1
+    return False
 
 
 class Element:
@@ -369,10 +436,13 @@ def verify_source(source: str, name: str) -> list[str]:
             if not el.attrs.get("stroke-dasharray"):
                 errors.append(f"{name}: trace line must be dashed")
 
-    # 6. Geometry comes from coordinates alone: no SVG transform anywhere in the figure.
+    # 6. Geometry comes from coordinates alone: no SVG or CSS transform in the figure.
     for el in [fig, *fig.walk()]:
         if "transform" in el.attrs:
             errors.append(f"{name}: <{el.tag}> carries transform={el.attrs['transform']!r}; position comes from projected coordinates")
+        style = el.attrs.get("style", "")
+        if style_declares_transform(style):
+            errors.append(f"{name}: <{el.tag}> carries style={style!r}; a CSS transform moves projected geometry")
 
     # 7. Animated parts lift by exactly their explode distance.
     for p in parts:

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -144,12 +145,22 @@ TITLE_ORDER = "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'"
 
 
 def mutate(path: Path, old: str, new: str) -> bytes:
-    """Replace *old* once in *path* and return the original bytes."""
+    """Replace *old* once in *path* and return the original bytes.
+
+    Fixtures are authored in LF, but only SKILL.md is pinned to LF in .gitattributes,
+    so a Windows checkout with ``core.autocrlf=true`` hands these files back as CRLF.
+    Retry the search on a newline-normalised copy, and write the result back in the
+    file's own line endings so the mutation stays confined to the needle.
+    """
     original = path.read_bytes()
     text = original.decode("utf-8")
-    if old not in text:
+    if old in text:
+        path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+        return original
+    normalised = text.replace("\r\n", "\n")
+    if old not in normalised:
         raise AssertionError(f"{path.name} no longer contains {old!r}; update the fixture")
-    path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+    path.write_bytes(normalised.replace(old, new, 1).replace("\n", "\r\n").encode("utf-8"))
     return original
 
 
@@ -549,6 +560,151 @@ def split_route_error(heading: str, target: str) -> str:
         f"SKILL.md {heading!r} no longer routes to {target}; the ADR 0004 split "
         "moved that content there, so it would ship unreachable"
     )
+
+
+def check_mutate_line_endings() -> None:
+    """A CRLF fixture mutates in place, restores its original bytes, and rejects a stale needle."""
+    fixture = b"# Title\r\n\r\n### 4px grid\r\nbody\r\n"
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-mutate-") as temporary:
+        path = Path(temporary) / "layout-budget.md"
+        path.write_bytes(fixture)
+
+        returned = mutate(path, "### 4px grid\n", "### Grid\n")
+
+        if returned != fixture:
+            raise AssertionError("mutate() must return the unmutated bytes")
+        mutated = path.read_bytes()
+        if b"### Grid\r\n" not in mutated:
+            raise AssertionError("the CRLF fixture was not mutated")
+        if b"### 4px grid" in mutated:
+            raise AssertionError("the needle survived the mutation")
+        if b"\n" in mutated.replace(b"\r\n", b""):
+            raise AssertionError("the mutation rewrote the fixture's line endings")
+
+        lf_path = Path(temporary) / "lf.md"
+        lf_fixture = b"# Title\n\n### 4px grid\nbody\n"
+        lf_path.write_bytes(lf_fixture)
+        if mutate(lf_path, "### 4px grid\n", "### Grid\n") != lf_fixture:
+            raise AssertionError("mutate() must return an LF fixture's original bytes")
+        if lf_path.read_bytes() != b"# Title\n\n### Grid\nbody\n":
+            raise AssertionError("the LF fixture was not mutated in place")
+
+        try:
+            mutate(path, "### never present\n", "### Grid\n")
+        except AssertionError as error:
+            if "no longer contains" not in str(error):
+                raise AssertionError(f"a stale needle raised an unrelated error: {error}") from error
+        else:
+            raise AssertionError("a stale needle must still raise")
+
+    print("OK mutate: a CRLF fixture mutates in place and a stale needle still raises")
+
+
+def check_export_surface_parity(verify) -> None:
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-export-") as temp_dir:
+        fake_root = Path(temp_dir)
+        fake_cmd = fake_root / "commands/export-diagram.md"
+        fake_prompt = fake_root / "prompts/export-diagram.md"
+        fake_cmd.parent.mkdir(parents=True)
+        fake_prompt.parent.mkdir(parents=True)
+
+        fake_cmd.write_text(
+            (ROOT / "commands/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        fake_prompt.write_text(
+            (ROOT / "prompts/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+        errors: list[str] = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if errors:
+            raise AssertionError(f"shipped export surfaces failed: {errors}")
+
+        broken_cmd = fake_cmd.read_text(encoding="utf-8").replace(
+            "Both `--svg-only` and `--png-only` supplied",
+            "Both format flags supplied",
+        )
+        fake_cmd.write_text(broken_cmd, encoding="utf-8")
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if not any("commands/export-diagram.md" in err for err in errors):
+            raise AssertionError(f"missing commands/export-diagram.md parity error: {errors}")
+        print("OK export surface parity: missing command rule caught")
+
+        fake_cmd.write_text(
+            (ROOT / "commands/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        broken_prompt = fake_prompt.read_text(encoding="utf-8").replace(
+            "Both `--svg-only` and `--png-only` supplied",
+            "Both format flags supplied",
+        )
+        fake_prompt.write_text(broken_prompt, encoding="utf-8")
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if not any("prompts/export-diagram.md" in err for err in errors):
+            raise AssertionError(f"missing prompts/export-diagram.md parity error: {errors}")
+        print("OK export surface parity: missing prompt rule caught")
+
+        fake_prompt.write_text(
+            (ROOT / "prompts/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        # #474: the produce-both Defaults bullet once listed the single-format flags.
+        for fake, name in ((fake_cmd, "commands"), (fake_prompt, "prompts")):
+            shipped = fake.read_text(encoding="utf-8")
+            fake.write_text(
+                shipped.replace(
+                    "only `--scale`/`--output`",
+                    "`--svg-only`/`--png-only`/`--scale`/`--output`",
+                ),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_export_surface_parity(errors, fake_root)
+            expected = (
+                f"{name}/export-diagram.md Defaults lists --svg-only, --png-only among "
+                "the cases that produce both .svg and .png; each restricts output to "
+                "its one format"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{name} single-format flags in Defaults not caught: {errors}")
+            print(f"OK export surface parity: {name} Defaults listing --svg-only caught")
+
+            fake.write_text(
+                re.sub(r"^- .*produce\W+both.*\n", "", shipped, flags=re.MULTILINE | re.IGNORECASE),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_export_surface_parity(errors, fake_root)
+            expected = (
+                f"{name}/export-diagram.md Defaults has no bullet saying when both "
+                ".svg and .png are produced"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{name} missing produce-both bullet not caught: {errors}")
+            print(f"OK export surface parity: {name} missing produce-both bullet caught")
+            fake.write_text(shipped, encoding="utf-8")
+
+        fake_cmd.unlink()
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if errors != ["export surface is missing: commands/export-diagram.md"]:
+            raise AssertionError(f"missing commands/export-diagram.md was not caught: {errors}")
+        print("OK export surface parity: missing commands file caught")
+
+        fake_cmd.write_text(
+            (ROOT / "commands/export-diagram.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        fake_prompt.unlink()
+        errors = []
+        verify.check_export_surface_parity(errors, fake_root)
+        if errors != ["export surface is missing: prompts/export-diagram.md"]:
+            raise AssertionError(f"missing prompts/export-diagram.md was not caught: {errors}")
+        print("OK export surface parity: missing prompts file caught")
 
 
 def check_split_routes(verify) -> None:
@@ -957,6 +1113,75 @@ def main() -> int:
     )
     if errors != [expected]:
         raise AssertionError(f"light-skin regression was not reported: {errors}")
+
+    # ── Loop station origin (#443) ───────────────────────────────────────────
+    loop_reference = (
+        ROOT / "skills/diagram-design/references/type-loop.md"
+    ).read_text(encoding="utf-8")
+    loop_examples = {
+        path.name: path.read_text(encoding="utf-8")
+        for path in sorted((ROOT / "skills/diagram-design/assets").glob("example-loop*.html"))
+    }
+    errors = []
+    verify.check_loop_station_origin(errors, loop_reference, loop_examples)
+    if errors:
+        raise AssertionError(f"shipped Loop reference failed: {errors}")
+
+    errors = []
+    verify.check_loop_station_origin(
+        errors,
+        re.sub(r"\bstation \d+ sits at the top", "station 1 sits at the top", loop_reference),
+        loop_examples,
+    )
+    expected = (
+        "type-loop.md puts station 1 at the top; "
+        "theta_k = -90deg + k * 360/N puts station 0 there"
+    )
+    if errors != [expected]:
+        raise AssertionError(f"station 1 at the top was not reported: {errors}")
+
+    errors = []
+    verify.check_loop_station_origin(
+        errors, verify.LOOP_ORIGIN_RE.sub("the ring starts here", loop_reference), loop_examples
+    )
+    expected = "type-loop.md no longer says which station sits at the top"
+    if errors != [expected]:
+        raise AssertionError(f"a Loop reference with no origin was not reported: {errors}")
+
+    rotated = dict(loop_examples)
+    rotated["example-loop.html"] = rotated["example-loop.html"].replace(
+        '<rect class="station" x="440" y="68"', '<rect class="station" x="440" y="548"', 1
+    )
+    errors = []
+    verify.check_loop_station_origin(errors, loop_reference, rotated)
+    expected = "example-loop.html: the first station is not the topmost station"
+    if errors != [expected]:
+        raise AssertionError(f"a rotated Loop example was not reported: {errors}")
+
+    unplaced = dict(loop_examples)
+    unplaced["example-loop.html"] = unplaced["example-loop.html"].replace(
+        '<rect class="station" x="440" y="68"', '<rect class="station" x="440"', 1
+    )
+    errors = []
+    verify.check_loop_station_origin(errors, loop_reference, unplaced)
+    expected = "example-loop.html: a station rect has no y attribute to check station order"
+    if errors != [expected]:
+        raise AssertionError(f"a station rect without y was not reported: {errors}")
+
+    unparsed = dict(loop_examples)
+    unparsed["example-loop.html"] = unparsed["example-loop.html"].replace(
+        'class="station', 'class="loop-station'
+    )
+    errors = []
+    verify.check_loop_station_origin(errors, loop_reference, unparsed)
+    expected = "example-loop.html: no station rects found to check station order"
+    if errors != [expected]:
+        raise AssertionError(f"a Loop example with no station rects was not reported: {errors}")
+
+    errors = []
+    verify.check_loop_station_origin(errors, loop_reference, {})
+    if errors != ["no Loop examples found to check station order"]:
+        raise AssertionError(f"missing Loop examples were not reported: {errors}")
 
     # ── type-ramp contract tests ─────────────────────────────────────────────
     errors = []
@@ -2030,14 +2255,17 @@ diagram-design/
     check_heading_syntax(verify)
     check_size_preset_surfaces(verify)
     check_split_type_ramp(verify)
+    check_mutate_line_endings()
     check_split_routes(verify)
+    check_export_surface_parity(verify)
 
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "
         "strict-bundler packaging, "
         "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
-        "split routing, and gallery guards (parent/variant model, contiguous ordinals, variant letters, type parity)"
+        "split routing, the CRLF fixture fallback in the fixture helper, and gallery guards "
+        "(parent/variant model, contiguous ordinals, variant letters, type parity)"
     )
     return 0
 
