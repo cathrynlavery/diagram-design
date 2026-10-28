@@ -132,7 +132,7 @@ Solid paper fill across `viewBox`. No dot pattern. Each zone box:
       fill="{ink @ 0.02}" stroke="{ink @ 0.10}" stroke-width="0.8" rx="8"/>
 <!-- paper-masked break for the zone label -->
 <rect x="zone_x(i)+20" y="zone_y-8" width="{label_w}" height="16" fill="{paper}"/>
-<text x="zone_x(i)+24" y="zone_y+4" fill="{ink @ 0.40}"
+<text x="zone_x(i)+24" y="zone_y+4" fill="{soft}"
       font-family="{eyebrow}" letter-spacing="0.14em">{name}</text>
 ```
 

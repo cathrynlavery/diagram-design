@@ -85,6 +85,13 @@ def main() -> int:
                 print(f"OK: {name} rejected — {expected}")
 
         check("canonical-template", source, None)
+        decorative = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 12 12">'
+                      '<path d="M2 2 L10 2 L10 10 L2 10 Z"/></svg>')
+        check("decorative-header-icon", source.replace("<body>", "<body>" + decorative, 1), None)
+        check("only-decorative-svgs", source.replace('<svg ', '<svg aria-hidden="true" ', 1),
+              "motion document needs an accessible SVG")
+        check("unnamed-accessible-header-icon", source.replace("<body>",
+              "<body>" + decorative.replace(' aria-hidden="true"', ''), 1), "needs role=img")
         script_free_none = re.sub(
             r"<script\b[^>]*>.*?</script\s*>", "", source, flags=re.IGNORECASE | re.DOTALL
         )
@@ -509,7 +516,7 @@ def main() -> int:
             missing_guide = directory / "missing-guide.md"
             missing_guide.write_text(
                 original_skill.read_text(encoding="utf-8").replace(
-                    "### Visual-type guide (41)", "### Visual guide"
+                    f"### Visual-type guide ({semantic_module.VISUAL_TYPE_COUNT})", "### Visual guide"
                 ),
                 encoding="utf-8",
             )
@@ -517,7 +524,7 @@ def main() -> int:
             markdown_errors = semantic_module.verify_markdown()
         finally:
             semantic_module.SKILL = original_skill
-        if not any("must contain the 41-row visual-type guide" in error for error in markdown_errors):
+        if not any(f"must contain the {semantic_module.VISUAL_TYPE_COUNT}-row visual-type guide" in error for error in markdown_errors):
             raise AssertionError(f"missing visual-guide anchor was accepted: {markdown_errors}")
         print("OK: missing visual-type guide anchor is rejected")
 

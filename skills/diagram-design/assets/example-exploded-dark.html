@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App stack · Three layers, one product</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #2d3142;
+      --color-ink:     #f5f5f5;
+      --color-muted:   #bfc0c0;
+      --color-accent:  #f08a59;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Exploded axonometric · Diagram Design</p>
+    <h1>App stack · Three layers, one product</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 556" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="exploded-dark-title exploded-dark-desc">
+        <title id="exploded-dark-title">App stack · Three layers, one product</title>
+        <desc id="exploded-dark-desc">Exploded view of a three-layer app stack: data at the base, logic in the middle, interface on top, with logic as the focal layer.</desc>
+        <rect width="100%" height="100%" fill="#2d3142"/>
+        <g data-exploded data-origin="344 284" data-gap="100">
+        <line data-role="trace" x1="151.03" y1="368" x2="151.03" y2="152" stroke="rgba(245,245,245,0.30)" stroke-width="0.8" stroke-dasharray="4,3"/><line data-role="trace" x1="536.97" y1="368" x2="536.97" y2="152" stroke="rgba(245,245,245,0.30)" stroke-width="0.8" stroke-dasharray="4,3"/>
+        <g data-part="data" data-name="Data" data-rect="0 0 200 200 12" data-z="0" data-t="16" data-level="0"><path data-role="silhouette" d="M 151.03 368 A 16.97 8.49 0 0 1 156 362 L 332 274 A 16.97 8.49 0 0 1 356 274 L 532 362 A 16.97 8.49 0 0 1 536.97 368 L 536.97 384 A 16.97 8.49 0 0 1 532 390 L 356 478 A 16.97 8.49 0 0 1 332 478 L 156 390 A 16.97 8.49 0 0 1 151.03 384 Z" fill="#393e53"/><path d="M 356 462 A 16.97 8.49 0 0 1 332 462 L 156 374 A 16.97 8.49 0 0 1 156 362 L 332 274 A 16.97 8.49 0 0 1 356 274 L 532 362 A 16.97 8.49 0 0 1 532 374 Z" fill="rgba(245,245,245,0.10)"/><path d="M 344 464.49 A 16.97 8.49 0 0 0 356 462 L 532 374 A 16.97 8.49 0 0 0 536.97 368 L 536.97 384 A 16.97 8.49 0 0 1 532 390 L 356 478 A 16.97 8.49 0 0 1 344 480.49 Z" fill="rgba(45,49,66,0.45)"/><path d="M 151.03 368 A 16.97 8.49 0 0 0 156 374 L 332 462 A 16.97 8.49 0 0 0 356 462 L 532 374 A 16.97 8.49 0 0 0 536.97 368" fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="0.8"/><path d="M 151.03 368 A 16.97 8.49 0 0 1 156 362 L 332 274 A 16.97 8.49 0 0 1 356 274 L 532 362 A 16.97 8.49 0 0 1 536.97 368 L 536.97 384 A 16.97 8.49 0 0 1 532 390 L 356 478 A 16.97 8.49 0 0 1 332 478 L 156 390 A 16.97 8.49 0 0 1 151.03 384 Z" fill="none" stroke="#f5f5f5" stroke-width="1.2" stroke-linejoin="round"/><g data-role="label"><line data-role="leader" x1="542.97" y1="376" x2="588.97" y2="376" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/><circle cx="536.97" cy="376" r="2" fill="#f5f5f5"/><text data-role="name" x="600.97" y="375" fill="#f5f5f5" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Data</text><text x="600.97" y="391" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" letter-spacing="0.08em">postgres, object store</text></g></g>
+        <g data-part="logic" data-name="Logic" data-rect="0 0 200 200 12" data-z="116" data-t="16" data-level="1" data-focal><path data-role="silhouette" d="M 151.03 252 A 16.97 8.49 0 0 1 156 246 L 332 158 A 16.97 8.49 0 0 1 356 158 L 532 246 A 16.97 8.49 0 0 1 536.97 252 L 536.97 268 A 16.97 8.49 0 0 1 532 274 L 356 362 A 16.97 8.49 0 0 1 332 362 L 156 274 A 16.97 8.49 0 0 1 151.03 268 Z" fill="#393e53"/><path d="M 356 346 A 16.97 8.49 0 0 1 332 346 L 156 258 A 16.97 8.49 0 0 1 156 246 L 332 158 A 16.97 8.49 0 0 1 356 158 L 532 246 A 16.97 8.49 0 0 1 532 258 Z" fill="rgba(240,138,89,0.18)"/><path d="M 344 348.49 A 16.97 8.49 0 0 0 356 346 L 532 258 A 16.97 8.49 0 0 0 536.97 252 L 536.97 268 A 16.97 8.49 0 0 1 532 274 L 356 362 A 16.97 8.49 0 0 1 344 364.49 Z" fill="rgba(45,49,66,0.45)"/><path d="M 151.03 252 A 16.97 8.49 0 0 0 156 258 L 332 346 A 16.97 8.49 0 0 0 356 346 L 532 258 A 16.97 8.49 0 0 0 536.97 252" fill="none" stroke="rgba(240,138,89,0.70)" stroke-width="0.8"/><path d="M 151.03 252 A 16.97 8.49 0 0 1 156 246 L 332 158 A 16.97 8.49 0 0 1 356 158 L 532 246 A 16.97 8.49 0 0 1 536.97 252 L 536.97 268 A 16.97 8.49 0 0 1 532 274 L 356 362 A 16.97 8.49 0 0 1 332 362 L 156 274 A 16.97 8.49 0 0 1 151.03 268 Z" fill="none" stroke="#f08a59" stroke-width="1.2" stroke-linejoin="round"/><g data-role="label"><line data-role="leader" x1="542.97" y1="260" x2="588.97" y2="260" stroke="rgba(240,138,89,0.60)" stroke-width="0.8"/><circle cx="536.97" cy="260" r="2" fill="#f08a59"/><text data-role="name" x="600.97" y="259" fill="#f5f5f5" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Logic</text><text x="600.97" y="275" fill="#f08a59" font-size="10" font-family="'Geist Mono', monospace" letter-spacing="0.08em">api, workers, queue</text></g></g>
+        <g data-part="interface" data-name="Interface" data-rect="0 0 200 200 12" data-z="232" data-t="16" data-level="2"><path data-role="silhouette" d="M 151.03 136 A 16.97 8.49 0 0 1 156 130 L 332 42 A 16.97 8.49 0 0 1 356 42 L 532 130 A 16.97 8.49 0 0 1 536.97 136 L 536.97 152 A 16.97 8.49 0 0 1 532 158 L 356 246 A 16.97 8.49 0 0 1 332 246 L 156 158 A 16.97 8.49 0 0 1 151.03 152 Z" fill="#393e53"/><path d="M 356 230 A 16.97 8.49 0 0 1 332 230 L 156 142 A 16.97 8.49 0 0 1 156 130 L 332 42 A 16.97 8.49 0 0 1 356 42 L 532 130 A 16.97 8.49 0 0 1 532 142 Z" fill="rgba(245,245,245,0.10)"/><path d="M 344 232.49 A 16.97 8.49 0 0 0 356 230 L 532 142 A 16.97 8.49 0 0 0 536.97 136 L 536.97 152 A 16.97 8.49 0 0 1 532 158 L 356 246 A 16.97 8.49 0 0 1 344 248.49 Z" fill="rgba(45,49,66,0.45)"/><path d="M 151.03 136 A 16.97 8.49 0 0 0 156 142 L 332 230 A 16.97 8.49 0 0 0 356 230 L 532 142 A 16.97 8.49 0 0 0 536.97 136" fill="none" stroke="rgba(245,245,245,0.45)" stroke-width="0.8"/><path d="M 151.03 136 A 16.97 8.49 0 0 1 156 130 L 332 42 A 16.97 8.49 0 0 1 356 42 L 532 130 A 16.97 8.49 0 0 1 536.97 136 L 536.97 152 A 16.97 8.49 0 0 1 532 158 L 356 246 A 16.97 8.49 0 0 1 332 246 L 156 158 A 16.97 8.49 0 0 1 151.03 152 Z" fill="none" stroke="#f5f5f5" stroke-width="1.2" stroke-linejoin="round"/><g data-role="label"><line data-role="leader" x1="542.97" y1="144" x2="588.97" y2="144" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/><circle cx="536.97" cy="144" r="2" fill="#f5f5f5"/><text data-role="name" x="600.97" y="143" fill="#f5f5f5" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Interface</text><text x="600.97" y="159" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" letter-spacing="0.08em">web app, mobile</text></g></g>
+        </g>
+        <text x="152" y="528" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">FOCAL LAYER</text>
+        <text x="256" y="528" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Logic is where the product decisions live; the other two layers are swappable.</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

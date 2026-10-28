@@ -187,6 +187,56 @@ def check_whiteboard() -> None:
     ok("whiteboard parses: shapes, frames, bound labels, groups, cycle, ledger")
 
 
+def check_nested_groups(tmp: Path) -> None:
+    # Excalidraw orders ids deepest to shallowest: the inner group comes first.
+    # Members of that inner group still belong to each outer group.
+    board = tmp / "nested-groups.excalidraw"
+    board.write_text(
+        scene(
+            "nested-groups",
+            [
+                {
+                    "id": "a",
+                    "type": "rectangle",
+                    "x": 0,
+                    "y": 0,
+                    "width": 40,
+                    "height": 40,
+                    "groupIds": ["inner", "outer"],
+                },
+                {
+                    "id": "b",
+                    "type": "rectangle",
+                    "x": 50,
+                    "y": 0,
+                    "width": 40,
+                    "height": 40,
+                    "groupIds": ["inner", "outer"],
+                },
+                {
+                    "id": "c",
+                    "type": "rectangle",
+                    "x": 100,
+                    "y": 0,
+                    "width": 40,
+                    "height": 40,
+                    "groupIds": ["outer"],
+                },
+            ],
+        ),
+        encoding="utf-8",
+    )
+    groups = {
+        group["id"]: group["children"]
+        for group in json.loads(run_extract([str(board), "--json"]))["scene"]["analysis"][
+            "collapsible_groups"
+        ]
+    }
+    if groups.get("inner") != 2 or groups.get("outer") != 3:
+        fail(f"nested Excalidraw groups were not both reported: {groups}")
+    ok("nested groups keep the outer cluster and the inner cluster")
+
+
 def check_bindings_and_shapes(tmp: Path) -> None:
     board = tmp / "bindings.excalidraw"
     board.write_text(
@@ -425,6 +475,26 @@ def check_errors_and_limits(tmp: Path) -> None:
     no_elements.write_text('{"type": "excalidraw"}', encoding="utf-8")
     expect_error([str(no_elements)], "scene has no elements array")
 
+    duplicate_id = tmp / "duplicate-id.excalidraw"
+    duplicate_id.write_text(
+        scene(
+            "duplicate-id",
+            [
+                {"id": "same", "type": "rectangle"},
+                {"id": "same", "type": "rectangle"},
+                {
+                    "id": "label",
+                    "type": "text",
+                    "containerId": "same",
+                    "text": "amplified label",
+                },
+            ],
+        ),
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_error([str(duplicate_id), *output_args], "duplicate element id")
+
     malformed_type = tmp / "malformed-type.excalidraw"
     malformed_type.write_text(
         scene("malformed-type", [{"id": "bad", "type": []}]),
@@ -650,7 +720,7 @@ def check_docs_and_wiring() -> None:
     example = EXAMPLE.read_text(encoding="utf-8")
     if 'viewBox="0 0 960 600"' not in example:
         fail("worked example does not use the doc-inline viewBox")
-    if example.count("#eb6c36") > 4:
+    if example.count("#bf4520") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
     if '<div class="diagram-container">' not in example or "overflow-x:auto" not in example:
         fail("worked example must contain its wide SVG in a local horizontal scroller")
@@ -703,11 +773,57 @@ def check_mobile_example() -> None:
     ok("worked example is contained and locally scrollable at 390px")
 
 
+def check_json_nesting_diagnostic(tmp: Path) -> None:
+    source = tmp / "deeply-nested.excalidraw"
+    # Stay below the byte cap; JSON parser nesting limits vary across Python versions.
+    source.write_text(
+        '{"type":"excalidraw","elements":[],"appState":'
+        + "[" * 20000 + "0" + "]" * 20000 + "}",
+        encoding="utf-8",
+    )
+    successful_digests = []
+    for flags in ([], ["--json"]):
+        process = invoke([str(source), *flags])
+        if "Traceback" in process.stderr or "Traceback" in process.stdout:
+            fail("deeply nested JSON leaked a traceback")
+        if process.returncode == 2:
+            if "nesting exceeds the parser limit" not in process.stderr or process.stdout:
+                fail("deeply nested JSON lacked a nesting diagnostic or leaked a partial digest")
+        elif process.returncode == 0:
+            successful_digests.append((flags, process.stdout))
+        else:
+            fail(f"deeply nested JSON exited {process.returncode}: {process.stderr!r}")
+    source.write_text(scene("shallow-control", []), encoding="utf-8")
+    payload = json.loads(run_extract([str(source), "--json"]))
+    if payload["scene"]["nodes"] or payload["scene"]["edges"]:
+        fail("shallow JSON control unexpectedly changed the empty scene")
+    for flags, digest in successful_digests:
+        if digest != run_extract([str(source), *flags]):
+            fail("deeply nested JSON did not produce the normal empty-scene digest")
+    ok("deeply nested JSON imports or fails cleanly; shallow JSON still imports")
+
+
+def check_unimported_container_text(tmp: Path) -> None:
+    source = tmp / "unsupported-container.excalidraw"
+    source.write_text(json.dumps({"type": "excalidraw", "elements": [
+        {"id": "future", "type": "future-shape", "x": 0, "y": 0, "width": 10, "height": 10},
+        {"id": "label", "type": "text", "text": "Visible annotation", "containerId": "future",
+         "x": 0, "y": 0, "width": 10, "height": 10},
+    ]}), encoding="utf-8")
+    scene = json.loads(run_extract([str(source), "--json"]))["scene"]
+    if not any(node["id"] == "label" and node["label"] == "Visible annotation" for node in scene["nodes"]):
+        fail("bound text must remain standalone when its container cannot be imported")
+    ok("visible text survives unsupported containers")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-excalidraw-") as directory:
         tmp = Path(directory)
         check_files()
+        check_json_nesting_diagnostic(tmp)
+        check_unimported_container_text(tmp)
         check_whiteboard()
+        check_nested_groups(tmp)
         check_bindings_and_shapes(tmp)
         check_arrow_directions(tmp)
         check_bidirectional_cycle(tmp)

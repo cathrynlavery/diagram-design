@@ -3,17 +3,24 @@
 
 ``gates.local_commands`` in ``.maintainer-policy.json`` must list exactly the
 gates that ``.github/workflows/ci.yml`` runs, so the local suite a maintainer
-runs on a pull request head is the same suite CI enforces. The set of CI gates
-is derived from the workflow's ``run:`` steps with these rules:
+runs on a pull request head is the same suite CI enforces. Every
+``verify-*.py`` script must also have a registered CI gate and an adversarial
+``test-verify-*.py`` gate. The two older exceptions below have their own test
+arrangement. This prevents a new diagram contract from being implemented but
+omitted from continuous checking.
+
+The set of CI gates is derived from the workflow's ``run:`` steps with these
+rules:
 
 - Every ``python``/``python3`` invocation of a ``.py`` file is one gate, even
   inside ``$(...)`` or an ``if`` branch. ``python`` is spelled ``python3``
   locally.
 - Shell glue is not a gate: the commands in ``SHELL_GLUE`` install or print
-  tools (``pip install``, ``playwright install``, ``python -c``, ``echo``) or
+  tools (``playwright install``, ``python -c``, ``echo``) or
   steer control flow (``if``/``then``/``else``/``fi``, ``[``, ``git
   rev-parse``, ``exit``). The list is read off the run lines ci.yml has.
-- A line starting with ``npx`` is one gate (the Claude plugin validator).
+- A line starting with ``npx`` or the locked local Claude executable is one
+  gate (the Claude plugin validator).
 - A ``git diff ... --exit-code`` line checks what the command before it in
   the same step generated, so it joins that command with ``&&`` (the
   build-icons freshness gate). Backslash continuations are joined first.
@@ -43,11 +50,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = ROOT / ".maintainer-policy.json"
 CI_WORKFLOW = ROOT / ".github/workflows/ci.yml"
+SCRIPTS = ROOT / "scripts"
+
+# These predate the verify-X/test-verify-X pairing: the import verifier carries
+# its own adversarial cases, and package verification uses test-plugin-package.
+ALTERNATE_TESTS = {
+    "mermaid-import": None,
+    "plugin-package": "test-plugin-package.py",
+}
 
 EXPECTED_MANIFESTS = {
     ".claude-plugin/plugin.json",
     ".codex-plugin/plugin.json",
     ".factory-plugin/plugin.json",
+    ".qoder-plugin/plugin.json",
 }
 
 REQUIRED_COMMANDS = {
@@ -67,8 +83,18 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-marimekko.py",
     "python3 scripts/verify-beeswarm.py --all",
     "python3 scripts/test-verify-beeswarm.py",
+    "python3 scripts/verify-box-plot.py --all",
+    "python3 scripts/test-verify-box-plot.py",
     "python3 scripts/verify-skin-polarity.py --all",
     "python3 scripts/test-verify-skin-polarity.py",
+    "python3 scripts/verify-architecture-delta.py --all",
+    "python3 scripts/test-verify-architecture-delta.py",
+    "python3 scripts/build-exploded-examples.py --check",
+    "python3 scripts/verify-exploded.py --all",
+    "python3 scripts/test-verify-exploded.py",
+    "python3 scripts/build-axonometric-plan-examples.py --check",
+    "python3 scripts/verify-axonometric-plan.py --all",
+    "python3 scripts/test-verify-axonometric-plan.py",
     "python3 scripts/lint-render.py --self-test",
     "python3 scripts/lint-render.py --all",
 }
@@ -96,6 +122,7 @@ SHELL_GLUE = (
     ("esac",),
     ("[",),
     ("git", "rev-parse"),
+    ("npm", "ci"),
     ("pip", "install"),
     ("python", "-m", "pip", "install"),
     ("playwright", "install"),
@@ -113,11 +140,13 @@ RUN_KEY = re.compile(r"^(?P<prefix>\s*(?:-\s+)?)run:\s*(?P<value>.*?)\s*$")
 PYTHON_SCRIPT = re.compile(
     r"(?<![\w./-])python3?\s+(?P<script>[\w./-]+\.py)(?P<args>(?:[ \t]+[^\s;&|()<>]+)*)"
 )
+UV_RUN = re.compile(r"\buv run --locked --project \.github/ci/python\s+")
 
 
 def normalize(command: str) -> str:
     """Canonical form of a policy entry: CI spelling, version gate collapsed."""
     command = " ".join(command.split())
+    command = re.sub(r"^npm ci --prefix \.github/ci/node && ", "", command)
     command = re.sub(r"^python(?=\s)", "python3", command)
     return VERSION_GATE if command == LOCAL_VERSION_GATE else command
 
@@ -230,13 +259,14 @@ def ci_gates(workflow: str) -> tuple[set[str], list[str]]:
     for block in run_blocks(workflow):
         commands: list[str] = []
         for line in logical_lines(block):
+            line = UV_RUN.sub("", line)
             if line.startswith("git diff") and "--exit-code" in line:
                 if commands:
                     commands[-1] = f"{commands[-1]} && {line}"
                 else:
                     commands.append(line)
                 continue
-            if line.startswith("npx "):
+            if line.startswith(("npx ", ".github/ci/node/node_modules/.bin/claude ")):
                 commands.append(line)
                 continue
             commands.extend(match.group(0) for match in PYTHON_SCRIPT.finditer(line))
@@ -287,6 +317,34 @@ def policy_failures(policy: dict, workflow: str) -> list[str]:
                 ", ".join(stale)
             )
         )
+    return failures
+
+
+def verifier_coverage_failures(commands: set[str], scripts: set[str]) -> list[str]:
+    """Require every verifier and its regression test in the CI-backed policy."""
+    failures: list[str] = []
+    commands = {normalize(command) for command in commands}
+    for filename in sorted(
+        s for s in scripts if s.startswith("verify-") and s.endswith(".py")
+    ):
+        stem = filename[len("verify-") : -len(".py")]
+        verify_command = f"python3 scripts/{filename}"
+        if not any(
+            command.startswith(verify_command + " ") or command == verify_command
+            for command in commands
+        ):
+            failures.append(f"{filename} has no registered CI gate")
+        test_filename = ALTERNATE_TESTS.get(stem, f"test-verify-{stem}.py")
+        if test_filename is None:
+            continue
+        if test_filename not in scripts:
+            failures.append(f"{filename} has no adversarial test {test_filename}")
+        test_command = f"python3 scripts/{test_filename}"
+        if not any(
+            command.startswith(test_command + " ") or command == test_command
+            for command in commands
+        ):
+            failures.append(f"{test_filename} has no registered CI gate")
     return failures
 
 
@@ -423,6 +481,18 @@ CASE_GUARDED_STEP = """
           echo "$out" | grep -q "All export-wait cases passed"
 """
 
+UV_PREFIXED_STEP = """
+      - name: Verify browser-backed export
+        run: |
+          uv run --locked --project .github/ci/python playwright install --with-deps chromium
+          uv run --locked --project .github/ci/python python scripts/test-export-svg-standalone.py
+"""
+
+LOCKED_CLAUDE_STEP = """
+      - name: Validate Claude marketplace package with locked executable
+        run: .github/ci/node/node_modules/.bin/claude plugin validate . --strict
+"""
+
 UNMAPPED_STEP = """
       - name: Verify something with a shell script
         run: bash scripts/check-something.sh
@@ -551,6 +621,23 @@ def self_test() -> list[str]:
             None,
         ),
         (
+            "uv-prefixed gate registered",
+            synthetic_ci(UV_PREFIXED_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + ["python3 scripts/test-export-svg-standalone.py"],
+            None,
+        ),
+        (
+            "locked Claude executable registered",
+            synthetic_ci(LOCKED_CLAUDE_STEP),
+            SYNTHETIC_POLICY_COMMANDS
+            + [
+                "npm ci --prefix .github/ci/node && "
+                ".github/ci/node/node_modules/.bin/claude plugin validate . --strict"
+            ],
+            None,
+        ),
+        (
             "pull requests stop running the version gate",
             synthetic_ci().replace(old_version_step, PUSH_ONLY_VERSION_STEP + "\n"),
             SYNTHETIC_POLICY_COMMANDS,
@@ -572,6 +659,24 @@ def self_test() -> list[str]:
             problems.append(f"self-test '{name}': expected no failures, got {failures}")
         elif expected is not None and not any(expected in failure for failure in failures):
             problems.append(f"self-test '{name}': expected {expected!r}, got {failures}")
+    coverage_cases = (
+        ("paired verifier and test", {"verify-waterfall.py", "test-verify-waterfall.py"},
+         {"python3 scripts/verify-waterfall.py --all", "python3 scripts/test-verify-waterfall.py"}, None),
+        ("normalized verifier and test commands", {"verify-waterfall.py", "test-verify-waterfall.py"},
+         {"python   scripts/verify-waterfall.py   --all", "python scripts/test-verify-waterfall.py"}, None),
+        ("unregistered verifier", {"verify-waterfall.py", "test-verify-waterfall.py"},
+         {"python3 scripts/test-verify-waterfall.py"}, "verify-waterfall.py has no registered CI gate"),
+        ("missing adversarial test", {"verify-waterfall.py"},
+         {"python3 scripts/verify-waterfall.py --all"}, "verify-waterfall.py has no adversarial test"),
+        ("unregistered adversarial test", {"verify-waterfall.py", "test-verify-waterfall.py"},
+         {"python3 scripts/verify-waterfall.py --all"}, "test-verify-waterfall.py has no registered CI gate"),
+    )
+    for name, scripts, commands, expected in coverage_cases:
+        failures = verifier_coverage_failures(commands, scripts)
+        if expected is None and failures:
+            problems.append(f"self-test '{name}': expected no failures, got {failures}")
+        elif expected is not None and not any(expected in failure for failure in failures):
+            problems.append(f"self-test '{name}': expected {expected!r}, got {failures}")
     return problems
 
 
@@ -586,6 +691,9 @@ def main() -> int:
     policy = json.loads(POLICY.read_text(encoding="utf-8"))
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
     failures = policy_failures(policy, workflow)
+    failures.extend(verifier_coverage_failures(
+        set(policy["gates"]["local_commands"]), {path.name for path in SCRIPTS.glob("*.py")}
+    ))
     if failures:
         print("FAIL maintainer policy")
         for failure in failures:

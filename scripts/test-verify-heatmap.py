@@ -50,7 +50,7 @@ CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 # Anchors — literal excerpts of the shipped light example.
 FOCAL_CELL = (
     'data-row="payments" data-col="S4" data-value="47" data-focal="true" '
-    'x="520" y="124" width="116" height="56" fill="rgba(235,108,54,0.85)"'
+    'x="520" y="124" width="116" height="56" fill="rgba(191,69,32,0.85)"'
 )
 FIRST_NONFOCAL = (
     'data-row="auth" data-col="S1" data-value="4" '
@@ -107,7 +107,7 @@ def case(
     expect_pass: bool,
     describe: str,
 ) -> None:
-    if source == original and not expect_pass:
+    if source == original:
         failures.append(
             f"could not build the {name!r} fixture (anchor not found in source)"
         )
@@ -139,12 +139,73 @@ def main() -> int:
             if code != 0:
                 failures.append(f"{label}: shipped example failed:\n  {output.strip()}")
 
+        single_quoted = re.sub(
+            r'="([^"<>]*)"',
+            lambda match: "='" + match.group(1).replace("'", "&#39;") + "'",
+            original,
+        )
+        case(failures, d, "P-single-quotes.html", single_quoted, original, True,
+             "single-quoted attributes retain the same heatmap semantics")
+        mixed_quotes = original.replace(
+            FIRST_NONFOCAL,
+            FIRST_NONFOCAL.replace('fill="', 'data-note="fill=\'red\'" fill="', 1),
+        )
+        case(failures, d, "P-mixed-quotes.html", mixed_quotes, original, True,
+             "attribute-like metadata does not override the real fill")
+        mixed_single = single_quoted.replace(
+            "fill='rgba(45,49,66,0.29)'",
+            "data-note='fill=\"red\"' fill='rgba(45,49,66,0.29)'",
+            1,
+        )
+        case(failures, d, "P-mixed-single-quotes.html", mixed_single, single_quoted, True,
+             "double-quoted text inside metadata does not override a single-quoted fill")
+        quoted_gt = original.replace(
+            "<rect " + FIRST_NONFOCAL,
+            '<rect data-note="p95>budget" ' + FIRST_NONFOCAL,
+            1,
+        )
+        case(failures, d, "P-quoted-greater-than.html", quoted_gt, original, True,
+             "a greater-than inside a double-quoted attribute does not drop the cell")
+        single_gt = original.replace(
+            "<rect " + FIRST_NONFOCAL,
+            "<rect data-note='p95>budget' " + FIRST_NONFOCAL,
+            1,
+        )
+        case(failures, d, "P-single-quoted-greater-than.html", single_gt, original, True,
+             "a greater-than inside a single-quoted attribute does not drop the cell")
+        label_gt = original.replace(
+            '<text data-row-label="auth"',
+            '<text data-note="a>b" data-row-label="auth"',
+            1,
+        )
+        case(failures, d, "P-quoted-greater-than-axis.html", label_gt, original, True,
+             "a greater-than inside axis metadata does not drop the row label")
+
+        commented_transform = original.replace('</style>', '/* archived experiment\n transform: translateX(12px);\n */\n</style>', 1)
+        case(failures, d, "P-commented-transform.html", commented_transform, original, True,
+             "a CSS comment cannot move verified geometry")
+
+        archived_style = original.replace('</style>', '</style><!-- <style>rect { transform: translateX(12px); }</style> -->', 1)
+        case(failures, d, "P-archived-style.html", archived_style, original, True,
+             "an HTML comment cannot activate archived CSS")
+        live_transform = original.replace('</style>', 'rect {/**/transform: translateX(12px); }\n</style>', 1)
+        case(failures, d, "N-comment-prefixed-transform.html", live_transform, original, False,
+             "a CSS comment before a property cannot hide an active transform")
+        for name, css in (
+            ("legacy-html-markers", "<!-- rect { transform: translateX(12px); } -->"),
+            ("quoted-comment-opener", 'rect { --note: "/*"; transform: translateX(12px); /* note */ }'),
+            ("escaped-quote-comment-opener", r'rect { --note: "\"/*"; transform: translateX(12px); /* note */ }'),
+        ):
+            live_css = original.replace('</style>', css + '\n</style>', 1)
+            case(failures, d, f"N-{name}.html", live_css, original, False,
+                 "quoted comment markers and HTML legacy markers cannot hide active CSS")
+
         # ── Negative: mutations that must be rejected ─────────────────────────
 
         # N1: two focal cells
         second_focal = FIRST_NONFOCAL.replace(
             'fill="rgba(45,49,66,0.29)"',
-            'data-focal="true" fill="rgba(235,108,54,0.85)"',
+            'data-focal="true" fill="rgba(191,69,32,0.85)"',
         )
         case(
             failures,
@@ -337,12 +398,83 @@ def main() -> int:
             "dark focal value text fails 4.5:1 contrast against the actual dark underlay",
         )
 
+
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for factor in (250_000_000, 1_000_000_000, 10_000_000_000):
+            scaled = re.sub(r'data-value="(\d+)"',
+                            lambda m: 'data-value="%d"' % (int(m.group(1)) * factor),
+                            original)
+            code, output = run(write(d, f"billion-counts-{factor}.html", scaled))
+            if code != 0:
+                failures.append(f"finite counts scaled by {factor} were rejected: {output.strip()}")
+        for invalid in ("nan", "inf", "-1", "1e400"):
+            changed = original.replace('data-value="4"', f'data-value="{invalid}"', 1)
+            code, output = run(write(d, "invalid-value.html", changed))
+            if code == 0 or "expected 30 cells" not in output or "Traceback" in output:
+                failures.append(f"invalid {invalid} did not retain grid completeness finding: {output.strip()}")
+        print("OK: billion-scale counts preserve the grid; non-finite/negative values remain findings")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        for original_source, label in ((original, "light"),
+                                       (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            pixel_lengths = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"',
+                                   lambda m: f'{m.group(1)}="{m.group(2)}px"', original_source)
+            code, output = run(write(d, f"pixel-lengths-{label}.html", pixel_lengths))
+            if code != 0:
+                failures.append(f"equivalent pixel lengths {label} were rejected: {output.strip()}")
+        # Supported coordinate syntax must not bypass the contrast comparison.
+        for template, theme in ((original, "light"),
+                                (GOOD_DARK.read_text(encoding="utf-8"), "dark")):
+            bad_contrast = template.replace('x="578" y="149" fill="#111111"',
+                                            'x="578" y="149" fill="#ffffff"', 1)
+            for notation in ("px", "exponent-px"):
+                def length(match: re.Match[str]) -> str:
+                    number = match.group(2)
+                    if notation == "exponent-px":
+                        number = f"{float(number):.4e}"
+                    return f'{match.group(1)}="{number}px"'
+                changed = re.sub(r'\b(x|y|width|height)="([-+0-9.eE]+)"', length, bad_contrast)
+                code, output = run(write(d, f"bad-contrast-{theme}-{notation}.html", changed))
+                if code == 0 or "below WCAG AA" not in output or "Traceback" in output:
+                    failures.append(f"{theme}/{notation} bypassed contrast failure: {output.strip()}")
+        for length in ("520%", "unknown", "nan", "1e400px"):
+            changed = original.replace(FOCAL_CELL, FOCAL_CELL.replace('x="520"', f'x="{length}"'), 1)
+            code, output = run(write(d, "unsupported-length.html", changed))
+            if code == 0 or "focal-text contrast measurement" not in output or "Traceback" in output:
+                failures.append(f"unsupported length {length!r} lacked a named finding: {output.strip()}")
+        print("OK: equivalent pixel lengths pass; unsupported/non-finite lengths are named findings")
+
+    # Translucent foregrounds compose against the cell beneath them, not paper.
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        # The light focal cell (accent #bf4520 at 0.85) leaves solid #111111 at
+        # 4.64:1, so only a nearly opaque translucent ink still clears 4.5:1 there.
+        for template, theme, passing_alpha in ((original, "light", "0.98"),
+                                               (GOOD_DARK.read_text(encoding="utf-8"), "dark", "0.8")):
+            for alpha, expected_pass in ((passing_alpha, True), ("0.2", False)):
+                changed = template.replace('x="578" y="149" fill="#111111"',
+                                           f'x="578" y="149" fill="rgba(17,17,17,{alpha})"', 1)
+                code, output = run(write(d, f"alpha-{theme}-{alpha}.html", changed))
+                if (code == 0) != expected_pass or (not expected_pass and "below WCAG AA" not in output):
+                    failures.append(f"alpha foreground {theme}/{alpha} unexpected result: {output.strip()}")
+        print("OK: translucent AA foregrounds pass; weak-alpha text still fails in both themes")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        encoded = re.sub(r'(\b(?:x|y|width|height|data-value|data-share)="[^"<>]*)[0-9]',
+                         lambda match: match.group(0)[:-1] + f"&#{ord(match.group(0)[-1])};",
+                         GOOD.read_text(encoding="utf-8"))
+        code, output = run(write(Path(tmp), "encoded-attributes.html", encoded))
+        if code != 0:
+            failures.append(f"XML-encoded numeric attributes rejected: {output.strip()}")
+
     if failures:
         for f in failures:
             print("FAIL:", f, file=sys.stderr)
         return 1
 
-    print(f"OK — {13 + 3} cases ({3} positive, {13} negative), all passed.")
+    print("OK — every heatmap verifier case passed.")
     return 0
 
 

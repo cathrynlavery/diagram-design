@@ -4,7 +4,7 @@ README.md renders the screenshots in `docs/screenshots/`. The originals are
 2400-2800px wide because they are the artifacts people download and inspect,
 but the README grid paints them at 252 CSS px and the three inline figures at
 838 CSS px. Serving the originals means several MB and hundreds of MB of
-decoded bitmap for one page of thumbnails, and a burst of 40 oversized
+decoded bitmap for one page of thumbnails, and a burst of oversized
 requests loses races: individual previews stall in flight and paint blank with
 no broken-image icon.
 

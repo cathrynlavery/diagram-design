@@ -74,17 +74,17 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
 - `fail` if version is below 3.10.
 
 2. Playwright availability for PNG export
-- Check whether Playwright import works in the active Python interpreter (`import playwright`).
-- Check whether Chromium is installed for Playwright (`playwright install --help` availability is sufficient for command presence; prefer also checking browser cache when practical).
-- If missing, mark `warn` and print exact setup hint:
-  - `pip install playwright && playwright install chromium`
+- Check whether Playwright import works in the active Python interpreter (`import playwright`); an optional package version attribute is not required.
+- Verify the default headless Chromium can launch in that interpreter and close it after the probe. This includes a supported headless-shell-only installation; the full Chromium executable path is not required for default PNG export. Bound browser startup to 5 seconds and the subprocess probe to 10 seconds, then terminate the owned probe tree on timeout. Windows tree cleanup and parent reaping each have an additional 2-second limit; report cleanup failures as warnings.
+- If missing, mark `warn` and report that the host environment must provision
+  an approved Playwright installation and compatible browser.
 - Append the host-specific hint for the resolved profile, in parentheses after
-  the command, so silent PNG failures get a one-shot fix:
-  - `claude-code` — run it in the Python environment Claude Code invokes, then `/reload-plugins`.
-  - `cowork` — install inside the Cowork session environment; sandboxed sessions do not see host-machine packages.
-  - `codex` — run it in the Codex workspace environment, then start a new session.
-  - `cursor` — run it in the Cursor agent terminal so the interpreter matches the export interpreter.
-  - `pi` — run it in the interpreter Pi uses, then `/reload`.
+  that report, so silent PNG failures get a one-shot fix:
+  - `claude-code`: provision it in the Python environment Claude Code invokes, then `/reload-plugins`.
+  - `cowork`: provision it inside the Cowork session environment; sandboxed sessions do not see host-machine packages.
+  - `codex`: provision it in the Codex workspace environment, then start a new session.
+  - `cursor`: provision it for the interpreter the Cursor agent terminal uses, which is the export interpreter.
+  - `pi`: provision it in the interpreter Pi uses, then `/reload`.
 - When the install channel is `marketplace`, also advise restarting the session
   so the host reloads the plugin environment.
 - Never auto-install dependencies.
@@ -220,6 +220,6 @@ Doctor summary: WARN (8 pass, 1 warn, 0 fail)
 ...
 
 Next actions
-- pip install playwright && playwright install chromium (Run it in the same Python environment Claude Code invokes, then run /reload-plugins so the session picks it up. If PNG export still fails after a marketplace install, restart the session so the host reloads the plugin environment.)
+- Provision an approved Playwright renderer in the host environment, then re-run this check. (Provision it in the same Python environment Claude Code invokes, then run /reload-plugins so the session picks it up. If PNG export still fails after a marketplace install, restart the session so the host reloads the plugin environment.)
 - Re-run: /diagram-design:doctor --strict
 ```

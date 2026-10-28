@@ -68,7 +68,7 @@ TAIL = "</svg></body></html>\n"
 TOP, HEIGHT, GUTTER = 40.0, 380.0, 4.0
 INK = "rgba(45,49,66,0.16)"
 HAIR = "rgba(45,49,66,0.30)"
-ACCENT_FILL = "rgba(235,108,54,0.16)"
+ACCENT_FILL = "rgba(191,69,32,0.16)"
 
 WA, WB, WC = 495.556, 297.333, 99.111
 XA = 40.0
@@ -129,7 +129,7 @@ def columns(a_linux: float = 228.0, a_mac: float = 152.0, wa: float = WA,
     body += segment("A", "macOS", 200, XA, TOP + a_linux if a_mac_y is None else a_mac_y,
                     wa, a_mac,
                     fill=ACCENT_FILL if focal else INK,
-                    stroke="#eb6c36" if focal else HAIR)
+                    stroke="#bf4520" if focal else HAIR)
     body += segment("B", "Linux", 240, xb, TOP, WB, b_linux)
     body += segment("B", "Windows", 60, xb, TOP + b_linux, WB, b_win)
     body += segment("C", "Linux", 100, xc, TOP, WC, HEIGHT)
@@ -367,7 +367,7 @@ def run_cases(h: Harness) -> int:
                           'width="%s" height="%s" rx="2" fill="%s" stroke="%s"'
                           % (XC, TOP, WC, HEIGHT, INK, HAIR),
                           'data-column="C" data-segment="Linux" data-amount="100" x="%s" y="%s" '
-                          'width="%s" height="%s" rx="2" fill="%s" stroke="#eb6c36"'
+                          'width="%s" height="%s" rx="2" fill="%s" stroke="#bf4520"'
                           % (XC, TOP, WC, HEIGHT, ACCENT_FILL)),
                       r"one focal segment max")
 

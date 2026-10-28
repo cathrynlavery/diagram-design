@@ -16,33 +16,33 @@
 - **Bar count:** 3–8 bars total, including both totals and at most one subtotal. More contributions than that → merge the tail into one named "Other" bridge (disclose what it contains) or split the walk into two charts.
 - **Bar width / pitch:** equal-width bars on an even pitch, bar ≥ 50% of the pitch. Six bars fit as width=96 on a 144px pitch starting at x=112.
 - **Totals anchor, bridges float.** The start total, any subtotal, and the end total are drawn from the domain floor (the x-axis baseline) up to their value. Bridge bars span exactly the running total before and after their contribution — an increase rises from the previous level, a decrease falls from it.
-- **Carry rules (the bridge grammar).** A horizontal connector line carries the running total across each gap between adjacent bars, drawn at the shared level: from the right edge of one bar to the left edge of the next, `rgba(45,49,66,0.55)` at 1px on light paper (`rgba(245,245,245,0.40)` dark) — the dumbbell's connector weight, because the carry is load-bearing and must clear 3:1, not the 0.25 axis hairline. Each carry declares the running total it transports in `data-carry`.
+- **Carry rules (the bridge grammar).** A horizontal connector line carries the running total across each gap between adjacent bars, drawn at the shared level: from the right edge of one bar to the left edge of the next, `ink @ 0.55` at 1px on light paper (`ink @ 0.40` on dark) — the dumbbell's connector weight, because the carry is load-bearing and must clear 3:1, not the 0.25 axis hairline. Each carry declares the running total it transports in `data-carry`.
 - **Machine-readable data contract.** Every bar rect declares `data-role` (`total`, `delta`, or `subtotal`), `data-value` (totals unsigned, deltas explicitly signed `+`/`-`), and `data-name`. `scripts/verify-waterfall.py` reads these and fails the build when the drawing and the declaration disagree — see the honesty rules below.
-- **Sign is encoded by fill weight, not hue.** Increases take the bar family's default tint (`rgba(79,93,117,0.15)` fill, `muted` stroke). Decreases are hollow — paper fill, same `muted` stroke — so the two directions survive greyscale and colour-vision deficiency without leaning on the accent. The geometry (which end of the bar meets the carry) and the signed printed value are the second and third encodings of the same fact.
-- **Totals are the heaviest marks:** `rgba(45,49,66,0.08)` fill with a 1px `ink` stroke. The reader's eye should land on the two anchors first, then walk the bridges.
-- **Focal bridge (≤1, optional):** the one contribution the chart exists to show gets the bar family's focal treatment — `rgba(235,108,54,0.12)` fill, `accent` stroke, accent value label. It replaces that bar's sign fill; the signed label and geometry still carry the direction.
-- **Value labels:** Geist Mono 8px. Totals and increases print above the bar top (baseline `top − 8`); decreases print below the bar bottom (baseline `bottom + 12`), because the space above a decrease is where its carry arrives. Deltas print with an explicit sign (`+64`, `−38`); totals print unsigned.
-- **Gridlines / axes:** identical to the bar chart — 4–6 faint horizontal gridlines `rgba(45,49,66,0.08)` 0.8px, y-axis line and x-axis baseline `rgba(45,49,66,0.25)` 1px, tick labels Geist Mono 8px muted right-aligned at x=72, rotated y-axis title Geist Mono 7px tracked.
-- **Category labels:** centered under each bar at y=440, Geist 11px 600 ink; the focal bar's label may take accent.
+- **Sign is encoded by fill weight, not hue.** Increases take the bar family's default tint (`muted @ 0.15` fill, `muted` stroke). Decreases are hollow — paper fill, same `muted` stroke — so the two directions survive greyscale and colour-vision deficiency without leaning on the accent. The geometry (which end of the bar meets the carry) and the signed printed value are the second and third encodings of the same fact.
+- **Totals are the heaviest marks:** `ink @ 0.08` fill with a 1px `ink` stroke. The reader's eye should land on the two anchors first, then walk the bridges.
+- **Focal bridge (≤1, optional):** the one contribution the chart exists to show gets the bar family's focal treatment — `accent @ 0.12` fill, `accent` stroke, accent value label. It replaces that bar's sign fill; the signed label and geometry still carry the direction.
+- **Value labels:** `arrow-label` role 8px. Totals and increases print above the bar top (baseline `top − 8`); decreases print below the bar bottom (baseline `bottom + 12`), because the space above a decrease is where its carry arrives. Deltas print with an explicit sign (`+64`, `−38`); totals print unsigned.
+- **Gridlines / axes:** identical to the bar chart — 4–6 faint horizontal gridlines `ink @ 0.08` 0.8px, y-axis line and x-axis baseline `ink @ 0.25` 1px, tick labels `arrow-label` role 8px `muted` right-aligned at x=72, rotated y-axis title `eyebrow` role 7px tracked.
+- **Category labels:** centered under each bar at y=440, `node-name` role 11px 600 `ink`; the focal bar's label may take accent.
 - **Legend:** horizontal bottom strip after a hairline rule, one key per treatment used: total, increase, decrease, focal.
 
 ### Waterfall element pattern
 
 ```svg
 <!-- Start total: anchored at the baseline (y=420), value 240 on a 0–400 domain, k=0.95 px/unit -->
-<rect x="112" y="192" width="96" height="228" fill="#f5f5f5"/>
-<rect x="112" y="192" width="96" height="228" fill="rgba(45,49,66,0.08)" stroke="#2d3142" stroke-width="1"
+<rect x="112" y="192" width="96" height="228" fill="{paper}"/>
+<rect x="112" y="192" width="96" height="228" fill="{ink @ 0.08}" stroke="{ink}" stroke-width="1"
       data-role="total" data-value="240" data-name="FY25 base"/>
-<text x="160" y="184" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">240</text>
+<text x="160" y="184" fill="{muted}" font-size="8" font-family="{arrow-label}" text-anchor="middle">240</text>
 
 <!-- Carry: the running total (240) crosses the gap at its own level -->
-<line x1="208" y1="192" x2="256" y2="192" stroke="rgba(45,49,66,0.55)" stroke-width="1" data-carry="240"/>
+<line x1="208" y1="192" x2="256" y2="192" stroke="{ink @ 0.55}" stroke-width="1" data-carry="240"/>
 
 <!-- Increase bridge: +64 rises from 240 to 304 -->
-<rect x="256" y="131" width="96" height="61" fill="#f5f5f5"/>
-<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"
+<rect x="256" y="131" width="96" height="61" fill="{paper}"/>
+<rect x="256" y="131" width="96" height="61" fill="{muted @ 0.15}" stroke="{muted}" stroke-width="1"
       data-role="delta" data-value="+64" data-name="Headcount"/>
-<text x="304" y="123" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">+64</text>
+<text x="304" y="123" fill="{muted}" font-size="8" font-family="{arrow-label}" text-anchor="middle">+64</text>
 ```
 
 Endpoint positions round to the nearest integer pixel and never snap to the 4px grid — data coordinates are exempt, exactly as in the dumbbell. Bar x-positions and widths are layout, so they stay on the grid.
@@ -58,6 +58,7 @@ Endpoint positions round to the nearest integer pixel and never snap to the 4px 
 
 ## Waterfall honesty rules
 
+- **Decimal declarations conserve exactly.** Fractional budgets use exact decimal arithmetic for totals, carries, and printed-value identity; geometry retains its pixel-rounding allowance. A binary floating point accumulation error must not reject a reconciled dollar-and-cent walk, and an actual decimal discrepancy is still a failure.
 - **The running total must conserve.** Start + every signed bridge = each subtotal and the end total, exactly — the declared `data-value`s must reconcile before geometry is even considered. A waterfall that doesn't add up is not approximately right, it is wrong.
 - **Bridges span exactly their two running levels.** Each bar's drawn top and bottom must sit where the shared scale puts the running totals before and after it (±0.75px for integer rounding). Stretching one bridge "for legibility" moves money that doesn't exist.
 - **Every carry sits at the level it transports,** spanning its full gap, and declares that value. A carry drawn at the wrong height reconnects the walk to a different total.

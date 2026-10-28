@@ -99,6 +99,61 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
 
+        archived = re.sub(r'<rect\b[^>]*>',
+                          lambda match: "<!-- " + match.group(0) + " -->", source)
+        code, output = run(write(directory, "archived-cells.html", archived))
+        if code == 0 or "parseable treemap cells" not in output:
+            failures.append("commented-out data-share cells were treated as drawn geometry")
+
+        unfinished = "<!--\n" + re.sub(r"<!--.*?-->", "", source, flags=re.DOTALL)
+        code, output = run(write(directory, "unfinished-comment.html", unfinished))
+        if code == 0 or "parseable treemap cells" not in output:
+            failures.append("an unfinished HTML comment left hidden treemap cells available")
+
+        inline_comment = source.replace(
+            ">South America</text>", ">South<!--" + "\n" * 30 + "--> America</text>",
+        )
+        code, output = run(write(directory, "inline-comment.html", inline_comment))
+        if inline_comment == source or code != 0:
+            failures.append(f"inline comment newlines changed label geometry: {output.strip()}")
+
+        def single_quotes(text: str) -> str:
+            return re.sub(
+                r'="([^"<>]*)"',
+                lambda match: match.group(0) if "'" in match.group(1) else "='" + match.group(1) + "'",
+                text,
+            )
+
+        quoted = single_quotes(source)
+        code, output = run(write(directory, "single-quotes.html", quoted))
+        if code != 0:
+            failures.append(f"single-quoted equivalent treemap was rejected: {output}")
+
+        valid_px = source.replace('font-size="14"', 'font-size="14px"', 1)
+        if valid_px == source:
+            failures.append("could not build the valid-px-font fixture (anchor moved)")
+        else:
+            code, output = run(write(directory, "valid-px-font.html", valid_px))
+            if code != 0:
+                failures.append(f"valid px font-size regressed the existing conservative behavior: {output}")
+            # An unsupported length on one field must not hide a non-finite
+            # value on another field of the same label.
+            mixed = re.sub(r'(<text\b[^>]*?\bx=)"[^"]*"([^>]*font-size="14px")',
+                           lambda match: match.group(1) + '"inf"' + match.group(2), valid_px, count=1)
+            if mixed == valid_px:
+                failures.append("could not build the mixed px/inf fixture (anchor moved)")
+            else:
+                code, output = run(write(directory, "mixed-px-inf.html", mixed))
+                if code == 0 or "finite label geometry" not in output:
+                    failures.append(f"non-finite x beside a px font-size escaped the containment check: {output}")
+
+        for field, value in (("font-size", "nan"), ("x", "inf"), ("y", "-inf"), ("font-size", "0"), ("font-size", "-1")):
+            malformed = re.sub(r'(<text\b[^>]*\b' + field + r'=)"[^"]*"',
+                               lambda match: match.group(1) + '"' + value + '"', source, count=1)
+            code, output = run(write(directory, f"nonfinite-{field}.html", malformed))
+            if code == 0 or "finite label geometry" not in output:
+                failures.append(f"non-finite text {field} escaped the containment check: {output}")
+
         # 1. Every shipped Latin example must pass untouched, proving the
         #    Unicode estimator did not move the calibrated Latin baseline.
         shipped_clean = True
@@ -160,6 +215,16 @@ def main() -> int:
                 failures.append(f"overflow reported without a fit finding: {output.strip()}")
             else:
                 print("OK: a label wider than its cell is rejected")
+
+        shifted = "<!--" + "\n" * 30 + "-->\n" + overflowing
+        label_match = re.search(r"<text\b[^>]*>South America and the Caribbean Basin</text>", shifted)
+        if label_match is None:
+            failures.append("could not locate the shifted overflowing label (anchor moved)")
+        else:
+            line = shifted.count("\n", 0, label_match.start()) + 1
+            code, output = run(write(directory, "shifted-label.html", shifted))
+            if code == 0 or f"shifted-label.html:{line}: label" not in output:
+                failures.append(f"comment removal changed diagnostic line tracking: {output.strip()}")
 
         # 4a. Reproduce #115: most glyphs in this Korean translation are
         #     full-width. The old 0.60em character-count estimate called it
@@ -257,6 +322,16 @@ def main() -> int:
                 failures.append(f"marker overflow not named in the finding: {output.strip()}")
             else:
                 print("OK: an information mark overflowing its cell is rejected")
+
+        for name, fixture, diagnostic in (
+            ("label", overflowing, "label 'South America and the Caribbean Basin'"),
+            ("marker", marker_over, "information marker"),
+        ):
+            code, output = run(write(directory, f"single-quoted-{name}-overflow.html", single_quotes(fixture)))
+            if code == 0 or diagnostic not in output:
+                failures.append(f"single-quoted {name} overflow lost its finding: {output.strip()}")
+            else:
+                print(f"OK: single-quoted {name} overflow retains its finding")
 
         # 4f. Combining marks do not advance independently. Eighteen decomposed
         #     accented glyphs fit by the unchanged Latin baseline (129.6px in
@@ -390,8 +465,8 @@ def main() -> int:
 
         asia_body = (
             '<rect x="40" y="40" width="532" height="380" rx="2" '
-            'data-share="59.04" fill="rgba(235,108,54,0.16)" '
-            'stroke="#eb6c36" stroke-width="1.5"/>'
+            'data-share="59.04" fill="rgba(191,69,32,0.16)" '
+            'stroke="#bf4520" stroke-width="1.5"/>'
         )
         triplicated = source.replace(asia_body, f"{asia_body}\n      {asia_body}", 1)
         if triplicated == source:
@@ -485,6 +560,36 @@ def main() -> int:
         else:
             print("OK: every hosted percentage claim must agree")
 
+        # Punctuation glued to a word must not hide a contradictory claim.
+        for separator in ("-", "_", "."):
+            changed = source.replace("4.78B · 59% of world", f"4.78B{separator}99% of world", 1)
+            code, output = run(write(directory, f"glued-percentage-{ord(separator)}.html", changed))
+            if code == 0:
+                failures.append(f"word-glued {separator!r} percentage was silently ignored")
+            elif "percentage" not in output:
+                failures.append(f"word-glued {separator!r} lacked a percentage diagnostic")
+            else:
+                print(f"OK: word-glued {separator!r} percentage cannot hide a claim")
+
+        # Commas separating a magnitude from a percentage are punctuation,
+        # while grouped digits remain one complete number.
+        for label, claim, expected_pass, expected_finding in (
+            ("comma-matching", "4.78B,59% of world", True, ""),
+            ("comma-scientific-matching", "4.78B,5.9e1% of world", True, ""),
+            ("comma-conflicting", "4.78B,99% of world", False, "is labelled 99%"),
+            ("comma-second-conflicting", "4.78B · 59%,99% of world", False, "conflicting percentage claims"),
+            ("comma-grouped-number", "4.78B,1,059% of world", False, "is labelled 1059%"),
+            ("comma-negative-number", "4.78B,-59% of world", False, "is labelled -59%"),
+        ):
+            changed = source.replace("4.78B · 59% of world", claim, 1)
+            code, output = run(write(directory, f"{label}.html", changed))
+            if (code == 0) != expected_pass or (
+                not expected_pass and expected_finding not in output
+            ):
+                failures.append(f"{label}: unexpected percentage result: {output.strip()}")
+            else:
+                print(f"OK: {label} keeps complete percentage claims")
+
         # 15. Explicit metadata outranks both sides of the decorative-rect
         #     heuristic. A declared cell cannot disappear merely because a bad
         #     edit makes it implausibly wide or tall.
@@ -540,6 +645,51 @@ def main() -> int:
                 failures.append(f"{label} geometry lacked an explicit finding: {output.strip()}")
             else:
                 print(f"OK: {label} data-share geometry fails closed")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        encoded = re.sub(r'(\b(?:x|y|width|height|cx|cy|r|data-value|data-share)="[^"<>]*)[0-9]',
+                         lambda match: match.group(0)[:-1] + f"&#{ord(match.group(0)[-1])};",
+                         GOOD.read_text(encoding="utf-8"))
+        code, output = run(write(Path(tmp), "encoded-attributes.html", encoded))
+        if code != 0:
+            failures.append(f"XML-encoded numeric attributes rejected: {output.strip()}")
+
+        encoded_marker_over = re.sub(
+            r'(\b(?:cx|cy|r)="[^"<>]*)[0-9]',
+            lambda match: match.group(0)[:-1] + f"&#{ord(match.group(0)[-1])};",
+            marker_over,
+        )
+        if encoded_marker_over == marker_over:
+            failures.append("could not encode the overflowing-marker fixture (anchor moved)")
+        else:
+            code, output = run(write(Path(tmp), "encoded-marker-overflow.html", encoded_marker_over))
+            if code == 0:
+                failures.append("XML-encoded information mark overflowing its cell was accepted")
+            elif "information marker" not in output:
+                failures.append(f"encoded marker overflow lacked a marker finding: {output.strip()}")
+            else:
+                print("OK: XML-encoded cx/cy/r retain marker containment checks")
+
+    with tempfile.TemporaryDirectory() as directory:
+        d = Path(directory)
+        for label, claim, expect_pass, finding in (
+            ("negative", "-59%", False, "labelled -59%"),
+            ("unicode-minus", "\u221259%", False, "labelled -59%"),
+            ("scientific", "5.9e1%", True, ""),
+            ("positive-sign", "+59%", True, ""),
+            ("leading-decimal", ".590e2%", True, ""),
+            ("wrong-exponent", "5.9e2%", False, "labelled 590%"),
+            ("signed-conflict", "59% and -59%", False, "conflicting percentage claims"),
+            ("non-finite-claim", "1e400%", False, "must be finite numeric"),
+        ):
+            changed = source.replace("59% of world", claim + " of world")
+            code, output = run(write(d, "percentage-" + label + ".html", changed))
+            if changed == source or (code == 0) != expect_pass:
+                failures.append(f"{label} percentage behaved incorrectly: {output.strip()}")
+            elif finding and finding not in output:
+                failures.append(f"{label} percentage lacked its finding: {output.strip()}")
+            else:
+                print(f"OK: {label} percentage is read as one complete numeric claim")
 
     for failure in failures:
         print(f"FAIL: {failure}")

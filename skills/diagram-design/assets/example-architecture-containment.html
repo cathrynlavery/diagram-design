@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The database is not in the subnet · Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #bf4520;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · containment</p>
+    <h1>The database is not in the subnet</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 704" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-labelledby="architecture-containment-title architecture-containment-desc"
+           data-grammar="architecture-containment">
+        <title id="architecture-containment-title">The database is not in the subnet</title>
+        <desc id="architecture-containment-desc">Nested administrative bands hold two peered virtual networks; private endpoints sit inside a subnet while their managed database and vault sit outside every traffic boundary.</desc>
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <!-- Scopes, outer first. Admin = band (rx=4, dashed). Traffic = box (rx=8, solid). -->
+        <rect data-role="bounds" data-scope-id="subscription" data-scope-kind="admin"
+              x="40" y="24" width="920" height="600" rx="4"
+              fill="rgba(45,49,66,0.015)" stroke="rgba(45,49,66,0.22)" stroke-width="0.8" stroke-dasharray="4,4"/>
+        <rect x="56" y="28" width="108" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="110" y="37" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">SUBSCRIPTION</text>
+
+        <rect data-role="bounds" data-scope-id="rg" data-scope-kind="admin" data-parent="subscription"
+              x="56" y="56" width="888" height="552" rx="4"
+              fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.28)" stroke-width="0.8" stroke-dasharray="4,4"/>
+        <rect x="72" y="60" width="116" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="130" y="69" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">RESOURCE GROUP</text>
+
+        <rect data-role="bounds" data-scope-id="vnet-hub" data-scope-kind="traffic" data-parent="rg"
+              x="80" y="168" width="400" height="400" rx="8"
+              fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+        <rect x="96" y="172" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="128" y="181" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">VNET-HUB</text>
+
+        <rect data-role="bounds" data-scope-id="vnet-spoke" data-scope-kind="traffic" data-parent="rg"
+              x="520" y="168" width="400" height="400" rx="8"
+              fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+        <rect x="536" y="172" width="80" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="576" y="181" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">VNET-SPOKE</text>
+
+        <rect data-role="bounds" data-scope-id="snet-app" data-scope-kind="traffic" data-parent="vnet-hub"
+              x="104" y="208" width="352" height="336" rx="8"
+              fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.28)" stroke-width="0.8"/>
+        <rect x="120" y="212" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="152" y="221" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">SNET-APP</text>
+
+        <rect data-role="bounds" data-scope-id="snet-pe" data-scope-kind="traffic" data-parent="vnet-spoke"
+              x="544" y="208" width="352" height="336" rx="8"
+              fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.28)" stroke-width="0.8"/>
+        <rect x="560" y="212" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="588" y="221" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">SNET-PE</text>
+
+        <!-- Paths behind nodes -->
+        <line data-peering="hub-spoke" data-from="vnet-hub" data-to="vnet-spoke"
+              x1="480" y1="196" x2="520" y2="196"
+              stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <path d="M 360,376 H 496 Q 504,376 504,368 V 320 Q 504,312 512,312 H 564"
+              fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <path d="M 636,280 V 160 Q 636,152 628,152 H 168 Q 160,152 160,144"
+              fill="none" stroke="#2e5aa8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-link)"/>
+        <path d="M 804,280 V 144 Q 804,136 796,136 H 352 Q 344,136 344,144"
+              fill="none" stroke="#2e5aa8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-link)"/>
+
+        <!-- Labels -->
+        <rect x="468" y="176" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="500" y="185" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PEERING</text>
+        <rect x="400" y="356" width="72" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="436" y="365" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SQL:1433</text>
+        <rect x="648" y="200" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="676" y="209" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PRIVATE</text>
+        <rect x="816" y="200" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="844" y="209" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PRIVATE</text>
+
+        <!-- Managed PaaS — inside the resource group, outside every traffic scope -->
+        <g data-node-id="sql" data-kind="managed" data-parent="rg">
+          <rect data-role="bounds" x="80" y="80" width="160" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="80" y="80" width="160" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+          <rect x="88" y="88" width="28" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.50)" stroke-width="0.8"/>
+          <text x="102" y="97" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+          <text x="160" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">SQL</text>
+          <text x="160" y="132" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">managed</text>
+        </g>
+        <g data-node-id="kv" data-kind="managed" data-parent="rg">
+          <rect data-role="bounds" x="264" y="80" width="160" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="264" y="80" width="160" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+          <rect x="272" y="88" width="24" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.50)" stroke-width="0.8"/>
+          <text x="284" y="97" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">KV</text>
+          <text x="344" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Key Vault</text>
+          <text x="344" y="132" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">managed</text>
+        </g>
+
+        <!-- Compute inside the app subnet -->
+        <g data-node-id="app" data-kind="compute" data-parent="snet-app">
+          <rect data-role="bounds" x="200" y="344" width="160" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="200" y="344" width="160" height="64" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+          <rect x="208" y="352" width="32" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.50)" stroke-width="0.8"/>
+          <text x="224" y="361" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+          <text x="280" y="380" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Checkout API</text>
+          <text x="280" y="396" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">snet-app</text>
+        </g>
+
+        <!-- Private endpoints inside the spoke subnet -->
+        <g data-node-id="pe-sql" data-kind="endpoint" data-parent="snet-pe" data-target="sql">
+          <rect data-role="bounds" x="564" y="280" width="144" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="564" y="280" width="144" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <rect x="572" y="288" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+          <text x="584" y="297" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PE</text>
+          <text x="636" y="316" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PE · SQL</text>
+          <text x="636" y="332" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">snet-pe</text>
+        </g>
+        <g data-node-id="pe-kv" data-kind="endpoint" data-parent="snet-pe" data-target="kv">
+          <rect data-role="bounds" x="732" y="280" width="144" height="64" rx="6" fill="#f5f5f5"/>
+          <rect x="732" y="280" width="144" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <rect x="740" y="288" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+          <text x="752" y="297" fill="#2d3142" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PE</text>
+          <text x="804" y="316" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PE · Vault</text>
+          <text x="804" y="332" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">snet-pe</text>
+        </g>
+
+        <!-- Legend -->
+        <line x1="80" y1="640" x2="920" y2="640" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="80" y="656" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <rect x="80" y="664" width="28" height="10" rx="2" fill="rgba(45,49,66,0.015)" stroke="rgba(45,49,66,0.22)" stroke-width="0.8" stroke-dasharray="4,4"/>
+        <text x="116" y="672" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Admin band</text>
+        <rect x="220" y="664" width="28" height="10" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+        <text x="256" y="672" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Traffic box</text>
+        <rect x="360" y="664" width="14" height="10" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="380" y="672" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Managed PaaS</text>
+        <rect x="500" y="664" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="520" y="672" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Private endpoint</text>
+        <rect x="656" y="664" width="14" height="10" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+        <text x="676" y="672" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Workload</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

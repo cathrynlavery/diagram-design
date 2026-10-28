@@ -1,0 +1,11 @@
+[project]
+name = "diagram-design-ci"
+version = "0.0.0"
+requires-python = "==3.12.*"
+dependencies = [
+  "pillow==12.1.1",
+  "playwright==1.62.0",
+]
+
+[tool.uv]
+package = false

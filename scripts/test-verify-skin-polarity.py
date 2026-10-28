@@ -136,6 +136,39 @@ def main():
     with tempfile.TemporaryDirectory() as raw:
         directory = Path(raw)
 
+        # SVG presentation opacity is multiplicative with the color alpha.
+        for skin, source, ramp, ink, hex_ink in (
+            ("light", light_source, LIGHT_RAMP, LIGHT_INK, "#2d3142"),
+            ("dark", dark_source, DARK_RAMP, DARK_INK, "#f5f5f5"),
+        ):
+            explicit = source
+            for rank, alpha in ramp:
+                explicit = explicit.replace(
+                    f'data-share="{rank}" fill="rgba({ink},{alpha})"',
+                    f'data-share="{rank}" fill="{hex_ink}" fill-opacity="{float(alpha) * 100:g}%"', 1)
+            code, output = run(write(directory, f"{skin}-fill-opacity.html", explicit))
+            if code:
+                failures.append(f"{skin} explicit fill-opacity ramp failed: {output}")
+            else:
+                print(f"OK: {skin} explicit fill-opacity ramp passes")
+        for attrs, expected in (
+            ('fill="rgba(45,49,66,.8)" fill-opacity=".5" opacity="25%"', .1),
+            ('fill="#2d3142" fill-opacity="200%" opacity=".25"', .25),
+        ):
+            members = COLLECT_MEMBERS(f'<rect x="0" y="0" width="10" height="10" data-share="1" {attrs}/>')
+            found = [m for group in members.values() for m in group]
+            if len(found) != 1 or abs(found[0].alpha - expected) > 1e-9:
+                failures.append(f"presentation opacity measured incorrectly: {attrs}")
+            else:
+                print(f"OK: presentation opacity measures {expected:g}")
+        inverted = light_source.replace('data-share="18.29" fill=',
+            'data-share="18.29" fill-opacity=".1" fill=', 1)
+        code, output = run(write(directory, "opacity-breaks-order.html", inverted))
+        if code == 0:
+            failures.append("explicit opacity that breaks rank order was accepted")
+        else:
+            print("OK: explicit opacity that breaks rank order is rejected")
+
         # SVG accepts both quote styles. Convert every rank-bearing ramp member
         # to single-quoted attributes; the checker must still discover all five
         # members and verify the shipped claim.
@@ -613,6 +646,87 @@ def main():
             break
     else:
         print("OK: shipped_wording_binds_as_a_contrast_claim")
+
+    with tempfile.TemporaryDirectory(prefix="polarity-unreadable-opacity-") as raw:
+        directory = Path(raw)
+        for skin, source, ink, alpha in (
+            ("light", light_source, LIGHT_INK, "0.16"),
+            ("dark", dark_source, DARK_INK, "0.14"),
+        ):
+            for attribute in ("fill-opacity", "opacity"):
+                for value in ("oops", "nan", "inf"):
+                    anchor = f'data-share="18.29" fill="rgba({ink},{alpha})"'
+                    changed = source.replace(anchor, anchor + f' {attribute}="{value}"', 1)
+                    code, output = run(write(directory, f"{skin}-{attribute}-{value}.html", changed))
+                    if not code or "unreadable" not in output:
+                        failures.append(f"unreadable {skin} {attribute}={value} dropped a ramp member silently: {output}")
+                    else:
+                        print(f"OK: unreadable {skin} {attribute}={value} is reported")
+
+    with tempfile.TemporaryDirectory(prefix="polarity-zero-opacity-") as raw:
+        directory = Path(raw)
+        for skin, source, ink, alpha in (
+            ("light", light_source, LIGHT_INK, "0.16"),
+            ("dark", dark_source, DARK_INK, "0.14"),
+        ):
+            for attribute in ("fill-opacity", "opacity"):
+                for value in ("0", "-0.25"):
+                    anchor = f'data-share="18.29" fill="rgba({ink},{alpha})"'
+                    changed = source.replace(anchor, anchor + f' {attribute}="{value}"', 1)
+                    code, output = run(write(directory, f"{skin}-{attribute}-{value}.html", changed))
+                    if not code or "does not move strictly one way" not in output:
+                        failures.append(f"transparent largest {skin} {attribute}={value} omitted from ramp: {output}")
+                    else:
+                        print(f"OK: transparent largest {skin} {attribute}={value} remains a ramp member")
+            smallest = 'data-share="0.56" fill="rgba(' + ink + ',0.04)"'
+            changed = source.replace(smallest, smallest + ' fill-opacity="0"', 1)
+            code, output = run(write(directory, f"{skin}-zero-smallest.html", changed))
+            if code:
+                failures.append(f"valid zero-alpha smallest {skin} member was rejected: {output}")
+            else:
+                print(f"OK: valid zero-alpha smallest {skin} member passes")
+
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        archived = light_source.replace("</body>",
+            "<!-- Archived legend: <p>Other continents · fainter contrast is larger</p> -->\n</body>", 1)
+        code, output = run(write(directory, "commented-legend.html", archived))
+        if code:
+            failures.append(f"commented old legend was treated as visible copy: {output}")
+        else:
+            print("OK: archived HTML comment is not a visible claim")
+        joined = light_source.replace("stronger contrast is larger", "str<!-- editorial note -->onger contrast is larger")
+        code, output = run(write(directory, "inline-comment.html", joined))
+        if code or "1 making a directional tone claim" not in output:
+            failures.append(f"inline comment changed the visible claim: {output}")
+        else:
+            print("OK: inline comment preserves adjacent visible text")
+        incorrect = light_source.replace("stronger contrast is larger", "faint<!-- editorial note -->er contrast is larger")
+        code, output = run(write(directory, "inline-comment-wrong.html", incorrect))
+        if not code or "but the ramp draws larger as stronger" not in output:
+            failures.append(f"wrong visible claim with an inline comment was accepted: {output}")
+        else:
+            print("OK: incorrect visible claim remains rejected across an inline comment")
+        unmatched = archived.replace("stronger contrast is larger", "larger means something stronger eventually")
+        code, output = run(write(directory, "visible-unparsed-with-comment.html", unmatched))
+        if not code:
+            failures.append("unparsed visible claim was excused by the archived comment")
+        else:
+            print("OK: unparsed visible claim remains rejected beside an archived comment")
+
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        for label, replacement, wrong in (
+            ("archived-inline-correct", "str<!-- archived <text>old legend</text> -->onger contrast is larger", False),
+            ("archived-inline-wrong", "faint<!-- archived <text>old legend</text> -->er contrast is larger", True),
+            ("archived-inline-unparsed", "larger<!-- archived <text>old legend</text> --> means something stronger eventually", True),
+        ):
+            source = light_source.replace("stronger contrast is larger", replacement)
+            code, output = run(write(directory, label + ".html", source))
+            if bool(code) != wrong or (not wrong and "1 making a directional tone claim" not in output):
+                failures.append(f"{label}: archived closing markup changed visible claim parsing: {output}")
+            else:
+                print(f"OK: {label} preserves complete visible copy")
 
     for failure in failures:
         print("FAIL: {}".format(failure))

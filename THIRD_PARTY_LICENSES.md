@@ -34,6 +34,14 @@ The MIT license is reproduced in full at https://github.com/log-z/logos/blob/mai
 
 The MIT license is reproduced in full at https://github.com/devicons/devicon/blob/master/LICENSE.
 
+## Instrument Serif
+
+- **License:** SIL Open Font License 1.1
+- **Upstream:** https://github.com/Instrument/instrument-serif
+- **Used in:** the plugin logo (`assets/logo.svg`, `assets/logo.png`, `assets/composer-icon.png`), which contains the outline of the lowercase "d" from Instrument Serif Italic. No font file is bundled.
+
+The license is reproduced in full at https://github.com/google/fonts/blob/main/ofl/instrumentserif/OFL.txt.
+
 ## One-off sourced icons
 
 The `scripts/vendor/icons/url/` directory contains one-off sourced icons for SAS, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:SAS_logo_horiz.svg) (public domain), and Stata, from the [IcePanel Technology Icons collection](https://icon.icepanel.io/Technology/svg/Stata.svg) published via techicons.dev. Their provenance is recorded here; use of these product marks is covered by the Trademarks note below.

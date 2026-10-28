@@ -126,6 +126,21 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     ok("Mermaid stdout stays lossless UTF-8 under a legacy Windows encoding")
 
 
+def check_utf8_bom(tmp: Path) -> None:
+    for suffix, source in (
+        ("mmd", "flowchart TD\nA --> B\n"),
+        ("md", "```mermaid\nflowchart TD\nA --> B\n```\n"),
+    ):
+        path = tmp / f"bom-source.{suffix}"
+        path.write_bytes(source.encode("utf-8"))
+        expected = json.loads(run_extract([str(path), "--json"]))
+        path.write_bytes(b"\xef\xbb\xbf" + source.encode("utf-8"))
+        actual = json.loads(run_extract([str(path), "--json"]))
+        if actual != expected:
+            fail(f"UTF-8 BOM changed the {suffix} extraction")
+    ok("UTF-8 BOM does not prevent Mermaid or Markdown import")
+
+
 def expect_error(args: list[str], message: str) -> None:
     process = invoke(args)
     if process.returncode != 2 or message not in process.stderr:
@@ -200,6 +215,51 @@ def check_flowchart() -> None:
         if needle not in digest:
             fail(f"flowchart digest missing {needle!r}")
     ok("flowchart parses: shapes, subgraphs, labels, cycle, budgets, tables")
+
+
+def check_flowchart_header_statements(tmp: Path) -> None:
+    # Mermaid accepts `graph TD; A-->B;` on the header line itself; the
+    # statements after the header's semicolon are diagram content.
+    for name, header in (("graph-td", "graph TD;"), ("flowchart-lr", "flowchart LR;")):
+        source = tmp / f"header-statements-{name}.mmd"
+        source.write_text(f"{header} A-->B; B-->|ok| C;\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+        nodes = sorted(node["id"] for node in diagram["nodes"])
+        edges = [(e["source"], e["target"], e["label"]) for e in diagram["edges"]]
+        if nodes != ["A", "B", "C"] or edges != [("A", "B", ""), ("B", "C", "ok")]:
+            fail(f"header-line statements were dropped for {header!r}: {nodes} {edges}")
+    bare = tmp / "header-statements-bare.mmd"
+    bare.write_text("flowchart LR;\nA-->B\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(bare), "--json"]))["diagrams"][0]
+    if [edge["target"] for edge in diagram["edges"]] != ["B"]:
+        fail("a bare header semicolon changed the following statements")
+    ok("flowchart statements after the header semicolon are retained")
+
+
+def check_entity_label_codes(tmp: Path) -> None:
+    source = tmp / "entity-labels.mmd"
+    source.write_text(
+        'flowchart LR\n'
+        'A["#35; #9829; #copy;"] -->|"#35; #9829; #copy;"| B["&#35; &#9829; &copy;"]\n'
+        'C["#amp;copy; &amp;copy; #35;copy; #unknown; #0; #1114112;"]\n'
+        'D["Use #42;value#42; &ast;html&ast; #60;br#62;"] -->|"#42;edge#42;"| E["*markup*"]\n',
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in diagram["nodes"]}
+    for node_id in ("A", "B"):
+        if nodes[node_id]["label"] != "# ♥ ©":
+            fail(f"entity codes lost in node {node_id}: {nodes[node_id]['label']!r}")
+    if diagram["edges"][0]["label"] != "# ♥ ©":
+        fail("Mermaid numeric/named entity codes lost in an edge label")
+    expected = "&copy; &copy; #copy; #unknown; #0; #1114112;"
+    if nodes["C"]["label"] != expected:
+        fail(f"entity labels were decoded twice or unknown codes changed: {nodes['C']['label']!r}")
+    if nodes["D"]["label"] != "Use *value* *html* <br>":
+        fail("encoded label characters were interpreted as Markdown or HTML markup")
+    if nodes["E"]["label"] != "markup" or diagram["edges"][1]["label"] != "*edge*":
+        fail("literal entity characters and actual label markup were confused")
+    ok("Mermaid decimal/named entity labels decode once in nodes and edges")
 
 
 def check_shape_and_edge_vocabulary(tmp: Path) -> None:
@@ -433,6 +493,40 @@ E-->|maybe|x--next-->F
     ]:
         fail("chained x/o endpoint IDs were consumed as left edge markers")
 
+    compact_dotted_space_file = tmp / "compact-dotted-space-labels.mmd"
+    compact_dotted_space_file.write_text(
+        """flowchart LR
+Q-.next candidate.->R
+S<-.both ways.->T
+U o-.circle marker.-o V
+W----->X
+""",
+        encoding="utf-8",
+    )
+    compact_dotted_space = json.loads(
+        run_extract([str(compact_dotted_space_file), "--json"])
+    )["diagrams"][0]
+    compact_dotted_space_ids = sorted(node["id"] for node in compact_dotted_space["nodes"])
+    if compact_dotted_space_ids != ["Q", "R", "S", "T", "U", "V", "W", "X"]:
+        fail(
+            "a whitespace-bearing compact dotted label materialized phantom "
+            f"nodes: {compact_dotted_space_ids}"
+        )
+    compact_dotted_space_edges = [
+        (edge["label"], edge["style"], edge["bidirectional"])
+        for edge in compact_dotted_space["edges"]
+    ]
+    if compact_dotted_space_edges != [
+        ("next candidate", "dashed", False),
+        ("both ways", "dashed", True),
+        ("circle marker", "dashed", True),
+        ("", "solid", False),
+    ]:
+        fail(
+            "a compact dotted link's label lost internal whitespace or its "
+            f"style/bidirectional semantics: {compact_dotted_space_edges}"
+        )
+
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
         '''flowchart LR
@@ -497,11 +591,72 @@ A --> B
         fail("leading Mermaid frontmatter was not skipped before grammar detection")
     if "Checkout" in digest or "forest" in digest:
         fail("frontmatter config leaked into the digest")
+    if "- discarded: 0 style directives, 0 click handlers, 1 config directives" not in digest:
+        fail("discarded frontmatter config was not counted in the digest")
+
+    directives = tmp / "init-directives.mmd"
+    directives.write_text(
+        '%%{init: {"theme": "dark"}}%%\nflowchart LR\nA --> B\n%%{\n  init: {"theme": "forest"}\n}%%\n',
+        encoding="utf-8",
+    )
+    counted = json.loads(run_extract([str(directives), "--json"]))["diagrams"][0]["discarded"]
+    if counted["config_directives"] != 2:
+        fail(f"%%{{init}}%% directives were not counted: {counted}")
 
     unterminated = tmp / "unterminated-frontmatter.mmd"
     unterminated.write_text("---\ntitle: Broken\nflowchart LR\nA --> B\n", encoding="utf-8")
     expect_error([str(unterminated)], "not a Mermaid file")
-    ok("frontmatter is skipped, and an unterminated block still fails specifically")
+    ok("frontmatter and %%{init}%% are skipped and counted, and an unterminated block still fails specifically")
+
+
+def check_outer_markdown_fences(tmp: Path) -> None:
+    for name, opening, closing in [
+        ("backtick", "````markdown", "````"),
+        ("tilde", "~~~markdown", "~~~"),
+        ("unlabelled", "````", "````"),
+        ("longer-close", "````markdown", "`````"),
+        ("three-space-indent", "   ````markdown", "   ````"),
+    ]:
+        path = tmp / f"outer-fence-{name}.md"
+        path.write_text(opening + "\n```mermaid\npie title Literal example\n```\n" + closing
+                        + "\n\n```mermaid\nflowchart TD\nA --> B\n```\n", encoding="utf-8")
+        payload = json.loads(run_extract([str(path), "--diagram", "all", "--json"]))
+        if payload["diagrams_total"] != 1 or len(payload["diagrams"]) != 1:
+            fail(f"{name}: literal Mermaid sample was counted as a live block")
+        diagram = payload["diagrams"][0]
+        if diagram["kind"] != "flowchart" or {n["id"] for n in diagram["nodes"]} != {"A", "B"}:
+            fail(f"{name}: live flowchart was not preserved")
+    mixed = tmp / "outer-fence-live-controls.md"
+    mixed.write_text("~~~text\n```mermaid\npie title Literal\n```\n~~~\n"
+                     "``` MeRmAiD  \nflowchart LR\nC --> D\n````\n"
+                     "~~~mermaid\nflowchart TD\nE --> F\n~~~~\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(mixed), "--diagram", "all", "--json"]))
+    if payload["diagrams_total"] != 2 or [d["kind"] for d in payload["diagrams"]] != ["flowchart", "flowchart"]:
+        fail("live mixed-case/whitespace and tilde fences did not retain their order")
+    if [{n["id"] for n in d["nodes"]} for d in payload["diagrams"]] != [{"C", "D"}, {"E", "F"}]:
+        fail("ordinary fence contents leaked into live diagram nodes")
+    selected = json.loads(run_extract([str(mixed), "--diagram", "1", "--json"]))
+    if {n["id"] for n in selected["diagrams"][0]["nodes"]} != {"E", "F"}:
+        fail("selection counted literal samples instead of live Mermaid blocks")
+    expect_error([str(mixed), "--diagram", "2"], "no diagram with index 2 (have 0..1)")
+    indented = tmp / "outer-fence-indented-example.md"
+    indented.write_text("    ```text\n\n```mermaid\nflowchart TD\nA --> B\n```\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(indented), "--json"]))
+    if {node["id"] for node in payload["diagrams"][0]["nodes"]} != {"A", "B"}:
+        fail("indented code example hid the following live Mermaid block")
+    indented.write_text("```text\n    ```\nstill inside\n```\n\n```mermaid\nflowchart TD\nA --> B\n```\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(indented), "--json"]))
+    if {node["id"] for node in payload["diagrams"][0]["nodes"]} != {"A", "B"}:
+        fail("indented closing fence ended an ordinary block early")
+    # Existing Mermaid indentation remains supported, including four spaces.
+    indented.write_text("    ```mermaid\nflowchart TD\nA --> B\n    ```\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(indented), "--json"]))
+    if {node["id"] for node in payload["diagrams"][0]["nodes"]} != {"A", "B"}:
+        fail("existing indented Mermaid support changed")
+    unclosed = tmp / "outer-fence-unclosed.md"
+    unclosed.write_text("````markdown\n```mermaid\nflowchart TD\nA --> B\n```\n", encoding="utf-8")
+    expect_error([str(unclosed)], "no fenced mermaid block found")
+    ok("outer code fences keep Mermaid samples literal and preserve live block order")
 
 
 def check_markdown_and_grammars(tmp: Path) -> None:
@@ -634,6 +789,107 @@ CUSTOMER ||--o{ ORDER : places
     ok("Markdown selection plus sequence, state, and ER grammars parse")
 
 
+def check_state_descriptions(tmp: Path) -> None:
+    cases = (
+        ("idle : Waiting for message\nidle : Retrying previous request\n[*] --> idle\n", "Waiting for message\nRetrying previous request"),
+        ("[*] --> idle\nidle : Waiting for message\n", "Waiting for message"),
+        ("idle : idle\nidle : Next step\nidle --> [*]\n", "idle\nNext step"),
+        ('state "Idle display" as idle\nidle : Waiting for message\nidle --> [*]\n', "Idle display\nWaiting for message"),
+        ('idle : Waiting for message\nstate "Latest display" as idle\nidle --> [*]\n', "Latest display"),
+        ('idle : First\nidle : Second\nstate "idle" as idle\nidle --> [*]\n', "First\nSecond"),
+        ('idle : First\nidle : Second\nstate "" as idle\nidle --> [*]\n', "First\nSecond"),
+        ('idle : <br/>\nidle --> [*]\n', "idle"),
+        ('idle : First\nstate "Latest" as idle\nidle : Last\nidle --> [*]\n', "Latest\nLast"),
+        ('idle : First\nstate "idle" as idle\nidle : Last\nidle --> [*]\n', "First\nLast"),
+    )
+    for index, (body, label) in enumerate(cases):
+        path = tmp / f"state-descriptions-{index}.mmd"
+        path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+        if node["label"] != label:
+            fail(f"state descriptions lost source-ordered text: {node['label']!r}")
+        if len(diagram["edges"]) != 1:
+            fail("state descriptions changed transition extraction")
+    # Exercise a large valid one-node import without copying its growing label
+    # for every line. The native benchmark is recorded separately; avoid a
+    # wall-clock assertion whose result would depend on CI host contention.
+    count = 4000
+    path = tmp / "state-descriptions-large.mmd"
+    lines = [f"description {index}" for index in range(count)]
+    path.write_text("stateDiagram-v2\n" + "".join(f"idle : {line}\n" for line in lines) + "idle --> [*]\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "idle")
+    if node["label"] != "\n".join(lines) or len(diagram["edges"]) != 1:
+        fail("large repeated descriptions lost text or transitions")
+    ok("multiple state descriptions retain source order and ordinary transitions")
+
+
+def check_named_composite_states(tmp: Path) -> None:
+    for declaration, expected in (("state \"Processing request\" as processing {", "Processing request"), ("state processing {", "processing")):
+        path = tmp / "named-composite.mmd"
+        path.write_text("stateDiagram-v2\n" + declaration + "\n[*] --> queued\nqueued --> done\n}\nprocessing --> [*]\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node for node in diagram["nodes"]}
+        parent = nodes.get("processing")
+        if parent is None or parent["label"] != expected or not parent["container"]:
+            fail("named composite state lost its ID, label or container")
+        for child in ("queued", "done"):
+            if (nodes[child]["parent"], nodes[child]["depth"]) != ("processing", 1):
+                fail("named composite state lost child membership")
+        if diagram["analysis"]["containers"] != 1 or len(diagram["edges"]) != 3:
+            fail("named composite state changed transitions or container counts")
+    path.write_text('stateDiagram-v2\nstate "Waiting for work" as Waiting\nWaiting --> [*]\n', encoding="utf-8")
+    diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "Waiting")
+    if node["label"] != "Waiting for work" or node["container"]:
+        fail("ordinary quoted state alias changed")
+    ok("named composite states retain aliases, child membership and transitions")
+
+
+def check_selection_before_parse(tmp: Path) -> None:
+    """A malformed block fails only when it is selected (#209)."""
+    bad_first = tmp / "bad-first-block.md"
+    bad_first.write_text(
+        "# doc\n\n```mermaid\nflowchart LR\nA -->\n```\n\n"
+        "```mermaid\nflowchart LR\nC --> D\n```\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(bad_first), "--diagram", "1", "--json"]))
+    if payload["diagrams_total"] != 2:
+        fail(f"diagrams_total must count every block: {payload['diagrams_total']}")
+    if [(item["index"], item["kind"]) for item in payload["diagrams"]] != [
+        (1, "flowchart")
+    ]:
+        fail("--diagram 1 did not return block 1 past a malformed block 0")
+    digest = run_extract([str(bad_first), "--diagram", "1"])
+    for needle in (
+        "2 diagram(s): [0] unparsed: malformed edge at line 5, [1] flowchart (2n/1e)",
+        "## Diagram 1",
+    ):
+        if needle not in digest:
+            fail(f"selected-block digest missing {needle!r}: {digest!r}")
+    if "## Diagram 0" in digest:
+        fail("an unselected malformed block was emitted as a diagram")
+    for selector in ([], ["--diagram", "0"], ["--diagram", "all"]):
+        expect_error([str(bad_first), *selector], "malformed edge at line 5")
+    expect_error([str(bad_first), "--diagram", "9"], "no diagram with index 9 (have 0..1)")
+
+    bad_second = tmp / "bad-second-block.md"
+    bad_second.write_text(
+        "```mermaid\nflowchart LR\nA --> B\n```\n\n"
+        "```mermaid\npie title Pets\n```\n",
+        encoding="utf-8",
+    )
+    default_digest = run_extract([str(bad_second)])
+    if "[1] unparsed: unsupported diagram kind" not in default_digest:
+        fail(f"default selection did not list the unparsed block 1: {default_digest!r}")
+    if "## Diagram 0" not in default_digest:
+        fail("default selection did not emit diagram 0 past a bad block 1")
+    expect_error([str(bad_second), "--diagram", "1"], "unsupported diagram kind: `pie`")
+    ok("--diagram selects a block before parsing it; selected bad blocks still fail")
+
+
 def check_adversarial(tmp: Path) -> None:
     payload = json.loads(run_extract([str(ADVERSARIAL), "--json"]))
     diagram = payload["diagrams"][0]
@@ -656,7 +912,7 @@ def check_adversarial(tmp: Path) -> None:
             fail(f"chained/multi-target edge missing: {pair}")
     if not any(edge["label"] == "label --> remains text" for edge in edges):
         fail("arrow text inside a quoted edge label was split as syntax")
-    if diagram["discarded"] != {"style_directives": 4, "click_handlers": 1}:
+    if diagram["discarded"] != {"style_directives": 4, "click_handlers": 1, "config_directives": 1}:
         fail(f"discard counts wrong: {diagram['discarded']}")
     serialized = json.dumps(payload)
     if "example.invalid" in serialized:
@@ -679,6 +935,107 @@ def check_adversarial(tmp: Path) -> None:
     if "&lt;img src=" not in digest_text or "&gt;" not in digest_text:
         fail("decoded HTML label was not safely encoded in Markdown output")
     ok("adversarial labels stay inert; nesting, chains, fan-out, discards work")
+
+
+def check_sequence_highlight_nesting_regression(tmp: Path) -> None:
+    cases = [
+        ("named-color-highlight", "rect lightblue\nA->>B: highlighted\nend", [], ["highlighted"]),
+        ("hex-color-highlight", "rect #ffccaa\nA->>B: highlighted\nend", [], ["highlighted"]),
+        ("variable-color-highlight", "rect var(--x)\nA->>B: highlighted\nend", [], ["highlighted"]),
+        ("highlight-inside-alt", "alt success\nrect rgb(200, 200, 200)\nrect rgba(0, 0, 255, .1)\nA->>B: highlighted\nend\nend\nelse failure\nA->>B: rejected\nend", [("alt", "success", 0, ["failure"])], ["highlighted", "rejected"]),
+        ("alt-inside-highlight", "rect rgb(200, 200, 200)\nalt success\nloop retries\nA->>B: attempt\nend\nelse failure\nA->>B: rejected\nend\nend", [("alt", "success", 0, ["failure"]), ("loop", "retries", 1, [])], ["attempt", "rejected"]),
+        ("ordinary-fragment-control", "alt success\nloop retries\nA->>B: attempt\nend\nelse failure\nA->>B: rejected\nend", [("alt", "success", 0, ["failure"]), ("loop", "retries", 1, [])], ["attempt", "rejected"]),
+    ]
+    for name, body, expected_fragments, expected_messages in cases:
+        scene = tmp / ("sequence-highlight-nesting-" + name + ".mmd")
+        scene.write_text("sequenceDiagram\nparticipant A\nparticipant B\n" + body + "\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(scene), "--json"]))["diagrams"][0]
+        actual = [(fragment["kind"], fragment["label"], fragment["depth"], fragment["regions"]) for fragment in diagram["fragments"]]
+        if actual != expected_fragments:
+            fail(f"{name}: semantic fragment nesting changed: {actual!r}")
+        if [edge["label"] for edge in diagram["edges"]] != expected_messages:
+            fail(f"{name}: messages changed while ignoring highlighting")
+        if [(node["id"], node["label"]) for node in diagram["nodes"]] != [("A", "A"), ("B", "B")]:
+            fail(f"{name}: highlighting introduced or renamed participants")
+    # Preserve an already accepted message source whose ID happens to be rect.
+    participant = tmp / "sequence-highlight-rect-participant.mmd"
+    participant.write_text("sequenceDiagram\nparticipant rect\nparticipant B\nrect ->>B: preserved\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(participant), "--json"]))["diagrams"][0]
+    if [(edge["source"], edge["target"], edge["label"]) for edge in diagram["edges"]] != [("rect", "B", "preserved")]:
+        fail("rect participant message was mistaken for visual highlighting")
+    if diagram["fragments"]:
+        fail("rect participant message introduced a semantic fragment")
+    malformed = tmp / "sequence-highlight-malformed-rect.mmd"
+    malformed.write_text("sequenceDiagram\nrect ->>: missing target\n", encoding="utf-8")
+    expect_error([str(malformed)], "malformed edge at line 2")
+    # Count actual depth-reduction work instead of relying on machine timing.
+    extractor = load_extractor_module()
+    for depth in (100, 200):
+        visits = [0]
+
+        def counted_sum(values, start=0):
+            total = start
+            for value in values:
+                visits[0] += 1
+                total += value
+            return total
+
+        extractor.sum = counted_sum
+        text = "rect rgb(0, 0, 0)\nopt nested\n" * depth + "A->>B: deepest\n" + "end\nend\n" * depth
+        diagram = extractor.Diagram(0, "sequenceDiagram", 1)
+        extractor._parse_sequence(diagram, list(enumerate(("sequenceDiagram\n" + text).splitlines(), 1)), 0)
+        if [fragment["depth"] for fragment in diagram.fragments] != list(range(depth)):
+            fail("deep highlight blocks changed semantic fragment depth")
+        if visits[0] > len(text):
+            fail(f"sequence fragment depth rescanned nested stacks: {visits[0]} visits")
+    ok("sequence highlight blocks preserve semantic fragment regions and depth")
+
+
+def check_sequence_digest_regions(tmp: Path) -> None:
+    scene = tmp / "sequence-digest-regions.mmd"
+    scene.write_text(
+        "sequenceDiagram\nparticipant A\nparticipant B\n"
+        "alt valid file\nA->>B: ok\nelse too large\nA->>B: 413\nelse too<br>slow\nA->>B: 504\n"
+        "else\nA->>B: other\nend\n"
+        "par one\nA->>B: x\nand two\nA->>B: y\nend\n"
+        "critical connect\nA->>B: c\noption timeout\nA->>B: t\nend\n",
+        encoding="utf-8",
+    )
+    expected = (
+        "- fragments: alt(valid file | else: too large | else: too ⏎ slow | else: unlabeled), "
+        "par(one | and: two), "
+        "critical(connect | option: timeout)"
+    )
+    if expected not in run_extract([str(scene)]).splitlines():
+        fail("digest drops the else/and/option regions of sequence fragments")
+    ok("digest lists the else/and/option regions of sequence fragments")
+
+
+def check_sequence_autonumber(tmp: Path) -> None:
+    scene = tmp / "sequence-autonumber.mmd"
+    scene.write_text(
+        "sequenceDiagram\nautonumber\nA->>B: one\nautonumber 10 5\nA->>B: ten\n"
+        "autonumber off\nA->>B: plain\nAutoNumber 3\nA->>B: three\n",
+        encoding="utf-8",
+    )
+    expected = "- autonumber: from 1, step 1; from 10, step 5; off; from 3, step 1"
+    if expected not in run_extract([str(scene)]).splitlines():
+        fail("digest drops sequence autonumber directives")
+    diagram = json.loads(run_extract([str(scene), "--json"]))["diagrams"][0]
+    if diagram["autonumber"][1] != {"line": 4, "off": False, "start": 10, "step": 5}:
+        fail(f"autonumber start/step not kept in the IR: {diagram['autonumber']}")
+    if len(diagram["edges"]) != 4:
+        fail("autonumber lines changed the parsed messages")
+    widest = tmp / "sequence-autonumber-widest.mmd"
+    widest.write_text(f"sequenceDiagram\nautonumber {'9' * 15} {'9' * 15}\nA->>B: one\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(widest), "--json"]))["diagrams"][0]
+    if diagram["autonumber"][0] != {"line": 2, "off": False, "start": 10**15 - 1, "step": 10**15 - 1}:
+        fail(f"15-digit autonumber start not kept: {diagram['autonumber']}")
+    for name, numbers in (("start", "9" * 16), ("step", f"1 {'9' * 16}"), ("huge", "9" * 5000)):
+        source = tmp / f"sequence-autonumber-{name}.mmd"
+        source.write_text(f"sequenceDiagram\nautonumber {numbers}\nA->>B: one\n", encoding="utf-8")
+        expect_error([str(source)], "autonumber value exceeds 15 digits at line 2")
+    ok("sequence autonumber directives are kept with their start and step")
 
 
 def check_sequence_grammar_forms(tmp: Path) -> None:
@@ -954,16 +1311,282 @@ def check_docs_and_wiring() -> None:
     ok("reference, SKILL.md, command, prompt, and example stay in sync")
 
 
+def check_bidirectional_analysis(tmp: Path) -> None:
+    source = tmp / "bidirectional.mmd"
+    source.write_text("flowchart LR\nA <--> B\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    analysis = diagram["analysis"]
+    if not analysis["has_cycle"]:
+        fail("bidirectional links must contribute their reverse edge to cycle analysis")
+    for node in diagram["nodes"]:
+        if (node["in_degree"], node["out_degree"]) != (1, 1):
+            fail("bidirectional links must contribute both inbound and outbound degrees")
+    if analysis["entry_points"] or analysis["terminals"]:
+        fail("a bidirectional pair has no one-way entry point or terminal")
+    ok("bidirectional flowchart analysis preserves both directions")
+
+
+def check_node_shape_updates(tmp: Path) -> None:
+    flow = tmp / "shape-updates.mmd"
+    flow.write_text("flowchart LR\nA{Decision}\nA[Work]\nA --> B\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "A")
+    if node["shape"] != "rect" or node["label"] != "Work":
+        fail("an explicit rectangle declaration must replace the earlier diamond")
+    flow.write_text(
+        'flowchart LR\nA{Decision}\nA@{ label: "Updated" }\n'
+        'B@{ label: "New" }\nC{Keep}\nC@{ shape: rect, label: "Reset" }\n',
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: (node["shape"], node["label"]) for node in diagram["nodes"]}
+    if nodes != {"A": ("rhombus", "Updated"), "B": ("rect", "New"), "C": ("rect", "Reset")}:
+        fail("label-only expanded attributes must retain existing shapes and default new nodes")
+    state = tmp / "fork-reference.mmd"
+    state.write_text("stateDiagram-v2\nstate Fork <<fork>>\nFork --> Done\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(state), "--json"]))["diagrams"][0]
+    node = next(node for node in diagram["nodes"] if node["id"] == "Fork")
+    if node["shape"] != "fork":
+        fail("a bare transition endpoint must preserve the declared fork shape")
+    ok("node declarations update shapes while bare references preserve them")
+
+
+def check_invisible_links(tmp: Path) -> None:
+    flow = tmp / "invisible-links.mmd"
+    flow.write_text("flowchart TD\nJ ~~~ K\nP --> Q ~~~ R\n", encoding="utf-8")
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    if sorted(node["id"] for node in diagram["nodes"]) != ["J", "K", "P", "Q", "R"]:
+        fail("endpoints of an invisible link must still become nodes")
+    if [(edge["source"], edge["target"]) for edge in diagram["edges"]] != [("P", "Q")]:
+        fail("an invisible link must not become an edge")
+    if diagram["notes"] != ["2 invisible layout links ignored"]:
+        fail(f"invisible links must be reported: {diagram['notes']!r}")
+    ok("invisible ~~~ links declare their nodes without becoming edges")
+
+    for endpoint in ("x", "o"):
+        for operator, style in (("--go-->", "solid"), ("==go==>", "thick"), ("-.go.->", "dashed")):
+            for invisible in ("~~~", "~~~~"):
+                flow.write_text(f"flowchart TD\nA {invisible} {endpoint}{operator}B\n", encoding="utf-8")
+                mixed = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+                if {node["id"] for node in mixed["nodes"]} != {"A", endpoint, "B"}:
+                    fail("an invisible link must preserve a following x/o endpoint")
+                edges = [(edge["source"], edge["target"], edge["label"], edge["style"])
+                         for edge in mixed["edges"]]
+                if edges != [(endpoint, "B", "go", style)]:
+                    fail(f"mixed invisible/labeled chain changed its visible edge: {edges!r}")
+                if mixed["notes"] != ["1 invisible layout links ignored"]:
+                    fail("mixed invisible/labeled chains must report only their layout link")
+
+    flow.write_text("flowchart TD\nA ~~~ x--go-->B ~~~ o-.next.->C\n", encoding="utf-8")
+    mixed = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    if {node["id"] for node in mixed["nodes"]} != {"A", "x", "B", "o", "C"}:
+        fail("a repeated mixed chain must preserve every endpoint")
+    if [(edge["source"], edge["target"], edge["label"]) for edge in mixed["edges"]] != [
+        ("x", "B", "go"), ("o", "C", "next")
+    ] or mixed["notes"] != ["2 invisible layout links ignored"]:
+        fail("a repeated mixed chain must retain both labeled edges and no invisible edges")
+    ok("invisible links keep x/o endpoint identity in solid, thick, dotted and repeated chains")
+
+
+def check_spaced_pipe_labels(tmp: Path) -> None:
+    flow = tmp / "spaced-pipe-labels.mmd"
+    flow.write_text(
+        "flowchart TD\nA --> |solid| B\nB -.-> |dotted| C\nC ==> |thick| D\nD --- |plain| E\nE -->|tight| F\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    edges = [(edge["source"], edge["target"], edge["label"]) for edge in diagram["edges"]]
+    expected = [("A", "B", "solid"), ("B", "C", "dotted"), ("C", "D", "thick"), ("D", "E", "plain"), ("E", "F", "tight")]
+    if edges != expected:
+        fail(f"a pipe label after whitespace must stay a label: {edges!r}")
+    ok("pipe labels may follow whitespace after the link operator")
+
+
+def check_edge_ids(tmp: Path) -> None:
+    flow = tmp / "edge-ids.mmd"
+    flow.write_text(
+        "flowchart LR\n  A e1@==>|go| B\n  B e2@-.-> C\n  e2@{ animate: true }\n"
+        "  e1@{ curve: linear }\n  X@{ label: \"Real\" }\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    nodes = sorted(node["id"] for node in diagram["nodes"])
+    if nodes != ["A", "B", "C", "X"]:
+        fail(f"edge IDs and their property statements must not become nodes: {nodes!r}")
+    edges = [(edge["source"], edge["target"], edge["label"], edge["style"]) for edge in diagram["edges"]]
+    if edges != [("A", "B", "go", "thick"), ("B", "C", "", "dashed")]:
+        fail(f"an edge ID before the operator must not change the edge: {edges!r}")
+    ok("Mermaid edge IDs and edge property statements are ignored")
+
+    for name, source, label, arrowhead in [
+        ("circle", "A e3@o--o B", "", "circle"),
+        ("cross", "A e4@x--x B", "", "cross"),
+        ("pipe", "A -->|retry@-1| B", "retry@-1", "arrow"),
+        ("spaced", "A -- retry@-1 --> B", "retry@-1", "arrow"),
+        ("pipe-operator", "A -->|retry@--> next| B", "retry@--> next", "arrow"),
+    ]:
+        flow.write_text("flowchart LR\n  " + source + "\n", encoding="utf-8")
+        result = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        edge = result["edges"][0]
+        if edge["label"] != label or edge["arrowhead"] != arrowhead:
+            fail(f"edge ID parsing changed {name}: {edge!r}")
+    flow.write_text("flowchart LR\n subgraph Retry retry@-1\n A --> B\n end\n", encoding="utf-8")
+    result = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    if result["nodes"][0]["label"] != "Retry retry@-1":
+        fail("edge ID parsing changed an unquoted subgraph title")
+    ok("edge IDs cover circle/cross operators without changing literal labels or titles")
+
+
+def check_unicode_state_regression(tmp: Path) -> None:
+    path = tmp / "unicode-state.mmd"
+    path.write_text('stateDiagram-v2\n待机 : 等待输入\n待机 --> 完成\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if nodes["待机"]["label"] != "等待输入":
+        fail("Unicode state description was discarded")
+    ok("Unicode state identifiers keep their colon-form descriptions")
+
+
+def check_unicode_er_regression(tmp: Path) -> None:
+    path = tmp / "unicode-er.mmd"
+    path.write_text('erDiagram\n订单 {\n string 编号\n}\n客户 ||--o{ 订单 : 下单\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if (
+        set(nodes) != {"订单", "客户"}
+        or nodes["订单"]["fields"] != ["string 编号"]
+        or len(payload["edges"]) != 1
+        or payload["edges"][0]["source"] != "客户"
+        or payload["edges"][0]["target"] != "订单"
+        or payload["edges"][0]["label"] != "|| -- o{ · 下单"
+    ):
+        fail("ER Unicode identifiers or their attributes/relationships were lost")
+    path.write_text("erDiagram\n1客户 ||--o{ 订单 : 下单\n", encoding="utf-8")
+    expect_error([str(path)], "malformed edge at line 2")
+    # Non-decimal numerals are \w but not \d, so a regex alone lets them lead.
+    path.write_text("erDiagram\n²客户 ||--o{ 订单 : 下单\n", encoding="utf-8")
+    expect_error([str(path)], "malformed edge at line 2")
+    path.write_text("erDiagram\n½订单\n²表 {\n string 编号\n}\nCUSTOMER ||--o{ ORDER : places\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    if {node["id"] for node in payload["nodes"]} != {"CUSTOMER", "ORDER"}:
+        fail("ER identifiers led by a non-decimal numeral were accepted")
+    ok("Unicode ER entity blocks and relationships keep identifiers, fields and endpoints")
+
+
+def check_standalone_er_regression(tmp: Path) -> None:
+    path = tmp / "standalone-er.mmd"
+    path.write_text('erDiagram\nINDEPENDENT\n客户\nÉquipe\n_独立\nCUSTOMER ||--o{ ORDER : places\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if set(nodes) != {"INDEPENDENT", "客户", "Équipe", "_独立", "CUSTOMER", "ORDER"} or any(
+        nodes[name]["shape"] != "table" for name in ("INDEPENDENT", "客户", "Équipe", "_独立")
+    ):
+        fail("Standalone ER entity was discarded")
+    ok("standalone ER entity declarations, including Unicode names, become tables")
+
+
+def check_standalone_state_regression(tmp: Path) -> None:
+    path = tmp / "supported-form.mmd"
+    path.write_text('stateDiagram-v2\nDisconnected\n[*] --> Active\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if "Disconnected" not in nodes or nodes["Disconnected"]["shape"] != "state":
+        fail("Standalone bare state was discarded")
+    concurrent = tmp / "concurrency.mmd"
+    concurrent.write_text('stateDiagram-v2\nstate Active {\nA --> B\n--\nC --> D\n}\n', encoding="utf-8")
+    payload = json.loads(run_extract([str(concurrent), "--json"]))["diagrams"][0]
+    if "--" in {node["id"] for node in payload["nodes"]}:
+        fail("The documented concurrency separator became a phantom state")
+
+    # Note bodies are annotation text, even when they resemble diagram syntax.
+    for side in ("left", "right"):
+        note = tmp / f"state-note-{side}.mmd"
+        note.write_text(
+            "stateDiagram-v2\nstate Group {\nstate Idle\n"
+            f"note {side} of Idle\nDisconnected\nstate Phantom\n"
+            "Ghost --> Imaginary\n}\nIdle: false description\nend note\n"
+            "Active\n}\nOutside\n",
+            encoding="utf-8",
+        )
+        payload = json.loads(run_extract([str(note), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node for node in payload["nodes"]}
+        if set(nodes) != {"Group", "Idle", "Active", "Outside"} or payload["edges"]:
+            fail(f"A {side} state note body became diagram structure")
+        if nodes["Idle"]["label"] != "Idle" or nodes["Active"]["parent"] != "Group":
+            fail(f"A {side} state note body altered labels or container membership")
+        if nodes["Outside"]["parent"] is not None:
+            fail("Parsing did not resume after the note and composite state")
+
+    notes = tmp / "state-notes-adjacent-inline.mmd"
+    notes.write_text(
+        "stateDiagram-v2\nstate Idle\nnote left of Idle\nGhost\nend note\n"
+        "note right of Idle\nPhantom\nend note\n"
+        "note left of Idle: first inline annotation\n"
+        "note right of Idle: second inline annotation\nActive\nnote\nend\nnotebook\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(notes), "--json"]))["diagrams"][0]
+    if {node["id"] for node in payload["nodes"]} != {"Idle", "Active", "note", "end", "notebook"}:
+        fail("State note boundaries swallowed real states or retained annotation bodies")
+
+    if payload["notes"] != ["first inline annotation", "second inline annotation"]:
+        fail("Single-line state notes were not retained in source order")
+    digest = run_extract([str(notes)])
+    if "notes: first inline annotation; second inline annotation" not in digest:
+        fail("Single-line state notes were not printed in the digest")
+
+    for side in ("left", "right"):
+        unterminated = tmp / f"state-note-unterminated-{side}.mmd"
+        unterminated.write_text(
+            f"stateDiagram-v2\nstate Idle\nnote {side} of Idle\n"
+            "Annotation\nActive\n",
+            encoding="utf-8",
+        )
+        expect_error([str(unterminated), "--json"], "unterminated state note at line 3")
+
+    special = tmp / "state-special-bare.mmd"
+    special.write_text(
+        "stateDiagram-v2\nstate Decision <<choice>>\nDecision\n"
+        "state Fork <<fork>>\nFork\nstate Join <<join>>\nJoin\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(special), "--json"]))["diagrams"][0]
+    shapes = {node["id"]: node["shape"] for node in payload["nodes"]}
+    if shapes != {"Decision": "choice", "Fork": "fork", "Join": "join"}:
+        fail("A repeated bare declaration replaced a special state shape")
+    ok("bare states retain shapes and exclude multiline state note bodies")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-mermaid-") as directory:
         tmp = Path(directory)
+        check_unicode_state_regression(tmp)
+        check_unicode_er_regression(tmp)
+        check_standalone_er_regression(tmp)
+        check_standalone_state_regression(tmp)
         check_files()
+        expect_error([str(FLOW), "--diagram", "²"], "--diagram must be an index")
         check_flowchart()
+        check_bidirectional_analysis(tmp)
+        check_node_shape_updates(tmp)
+        check_invisible_links(tmp)
+        check_spaced_pipe_labels(tmp)
+        check_flowchart_header_statements(tmp)
+        check_edge_ids(tmp)
+        check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
         check_frontmatter(tmp)
+        check_outer_markdown_fences(tmp)
         check_markdown_and_grammars(tmp)
+        check_state_descriptions(tmp)
+        check_named_composite_states(tmp)
+        check_selection_before_parse(tmp)
+        check_utf8_bom(tmp)
         check_legacy_stdout_encoding(tmp)
         check_sequence_grammar_forms(tmp)
+        check_sequence_highlight_nesting_regression(tmp)
+        check_sequence_digest_regions(tmp)
+        check_sequence_autonumber(tmp)
         check_adversarial(tmp)
         check_errors_and_limits(tmp)
         check_docs_and_wiring()

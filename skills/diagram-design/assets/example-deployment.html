@@ -11,7 +11,7 @@
       --color-paper:   #f5f5f5;
       --color-ink:     #2d3142;
       --color-muted:   #4f5d75;
-      --color-accent:  #eb6c36;
+      --color-accent:  #bf4520;
       --font-sans:     'Geist', system-ui, sans-serif;
       --font-serif:    'Instrument Serif', serif;
       --font-mono:     'Geist Mono', ui-monospace, monospace;
@@ -66,7 +66,7 @@
           <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
         </pattern>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
         <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
       </defs>
 
@@ -90,7 +90,7 @@
       <path d="M 224,196 H 288 Q 296,196 296,188 V 128 Q 296,120 304,120" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
       <line x1="420" y1="164" x2="420" y2="196" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
       <path d="M 536,252 H 572 Q 580,252 580,244 V 128 Q 580,120 588,120 H 624" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <line x1="720" y1="164" x2="720" y2="212" stroke="#eb6c36" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-accent)"/>
+      <line x1="720" y1="164" x2="720" y2="212" stroke="#bf4520" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-accent)"/>
 
       <!-- Path labels -->
       <rect x="224" y="176" width="64" height="12" rx="2" fill="#f5f5f5"/>
@@ -103,13 +103,13 @@
       <text x="620" y="189" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TLS:5432</text>
 
       <rect x="728" y="182" width="72" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="764" y="191" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WAL STREAM</text>
+      <text x="764" y="191" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">WAL STREAM</text>
 
       <!-- Node: CDN (edge-cache) -->
       <rect x="64" y="156" width="160" height="84" rx="6" fill="#f5f5f5"/>
       <rect x="64" y="156" width="160" height="84" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
       <rect x="72" y="164" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
-      <text x="88" y="173" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CDN</text>
+      <text x="88" y="173" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CDN</text>
       <text x="144" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cloudflare</text>
       <rect x="72" y="208" width="144" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
       <text x="80" y="224" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">edge-cache</text>
@@ -142,9 +142,9 @@
 
       <!-- Node: rds-primary (focal) -->
       <rect x="624" y="80" width="192" height="84" rx="6" fill="#f5f5f5"/>
-      <rect x="624" y="80" width="192" height="84" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <rect x="632" y="88" width="64" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
-      <text x="664" y="97" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MANAGED</text>
+      <rect x="624" y="80" width="192" height="84" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+      <rect x="632" y="88" width="64" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.50)" stroke-width="0.8"/>
+      <text x="664" y="97" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MANAGED</text>
       <text x="720" y="120" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">rds-primary</text>
       <rect x="632" y="132" width="176" height="24" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="0.8"/>
       <text x="640" y="148" fill="#2d3142" font-size="12" font-family="'Geist', sans-serif">postgres</text>
@@ -164,7 +164,7 @@
       <line x1="40" y1="340" x2="1000" y2="340" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
       <text x="40" y="356" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
 
-      <rect x="40" y="372" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="40" y="372" width="14" height="10" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
       <text x="60" y="380" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal / primary</text>
 
       <rect x="180" y="372" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
@@ -179,7 +179,7 @@
       <line x1="600" y1="376" x2="628" y2="376" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
       <text x="636" y="380" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Cross-zone</text>
 
-      <line x1="740" y1="376" x2="768" y2="376" stroke="#eb6c36" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-accent)"/>
+      <line x1="740" y1="376" x2="768" y2="376" stroke="#bf4520" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-accent)"/>
       <text x="776" y="380" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Replication</text>
 
       <line x1="880" y1="376" x2="908" y2="376" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>

@@ -316,9 +316,37 @@ def run_cases(h):
         name="figure.html",
     )
 
+    # A renamed chart whose band paths declare data-layer but drop
+    # data-values is still claimed by its markup; the missing values are the
+    # finding, so the file must not slip out of scope.
+    h.expect_finding(
+        "renamed layer paths missing data-values fail closed, not skipped",
+        PLAIN_HEAD.replace("<title>t</title>", "<title>Build minutes by team</title>")
+        + '  <path data-layer="Docs" d="M 80 230 L 160 230 Z" fill="#2d3142"/>\n'
+        + '  <path data-layer="Unit" d="M 80 240 L 160 240 Z" fill="#4f5d75"/>\n'
+        + TAIL,
+        r"presents as a streamgraph but declares 0 verifiable layer",
+        name="figure.html",
+    )
+
+    # The same row grouping a service blueprint uses (data-layer on <g>) does
+    # not claim a file on its own.
+    h.expect_out_of_scope(
+        "data-layer on row groups alone does not claim the file",
+        PLAIN_HEAD
+        + '  <g data-layer="customer"><rect x="0" y="0" width="4" height="4"/></g>\n'
+        + TAIL,
+        "figure.html",
+    )
+
     # The detector must not drag the other example types into scope.
+    # Service blueprint reuses data-layer on row groups; those files must
+    # stay out of scope because no band mark carries data-layer.
     for other in ("example-line.html", "example-slopegraph.html",
-                  "example-sankey.html", "example-treemap.html"):
+                  "example-sankey.html", "example-treemap.html",
+                  "example-service-blueprint.html",
+                  "example-service-blueprint-dark.html",
+                  "example-service-blueprint-full.html"):
         path = ROOT / "skills/diagram-design/assets" / other
         if path.exists():
             h.expect_out_of_scope(

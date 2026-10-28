@@ -182,6 +182,8 @@ def load_scene_data(path: Path) -> dict[str, Any]:
                 f"invalid geometry: {token} is not finite"
             ),
         )
+    except RecursionError:
+        _fail(f"{path.name}: Excalidraw JSON nesting exceeds the parser limit")
     except (UnicodeDecodeError, ValueError):
         _fail(f"{path.name}: not valid Excalidraw JSON")
     if not isinstance(document, dict) or document.get("type") != "excalidraw":
@@ -202,6 +204,13 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         if isinstance(element, dict) and isinstance(element.get("id"), str)
     ]
 
+    seen_ids: set[str] = set()
+    for element in elements:
+        element_id = element["id"]
+        if element_id in seen_ids:
+            _fail("duplicate element id")
+        seen_ids.add(element_id)
+
     live: list[dict[str, Any]] = []
     for element in elements:
         if not isinstance(element.get("type"), str):
@@ -211,7 +220,10 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
             continue
         live.append(element)
 
-    by_id = {element["id"]: element for element in live}
+    foldable_ids = {
+        element["id"] for element in live
+        if element.get("type") in NODE_SHAPES or element.get("type") in EDGE_TYPES
+    }
 
     # Pass 1: fold bound text into its container (node label or edge label).
     bound_labels: dict[str, list[str]] = {}
@@ -219,7 +231,7 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         if element.get("type") != "text":
             continue
         container = element.get("containerId")
-        if isinstance(container, str) and container in by_id:
+        if isinstance(container, str) and container in foldable_ids:
             text = clean_label(element.get("text"))
             if text:
                 bound_labels.setdefault(container, []).append(text)
@@ -237,7 +249,7 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         if kind in EDGE_TYPES:
             continue
         if kind == "text":
-            if isinstance(element.get("containerId"), str) and element["containerId"] in by_id:
+            if isinstance(element.get("containerId"), str) and element["containerId"] in foldable_ids:
                 continue  # folded into its container in pass 1
             shape, label = "text", clean_label(element.get("text"))
         elif kind in CONTAINER_TYPES:
@@ -464,10 +476,16 @@ def analyze(scene: Scene) -> dict[str, Any]:
         if container.children
         and all(not scene.node_map[child].children for child in container.children)
     ]
+    # Excalidraw orders group ids from deepest to shallowest (inner to outer).
+    # Count every membership: selecting either endpoint alone loses a cluster.
     group_members: dict[str, list[Node]] = {}
     for node in nodes:
-        if node.groups:
-            group_members.setdefault(node.groups[-1], []).append(node)
+        seen_groups: set[str] = set()
+        for group_id in node.groups:
+            if not group_id or group_id in seen_groups:
+                continue
+            seen_groups.add(group_id)
+            group_members.setdefault(group_id, []).append(node)
     for group_id, members in group_members.items():
         if len(members) < 2:
             continue

@@ -13,11 +13,11 @@
       --color-paper-2:     #ececec;
       --color-ink:         #2d3142;
       --color-muted:       #4f5d75;
-      --color-soft:        #7a8399;
+      --color-soft:        #5a6580;
       --color-rule:        rgba(45,49,66,0.12);
       --color-rule-solid:  rgba(79,93,117,0.25);
-      --color-accent:      #eb6c36;
-      --color-accent-tint: rgba(235,108,54,0.08);
+      --color-accent:      #bf4520;
+      --color-accent-tint: rgba(191,69,32,0.08);
       --color-link:        #2e5aa8;
       --font-sans:   'Geist', system-ui, sans-serif;
       --font-serif:  'Instrument Serif', 'Times New Roman', serif;
@@ -197,7 +197,7 @@
             <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
           </marker>
           <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+            <polygon points="0 0, 8 3, 0 6" fill="#bf4520"/>
           </marker>
           <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
             <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
@@ -244,7 +244,7 @@
         <line x1="580" y1="352" x2="356" y2="352" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
 
         <!-- M5: Cloudflare → Reader  (primary success · coral) -->
-        <line x1="348" y1="408" x2="128" y2="408" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <line x1="348" y1="408" x2="128" y2="408" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
 
         <!-- M6: Reader → Analytics  (async beacon · muted dashed) -->
         <line x1="128" y1="464" x2="800" y2="464" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
@@ -271,7 +271,7 @@
 
         <!-- M5 label (coral · primary response) -->
         <rect x="192" y="392" width="96" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="240" y="402" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">200 · EDGE-CACHED</text>
+        <text x="240" y="402" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">200 · EDGE-CACHED</text>
 
         <!-- M6 label (placed between Astro and Analytics lifelines, a clear gap) -->
         <rect x="648" y="448" width="96" height="12" rx="2" fill="#f5f5f5"/>
@@ -284,9 +284,9 @@
 
         <!-- Actor 1: Reader (external / soft) -->
         <rect x="56" y="72" width="144" height="56" rx="6" fill="#f5f5f5"/>
-        <rect x="56" y="72" width="144" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
-        <rect x="64" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
-        <text x="78" y="89" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+        <rect x="56" y="72" width="144" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#5a6580" stroke-width="1"/>
+        <rect x="64" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(90,101,128,0.40)" stroke-width="0.8"/>
+        <text x="78" y="89" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
         <text x="128" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Reader</text>
         <text x="128" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Browser</text>
 
@@ -294,15 +294,15 @@
         <rect x="280" y="72" width="144" height="56" rx="6" fill="#f5f5f5"/>
         <rect x="280" y="72" width="144" height="56" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
         <rect x="288" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
-        <text x="304" y="89" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EDGE</text>
+        <text x="304" y="89" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EDGE</text>
         <text x="352" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cloudflare</text>
         <text x="352" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Pages · cache</text>
 
         <!-- Actor 3: Astro Origin (focal / coral) -->
         <rect x="504" y="72" width="160" height="56" rx="6" fill="#f5f5f5"/>
-        <rect x="504" y="72" width="160" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-        <rect x="512" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
-        <text x="528" y="89" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ORIG</text>
+        <rect x="504" y="72" width="160" height="56" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+        <rect x="512" y="80" width="32" height="12" rx="2" fill="transparent" stroke="rgba(191,69,32,0.50)" stroke-width="0.8"/>
+        <text x="528" y="89" fill="#bf4520" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ORIG</text>
         <text x="584" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Astro Origin</text>
         <text x="584" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">SSR + MDX</text>
 
@@ -310,7 +310,7 @@
         <rect x="728" y="72" width="144" height="56" rx="6" fill="#f5f5f5"/>
         <rect x="728" y="72" width="144" height="56" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.22)" stroke-width="1" stroke-dasharray="4,3"/>
         <rect x="736" y="80" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.22)" stroke-width="0.8"/>
-        <text x="750" y="89" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ASY</text>
+        <text x="750" y="89" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ASY</text>
         <text x="800" y="104" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Analytics</text>
         <text x="800" y="119" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Beacon · async</text>
 
@@ -322,7 +322,7 @@
         <text x="56" y="520" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
 
         <!-- Item 1: Actor swatch (coral focal) -->
-        <rect x="56" y="540" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <rect x="56" y="540" width="14" height="10" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
         <text x="76" y="548" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal actor</text>
 
         <!-- Item 2: Activation bar swatch -->
@@ -338,7 +338,7 @@
         <text x="512" y="548" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Return / async</text>
 
         <!-- Item 5: Primary response (coral) -->
-        <line x1="652" y1="546" x2="680" y2="546" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <line x1="652" y1="546" x2="680" y2="546" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <text x="688" y="548" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Primary response</text>
 
       </svg>

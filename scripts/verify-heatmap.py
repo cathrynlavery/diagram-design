@@ -49,17 +49,29 @@ Exit: 0 clean, 1 findings, 2 usage.
 from __future__ import annotations
 
 import argparse
+import math
 import re
+import html
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>", re.IGNORECASE)
+# A ">" inside a quoted attribute is text, not the end of the tag. Ending the
+# scan there drops the cell or axis label that follows it.
+_ATTRS = r"""(?:"[^"]*"|'[^']*'|[^"'<>])*"""
+RECT_RE = re.compile(rf"<rect\b(?P<attrs>{_ATTRS})/?>", re.IGNORECASE)
+TEXT_RE = re.compile(rf"<text\b(?P<attrs>{_ATTRS})>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
+COMMENT_OR_STYLE_RE = re.compile(
+    r"<!--.*?(?:-->|$)|" + STYLE_RE.pattern, re.IGNORECASE | re.DOTALL
+)
+CSS_NONCODE_RE = re.compile(
+    r'''"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|\\[\s\S]|/\*.*?(?:\*/|$)''',
+    re.DOTALL,
+)
 RGBA_RE = re.compile(r"rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)")
 HEX_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
@@ -80,9 +92,38 @@ CSS_MOVES_MARK_RE = re.compile(
 )
 
 
+LENGTH_RE = re.compile(
+    r"(?P<number>[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)(?:px)?",
+    re.IGNORECASE,
+)
+
+
+def _length_px(raw: str | None, field: str, errors: list[str] | None) -> float | None:
+    """Measure finite unitless/pixel SVG lengths for focal-text contrast."""
+    if raw is None:
+        return None
+    match = LENGTH_RE.fullmatch(raw.strip())
+    if match is not None:
+        value = float(match.group("number"))
+        if math.isfinite(value):
+            return value
+    if errors is not None:
+        errors.append(
+            f"unsupported or non-finite {field} length {raw!r} for focal-text "
+            "contrast measurement; use a finite unitless or px length"
+        )
+    return None
+
+
 def _attr(attrs_str: str, name: str) -> str | None:
-    m = re.search(r"\b" + re.escape(name) + r'\s*=\s*"([^"]*)"', attrs_str)
-    return m.group(1) if m else None
+    for match in re.finditer(
+        r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+        attrs_str,
+        re.DOTALL,
+    ):
+        if match.group("name") == name:
+            return html.unescape(match.group("value"))
+    return None
 
 
 def _is_accent(r: int, g: int, b: int) -> bool:
@@ -215,7 +256,7 @@ def parse_axis_labels(source: str) -> tuple[list[str], list[str], set[str], set[
     return declared_rows, declared_cols, duplicate_rows, duplicate_cols
 
 
-def parse_cells(source: str) -> list[dict]:
+def parse_cells(source: str, errors: list[str] | None = None) -> list[dict]:
     """Return list of cell dicts: row, col, value, opacity, focal."""
     source_clean = COMMENT_RE.sub("", source)
     cells: list[dict] = []
@@ -231,7 +272,7 @@ def parse_cells(source: str) -> list[dict]:
             value = float(val_str)
         except ValueError:
             continue
-        if not (0.0 <= value < 1e9) or value != value:  # reject nan/inf/negative
+        if not math.isfinite(value) or value < 0:  # unsigned finite rates/counts
             continue
 
         fill = _attr(attrs_str, "fill") or ""
@@ -265,17 +306,17 @@ def parse_cells(source: str) -> list[dict]:
                 "opacity": opacity,
                 "focal": focal,
                 "fill": fill,
-                "x": float(x) if x is not None else None,
-                "y": float(y) if y is not None else None,
-                "width": float(width) if width is not None else None,
-                "height": float(height) if height is not None else None,
+                "x": _length_px(x, "x", errors),
+                "y": _length_px(y, "y", errors),
+                "width": _length_px(width, "width", errors),
+                "height": _length_px(height, "height", errors),
             }
         )
 
     return cells
 
 
-def parse_text_labels(source: str) -> list[dict]:
+def parse_text_labels(source: str, errors: list[str] | None = None) -> list[dict]:
     """Return SVG text labels with their fill, x, y, and rendered text."""
     source_clean = COMMENT_RE.sub("", source)
     texts: list[dict] = []
@@ -290,8 +331,8 @@ def parse_text_labels(source: str) -> list[dict]:
         texts.append(
             {
                 "fill": fill,
-                "x": float(x) if x is not None else None,
-                "y": float(y) if y is not None else None,
+                "x": _length_px(x, "x", errors),
+                "y": _length_px(y, "y", errors),
                 "text": text_content.group(1).strip() if text_content else "",
             }
         )
@@ -305,16 +346,26 @@ def check_file(path: Path) -> list[str]:
     except OSError as exc:
         return [f"{path.name}: cannot read: {exc}"]
 
+    # Consume archived HTML comments before styles, while keeping HTML legacy
+    # comment markers inside a live style's raw text available to the CSS guard.
+    styles = [match.group("body") for match in COMMENT_OR_STYLE_RE.finditer(source)
+              if match.group("body") is not None]
+    source = COMMENT_RE.sub("", source)
+
     # CSS-moves-geometry check.
-    for style_body in STYLE_RE.findall(source):
-        m = CSS_MOVES_MARK_RE.search(style_body)
+    for style_body in styles:
+        # Strings/escapes are indivisible: a quoted /* cannot begin a comment
+        # that swallows the following active geometry declaration.
+        live_css = CSS_NONCODE_RE.sub(" ", style_body)
+        m = CSS_MOVES_MARK_RE.search(live_css)
         if m:
             errors.append(
                 f"{path.name}: CSS property '{m.group('prop')}' can move verified "
                 "cell geometry without changing the attributes this checker reads"
             )
 
-    cells = parse_cells(source)
+    geometry_errors: list[str] = []
+    cells = parse_cells(source, geometry_errors)
 
     if not cells:
         errors.append(
@@ -455,7 +506,8 @@ def check_file(path: Path) -> list[str]:
     if canvas_underlay is None:
         canvas_underlay = (245, 245, 245)
 
-    text_labels = parse_text_labels(source)
+    text_labels = parse_text_labels(source, geometry_errors)
+    errors.extend(f"{path.name}: {finding}" for finding in geometry_errors)
     for focal in focal_cells:
         bg_rgb = _parse_color(focal["fill"], canvas_underlay)
         if bg_rgb is None:
@@ -469,7 +521,7 @@ def check_file(path: Path) -> list[str]:
                 continue
             if not (x0 <= text["x"] <= x0 + width and y0 <= text["y"] <= y0 + height):
                 continue
-            text_rgb = _parse_color(text["fill"])
+            text_rgb = _parse_color(text["fill"], bg_rgb)
             if text_rgb is None:
                 continue
             ratio = _contrast_ratio(text_rgb, bg_rgb)

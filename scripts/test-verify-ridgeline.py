@@ -58,7 +58,7 @@ FOCAL_D = ('d="M320,320 L350,317.6 L380,305.6 L410,279.2 L440,269.6 L470,286.4 '
 FOCAL_PATH = ('<path data-ridge="checkout-api" data-baseline="320" '
               'data-bins="0,1,6,17,21,14,8,6,7,9,7,4,0" '
               + FOCAL_D +
-              ' fill="rgba(235,108,54,0.16)" stroke="#eb6c36" stroke-width="2.4" '
+              ' fill="rgba(191,69,32,0.16)" stroke="#bf4520" stroke-width="2.4" '
               'stroke-linejoin="round"/>')
 # The same ridge redrawn at 3.6px per unit instead of the figure's 2.4. Every
 # vertex still sits on a straight, closed outline over the same bins; only the
@@ -144,7 +144,7 @@ def synthetic(n_ridges, n_bins, top=100, pitch=40, amp=2.0, x0=200, dx=20, unit=
         pts = ["%g,%g" % (x, baseline - amp * v) for x, v in zip(xs, values)]
         d = "M" + pts[0] + " " + " ".join("L" + p for p in pts[1:]) + " Z"
         focal = s == 0
-        stroke = "#eb6c36" if focal else "rgba(45,49,66,0.70)"
+        stroke = "#bf4520" if focal else "rgba(45,49,66,0.70)"
         width = "2.4" if focal else "1.2"
         live = [i for i, v in enumerate(values) if v > 0]
         parts.append('<line data-ridge="r%d" data-role="baseline" x1="%d" y1="%g" '
@@ -402,14 +402,14 @@ def main() -> int:
         case(
             failures, directory, "two-focal",
             source.replace('stroke="rgba(45,49,66,0.80)" stroke-width="1.2"',
-                           'stroke="#eb6c36" stroke-width="2.4"', 1),
+                           'stroke="#bf4520" stroke-width="2.4"', 1),
             source, "exactly one editorially focal",
             "two ridges carrying the accent stroke",
         )
         case(
             failures, directory, "weight-mismatch",
-            source.replace('stroke="#eb6c36" stroke-width="2.4"',
-                           'stroke="#eb6c36" stroke-width="1.2"', 1),
+            source.replace('stroke="#bf4520" stroke-width="2.4"',
+                           'stroke="#bf4520" stroke-width="1.2"', 1),
             source, "focus cue",
             "a focal stroke at non-focal weight",
         )

@@ -91,26 +91,26 @@
         <!-- Arrows (drawn first) -->
         <!-- 1. Draft → Open PR (within Author) -->
         <line x1="300" y1="120" x2="340" y2="120" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
-        <!-- 2. Open PR → Review (Author → Reviewer handoff, diagonal down-right) -->
-        <line x1="460" y1="144" x2="500" y2="176" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 2. Open PR → Review (Author → Reviewer handoff: right edge, one turn, down into Review's top) -->
+        <path d="M 460,120 H 512 Q 520,120 520,128 V 176" fill="none" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
         <!-- 3. Review → Polish (Reviewer → Editor, vertical down) -->
         <line x1="570" y1="224" x2="570" y2="256" stroke="#bfc0c0" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
         <!-- 4. Polish → Approve (within Editor) -->
         <line x1="640" y1="280" x2="680" y2="280" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
-        <!-- 5. Approve → Build (Editor → CI/CD, coral handoff) -->
-        <line x1="750" y1="304" x2="720" y2="336" stroke="#f08a59" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <!-- 5. Approve → Build (Editor → CI/CD, coral handoff, straight down) -->
+        <line x1="720" y1="304" x2="720" y2="336" stroke="#f08a59" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <!-- 6. Build → Deploy (within CI/CD) -->
         <line x1="760" y1="360" x2="800" y2="360" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
 
         <!-- Arrow labels -->
-        <rect x="478" y="140" width="60" height="12" rx="2" fill="#2d3142"/>
-        <text x="508" y="150" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">HANDOFF</text>
+        <rect x="528" y="140" width="60" height="12" rx="2" fill="#2d3142"/>
+        <text x="558" y="150" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">HANDOFF</text>
 
-        <rect x="548" y="228" width="52" height="12" rx="2" fill="#393e53"/>
-        <text x="574" y="238" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">REVISE</text>
+        <rect x="578" y="234" width="52" height="12" rx="2" fill="#393e53"/>
+        <text x="604" y="244" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">REVISE</text>
 
-        <rect x="712" y="308" width="80" height="12" rx="2" fill="#2d3142"/>
-        <text x="752" y="318" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">DEPLOY TRIGGER</text>
+        <rect x="728" y="314" width="80" height="12" rx="2" fill="#2d3142"/>
+        <text x="768" y="324" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">DEPLOY TRIGGER</text>
 
         <!-- Steps -->
         <!-- Author: Draft MDX -->

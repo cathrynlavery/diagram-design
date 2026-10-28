@@ -11,7 +11,7 @@
       --color-paper:   #f5f5f5;
       --color-ink:     #2d3142;
       --color-muted:   #4f5d75;
-      --color-accent:  #eb6c36;
+      --color-accent:  #bf4520;
       --font-sans:     'Geist', system-ui, sans-serif;
       --font-serif:    'Instrument Serif', serif;
       --font-mono:     'Geist Mono', ui-monospace, monospace;
@@ -66,7 +66,7 @@
             <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
           </pattern>
           <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
         </defs>
 
         <rect width="100%" height="100%" fill="#f5f5f5"/>
@@ -91,26 +91,26 @@
         <!-- Arrows (drawn first) -->
         <!-- 1. Draft → Open PR (within Author) -->
         <line x1="300" y1="120" x2="340" y2="120" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-        <!-- 2. Open PR → Review (Author → Reviewer handoff, diagonal down-right) -->
-        <line x1="460" y1="144" x2="500" y2="176" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 2. Open PR → Review (Author → Reviewer handoff: right edge, one turn, down into Review's top) -->
+        <path d="M 460,120 H 512 Q 520,120 520,128 V 176" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
         <!-- 3. Review → Polish (Reviewer → Editor, vertical down) -->
         <line x1="570" y1="224" x2="570" y2="256" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
         <!-- 4. Polish → Approve (within Editor) -->
         <line x1="640" y1="280" x2="680" y2="280" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-        <!-- 5. Approve → Build (Editor → CI/CD, coral handoff) -->
-        <line x1="750" y1="304" x2="720" y2="336" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <!-- 5. Approve → Build (Editor → CI/CD, coral handoff, straight down) -->
+        <line x1="720" y1="304" x2="720" y2="336" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <!-- 6. Build → Deploy (within CI/CD) -->
         <line x1="760" y1="360" x2="800" y2="360" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
         <!-- Arrow labels -->
-        <rect x="478" y="140" width="60" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="508" y="150" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">HANDOFF</text>
+        <rect x="528" y="140" width="60" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="558" y="150" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">HANDOFF</text>
 
-        <rect x="548" y="228" width="52" height="12" rx="2" fill="#ececec"/>
-        <text x="574" y="238" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">REVISE</text>
+        <rect x="578" y="234" width="52" height="12" rx="2" fill="#ececec"/>
+        <text x="604" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">REVISE</text>
 
-        <rect x="712" y="308" width="80" height="12" rx="2" fill="#f5f5f5"/>
-        <text x="752" y="318" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">DEPLOY TRIGGER</text>
+        <rect x="728" y="314" width="80" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="768" y="324" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">DEPLOY TRIGGER</text>
 
         <!-- Steps -->
         <!-- Author: Draft MDX -->
@@ -144,7 +144,7 @@
         <text x="720" y="372" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">astro build</text>
 
         <!-- CI/CD: Deploy (coral focal) -->
-        <rect x="800" y="336" width="120" height="48" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <rect x="800" y="336" width="120" height="48" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
         <text x="860" y="358" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Deploy</text>
         <text x="860" y="372" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">cloudflare pages</text>
 
@@ -155,7 +155,7 @@
         <rect x="40" y="460" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
         <text x="60" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Step</text>
 
-        <rect x="132" y="460" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <rect x="132" y="460" width="14" height="10" rx="2" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
         <text x="152" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal outcome</text>
 
         <line x1="268" y1="466" x2="296" y2="466" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -164,7 +164,7 @@
         <line x1="444" y1="466" x2="472" y2="466" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
         <text x="480" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Revision loop</text>
 
-        <line x1="608" y1="466" x2="636" y2="466" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <line x1="608" y1="466" x2="636" y2="466" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <text x="644" y="468" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Critical handoff</text>
       </svg>
   </div>

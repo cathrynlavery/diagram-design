@@ -156,6 +156,9 @@ DIGIT_RE = re.compile(r"\d")
 # live markup is held to the contract even when the parser finds no complete
 # layer - that is check_source's fail-closed case, not a skip.
 DECLARES_LAYER_RE = re.compile(r"\bdata-layer\s*=", re.IGNORECASE)
+# Opening <g> tags. A data-layer on a group is a row (service blueprint),
+# not a band; only data-layer on any other tag claims the file.
+GROUP_OPEN_TAG_RE = re.compile(r"<g\b[^>]*>", re.IGNORECASE)
 # Path grammar: absolute M/C/L/Z and numbers only. Relative commands, arcs,
 # shorthand curves and H/V would need a transform stack this checker refuses
 # to half-implement; a partial parse looks like coverage without being it.
@@ -419,10 +422,19 @@ def looks_like_streamgraph(path: Path, source: str) -> bool:
     commented-out draft of a layer cannot pull another example type into
     scope; a mangled tag whose bytes still say `data-layer=` can, and then
     the parser finding no complete layer is exactly what is reported.
+
+    `data-layer` on a `<g>` is not the signal. Service-blueprint rows reuse
+    that attribute for customer / frontstage / backstage groups, which are
+    not stacked bands. Bands are marks, so `data-layer` anywhere outside a
+    group's opening tag still claims the file, whether or not `data-values`
+    is present: a band missing its values is a finding, not a skip.
     """
+    if path.name.startswith("example-service-blueprint"):
+        return False
     if path.name.startswith("example-streamgraph"):
         return True
-    if DECLARES_LAYER_RE.search(HTML_COMMENT_RE.sub(" ", source)):
+    live = HTML_COMMENT_RE.sub(" ", source)
+    if DECLARES_LAYER_RE.search(GROUP_OPEN_TAG_RE.sub(" ", live)):
         return True
     described = named_text(parse_document(source))
     return "streamgraph" in described or "stream graph" in described

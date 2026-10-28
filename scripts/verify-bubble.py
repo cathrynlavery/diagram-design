@@ -164,7 +164,7 @@ HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 # STROKE because the fill is a translucent tint the paper shows through; the
 # stroke is the mark's edge and the thing a reader identifies the accent by.
 ACCENT_RE = re.compile(
-    r"#eb6c36\b|#f08a59\b|rgba\(\s*235\s*,\s*108\s*,\s*54\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
 
@@ -638,6 +638,13 @@ def check_axis(bubbles: list, axis: str, findings: list, name: str):
             "%s:%d: the %s axis has no two distinct declared values, so its scale "
             "cannot be derived and no position on it is verifiable"
             % (name, line, axis)
+        )
+        return None, None
+
+    if slope == 0 or not all(map(math.isfinite, (slope, intercept))):
+        findings.append(
+            "%s:%d: the %s axis has a zero or non-finite scale — distinct "
+            "values must map to distinct finite positions" % (name, line, axis)
         )
         return None, None
 

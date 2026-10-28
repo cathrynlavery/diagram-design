@@ -51,17 +51,32 @@ def normalize_newlines(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def run_extract(args: list[str]) -> str:
-    proc = subprocess.run(
+def invoke(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         [sys.executable, str(EXTRACT), *args],
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
     )
+
+
+def run_extract(args: list[str]) -> str:
+    proc = invoke(args)
     if proc.returncode != 0:
         fail(f"extractor exited {proc.returncode} for {args}: {proc.stderr.strip()}")
     return proc.stdout
+
+
+def expect_extract_error(args: list[str], message: str, *, quiet_stdout: bool = False) -> None:
+    proc = invoke(args)
+    if proc.returncode != 2 or message not in proc.stderr:
+        fail(
+            f"expected exit 2 containing {message!r} for {args}; got "
+            f"{proc.returncode}: {proc.stderr.strip()!r}"
+        )
+    if quiet_stdout and proc.stdout:
+        fail(f"expected no stdout for failed write {args}; got {proc.stdout.strip()!r}")
 
 
 def check_legacy_stdout_encoding(tmp: Path) -> None:
@@ -69,7 +84,7 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     source.write_text(
         """<mxfile><diagram name="日本語">
 <mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<mxCell id="2" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
+<mxCell id="2" style="html=1;" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
 <mxGeometry x="0" y="0" width="120" height="60" as="geometry"/>
 </mxCell></root></mxGraphModel></diagram></mxfile>""",
         encoding="utf-8",
@@ -155,6 +170,31 @@ def png_chunk(ctype: bytes, data: bytes) -> bytes:
     )
 
 
+def check_out_write_errors(tmp: Path) -> None:
+    # A missing parent directory is the common caller mistake; an existing
+    # directory or a regular file in the parent slot are the hostile cases.
+    missing_dir = tmp / "missing-output-directory"
+    expect_extract_error(
+        [str(FIXTURE), "--out", str(missing_dir / "digest.md")],
+        f"cannot write {missing_dir / 'digest.md'}",
+        quiet_stdout=True,
+    )
+    expect_extract_error(
+        [str(FIXTURE), "--json", "--out", str(missing_dir / "digest.json")],
+        f"cannot write {missing_dir / 'digest.json'}",
+        quiet_stdout=True,
+    )
+    expect_extract_error(
+        [str(FIXTURE), "--out", str(tmp)], "cannot write", quiet_stdout=True
+    )
+    parent_file = tmp / "regular-file.md"
+    parent_file.write_text("not a directory", encoding="utf-8")
+    expect_extract_error(
+        [str(FIXTURE), "--out", str(parent_file / "digest.md")], "cannot write", quiet_stdout=True
+    )
+    ok("draw.io --out write failures report a clear diagnostic and exit 2")
+
+
 def check_files() -> None:
     for path in (SKILL, EXTRACT, IMPORT_REF, OUTPUT_REF, EXPORT_REF, COMMAND, FIXTURE, EXAMPLE):
         if not path.is_file():
@@ -215,6 +255,64 @@ def check_parse_raw() -> dict:
     return payload
 
 
+def check_arrow_directions(tmp: Path) -> None:
+    # mxGraph's serialized source/target describe the connector geometry;
+    # its start/end arrowheads describe the actual relationship direction.
+    cases = (
+        ("startArrow=classic;endArrow=none;", "b", "a", False, False, ["B"], ["A"], False),
+        ("startArrow=none;endArrow=classic;", "a", "b", False, False, ["A"], ["B"], False),
+        ("startArrow=classic;endArrow=classic;", "a", "b", True, False, [], [], True),
+        ("startArrow=none;endArrow=none;", "a", "b", False, True, [], [], False),
+        ("", "a", "b", False, False, ["A"], ["B"], False),
+        ("startArrow=0;endArrow=0;", "a", "b", False, True, [], [], False),
+    )
+    for index, (style, source, target, both, neither, entries, terminals, cycle) in enumerate(cases):
+        path = tmp / f"arrow-direction-{index}.drawio"
+        path.write_text(
+            '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+            '<mxCell id="a" value="A" vertex="1" parent="1"><mxGeometry width="60" height="40" as="geometry"/></mxCell>'
+            '<mxCell id="b" value="B" vertex="1" parent="1"><mxGeometry x="100" width="60" height="40" as="geometry"/></mxCell>'
+            f'<mxCell id="e" value="message" style="{style}" edge="1" parent="1" source="a" target="b">'
+            '<mxGeometry relative="1" as="geometry"/></mxCell></root></mxGraphModel>',
+            encoding="utf-8",
+        )
+        page = json.loads(run_extract([str(path), "--json"]))["pages"][0]
+        edge, analysis = page["edges"][0], page["analysis"]
+        if (edge["source"], edge["target"], edge["bidirectional"], edge["undirected"]) != (source, target, both, neither):
+            fail(f"arrow direction {index} disagrees with serialized arrowheads: {edge}")
+        if (analysis["entry_points"], analysis["terminals"], analysis["has_cycle"]) != (entries, terminals, cycle):
+            fail(f"arrow direction {index} has inconsistent structural analysis: {analysis}")
+        if both or neither:
+            if any((node["in_degree"], node["out_degree"]) != (1, 1) for node in page["nodes"]):
+                fail(f"arrow direction {index} invented one-way degree counts")
+        else:
+            nodes = {node["id"]: node for node in page["nodes"]}
+            if (nodes[source]["in_degree"], nodes[source]["out_degree"], nodes[target]["in_degree"], nodes[target]["out_degree"]) != (0, 1, 1, 0):
+                fail(f"arrow direction {index} lost directed degree counts")
+    ok("arrowhead direction, degrees, entry/terminal analysis and bidirectional cycles agree")
+
+
+def check_relative_geometry(tmp: Path) -> None:
+    parent = '<mxCell id="outer" value="Outer" vertex="1" parent="1"><mxGeometry x="20" y="50" width="200" height="100" as="geometry"/></mxCell>'
+    for relative, offset, expected in ((True, False, (120.0, 150.0)), (True, True, (90.0, 130.0)), (False, False, (120.0, 150.0)), (False, True, (120.0, 150.0))):
+        position = 'x="0.5" y="1" relative="1"' if relative else 'x="100" y="100"'
+        child = f'<mxCell id="child" value="Child" vertex="1" parent="outer"><mxGeometry {position} width="60" height="40" as="geometry">'
+        child += '<mxPoint x="-30" y="-20" as="offset"/>' if offset else ''
+        child += '</mxGeometry></mxCell>'
+        for order in ((parent, child), (child, parent)):
+            path = tmp / "relative-child.drawio"
+            path.write_text('<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>' + ''.join(order) + '</root></mxGraphModel>', encoding="utf-8")
+            page = json.loads(run_extract([str(path), "--json"]))["pages"][0]
+            node = next(node for node in page["nodes"] if node["id"] == "child")
+            if (node["x"], node["y"]) != expected or (node["parent"], node["depth"]) != ("outer", 1):
+                fail(f"relative child geometry disagrees with mxGraph: {node}")
+    path.write_text(path.read_text().replace('x="100" y="100"', 'x="1e308" y="1" relative="1"'), encoding="utf-8")
+    expect_extract_error([str(path)], "geometry overflow")
+    path.write_text(path.read_text().replace('x="-30"', 'x="Infinity"'), encoding="utf-8")
+    expect_extract_error([str(path)], "invalid geometry: x must be finite")
+    ok("relative child positions resolve parent dimensions/offsets independent of cell order")
+
+
 def check_nested_geometry(tmp: Path) -> None:
     cells = (
         '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
@@ -239,6 +337,161 @@ def check_nested_geometry(tmp: Path) -> None:
         if page["bounds"] != {"x0": 100, "y0": 200, "x1": 200, "y1": 300}:
             fail(f"nested geometry changed canvas bounds: {page['bounds']}")
     ok("nested geometry and bounds are independent of cell order")
+
+
+def check_nested_relative_geometry(tmp: Path) -> None:
+    # Encoded by mxGraph 4.2.2: both the inner group and leaf have relative
+    # positions plus offsets. The leaf extends beyond its ancestor's box.
+    cells = (
+        '<mxCell id="outer" value="Outer" vertex="1" parent="1">'
+        '<mxGeometry x="20" y="50" width="200" height="100" as="geometry"/></mxCell>',
+        '<mxCell id="inner" value="Inner" vertex="1" parent="outer">'
+        '<mxGeometry x="0.5" y="0.5" width="80" height="60" relative="1" as="geometry">'
+        '<mxPoint x="-10" y="15" as="offset"/></mxGeometry></mxCell>',
+        '<mxCell id="leaf" value="Leaf" vertex="1" parent="inner">'
+        '<mxGeometry x="1" y="0.5" width="30" height="20" relative="1" as="geometry">'
+        '<mxPoint x="5" y="-5" as="offset"/></mxGeometry></mxCell>',
+    )
+    expected = {"outer": (20, 50, 0), "inner": (110, 115, 1), "leaf": (195, 140, 2)}
+    source = tmp / "nested-relative.drawio"
+    for order in itertools.permutations(cells):
+        source.write_text(
+            '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+            + "".join(order) + "</root></mxGraphModel>",
+            encoding="utf-8",
+        )
+        page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+        actual = {n["id"]: (n["x"], n["y"], n["depth"]) for n in page["nodes"]}
+        if actual != expected:
+            fail(f"nested relative geometry depends on cell order: {actual}")
+        if page["bounds"] != {"x0": 20, "y0": 50, "x1": 225, "y1": 175}:
+            fail(f"nested relative geometry changed canvas bounds: {page['bounds']}")
+    ok("nested relative groups, offsets, depth and bounds match all six cell orders")
+
+
+def check_bom_prefixed(tmp: Path) -> None:
+    model = re.search(
+        r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
+    )
+    if not model:
+        fail("fixture has no mxGraphModel")
+    # ElementTree accepts a leading U+FEFF, so the raw XML case passes even
+    # without BOM handling. The bare payload is the case that needs it:
+    # base64 decoding rejects the BOM and the extractor exits 2.
+    inputs = {
+        "raw XML": FIXTURE.read_bytes(),
+        "bare base64+deflate payload": compress_model(model.group(0)).encode("ascii"),
+    }
+    for index, (label, body) in enumerate(inputs.items()):
+        # Same file name in both runs: a bare payload's page is named after it.
+        plain = tmp / f"bom-{index}" / "plain" / "input.drawio"
+        prefixed = tmp / f"bom-{index}" / "prefixed" / "input.drawio"
+        for path in (plain, prefixed):
+            path.parent.mkdir(parents=True)
+        plain.write_bytes(body)
+        prefixed.write_bytes(b"\xef\xbb\xbf" + body)
+        expected = json.loads(run_extract([str(plain), "--json"]))["pages"]
+        actual = json.loads(run_extract([str(prefixed), "--json"]))["pages"]
+        analysis = actual[0]["analysis"]
+        if analysis["nodes_total"] != 12 or analysis["edges_total"] != 8:
+            fail(f"UTF-8 BOM-prefixed {label} graph differs from the source fixture")
+        if actual != expected:
+            fail(f"UTF-8 BOM-prefixed {label} extracts differently from the same input without a BOM")
+    ok("UTF-8 BOM-prefixed raw XML and bare compressed payload parse like their unprefixed input")
+
+
+def check_plain_angle_brackets(tmp: Path) -> None:
+    # XML decoding turns &lt; into a real "<" before label cleanup. A plain
+    # label such as List<String> or "a < b > c" is text, not a tag; HTML
+    # wrappers and comments still have to flatten.
+    source = tmp / "angle-brackets.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="generic" value="List&lt;String&gt;" vertex="1" parent="1">'
+        '<mxGeometry width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="compare" value="a &lt; b &gt; c" vertex="1" parent="1">'
+        '<mxGeometry x="100" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="html" style="html=1;" value="&lt;div&gt;&lt;b&gt;List&amp;lt;String&amp;gt;&lt;/b&gt;&lt;br&gt;kept&lt;/div&gt;" vertex="1" parent="1">'
+        '<mxGeometry x="200" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="comment" style="html=1;" value="&lt;!-- secret --&gt;visible" vertex="1" parent="1">'
+        '<mxGeometry x="300" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="u" value="List&lt;U&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="cpp" value="std::vector&lt;std::string&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="url" value="see &lt;https://x.io&gt; now" vertex="1" parent="1"/>'
+        '<mxCell id="plainhtml" style="html=0;" value="&lt;b&gt;literal&lt;/b&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="e" edge="1" value="List&lt;U&gt;" parent="1" source="generic" target="compare"/>'
+        '<mxCell id="el" vertex="1" parent="e" value="std::vector&lt;std::string&gt;"/>'
+        "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    for node_id, expected in {"u": "List<U>", "cpp": "std::vector<std::string>",
+                              "url": "see <https://x.io> now", "plainhtml": "<b>literal</b>"}.items():
+        actual = next(node["label"] for node in payload["nodes"] if node["id"] == node_id)
+        if actual != expected:
+            fail(f"plain label {node_id} changed: {actual!r} != {expected!r}")
+    if payload["edges"][0]["label"] != "List<U> / std::vector<std::string>":
+        fail(f"plain edge or edge-child label changed: {payload['edges']!r}")
+    nodes = {
+        node["id"]: node["label"]
+        for node in json.loads(run_extract([str(source), "--json"]))["pages"][0]["nodes"]
+    }
+    if nodes.get("generic") != "List<String>":
+        fail(f"plain generic label was stripped: {nodes.get('generic')!r}")
+    if nodes.get("compare") != "a < b > c":
+        fail(f"plain comparison label was stripped: {nodes.get('compare')!r}")
+    if nodes.get("html") != "List<String>\nkept":
+        fail(f"HTML label was not flattened: {nodes.get('html')!r}")
+    if nodes.get("comment") != "visible":
+        fail(f"HTML comment leaked into the label: {nodes.get('comment')!r}")
+    ok("plain angle brackets stay in labels and HTML tags still flatten")
+
+
+def check_hidden_cells(tmp: Path) -> None:
+    # visible="0" on a cell, a group, or a layer hides it in draw.io; the import must not resurrect it.
+    def vertex(cid: str, parent: str, x: int, extra: str = "") -> str:
+        return (f'<mxCell id="{cid}" value="{cid.upper()}" vertex="1" parent="{parent}"{extra}>'
+                f'<mxGeometry x="{x}" width="60" height="40" as="geometry"/></mxCell>')
+
+    def edge(cid: str, parent: str, extra: str = "") -> str:
+        return (f'<mxCell id="{cid}" value="{cid}" edge="1" parent="{parent}" source="a" target="b"{extra}>'
+                '<mxGeometry relative="1" as="geometry"/></mxCell>')
+
+    source = tmp / "hidden-cells.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="layer2" value="Draft" parent="0" visible="0"/>'
+        + vertex("a", "1", 0) + vertex("b", "1", 100)
+        + vertex("hidden", "1", 200, ' visible="0"')
+        + vertex("draft", "layer2", 300)
+        + vertex("grp", "1", 400, ' visible="0"') + vertex("inside", "grp", 5)
+        + edge("shown", "1") + edge("hiddenedge", "1", ' visible="0"') + edge("draftedge", "layer2")
+        + "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    nodes, edges = sorted(n["id"] for n in page["nodes"]), sorted(e["id"] for e in page["edges"])
+    if (nodes, edges) != (["a", "b"], ["shown"]):
+        fail(f"hidden cells, groups or layers leaked into the IR: nodes={nodes} edges={edges}")
+    # Put the deepest descendant first: memoization cannot shorten the first
+    # ancestor walk, and input order must not resurrect a hidden descendant.
+    deep = tmp / "hidden-child-first.drawio"
+    count = 8000
+    deep.write_text(
+        '<mxGraphModel><root>'
+        + ''.join(
+            f'<mxCell id="n{i}" parent="n{i + 1}" vertex="1"'
+            + (' visible="0"' if i == count - 1 else '')
+            + '><mxGeometry x="0" y="0" width="40" height="40" as="geometry"/></mxCell>'
+            for i in range(count)
+        )
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    deep_page = json.loads(run_extract([str(deep), "--json"]))["pages"][0]
+    if deep_page["nodes"] or deep_page["edges"]:
+        fail("Child-first deep descendants escaped their hidden ancestor")
+    ok("cells hidden directly, through a group, or through a layer are dropped from the IR")
 
 
 def check_containers(tmp: Path) -> None:
@@ -427,6 +680,125 @@ def check_security_and_limits(tmp: Path) -> None:
     if proc.returncode != 2 or "truncated metadata chunk" not in proc.stderr:
         fail("truncated PNG metadata must be rejected with a clear diagnostic")
 
+    duplicate_id = tmp / "duplicate-id.drawio"
+    duplicate_id.write_text(
+        '<mxGraphModel><root><mxCell id="same" vertex="1"/>'
+        '<mxCell id="same" value="amplified label" vertex="1"/>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error([str(duplicate_id)], "duplicate cell id")
+
+    nested_pages = tmp / "nested-pages.drawio"
+    nested_pages.write_text(
+        '<mxfile>'
+        + '<diagram name="outer">' * 20
+        + '<mxGraphModel><root><mxCell id="node" value="Node" vertex="1"/>'
+        + '</root></mxGraphModel>'
+        + '</diagram>' * 20
+        + '</mxfile>',
+        encoding="utf-8",
+    )
+    nested_payload = json.loads(run_extract([str(nested_pages), "--json"]))
+    if nested_payload["pages_total"] != 1:
+        fail("nested diagram descendants were treated as independent pages")
+
+    too_many_pages = tmp / "too-many-pages.drawio"
+    too_many_pages.write_text(
+        '<mxfile>'
+        + '<diagram><mxGraphModel><root/></mxGraphModel></diagram>'
+        * (extractor.MAX_PAGES + 1)
+        + '</mxfile>',
+        encoding="utf-8",
+    )
+    expect_extract_error(
+        [str(too_many_pages)], f"page limit exceeded (max {extractor.MAX_PAGES})"
+    )
+
+    too_many_cells = tmp / "too-many-cells.drawio"
+    too_many_cells.write_text(
+        '<mxGraphModel><root>'
+        + '<mxCell id="cell"/>' * (extractor.MAX_CELLS_PER_PAGE + 1)
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error(
+        [str(too_many_cells)],
+        f"cell limit exceeded (max {extractor.MAX_CELLS_PER_PAGE})",
+    )
+
+    for name, coordinate, diagnostic in (
+        ("nan", "NaN", "must be finite"),
+        ("infinity", "Infinity", "must be finite"),
+        ("derived-overflow", "1e308", "bounding box overflow"),
+    ):
+        malformed_geometry = tmp / f"{name}.drawio"
+        malformed_geometry.write_text(
+            '<mxGraphModel><root><mxCell id="node" value="Node" vertex="1">'
+            f'<mxGeometry x="{coordinate}" y="0" width="{coordinate}" height="10"/>'
+            '</mxCell></root></mxGraphModel>',
+            encoding="utf-8",
+        )
+        for output_args in ([], ["--json"]):
+            expect_extract_error(
+                [str(malformed_geometry), *output_args], diagnostic
+            )
+
+    canvas_span_overflow = tmp / "canvas-span-overflow.drawio"
+    canvas_span_overflow.write_text(
+        '<mxGraphModel><root>'
+        '<mxCell id="left" value="Left" vertex="1">'
+        '<mxGeometry x="-1e308" y="0" width="10" height="10"/></mxCell>'
+        '<mxCell id="right" value="Right" vertex="1">'
+        '<mxGeometry x="1e308" y="0" width="10" height="10"/></mxCell>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_extract_error(
+            [str(canvas_span_overflow), *output_args], "canvas span overflow"
+        )
+
+    parent_position_overflow = tmp / "parent-position-overflow.drawio"
+    parent_position_overflow.write_text(
+        '<mxGraphModel><root>'
+        '<mxCell id="parent" value="Parent" vertex="1">'
+        '<mxGeometry x="1e308" y="0" width="10" height="10"/></mxCell>'
+        '<mxCell id="child" value="Child" vertex="1" parent="parent">'
+        '<mxGeometry x="1e308" y="0" width="10" height="10"/></mxCell>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    for output_args in ([], ["--json"]):
+        expect_extract_error(
+            [str(parent_position_overflow), *output_args], "page 0: geometry overflow"
+        )
+
+    deep_parents = tmp / "deep-parents.drawio"
+    deep_parents.write_text(
+        '<mxGraphModel><root>'
+        + ''.join(
+            f'<mxCell id="n{index}" value="Node" vertex="1" parent="n{index - 1}">'
+            '<mxGeometry x="1" y="1" width="1" height="1"/></mxCell>'
+            for index in range(1, 1101)
+        )
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    deepest = json.loads(run_extract([str(deep_parents), "--json"]))["pages"][0]["nodes"][-1]
+    if (deepest["x"], deepest["y"], deepest["depth"]) != (1100, 1100, 1099):
+        fail(f"deep parent chain resolved incorrectly: {deepest}")
+
+    parent_cycle = tmp / "parent-cycle.drawio"
+    parent_cycle.write_text(
+        '<mxGraphModel><root>'
+        '<mxCell id="a" value="A" vertex="1" parent="b"/>'
+        '<mxCell id="b" value="B" vertex="1" parent="a"/>'
+        '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    expect_extract_error([str(parent_cycle)], "parent cycle")
+
     proc = subprocess.run(
         [sys.executable, str(EXTRACT), str(FIXTURE), "--max-rows", "0"],
         capture_output=True,
@@ -530,7 +902,7 @@ def check_docs() -> None:
     )
     if route is None or route.group(1) != "M560,232 H640":
         fail("worked example API Gateway-to-Orders route must be a direct horizontal connector")
-    if example.count("#eb6c36") > 4:
+    if example.count("#bf4520") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
     proc = subprocess.run(
         [sys.executable, str(ROOT / "scripts/lint-skin.py"), str(EXAMPLE)],
@@ -544,14 +916,32 @@ def check_docs() -> None:
     ok("references, SKILL.md wiring, and slash command are consistent")
 
 
+def check_unicode_page_names() -> None:
+    extractor = load_extractor_module()
+    page = extractor.Page(id="page", name="²", index=0)
+    if extractor.select_pages([page], "²") != [page]:
+        fail("non-decimal numeric characters must remain valid page names")
+    if extractor.select_pages([page], "٠") != [page]:
+        fail("decimal Unicode selectors must remain supported")
+    ok("page selection distinguishes decimal indexes from Unicode names")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-drawio-") as tmp_dir:
         tmp = Path(tmp_dir)
         check_files()
+        check_unicode_page_names()
         check_parse_raw()
+        check_arrow_directions(tmp)
+        check_relative_geometry(tmp)
         check_nested_geometry(tmp)
+        check_nested_relative_geometry(tmp)
+        check_bom_prefixed(tmp)
+        check_plain_angle_brackets(tmp)
+        check_hidden_cells(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)
+        check_out_write_errors(tmp)
         check_digest_escaping(tmp)
         check_security_and_limits(tmp)
         check_docs()
