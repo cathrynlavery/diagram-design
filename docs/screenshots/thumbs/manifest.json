@@ -295,6 +295,15 @@
       "thumb_sha256": "d3298c4d10fb41c0e3d3ba58eaaa6785e5a0291ea34d9e70be0ddcd96bcbbb66"
     },
     {
+      "thumb": "requirement-traceability.webp",
+      "source": "docs/screenshots/requirement-traceability.png",
+      "source_sha256": "df49e9186ca28f136b7867033f724383a63d47c475feeb17b68d405019c3e6fe",
+      "width": 600,
+      "height": 360,
+      "quality": 82,
+      "thumb_sha256": "77e6eb71181c6dc9a8de0f4eaec86a2150df9613f309274265e23998f52aa9da"
+    },
+    {
       "thumb": "sankey.webp",
       "source": "docs/screenshots/sankey.png",
       "source_sha256": "c9420788abdde6e8af1eaac91f6ccc43404b31f05f64e8762d8a9571d1fa2412",

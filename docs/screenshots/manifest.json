@@ -415,6 +415,15 @@
       "screenshot_sha256": "b655659e0dad7fafa4f33517899f60db08279938b9274adbb0d6ad2e250d6783",
       "width": 2480,
       "height": 1288
+    },
+    {
+      "slug": "requirement-traceability",
+      "source": "skills/diagram-design/assets/example-requirement-traceability.html",
+      "screenshot": "docs/screenshots/requirement-traceability.png",
+      "source_sha256": "665b0f1d66a86bcf056155d01c25d203a0fc8479c21dcbf9e0dea9fcaacbe8df",
+      "screenshot_sha256": "df49e9186ca28f136b7867033f724383a63d47c475feeb17b68d405019c3e6fe",
+      "width": 2400,
+      "height": 1440
     }
   ]
 }

@@ -71,7 +71,7 @@ LOOP_REFERENCE = ROOT / "skills/diagram-design/references/type-loop.md"
 LOOP_EXAMPLE_GLOB = "example-loop*.html"
 OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design/references/output-spec.md"
 VARIANTS = ("", "-dark", "-full")
-VISUAL_TYPE_COUNT = 45
+VISUAL_TYPE_COUNT = 46
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
 PLUGIN_DESCRIPTION_MAX = 500
 # Types whose selection-table name differs from its description vocabulary.

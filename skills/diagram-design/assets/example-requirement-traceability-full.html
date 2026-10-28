@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Illustrative requirement traceability · Diagram Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#f5f5f5;color:#2d3142;font-family:Geist,system-ui,sans-serif;padding:48px 32px}
+.frame{max-width:1200px;margin:0 auto}
+.eyebrow{color:#bf4520;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}
+h1{font-family:Instrument Serif,system-ui,sans-serif;font-size:40px;line-height:1.1;margin:0 0 12px}
+.subtitle{font-size:20px;line-height:1.4;color:#4f5d75;margin:0 0 28px}
+.canvas{overflow-x:auto}
+svg{display:block;width:100%;min-width:960px}
+.cards{display:grid;grid-template-columns:1.1fr 1fr .9fr;gap:20px;margin-top:28px}
+.cards section{border-top:2px solid #bfc0c0;padding-top:16px}
+.cards h2{font-family:Instrument Serif,system-ui,sans-serif;font-size:20px;margin:0 0 8px}
+.cards p{font-size:16px;line-height:1.5;color:#4f5d75;margin:0}
+@media(max-width:720px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Requirement traceability · Diagram Design</p>
+<h1>From requirement to evidence</h1>
+<p class="subtitle">An illustrative trace with one explicit verification gap.</p>
+<div class="canvas"><svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg" role="img" data-diagram-type="requirement-traceability" aria-labelledby="requirement-traceability-full-title requirement-traceability-full-desc">
+<title id="requirement-traceability-full-title">Illustrative requirement traceability</title>
+<desc id="requirement-traceability-full-desc">Three illustrative requirements trace from source notes to design elements and verification checks. The last requirement has no linked verification and is visibly marked as open.</desc>
+<rect width="1200" height="720" fill="#f5f5f5"/>
+<text x="64" y="64" fill="#4f5d75" font-size="14" font-weight="700" font-family="Geist, sans-serif">SOURCE</text>
+<text x="272" y="64" fill="#4f5d75" font-size="14" font-weight="700" font-family="Geist, sans-serif">REQUIREMENT</text>
+<text x="568" y="64" fill="#4f5d75" font-size="14" font-weight="700" font-family="Geist, sans-serif">SATISFIED BY</text>
+<text x="864" y="64" fill="#4f5d75" font-size="14" font-weight="700" font-family="Geist, sans-serif">VERIFIED BY</text>
+<line x1="64" y1="88" x2="1136" y2="88" stroke="#bfc0c0" stroke-width="2"/>
+<g data-trace-row="REQ-01" data-trace-source="Review brief §1">
+<g data-diagram-role="source" data-trace-kind="source" data-trace-id="SRC-01" data-source-ref="Review brief §1" data-trace-rel="derives" data-trace-from="SRC-01" data-trace-to="REQ-01">
+<rect x="64" y="124" width="176" height="136" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="2"/>
+<text x="80" y="154" fill="#4f5d75" font-size="16" font-weight="700" font-family="Geist, sans-serif">SRC-01</text>
+<text x="80" y="194" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Review brief §1</text>
+<text x="80" y="232" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">SOURCE</text>
+</g>
+<g data-diagram-role="requirement" data-trace-kind="requirement" data-trace-id="REQ-01">
+<rect x="256" y="124" width="280" height="136" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="2"/>
+<text x="272" y="154" fill="#4f5d75" font-size="16" font-weight="700" font-family="Geist, sans-serif">REQ-01</text>
+<text x="272" y="194" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Retain decision source</text>
+<text x="272" y="232" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">DERIVED FROM SRC-01</text>
+</g>
+<g data-diagram-role="design-element" data-trace-kind="design" data-trace-id="DES-01" data-trace-rel="satisfies" data-trace-from="DES-01" data-trace-to="REQ-01">
+<rect x="552" y="124" width="280" height="136" rx="4" fill="#f5f5f5" stroke="#2e5aa8" stroke-width="2"/>
+<text x="568" y="154" fill="#2e5aa8" font-size="16" font-weight="700" font-family="Geist, sans-serif">DES-01</text>
+<text x="568" y="194" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Decision record</text>
+<text x="568" y="232" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">SATISFIES</text>
+</g>
+<g data-diagram-role="verification" data-trace-kind="test" data-trace-id="TST-01" data-trace-rel="verifies" data-trace-from="TST-01" data-trace-to="REQ-01">
+<rect x="848" y="124" width="288" height="136" rx="4" fill="#f5f5f5" stroke="#2e5aa8" stroke-width="2"/>
+<text x="864" y="154" fill="#2e5aa8" font-size="16" font-weight="700" font-family="Geist, sans-serif">TST-01</text>
+<text x="864" y="194" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Source link check</text>
+<text x="864" y="232" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">VERIFIES</text>
+</g>
+</g>
+<g data-trace-row="REQ-02" data-trace-source="Review brief §2">
+<g data-diagram-role="source" data-trace-kind="source" data-trace-id="SRC-02" data-source-ref="Review brief §2" data-trace-rel="derives" data-trace-from="SRC-02" data-trace-to="REQ-02">
+<rect x="64" y="300" width="176" height="136" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="2"/>
+<text x="80" y="330" fill="#4f5d75" font-size="16" font-weight="700" font-family="Geist, sans-serif">SRC-02</text>
+<text x="80" y="370" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Review brief §2</text>
+<text x="80" y="408" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">SOURCE</text>
+</g>
+<g data-diagram-role="requirement" data-trace-kind="requirement" data-trace-id="REQ-02">
+<rect x="256" y="300" width="280" height="136" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="2"/>
+<text x="272" y="330" fill="#4f5d75" font-size="16" font-weight="700" font-family="Geist, sans-serif">REQ-02</text>
+<text x="272" y="370" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Show missing evidence</text>
+<text x="272" y="408" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">DERIVED FROM SRC-02</text>
+</g>
+<g data-diagram-role="design-element" data-trace-kind="design" data-trace-id="DES-02" data-trace-rel="satisfies" data-trace-from="DES-02" data-trace-to="REQ-02">
+<rect x="552" y="300" width="280" height="136" rx="4" fill="#f5f5f5" stroke="#2e5aa8" stroke-width="2"/>
+<text x="568" y="330" fill="#2e5aa8" font-size="16" font-weight="700" font-family="Geist, sans-serif">DES-02</text>
+<text x="568" y="370" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Coverage report</text>
+<text x="568" y="408" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">SATISFIES</text>
+</g>
+<g data-diagram-role="verification" data-trace-kind="test" data-trace-id="TST-02" data-trace-rel="verifies" data-trace-from="TST-02" data-trace-to="REQ-02">
+<rect x="848" y="300" width="288" height="136" rx="4" fill="#f5f5f5" stroke="#2e5aa8" stroke-width="2"/>
+<text x="864" y="330" fill="#2e5aa8" font-size="16" font-weight="700" font-family="Geist, sans-serif">TST-02</text>
+<text x="864" y="370" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Gap display check</text>
+<text x="864" y="408" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">VERIFIES</text>
+</g>
+</g>
+<g data-trace-row="REQ-03" data-trace-source="Review brief §3">
+<g data-diagram-role="source" data-trace-kind="source" data-trace-id="SRC-03" data-source-ref="Review brief §3" data-trace-rel="derives" data-trace-from="SRC-03" data-trace-to="REQ-03">
+<rect x="64" y="476" width="176" height="136" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="2"/>
+<text x="80" y="506" fill="#4f5d75" font-size="16" font-weight="700" font-family="Geist, sans-serif">SRC-03</text>
+<text x="80" y="546" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Review brief §3</text>
+<text x="80" y="584" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">SOURCE</text>
+</g>
+<g data-diagram-role="requirement" data-trace-kind="requirement" data-trace-id="REQ-03">
+<rect x="256" y="476" width="280" height="136" rx="4" fill="#f5f5f5" stroke="#bfc0c0" stroke-width="2"/>
+<text x="272" y="506" fill="#4f5d75" font-size="16" font-weight="700" font-family="Geist, sans-serif">REQ-03</text>
+<text x="272" y="546" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Export trace IDs</text>
+<text x="272" y="584" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">DERIVED FROM SRC-03</text>
+</g>
+<g data-diagram-role="design-element" data-trace-kind="design" data-trace-id="DES-03" data-trace-rel="satisfies" data-trace-from="DES-03" data-trace-to="REQ-03">
+<rect x="552" y="476" width="280" height="136" rx="4" fill="#f5f5f5" stroke="#2e5aa8" stroke-width="2"/>
+<text x="568" y="506" fill="#2e5aa8" font-size="16" font-weight="700" font-family="Geist, sans-serif">DES-03</text>
+<text x="568" y="546" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">Trace export</text>
+<text x="568" y="584" fill="#4f5d75" font-size="12" font-weight="700" font-family="Geist, sans-serif">SATISFIES</text>
+</g>
+<g data-diagram-role="coverage-gap" data-trace-rel="verifies" data-trace-missing="true" data-trace-to="REQ-03">
+<rect x="848" y="476" width="288" height="136" rx="4" fill="#f5f5f5" stroke="#bf4520" stroke-width="2"/>
+<text x="864" y="508" fill="#bf4520" font-size="16" font-weight="700" font-family="Geist, sans-serif">OPEN GAP</text>
+<text x="864" y="550" fill="#2d3142" font-size="16" font-weight="600" font-family="Geist, sans-serif">No verification linked</text>
+<text x="864" y="584" fill="#bf4520" font-size="12" font-weight="700" font-family="Geist, sans-serif">NO VERIFICATION</text>
+</g>
+</g>
+<line x1="64" y1="668" x2="1136" y2="668" stroke="#bfc0c0" stroke-width="1"/>
+<text x="64" y="700" fill="#4f5d75" font-size="12" font-weight="600" font-family="Geist, sans-serif">ILLUSTRATIVE TRACE  ·  ONE OPEN VERIFICATION GAP</text>
+</svg></div>
+<div class="cards">
+<section><h2>Read each row</h2><p>A source note, requirement, design element, and verification check share one horizontal trace.</p></section>
+<section><h2>Relationship direction</h2><p>Design elements satisfy requirements. Tests verify requirements. The column headings name those roles.</p></section>
+<section><h2>Keep the gap</h2><p>REQ-03 has no linked verification. The example marks it as open instead of inventing a test.</p></section>
+</div>
+</div>
+</body>
+</html>
