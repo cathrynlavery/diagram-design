@@ -1485,6 +1485,24 @@ def check_standalone_er_regression(tmp: Path) -> None:
     ok("standalone ER entity declarations, including Unicode names, become tables")
 
 
+def check_standalone_hyphenated_node(tmp: Path) -> None:
+    # `-p...o` in `user-profile` once matched the unescaped `-.` of the dotted-link opener.
+    path = tmp / "hyphenated-node.mmd"
+    path.write_text(
+        "flowchart LR\n  user-profile\n  api-proxy[API proxy]\n  user-profile --> api-proxy\n  A --> B\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node["label"] for node in payload["nodes"]}
+    if nodes != {"user-profile": "user-profile", "api-proxy": "API proxy", "A": "A", "B": "B"} or len(payload["edges"]) != 2:
+        fail(f"standalone hyphenated node ids were not kept: {nodes}")
+    path.write_text("flowchart LR\n  my-node -.- \n", encoding="utf-8")
+    expect_error([str(path)], "malformed edge at line 2")
+    path.write_text("flowchart LR\n  A --> B\n  A- >B\n", encoding="utf-8")
+    expect_error([str(path)], "malformed edge at line 3")
+    ok("standalone flowchart nodes with a hyphen in the id are nodes, not malformed edges")
+
+
 def check_standalone_state_regression(tmp: Path) -> None:
     path = tmp / "supported-form.mmd"
     path.write_text('stateDiagram-v2\nDisconnected\n[*] --> Active\n', encoding="utf-8")
@@ -1564,6 +1582,7 @@ def main() -> int:
         check_unicode_er_regression(tmp)
         check_standalone_er_regression(tmp)
         check_standalone_state_regression(tmp)
+        check_standalone_hyphenated_node(tmp)
         check_files()
         expect_error([str(FLOW), "--diagram", "²"], "--diagram must be an index")
         check_flowchart()
