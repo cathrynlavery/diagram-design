@@ -389,6 +389,16 @@ jobs:
         id: service_blueprint_tests
         run: python scripts/test-verify-service-blueprint.py
 
+      - name: Verify event modeling stage order, roles, and links
+        if: always()
+        id: event_modeling
+        run: python scripts/verify-event-modeling.py --all
+
+      - name: Verify event modeling checker
+        if: always()
+        id: event_modeling_tests
+        run: python scripts/test-verify-event-modeling.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline

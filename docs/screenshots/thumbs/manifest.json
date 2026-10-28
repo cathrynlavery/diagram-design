@@ -106,6 +106,15 @@
       "thumb_sha256": "ecd1f6bff9f6841a3ad1e623de73151dbb5cf58008227f91695d167f1e0a6152"
     },
     {
+      "thumb": "event-modeling.webp",
+      "source": "docs/screenshots/event-modeling.png",
+      "source_sha256": "00d763b03695d6ce4058aed6c52188dbcf089796de782365f3389d3fca747cfc",
+      "width": 600,
+      "height": 360,
+      "quality": 82,
+      "thumb_sha256": "feecdcdecf3c37154d271924bb4ea0e053ae0896636d2ab1338da226118519ec"
+    },
+    {
       "thumb": "exploded.webp",
       "source": "docs/screenshots/exploded.png",
       "source_sha256": "bc5447fb4af265086848e870da6b8c4584112eab713fdf45a16d8d32ed9d9b49",
