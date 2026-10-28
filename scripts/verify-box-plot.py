@@ -72,7 +72,11 @@ Ten invariants:
    display, visibility or opacity on itself, a group around it, the <svg>
    or a page element around that. An attribute, an inline style and a
    <style> rule all count; a rule's selector is held to the element it
-   names, and a type-only rule reaches every element of that type.
+   names, and a type-only rule reaches every element of that type. Nor is a
+   bound box, median, whisker or cap whose own stated paint draws it nothing:
+   a colour of `none`, or a stroke-width, stroke-opacity or fill-opacity of 0,
+   leaves coordinates for a mark no reader sees. A channel the mark does not
+   state may be inherited, so it counts as drawn.
 
 10. FAIL CLOSED - a file that presents as a box plot but yields fewer than
    three series on three distinct medians is a finding, never a pass. Three
@@ -522,6 +526,70 @@ def lines_with_role(body: str, role: str) -> list:
         if attrs.get("data-role") == role:
             found.append(attrs)
     return found
+
+
+# A bound mark is read from its coordinates, so a mark whose own paint draws
+# nothing is a summary a reader never sees. These helpers read only what the
+# element states for itself, from its attributes and inline style; a rule in a
+# <style> block, an inherited channel, and a colour hidden by its alpha rather
+# than spelled `none` are all held to paint.
+STROKED_MARKS = {"line", "path", "polygon", "polyline"}
+PAINTED_MARKS = STROKED_MARKS | {"rect"}
+NO_COLOUR = {"none", "transparent"}
+CHANNEL_PROPS = {
+    # Channel -> the colour that fills it, then the sizes that stop it at 0.
+    "fill": ("fill", ("fill-opacity",)),
+    "stroke": ("stroke", ("stroke-width", "stroke-opacity")),
+}
+
+
+def stated_value(attrs: dict, prop: str):
+    """The value this element states for one paint property, inline style last.
+
+    An inline style overrides the presentation attribute, so the style's last
+    declaration wins, unless an earlier declaration is `!important`: then only
+    a later `!important` can take the property from it. With no style
+    declaration the attribute stands.
+    """
+    value, important = attrs.get(prop), False
+    for match in re.finditer(r"(?:^|[{;])\s*%s\s*:\s*([^;{}]+)" % re.escape(prop),
+                             blank_css_comments(attrs.get("style", "")), re.IGNORECASE):
+        declared = match.group(1)
+        priority = re.search(r"!\s*important\s*$", declared, re.IGNORECASE)
+        if important and priority is None:
+            continue
+        value, important = declared.split("!")[0], priority is not None
+    return value.strip().lower() if value is not None else None
+
+
+def channel_paints(attrs: dict, channel: str) -> bool:
+    """Does this element state paint that draws one channel of itself?
+
+    A channel it does not state may be inherited, so it counts as drawing. A
+    colour of `none` or `transparent` paints nothing, a zero width or opacity
+    paints nothing, and a size this checker cannot read is held to paint.
+    """
+    colour, sizes = CHANNEL_PROPS[channel]
+    if stated_value(attrs, colour) in NO_COLOUR:
+        return False
+    for prop in sizes:
+        size = number((stated_value(attrs, prop) or "").rstrip("%"))
+        if size is not None and size <= 0:
+            return False
+    return True
+
+
+def bound_mark_draws(tag: str, attrs: dict) -> bool:
+    """Does a bound mark state paint that draws it?
+
+    A rect draws through either channel — a hollow box with no stroke is still
+    a box. A stroked shape draws only through its stroke.
+    """
+    if tag == "rect":
+        return channel_paints(attrs, "fill") or channel_paints(attrs, "stroke")
+    if tag in STROKED_MARKS:
+        return channel_paints(attrs, "stroke")
+    return True
 
 
 def declared_paints(style: str) -> list:
@@ -1010,6 +1078,24 @@ def parse_series(source: str, findings: list, name: str) -> list:
                 % (where, attrs["data-name"])
             )
             continue
+        # A mark that paints nothing still passes the geometry below: it is a
+        # five-number summary no reader sees.
+        for mark in OPEN_TAG_RE.finditer(body):
+            mattrs = attrs_of(mark.group("attrs"))
+            role = mattrs.get("data-role", "").strip().lower()
+            tag = mark.group("tag").lower()
+            if role not in MARK_ROLES or tag not in PAINTED_MARKS:
+                continue
+            if bound_mark_draws(tag, mattrs):
+                continue
+            findings.append(
+                "%s:%d: series %r has a data-role=%s %s that paints nothing "
+                "— a colour of none, or a zero stroke-width, stroke-opacity "
+                "or fill-opacity, so the checker reads a summary in a mark "
+                "that is never drawn"
+                % (name, line_of(source, body_at + mark.start()),
+                   attrs["data-name"], role, tag)
+            )
         boxes = [m for m in RECT_RE.finditer(body)
                  if attrs_of(m.group("attrs")).get("data-role") == "box"]
         for role, count in (("box", len(boxes)),

@@ -166,6 +166,14 @@ AUTH_BOX = ('<rect data-role="box" x="196" y="64.0" width="20" height="32" rx="2
             'fill="rgba(45,49,66,0.15)" stroke="#4f5d75" stroke-width="1"/>')
 CHECKOUT_BOX = ('<rect data-role="box" x="320" y="200.0" width="240" height="32" '
                 'rx="2" fill="rgba(191,69,32,0.12)" stroke="#bf4520"')
+AUTH_MEDIAN = ('<line data-role="median" x1="204" y1="64.0" x2="204" y2="96.0" '
+               'stroke="#2d3142" stroke-width="1.5"/>')
+AUTH_WHISKER_LO = ('<line data-role="whisker-lo" x1="184" y1="80" x2="196" y2="80" '
+                   'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>')
+AUTH_WHISKER_HI = ('<line data-role="whisker-hi" x1="216" y1="80" x2="240" y2="80" '
+                   'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>')
+AUTH_CAP = ('<line data-role="cap" x1="184" y1="72" x2="184" y2="88" '
+            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>')
 
 
 def shipped_with(*swaps: tuple, index: int = 0) -> str:
@@ -1086,6 +1094,91 @@ def run_cases(h: Harness) -> int:
             "a series hidden by %s is one finding" % title,
             shipped_with(*swaps), 1, "never drawn",
         )
+    # A bound mark may state paint that draws nothing. Its coordinates still
+    # land on the scale, so the checker used to read a summary no reader sees.
+    # Only the mark's own attribute and inline style count: a channel it does
+    # not state may be inherited, and a stylesheet rule is the other class.
+    for title, swaps in (
+        ('stroke="none" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#2d3142"', 'stroke="none"'))]),
+        ('stroke-width="0" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', 'stroke-width="0"'))]),
+        ('stroke-opacity="0" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"',
+                                            'stroke-width="1.5" stroke-opacity="0"'))]),
+        ('stroke="none" on whisker-lo',
+         [(AUTH_WHISKER_LO, AUTH_WHISKER_LO.replace(
+             'stroke="rgba(45,49,66,0.55)"', 'stroke="none"'))]),
+        ('stroke="transparent" on whisker-hi',
+         [(AUTH_WHISKER_HI, AUTH_WHISKER_HI.replace(
+             'stroke="rgba(45,49,66,0.55)"', 'stroke="transparent"'))]),
+        ('stroke-width="0" on a cap',
+         [(AUTH_CAP, AUTH_CAP.replace('stroke-width="1"', 'stroke-width="0"'))]),
+        ('style="stroke:none" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace("/>", ' style="stroke:none"/>'))]),
+        ('style="stroke-width:0" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', "").replace(
+             "/>", ' style="stroke-width:0"/>'))]),
+        ('fill="none" and stroke="none" on the box',
+         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"', 'fill="none"')
+           .replace('stroke="#4f5d75"', 'stroke="none"'))]),
+        ('style="stroke:transparent" on whisker-lo',
+         [(AUTH_WHISKER_LO, AUTH_WHISKER_LO.replace(
+             'stroke="rgba(45,49,66,0.55)"', 'stroke="#4f5d75"').replace(
+             "/>", ' style="stroke:transparent"/>'))]),
+        ('style="stroke:#2d3142; stroke:none !important" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:#2d3142; stroke:none !important"/>'))]),
+    ):
+        h.expect_findings(
+            "a bound mark with %s is one finding" % title,
+            shipped_with(*swaps), 1, "paints nothing",
+        )
+
+    # Both polarities of the same rule: a mark that paints through either
+    # channel, or inherits a channel it does not state, is honest.
+    for title, swaps in (
+        ("a hollow box with fill=none still stroked",
+         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"', 'fill="none"'))]),
+        ("a box with fill-opacity=0 still stroked",
+         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"',
+                                      'fill="#2d3142" fill-opacity="0"'))]),
+        ("a median with no stroke of its own under a stroked series group",
+         [(AUTH_G, '<g stroke="#4f5d75" data-name="Auth"'),
+          (AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', ""))]),
+        ("a median with a hairline stroke-width=0.5",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', 'stroke-width="0.5"'))]),
+        ("a median whose inline style restores a colour over stroke=none",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#2d3142"', 'stroke="none"').replace(
+             "/>", ' style="stroke:#2d3142"/>'))]),
+        ("a cap with stroke-opacity=0.25",
+         [(AUTH_CAP, AUTH_CAP.replace('stroke-width="1"',
+                                      'stroke-width="1" stroke-opacity="0.25"'))]),
+        ("a stroke-width in percent, 100%",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', 'stroke-width="100%"'))]),
+        ("a width this checker cannot read is held to paint",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"',
+                                            'stroke-width="calc(1px + 1px)"'))]),
+        ("a median whose !important stroke beats a later stroke:none",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:#2d3142 !important; stroke:none"/>'))]),
+        ("a median whose later !important stroke beats stroke:none",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:none; stroke:#2d3142 !important"/>'))]),
+        ("a median whose last !important declaration wins",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:none !important; stroke:#2d3142 !important"/>'))]),
+        ("a median whose ! important wins with a space after the bang",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
+             "/>", ' style="stroke:#2d3142 ! important; stroke:none"/>'))]),
+    ):
+        h.expect_clean("%s passes" % title, shipped_with(*swaps))
+    h.expect_clean(
+        "a stylesheet rule removing a bound stroke is the other class of the "
+        "issue, and passes here",
+        shipped_with(styled('line[data-role="median"]{stroke:none}')),
+    )
+
     for title, swaps in (
         ("the focal series painted through var(--color-accent)",
          [(CHECKOUT_BOX, CHECKOUT_BOX.replace(
