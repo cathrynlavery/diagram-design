@@ -35,7 +35,15 @@ Nine invariants:
 
 7. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute.
    A `transform` attribute, an inline `style`, or a rule in a <style> block
-   on a mark, a bound label, or an ancestor is refused rather than resolved.
+   on a mark, a bound label, or an ancestor is refused rather than resolved,
+   and so is a nested <svg> carrying x, y or viewBox, which remaps every
+   coordinate inside it.
+
+7b. EVERY COUNTED MARK IS DRAWN - a bound node, label or import that is
+   hidden (display none, visibility hidden, zero opacity) or sits inside a
+   hidden ancestor or a non-rendered container (<defs>, <symbol>, <marker>,
+   <mask>, <clipPath>, <pattern>) is refused: a seat readers cannot see
+   must not count toward a span.
 
 8. BOUND NAMES, BOTH WAYS - every node circle has exactly one label bound
    to the same `data-name`, the visible text matches, and the name is
@@ -77,9 +85,22 @@ TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>",
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>",
-                           re.IGNORECASE)
-GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
+CONTAINER_TAGS = r"g|svg|defs|symbol|marker|mask|clipPath|pattern"
+GROUP_OPEN_RE = re.compile(
+    r"<(?P<tag>%s)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>" % CONTAINER_TAGS,
+    re.IGNORECASE,
+)
+GROUP_CLOSE_RE = re.compile(r"</(?:%s)\s*>" % CONTAINER_TAGS, re.IGNORECASE)
+NON_RENDERED = {"defs", "symbol", "marker", "mask", "clippath", "pattern"}
+VIEWPORT_ATTRS = ("x", "y", "viewbox")
+CSS_HIDES_RE = re.compile(
+    r"(?:^|[{;}\n])\s*(?:"
+    r"(?P<display>display)\s*:\s*none"
+    r"|(?P<visibility>visibility)\s*:\s*(?:hidden|collapse)"
+    r"|(?P<opacity>(?:fill-|stroke-)?opacity)\s*:\s*(?P<amount>[^;}]*)"
+    r")",
+    re.IGNORECASE,
+)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>",
                       re.IGNORECASE | re.DOTALL)
 CSS_MOVES_MARK_RE = re.compile(
@@ -212,33 +233,95 @@ def transform_carrier(attrs: dict):
     return None
 
 
+def invisible_amount(value) -> bool:
+    text = str(value).strip().lower()
+    scale = 1.0
+    if text.endswith("%"):
+        text, scale = text[:-1], 0.01
+    try:
+        amount = float(text) * scale
+    except ValueError:
+        return False
+    return math.isfinite(amount) and amount <= 0
+
+
+def hidden_carrier(attrs: dict):
+    if attrs.get("display", "").strip().lower() == "none":
+        return "display=%r" % attrs["display"]
+    if attrs.get("visibility", "").strip().lower() in ("hidden", "collapse"):
+        return "visibility=%r" % attrs["visibility"]
+    for key in ("opacity", "fill-opacity", "stroke-opacity"):
+        if key in attrs and invisible_amount(attrs[key]):
+            return "%s=%r" % (key, attrs[key])
+    style = attrs.get("style")
+    if style is not None:
+        for found in CSS_HIDES_RE.finditer(style):
+            if found.group("opacity") and not invisible_amount(found.group("amount")):
+                continue
+            prop = found.group("display") or found.group("visibility") \
+                or found.group("opacity")
+            return "style=%r (the %s property)" % (style, prop.lower())
+    return None
+
+
 def transformed_spans(source: str) -> list:
+    """Spans of containers that move or hide what they wrap.
+
+    Each span is (start, end, how, kind): kind "moves" for a transform or a
+    nested <svg> viewport, kind "hides" for a hidden or non-rendered
+    container. The outermost <svg> may carry a viewBox; a nested one with
+    x, y or viewBox remaps every coordinate inside it.
+    """
     events = []
     for match in GROUP_OPEN_RE.finditer(source):
         if match.group("selfclose"):
             continue
-        attrs = attrs_of(match.group("attrs"))
-        how = None
-        if "transform" in attrs:
-            how = "an ancestor <g>/<svg> transform"
-        elif transform_carrier(attrs) is not None:
-            how = "an ancestor <g>/<svg> style transform"
-        events.append((match.start(), 0, how))
+        events.append((match.start(), 0, match.group("tag").lower(),
+                       attrs_of(match.group("attrs"))))
     for match in GROUP_CLOSE_RE.finditer(source):
-        events.append((match.start(), 1, None))
+        events.append((match.start(), 1, None, None))
     events.sort(key=lambda event: (event[0], event[1]))
     stack, spans = [], []
-    for position, kind, how in events:
+    for position, kind, tag, attrs in events:
         if kind == 0:
-            stack.append((position, how))
+            how, effect = None, None
+            nested_svg = tag == "svg" and any(
+                entry[1] == "svg" for entry in stack
+            )
+            if "transform" in attrs:
+                how, effect = "an ancestor <g>/<svg> transform", "moves"
+            elif transform_carrier(attrs) is not None:
+                how, effect = "an ancestor <g>/<svg> style transform", "moves"
+            elif nested_svg and any(key in attrs for key in VIEWPORT_ATTRS):
+                how, effect = (
+                    "a nested <svg> viewport (%s)" % ", ".join(
+                        key for key in VIEWPORT_ATTRS if key in attrs
+                    ),
+                    "moves",
+                )
+            elif tag in NON_RENDERED:
+                how, effect = "a non-rendered <%s> container" % tag, "hides"
+            elif hidden_carrier(attrs) is not None:
+                how, effect = (
+                    "an ancestor <%s> %s" % (tag, hidden_carrier(attrs)),
+                    "hides",
+                )
+            stack.append((position, tag, how, effect))
         elif stack:
-            start, was_transformed = stack.pop()
-            if was_transformed:
-                spans.append((start, position, was_transformed))
-    for start, was_transformed in stack:
-        if was_transformed:
-            spans.append((start, len(source), was_transformed))
+            start, _tag, how, effect = stack.pop()
+            if how:
+                spans.append((start, position, how, effect))
+    for start, _tag, how, effect in stack:
+        if how:
+            spans.append((start, len(source), how, effect))
     return spans
+
+
+def is_bound(match) -> bool:
+    raw = match.group("attrs")
+    if match.re is PATH_RE:
+        return DECLARES_ARC_RE.search(raw) is not None
+    return "data-name" in attrs_of(raw)
 
 
 def check_transforms(source: str, findings: list, name: str) -> None:
@@ -265,12 +348,31 @@ def check_transforms(source: str, findings: list, name: str) -> None:
                 % (name, line_of(source, match.start()), how)
             )
             continue
-        for start, end, ancestor in spans:
-            if start < match.start() < end:
+        bound = is_bound(match)
+        hidden = hidden_carrier(attrs) if bound else None
+        if hidden is not None:
+            findings.append(
+                "%s:%d: %s hides a bound mark — a seat or import readers "
+                "cannot see still counts toward the spans that passed. "
+                "Remove it or draw it" % (name, line_of(source, match.start()), hidden)
+            )
+            continue
+        for start, end, ancestor, effect in spans:
+            if not start < match.start() < end:
+                continue
+            if effect == "moves":
                 findings.append(
                     "%s:%d: %s positions a mark — the checker reads raw "
                     "coordinates, so anything applied afterwards invalidates "
                     "the check that passed. Bake the offset into the attributes"
+                    % (name, line_of(source, match.start()), ancestor)
+                )
+                break
+            if bound:
+                findings.append(
+                    "%s:%d: %s hides a bound mark — a seat or import readers "
+                    "cannot see still counts toward the spans that passed. "
+                    "Remove it or draw it"
                     % (name, line_of(source, match.start()), ancestor)
                 )
                 break

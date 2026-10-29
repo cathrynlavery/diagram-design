@@ -256,6 +256,75 @@ def run_cases(h: Harness) -> int:
         "positions a mark",
     )
 
+    for wrapper in ('<svg x="40">', '<svg y="12">',
+                    '<svg viewBox="40 0 1000 500">'):
+        h.expect_named(
+            "an import inside nested %s is a finding" % wrapper,
+            honest().replace(
+                arc("A", "B", 1, 0, 1),
+                wrapper + "\n" + arc("A", "B", 1, 0, 1) + "  </svg>\n",
+                1,
+            ),
+            "nested <svg> viewport",
+        )
+
+    h.expect_clean(
+        "a nested <svg> with no viewport attributes passes",
+        honest().replace(
+            arc("A", "B", 1, 0, 1),
+            "<svg>\n" + arc("A", "B", 1, 0, 1) + "  </svg>\n",
+            1,
+        ),
+    )
+
+    for hide in ('style="display:none"', 'display="none"',
+                 'visibility="hidden"', 'style="opacity: 0"',
+                 'opacity="0%"'):
+        h.expect_named(
+            "a bound node with %s is a finding" % hide,
+            honest().replace(
+                node("C", 2), node("C", 2, extra=hide), 1,
+            ),
+            "hides a bound mark",
+        )
+
+    h.expect_named(
+        "a hidden import path is a finding",
+        honest().replace(
+            arc("A", "C", 2, 0, 2),
+            arc("A", "C", 2, 0, 2, extra='stroke-opacity="0"'),
+            1,
+        ),
+        "hides a bound mark",
+    )
+
+    for wrapper, close in (('<g style="display: none">', "</g>"),
+                           ('<g visibility="hidden">', "</g>"),
+                           ("<defs>", "</defs>"),
+                           ('<symbol id="s">', "</symbol>")):
+        h.expect_named(
+            "a bound node inside %s is a finding" % wrapper,
+            honest().replace(
+                node("C", 2),
+                wrapper + "\n" + node("C", 2) + "  " + close + "\n",
+                1,
+            ),
+            "hides a bound mark",
+        )
+
+    h.expect_clean(
+        "an unbound decorative circle in <defs> passes",
+        honest('  <defs><pattern id="p" width="4" height="4">'
+               '<circle cx="2" cy="2" r="1" fill="#000"/></pattern></defs>\n'),
+    )
+
+    h.expect_clean(
+        "a visible opacity on a bound node passes",
+        honest().replace(
+            node("C", 2), node("C", 2, extra='opacity="0.8"'), 1,
+        ),
+    )
+
     h.expect_named(
         "two nodes sharing a name is a finding",
         document(
