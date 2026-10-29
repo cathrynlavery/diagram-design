@@ -85,6 +85,8 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-beeswarm.py",
     "python3 scripts/verify-box-plot.py --all",
     "python3 scripts/test-verify-box-plot.py",
+    "python3 scripts/verify-arc-diagram.py --all",
+    "python3 scripts/test-verify-arc-diagram.py",
     "python3 scripts/verify-skin-polarity.py --all",
     "python3 scripts/test-verify-skin-polarity.py",
     "python3 scripts/verify-architecture-delta.py --all",
