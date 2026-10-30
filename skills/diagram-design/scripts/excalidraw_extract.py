@@ -137,6 +137,18 @@ def clean_label(value: Any) -> str:
     return "\n".join(line for line in lines if line).strip()
 
 
+def text_label(element: dict[str, Any]) -> str:
+    """The text as typed, not as wrapped to its box.
+
+    Excalidraw stores ``text`` re-wrapped to the container (or fixed) width,
+    with a line break at every wrap point, and keeps what the author typed in
+    ``originalText``. Fall back to ``text`` the way Excalidraw's own restore
+    does, for scenes saved before ``originalText`` existed.
+    """
+    original = element.get("originalText")
+    return clean_label(original if isinstance(original, str) and original else element.get("text"))
+
+
 def _num(element: dict[str, Any], key: str) -> float:
     """A geometry field as a finite float; absent or non-numeric reads as 0.
 
@@ -232,7 +244,7 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
             continue
         container = element.get("containerId")
         if isinstance(container, str) and container in foldable_ids:
-            text = clean_label(element.get("text"))
+            text = text_label(element)
             if text:
                 bound_labels.setdefault(container, []).append(text)
 
@@ -251,7 +263,7 @@ def parse_scene(path: Path, document: dict[str, Any]) -> Scene:
         if kind == "text":
             if isinstance(element.get("containerId"), str) and element["containerId"] in foldable_ids:
                 continue  # folded into its container in pass 1
-            shape, label = "text", clean_label(element.get("text"))
+            shape, label = "text", text_label(element)
         elif kind in CONTAINER_TYPES:
             frame_ids.add(element_id)
             shape = "frame"

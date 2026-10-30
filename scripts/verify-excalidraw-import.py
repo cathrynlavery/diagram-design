@@ -803,6 +803,44 @@ def check_json_nesting_diagnostic(tmp: Path) -> None:
     ok("deeply nested JSON imports or fails cleanly; shallow JSON still imports")
 
 
+def check_wrapped_text(tmp: Path) -> None:
+    # Excalidraw saves `text` re-wrapped to the box width and the typed text in
+    # `originalText`. A wrap point is layout, not a line the author wrote.
+    def text(element_id, typed, wrapped, container=None, auto_resize=True):
+        return {"id": element_id, "type": "text", "x": 0, "y": 0, "width": 80, "height": 50,
+                "text": wrapped, "originalText": typed, "autoResize": auto_resize,
+                "containerId": container}
+
+    source = tmp / "wrapped-text.excalidraw"
+    source.write_text(scene("wrapped", [
+        {"id": "db", "type": "ellipse", "x": 0, "y": 0, "width": 90, "height": 80},
+        text("db-label", "PostgreSQL", "Postgr\neSQL", container="db"),
+        {"id": "api", "type": "rectangle", "x": 300, "y": 0, "width": 140, "height": 80},
+        {"id": "call", "type": "arrow", "x": 90, "y": 40, "points": [[0, 0], [210, 0]],
+         "startBinding": {"elementId": "api", "focus": 0, "gap": 1},
+         "endBinding": {"elementId": "db", "focus": 0, "gap": 1}},
+        text("call-label", "reads user records", "reads user\nrecords", container="call"),
+        text("note", "Sessions expire after 30 minutes", "Sessions expire\nafter 30 minutes",
+             auto_resize=False),
+        text("steps", "1. Log in\n2. Pick a plan", "1. Log in\n2. Pick a plan"),
+        {"id": "legacy", "type": "text", "x": 0, "y": 300, "width": 80, "height": 25,
+         "text": "No original"},
+    ]), encoding="utf-8")
+    payload = json.loads(run_extract([str(source), "--json"]))["scene"]
+    labels = {node["id"]: node["label"] for node in payload["nodes"]}
+    expected = {
+        "db": "PostgreSQL",
+        "note": "Sessions expire after 30 minutes",
+        "steps": "1. Log in\n2. Pick a plan",
+        "legacy": "No original",
+    }
+    if {key: labels.get(key) for key in expected} != expected:
+        fail(f"wrapped Excalidraw text must keep the typed text: {labels}")
+    if [edge["label"] for edge in payload["edges"]] != ["reads user records"]:
+        fail(f"wrapped arrow label must keep the typed text: {payload['edges']}")
+    ok("wrapped text keeps the typed text; typed line breaks stay")
+
+
 def check_unimported_container_text(tmp: Path) -> None:
     source = tmp / "unsupported-container.excalidraw"
     source.write_text(json.dumps({"type": "excalidraw", "elements": [
@@ -822,6 +860,7 @@ def main() -> int:
         check_files()
         check_json_nesting_diagnostic(tmp)
         check_unimported_container_text(tmp)
+        check_wrapped_text(tmp)
         check_whiteboard()
         check_nested_groups(tmp)
         check_bindings_and_shapes(tmp)
