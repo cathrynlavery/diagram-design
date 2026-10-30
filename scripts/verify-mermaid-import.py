@@ -313,6 +313,22 @@ A --> B; B --> C
     ]:
         fail("semicolon-separated flowchart statements were not split")
 
+    # Mermaid lengthens a dotted link with dots, not dashes.
+    dotted_file = tmp / "dotted-lengths.mmd"
+    dotted_file.write_text(
+        "flowchart LR\nA -..-> B\nB -...-> C\nC -..- D\nD -...- E\n",
+        encoding="utf-8",
+    )
+    dotted = json.loads(run_extract([str(dotted_file), "--json"]))["diagrams"][0]
+    expected_dotted = [("A", "B", False), ("B", "C", False), ("C", "D", True), ("D", "E", True)]
+    actual_dotted = [
+        (edge["source"], edge["target"], edge["undirected"])
+        for edge in dotted["edges"]
+        if edge["style"] == "dashed"
+    ]
+    if actual_dotted != expected_dotted or len(dotted["nodes"]) != 5:
+        fail(f"longer dotted links were not read as dashed edges: {dotted['edges']}")
+
     labeled_file = tmp / "labeled-links.mmd"
     labeled_file.write_text(
         """flowchart LR
