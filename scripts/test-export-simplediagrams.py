@@ -1,0 +1,659 @@
+#!/usr/bin/env python3
+"""Tests for the SimpleDiagrams export (skills/diagram-design/scripts/export_simplediagrams.py).
+
+Covers the export's contract: every shipped example becomes a package that
+keeps the document format's rules, the translation keeps boxes, labels and
+connectors editable, malformed input fails clearly instead of hanging or
+writing a broken document, re-exports are byte-identical, and an existing
+document is never replaced.
+
+``format_problems`` checks the format rules most likely to break, so CI
+catches a bad document without the app. Opening one in SimpleDiagrams remains
+the final check.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import hashlib
+import importlib.util
+import io
+import json
+import math
+import sys
+import tempfile
+import unittest
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = ROOT / "skills/diagram-design/scripts"
+ASSETS = ROOT / "skills/diagram-design/assets"
+HELPER = SCRIPTS / "export_simplediagrams.py"
+
+sys.path.insert(0, str(SCRIPTS))  # the exporter imports export_svg beside it
+
+Record = dict[str, Any]
+
+FLOWCHART = """<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <title>Order flow</title>
+  <defs><marker id="arrow" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker></defs>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <line x1="160" y1="60" x2="240" y2="60" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="40" y="40" width="120" height="40" rx="6" fill="#ffffff" stroke="#2d3142"/>
+  <text x="100" y="58" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Place order</text>
+  <text x="100" y="72" font-size="9" fill="#4f5d75" font-family="'Geist Mono', monospace" text-anchor="middle">web shop</text>
+  <polygon points="300,20 360,60 300,100 240,60" fill="#ffffff" stroke="#2d3142"/>
+  <text x="300" y="64" font-size="12" text-anchor="middle">Paid?</text>
+  <text x="40" y="200" font-size="10">A free note</text>
+</svg>"""
+
+
+def load_helper() -> ModuleType:
+    """Import the exporter from its file, as the skill runs it."""
+    spec = importlib.util.spec_from_file_location("diagram_design_export_simplediagrams", HELPER)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {HELPER}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def exportable_assets() -> list[Path]:
+    """Every shipped diagram, without the gallery and the icon sheet."""
+    return sorted(
+        path for path in ASSETS.glob("*.html") if path.name not in {"index.html", "icons.html"}
+    )
+
+
+def core(element: Record) -> Record:
+    """The innermost level of an element record, where its own keys live."""
+    inner: Record = element["content"]["content"]["content"]
+    return inner
+
+
+def resolve(element: Record, fraction: Record) -> tuple[float, float]:
+    """Where a connection point is drawn: mirrored by the flips, scaled, then turned."""
+    item = core(element)
+    frame, angle = item["frame"], math.radians(item["rotation_degrees"])
+    u = 1 - fraction["x"] if element["content"]["flip_horizontal"] else fraction["x"]
+    v = 1 - fraction["y"] if element["content"]["flip_vertical"] else fraction["y"]
+    dx, dy = (u - 0.5) * frame["width"], (v - 0.5) * frame["height"]
+    return (
+        frame["x"] + frame["width"] / 2 + dx * math.cos(angle) - dy * math.sin(angle),
+        frame["y"] + frame["height"] / 2 + dx * math.sin(angle) + dy * math.cos(angle),
+    )
+
+
+def package_bytes(package: Path) -> dict[str, bytes]:
+    """Every file in a package, by its path inside it."""
+    return {
+        str(path.relative_to(package)): path.read_bytes()
+        for path in sorted(package.rglob("*"))
+        if path.is_file()
+    }
+
+
+def format_problems(manifest: Record, document: Record) -> list[str]:
+    """The format rules an exporter change is most likely to break, as messages."""
+    problems: list[str] = []
+    if manifest != {
+        "format": "com.simplediagrams.document",
+        "format_version": 19,
+        "contains_legacy_source": False,
+    }:
+        problems.append(f"unexpected manifest {manifest}")
+    if document["schema_version"] != 18 or not {"id", "pages", "embedded_assets"} <= set(document):
+        problems.append("document.json lacks a top-level key or the right schema version")
+    seen = {document["id"]}
+    for page in document["pages"]:
+        elements = {core(e)["id"]: e for e in page["elements"]}
+        connections = [c["content"] for c in page["content"]["content"]["connections"]]
+        groups = page["content"]["groups"]
+        for identifier in (*elements, *(c["id"] for c in connections), *(g["id"] for g in groups)):
+            if identifier in seen:
+                problems.append(f"identifier {identifier} repeats")
+            seen.add(identifier)
+        for name, element in elements.items():
+            shape = element.get("complex_shape")
+            if shape and set(shape) != {"type", "version", "settings", "parts"}:
+                problems.append(f"element {name} breaks the complex-shape record")
+        for connection in connections:
+            for end in ("start_attachment", "end_attachment"):
+                if (attachment := connection.get(end)) is None:
+                    continue
+                target = elements.get(attachment["element_id"])
+                points = core(target)["connection_points"] if target else []
+                if attachment["connection_point_id"] not in {point["id"] for point in points}:
+                    problems.append(f"connector {connection['id']} {end} names no real point")
+    return problems
+
+
+class ExportSimpleDiagramsTests(unittest.TestCase):
+    """The exporter's behaviour, from the shipped examples down to single shapes."""
+
+    mod: ModuleType
+    flowchart: Record
+    elements: list[Record]
+    connections: list[Record]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Load the exporter once and export the small flowchart most tests read."""
+        cls.mod = load_helper()
+        cls.flowchart = cls.mod.export_document(FLOWCHART, Path("order-flow.html")).document
+        page = cls.flowchart["pages"][0]
+        cls.elements = [core(element) for element in page["elements"]]
+        cls.connections = [c["content"] for c in page["content"]["content"]["connections"]]
+
+    def export(self, svg: str) -> tuple[Record, dict[str, int]]:
+        """Export a diagram, check it keeps the format's rules, and return it with its notes."""
+        result = self.mod.export_document(svg, Path("case.html"))
+        self.assertEqual(format_problems(result.manifest, result.document), [])
+        return result.document, result.skipped
+
+    def run_cli(self, *argv: str) -> int:
+        """Run the command line quietly; returns its exit status."""
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            return int(self.mod.main(list(argv)))
+
+    def element_labelled(self, string: str, document: Record | None = None) -> Record:
+        """The element whose text is ``string``, in the flowchart or in ``document``."""
+        elements = (
+            self.elements
+            if document is None
+            else [core(e) for e in document["pages"][0]["elements"]]
+        )
+        return next(element for element in elements if element["text_content"]["string"] == string)
+
+    def test_every_shipped_example_exports_a_valid_package(self) -> None:
+        """End to end: the files the command line writes for every example keep the format."""
+        with tempfile.TemporaryDirectory() as tmp:
+            for source in exportable_assets():
+                with self.subTest(source=source.name):
+                    package = Path(tmp, f"{source.stem}.simplediagram")
+                    errors = io.StringIO()
+                    quiet = contextlib.redirect_stdout(io.StringIO())
+                    with quiet, contextlib.redirect_stderr(errors):
+                        self.assertEqual(self.mod.main([str(source), str(package)]), 0)
+                    # A note appearing or vanishing on a shipped example is a change to review.
+                    notes = {line.rsplit(" (", 1)[0] for line in errors.getvalue().splitlines()}
+                    expected = set()
+                    if source.stem.startswith(("example-datalake", "example-high-level")):
+                        expected = {"note: hole in a filled shape, kept as an outline only"}
+                    if source.stem.startswith(
+                        (
+                            "example-exploded-keyboard",
+                            "example-exploded-phone",
+                            "example-exploded-unboxing",
+                            "example-medallion",
+                            "example-venn",
+                        )
+                    ):
+                        expected = {"note: clipping and masks left out; shapes are drawn unclipped"}
+                    self.assertEqual(notes, expected)
+                    self.assertEqual(
+                        sorted(p.name for p in package.iterdir()),
+                        ["assets", "document.json", "manifest.json"],
+                    )
+                    manifest, document = (
+                        json.loads((package / name).read_bytes().decode("utf-8"))
+                        for name in ("manifest.json", "document.json")
+                    )
+                    self.assertEqual(format_problems(manifest, document), [])
+                    stored = {f.name: f.read_bytes() for f in (package / "assets").iterdir()}
+                    listed = {a["filename"]: a for a in document["embedded_assets"]}
+                    self.assertEqual(stored.keys(), listed.keys())
+                    for name, data in stored.items():
+                        self.assertEqual(listed[name]["id"], hashlib.sha256(data).hexdigest())
+                        self.assertEqual(listed[name]["byte_count"], len(data))
+                        self.assertTrue(self.mod.is_safe_svg(ET.fromstring(data)))
+
+    def test_boxes_keep_their_text_with_each_line_styled(self) -> None:
+        """A box's lines become its label, and a line in another style gets a run."""
+        box = self.element_labelled("Place order\nweb shop")
+        self.assertEqual(box["symbol_reference"]["item_id"], "rounded-rectangle")
+        self.assertEqual(box["style"]["fill_hex"], "#FFFFFF")
+        self.assertEqual(box["text_content"]["base_style"]["weight"], "bold")
+        self.assertEqual(box["text_content"]["base_style"]["font_family"], "Geist")
+        [run] = box["text_content"]["character_runs"]
+        self.assertEqual(run["range"], {"location": 12, "length": 8})
+        self.assertEqual(run["style"]["font_family"], "Geist Mono")
+        self.assertEqual(run["style"]["color_hex"], "#4F5D75")
+
+    def test_boxes_become_hand_drawn_basic_shapes(self) -> None:
+        """Rectangles, circles and labelled outlines become the matching Basic shapes."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <rect x="10" y="10" width="80" height="40" fill="#fff" stroke="#000"/><text x="50" y="34">A</text>
+          <rect x="110" y="10" width="80" height="40" rx="6" fill="#fff" stroke="#000"/><text x="150" y="34">B</text>
+          <rect x="210" y="10" width="80" height="40" rx="20" fill="#fff" stroke="#000"/><text x="250" y="34">C</text>
+          <circle cx="50" cy="120" r="30" fill="#fff" stroke="#000"/><text x="50" y="124">D</text>
+          <polygon points="150,90 190,120 150,150 110,120" fill="#fff" stroke="#000"/>
+          <text x="150" y="124" text-anchor="middle">E</text>
+          <polygon points="210,90 390,90 400,120 390,150 210,150 220,120" fill="#fff" stroke="#000"/>
+          <text x="300" y="124" text-anchor="middle">F</text>
+          <polygon points="50,200 80,230 50,260 20,230" fill="#fff" stroke="#000"/></svg>""")
+        shapes = {
+            core(e)["text_content"]["string"]: core(e).get("symbol_reference", {}).get("item_id")
+            for e in document["pages"][0]["elements"]
+        }
+        # A wide notched banner (F) is no Basic Chevron, whose notch is half its width;
+        # an unlabelled outline ("") is drawing geometry, such as a 3D face.
+        expected = {"A": "Square", "B": "rounded-rectangle", "C": "pill", "D": "Circle"}
+        self.assertEqual(shapes, expected | {"E": "Diamond", "F": None, "": None})
+
+    def test_square_lines_keep_only_their_real_corners(self) -> None:
+        """Rounded corners and hops are dropped, since SimpleDiagrams 5.2 draws neither."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <defs><marker id="a"><polygon points="0 0,8 3,0 6"/></marker></defs>
+          <path d="M 40,200 V 108 Q 40,100 48,100 H 120 A 8 8 0 0 1 136 100 H 252 Q 260,100 260,92 V 60"
+                fill="none" stroke="#000" marker-end="url(#a)"/>
+          <path d="M 40,250 H 120 A 8 8 0 0 1 136 250 H 300" fill="none" stroke="#000" marker-end="url(#a)"/>
+          <path d="M 300,40 C 350,40 380,80 380,120" fill="none" stroke="#000" marker-end="url(#a)"/></svg>""")
+        bent, straight, curved = document["pages"][0]["content"]["content"]["connections"]
+        self.assertEqual(bent["routing"], "right_angle")
+        corners = [(p["x"], p["y"]) for p in bent["content"]["points"]]
+        self.assertEqual(corners, [(40, 200), (40, 100), (260, 100), (260, 60)])
+        self.assertNotIn("routing", straight)
+        self.assertEqual(len(straight["content"]["points"]), 2)
+        self.assertNotIn("routing", curved)  # a real curve keeps its shape
+        self.assertGreater(len(curved["content"]["points"]), 2)
+        # Two roundings back to back are a step, with its upright midway.
+        [step] = self.mod.parse_path_data(
+            "M 400,104 H 348 Q 340,104 340,112 Q 340,120 332,120 H 280"
+        )
+        self.assertEqual(
+            self.mod.right_angle_route(step), [(400, 104), (340, 104), (340, 120), (280, 120)]
+        )
+
+    def test_an_arrow_label_becomes_the_connector_label(self) -> None:
+        """The skill's arrow label, text on a small paper-coloured box, rides on the connector."""
+        document, _ = self.export("""<svg viewBox="0 0 400 200">
+          <defs><marker id="a"><polygon points="0 0,8 3,0 6"/></marker></defs>
+          <rect x="20" y="80" width="80" height="40" fill="#fff" stroke="#000"/>
+          <rect x="300" y="80" width="80" height="40" fill="#fff" stroke="#000"/>
+          <line x1="100" y1="100" x2="300" y2="100" stroke="#000" marker-end="url(#a)"/>
+          <rect x="230" y="80" width="40" height="12" fill="#f5f5f5"/>
+          <text x="250" y="89" font-size="8" text-anchor="middle">SENDS</text></svg>""")
+        page = document["pages"][0]
+        [arrow] = page["content"]["content"]["connections"]
+        label = arrow["content"]["label"]
+        self.assertEqual(label["content"]["string"], "SENDS")
+        self.assertEqual((label["position"], label["normal_offset"]), (0.75, -14))  # above the line
+        self.assertEqual(len(page["elements"]), 2)  # the label's box is gone
+
+    def test_lanes_drawn_as_dividers_become_a_swimlanes_shape(self) -> None:
+        """Lanes become one Swimlanes shape holding their content; a legend rule stays a line."""
+        source = ASSETS / "example-swimlane.html"
+        document = self.mod.export_document(source.read_text(encoding="utf-8"), source).document
+        [shape] = [e for e in document["pages"][0]["elements"] if "complex_shape" in e]
+        record = shape["complex_shape"]
+        self.assertEqual(record["settings"]["direction"], "horizontal")
+        titles = [lane["text"]["string"] for lane in record["parts"]]
+        self.assertEqual(titles, ["AUTHOR", "REVIEWER", "EDITOR", "CI / CD"])
+        self.assertTrue(all(lane["members"] for lane in record["parts"]))
+        lines = [core(e) for e in document["pages"][0]["elements"] if core(e)["kind"] == "path"]
+        self.assertTrue(any(line["frame"]["y"] > 420 for line in lines))
+
+    def test_lanes_drawn_as_columns_become_vertical_swimlanes(self) -> None:
+        """Columns with a title row become vertical Swimlanes, holding what is drawn in them."""
+        dividers = "".join(
+            f'<line x1="{x}" y1="20" x2="{x}" y2="380" stroke="#999"/>' for x in (20, 100, 180, 260)
+        )
+        titles = "".join(
+            f'<text x="{60 + i * 80}" y="40" font-size="10" text-anchor="middle">L{i}</text>'
+            for i in range(3)
+        )
+        document, _ = self.export(f"""<svg viewBox="0 0 400 400">{dividers}
+          <line x1="20" y1="60" x2="260" y2="60" stroke="#999"/>{titles}
+          <rect x="110" y="120" width="60" height="30" fill="#fff" stroke="#000"/></svg>""")
+        [shape] = [e for e in document["pages"][0]["elements"] if "complex_shape" in e]
+        record = shape["complex_shape"]
+        self.assertEqual(record["settings"]["direction"], "vertical")
+        self.assertEqual([lane["text"]["string"] for lane in record["parts"]], ["L0", "L1", "L2"])
+        self.assertEqual([len(lane["members"]) for lane in record["parts"]], [0, 1, 0])
+
+    def test_a_small_tag_keeps_its_word_on_one_line(self) -> None:
+        """A tag too small for the default label margins gets a region wide enough for its word."""
+        document, _ = self.export("""<svg viewBox="0 0 200 100">
+          <rect x="20" y="20" width="40" height="12" fill="#f5f5f5" stroke="#333"/>
+          <text x="40" y="29" font-size="8" text-anchor="middle">SESSION</text></svg>""")
+        [tag] = document["pages"][0]["elements"]
+        region = tag["content"]["text_layout"]["frame"]
+        self.assertGreaterEqual(region["width"] * 40, 7 * 8 * 0.7)
+
+    def test_a_tint_over_an_opaque_copy_is_one_labelled_shape(self) -> None:
+        """The skill's tinted node over a paper-coloured copy becomes one shape at the tint."""
+        document, _ = self.export("""<svg viewBox="0 0 200 100">
+          <rect x="10" y="10" width="160" height="48" rx="6" fill="#f5f5f5"/>
+          <rect x="10" y="10" width="160" height="48" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520"/>
+          <text x="90" y="38" text-anchor="middle">Write a skill</text></svg>""")
+        [node] = [core(e) for e in document["pages"][0]["elements"]]
+        self.assertEqual(node["text_content"]["string"], "Write a skill")
+        self.assertEqual(node["style"]["fill_hex"], "#BF452014")
+        self.assertEqual(node["style"]["stroke_hex"], "#BF4520")
+
+    def test_arrows_attach_to_mirrored_shapes_where_they_are_drawn(self) -> None:
+        """A flipped shape's connection point is stored so it resolves where the arrow ends."""
+        document, _ = self.export("""<svg viewBox="0 0 300 300">
+          <defs><marker id="a"><polygon points="0 0,8 3,0 6"/></marker></defs>
+          <polygon points="100,100 200,100 150,190" fill="#fff" stroke="#000"/>
+          <text x="150" y="125" text-anchor="middle">Down</text>
+          <line x1="150" y1="260" x2="150" y2="192" stroke="#000" marker-end="url(#a)"/></svg>""")
+        page = document["pages"][0]
+        [triangle] = [e for e in page["elements"] if core(e)["text_content"]["string"] == "Down"]
+        self.assertEqual(core(triangle)["symbol_reference"]["item_id"], "Triangle")
+        self.assertTrue(triangle["content"]["flip_vertical"])
+        [arrow] = page["content"]["content"]["connections"]
+        self.assertEqual(arrow["content"]["end_attachment"]["element_id"], core(triangle)["id"])
+        self.assertEqual(arrow["content"]["points"][-1], {"x": 150, "y": 190, "kind": "straight"})
+        point_id = arrow["content"]["end_attachment"]["connection_point_id"]
+        point = next(p for p in core(triangle)["connection_points"] if p["id"] == point_id)
+        self.assertLess(math.dist(resolve(triangle, point), (150, 190)), 0.01)
+
+    def test_arrows_attach_to_the_boxes_they_touch(self) -> None:
+        """An arrow becomes a connector attached at both ends, so it follows the boxes."""
+        [arrow] = self.connections
+        self.assertEqual(arrow["end_ending"], "filledArrow")
+        start = self.element_labelled("Place order\nweb shop")["id"]
+        self.assertEqual(arrow["start_attachment"]["element_id"], start)
+        end = self.element_labelled("Paid?")["id"]
+        self.assertEqual(arrow["end_attachment"]["element_id"], end)
+        self.assertEqual((arrow["points"][0]["x"], arrow["points"][-1]["x"]), (160, 240))
+
+    def test_a_crowded_box_shares_its_connection_points(self) -> None:
+        """Past the format's limit, further arrows share the nearest point and still attach."""
+        arrows = "".join(
+            f'<line x1="{12 + i * 2}" y1="10" x2="{12 + i * 2}" y2="49" stroke="#000"'
+            ' marker-end="url(#a)"/>'
+            for i in range(140)
+        )
+        document, _ = self.export(f"""<svg viewBox="0 0 320 100">
+          <defs><marker id="a"><polygon points="0 0,8 3,0 6"/></marker></defs>
+          <rect x="10" y="50" width="300" height="40" fill="#fff" stroke="#000"/>{arrows}</svg>""")
+        [box] = [core(e) for e in document["pages"][0]["elements"]]
+        self.assertEqual(len(box["connection_points"]), self.mod.MAX_CONNECTION_POINTS)
+        connections = document["pages"][0]["content"]["content"]["connections"]
+        self.assertTrue(all("end_attachment" in c["content"] for c in connections))
+
+    def test_text_on_no_box_stays_in_place_and_paper_becomes_the_background(self) -> None:
+        """Free text keeps its place, the paper colours the page, and the title names it."""
+        note = self.element_labelled("A free note")
+        self.assertEqual(note["kind"], "text")
+        self.assertLessEqual(note["frame"]["x"], 40)
+        background = self.flowchart["pages"][0]["content"]["background"]
+        self.assertEqual(background, {"kind": "solid", "color_hex": "#F5F5F5"})
+        self.assertEqual(self.flowchart["name"], "Order flow")
+
+    def test_labels_inside_moved_groups_keep_their_place(self) -> None:
+        """Labels in a transformed group are placed in page coordinates, not the group's."""
+        document, _ = self.export("""<svg viewBox="50 20 400 200"><g transform="translate(100,50)">
+          <rect width="120" height="40" fill="#fff" stroke="#000"/>
+          <text x="60" y="24" font-size="12" text-anchor="middle">Centred</text>
+          <rect y="60" width="120" height="60" fill="#fff" stroke="#000"/>
+          <text x="8" y="76" font-size="12">Top left</text></g></svg>""")
+        centred = self.element_labelled("Centred", document)
+        corner = self.element_labelled("Top left", document)
+        self.assertEqual(centred["frame"]["x"], 50)  # 100 across, less the viewBox origin
+        page = {core(e)["id"]: e for e in document["pages"][0]["elements"]}
+        self.assertNotIn("text_layout", page[centred["id"]]["content"])
+        region = page[corner["id"]]["content"]["text_layout"]["frame"]
+        self.assertGreater(region["width"], 0.8)  # room to the box's far edge
+        self.assertLess(region["y"], 0.2)
+
+    def test_stylesheet_classes_and_custom_properties_are_resolved(self) -> None:
+        """Classes, custom properties and the font shorthand style shapes; dark mode is ignored."""
+        document, _ = self.export("""<style>:root { --ink: #2d3142; --accent: #bf4520; }
+          .node { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
+          .title { font: 600 13px 'Geist', sans-serif; fill: var(--ink); text-transform: uppercase; }
+          @media (prefers-color-scheme: dark) { .node { fill: #000000; } }</style>
+          <svg viewBox="0 0 200 100"><rect class="node" x="10" y="10" width="100" height="50"/>
+          <text class="title" x="60" y="40" text-anchor="middle">api</text></svg>""")
+        node = self.element_labelled("API", document)
+        self.assertEqual(
+            node["style"], {"fill_hex": "#BF4520", "stroke_hex": "#2D3142", "line_width": 2}
+        )
+        self.assertEqual(node["text_content"]["base_style"]["font_size"], 13)
+
+    def test_scaled_text_measures_in_local_coordinates_only_once(self) -> None:
+        """Scaling a text-only group scales its frame and output font exactly once."""
+        frames: list[Record] = []
+        for scale in (1, 2):
+            document, _ = self.export(f"""<svg viewBox="0 0 300 300">
+              <g transform="scale({scale})"><text x="10" y="20" font-size="10">ABC</text>
+              </g></svg>""")
+            [label] = [core(e) for e in document["pages"][0]["elements"]]
+            self.assertEqual(label["text_content"]["base_style"]["font_size"], 10 * scale)
+            frames.append(label["frame"])
+        self.assertEqual(frames[1], {key: value * 2 for key, value in frames[0].items()})
+
+    def test_cards_group_with_what_is_drawn_on_them_but_zones_do_not(self) -> None:
+        """A card groups with its tag and numeral; a zone holding the card stays free."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <rect x="10" y="10" width="380" height="280" fill="none" stroke="#999"/>
+          <text x="20" y="26" font-size="9">ZONE</text>
+          <rect x="40" y="60" width="160" height="60" fill="#fff" stroke="#333"/>
+          <rect x="48" y="66" width="30" height="12" fill="#eee"/>
+          <text x="63" y="75" font-size="8" text-anchor="middle">TAG</text>
+          <text x="120" y="100" font-size="12" text-anchor="middle">Service</text>
+          <text x="196" y="116" font-size="20" text-anchor="end">01</text></svg>""")
+        self.assertEqual(self.element_labelled("ZONE", document)["kind"], "text")
+        [group] = document["pages"][0]["content"]["groups"]
+        self.assertEqual(
+            {m["id"] for m in group["members"]},
+            {self.element_labelled(s, document)["id"] for s in ("Service", "TAG", "01")},
+        )
+
+    def test_tspan_lines_and_em_offsets_become_one_label(self) -> None:
+        """A ``<tspan>`` placed a line below, in ems, continues the same label."""
+        document, _ = self.export("""<svg viewBox="0 0 200 100"><rect x="10" y="10" width="180"
+          height="80" fill="#fff" stroke="#000"/><text x="100" y="40" font-size="10"
+          text-anchor="middle">First<tspan x="100" dy="1.4em">second</tspan></text></svg>""")
+        self.element_labelled("First\nsecond", document)
+
+    def test_text_runs_count_utf16_units(self) -> None:
+        """Run ranges count UTF-16 code units, as the format does, so an emoji counts as two."""
+        document, _ = self.export("""<svg viewBox="0 0 200 100"><rect x="10" y="10" width="180"
+          height="80" fill="#fff" stroke="#000"/><text x="100" y="40" font-size="12"
+          text-anchor="middle">Deploy 🚀</text>
+          <text x="100" y="56" font-size="9" fill="#777" text-anchor="middle">déjà vu</text></svg>""")
+        text = self.element_labelled("Deploy 🚀\ndéjà vu", document)["text_content"]
+        self.assertEqual(text["character_runs"][0]["range"], {"location": 10, "length": 7})
+
+    def test_path_data_covers_relative_shorthand_and_arc_commands(self) -> None:
+        """Relative, shorthand, smooth and arc commands, including packed arc flags."""
+        cubic, quad = self.mod.Cubic, self.mod.Quad
+        [square] = self.mod.parse_path_data("m10 10 h20 v20 h-20 z")
+        self.assertTrue(square.closed)
+        self.assertEqual([s.end for s in square.segments], [(30, 10), (30, 30), (10, 30)])
+        [curve] = self.mod.parse_path_data(
+            "M0 0 C 10 0 20 10 20 20 S 30 40 40 40 Q 50 40 50 50 T 60 60"
+        )
+        self.assertEqual([type(s) for s in curve.segments], [cubic, cubic, quad, quad])
+        self.assertEqual(curve.segments[1].control1, (20, 30))  # S mirrors the last control
+        self.assertEqual(curve.segments[3].control, (50, 60))  # and so does T
+        [arc] = self.mod.parse_path_data("M0 0 A 10 10 0 0 1 20 0")
+        self.assertEqual(arc.segments[-1].end, (20, 0))
+        [packed] = self.mod.parse_path_data("M5 5a9.4 9.4 0 01-1.9-.4l2 2")
+        self.assertEqual(packed.segments[-1].end, (5.1, 6.6))
+        # S mirrors only a cubic's control point; after an arc it starts at the current point.
+        [after_arc] = self.mod.parse_path_data("M0 0 A 10 10 0 0 1 20 0 S 30 10 40 0")
+        self.assertEqual(after_arc.segments[-1].control1, (20, 0))
+
+    def test_malformed_path_data_fails_instead_of_hanging(self) -> None:
+        """Broken path data raises at once, rather than looping or drawing nonsense."""
+        for data in ("M0 0 L10", "M0 0 L10 0 L10 10 Z 5", "L 5 5", "M0 0 L1e999 0"):
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                self.mod.parse_path_data(data)
+
+    def test_holes_keep_their_outline_and_are_reported(self) -> None:
+        """A hole keeps only its outline, with a note; an island inside it is filled again."""
+        document, skipped = self.export("""<svg viewBox="0 0 200 200">
+          <path d="M10 10H110V110H10ZM40 40H80V80H40Z" fill="#000" stroke="#333"/></svg>""")
+        fills = sorted(core(e)["style"]["fill_hex"] for e in document["pages"][0]["elements"])
+        self.assertEqual(fills, ["#000000", "#00000000"])
+        self.assertEqual(skipped, {"hole in a filled shape, kept as an outline only": 1})
+        document, _ = self.export("""<svg viewBox="0 0 200 200">
+          <path d="M10 10H110V110H10ZM40 40H80V80H40ZM55 55H65V65H55Z" fill="#000"/></svg>""")
+        fills = sorted(core(e)["style"]["fill_hex"] for e in document["pages"][0]["elements"])
+        self.assertEqual(fills, ["#000000", "#000000"])
+
+    def test_icons_are_stored_as_artwork_and_images_are_left_out(self) -> None:
+        """Icons are stored once each; unsafe icons and every image are left out with a note."""
+        result = self.mod.export_document(
+            """<svg viewBox="0 0 400 200"><defs>
+              <symbol id="db" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <ellipse cx="12" cy="6" rx="8" ry="3"/></symbol>
+              <g id="key" fill="none" stroke="currentColor"><circle cx="0" cy="0" r="4"/></g>
+              <g id="bad" onclick="steal()"><circle r="2"/></g></defs>
+              <use href="#db" x="10" y="10" width="48" height="48" color="#bf4520"/>
+              <use href="#db" x="70" y="10" width="24" height="24" color="#bf4520"/>
+              <use href="#key" transform="translate(150 40)" style="color:#2e5aa8"/>
+              <use href="#bad" transform="translate(200 40)"/>
+              <image href="data:image/png;base64,AAAA" x="250" y="10" width="40" height="20"/>
+            </svg>""",
+            Path("pictures.html"),
+        )
+        self.assertEqual(format_problems(result.manifest, result.document), [])
+        kinds = [core(e)["kind"] for e in result.document["pages"][0]["elements"]]
+        self.assertEqual(kinds, ["svg_artwork"] * 3)
+        self.assertEqual(len(result.assets), 2)  # the database icon, placed twice, is stored once
+        svgs = [a.data.decode() for a in result.assets]
+        self.assertTrue(
+            any('color="#BF4520"' in svg and 'viewBox="0 0 24 24"' in svg for svg in svgs)
+        )
+        self.assertEqual(
+            result.skipped,
+            {"icon SimpleDiagrams cannot store safely left out": 1, "<image> left out": 1},
+        )
+
+    def test_icon_svg_is_stored_only_when_plainly_safe(self) -> None:
+        """Doubtful SVG is refused, so a package never holds artwork the app would reject."""
+        deep = "<svg>" + "<g>" * 128 + "</g>" * 128 + "</svg>"
+        crowded = "<svg><g " + " ".join(f'a{i}="x"' for i in range(129)) + "/></svg>"
+        cases = (
+            ('<svg><circle r="4"/></svg>', True),
+            ('<svg><rect fill="url( \'#b\' )" clip-path="url(#elsewhere)"/></svg>', True),
+            ('<svg><g ONCLICK="x()"/></svg>', False),
+            ('<svg><g base="x"/></svg>', False),
+            ('<svg><linearGradient href="#a"/></svg>', False),
+            ('<svg xmlns:x="http://www.w3.org/1999/xlink"><g x:href="#a"/></svg>', False),
+            ('<svg xmlns:i="urn:inkscape"><g i:label="x"/></svg>', False),
+            ('<svg xmlns:i="urn:inkscape"><i:g/></svg>', False),
+            ("<svg><SCRIPT/></svg>", False),
+            ("<svg><Use/></svg>", False),
+            ("<svg><image/></svg>", False),
+            ("<svg><foreignObject/></svg>", False),
+            ("<svg><style>rect { fill: red }</style></svg>", False),
+            ("<svg><filter/></svg>", False),
+            ('<svg><feGaussianBlur stdDeviation="1"/></svg>', False),
+            ('<svg><rect fill="url(http://a/b)"/></svg>', False),
+            ('<svg><rect style="content: \\66"/></svg>', False),
+            ('<svg><rect fill="url(#a"/></svg>', False),  # url( never closed
+            ('<svg><rect fill="url(#caf\u00e9)"/></svg>', False),
+            (deep, False),
+            (crowded, False),
+        )
+        for content, safe in cases:
+            with self.subTest(content=content[:80]):
+                self.assertEqual(self.mod.is_safe_svg(ET.fromstring(content)), safe)
+
+    def test_an_unclosed_url_is_refused_without_slow_backtracking(self) -> None:
+        """A long run of spaces after url( is read once, not retried at every split."""
+        root = ET.fromstring(f'<svg><rect fill="url({" " * 4096}"/></svg>')
+        self.assertFalse(self.mod.is_safe_svg(root))
+        root = ET.fromstring(f'<svg><rect fill="url({" " * 4096}#a)"/></svg>')
+        self.assertTrue(self.mod.is_safe_svg(root))
+
+    def test_icon_size_and_extent_stay_within_what_the_editor_accepts(self) -> None:
+        """An oversized icon or an unusable view box is refused rather than stored."""
+        part = ET.fromstring('<circle r="4"/>')
+        self.assertIsNotNone(self.mod.svg_asset((0, 0, 10, 10), [part], {}))
+        self.assertIsNone(self.mod.svg_asset((0, 0, 0, 10), [part], {}))
+        self.assertIsNone(self.mod.svg_asset((0, 0, 20_000_000, 10), [part], {}))
+        with mock.patch.object(self.mod, "MAX_ICON_BYTES", 16):
+            self.assertIsNone(self.mod.svg_asset((0, 0, 10, 10), [part], {}))
+
+    def test_clipping_and_masks_are_noted_and_their_shapes_stay_drawn(self) -> None:
+        """A clipped shape stays whole, so the note is what tells the user it differs."""
+        document, skipped = self.export("""<style>.crop { mask: url(#m) }</style>
+          <svg viewBox="0 0 100 100"><defs><clipPath id="c"><rect width="9" height="9"/></clipPath>
+          <mask id="m"/></defs><g clip-path="url(#c)"><circle cx="50" cy="50" r="40"/></g>
+          <circle class="crop" r="4"/><circle style="clip-path: none" r="5"/></svg>""")
+        self.assertEqual(len(document["pages"][0]["elements"]), 3)
+        self.assertEqual(skipped, {"clipping and masks left out; shapes are drawn unclipped": 2})
+
+    def test_untranslatable_content_is_reported_not_silently_dropped(self) -> None:
+        """Every kind of content left out or simplified is counted for a note."""
+        _, skipped = self.export("""<svg viewBox="0 0 10 10"><use href="#a"/><image href="x.png"/>
+          <rect width="5" height="5" fill="url(#gradient)" stroke="#000"/><walk/>
+          <text><textPath href="#p">curved</textPath></text></svg>""")
+        self.assertEqual(
+            skipped,
+            {
+                "<use> of nothing left out": 1,
+                "<image> left out": 1,
+                "<walk> left out": 1,
+                "<textPath> left out": 1,
+                "gradient, pattern or unknown colour, left transparent": 1,
+            },
+        )
+
+    def test_impossible_numbers_are_ignored_or_refused_clearly(self) -> None:
+        """Non-finite numbers are dropped; sizes the format cannot hold are refused by name."""
+        document, _ = self.export(
+            '<svg viewBox="0 0 10 10"><rect x="nan" width="1e999" height="4"/>'
+            '<rect width="4" height="4" transform="scale(1e999)"/></svg>'
+        )
+        self.assertEqual(len(document["pages"][0]["elements"]), 1)
+        too_many = "".join(
+            f'<rect x="{i % 100 * 3}" y="{i // 100 * 3}" width="2" height="2"/>'
+            for i in range(self.mod.MAX_ITEMS + 1)
+        )
+        refused = (
+            (
+                "beyond what SimpleDiagrams can hold",
+                '0 0 10 10"><rect x="2e9" width="4" height="4"/>',
+            ),
+            ("larger than a SimpleDiagrams page", '0 0 2e7 10"><rect width="4" height="4"/>'),
+            ("this export handles up to", f'0 0 400 400">{too_many}'),
+        )
+        for message, content in refused:
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                self.mod.export_document(f'<svg viewBox="{content}</svg>', Path("refused.html"))
+
+    def test_reexport_is_byte_identical(self) -> None:
+        """Exporting an unchanged diagram twice writes the same bytes."""
+        with tempfile.TemporaryDirectory() as tmp:
+            for name in ("example-architecture", "example-er", "example-dp-integration"):
+                source = ASSETS / f"{name}.html"
+                first, second = (Path(tmp, f"{name}-{n}.simplediagram") for n in "ab")
+                for output in (first, second):
+                    self.assertEqual(self.run_cli(str(source), str(output)), 0)
+                self.assertEqual(package_bytes(first), package_bytes(second), name)
+
+    def test_an_existing_document_is_never_replaced(self) -> None:
+        """An existing output, a wrong suffix and the gallery are all refused untouched."""
+        source = ASSETS / "example-flowchart.html"
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp, "kept.simplediagram")
+            output.mkdir()
+            (output / "document.json").write_text("{}", encoding="utf-8")
+            errors = io.StringIO()
+            with contextlib.redirect_stderr(errors):
+                self.assertEqual(self.mod.main([str(source), str(output)]), 2)
+                self.assertEqual(self.mod.main([str(source), str(Path(tmp, "wrong.json"))]), 2)
+                self.assertEqual(self.mod.main([str(ASSETS / "index.html")]), 2)
+            self.assertEqual((output / "document.json").read_text(encoding="utf-8"), "{}")
+            self.assertIn("already exists", errors.getvalue())
+            self.assertFalse(Path(tmp, "wrong.json").exists())
+
+
+if __name__ == "__main__":
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(ExportSimpleDiagramsTests)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    sys.exit(0 if result.wasSuccessful() else 1)
