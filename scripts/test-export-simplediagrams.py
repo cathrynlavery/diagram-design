@@ -183,8 +183,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                     # A note appearing or vanishing on a shipped example is a change to review.
                     notes = {line.rsplit(" (", 1)[0] for line in errors.getvalue().splitlines()}
                     expected = set()
-                    if source.stem.startswith(("example-datalake", "example-high-level")):
-                        expected = {"note: hole in a filled shape, kept as an outline only"}
+                    if source.stem == "example-quadrant-consultant":
+                        expected = {"note: styled words inside a line take the line's style"}
                     if source.stem.startswith(
                         (
                             "example-exploded-keyboard",
@@ -586,6 +586,108 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
           <circle class="crop" r="4"/><circle style="clip-path: none" r="5"/></svg>""")
         self.assertEqual(len(document["pages"][0]["elements"]), 3)
         self.assertEqual(skipped, {"clipping and masks left out; shapes are drawn unclipped": 2})
+
+    def test_an_open_filled_path_keeps_its_fill_below_its_line(self) -> None:
+        """SVG fills an open path as if closed, so the fill must not vanish when it is exported."""
+        document, _ = self.export(
+            '<svg viewBox="0 0 100 100"><path d="M10 10 H90 V90 H10" fill="#bf4520"/></svg>'
+        )
+        [fill] = [core(e) for e in document["pages"][0]["elements"]]
+        self.assertEqual(fill["style"]["fill_hex"], "#BF4520")
+        self.assertEqual(fill["style"]["line_width"], 0)
+        self.assertTrue(fill["path"]["is_closed"])
+        document, _ = self.export(
+            """<svg viewBox="0 0 100 100">
+            <path d="M10 10 H90 V90 H10" fill="#bf4520" stroke="#000"/></svg>"""
+        )
+        [fill, line] = [core(e) for e in document["pages"][0]["elements"]]
+        self.assertEqual(fill["style"]["fill_hex"], "#BF4520")
+        self.assertFalse(line["path"]["is_closed"])
+        self.assertEqual(line["style"]["fill_hex"], "#00000000")  # painted once, by the box below
+
+    def test_a_line_end_never_attaches_to_its_own_fill(self) -> None:
+        """An arrow with a fill stays free, and a plain line gains no fill box."""
+        document, _ = self.export("""<svg viewBox="0 0 100 100"><defs>
+          <marker id="a"><polygon points="0 0,8 3,0 6"/></marker></defs>
+          <path d="M10 10 H90 V90" fill="#bf4520" stroke="#000" marker-end="url(#a)"/></svg>""")
+        [arrow] = document["pages"][0]["content"]["content"]["connections"]
+        self.assertIsNone(arrow["content"].get("start_attachment"))
+        self.assertIsNone(arrow["content"].get("end_attachment"))
+        document, _ = self.export(
+            '<svg viewBox="0 0 99 99"><line x1="9" y1="9" x2="90" y2="90" stroke="#000"/></svg>'
+        )
+        self.assertEqual(len(document["pages"][0]["elements"]), 1)
+
+    def test_shapes_sharing_bounds_merge_only_when_they_are_the_same_outline(self) -> None:
+        """A star's two triangles and an X's two legs stay apart; one shape painted twice merges."""
+        for first, second, count in (
+            ("50,0 100,100 0,100", "50,100 0,0 100,0", 2),  # a six-pointed star
+            ("20,44 0,34 70,0 90,10", "70,44 90,34 20,0 0,10", 2),  # the two legs of an X
+            ("50,0 100,100 0,100", "50,0 100,100 0,100", 1),
+        ):
+            with self.subTest(first=first, second=second):
+                document, _ = self.export(f"""<svg viewBox="0 0 100 100">
+                  <polygon points="{first}" fill="#fff"/><polygon points="{second}" fill="#000"/>
+                  </svg>""")
+                self.assertEqual(len(document["pages"][0]["elements"]), count)
+
+    def test_an_icon_keeps_the_paint_its_stylesheet_and_placement_gave_it(self) -> None:
+        """Icons are stored without the page's CSS, so their paint must be written onto them."""
+        result = self.mod.export_document(
+            """<style>:root { --ink: #123456 } .brand { fill: #bf4520 }
+              .inked { stroke: var(--ink) }
+              .lost { fill: var(--nothing) }</style>
+              <svg viewBox="0 0 200 100"><defs>
+              <symbol id="a" viewBox="0 0 24 24"><path class="brand" d="M0 0H9V9Z"/></symbol>
+              <symbol id="b" viewBox="0 0 24 24"><path class="inked" d="M1 1H9V9Z"/></symbol>
+              <symbol id="c" viewBox="0 0 24 24"><path d="M2 2H9V9Z"/></symbol>
+              <symbol id="d" viewBox="0 0 24 24"><path class="lost" d="M3 3H9V9Z"/></symbol>
+              </defs><use href="#a" width="24" height="24"/>
+              <use href="#b" x="30" width="24" height="24"/>
+              <use href="#c" x="60" width="24" height="24" fill="#2e5aa8"/>
+              <use href="#d" x="90" width="24" height="24"/></svg>""",
+            Path("painted-icons.html"),
+        )
+        svgs = "".join(asset.data.decode() for asset in result.assets)
+        self.assertEqual(len(result.assets), 3)
+        for written in ('fill="#bf4520"', 'stroke="#123456"', 'fill="#2e5aa8"'):
+            self.assertIn(written, svgs)
+        self.assertNotIn("class=", svgs)
+        self.assertNotIn("var(", svgs)
+        self.assertEqual(result.skipped, {"icon SimpleDiagrams cannot store safely left out": 1})
+
+    def test_a_nested_svg_is_an_icon_where_the_browser_draws_it(self) -> None:
+        """Ignoring a nested view port piles every icon into the page's top-left corner."""
+        result = self.mod.export_document(
+            """<svg viewBox="0 0 400 300">
+              <svg x="90" y="50" width="80" height="80" viewBox="0 0 10 10" fill="none"
+                stroke="#123456" stroke-linecap="round"><rect x="1" y="1" width="8" height="8"/></svg>
+              <svg x="200" y="50"><rect x="5" y="6" width="30" height="40" fill="#2e5aa8"/></svg>
+              </svg>""",
+            Path("nested.html"),
+        )
+        frames = [core(e)["frame"] for e in result.document["pages"][0]["elements"]]
+        self.assertIn({"x": 90, "y": 50, "width": 80, "height": 80}, frames)  # an icon
+        self.assertIn({"x": 205, "y": 56, "width": 30, "height": 40}, frames)  # only moved
+        self.assertEqual(len(result.assets), 1)
+        icon = result.assets[0].data.decode()
+        for written in ('fill="none"', 'stroke="#123456"', 'stroke-linecap="round"'):
+            self.assertIn(written, icon)
+
+    def test_an_important_declaration_beats_every_normal_one(self) -> None:
+        """!important reverses the cascade, whatever the specificity or inline style says."""
+        for css, attributes in (
+            (".a { fill: #ff0000 !important } text.a { fill: #0000ff }", ""),
+            (".a { fill: #ff0000 ! IMPORTANT }", 'style="fill: #0000ff"'),
+            (".a { fill: #ff0000 !important; fill: #0000ff }", ""),
+        ):
+            with self.subTest(css=css):
+                document, _ = self.export(
+                    f"""<svg viewBox="0 0 400 300"><style>{css}</style>
+                    <text class="a" x="9" y="50" {attributes}>Hi</text></svg>"""
+                )
+                self.assertIn('"#FF0000"', json.dumps(document))
+                self.assertNotIn('"#0000FF"', json.dumps(document))
 
     def test_untranslatable_content_is_reported_not_silently_dropped(self) -> None:
         """Every kind of content left out or simplified is counted for a note."""

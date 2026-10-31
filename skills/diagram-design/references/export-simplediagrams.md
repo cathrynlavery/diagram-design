@@ -24,8 +24,8 @@ It reads the diagram through `scripts/export_svg.py`, needs only the Python stan
 
 - **The output already exists:** refuse and ask for another name. An existing document may hold the user's edits, so it is never replaced.
 - **Source is `assets/index.html`:** refuse, as for SVG/PNG — ask which diagram file.
-- **Icons:** icons placed with `<use>` are stored in the document as vector artwork. An icon holding anything active, filtered or linked is left out with a note.
-- **Content SimpleDiagrams cannot hold** (images of any kind, which are never fetched or stored; clipping and masks, whose shapes are drawn unclipped; gradients; text on a path; holes in filled shapes): the helper prints one `note:` line per kind. Pass the notes on to the user.
+- **Icons:** icons placed with `<use>` or a nested `<svg>` are stored in the document as vector artwork. An icon holding anything active, filtered or linked is left out with a note.
+- **Content SimpleDiagrams cannot hold** (images of any kind, which are never fetched or stored; clipping and masks, whose shapes are drawn unclipped; gradients; text on a path; holes in filled shapes; styled words inside a line, which take the line's style): the helper prints one `note:` line per kind. Pass the notes on to the user.
 
 ## What this never does
 

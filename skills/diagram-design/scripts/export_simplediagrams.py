@@ -33,7 +33,6 @@ status 2 means nothing was written.
 from __future__ import annotations
 
 import argparse
-import copy
 import hashlib
 import itertools
 import json
@@ -44,7 +43,7 @@ import unicodedata
 import uuid
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterable, Iterator, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Literal, NamedTuple, TypeAlias
@@ -100,6 +99,8 @@ TITLE_BAND = 28.0
 # Corner radii that pick a rectangle's shape: a share of the shorter side, or points.
 PILL_SHARE = 0.4
 ROUNDED_RADIUS = 2.0
+# An open path enclosing less than this, in square SVG units, has no fill to show.
+MIN_FILLED_AREA = 0.01
 
 # Text is placed without the fonts at hand, so its size is estimated, in font sizes,
 # generously: SimpleDiagrams draws a missing font, such as Geist, in the system font.
@@ -132,9 +133,17 @@ INHERITED = frozenset(
      "text-align", "text-transform", "text-decoration", "letter-spacing", "visibility",
      "marker-start", "marker-end"}
 )  # fmt: skip
+ICON_PAINT = frozenset(
+    {"fill", "stroke", "stroke-width", "stroke-dasharray", "fill-opacity", "stroke-opacity",
+     "opacity", "color"}
+)  # fmt: skip
+LINE_ENDINGS = frozenset({"stroke-linecap", "stroke-linejoin"})  # not cascaded, but icons use them
 EFFECTS = frozenset({"clip-path", "mask"})  # read only to report them: nothing here clips
 PRESENTATION = INHERITED | EFFECTS | {"opacity", "display", "transform"}
+TEXT_STYLE = ("fill", "font-family", "font-size", "font-style", "font-weight", "text-decoration")
 NO_PAINT = frozenset({"none", "transparent"})
+IMPORTANT = "!important"
+IMPORTANT_RE = re.compile(r"\s*!\s*important$", re.IGNORECASE)
 GENERIC_FONTS = frozenset(
     {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-serif",
      "ui-sans-serif", "ui-monospace", "ui-rounded"}
@@ -206,7 +215,10 @@ class CssRule:
 
 
 def _declarations(body: str) -> Props:
-    """Split ``a: b; c: d`` into a dict, keeping semicolons inside parentheses."""
+    """Split ``a: b; c: d`` into a dict, keeping semicolons inside parentheses.
+
+    A value keeps a normalised ``!important`` ending for the cascade to act on.
+    """
     out: Props = {}
     depth, start = 0, 0
     for index, char in enumerate(body + ";"):
@@ -214,7 +226,9 @@ def _declarations(body: str) -> Props:
         if char == ";" and depth <= 0:
             name, colon, value = body[start:index].partition(":")
             if colon:
-                out[name.strip().lower()] = value.replace("!important", "").strip()
+                name, value = name.strip().lower(), IMPORTANT_RE.sub(IMPORTANT, value.strip())
+                if value.endswith(IMPORTANT) or not out.get(name, "").endswith(IMPORTANT):
+                    out[name] = value
             start = index + 1
     return out
 
@@ -309,17 +323,24 @@ def computed_properties(
     rules: Sequence[CssRule],
     ancestors: Sequence[ET.Element],
 ) -> Props:
-    """Cascade presentation attributes, then stylesheet rules, then inline style."""
+    """Cascade presentation attributes, then stylesheet rules, then inline style.
+
+    The same order runs twice, because an ``!important`` declaration beats every normal one.
+    """
     props = {k: v for k, v in inherited.items() if k in INHERITED or k.startswith("--")}
     layers = [{k: v for k, v in element.attrib.items() if k in PRESENTATION}]
     layers += [rule.declarations for rule in rules if rule.applies(element, ancestors)]
     layers.append(_declarations(element.get("style", "")))
-    for layer in layers:
-        for name, value in layer.items():
-            if name == "font":
-                props.update(expand_font_shorthand(resolve_vars(value, props)))
-            elif name in PRESENTATION or name.startswith("--"):
-                props[name] = value
+    for important in (False, True):
+        for layer in layers:
+            for name, marked in layer.items():
+                if marked.endswith(IMPORTANT) != important:
+                    continue
+                value = marked.removesuffix(IMPORTANT).rstrip()
+                if name == "font":
+                    props.update(expand_font_shorthand(resolve_vars(value, props)))
+                elif name in PRESENTATION or name.startswith("--"):
+                    props[name] = value
     return {k: v if k.startswith("--") else resolve_vars(v, props) for k, v in props.items()}
 
 
@@ -899,7 +920,9 @@ def is_safe_svg(root: ET.Element) -> bool:
             local = name.rpartition("}")[2].lower()
             if local.startswith("on") or local in ("base", "href", "src"):
                 return False
-            if UNSAFE_IN_SVG.search(value):
+            if UNSAFE_IN_SVG.search(value) or "var(" in value:
+                return False
+            if name in ICON_PAINT and not value.strip():  # a token that resolved to nothing
                 return False
             # SimpleDiagrams reads each url( up to the first ")"; an unclosed one is refused.
             found = re.findall(r"url\(([^)]*)\)", value, re.IGNORECASE)
@@ -917,11 +940,7 @@ def svg_asset(view: Rect, parts: Sequence[ET.Element], paint: Props) -> Asset | 
         return None
     root = ET.Element(f"{{{SVG_NAMESPACE}}}svg", {"viewBox": " ".join(f"{v:g}" for v in view)})
     group = ET.SubElement(root, f"{{{SVG_NAMESPACE}}}g", paint)
-    group.extend(copy.deepcopy(part) for part in parts)
-    for element in group.iter():  # stylesheet rules and tokens do not travel with the copy
-        element.attrib.pop("class", None)
-        if "var(" in element.get("style", ""):
-            del element.attrib["style"]
+    group.extend(parts)
     if not is_safe_svg(root):
         return None
     text = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode")
@@ -1091,6 +1110,7 @@ class Stroke(Item):
     start: Attachment | None = field(default=None, init=False)
     end: Attachment | None = field(default=None, init=False)
     label: Box | None = field(default=None, init=False)  # the box whose text labels it
+    fill: Box | None = field(default=None, init=False)  # the box painting this open path's fill
 
     @property
     def marked(self) -> bool:
@@ -1313,7 +1333,9 @@ class Reader:
             return
         if any(props.get(effect, "none").strip().lower() != "none" for effect in EFFECTS):
             self._skip("clipping and masks left out; shapes are drawn unclipped")
-        if name in CONTAINERS:
+        if name == "svg" and element is not self.root:
+            self._nested_svg(element, props, matrix, opacity, ancestors)
+        elif name in CONTAINERS:
             for child in element:
                 self._walk(child, props, matrix, opacity, [*ancestors, element])
         elif handler := self.handlers.get(name):
@@ -1480,10 +1502,19 @@ class Reader:
         if subpath.closed and len(subpath.flattened()) >= 3:
             if paint.filled or paint.line_width > 0:
                 self._add_box(None, (0, 0, 0, 0), matrix, paint, subpath)
-        elif paint.line_width > 0:  # an open shape with no line draws nothing to keep
+            return
+        # SVG fills an open path as if it were closed: the fill goes below its line.
+        fill = None
+        if paint.filled and enclosed_area(subpath.flattened()) > MIN_FILLED_AREA:
+            shape = Subpath(subpath.start, subpath.segments, closed=True)
+            below = replace(paint, stroke=TRANSPARENT, line_width=0, pattern="solid")
+            self._add_box(None, (0, 0, 0, 0), matrix, below, shape)
+            fill, paint = self.items[-1], replace(paint, fill=TRANSPARENT)
+        if paint.line_width > 0:  # an open shape with no line draws no line to keep
             start = self._ending(props.get("marker-start"))
             end = self._ending(props.get("marker-end"))
             stroke = Stroke(len(self.items), subpath.transformed(matrix), paint, start, end)
+            stroke.fill = fill if isinstance(fill, Box) else None
             self.items.append(stroke)
 
     # -- text -------------------------------------------------------------
@@ -1516,6 +1547,9 @@ class Reader:
                     lines.append((anchor, child_props, [text]))
                 else:
                     lines[-1][2].append(text)
+                    line_style = lines[-1][1]
+                    if any(child_props.get(k) != line_style.get(k) for k in TEXT_STYLE):
+                        self._skip("styled words inside a line take the line's style")
             lines[-1][2].append(child.tail or "")
         for anchor, line_props, parts in lines:
             align = _alignment(line_props.get("text-anchor", ""))
@@ -1551,6 +1585,11 @@ class Reader:
             return
         colour = colour_hex(parse_colour(props.get("color", "black"), props))[:7]
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
+        context = props | {"color": colour}  # what the icon's markup inherits on the page
+        ancestors = [self.root]
+        if _local(target) == "symbol":
+            context = computed_properties(target, context, self.rules, ancestors)
+            ancestors = [self.root, target]
         x, y = length(element.get("x")), length(element.get("y"))
         view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
         if _local(target) == "symbol" and len(view) == 4 and view[2] > 0 and view[3] > 0:
@@ -1558,18 +1597,77 @@ class Reader:
             painted = {k: v for k, v in target.attrib.items() if k in PRESENTATION - EFFECTS}
             w = length(element.get("width"), view[2], percent_of=view[2])
             h = length(element.get("height"), view[3], percent_of=view[3])
-            asset = svg_asset((view[0], view[1], view[2], view[3]), list(target), paint | painted)
+            parts = self._icon_copy(list(target), context, paint | painted, ancestors)
+            asset = svg_asset((view[0], view[1], view[2], view[3]), parts, paint | painted)
             local = (x, y, w, h)
         else:
             parts = list(target) if _local(target) == "symbol" else [target]
             if (extent := self._extent(parts, props)) is None:
                 return
-            asset = svg_asset(extent, parts, paint)
+            asset = svg_asset(extent, self._icon_copy(parts, context, paint, ancestors), paint)
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
+        self._add_icon(asset, local, matrix)
+
+    def _nested_svg(
+        self,
+        element: ET.Element,
+        props: Props,
+        matrix: Matrix,
+        opacity: float,
+        ancestors: list[ET.Element],
+    ) -> None:
+        """A nested ``<svg>`` with a view box is an icon in its own frame, as a symbol is."""
+        x, y = length(element.get("x")), length(element.get("y"))
+        path = [*ancestors, element]
+        view = [float(v) for v in NUMBER_RE.findall(element.get("viewBox", ""))]
+        if len(view) != 4 or view[2] <= 0 or view[3] <= 0:
+            moved = multiply(matrix, (1, 0, 0, 1, x, y))
+            for child in element:
+                self._walk(child, props, moved, opacity, path)
+            return
+        w = length(element.get("width"), self.view[2], percent_of=self.view[2])
+        h = length(element.get("height"), self.view[3], percent_of=self.view[3])
+        paint = {name: props[name] for name in sorted(ICON_PAINT & props.keys())}
+        paint |= {k: v for k, v in element.attrib.items() if k in LINE_ENDINGS}
+        paint.pop("opacity", None)  # already in ``opacity``, with the page's around it
+        if opacity < 1:
+            paint["opacity"] = f"{opacity:g}"
+        parts = self._icon_copy(list(element), props, paint, path)
+        asset = svg_asset((view[0], view[1], view[2], view[3]), parts, paint)
+        self._add_icon(asset, (x, y, w, h), matrix)
+
+    def _add_icon(self, asset: Asset | None, local: Rect, matrix: Matrix) -> None:
+        """Add an icon as artwork, or note that it could not be stored."""
         if asset is None:
             self._skip("icon SimpleDiagrams cannot store safely left out")
         else:
             self._add_artwork(local, matrix, asset)
+
+    def _icon_copy(
+        self, parts: Sequence[ET.Element], page: Props, paint: Props, ancestors: list[ET.Element]
+    ) -> list[ET.Element]:
+        """Copies of icon markup, which is stored without the page's stylesheet."""
+        stored = computed_properties(ET.Element("g", paint), {}, (), ())
+        return [self._frozen(part, page, stored, ancestors) for part in parts]
+
+    def _frozen(
+        self, element: ET.Element, page: Props, stored: Props, ancestors: list[ET.Element]
+    ) -> ET.Element:
+        """Copy one element, writing out any paint that only the stylesheet or a token gave it."""
+        clone = ET.Element(element.tag, dict(element.attrib))
+        clone.text, clone.tail = element.text, element.tail
+        clone.attrib.pop("class", None)
+        if "var(" in clone.get("style", ""):
+            del clone.attrib["style"]
+        page = computed_properties(element, page, self.rules, ancestors)
+        stored = computed_properties(clone, stored, (), ())
+        for name in sorted(ICON_PAINT & page.keys()):
+            if page[name] != stored.get(name):
+                clone.set(name, page[name])
+                stored[name] = page[name]
+        path = [*ancestors, element]
+        clone.extend(self._frozen(child, page, stored, path) for child in element)
+        return clone
 
     def _extent(self, parts: Sequence[ET.Element], props: Props) -> Rect | None:
         """The bounds of drawing that has no view box of its own, with room for its lines."""
@@ -1773,7 +1871,8 @@ def _classify_strokes(
     connections: list[Connection] = []
     for stroke in strokes:
         flat = stroke.subpath.flattened()
-        start, end = _touching(boxes, flat[0]), _touching(boxes, flat[-1])
+        others = [box for box in boxes if box is not stroke.fill]  # never its own fill
+        start, end = _touching(others, flat[0]), _touching(others, flat[-1])
         joins = (
             start is not None
             and end is not None
@@ -1844,8 +1943,14 @@ def _label_connectors(boxes: Sequence[Box], connectors: Sequence[Stroke]) -> set
 
 def _same_place(below: Box, above: Box) -> bool:
     """Whether two boxes are the same shape in the same place, one painted over the other."""
-    same_outline = all(abs(a - b) <= 0.5 for a, b in zip(below.extent, above.extent, strict=True))
-    return same_outline and (below.basic, below.rotation) == (above.basic, above.rotation)
+    if (below.basic, below.rotation, below.flips) != (above.basic, above.rotation, above.flips):
+        return False
+    if any(abs(a - b) > 0.5 for a, b in zip(below.extent, above.extent, strict=True)):
+        return False
+    return (
+        _outline_gap(densified(below.outline), above.outline, 0.5) is not None
+        and _outline_gap(densified(above.outline), below.outline, 0.5) is not None
+    )
 
 
 def _is_node_sized(inner: Box, outer: Box) -> bool:
