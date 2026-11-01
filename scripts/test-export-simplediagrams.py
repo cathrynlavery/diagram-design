@@ -817,6 +817,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", '<text y="9">Shown <tspan display="none">Hidden</tspan></text>', "Shown", "Hidden"),
             ("", '<text y="9"><a href="#x">Docs</a> page</text>', "Docs page", "!"),
             ("", '<text y="9">Label<tspan dx="8">note</tspan></text>', "Label note", "!"),
+            ("", '<text y="9">Label<tspan dx="0">note</tspan></text>', "Labelnote", "!"),
             ("", '<text y="9">First<tspan dy="20">Second</tspan></text>', "Second", "FirstSecond"),
             ("", '<foreignObject width="90" height="40"><div><div>One</div><div>Two</div></div>'
              "</foreignObject>", "One Two", "!"),
@@ -890,6 +891,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              "line ending other than an arrow, a circle or a diamond drawn as an arrow"),
             ('<foreignObject width="9" height="9"><div>One</div><div>Two</div></foreignObject>',
              "rich HTML text kept as plain text"),
+            ('<text y="9">Left<tspan dx="150">Right</tspan></text>',
+             "a wide sideways gap inside a line became one space"),
         ):  # fmt: skip
             with self.subTest(svg=svg):
                 _, skipped = self.export(f'<svg viewBox="0 0 400 300">{svg}</svg>')

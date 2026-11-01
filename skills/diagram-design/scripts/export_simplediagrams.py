@@ -1688,12 +1688,15 @@ class Reader:
                 child_props = computed_properties(child, props, self.rules, ancestors)
                 shown = child_props.get("display") != "none" and not _is_invisible(child_props)
                 text = "".join(child.itertext())
+                child_size = length(child_props.get("font-size"), 16.0)
                 if shown and any(child.get(key) is not None for key in ("x", "y", "dy")):
-                    child_size = length(child_props.get("font-size"), 16.0)
                     anchor = placed(child, child_size, *lines[-1][0])
                     lines.append((anchor, child_props, [text]))
                 elif shown:
-                    lines[-1][2].append(f" {text}" if child.get("dx") is not None else text)
+                    gap = length(child.get("dx"), font_size=child_size)
+                    lines[-1][2].append(f" {text}" if gap > 0 else text)
+                    if abs(gap) > child_size:
+                        self._skip("a wide sideways gap inside a line became one space")
                     line_style = lines[-1][1]
                     if any(child_props.get(k) != line_style.get(k) for k in TEXT_STYLE):
                         self._skip("styled words inside a line take the line's style")
