@@ -34,7 +34,9 @@
       "Write"
     ],
     "websiteURL": "https://diagramdesign.dev",
+    "supportURL": "https://github.com/cathrynlavery/diagram-design/issues",
     "privacyPolicyURL": "https://github.com/cathrynlavery/diagram-design/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/cathrynlavery/diagram-design/blob/main/LICENSE",
     "defaultPrompt": [
       "Make an architecture diagram of my app.",
       "Create a flowchart for this decision process.",
