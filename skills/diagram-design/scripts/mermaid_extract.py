@@ -740,8 +740,9 @@ def _edge_operators(text: str) -> list[_Operator]:
             )
             occupied.append((operator_start, match.end()))
 
+    # A dotted link grows by dots: `-.->`, `-..->`, `-...->` and `-.-`, `-..-`.
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}|~{3,}"
+        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.+-+>|=+>|-+(?:>|x|o)|-+\.+-+|={3,}|-{3,}|~{3,}"
     )
     for match in pattern.finditer(mask):
         if any(start <= match.start() < end for start, end in occupied):
