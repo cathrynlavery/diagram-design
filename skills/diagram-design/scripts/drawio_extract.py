@@ -283,8 +283,12 @@ SHAPE_KEYS = (
 def classify_shape(style: dict[str, str]) -> str:
     raw = style.get("shape", "")
     if raw:
+        # An exact name wins over a prefix: "tableRow" starts with "table".
         for key, name in SHAPE_KEYS:
-            if raw == key or raw.startswith(key):
+            if raw == key:
+                return name
+        for key, name in SHAPE_KEYS:
+            if raw.startswith(key):
                 return name
         for prefix, family in SHAPE_FAMILIES:
             if raw.startswith(prefix):
