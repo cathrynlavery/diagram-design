@@ -316,6 +316,13 @@ path under the resolved skill directory with the interpreter that passed
 detection: `python3 <skill-dir>/scripts/export_png.py <src.html> <out.png> [scale]`
 or `python <skill-dir>/scripts/export_png.py <src.html> <out.png> [scale]`.
 
+If the bundled Chromium executable is unavailable, an already installed compatible
+Chromium browser can be selected explicitly with `--channel msedge` or `--channel chrome`.
+Verify that the selected browser is installed before using it. Omitting `--channel`
+preserves the bundled Chromium default. A missing or incompatible selected browser
+fails normally; the helper neither installs a browser nor silently switches channels.
+Record the browser used when reporting export verification.
+
 If the `networkidle` wait times out (a stalled font or stylesheet behind a proxy), the helper cancels the outstanding load with `window.stop()` and captures with fallback typography, printing a warning to stderr — pass that warning on to the user. Any other error propagates and fails the export normally. The helper requests the complete static motion frame, waits for font readiness, and rejects a motion root that has not reached `data-frame="static"`; ordinary script-free diagrams need no motion root.
 
 Default `device_scale_factor=2` for crisp output. Accept `1` for compact assets or `3` for print/retina hero use, passed as a third CLI arg. Fractional scales such as `1.25` are also accepted within the documented 1–4 range for exact pixel sizes.
