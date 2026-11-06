@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beta-carotene splits in two · SBGN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #bf4520;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">SBGN · process description</p>
+    <h1>Beta-carotene splits in two</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-labelledby="sbgn-title sbgn-desc" data-diagram="sbgn">
+        <title id="sbgn-title">Beta-carotene splits in two</title>
+        <desc id="sbgn-desc">Seven carotenoid species in cytosol cleaved by six processes; beta-carotene yields B-10-apo and B-ionone, with cryptoxanthin and zeaxanthin feeding the same products.</desc>
+        <defs>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+          </pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
+          <marker id="mod" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+            <circle cx="5" cy="5" r="3.5" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1"/>
+          </marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
+
+        <rect data-kind="compartment" data-compartment-id="cyt" data-role="bounds"
+              x="40" y="24" width="920" height="552" rx="8"
+              fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+        <rect x="56" y="28" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="88" y="37" fill="#5a6580" font-size="7" font-family="'Geist Mono', monospace"
+              text-anchor="middle" letter-spacing="0.14em">CYTOSOL</text>
+
+        <!-- Arcs behind glyphs -->
+        <path data-kind="consumption" data-from="bcar" data-to="v1"
+              d="M 224,112 H 280" fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <path data-kind="production" data-from="v1" data-to="b10"
+              d="M 312,112 H 480" fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <path data-kind="production" data-from="v1" data-to="bio"
+              d="M 296,96 V 64 Q 296,56 304,56 H 864 Q 872,56 872,64 V 80"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="consumption" data-from="b10" data-to="v2"
+              d="M 624,112 H 680" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v2" data-to="bio"
+              d="M 712,112 H 800" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="consumption" data-from="bcry" data-to="v3"
+              d="M 224,200 H 280" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v3" data-to="b10"
+              d="M 312,192 H 352 Q 360,192 360,184 V 136 Q 360,128 368,128 H 480"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v3" data-to="ohbio"
+              d="M 312,208 H 816 a 8,8 0 0,1 16,0 H 840 Q 848,208 848,216 V 280"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="consumption" data-from="bcry" data-to="v4"
+              d="M 152,232 V 256 Q 152,264 160,264 H 280"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v4" data-to="ohb10"
+              d="M 296,280 V 304 Q 296,312 304,312 H 480"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v4" data-to="bio"
+              d="M 312,264 H 816 Q 824,264 824,256 V 144"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="consumption" data-from="zea" data-to="v6"
+              d="M 224,352 H 280" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v6" data-to="ohb10"
+              d="M 312,360 H 352 Q 360,360 360,352 V 344 Q 360,336 368,336 H 480"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v6" data-to="ohbio"
+              d="M 296,368 V 424 Q 296,432 304,432 H 848 Q 856,432 856,424 V 344"
+              fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="consumption" data-from="ohb10" data-to="v5"
+              d="M 624,312 H 680" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path data-kind="production" data-from="v5" data-to="ohbio"
+              d="M 712,312 H 800" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Macromolecules -->
+        <g data-kind="macromolecule" data-entity-id="bcar" data-compartment="cyt">
+          <rect data-role="bounds" x="80" y="80" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="80" y="80" width="144" height="64" rx="16" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+          <text x="152" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">B-carotene</text>
+          <text x="152" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">bcar</text>
+        </g>
+        <g data-kind="macromolecule" data-entity-id="bcry" data-compartment="cyt">
+          <rect data-role="bounds" x="80" y="168" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="80" y="168" width="144" height="64" rx="16" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+          <text x="152" y="196" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">B-crypto</text>
+          <text x="152" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">bcry</text>
+        </g>
+        <g data-kind="macromolecule" data-entity-id="zea" data-compartment="cyt">
+          <rect data-role="bounds" x="80" y="320" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="80" y="320" width="144" height="64" rx="16" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+          <text x="152" y="348" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Zeaxanthin</text>
+          <text x="152" y="364" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">zea</text>
+        </g>
+        <g data-kind="macromolecule" data-entity-id="b10" data-compartment="cyt">
+          <rect data-role="bounds" x="480" y="80" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="480" y="80" width="144" height="64" rx="16" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <text x="552" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">B-10-apo</text>
+          <text x="552" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">b10</text>
+        </g>
+        <g data-kind="macromolecule" data-entity-id="ohb10" data-compartment="cyt">
+          <rect data-role="bounds" x="480" y="280" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="480" y="280" width="144" height="64" rx="16" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <text x="552" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">OH-B-10</text>
+          <text x="552" y="324" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ohb10</text>
+        </g>
+        <g data-kind="macromolecule" data-entity-id="bio" data-compartment="cyt">
+          <rect data-role="bounds" x="800" y="80" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="800" y="80" width="144" height="64" rx="16" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <text x="872" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">B-ionone</text>
+          <text x="872" y="124" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">bio</text>
+        </g>
+        <g data-kind="macromolecule" data-entity-id="ohbio" data-compartment="cyt">
+          <rect data-role="bounds" x="800" y="280" width="144" height="64" rx="16" fill="#f5f5f5"/>
+          <rect x="800" y="280" width="144" height="64" rx="16" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+          <text x="872" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">OH-B-ionone</text>
+          <text x="872" y="324" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ohbio</text>
+        </g>
+
+        <!-- Processes -->
+        <g data-kind="process" data-process-id="v1" data-compartment="cyt">
+          <rect data-role="bounds" x="280" y="96" width="32" height="32" rx="2" fill="#f5f5f5" stroke="#bf4520" stroke-width="1"/>
+          <text x="296" y="116" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v1</text>
+        </g>
+        <g data-kind="process" data-process-id="v3" data-compartment="cyt">
+          <rect data-role="bounds" x="280" y="184" width="32" height="32" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+          <text x="296" y="204" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v3</text>
+        </g>
+        <g data-kind="process" data-process-id="v4" data-compartment="cyt">
+          <rect data-role="bounds" x="280" y="248" width="32" height="32" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+          <text x="296" y="268" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v4</text>
+        </g>
+        <g data-kind="process" data-process-id="v6" data-compartment="cyt">
+          <rect data-role="bounds" x="280" y="336" width="32" height="32" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+          <text x="296" y="356" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v6</text>
+        </g>
+        <g data-kind="process" data-process-id="v2" data-compartment="cyt">
+          <rect data-role="bounds" x="680" y="96" width="32" height="32" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+          <text x="696" y="116" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v2</text>
+        </g>
+        <g data-kind="process" data-process-id="v5" data-compartment="cyt">
+          <rect data-role="bounds" x="680" y="296" width="32" height="32" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+          <text x="696" y="316" fill="#2d3142" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v5</text>
+        </g>
+
+        <g data-role="legend">
+          <line x1="72" y1="512" x2="928" y2="512" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+          <text x="72" y="528" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+          <rect x="72" y="536" width="28" height="14" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+          <text x="108" y="547" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Macromolecule</text>
+          <rect x="220" y="538" width="12" height="12" rx="2" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+          <text x="240" y="547" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Process</text>
+          <line x1="300" y1="544" x2="328" y2="544" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <text x="336" y="547" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Consumption / production</text>
+          <rect x="520" y="536" width="28" height="14" rx="4" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.20)" stroke-width="0.8"/>
+          <text x="556" y="547" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Compartment</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

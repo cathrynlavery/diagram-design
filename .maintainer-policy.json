@@ -89,6 +89,8 @@
       "python3 scripts/build-axonometric-plan-examples.py --check",
       "python3 scripts/verify-axonometric-plan.py --all",
       "python3 scripts/test-verify-axonometric-plan.py",
+      "python3 scripts/verify-sbgn.py --all",
+      "python3 scripts/test-verify-sbgn.py",
       "python3 scripts/verify-block-registry.py --all",
       "python3 scripts/test-verify-block-registry.py",
       "python3 scripts/verify-treemap.py --all",

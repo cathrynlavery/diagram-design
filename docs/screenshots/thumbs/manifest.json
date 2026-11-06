@@ -304,6 +304,15 @@
       "thumb_sha256": "06226254c07129794f7652ef76c6a0f12adc99f7dd99e1799b8232eb3c1e78b7"
     },
     {
+      "thumb": "sbgn.webp",
+      "source": "docs/screenshots/sbgn.png",
+      "source_sha256": "12078a5a055ba04a9dcd17d5eaca19ad578ee333c5a7681a381666daf771a669",
+      "width": 600,
+      "height": 360,
+      "quality": 82,
+      "thumb_sha256": "0136edb3d260b9e489b1fec5d1e25fb36d937a63212e31a1e5586b5e9bb8fdab"
+    },
+    {
       "thumb": "scatter.webp",
       "source": "docs/screenshots/scatter.png",
       "source_sha256": "96051c45981d0c387444b2386cf888817a49b51687f702f6e4125be065e54907",

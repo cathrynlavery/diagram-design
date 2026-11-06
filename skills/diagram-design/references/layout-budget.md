@@ -17,7 +17,7 @@ Routed from SKILL.md §7 and §8. SKILL.md keeps the grid rule in one line, the 
 
 ### Complexity budget (per diagram)
 
-These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 coral elements, 2 annotation callouts, and the motion limits) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them.
+These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 coral elements, 2 annotation callouts, and the motion limits) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them. One type is the exception: SBGN replaces the 9 nodes and 12 arrows rows with its own ceiling below, because a process square is a reaction marker rather than a node and every reaction needs its consumption and production arcs. Its other universal rows still apply, and no other type may exceed 9 nodes or 12 arrows by analogy.
 
 | Limit | Rule |
 |---|---|
@@ -63,6 +63,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max classes / relationships (UML class) | 7 / 8, 5 members per compartment |
 | Max activities / slices / cards (story map) | 5 / 3 / 12 |
 | Max tables / columns / FKs (db schema) | 5 / 8 shown / 6 |
+| Max macromolecules / processes / compartments / source-sink / arcs (SBGN) | 7 / 6 / 1 / 2 / 16; replaces the 9 nodes and 12 arrows rows |
 
 If you exceed, split into two diagrams (overview + detail).
 
