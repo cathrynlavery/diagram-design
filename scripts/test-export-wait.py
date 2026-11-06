@@ -29,6 +29,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parent.parent
 EXPORT_PNG = ROOT / "skills/diagram-design/scripts/export_png.py"
@@ -381,6 +382,32 @@ def require_static_motion_frame(exporter, tmp: Path) -> None:
         raise AssertionError("incomplete motion frame was exported without an error")
     print("OK: motion exports show the complete static frame, repeat identically, and reject incomplete roots")
 
+def require_channel_contract(exporter) -> None:
+    """Channel selection is explicit; defaults and launch errors are preserved."""
+    for options, channel in (([], None), (["--channel", "msedge"], "msedge")):
+        for scale_args, scale in (([], 2), (["1.25"], 1.25)):
+            with patch.object(sys, "argv", [str(EXPORT_PNG), "in.html", "out.png", *scale_args, *options]):
+                with patch.object(exporter, "rasterize") as render:
+                    assert exporter.main() == 0
+                    render.assert_called_once_with(Path("in.html"), Path("out.png"), scale, channel=channel)
+    for channel in (None, "msedge", "chrome", "unavailable-channel"):
+        context = MagicMock()
+        launch = context.__enter__.return_value.chromium.launch
+        launch.side_effect = RuntimeError("browser unavailable")
+        with patch.object(exporter, "sync_playwright", return_value=context):
+            try:
+                if channel is None:
+                    exporter.rasterize(Path("in.html"), Path("out.png"))
+                else:
+                    exporter.rasterize(Path("in.html"), Path("out.png"), channel=channel)
+            except RuntimeError as exc:
+                assert str(exc) == "browser unavailable"
+            else:
+                raise AssertionError("browser launch failure was swallowed")
+        launch.assert_called_once_with(channel=channel)
+    print("OK: CLI/API channels preserve defaults, fractional scales, and launch failures")
+
+
 def main() -> int:
     try:
         import playwright  # noqa: F401
@@ -389,6 +416,7 @@ def main() -> int:
         return 0
 
     exporter = load_exporter()
+    require_channel_contract(exporter)
     with tempfile.TemporaryDirectory(prefix="diagram-export-wait-") as raw_tmp:
         tmp = Path(raw_tmp)
         require_stalled_fallback(tmp)
