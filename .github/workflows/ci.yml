@@ -290,6 +290,10 @@ jobs:
         id: export_svg
         run: python scripts/test-export-svg-standalone.py
 
+      - name: Verify SimpleDiagrams export
+        if: always()
+        run: python scripts/test-export-simplediagrams.py
+
       - name: Verify label geometry
         if: always()
         id: geometry
