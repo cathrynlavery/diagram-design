@@ -36,6 +36,9 @@ NONRENDERING = {"defs", "title", "desc", "metadata", "marker", "pattern", "symbo
 INHERITED = {"visibility", "fill", "fill-opacity", "font-size", "stroke", "stroke-opacity", "stroke-width", "stroke-dasharray"}
 CSS_GEOMETRY = {"transform", "translate", "rotate", "scale", "x", "y", "dx", "dy", "clip-path", "mask", "filter"}
 CSS_PAINT = {"fill", "fill-opacity", "stroke", "stroke-opacity", "stroke-width", "stroke-dasharray", "marker-end"}
+CSS_SIZE = {"width", "height"}
+VISIBILITY_ALPHA = {"opacity", "fill-opacity", "stroke-opacity"}
+VISIBILITY_VALUES = VISIBILITY_ALPHA | {"display", "visibility", "content-visibility", "font-size", "fill", "stroke"}
 
 
 @dataclass(eq=False)
@@ -69,9 +72,10 @@ class SequenceParser(HTMLParser):
                 css = re.sub(r"/\*.*?\*/", "", "".join(x for x in node.content if isinstance(x, str)), flags=re.S)
                 for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
                     values = dict(re.findall(r"([\w-]+)\s*:\s*([^;]+)", declarations))
-                    self.rules.extend((selector, values) for selector in selectors.split(","))
+                    selectors = css_parts(selectors, ",")
+                    self.rules.extend((selector, values) for selector in selectors)
                     if hides(values, text=True):
-                        self.hide_rules.extend((selector, values) for selector in selectors.split(","))
+                        self.hide_rules.extend((selector, values) for selector in selectors)
 
     def handle_starttag(self, tag, attrs):
         values = {}
@@ -160,6 +164,25 @@ def transparent(fill: str) -> bool:
             or bool(re.search(r"/\s*0(?:\.0*)?%?\s*\)$", fill)))
 
 
+def unresolved_visibility(values: dict[str, str]) -> list[str]:
+    """Refuse visual values this static checker cannot resolve, never guess them."""
+    findings = []
+    for name, raw in values.items():
+        name = name.lower()
+        if name not in VISIBILITY_VALUES:
+            continue
+        value = re.sub(r"\s*!important\s*$", "", raw, flags=re.I).strip().lower()
+        unknown = (value in {"inherit", "initial", "unset", "revert", "revert-layer", "currentcolor"}
+                   or bool(re.search(r"\b(?:var|env|calc|min|max|clamp)\s*\(", value)))
+        if name in VISIBILITY_ALPHA:
+            numeric = value.removesuffix("%")
+            unknown = (not re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?", numeric)
+                       or not math.isfinite(float(numeric)))
+        if unknown:
+            findings.append(f"unresolved visibility value for {name}: {raw!r}")
+    return findings
+
+
 def hides(values: dict[str, str], text: bool = False) -> bool:
     values = {key.lower(): re.sub(r"\s*!important\s*$", "", value, flags=re.I).strip().lower()
               for key, value in values.items()}
@@ -183,18 +206,48 @@ def hides(values: dict[str, str], text: bool = False) -> bool:
     return False
 
 
+def css_parts(source: str, separators: str) -> list[str]:
+    """Split selector lists/compounds outside quoted attributes and functions."""
+    parts, start, depth, quote, escaped = [], 0, 0, "", False
+    for index, char in enumerate(source):
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif quote:
+            if char == quote:
+                quote = ""
+        elif char in {"'", '"'}:
+            quote = char
+        elif char in "([":
+            depth += 1
+        elif char in ")]":
+            depth = max(0, depth - 1)
+        elif depth == 0 and (char in separators or " " in separators and char.isspace()):
+            if source[start:index].strip():
+                parts.append(source[start:index].strip())
+            start = index + 1
+    if source[start:].strip():
+        parts.append(source[start:].strip())
+    return parts
+
+
 def selector_may_match(selector: str, node: Element) -> bool:
     """Conservative CSS hiding check, following the architecture verifier.
 
     This bounded static checker does not implement the CSS cascade: a possible
     hiding rule is refused even if another rule might restore visibility.
     """
-    last = re.split(r"\s+|[>+~]", selector.strip())[-1]
-    if not last or any(char in last for char in (":", "\\", "[")):
+    compounds = css_parts(selector, " >+~")
+    last = compounds[-1] if compounds else ""
+    if not last:
         return True
-    tag = re.match(r"^[\w-]+", last)
-    if tag and tag.group() != node.tag:
+    tag = re.match(r"^(?:[\w*-]*\|)?([\w-]+|\*)", last)
+    escaped_tag = tag is not None and last[tag.end():].startswith("\\")
+    if tag and not escaped_tag and tag[1] not in {node.tag, "*"}:
         return False
+    if any(char in last for char in (":", "\\", "[")):
+        return True
     return (all(value == node.attrs.get("id") for value in re.findall(r"#([\w-]+)", last))
             and set(re.findall(r"\.([\w-]+)", last)) <= set(node.attrs.get("class", "").split()))
 
@@ -251,29 +304,44 @@ def check_oauth(source: str) -> list[str]:
     spans need a renderer and are refused rather than checked at the wrong point.
     """
     document = SequenceParser(source)
-    visible = [node for node in document.elements if document.visible(node)]
-    texts = [(node, " ".join(document.text(node).split())) for node in document.elements if node.tag == "text"]
+    diagrams = [node for node in document.elements if node.tag == "svg" and node.attrs.get("role") == "img"
+                and not any(ancestor.tag == "svg" for ancestor in list(node.ancestors())[1:])]
+    if len(diagrams) != 1:
+        return ['require one top-level OAuth diagram SVG with role="img"']
+    scoped = [node for node in document.elements if diagrams[0] in node.ancestors()]
+    visible = [node for node in scoped if document.visible(node)]
+    texts = [(node, " ".join(document.text(node).split())) for node in scoped if node.tag == "text"]
     texts = [(node, text) for node, text in texts if text]
     lines = [node for node in visible if node.tag == "line"]
     rects = [node for node in visible if node.tag == "rect"]
     errors = []
     # No CSS cascade is implemented for paint or geometry. Refuse matching
     # overrides rather than certify the attributes while CSS changes the marks.
-    for node in document.elements:
+    for node in scoped:
         chain = list(node.ancestors())
         if (node.tag not in {"line", "rect", "text", "tspan"} and not any(x.tag == "text" for x in chain)
                 or not any(x.tag == "svg" for x in chain)):
             continue
         if any(x.tag in NONRENDERING for x in node.ancestors()):
             continue
+        if sum(ancestor.tag == "svg" for ancestor in chain) > 1:
+            errors.append("unsupported nested SVG coordinate system on checked elements")
         for ancestor in node.ancestors():
+            errors.extend(unresolved_visibility(properties(ancestor)))
             inline = re.sub(r"/\*.*?\*/", "", ancestor.attrs.get("style", ""), flags=re.S)
             keys = {key.lower() for key, _ in re.findall(r"([\w-]+)\s*:\s*([^;]+)", inline)}
             if keys & CSS_GEOMETRY or any(ancestor.attrs.get(key, "none") != "none" for key in ("clip-path", "mask", "filter")):
                 errors.append("unsupported inline SVG geometry or clipping override")
+            if ancestor.tag == "rect" and keys & CSS_SIZE:
+                errors.append("unsupported inline rectangle size override")
             for selector, values in document.rules:
-                if {key.lower() for key in values} & (CSS_GEOMETRY | CSS_PAINT) and selector_may_match(selector, ancestor):
-                    errors.append("unsupported stylesheet override of SVG paint or geometry")
+                if selector_may_match(selector, ancestor):
+                    errors.extend(unresolved_visibility(values))
+                    rule_keys = {key.lower() for key in values}
+                    if rule_keys & (CSS_GEOMETRY | CSS_PAINT):
+                        errors.append("unsupported stylesheet override of SVG paint or geometry")
+                    if ancestor.tag == "rect" and rule_keys & CSS_SIZE:
+                        errors.append("unsupported stylesheet rectangle size override")
     if errors:
         return sorted(set(errors))
     try:
@@ -290,6 +358,11 @@ def check_oauth(source: str) -> list[str]:
         def contains(rect, x, y):
             return (coordinate(rect, "x") <= x <= coordinate(rect, "x") + coordinate(rect, "width")
                     and coordinate(rect, "y") <= y <= coordinate(rect, "y") + coordinate(rect, "height"))
+
+        def positioned_children(node):
+            # Even an empty/whitespace span can move the following text cursor.
+            return any(any(key in child.attrs for key in ("x", "y", "dx", "dy", "transform"))
+                       for child in scoped if node in list(child.ancestors())[1:])
 
         # Percentage backgrounds are not fragment rectangles.
         rects = [node for node in rects if all(re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?", node.attrs.get(key, ""))
@@ -315,10 +388,7 @@ def check_oauth(source: str) -> list[str]:
             frame, divider, operator = fragments[0]
             region1 = region2 = False
             for node, text in texts:
-                if text.startswith("[") and any(
-                    any(key in child.attrs for key in ("x", "y", "dx", "dy", "transform"))
-                    for child in document.elements if node in list(child.ancestors())[1:]
-                ):
+                if text.startswith("[") and positioned_children(node):
                     errors.append("guard spans must inherit their parent text position")
                     continue
                 if not contains(frame, coordinate(node, "x"), coordinate(node, "y")):
@@ -341,6 +411,9 @@ def check_oauth(source: str) -> list[str]:
                 labels = [node for node, text in texts if text == label
                           and contains(frame, coordinate(node, "x"), coordinate(node, "y"))
                           and coordinate(node, "y") > coordinate(divider, "y1")]
+                if any(positioned_children(node) for node in labels):
+                    errors.append(f"response label spans must inherit their parent text position: {label!r}")
+                    continue
                 response = None
                 if len(labels) == 1:
                     anchor = labels[0]

@@ -63,6 +63,14 @@ def restore_child_paint(source: str, tag: str = "tspan", painted: bool = True) -
     return changed
 
 
+def wrap_response(source: str, label: str, attrs: str = "", tag: str = "tspan") -> str:
+    # The final BODY label belongs to the retry, not the headline success.
+    before, separator, after = source.rpartition(f">{label}</text>")
+    if not separator:
+        raise AssertionError(f"response label absent: {label}")
+    return before + f"><{tag} {attrs}>{label}</{tag}></text>" + after
+
+
 def check_mutations() -> None:
     for path in OAUTH:
         original = path.read_text(encoding="utf-8")
@@ -91,7 +99,20 @@ def check_mutations() -> None:
                 'x1="480" y1="128" x2="480" y2="624"', 'x1="480" y1="128" x2="480" y2="624" marker-end="none"'),
             "inline unmarked API lifeline": replace_once(original,
                 'x1="480" y1="128" x2="480" y2="624"', 'x1="480" y1="128" x2="480" y2="624" style="marker-end: none"'),
+            "literal opacity on guard": replace_once(original,
+                ">[token valid]</text>", ' style="opacity: 0.5 !important">[token valid]</text>'),
+            "literal percentage opacity on guard": replace_once(original,
+                ">[token valid]</text>", ' opacity="50%">[token valid]</text>'),
+            "responsive SVG stylesheet dimensions": original + '<style>svg { width: 100%; height: auto; }</style>',
+            "responsive SVG inline dimensions": replace_once(original,
+                '<svg viewBox=', '<svg style="width: 100%; height: auto" viewBox='),
+            "unpositioned response spans": wrap_response(wrap_response(wrap_response(original,
+                "401"), "200 · NEW ACCESS"), "200 · BODY"),
+            "separate decorative SVG": original + '<svg aria-hidden="true"><rect x="0" y="0" width="8" height="8"/></svg>',
         }
+        for selector in ('svg[role=img]', 'svg[role = "img"]', 'svg:not(.icon)',
+                         '.frame svg[role=img]', 'body:has(svg, rect)', 'svg[role=img], .frame'):
+            positives[f"responsive qualified selector {selector}"] = original + f'<style>{selector} {{ width: 100%; height: auto; }}</style>'
         for label, source in positives.items():
             findings = CHECK(source)
             if findings:
@@ -168,6 +189,43 @@ def check_mutations() -> None:
             negatives[f"missing return {y} plus reversed legend"] = (replace_once(missing,
                 'x1="448" y1="684" x2="476" y2="684"',
                 'x1="476" y1="684" x2="448" y2="684"'), "ordinary OAuth return")
+        for guard in ("[token valid]", "[else · 401]"):
+            for prop in ("opacity", "fill-opacity", "stroke-opacity", "visibility", "display", "font-size", "fill", "stroke"):
+                negatives[f"{guard} unresolved {prop}"] = (replace_once(original,
+                    f">{guard}</text>", f' style="--hidden: 0; {prop}: var(--hidden)">{guard}</text>'), "unresolved visibility")
+            negatives[f"{guard} unresolved presentation opacity"] = (replace_once(original,
+                f">{guard}</text>", f' opacity="var(--hidden)">{guard}</text>'), "unresolved visibility")
+            negatives[f"{guard} unresolved stylesheet opacity"] = (replace_once(original,
+                f">{guard}</text>", f' class="variable-opacity">{guard}</text>')
+                + '<style>.variable-opacity { --hidden: 0; opacity: var(--hidden); }</style>', "unresolved visibility")
+            for attrs in ('x="0" y="400"', 'width="10" height="10" viewBox="0 0 1000 1000"'):
+                negatives[f"{guard} nested SVG {attrs}"] = (re.sub(
+                    rf'(<text\b[^>]*>{re.escape(guard)}</text>)',
+                    rf'<svg {attrs}>\1</svg>', original, count=1), "nested SVG")
+        negatives["guard in a separate SVG"] = (replace_once(original,
+            ">[token valid]</text>", "> </text>")
+            + '<svg><text x="100" y="244">[token valid]</text></svg>', "first ALT region")
+        for prop in ("width", "height"):
+            negatives[f"activation inline {prop}"] = (replace_once(original,
+                'y="180" width="8" height="104"', f'y="180" width="8" height="104" style="{prop}: 1px"'), "rectangle size override")
+            negatives[f"activation stylesheet {prop}"] = (replace_once(original,
+                'y="180" width="8" height="104"', 'y="180" width="8" height="104" class="short-activation"')
+                + f'<style>.short-activation {{ {prop}: 1px; }}</style>', "rectangle size override")
+        for selector in ('rect[width = "8"]', 'svg rect:not(.safe)'):
+            negatives[f"qualified rectangle size selector {selector}"] = (original
+                + f'<style>{selector} {{ height: 1px; }}</style>', "rectangle size override")
+        for label in ("401", "200 · NEW ACCESS", "200 · BODY"):
+            for tag in ("tspan", "a"):
+                for attrs in ('dy="250"', 'dx="1000"', 'x="0"', 'y="0"', 'transform="translate(0, 250)"'):
+                    negatives[f"positioned response {label} {tag} {attrs}"] = (wrap_response(original,
+                        label, attrs, tag), "response label spans")
+            positioned = wrap_response(original, label, 'dx="1000"')
+            negatives[f"positioned whitespace before response {label}"] = (replace_once(positioned,
+                f'<tspan dx="1000">{label}</tspan>', f'<tspan dx="1000"> </tspan>{label}'), "response label spans")
+        negatives["positioned whitespace within guard"] = (replace_once(original,
+            ">[token valid]</text>", '>[token<tspan dx="1000"> </tspan>valid]</text>'), "guard spans")
+        negatives["hidden positioned whitespace within guard"] = (replace_once(original,
+            ">[token valid]</text>", '>[token<tspan dx="1000" opacity="0"> </tspan>valid]</text>'), "guard spans")
         for label, (source, diagnostic) in negatives.items():
             if source == original:
                 raise AssertionError(f"{path.name}: {label} mutation did not change source")
