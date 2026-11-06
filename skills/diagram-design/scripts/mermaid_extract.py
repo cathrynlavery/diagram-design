@@ -1175,6 +1175,7 @@ def _parse_er(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
     current: Node | None = None
+    aliased_names: set[str] = set()
     relationship = re.compile(
         rf"^({ER_NAME})\s+(\S*(?:--|\.\.)\S*)\s+"
         rf"({ER_NAME})\s*(?::\s*(.*))?$"
@@ -1197,7 +1198,7 @@ def _parse_er(
             continue
         declared = _er_declaration(declaration.match(text))
         if declared is not None and declared[3]:
-            current = _er_table(diagram, *declared[:3])
+            current = _er_table(diagram, aliased_names, *declared[:3])
             continue
         if current is not None:
             current.fields.append(clean_label(text))
@@ -1205,8 +1206,8 @@ def _parse_er(
         edge = relationship.match(text)
         if edge and _er_entity(edge.group(1)) and _er_entity(edge.group(3)):
             source_token, cardinality, target_token, relationship_label = edge.groups()
-            source = _er_table(diagram, _er_entity(source_token), _er_label(source_token)).id
-            target = _er_table(diagram, _er_entity(target_token), _er_label(target_token)).id
+            source = _er_table(diagram, aliased_names, _er_entity(source_token), _er_label(source_token)).id
+            target = _er_table(diagram, aliased_names, _er_entity(target_token), _er_label(target_token)).id
             left, separator, right = cardinality.partition("--")
             if not separator:
                 left, separator, right = cardinality.partition("..")
@@ -1227,7 +1228,7 @@ def _parse_er(
         if "--" in unquoted or ".." in unquoted:
             _fail(f"malformed edge at line {line_number}")
         if declared is not None:
-            _er_table(diagram, *declared[:3])
+            _er_table(diagram, aliased_names, *declared[:3])
 
 
 def _er_label(token: str) -> str:
@@ -1252,10 +1253,21 @@ def _er_declaration(
     return name, _er_label(alias_token), True, block is not None
 
 
-def _er_table(diagram: Diagram, name: str, label: str, aliased: bool = False) -> Node:
-    """Add an ER table. Only an alias changes the label of an existing table."""
+def _er_table(
+    diagram: Diagram,
+    aliased_names: set[str],
+    name: str,
+    label: str,
+    aliased: bool = False,
+) -> Node:
+    """Add an ER table. As in Mermaid, only an entity's first alias sets its label."""
     existing = diagram.node_map.get(name)
-    if existing is not None and not aliased:
+    if aliased and name not in aliased_names:
+        aliased_names.add(name)
+        if existing is not None:
+            existing.label = label
+            return existing
+    elif existing is not None:
         return existing
     return diagram.add_node(name, label, "table")
 

@@ -1536,6 +1536,14 @@ def check_er_aliases_and_quoted_names(tmp: Path) -> None:
     ):
         fail(f"ER quoted entity names were dropped or misread: {payload['nodes']} {edges}")
 
+    # Mermaid keeps the first alias and ignores later ones, including one
+    # that repeats the entity name.
+    path.write_text("erDiagram\np[Person]\np[Other]\np[p]\np ||--o| a : has\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    label = next(node["label"] for node in payload["nodes"] if node["id"] == "p")
+    if label != "Person":
+        fail(f"a later ER alias replaced the first one: {label!r}")
+
     # Mermaid rejects an empty quoted name, and an alias is not an endpoint.
     for body in ('"" ||--o{ B : x\n', 'p[Person] ||--o| a : has\n'):
         path.write_text("erDiagram\n" + body, encoding="utf-8")
