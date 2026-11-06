@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Bash
   - Glob
+  - Agent
 ---
 
 Redraw the Mermaid source at `$1` in this skill's design system, following [`skills/diagram-design/references/import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md) and [`skills/diagram-design/references/output-spec.md`](../skills/diagram-design/references/output-spec.md). Treat those references as the source of truth.
@@ -40,6 +41,7 @@ Accepts `.mmd`, `.mermaid`, and Markdown files containing fenced `mermaid` block
 
 1. **No file provided** → ask which Mermaid or Markdown file. Don't guess.
 2. **Locate the installed skill and run `<skill-dir>/scripts/mermaid_extract.py` first.** Never assume the skill is under the current working directory.
+   - In Claude Code, use this plugin's `import-renderer` agent when available; follow the handoff in `SKILL.md` §11.
 3. **Extractor exits non-zero** → report its message verbatim and stop.
 4. **Multi-block file with no `--diagram`** → list blocks with kinds and node/edge counts and ask which one.
 5. **Requested detail is impossible at the requested size** → say so before drawing and propose overview + detail outputs.
