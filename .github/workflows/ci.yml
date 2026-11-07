@@ -389,6 +389,16 @@ jobs:
         id: service_blueprint_tests
         run: python scripts/test-verify-service-blueprint.py
 
+      - name: Verify requirement traceability IDs, links, and gaps
+        if: always()
+        id: requirement_traceability
+        run: python scripts/verify-requirement-traceability.py --all
+
+      - name: Verify requirement traceability checker
+        if: always()
+        id: requirement_traceability_tests
+        run: python scripts/test-verify-requirement-traceability.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline
@@ -611,6 +621,8 @@ jobs:
           echo "| Waterfall Checker | ${{ steps.waterfall_tests.outcome == 'success' && '✅ Passed' || (steps.waterfall_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Service Blueprint Visibility Line & Grid | ${{ steps.service_blueprint.outcome == 'success' && '✅ Passed' || (steps.service_blueprint.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Service Blueprint Checker | ${{ steps.service_blueprint_tests.outcome == 'success' && '✅ Passed' || (steps.service_blueprint_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Requirement Traceability | ${{ steps.requirement_traceability.outcome == 'success' && '✅ Passed' || (steps.requirement_traceability.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Requirement Traceability Checker | ${{ steps.requirement_traceability_tests.outcome == 'success' && '✅ Passed' || (steps.requirement_traceability_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Shared Amplitude | ${{ steps.ridgeline.outcome == 'success' && '✅ Passed' || (steps.ridgeline.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
