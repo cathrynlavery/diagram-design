@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Illustrative event modeling · Diagram Design</title><link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet"><style>*,*::before,*::after{box-sizing:border-box}body{margin:0;background:#2d3142;color:#f5f5f5;font-family:Geist,system-ui,sans-serif;padding:48px 32px}.frame{max-width:1200px;margin:0 auto}.eyebrow{color:#f08a59;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}h1{font-family:Instrument Serif,system-ui,sans-serif;font-size:40px;line-height:1.1;margin:0 0 12px}.subtitle{font-size:20px;line-height:1.4;color:#bfc0c0;margin:0 0 28px}.canvas{overflow-x:auto}svg{display:block;width:100%;min-width:960px}.cards{display:grid;grid-template-columns:1.1fr 1fr .9fr;gap:20px;margin-top:28px}.cards section{border-top:2px solid rgba(245,245,245,0.12);padding-top:16px}.cards h2{font-family:Instrument Serif,system-ui,sans-serif;font-size:20px;margin:0 0 8px}.cards p{font-size:16px;line-height:1.5;color:#bfc0c0;margin:0}@media(max-width:720px){.cards{grid-template-columns:1fr}}</style></head><body><div class="frame"><p class="eyebrow">Event modeling · Diagram Design</p><h1>From command to read model</h1><p class="subtitle">An illustrative three-stage information flow, ordered left to right.</p><div class="canvas"><svg viewBox="0 0 1200 720" xmlns="http://www.w3.org/2000/svg" role="img" data-diagram-type="event-modeling" aria-labelledby="event-modeling-dark-title event-modeling-dark-desc"><title id="event-modeling-dark-title">Illustrative event modeling</title><desc id="event-modeling-dark-desc">Three time-ordered stages. Each has a command, a resulting past-tense event, and a read model projected from that event.</desc><rect width="1200" height="720" fill="#2d3142"/>
+<text x="64" y="173" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">COMMAND</text>
+<line x1="64" y1="191" x2="1136" y2="191" stroke="rgba(245,245,245,0.12)" stroke-width="1"/>
+<text x="64" y="335" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">EVENT</text>
+<line x1="64" y1="353" x2="1136" y2="353" stroke="rgba(245,245,245,0.12)" stroke-width="1"/>
+<text x="64" y="497" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">READ MODEL</text>
+<line x1="64" y1="515" x2="1136" y2="515" stroke="rgba(245,245,245,0.12)" stroke-width="1"/>
+<g data-event-stage="STAGE-01" data-stage-order="1" data-diagram-role="timeframe">
+<text x="64" y="71" fill="#bfc0c0" font-size="16" font-weight="700" font-family="Geist, sans-serif">01  SUBMIT</text>
+<line x1="64" y1="91" x2="400" y2="91" stroke="rgba(245,245,245,0.12)" stroke-width="2"/>
+<g data-diagram-role="command" data-event-kind="command" data-event-id="CMD-01"><rect x="64" y="212" width="336" height="90" rx="4" fill="#2d3142" stroke="#739fdf" stroke-width="2"/>
+<text x="80" y="240" fill="#739fdf" font-size="14" font-weight="700" font-family="Geist, sans-serif">CMD-01</text>
+<text x="80" y="274" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">Submit finding</text>
+</g>
+<g data-diagram-role="event" data-event-kind="event" data-event-id="EVT-01"><rect x="64" y="374" width="336" height="90" rx="4" fill="#2d3142" stroke="#bfc0c0" stroke-width="2"/>
+<text x="80" y="402" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">EVT-01</text>
+<text x="80" y="436" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">FindingSubmitted</text>
+</g>
+<g data-diagram-role="read-model" data-event-kind="read-model" data-event-id="VIEW-01"><rect x="64" y="536" width="336" height="90" rx="4" fill="#2d3142" stroke="rgba(245,245,245,0.12)" stroke-width="2"/>
+<text x="80" y="564" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">VIEW-01</text>
+<text x="80" y="598" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">Open findings</text>
+</g>
+<g data-diagram-role="event-link" data-event-rel="emits" data-from="CMD-01" data-to="EVT-01"><path d="M 224 302 V 363" fill="none" stroke="#bfc0c0" stroke-width="2"/><path d="M 218 360 L 224 368 L 230 360" fill="none" stroke="#bfc0c0" stroke-width="2"/></g>
+<g data-diagram-role="event-link" data-event-rel="projects" data-from="EVT-01" data-to="VIEW-01"><path d="M 224 464 V 525" fill="none" stroke="#bfc0c0" stroke-width="2"/><path d="M 218 522 L 224 530 L 230 522" fill="none" stroke="#bfc0c0" stroke-width="2"/></g>
+</g>
+<g data-event-stage="STAGE-02" data-stage-order="2" data-diagram-role="timeframe">
+<text x="428" y="71" fill="#f08a59" font-size="16" font-weight="700" font-family="Geist, sans-serif">02  PUBLISH</text>
+<line x1="428" y1="91" x2="764" y2="91" stroke="#f08a59" stroke-width="2"/>
+<g data-diagram-role="command" data-event-kind="command" data-event-id="CMD-02"><rect x="428" y="212" width="336" height="90" rx="4" fill="#2d3142" stroke="#739fdf" stroke-width="2"/>
+<text x="444" y="240" fill="#739fdf" font-size="14" font-weight="700" font-family="Geist, sans-serif">CMD-02</text>
+<text x="444" y="274" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">Publish review</text>
+</g>
+<g data-diagram-role="event" data-event-kind="event" data-event-id="EVT-02"><rect x="428" y="374" width="336" height="90" rx="4" fill="#2d3142" stroke="#f08a59" stroke-width="2"/>
+<text x="444" y="402" fill="#f08a59" font-size="14" font-weight="700" font-family="Geist, sans-serif">EVT-02</text>
+<text x="444" y="436" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">ReviewPublished</text>
+</g>
+<g data-diagram-role="read-model" data-event-kind="read-model" data-event-id="VIEW-02"><rect x="428" y="536" width="336" height="90" rx="4" fill="#2d3142" stroke="rgba(245,245,245,0.12)" stroke-width="2"/>
+<text x="444" y="564" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">VIEW-02</text>
+<text x="444" y="598" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">Published reviews</text>
+</g>
+<g data-diagram-role="event-link" data-event-rel="emits" data-from="CMD-02" data-to="EVT-02"><path d="M 588 302 V 363" fill="none" stroke="#bfc0c0" stroke-width="2"/><path d="M 582 360 L 588 368 L 594 360" fill="none" stroke="#bfc0c0" stroke-width="2"/></g>
+<g data-diagram-role="event-link" data-event-rel="projects" data-from="EVT-02" data-to="VIEW-02"><path d="M 588 464 V 525" fill="none" stroke="#bfc0c0" stroke-width="2"/><path d="M 582 522 L 588 530 L 594 522" fill="none" stroke="#bfc0c0" stroke-width="2"/></g>
+</g>
+<g data-event-stage="STAGE-03" data-stage-order="3" data-diagram-role="timeframe">
+<text x="792" y="71" fill="#bfc0c0" font-size="16" font-weight="700" font-family="Geist, sans-serif">03  CLOSE</text>
+<line x1="792" y1="91" x2="1128" y2="91" stroke="rgba(245,245,245,0.12)" stroke-width="2"/>
+<g data-diagram-role="command" data-event-kind="command" data-event-id="CMD-03"><rect x="792" y="212" width="336" height="90" rx="4" fill="#2d3142" stroke="#739fdf" stroke-width="2"/>
+<text x="808" y="240" fill="#739fdf" font-size="14" font-weight="700" font-family="Geist, sans-serif">CMD-03</text>
+<text x="808" y="274" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">Close case</text>
+</g>
+<g data-diagram-role="event" data-event-kind="event" data-event-id="EVT-03"><rect x="792" y="374" width="336" height="90" rx="4" fill="#2d3142" stroke="#bfc0c0" stroke-width="2"/>
+<text x="808" y="402" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">EVT-03</text>
+<text x="808" y="436" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">CaseClosed</text>
+</g>
+<g data-diagram-role="read-model" data-event-kind="read-model" data-event-id="VIEW-03"><rect x="792" y="536" width="336" height="90" rx="4" fill="#2d3142" stroke="rgba(245,245,245,0.12)" stroke-width="2"/>
+<text x="808" y="564" fill="#bfc0c0" font-size="14" font-weight="700" font-family="Geist, sans-serif">VIEW-03</text>
+<text x="808" y="598" fill="#f5f5f5" font-size="16" font-weight="600" font-family="Geist, sans-serif">Closed cases</text>
+</g>
+<g data-diagram-role="event-link" data-event-rel="emits" data-from="CMD-03" data-to="EVT-03"><path d="M 952 302 V 363" fill="none" stroke="#bfc0c0" stroke-width="2"/><path d="M 946 360 L 952 368 L 958 360" fill="none" stroke="#bfc0c0" stroke-width="2"/></g>
+<g data-diagram-role="event-link" data-event-rel="projects" data-from="EVT-03" data-to="VIEW-03"><path d="M 952 464 V 525" fill="none" stroke="#bfc0c0" stroke-width="2"/><path d="M 946 522 L 952 530 L 958 522" fill="none" stroke="#bfc0c0" stroke-width="2"/></g>
+</g>
+<line x1="64" y1="666" x2="1136" y2="666" stroke="rgba(245,245,245,0.12)" stroke-width="1"/>
+<text x="64" y="699" fill="#bfc0c0" font-size="12" font-weight="600" font-family="Geist, sans-serif">ILLUSTRATIVE FLOW  ·  TIME MOVES LEFT TO RIGHT</text>
+</svg></div></div></body></html>
