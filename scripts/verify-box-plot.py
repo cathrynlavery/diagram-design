@@ -59,7 +59,9 @@ Ten invariants:
    and on the label rail left of the value axis. dx/dy, a positioned
    <tspan>, and a hidden label are refused: display, visibility, opacity
    or fill-opacity from an attribute, inline style or <style> rule on the
-   label, its <tspan>, a group around it or the page.
+   label, its <tspan>, a group around it or the page. There is no cascade, so a
+   label that restores its own visibility under a hiding group is still
+   refused.
 
 9. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute.
    A `transform` attribute, an inline `style`, or a rule in a <style> block
