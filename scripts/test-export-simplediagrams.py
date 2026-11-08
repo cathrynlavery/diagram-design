@@ -56,6 +56,13 @@ FLOWCHART = """<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
 </svg>"""
 
 
+RECOLOURED_ENDINGS = "line endings painted another colour take the line's colour"
+
+# A marker drawing an arrowhead; ``{}`` takes the polygon's own attributes.
+ARROW_MARKER = (
+    '<defs><marker id="a" orient="auto"><polygon {} points="0 0,8 3,0 6"/></marker></defs>'
+)
+
 NESTED_ICON = '<svg x="1" y="1" width="8" height="8" viewBox="0 0 10 10">{}</svg>'
 
 
@@ -219,6 +226,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                         )
                     ):
                         expected = {"note: clipping and masks left out; shapes are drawn unclipped"}
+                    recoloured = r"example-(datalake|high-level|uml-class)(-dark|-full)?"
+                    if re.fullmatch(recoloured, source.stem):
+                        expected = {"note: " + RECOLOURED_ENDINGS}
                     self.assertEqual(notes, expected)
                     self.assertEqual(
                         sorted(p.name for p in package.iterdir()),
@@ -359,6 +369,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
     def test_a_tint_over_an_opaque_copy_is_one_labelled_shape(self) -> None:
         """The skill's tinted node over a paper-coloured copy becomes one shape at the tint."""
         document, _ = self.export("""<svg viewBox="0 0 200 100">
+          <rect width="100%" height="100%" fill="#f5f5f5"/>
           <rect x="10" y="10" width="160" height="48" rx="6" fill="#f5f5f5"/>
           <rect x="10" y="10" width="160" height="48" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520"/>
           <text x="90" y="38" text-anchor="middle">Write a skill</text></svg>""")
@@ -366,6 +377,11 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual(node["text_content"]["string"], "Write a skill")
         self.assertEqual(node["style"]["fill_hex"], "#BF452014")
         self.assertEqual(node["style"]["stroke_hex"], "#BF4520")
+        document, _ = self.export("""<svg viewBox="0 0 200 100">
+          <rect x="10" y="10" width="40" height="40" fill="#0000ff"/>
+          <rect x="10" y="10" width="40" height="40" fill="#ff0000" fill-opacity="0.5"/></svg>""")
+        [node] = [core(e) for e in document["pages"][0]["elements"]]
+        self.assertEqual(node["style"]["fill_hex"], "#80007F")  # over another colour, they mix
 
     def test_arrows_attach_to_mirrored_shapes_where_they_are_drawn(self) -> None:
         """A flipped shape's connection point is stored so it resolves where the arrow ends."""
@@ -521,16 +537,23 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 self.mod.parse_path_data(data)
 
     def test_holes_keep_their_outline_and_are_reported(self) -> None:
-        """A hole keeps only its outline, with a note; an island inside it is filled again."""
-        document, skipped = self.export("""<svg viewBox="0 0 200 200">
-          <path d="M10 10H110V110H10ZM40 40H80V80H40Z" fill="#000" stroke="#333"/></svg>""")
-        fills = sorted(core(e)["style"]["fill_hex"] for e in document["pages"][0]["elements"])
-        self.assertEqual(fills, ["#000000", "#00000000"])
-        self.assertEqual(skipped, {"hole in a filled shape, kept as an outline only": 1})
-        document, _ = self.export("""<svg viewBox="0 0 200 200">
-          <path d="M10 10H110V110H10ZM40 40H80V80H40ZM55 55H65V65H55Z" fill="#000"/></svg>""")
-        fills = sorted(core(e)["style"]["fill_hex"] for e in document["pages"][0]["elements"])
-        self.assertEqual(fills, ["#000000", "#000000"])
+        """A hole keeps only its outline, with a note; what the fill rule fills stays filled."""
+        hole = {"hole in a filled shape, kept as an outline only": 1}
+        outer, inner, reversed_inner = "M10 10H110V110H10Z", "M40 40H80V80H40Z", "M40 40V80H80V40Z"
+        for d, rule, fills, notes in (
+            (outer + reversed_inner, "nonzero", ["#000000", "#00000000"], hole),
+            (outer + inner, "evenodd", ["#000000", "#00000000"], hole),
+            (outer + inner, "nonzero", ["#000000", "#000000"], {}),  # wound alike: filled
+            (outer + "M60 60H160V160H60Z", "nonzero", ["#000000", "#000000"], {}),  # overlapping
+            (outer + reversed_inner + "M55 55H65V65H55Z", "nonzero", ["#000000", "#000000", "#00000000"],
+             hole),  # an island inside the hole is filled again
+        ):  # fmt: skip
+            with self.subTest(d=d, rule=rule):
+                document, skipped = self.export(f"""<svg viewBox="0 0 200 200">
+                  <path d="{d}" fill="#000" fill-rule="{rule}" stroke="#333"/></svg>""")
+                elements = document["pages"][0]["elements"]
+                self.assertEqual(sorted(core(e)["style"]["fill_hex"] for e in elements), fills)
+                self.assertEqual(skipped, notes)
 
     def test_icons_are_stored_as_artwork_and_images_are_left_out(self) -> None:
         """Icons are stored once each; unsafe icons and every image are left out with a note."""
@@ -1313,6 +1336,96 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 self.assertEqual(text["string"], string)
                 self.assertEqual({k: text["base_style"][k] for k in style}, style)
                 self.assertEqual(skipped, notes)
+
+    def test_what_the_export_cannot_keep_is_noted(self) -> None:
+        """Each row draws differently in SimpleDiagrams; only a note tells the user so."""
+        arrow = ARROW_MARKER
+        line = '<line x1="10" y1="9" x2="90" y2="9" stroke="#000" marker-end="url(#a)"/>'
+        for css, svg, note in (
+            ("", '<rect width="40" height="40" style="filter: blur(5px)"/>', "filters such as blur and shadow left out"),
+            ("g > rect { fill: red }", '<g><rect width="40" height="40"/></g>',
+             "stylesheet rules this export cannot read left unapplied"),
+            ("", '<text y="100" font-size="1000">A</text>', "text sizes beyond 1 to 720 points drawn at the nearest"),
+            ("", arrow.format('fill="#ff0000"') + line, "line endings painted another colour take the line's colour"),
+            ("", arrow.replace("0 0,8 3,0 6", "8 0,0 3,8 6").format('fill="#fff" stroke="#000"') + line,
+             "arrowhead not pointing away from its line drawn pointing away"),
+            ("", ('<defs><linearGradient id="g"><stop stop-color="#f00"/></linearGradient></defs>'
+                  '<rect width="100%" height="100%" fill="url(#g)"/>'), "gradient, pattern or unknown colour, left transparent"),
+            ("", '<rect width="100" height="50" rx="8" transform="skewX(30)" fill="red"/>',
+             "rounded corners of a skewed rectangle drawn square"),
+            ("", arrow.format("") + '<path d="M10 10H90V90Z" fill="none" stroke="#000" marker-end="url(#a)"/>',
+             "markers on a closed shape or a line with no stroke left out"),
+            ("", arrow.format("") + '<polyline points="10,10 50,50 90,10" fill="none" stroke="#000" marker-mid="url(#a)"/>',
+             "markers between a line's ends left out"),
+            ("", '<text x="10 40 70" y="30">ABC</text>', "letters placed one by one drawn as one run of text"),
+            ("", '<text y="30"><tspan>A<tspan dx="100">B</tspan></tspan></text>', "sideways gaps inside nested spans left out"),
+            ("", '<text y="30" xml:space="preserve">A    B</text>', "runs of spaces in text joined into one"),
+            ("", '<text y="30" fill="none" stroke="#123456">Outline</text>', "outlined text drawn filled with its outline colour"),
+            ("", ('<foreignObject width="100" height="40"><div style="transform: translate(50px, 0)">Moved</div>'
+                  "</foreignObject>"), "CSS transform this export cannot read may misplace a shape"),
+            ("", ('<defs><clipPath id="c"><rect width="2" height="2"/></clipPath><symbol id="s" viewBox="0 0 10 10"'
+                  ' clip-path="url(#c)"><rect width="9" height="9"/></symbol></defs><use href="#s" width="20" height="20"/>'),
+             "clipping and masks left out; shapes are drawn unclipped"),
+            ("", ('<g opacity="0.5"><rect width="40" height="40" fill="red"/><rect x="20" y="20" width="40" height="40"'
+                  ' fill="red"/></g>'), "see-through groups drawn shape by shape; where shapes overlap they look darker"),
+            ("", '<text x="10" y="30" transform="skewX(30)">Skew</text>', "text skewed, stretched or mirrored drawn plainly"),
+        ):  # fmt: skip
+            with self.subTest(css=css, svg=svg[:60]):
+                _, skipped = self.export(
+                    f'<svg viewBox="0 0 400 300"><style>{css}</style>{svg}</svg>'
+                )
+                self.assertEqual(skipped, {note: 1})
+
+    def test_drawing_reads_as_the_browser_draws_it(self) -> None:
+        """Each row once lost, moved, resized or revealed something, with no note at all."""
+
+        def frames(document: Record) -> list[Record]:
+            return [core(e)["frame"] for e in document["pages"][0]["elements"]]
+
+        def strings(document: Record) -> list[str]:
+            return [core(e)["text_content"]["string"] for e in document["pages"][0]["elements"]]
+
+        def endings(document: Record) -> list[tuple[str, int]]:
+            page = document["pages"][0]["content"]["content"]
+            lines = [connection["content"] for connection in page["connections"]]
+            return [(line["end_ending"], len(line["points"])) for line in lines]
+
+        arrow = ARROW_MARKER
+        for svg, read, expected in (
+            ('<rect x="10" y="10" width="1in" height="1in"/>', frames, [{"x": 10, "y": 10, "width": 96, "height": 96}]),
+            ('<g font-size="10"><rect width="2em" height="2em"/></g>', frames, [{"x": 0, "y": 0, "width": 20, "height": 20}]),
+            ('<svg x="20" y="20" width="100" height="100"><rect width="50%" height="50%"/></svg>', frames,
+             [{"x": 20, "y": 20, "width": 50, "height": 50}]),
+            ('<foreignObject x="50%" y="50%" width="25%" height="25%"><div>Hi</div></foreignObject>', frames,
+             [{"x": 200, "y": 150, "width": 100, "height": 75}]),
+            ('<path d="M10 10H110V110H10Z M60 60H160V160H60Z" fill="red"/>', frames,
+             [{"x": 10, "y": 10, "width": 100, "height": 100}, {"x": 60, "y": 60, "width": 100, "height": 100}]),
+            ('<path d="M10 10L90 90H10L90 10" fill="red"/>', frames, [{"x": 10, "y": 10, "width": 80, "height": 80}]),
+            ('<path d="M0 0 A1e-200 1e-200 0 0 1 10 0" fill="none" stroke="#000"/>', lambda d: len(frames(d)), 1),
+            ('<text x="10" y="20" transform="scale(0)">Hidden</text>', frames, []),
+            ('<g visibility="hidden"><text y="30" visibility="inherit">Hidden</text></g>', frames, []),
+            ('<text y="30">Shown <tspan opacity="0">Hidden</tspan></text>', strings, ["Shown"]),
+            (('<foreignObject width="99" height="40"><div>Shown <span style="opacity:0">gone</span></div>'
+              "</foreignObject>"), strings, ["Shown"]),
+            ('<foreignObject width="99" height="40"><div>A<br style="display:none"/>B</div></foreignObject>',
+             strings, ["AB"]),
+            (('<rect x="60" y="30" width="100" height="50" fill="#fff" stroke="#000"/><line x1="40" y1="52" x2="180"'
+              ' y2="52" stroke="#000" stroke-width="6"/><text x="110" y="55" text-anchor="middle">TOP</text>'),
+             strings, ["", "", "TOP"]),  # the label stays above the line drawn over its box
+            (arrow.format('display="none"') + '<line x1="10" y1="9" x2="90" y2="9" stroke="#000"'
+             ' marker-end="url(#a)"/>', endings, []),
+            (arrow.format("") + '<path d="M1 1h.001" stroke="#000" marker-end="url(#a)"/>', endings,
+             [("filledArrow", 2)]),
+        ):  # fmt: skip
+            with self.subTest(svg=svg[:60]):
+                document, _ = self.export(f'<svg viewBox="0 0 400 300">{svg}</svg>')
+                self.assertEqual(read(document), expected)
+        document, _ = self.export('<svg viewBox="0 0 400 300"><rect width="400" height="300"'
+                                  ' transform="skewX(30)" fill="red"/></svg>')  # fmt: skip
+        self.assertEqual(document["pages"][0]["content"]["background"], {"kind": "none"})
+        with self.assertRaises(ValueError):  # a page too small for the format is refused
+            self.mod.export_document('<svg viewBox="0 0 .0001 .0001"><rect width="1" height="1"/></svg>',
+                                     Path("case.html"))  # fmt: skip
 
     def test_a_mirrored_icon_is_stored_flipped_not_turned(self) -> None:
         """The format mirrors artwork in its frame and then turns it; the corners must land where
