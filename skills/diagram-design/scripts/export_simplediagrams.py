@@ -1876,7 +1876,8 @@ class Reader:
             elif _local(child) in ("tspan", "a"):
                 ancestors = [*self.ancestors, element]
                 child_props = computed_properties(child, props, self.rules, ancestors)
-                pieces = self._text_pieces(child, child_props, ancestors)
+                before = "".join(lines[-1][2])
+                pieces = self._text_pieces(child, child_props, ancestors, before)
                 worded = [(words, style) for words, style in pieces if words.strip()]
                 if any(style is not None for _, style in pieces):
                     text = "".join(words for words, style in pieces if style is not None)
@@ -1906,7 +1907,7 @@ class Reader:
                     self._skip(moved)
                 if tail and not _same_text_style(lines[-1][1], props):
                     self._skip("styled words inside a line take the line's style")
-                lines[-1][2].append(_cased(child.tail, props))
+                lines[-1][2].append(_cased(child.tail, props, "".join(lines[-1][2])))
             else:
                 after_hidden = after_hidden or bool(tail)
         for anchor, line_props, parts in lines:
@@ -1915,27 +1916,28 @@ class Reader:
             self._add_label("".join(parts), anchor, line_props, matrix, opacity, align, paint)
 
     def _text_pieces(
-        self, node: ET.Element, props: Props, ancestors: list[ET.Element]
+        self, node: ET.Element, props: Props, ancestors: list[ET.Element], before: str
     ) -> list[tuple[str, Props | None]]:
         """A span's words in order, each with the style that shows it, or ``None`` when hidden.
 
         A span under ``display: none`` takes no room, so it has no pieces; a hidden one keeps
-        its place in the line.
+        its place in the line. ``before`` is the line's text ahead of the span.
         """
         if props.get("display") == "none":
             return []
         style = None if _is_invisible(props) else props
-        pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props), style)]
+        pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props, before), style)]
         path = [*ancestors, node]
         for child in node:
-            inner = self._text_pieces(
-                child, computed_properties(child, props, self.rules, path), path
-            )
+            ahead = before + "".join(words for words, _ in pieces)
+            child_props = computed_properties(child, props, self.rules, path)
+            inner = self._text_pieces(child, child_props, path, ahead)
             placed = any(child.get(key) is not None for key in LINE_PLACEMENT)
             if placed and any(shown is not None and words.strip() for words, shown in inner):
                 self._skip("a line placed inside a span joins that span's line")
             pieces += inner
-            pieces.append((_cased(child.tail, props), style))
+            ahead = before + "".join(words for words, _ in pieces)
+            pieces.append((_cased(child.tail, props, ahead), style))
         return pieces
 
     def _foreign_object(
@@ -1997,13 +1999,15 @@ class Reader:
                 return True
         return False
 
-    def _html_text(self, element: ET.Element, props: Props, ancestors: list[ET.Element]) -> str:
+    def _html_text(
+        self, element: ET.Element, props: Props, ancestors: list[ET.Element], before: str = ""
+    ) -> str:
         """The words an HTML fragment shows, with ``LINE_BREAK`` where the browser starts a line.
 
         A table cell's words are kept apart from its neighbours' by a space.
         """
         shows = not _is_invisible(props)
-        words = [_cased(element.text, props)] if shows else []
+        words = [_cased(element.text, props, before)] if shows else []
         path = [*ancestors, element]
         flex = props.get("display", "").strip() in ("flex", "inline-flex")
         in_row = flex and not self._declares(element, ancestors, _stacks)  # items side by side
@@ -2021,9 +2025,10 @@ class Reader:
                 cell = display == "table-cell" if display else name in ("td", "th")
                 line = display.startswith(HTML_LINES) if display else name in HTML_LINE_TAGS
                 gap = " " if cell or in_row else LINE_BREAK if line else ""
-                words += [gap, self._html_text(child, child_props, path), gap]
+                ahead = before + "".join(words) + gap
+                words += [gap, self._html_text(child, child_props, path, ahead), gap]
             if shows:
-                words.append(_cased(child.tail, props))
+                words.append(_cased(child.tail, props, before + "".join(words)))
         return "".join(words)
 
     def _use(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
@@ -2293,15 +2298,22 @@ def _html_defaults(element: ET.Element, inherited: Props) -> Props:
     return defaults
 
 
-def _cased(words: str | None, props: Props) -> str:
-    """Words in the case ``text-transform`` gives them; each span may give its own."""
+def _cased(words: str | None, props: Props, before: str = "") -> str:
+    """Words in the case ``text-transform`` gives them; each span may give its own.
+
+    ``before`` is the text ahead of them, so a word split across spans keeps one capital.
+    """
     match props.get("text-transform", "").strip():
         case "uppercase":
             return (words or "").upper()
         case "lowercase":
             return (words or "").lower()
         case "capitalize":
-            return re.sub(r"(?<![\w'’])\w", lambda m: m.group(0).upper(), words or "")
+            lead = before[-1:]
+            capitalised = re.sub(
+                r"(?<![\w'’])\w", lambda m: m.group(0).upper(), lead + (words or "")
+            )
+            return capitalised[len(lead) :]
     return words or ""
 
 

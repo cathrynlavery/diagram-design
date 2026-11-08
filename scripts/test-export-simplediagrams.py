@@ -1255,6 +1255,10 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              "Use API now", {}, {}),
             ("", ('<text y="20" style="text-transform: uppercase">loud <tspan style="text-transform: none">'
                   "quiet</tspan></text>"), "LOUD quiet", {}, {}),
+            ("", '<text y="20" style="text-transform: capitalize">gate<tspan>way</tspan> api</text>',
+             "Gateway Api", {}, {}),
+            ("", card.format('<div style="text-transform: capitalize">gate<span>way</span> api</div>'),
+             "Gateway Api", {}, {}),
             ("", card.format('<h1 style="font-size: 1em">T</h1>'), "T", {"font_size": 16, "weight": "bold"},
              {}),
             ("", card.format('<div style="display: flex; flex-direction: column">Auth</div>'), "Auth", {}, {}),
