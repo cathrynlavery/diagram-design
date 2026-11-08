@@ -851,6 +851,64 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
           {lines}</svg>""")
         self.assertEqual(len(document["pages"][0]["elements"]), 1)  # a centred stack stays whole
 
+    def test_what_shows_itself_inside_hidden_content_is_kept(self) -> None:
+        """``visibility`` hides only an element's own drawing; a child may show itself again."""
+        visible = 'visibility="visible"'
+        symbol = f'<defs><symbol id="s" viewBox="0 0 10 10"><rect {visible} width="9" height="9"/>'
+        for svg, kept, lost, notes in (
+            (f'<g visibility="hidden"><rect {visible} width="20" height="20" fill="#123456"/></g>',
+             '"#123456"', "!", {}),
+            ('<g visibility="hidden"><rect width="20" height="20" fill="#123456"/></g>', "pages", "#123456", {}),
+            ('<rect visibility="hidden" width="20" height="20" fill="#123456"><title>T</title></rect>',
+             "pages", "#123456", {}),
+            (f'<text visibility="hidden" y="9">gone<tspan {visible} x="40">Shown</tspan> gone</text>',
+             '"Shown"', "gone", {}),
+            (f'<text visibility="hidden" y="9" fill="#ff0000"><tspan {visible} fill="#123">Hi</tspan></text>',
+             '"#112233"', "#FF0000", {}),
+            (f'<text visibility="hidden" y="9">gone <tspan {visible}>Shown</tspan></text>', '"Shown"', "gone",
+             {"words after hidden words in a line moved into their place": 1}),
+            ('<text y="9">One <tspan visibility="hidden">two</tspan> three</text>', '"One three"', "two",
+             {"words after hidden words in a line moved into their place": 1}),
+            (f'{symbol}</symbol></defs><use href="#s" visibility="hidden" width="20" height="20"/>',
+             '"svg_artwork"', "!", {}),
+            (f'<foreignObject visibility="hidden" width="9" height="9"><p {visible}>Shown</p></foreignObject>',
+             "pages", "Shown", {"visible content inside a hidden <foreignObject> left out": 1}),
+        ):  # fmt: skip
+            with self.subTest(svg=svg):
+                document, skipped = self.export(f'<svg viewBox="0 0 400 300">{svg}</svg>')
+                written = json.dumps(document)
+                self.assertIn(kept, written)
+                self.assertNotIn(lost, written)
+                self.assertEqual(skipped, notes)
+
+    def test_a_mirrored_icon_is_stored_flipped_not_turned(self) -> None:
+        """The format mirrors artwork in its frame and then turns it; the corners must land where
+        the browser draws them, or an asymmetric icon opens facing the wrong way."""
+        icon = '<defs><symbol id="s" viewBox="0 0 10 10"><path d="M0 0H10L0 10Z"/></symbol></defs>'
+        for transform, flips in (
+            ("translate(100 0) scale(-1 1)", (True, False)),
+            ("translate(0 100) scale(1 -1)", (False, True)),
+            ("translate(200 150) rotate(30) scale(-1 1)", (True, False)),
+            ("translate(200 150) rotate(90) scale(-1 1)", None),  # either mirror, a quarter turn
+            ("translate(200 150) scale(-1 -1)", (False, False)),  # a half turn, not a mirror
+        ):
+            with self.subTest(transform=transform):
+                document, skipped = self.export(f"""<svg viewBox="0 0 400 300">{icon}
+                  <use href="#s" x="10" y="20" width="40" height="30" transform="{transform}"/></svg>""")
+                self.assertEqual(skipped, {})
+                [artwork] = document["pages"][0]["elements"]
+                content = artwork["content"]
+                if flips is not None:
+                    self.assertEqual((content["flip_horizontal"], content["flip_vertical"]), flips)
+                matrix = self.mod.parse_transform(transform)
+                for u, v in ((0, 0), (1, 0), (0, 1)):
+                    drawn = self.mod.apply(matrix, (10 + 40 * u, 20 + 30 * v))
+                    self.assertLess(math.dist(resolve(artwork, {"x": u, "y": v}), drawn), 0.01)
+        # Text, which the app never mirrors, stays upright where the mirror put it.
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <text transform="translate(300 0) scale(-1 1)" x="100" y="50">Mirrored</text></svg>""")
+        self.assertEqual(self.element_labelled("Mirrored", document)["rotation_degrees"], 0)
+
     def test_a_marker_keeps_its_line_ending(self) -> None:
         """UML and ER meaning lives in the ending: hollow, filled and diamond differ."""
         triangle, diamond = 'points="0 0,8 3,0 6"', 'points="0 5,9 0,18 5,9 10"'

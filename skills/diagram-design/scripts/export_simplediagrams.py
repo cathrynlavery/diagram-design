@@ -126,6 +126,7 @@ NOT_DRAWN = frozenset(
 )  # fmt: skip
 UNSUPPORTED = frozenset({"switch"})
 CONTAINERS = frozenset({"svg", "g", "a"})
+SHOWS_VISIBLE_CHILDREN = frozenset({"text", "use"})  # hidden, they still draw what shows itself
 
 INHERITED = frozenset(
     {"fill", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap",
@@ -500,21 +501,34 @@ def parse_transform(value: str | None) -> Matrix:
     return result
 
 
-def decompose(m: Matrix) -> tuple[float, float, float] | None:
-    """Rotation (degrees) and the two axis scales, or ``None`` when the transform skews."""
+def decompose(m: Matrix) -> tuple[float, float, float, Flips] | None:
+    """Rotation (degrees), the two axis scales and any mirroring, or ``None`` when it skews.
+
+    A mirroring transform is read as the format reads flips: mirrored in the
+    frame first, then turned. Either axis can carry the mirror, so the one that
+    needs the smaller turn is chosen, which keeps text, never mirrored, upright.
+    """
     a, b, c, d = m[:4]
     if abs(a * c + b * d) > 1e-6 * max(1.0, abs(a * d - b * c)):
         return None
     sx, sy = math.hypot(a, b), math.hypot(c, d)
     if sx < 1e-9 or sy < 1e-9:
         return None
-    return math.degrees(math.atan2(b, a)), sx, sy
+    angle = math.degrees(math.atan2(b, a))
+    if a * d - b * c >= 0:
+        return angle, sx, sy, (False, False)
+    across = math.degrees(math.atan2(-b, -a))  # the turn when the left-right mirror is used
+    if abs(across) < abs(angle) - 1e-9:
+        return across, sx, sy, (True, False)
+    return angle, sx, sy, (False, True)
 
 
 def placed_frame(local: Rect, m: Matrix) -> tuple[Rect, float] | None:
     """A frame drawn through a transform, as an unrotated frame and its rotation.
 
     ``None`` when the transform skews, since a skewed frame is no longer a frame.
+    A mirroring transform's flips come from ``decompose``; only artwork stores them,
+    since the rectangles and ellipses placed this way look the same mirrored.
     """
     if (turn := decompose(m)) is None:
         return None
@@ -1315,6 +1329,7 @@ class Artwork(Item):
     frame: Rect  # before rotation
     rotation: float
     asset: Asset
+    flips: Flips = (False, False)  # a mirrored placement, mirrored in the frame before turning
 
     @property
     def area(self) -> float:
@@ -1425,6 +1440,17 @@ class Reader:
             )
         return self
 
+    def _shows_inside(self, element: ET.Element, props: Props, ancestors: list[ET.Element]) -> bool:
+        """Whether something inside a hidden element makes itself visible again."""
+        path = [*ancestors, element]
+        for child in element:
+            child_props = computed_properties(child, props, self.rules, path)
+            if child_props.get("display") == "none" or _local(child) in NOT_DRAWN:
+                continue
+            if not _is_invisible(child_props) or self._shows_inside(child, child_props, path):
+                return True
+        return False
+
     def _skip(self, what: str) -> None:
         """Count content that could not be translated, for one note per kind."""
         self.skipped[what] = self.skipped.get(what, 0) + 1
@@ -1451,7 +1477,7 @@ class Reader:
             self._skip("CSS transform this export cannot read may misplace a shape")
         matrix = multiply(matrix, parse_transform(props.get("transform")))
         opacity *= max(0.0, min(1.0, length(props.get("opacity"), 1.0, percent_of=1.0)))
-        if opacity <= 0 or _is_invisible(props):
+        if opacity <= 0:
             return
         if any(props.get(effect, "none").strip().lower() != "none" for effect in EFFECTS):
             self._skip("clipping and masks left out; shapes are drawn unclipped")
@@ -1460,6 +1486,10 @@ class Reader:
         elif name in CONTAINERS:
             for child in element:
                 self._walk(child, props, matrix, opacity, [*ancestors, element])
+        elif _is_invisible(props) and name not in SHOWS_VISIBLE_CHILDREN:
+            # Hidden drawing; a child of it that shows itself has no equivalent here.
+            if self._shows_inside(element, props, ancestors):
+                self._skip(f"visible content inside a hidden <{name}> left out")
         elif handler := self.handlers.get(name):
             self.ancestors = ancestors  # text handlers style their children with it
             handler(element, props, matrix, opacity)
@@ -1677,22 +1707,29 @@ class Reader:
             return x + dx, y + dy
 
         size = length(props.get("font-size"), 16.0)
+        own = not _is_invisible(props)  # hidden, it draws only the spans that show themselves
         lines: list[tuple[Point, Props, list[str]]] = [
-            (placed(element, size, 0.0, 0.0), props, [element.text or ""])
+            (placed(element, size, 0.0, 0.0), props, [element.text or ""] if own else [])
         ]
+        # Hidden words still take their room in the line; here what follows moves into it.
+        held = not own and bool((element.text or "").strip())
         for child in element:
             if _local(child) == "textPath":
                 self._skip("<textPath> left out")
             elif _local(child) in ("tspan", "a"):
                 ancestors = [*self.ancestors, element]
                 child_props = computed_properties(child, props, self.rules, ancestors)
-                shown = child_props.get("display") != "none" and not _is_invisible(child_props)
+                laid_out = child_props.get("display") != "none"
+                shown = laid_out and not _is_invisible(child_props)
                 text = "".join(child.itertext())
                 child_size = length(child_props.get("font-size"), 16.0)
                 if shown and any(child.get(key) is not None for key in ("x", "y", "dy")):
                     anchor = placed(child, child_size, *lines[-1][0])
                     lines.append((anchor, child_props, [text]))
+                    held = False
                 elif shown:
+                    if not own and not "".join(lines[-1][2]).strip():  # it starts what shows
+                        lines[-1] = (lines[-1][0], child_props, lines[-1][2])
                     gap = length(child.get("dx"), font_size=child_size)
                     lines[-1][2].append(f" {text}" if gap > 0 else text)
                     if abs(gap) > child_size:
@@ -1700,7 +1737,17 @@ class Reader:
                     line_style = lines[-1][1]
                     if any(child_props.get(k) != line_style.get(k) for k in TEXT_STYLE):
                         self._skip("styled words inside a line take the line's style")
-            lines[-1][2].append(child.tail or "")
+                    if held and text.strip():
+                        self._skip("words after hidden words in a line moved into their place")
+                elif laid_out:
+                    held = held or bool(text.strip())
+            tail = (child.tail or "").strip()
+            if own and held and tail:
+                self._skip("words after hidden words in a line moved into their place")
+            if own:
+                lines[-1][2].append(child.tail or "")
+            else:
+                held = held or bool(tail)
         for anchor, line_props, parts in lines:
             align = _alignment(line_props.get("text-anchor", ""))
             paint = line_props.get("fill", "black")
@@ -1854,11 +1901,11 @@ class Reader:
 
     def _add_artwork(self, local: Rect, matrix: Matrix, asset: Asset) -> None:
         """Add a picture in its frame; a skewed or empty one cannot be shown."""
-        placed = placed_frame(local, matrix)
-        if placed is None or local[2] <= 0 or local[3] <= 0:
+        placed, turn = placed_frame(local, matrix), decompose(matrix)
+        if placed is None or turn is None or local[2] <= 0 or local[3] <= 0:
             self._skip("skewed or empty picture left out")
             return
-        self.items.append(Artwork(len(self.items), *placed, asset))
+        self.items.append(Artwork(len(self.items), *placed, asset, turn[3]))
 
     def _add_label(
         self,
@@ -2822,7 +2869,7 @@ class Writer:
             STANDARD_POINTS,
         )
         core["embedded_asset_id"] = artwork.asset.id
-        return element_record(core)
+        return element_record(core, flips=artwork.flips)
 
     def _line(self, stroke: Stroke, element_id: str) -> Record:
         """A line that is not a connector, as an open path."""
