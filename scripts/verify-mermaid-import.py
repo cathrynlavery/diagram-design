@@ -247,7 +247,8 @@ def check_flowchart_apostrophes(tmp: Path) -> None:
         "  A[Bob's box] -->|it's| B{Don't panic?}\n"
         "  B -- it's fine --> C(User's cart)\n"
         "  D[O'Brien] --> E[it's]\n"
-        "  F@{ shape: rect, label: 'a, b' } --> A\n",
+        "  F@{ shape: rect, label: 'a, b' } --> A\n"
+        "  G@{ shape: rect, label: '[' } --> H@{ label: '(' }\n",
         encoding="utf-8",
     )
     diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
@@ -260,6 +261,8 @@ def check_flowchart_apostrophes(tmp: Path) -> None:
         "D": "O'Brien",
         "E": "it's",
         "F": "a, b",
+        "G": "[",
+        "H": "(",
     }:
         fail(f"apostrophes in flowchart labels changed node labels: {labels}")
     if edges != [
@@ -267,6 +270,7 @@ def check_flowchart_apostrophes(tmp: Path) -> None:
         ("B", "C", "it's fine"),
         ("D", "E", ""),
         ("F", "A", ""),
+        ("G", "H", ""),
     ]:
         fail(f"apostrophes in flowchart labels dropped or changed edges: {edges}")
     ok("flowchart apostrophes stay label text; @{ } attributes keep YAML quotes")

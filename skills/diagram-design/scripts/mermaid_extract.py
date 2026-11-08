@@ -396,9 +396,18 @@ def _kind_and_direction(
 # Mermaid's flowchart lexer opens a string only at a double quote (a Markdown
 # string is "`...`"), so an apostrophe is label text: `A[Bob's box]`,
 # `A -->|it's| B`. Expanded `@{ ... }` attributes are YAML, where single
-# quotes do delimit values, so that splitter passes its own quote set.
+# quotes do delimit values (`label: '['`), so the scanners switch to the
+# attribute quote set inside one.
 FLOWCHART_QUOTES = "\"`"
 ATTRIBUTE_QUOTES = "\"'`"
+ATTRIBUTE_OPEN = "@{"
+
+
+def _opening(text: str, index: int) -> str:
+    """Return the stack entry for the bracket at *index*; `@{` marks attributes."""
+    if text[index] == "{" and text[index - 1 : index] == "@":
+        return ATTRIBUTE_OPEN
+    return text[index]
 
 
 def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
@@ -418,16 +427,16 @@ def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
             elif character == quote:
                 quote = None
             continue
-        if character in quotes:
+        if character in (ATTRIBUTE_QUOTES if ATTRIBUTE_OPEN in stack else quotes):
             quote = character
             output[index] = " "
             continue
         if character in "[({":
-            stack.append(character)
+            stack.append(_opening(text, index))
             output[index] = " "
             continue
         if character in "])}":
-            if stack and stack[-1] == pairs[character]:
+            if stack and stack[-1][-1] == pairs[character]:
                 stack.pop()
             output[index] = " "
             continue
@@ -456,7 +465,7 @@ def _statement_complete(text: str) -> bool:
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
-    for character in text:
+    for index, character in enumerate(text):
         if quote is not None:
             if escaped:
                 escaped = False
@@ -465,12 +474,12 @@ def _statement_complete(text: str) -> bool:
             elif character == quote:
                 quote = None
             continue
-        if character in FLOWCHART_QUOTES:
+        if character in (ATTRIBUTE_QUOTES if ATTRIBUTE_OPEN in stack else FLOWCHART_QUOTES):
             quote = character
         elif character in "[({":
-            stack.append(character)
+            stack.append(_opening(text, index))
         elif character in "])}":
-            if stack and stack[-1] == pairs[character]:
+            if stack and stack[-1][-1] == pairs[character]:
                 stack.pop()
     return quote is None and not stack
 
