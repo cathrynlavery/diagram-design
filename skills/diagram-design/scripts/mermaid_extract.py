@@ -6,9 +6,9 @@ fetches, or executes Mermaid, JavaScript, URLs, directives, or label content.
 Every label and directive value is untrusted data. Click targets and styling are
 counted and discarded; retained labels are emitted only as inert text.
 
-Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2, and
-erDiagram. Inputs may be .mmd, .mermaid, or Markdown files containing fenced
-``mermaid`` blocks.
+Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2 (or
+its older stateDiagram header), and erDiagram. Inputs may be .mmd, .mermaid, or
+Markdown files containing fenced ``mermaid`` blocks.
 
 Usage:
     python3 mermaid_extract.py <file> [--diagram N|all] [--json]
@@ -53,7 +53,6 @@ UNSUPPORTED_KINDS = {
     "gantt",
     "journey",
     "classdiagram",
-    "statediagram",
 }
 MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkd"}
 MERMAID_SUFFIXES = {".mmd", ".mermaid"}
@@ -65,6 +64,19 @@ ER_IDENTIFIER = r"[^\W\d][\w.-]*"
 
 def _er_name(name: str) -> bool:
     return name[:1] == "_" or name[:1].isalpha()
+
+
+# A quoted ER name may hold spaces and any character except these, as in
+# Mermaid's ER lexer. Mermaid drops the quotes to get the entity name.
+ER_QUOTED_NAME = r'"[^"%\r\n\v\b\\]+"'
+ER_NAME = rf"(?:{ER_QUOTED_NAME}|{ER_IDENTIFIER})"
+
+
+def _er_entity(token: str) -> str | None:
+    """Return the entity name of an ER name token, or None if it is not one."""
+    if token.startswith('"'):
+        return token[1:-1]
+    return token if _er_name(token) else None
 
 
 def _configure_stdout_utf8() -> None:
@@ -368,7 +380,7 @@ def _kind_and_direction(
             return "flowchart", match.group(2).upper(), position
         if re.match(r"^sequenceDiagram\b", text, re.I):
             return "sequenceDiagram", "LR", position
-        if re.match(r"^stateDiagram-v2\b", text, re.I):
+        if re.match(r"^stateDiagram(?:-v2)?(?![\w-])", text, re.I):
             return "stateDiagram-v2", "TD", position
         if re.match(r"^erDiagram\b", text, re.I):
             return "erDiagram", "TD", position
@@ -1162,10 +1174,14 @@ def _parse_er(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
     current: Node | None = None
+    aliased_names: set[str] = set()
     relationship = re.compile(
-        rf"^({ER_IDENTIFIER})\s+(\S*(?:--|\.\.)\S*)\s+"
-        rf"({ER_IDENTIFIER})\s*(?::\s*(.*))?$"
+        rf"^({ER_NAME})\s+(\S*(?:--|\.\.)\S*)\s+"
+        rf"({ER_NAME})\s*(?::\s*(.*))?$"
     )
+    # `p[Person]` shows the alias in place of the entity name. Relationships
+    # use the name, so an alias is valid only on a declaration.
+    declaration = re.compile(rf"^({ER_NAME})(?:\s*\[({ER_NAME})\])?\s*(\{{)?$")
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
@@ -1179,18 +1195,18 @@ def _parse_er(
         if direction_match and current is None:
             diagram.direction = direction_match.group(1).upper()
             continue
-        entity = re.match(rf"^({ER_IDENTIFIER})\s*\{{$", text)
-        if entity and _er_name(entity.group(1)):
-            current = diagram.add_node(entity.group(1), entity.group(1), "table")
+        declared = _er_declaration(declaration.match(text))
+        if declared is not None and declared[3]:
+            current = _er_table(diagram, aliased_names, *declared[:3])
             continue
         if current is not None:
             current.fields.append(clean_label(text))
             continue
         edge = relationship.match(text)
-        if edge and _er_name(edge.group(1)) and _er_name(edge.group(3)):
-            source, cardinality, target, relationship_label = edge.groups()
-            diagram.add_node(source, source, "table")
-            diagram.add_node(target, target, "table")
+        if edge and _er_entity(edge.group(1)) and _er_entity(edge.group(3)):
+            source_token, cardinality, target_token, relationship_label = edge.groups()
+            source = _er_table(diagram, aliased_names, _er_entity(source_token), _er_label(source_token)).id
+            target = _er_table(diagram, aliased_names, _er_entity(target_token), _er_label(target_token)).id
             left, separator, right = cardinality.partition("--")
             if not separator:
                 left, separator, right = cardinality.partition("..")
@@ -1206,10 +1222,53 @@ def _parse_er(
                 undirected=True,
             )
             continue
-        if "--" in text or ".." in text:
+        # A quoted name may contain `--` or `..` as plain text.
+        unquoted = re.sub(ER_QUOTED_NAME, '""', text)
+        if "--" in unquoted or ".." in unquoted:
             _fail(f"malformed edge at line {line_number}")
-        if re.fullmatch(ER_IDENTIFIER, text) and _er_name(text):
-            diagram.add_node(text, text, "table")
+        if declared is not None:
+            _er_table(diagram, aliased_names, *declared[:3])
+
+
+def _er_label(token: str) -> str:
+    """Return the display text of an ER name token."""
+    return clean_label(token) if token.startswith('"') else token
+
+
+def _er_declaration(
+    match: re.Match[str] | None,
+) -> tuple[str, str, bool, bool] | None:
+    """Return (name, label, aliased, opens_block) for an ER entity declaration."""
+    if match is None:
+        return None
+    name_token, alias_token, block = match.groups()
+    name = _er_entity(name_token)
+    if name is None:
+        return None
+    if alias_token is None:
+        return name, _er_label(name_token), False, block is not None
+    if _er_entity(alias_token) is None:
+        return None
+    return name, _er_label(alias_token), True, block is not None
+
+
+def _er_table(
+    diagram: Diagram,
+    aliased_names: set[str],
+    name: str,
+    label: str,
+    aliased: bool = False,
+) -> Node:
+    """Add an ER table. As in Mermaid, only an entity's first alias sets its label."""
+    existing = diagram.node_map.get(name)
+    if aliased and name not in aliased_names:
+        aliased_names.add(name)
+        if existing is not None:
+            existing.label = label
+            return existing
+    elif existing is not None:
+        return existing
+    return diagram.add_node(name, label, "table")
 
 
 def parse_block(block: SourceBlock) -> Diagram:
