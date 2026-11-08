@@ -1074,6 +1074,18 @@ def check_source(path: Path, source: str) -> list[str]:
             routes.append(flatten_route(node, name))
         except ValueError as error:
             fail(node, f"arc {name}: path data could not be read ({error})")
+    # data-from and data-to are what the bipartite check reads, so the drawn
+    # stroke must actually start on the first glyph's edge and end on the
+    # second's; otherwise an arc can declare a valid pair and draw another.
+    for route in routes:
+        for end, attr, point in (("start", "data-from", route.head), ("end", "data-to", route.tail)):
+            glyph = glyphs.get(route.node.attrs.get(attr, ""))
+            if glyph is None or glyph.kind == "compartment":
+                continue
+            if not on_bounds_edge(point, glyph):
+                x, y = round(point[0], 2), round(point[1], 2)
+                fail(route.node, f'arc {route.name} must {end} on the edge of {attr} glyph "{glyph.identity}"; '
+                                 f"its path {end}s at ({x:g}, {y:g})")
     hops = valid_hops(routes)
     ports = [g for g in glyphs.values() if g.kind != "compartment"]
     for index, route in enumerate(routes):

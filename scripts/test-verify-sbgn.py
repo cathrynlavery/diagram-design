@@ -51,6 +51,17 @@ class ContractTests(unittest.TestCase):
     def clean(self, source):
         self.assertEqual(checker.check_source(SYNTHETIC_PATH, source), [])
 
+    def routes_clean(self, source):
+        """Clean apart from where arcs attach.
+
+        The routing fixtures below draw schematic strokes in open space to
+        exercise crossings, hops and budgets; whether an arc reaches its
+        declared glyphs has its own test (test_arc_must_reach_declared_glyphs).
+        """
+        findings = [finding for finding in checker.check_source(SYNTHETIC_PATH, source)
+                    if " on the edge of data-" not in finding]
+        self.assertEqual(findings, [])
+
     def rejects(self, source, reason):
         self.assertNotEqual(source, GOOD, "fixture mutation did not apply")
         findings = checker.check_source(SYNTHETIC_PATH, source)
@@ -87,8 +98,8 @@ class ContractTests(unittest.TestCase):
     def test_modulation_and_reversible(self):
         source = GOOD.replace(
             "</svg>",
-            '<path data-kind="modulation" data-from="a" data-to="p" d="M 112,80 H 160"/>'
-            '<path data-kind="reversible" data-from="b" data-to="p" d="M 240,80 H 192"/></svg>',
+            '<path data-kind="modulation" data-from="a" data-to="p" d="M 112,72 H 160"/>'
+            '<path data-kind="reversible" data-from="b" data-to="p" d="M 240,72 H 192"/></svg>',
         )
         self.clean(source)
         self.rejects(GOOD.replace("</svg>",
@@ -223,7 +234,7 @@ class ContractTests(unittest.TestCase):
             '<g data-kind="source-sink" data-entity-id="src" data-compartment="cyt">'
             '<rect data-role="bounds" x="32" y="120" width="24" height="24"/>'
             '<circle cx="44" cy="132" r="12"/><line x1="32" y1="144" x2="56" y2="120"/></g>'
-            '<path data-kind="consumption" data-from="src" data-to="p" d="M 56,132 H 160"/></svg>',
+            '<path data-kind="consumption" data-from="src" data-to="p" d="M 56,132 H 176 V 76"/></svg>',
         )
         self.clean(source)
 
@@ -252,7 +263,7 @@ class ContractTests(unittest.TestCase):
         # (140, 100) that the measured routes never show.
         apart = ('<path data-kind="modulation" data-from="a" data-to="p" d="M 120,100 H 172"/>'
                  '<path data-kind="modulation" data-from="b" data-to="p" d="M 140,128 V 148"/></svg>')
-        self.clean(GOOD.replace("</svg>", apart))
+        self.routes_clean(GOOD.replace("</svg>", apart))
         second = '<path data-kind="modulation" data-from="b"'
         moved = apart.replace(second, second + ' transform="translate(0,-30)"', 1)
         self.rejects(GOOD.replace("</svg>", moved), "transform attribute")
@@ -270,7 +281,7 @@ class ContractTests(unittest.TestCase):
         bridged = ('<path data-kind="modulation" data-from="a" data-to="p" '
                    'd="M 120,100 H 132 a 8,8 0 0,1 16,0 H 172"/>'
                    '<path data-kind="modulation" data-from="b" data-to="p" d="M 140,90 V 112"/></svg>')
-        self.clean(GOOD.replace("</svg>", bridged))
+        self.routes_clean(GOOD.replace("</svg>", bridged))
 
     def test_arc_ending_on_another_arc_is_rejected(self):
         touching = ('<path data-kind="modulation" data-from="a" data-to="p" d="M 120,100 H 172"/>'
@@ -281,6 +292,19 @@ class ContractTests(unittest.TestCase):
         stacked = ('<path data-kind="modulation" data-from="a" data-to="p" d="M 120,100 H 172"/>'
                    '<path data-kind="modulation" data-from="b" data-to="p" d="M 150,100 H 190"/></svg>')
         self.rejects(GOOD.replace("</svg>", stacked), "overlap")
+
+    def test_arc_must_reach_declared_glyphs(self):
+        # Greptile P1 on #402: an arc could declare a -> p and draw a -> b.
+        detour = "M 72,80 V 120 H 280 V 80"  # a's bottom edge to b's bottom edge
+        self.rejects(GOOD.replace('d="M 112,60 H 160"', f'd="{detour}"', 1),
+                     'arc a to p must end on the edge of data-to glyph "p"')
+        self.rejects(GOOD.replace('d="M 192,60 H 240"', f'd="{detour}"', 1),
+                     'arc p to b must start on the edge of data-from glyph "p"')
+        # Stopping short of the glyph also fails.
+        self.rejects(GOOD.replace('d="M 112,60 H 160"', 'd="M 112,60 H 152"', 1),
+                     'must end on the edge of data-to glyph "p"')
+        self.rejects(GOOD.replace('d="M 192,60 H 240"', 'd="M 200,60 H 240"', 1),
+                     'must start on the edge of data-from glyph "p"')
 
     def test_unreadable_arc_path_is_rejected(self):
         self.rejects(GOOD.replace('d="M 112,60 H 160"', 'd="M 112,60 X 160"', 1), "path data")
@@ -308,7 +332,7 @@ class ContractTests(unittest.TestCase):
 
     def test_route_over_a_hop_top_is_rejected(self):
         hop = "M 120,100 H 132 a 8,8 0 0,1 16,0 H 172"
-        self.clean(self.arcs(hop, "M 140,90 V 112"))
+        self.routes_clean(self.arcs(hop, "M 140,90 V 112"))
         # A third route touching the hop's arc voids the exemption.
         self.rejects(self.arcs(hop, "M 140,90 V 112", "M 130,93 H 137"), "cross at")
         # A hop that bridges two routes at once is not the documented hop.
@@ -317,12 +341,12 @@ class ContractTests(unittest.TestCase):
         self.rejects(self.arcs(hop, "M 130,93 H 137"), "cross at")
 
     def test_routes_meeting_at_a_shared_glyph_port_are_clean(self):
-        self.clean(self.arcs("M 176,120 V 76", "M 200,100 L 176,76"))
+        self.routes_clean(self.arcs("M 176,120 V 76", "M 200,100 L 176,76"))
         # The same meeting point away from any glyph reads as a junction.
         self.rejects(self.arcs("M 176,140 V 110", "M 200,130 L 176,110"), "away from a glyph port")
 
     def test_near_miss_parallel_routes_are_clean(self):
-        self.clean(self.arcs("M 120,100 H 172", "M 120,102 H 172"))
+        self.routes_clean(self.arcs("M 120,100 H 172", "M 120,102 H 172"))
 
     def test_unsupported_path_command_fails_closed(self):
         self.rejects(self.arcs("M 120,100 B 140,100"), "path data")
@@ -334,7 +358,7 @@ class ContractTests(unittest.TestCase):
             '<g data-kind="source-sink" data-entity-id="src" data-compartment="cyt">'
             '<rect data-role="bounds" x="32" y="120" width="24" height="24"/>'
             "</g>"
-            '<path data-kind="consumption" data-from="src" data-to="p" d="M 56,132 H 160"/></svg>',
+            '<path data-kind="consumption" data-from="src" data-to="p" d="M 56,132 H 176 V 76"/></svg>',
         )
         self.clean(source)
 
@@ -380,7 +404,7 @@ class ContractTests(unittest.TestCase):
     def test_arc_budget(self):
         arcs = "".join(f'<path data-kind="modulation" data-from="a" data-to="p" d="M 112,{64 + 4 * i} H 160"/>'
                        for i in range(checker.MAX_ARC - 2))  # GOOD already draws two arcs
-        self.clean(GOOD.replace("</svg>", arcs + "</svg>"))
+        self.routes_clean(GOOD.replace("</svg>", arcs + "</svg>"))
         extra = arcs + '<path data-kind="modulation" data-from="b" data-to="p" d="M 240,72 H 192"/>'
         self.rejects(GOOD.replace("</svg>", extra + "</svg>"), f"arc budget is {checker.MAX_ARC}")
 
