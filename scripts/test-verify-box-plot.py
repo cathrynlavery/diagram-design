@@ -1238,11 +1238,23 @@ def run_cases(h: Harness) -> int:
         (".n{display:none} on the label's tspan",
          [styled(".n{display:none}"),
           (AUTH_LABEL, AUTH_LABEL.replace(">Auth</text>", '><tspan class="n">Auth</tspan></text>'))], 1),
+        (".outer .inner{display:none} on a nested tspan",
+         [styled(".outer .inner{display:none}"),
+          (AUTH_LABEL, AUTH_LABEL.replace(
+              ">Auth</text>", '><tspan class="outer"><tspan class="inner">Auth</tspan></tspan></text>'))], 1),
     ):
         h.expect_findings(
             "a stylesheet rule %s is %d hidden-label finding(s)" % (title, count),
             shipped_with(*swaps), count, "hides its bound label",
         )
+    h.expect_clean(
+        "a rule .inner .outer{display:none} on nested tspans with no .inner around "
+        "the .outer matches nothing and passes",
+        shipped_with(styled(".inner .outer{display:none}"),
+                     (AUTH_LABEL, AUTH_LABEL.replace(
+                         ">Auth</text>",
+                         '><tspan class="outer"><tspan class="inner">Auth</tspan></tspan></text>'))),
+    )
     for title, css in (
         ("a label rule that only paints", "text[data-name]{fill:#2d3142}"),
         ("a label rule with a nonzero opacity", "text[data-name]{opacity:0.8}"),

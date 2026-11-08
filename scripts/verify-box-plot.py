@@ -941,6 +941,24 @@ def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
     return False
 
 
+TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+
+
+def tspan_chains(body: str, chain: list) -> list:
+    """(tokens, strict ancestors) for every <tspan> in a label, nested ones included."""
+    found, stack = [], []
+    for tag in TSPAN_TAG_RE.finditer(body):
+        if tag.group("close"):
+            if stack:
+                stack.pop()
+            continue
+        tokens = element_tokens(attrs_of(tag.group("attrs")))
+        found.append((tokens, chain + stack))
+        if not tag.group("selfclose"):
+            stack.append(("tspan", tokens))
+    return found
+
+
 def positioned_tspan(body: str) -> bool:
     for match in TSPAN_RE.finditer(body):
         attrs = attrs_of(match.group("attrs"))
@@ -1311,9 +1329,9 @@ def parse_series(source: str, findings: list, name: str) -> list:
                         page_hides_labels or inside_span(at, label_hiding)
                         or css_matches("text", element_tokens(tattrs), chain_at(at),
                                        label_hide_rules)
-                        or any(css_matches("tspan", element_tokens(attrs_of(tspan.group("attrs"))),
-                                           text_chain, label_hide_rules)
-                               for tspan in TSPAN_RE.finditer(text.group("body"))))):
+                        or any(css_matches("tspan", tokens, ancestors, label_hide_rules)
+                               for tokens, ancestors in tspan_chains(text.group("body"),
+                                                                     text_chain)))):
                 findings.append(
                     "%s: series %r hides its bound label — the name the "
                     "checker reads is not the name a reader sees"
