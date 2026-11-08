@@ -337,25 +337,27 @@ def resolve_vars(value: str, props: Props, depth: int = 0) -> str:
         name, _, fallback = match.group(1).partition(",")
         return resolve_vars(props.get(name.strip(), fallback.strip()), props, depth + 1)
 
-    pattern = r"var\(\s*(--[\w-]+\s*(?:,[^()]*)?)\)"
+    pattern = r"var\(\s*(--[\w-]+\s*(?:,(?:[^()]|\([^()]*\))*)?)\)"  # a fallback may hold rgb(…)
     return resolve_vars(re.sub(pattern, substitute, value), props, depth + 1)
 
 
 def expand_font_shorthand(value: str) -> Props:
     """Read ``font: italic 600 13px 'Geist', sans-serif`` into its longhand properties."""
     match = re.fullmatch(
-        r"\s*(?:(italic|oblique|normal)\s+)?(?:(\d{3}|bold|bolder|lighter|normal)\s+)?"
-        r"([\d.]+(?:px|rem))(?:\s*/\s*\S+)?\s+(.+)",
+        r"\s*((?:(?:italic|oblique|normal|\d{3}|bold|bolder|lighter)\s+)*)"
+        r"([\d.]+(?:px|rem|em|%|pt))(?:\s*/\s*\S+)?\s+(.+)",
         value,
     )
     if match is None:
         return {}
-    style, weight, size, family = match.groups()
+    words, size, family = match.group(1).split(), match.group(2), match.group(3)
+    slanted = [word for word in words if word in ("italic", "oblique")]
+    weights = [word for word in words if word not in ("italic", "oblique", "normal")]
     return {
         "font-size": size.removesuffix("px"),
         "font-family": family,
-        "font-style": style or "normal",
-        "font-weight": weight or "normal",
+        "font-style": slanted[0] if slanted else "normal",
+        "font-weight": weights[0] if weights else "normal",
     }
 
 
@@ -364,14 +366,15 @@ def computed_properties(
     inherited: Props,
     rules: Sequence[CssRule],
     ancestors: Sequence[ET.Element],
+    defaults: Props | None = None,
 ) -> Props:
-    """Cascade presentation attributes, then stylesheet rules, then inline style.
+    """Cascade a browser's ``defaults``, presentation attributes, stylesheet rules, inline style.
 
     The same order runs twice, because an ``!important`` declaration beats every normal one.
     Custom properties settle first, so ``font`` reads their final values wherever they are set.
     """
     props = {k: v for k, v in inherited.items() if k in INHERITED or k.startswith("--")}
-    layers = [{k: v for k, v in element.attrib.items() if k in PRESENTATION}]
+    layers = [defaults or {}, {k: v for k, v in element.attrib.items() if k in PRESENTATION}]
     layers += [rule.declarations for rule in rules if rule.applies(element, ancestors)]
     layers.append(_declarations(element.get("style", "")))
     declared = [
@@ -465,6 +468,8 @@ def length(
         amount *= font_size
     elif unit == "rem":
         amount *= 16.0
+    elif unit == "pt":
+        amount *= 4 / 3
     elif unit == "%":
         if percent_of is None:
             return default
@@ -1116,11 +1121,19 @@ def _readable_transform(props: Props) -> bool:
     return TRANSFORM_FRAME.isdisjoint(props) and SVG_TRANSFORM.fullmatch(value) is not None
 
 
-def svg_asset(view: Rect, parts: Sequence[ET.Element], paint: Props) -> Asset | None:
-    """Stand-alone SVG artwork drawing ``parts`` in ``view``, painted as placed."""
+def svg_asset(
+    view: Rect, parts: Sequence[ET.Element], paint: Props, shared: Sequence[ET.Element] = ()
+) -> Asset | None:
+    """Stand-alone SVG artwork drawing ``parts`` in ``view``, painted as placed.
+
+    ``shared`` definitions sit outside the placement's paint, which on the page they never
+    inherit: a marker or pattern takes its paint from where it is defined.
+    """
     if not all(MIN_SVG_DIMENSION <= size <= MAX_DIMENSION for size in view[2:]):
         return None
     root = ET.Element(f"{{{SVG_NAMESPACE}}}svg", {"viewBox": " ".join(f"{v:g}" for v in view)})
+    if shared:
+        ET.SubElement(root, f"{{{SVG_NAMESPACE}}}defs").extend(shared)
     group = ET.SubElement(root, f"{{{SVG_NAMESPACE}}}g", paint)
     group.extend(parts)
     if not is_safe_svg(root):
@@ -1133,6 +1146,13 @@ def svg_asset(view: Rect, parts: Sequence[ET.Element], paint: Props) -> Asset | 
 # --------------------------------------------------------------------------
 # What the SVG draws, in source order
 # --------------------------------------------------------------------------
+
+
+class IconCopy(NamedTuple):
+    """An icon's markup copied for storing, and the page definitions it paints with."""
+
+    parts: list[ET.Element]
+    shared: list[ET.Element]
 
 
 @dataclass(frozen=True, slots=True)
@@ -1293,6 +1313,7 @@ class Stroke(Item):
     end: Attachment | None = field(default=None, init=False)
     label: Box | None = field(default=None, init=False)  # the box whose text labels it
     fill: Box | None = field(default=None, init=False)  # the box painting this open path's fill
+    reach: float = field(default=0.0, init=False)  # how far its markers reach past its ends
 
     @property
     def marked(self) -> bool:
@@ -1454,7 +1475,10 @@ class Reader:
         self.root = root
         styles = (element.text or "" for element in root.iter() if _local(element) == "style")
         self.rules = parse_stylesheet("".join(styles))
-        self.by_id = {element.get("id"): element for element in root.iter() if element.get("id")}
+        self.by_id: dict[str, ET.Element] = {}
+        for element in root.iter():
+            if name := element.get("id"):
+                self.by_id.setdefault(name, element)  # the first wins, as in a browser
         self.parents = {child: parent for parent in root.iter() for child in parent}
         self.markers = {key: e for key, e in self.by_id.items() if _local(e) == "marker"}
         view = [float(v) for v in NUMBER_RE.findall(root.get("viewBox", ""))]
@@ -1466,6 +1490,7 @@ class Reader:
         self.background: str | None = None
         self.skipped: dict[str, int] = {}
         self.measuring = False  # walking an icon only to find its bounds
+        self.held_back: set[str] = set()  # notes from measuring, raised if nothing is stored
         self.ancestors: list[ET.Element] = []
         self.handlers: dict[str, Handler] = {
             "rect": self._rect,
@@ -1539,8 +1564,15 @@ class Reader:
         return False
 
     def _skip(self, what: str) -> None:
-        """Count content that could not be translated, for one note per kind."""
-        self.skipped[what] = self.skipped.get(what, 0) + 1
+        """Count content that could not be translated, for one note per kind.
+
+        Walking an icon only to measure it holds its notes back: the icon is stored as SVG, and
+        its copy raises the notes that apply to it. They are raised only if nothing is stored.
+        """
+        if self.measuring:
+            self.held_back.add(what)
+        else:
+            self.skipped[what] = self.skipped.get(what, 0) + 1
 
     def _walk(
         self,
@@ -1616,15 +1648,30 @@ class Reader:
             pattern,
         )
 
+    def _marker(self, reference: str | None) -> ET.Element | None:
+        """The ``<marker>`` a ``marker-start`` or ``marker-end`` value names, if any."""
+        match = re.fullmatch(r"\s*url\(\s*['\"]?#([^'\")]+)['\"]?\s*\)\s*", reference or "")
+        return self.markers.get(match.group(1)) if match else None
+
+    def _marker_reach(self, props: Props, line_width: float) -> float:
+        """How far a line's markers can reach past its end, so an icon's bounds include them."""
+        reach = 0.0
+        for reference in (props.get("marker-start"), props.get("marker-end")):
+            if (marker := self._marker(reference)) is not None:
+                size = math.hypot(
+                    length(marker.get("markerWidth"), 3.0), length(marker.get("markerHeight"), 3.0)
+                )
+                scale = 1.0 if marker.get("markerUnits") == "userSpaceOnUse" else line_width
+                reach = max(reach, size * scale)
+        return reach
+
     def _ending(self, reference: str | None, heading: float | None, at_start: bool) -> Ending:
         """The line ending a ``marker-start`` or ``marker-end`` reference draws.
 
         ``heading`` is the way the line runs at that end. SimpleDiagrams' arrows point away
         from the line, so an arrowhead the page points any other way is noted.
         """
-        match = re.fullmatch(r"\s*url\(\s*['\"]?#([^'\")]+)['\"]?\s*\)\s*", reference or "")
-        marker = self.markers.get(match.group(1)) if match else None
-        if marker is None:
+        if (marker := self._marker(reference)) is None:
             return "none"
         drawable = ("polygon", "path", "polyline", "circle", "ellipse", "rect", "line")
         shape = next((child for child in marker.iter() if _local(child) in drawable), None)
@@ -1799,6 +1846,7 @@ class Reader:
             end = self._ending(props.get("marker-end"), _heading(points, at_start=False), False)
             stroke = Stroke(len(self.items), subpath.transformed(matrix), paint, start, end)
             stroke.fill = fill if isinstance(fill, Box) else None
+            stroke.reach = self._marker_reach(props, paint.line_width)
             self.items.append(stroke)
 
     # -- text -------------------------------------------------------------
@@ -1840,7 +1888,7 @@ class Reader:
                         lines.append((anchor, child_props, [text]))
                         after_hidden = False
                     else:
-                        if not shows and not "".join(lines[-1][2]).strip():  # it starts the line
+                        if text.strip() and not "".join(lines[-1][2]).strip():  # it starts the line
                             lines[-1] = (lines[-1][0], child_props, lines[-1][2])
                         gap = length(child.get("dx"), font_size=child_size)
                         lines[-1][2].append(f" {text}" if gap > 0 else text)
@@ -1856,6 +1904,8 @@ class Reader:
             if shows:
                 if after_hidden and tail:
                     self._skip(moved)
+                if tail and not _same_text_style(lines[-1][1], props):
+                    self._skip("styled words inside a line take the line's style")
                 lines[-1][2].append(child.tail or "")
             else:
                 after_hidden = after_hidden or bool(tail)
@@ -1898,38 +1948,93 @@ class Reader:
             return
         x, y, w, h = (length(element.get(key)) for key in ("x", "y", "width", "height"))
         words = self._html_text(element, props, list(self.ancestors))
+        if re.search(rf"\S\s*{LINE_BREAK}[\s{LINE_BREAK}]*\S", words):
+            self._skip("line breaks in HTML text joined into one line")
+        words = words.replace(LINE_BREAK, " ")
         if self._paints_html_box(element, props, list(self.ancestors)):
             self._skip("HTML box background, border or shadow left out; its text is kept")
-        # The text takes the style of the innermost single wrapper, usually one <div>.
+        # The text takes the style of the innermost single wrapper, usually one <div>; words
+        # beside a wrapper make the text rich, and it keeps the style around them.
         holder, ancestors = element, list(self.ancestors)
-        while len(holder) == 1:
+        centred = False
+        while (
+            len(holder) == 1
+            and _local(holder[0]) != "br"
+            and (_is_invisible(props) or not _words_beside(holder))
+        ):
             ancestors.append(holder)
             holder = holder[0]
-            props = computed_properties(holder, props, self.rules, ancestors)
-        if len(holder) > 1:
+            defaults = _html_defaults(holder, props)
+            props = computed_properties(holder, props, self.rules, ancestors, defaults)
+            layout = props.get("display", "").strip().startswith(HTML_LAYOUTS)
+            centred = centred or (layout and self._declares(holder, ancestors, _aligns))
+        if self._restyled_html(holder, props, ancestors):
             self._skip("rich HTML text kept as plain text")
+        if centred:
+            self._skip(
+                "HTML layout such as flex or grid centring not read; the text sits at the top"
+            )
         align = _alignment(props.get("text-align", ""))
         wrap_box = (x, y, w, h) if w > 0 and h > 0 else None
         paint = props.get("color", "black")
         self._add_label(words, (x, y), props, matrix, opacity, align, paint, wrap_box)
 
+    def _restyled_html(
+        self, element: ET.Element, props: Props, ancestors: list[ET.Element]
+    ) -> bool:
+        """Whether HTML that shows inside an element styles some of its words differently."""
+        path = [*ancestors, element]
+        for child in element:
+            if _local(child) in ("br", "style", "script") or child.get("hidden") is not None:
+                continue
+            defaults = _html_defaults(child, props)
+            child_props = computed_properties(child, props, self.rules, path, defaults)
+            if child_props.get("display") == "none" or _is_invisible(child_props):
+                continue
+            if _html_look(child_props) != _html_look(props):
+                return True
+            if self._restyled_html(child, child_props, path):
+                return True
+        return False
+
     def _html_text(self, element: ET.Element, props: Props, ancestors: list[ET.Element]) -> str:
-        """The words an HTML fragment shows; a line break separates words."""
+        """The words an HTML fragment shows, with ``LINE_BREAK`` where the browser starts a line.
+
+        A table cell's words are kept apart from its neighbours' by a space.
+        """
         shows = not _is_invisible(props)
         words = [element.text or ""] if shows else []
         path = [*ancestors, element]
+        flex = props.get("display", "").strip() in ("flex", "inline-flex")
+        in_row = flex and not self._declares(element, ancestors, _stacks)  # items side by side
         for child in element:
+            name = _local(child)
             child_props = computed_properties(child, props, self.rules, path)
-            gone = child.get("hidden") is not None or child_props.get("display") == "none"
-            if _local(child) not in ("style", "script") and not gone:
-                breaks = " " if _local(child) in HTML_BREAKS else ""
-                words += [breaks, self._html_text(child, child_props, path)]
+            display = child_props.get("display", "").strip()
+            if name == "br":
+                words.append(LINE_BREAK)
+            elif (
+                name not in ("style", "script")
+                and child.get("hidden") is None
+                and display != "none"
+            ):
+                cell = display == "table-cell" if display else name in ("td", "th")
+                line = display.startswith(HTML_LINES) if display else name in HTML_LINE_TAGS
+                gap = " " if cell or in_row else LINE_BREAK if line else ""
+                words += [gap, self._html_text(child, child_props, path), gap]
             if shows:
                 words.append(child.tail or "")
         return "".join(words)
 
     def _use(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
-        """An icon placed by reference becomes SVG artwork, painted as the placement paints it."""
+        """An icon placed by reference becomes SVG artwork, painted as the placement paints it.
+
+        Inside an icon being measured, a ``<use>`` is not followed: the stored copy cannot keep
+        one, and following it could loop or multiply without end.
+        """
+        if self.measuring:
+            self._skip("icon SimpleDiagrams cannot store safely left out")  # never kept in a copy
+            return
         reference = element.get("href") or element.get(XLINK_HREF) or ""
         target = self.by_id.get(reference[1:]) if reference.startswith("#") else None
         if target is None:
@@ -1954,21 +2059,21 @@ class Reader:
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}
             w = length(element.get("width"), view[2], percent_of=view[2])
             h = length(element.get("height"), view[3], percent_of=view[3])
-            parts = self._icon_copy(list(target), context, paint | painted, ancestors)
-            if not solid and _uses_current_colour(parts, painted):
+            icon = self._icon_copy(list(target), context, paint | painted, ancestors)
+            if not solid and _uses_current_colour(icon.parts, painted):
                 self._skip("see-through or unknown icon colour stored as solid")
             box = (view[0], view[1], view[2], view[3])
             frame = self._icon_frame((x, y, w, h), box, target)
-            self._add_icon(box, parts, paint | painted, frame, matrix)
+            self._add_icon(box, icon, paint | painted, frame, matrix)
         else:
             parts = list(target) if _local(target) == "symbol" else [target]
             if (extent := self._extent(parts, props)) is None:
                 return
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
-            copies = self._icon_copy(parts, context, paint, ancestors)
-            if not solid and _uses_current_colour(copies, {}):
+            icon = self._icon_copy(parts, context, paint, ancestors)
+            if not solid and _uses_current_colour(icon.parts, {}):
                 self._skip("see-through or unknown icon colour stored as solid")
-            self._add_icon(extent, copies, paint, local, matrix)
+            self._add_icon(extent, icon, paint, local, matrix)
 
     def _nested_svg(
         self,
@@ -1994,9 +2099,9 @@ class Reader:
         paint.pop("opacity", None)  # already in ``opacity``, with the page's around it
         if opacity < 1:
             paint["opacity"] = f"{opacity:g}"
-        parts = self._icon_copy(list(element), props, paint, path)
+        icon = self._icon_copy(list(element), props, paint, path)
         box = (view[0], view[1], view[2], view[3])
-        self._add_icon(box, parts, paint, self._icon_frame((x, y, w, h), box, element), matrix)
+        self._add_icon(box, icon, paint, self._icon_frame((x, y, w, h), box, element), matrix)
 
     def _icon_frame(self, viewport: Rect, view: Rect, element: ET.Element) -> Rect:
         """An icon's frame inside its viewport, noting a crop the frame cannot show."""
@@ -2006,23 +2111,23 @@ class Reader:
         return frame
 
     def _add_icon(
-        self, view: Rect, parts: Sequence[ET.Element], paint: Props, local: Rect, matrix: Matrix
+        self, view: Rect, icon: IconCopy, paint: Props, local: Rect, matrix: Matrix
     ) -> None:
         """Add an icon as artwork, or note that it could not be stored; all hidden adds nothing."""
-        if all(_local(item) in ICON_STRUCTURE for part in parts for item in part.iter()):
+        if all(_local(item) in ICON_STRUCTURE for part in icon.parts for item in part.iter()):
             return
-        if (asset := svg_asset(view, parts, paint)) is None:
+        if (asset := svg_asset(view, icon.parts, paint, icon.shared)) is None:
             self._skip("icon SimpleDiagrams cannot store safely left out")
         else:
             self._add_artwork(local, matrix, asset)
 
     def _icon_copy(
         self, parts: Sequence[ET.Element], page: Props, paint: Props, ancestors: list[ET.Element]
-    ) -> list[ET.Element]:
+    ) -> IconCopy:
         """Copies of icon markup, which is stored without the page's stylesheet.
 
         Definitions the icon paints with but does not hold, such as a gradient in the page's
-        shared ``<defs>``, are copied in beside it, so the stored file draws the same paint.
+        shared ``<defs>``, are copied too, styled as they are where they are defined.
         """
         stored = computed_properties(ET.Element("g", paint), {}, (), ())
         frozen = (self._frozen(part, page, stored, ancestors) for part in parts)
@@ -2031,19 +2136,16 @@ class Reader:
         wanted = _references(copies, paint) - held
         shared: list[ET.Element] = []
         while wanted:
-            name = wanted.pop()
+            name = min(wanted)  # a stable order, so an unchanged diagram re-exports byte for byte
+            wanted.remove(name)
             if name in held or (definition := self.by_id.get(name)) is None:
                 continue  # a reference to nothing paints nothing in the browser either
             inherited, path = self._context_of(definition)
-            if (copy := self._frozen(definition, inherited, stored, path)) is not None:
+            if (copy := self._frozen(definition, inherited, {}, path)) is not None:
                 shared.append(copy)
                 held |= _ids([copy])
                 wanted |= _references([copy], {}) - held
-        if shared:
-            defs = ET.Element(f"{{{SVG_NAMESPACE}}}defs")
-            defs.extend(shared)
-            copies.append(defs)
-        return copies
+        return IconCopy(copies, shared)
 
     def _context_of(self, element: ET.Element) -> tuple[Props, list[ET.Element]]:
         """What an element inherits where it sits on the page, and its ancestors, root first."""
@@ -2088,24 +2190,32 @@ class Reader:
 
     def _extent(self, parts: Sequence[ET.Element], props: Props) -> Rect | None:
         """The bounds of drawing that has no view box of its own, with room for its lines."""
-        saved, measuring = self.items, self.measuring
-        self.items, self.measuring = [], True
+        saved, measuring, held_back = self.items, self.measuring, self.held_back
+        self.items, self.measuring, self.held_back = [], True, set()
         for part in parts:
             self._walk(part, props, IDENTITY, 1.0, [])
-        drawn, self.items, self.measuring = self.items, saved, measuring
+        drawn, noted = self.items, self.held_back
+        self.items, self.measuring, self.held_back = saved, measuring, held_back
         outlines = [
             (item.outline if isinstance(item, Box) else item.subpath.flattened(), item.paint)
             for item in drawn
             if isinstance(item, (Box, Stroke))
         ]
         points = [point for outline, _ in outlines for point in outline]
-        for label in (item for item in drawn if isinstance(item, Label)):
-            left, top, right, bottom = label.page_bounds()
-            points += [(left, top), (right, bottom)]
+        for item in drawn:
+            if isinstance(item, Label):
+                left, top, right, bottom = item.page_bounds()
+                points += [(left, top), (right, bottom)]
+            elif isinstance(item, Artwork):
+                points += _frame_corners(item.frame, item.rotation)
         if not points:
+            for what in sorted(noted):  # nothing is stored, so what the icon lost is noted here
+                self._skip(what)
             return None
         left, top, right, bottom = bounds(points)
-        pad = max((paint.line_width for _, paint in outlines), default=0.0) / 2 + 0.5
+        lines = [paint.line_width / 2 for _, paint in outlines]
+        markers = [item.reach for item in drawn if isinstance(item, Stroke)]
+        pad = max(lines + markers, default=0.0) + 0.5
         return left - pad, top - pad, right - left + 2 * pad, bottom - top + 2 * pad
 
     def _add_artwork(self, local: Rect, matrix: Matrix, asset: Asset) -> None:
@@ -2135,15 +2245,15 @@ class Reader:
                 string = string.upper()
             case "lowercase":
                 string = string.lower()
+            case "capitalize":
+                string = re.sub(r"(?<![\w'’])\w", lambda m: m.group(0).upper(), string)
         turn = decompose(matrix)
         size = max(1.0, length(props.get("font-size"), 16.0))
-        weight = props.get("font-weight", "400").lower()
-        heavy = weight in ("bold", "bolder") or length(weight) >= 600
         text_opacity = opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)
         style = TextStyle(
             font_family=_font_family(props.get("font-family")),
             font_size=size * (turn[2] if turn else 1.0),
-            weight="bold" if heavy else "medium" if length(weight) >= 500 else "regular",
+            weight=_weight(props),
             italic=props.get("font-style", "") in ("italic", "oblique"),
             underlined="underline" in props.get("text-decoration", ""),
             colour=colour_hex(self._colour(paint, props), text_opacity),
@@ -2161,7 +2271,68 @@ def _alignment(value: str) -> Alignment:
     return "trailing" if value in ("end", "right") else "leading"
 
 
-HTML_BREAKS = ("br", "div", "p", "li", "h1", "h2", "h3", "h4", "h5", "h6")
+HTML_LINE_TAGS = frozenset(
+    {"div", "p", "li", "ul", "ol", "table", "tr", "h1", "h2", "h3", "h4", "h5", "h6"}
+)  # elements a browser starts on a line of their own
+HTML_LINES = ("block", "flex", "grid", "list-item", "table")  # displays that start a line
+LINE_BREAK = "\u2028"  # where HTML text starts a line, unlike a newline in its source
+HTML_LAYOUTS = ("flex", "grid", "inline-flex", "inline-grid")  # place text by rules not read here
+HTML_ALIGNING = frozenset(
+    {"align-items", "align-content", "align-self", "justify-content", "justify-items",
+     "place-items", "place-content"}
+)  # fmt: skip
+HEADING_SIZES = {"h1": 2.0, "h2": 1.5, "h3": 1.17, "h4": 1.0, "h5": 0.83, "h6": 0.67}
+
+
+def _html_defaults(element: ET.Element, inherited: Props) -> Props:
+    """A browser's own styles for an HTML element, beneath any the page declares."""
+    name = _local(element)
+    defaults: Props = {}
+    if name in ("b", "strong", "th") or name in HEADING_SIZES:
+        defaults["font-weight"] = "bold"
+    if name in ("em", "i"):
+        defaults["font-style"] = "italic"
+    if name == "a" and element.get("href") is not None:
+        defaults |= {"color": "#0000EE", "text-decoration": "underline"}
+    if name in HEADING_SIZES:
+        size = length(inherited.get("font-size"), 16.0) * HEADING_SIZES[name]
+        defaults["font-size"] = f"{size:g}"
+    return defaults
+
+
+def _weight(props: Props) -> Literal["regular", "medium", "bold"]:
+    """The SimpleDiagrams weight a CSS ``font-weight`` comes closest to."""
+    weight = props.get("font-weight", "400").lower()
+    if weight in ("bold", "bolder") or length(weight) >= 600:
+        return "bold"
+    return "medium" if length(weight) >= 500 else "regular"
+
+
+def _html_look(props: Props) -> tuple[object, ...]:
+    """What a SimpleDiagrams label can show of an HTML text style, however it is spelled."""
+    return (
+        round(length(props.get("font-size"), 16.0), 2),
+        _weight(props),
+        props.get("font-style", "") in ("italic", "oblique"),
+        "underline" in props.get("text-decoration", ""),
+        parse_colour(props.get("color", "black"), props),
+        _font_family(props.get("font-family")),
+    )
+
+
+def _stacks(name: str, value: str) -> bool:
+    """Whether a flex declaration stacks its items in a column rather than a row."""
+    return name in ("flex-direction", "flex-flow") and "column" in value
+
+
+def _aligns(name: str, value: str) -> bool:
+    """Whether a flex or grid declaration moves text from the top-left corner."""
+    return name in HTML_ALIGNING and any(word in value for word in ("center", "end"))
+
+
+def _words_beside(holder: ET.Element) -> bool:
+    """Whether words sit beside an element's one child, so the text mixes styles."""
+    return bool((holder.text or "").strip() or (holder[0].tail or "").strip())
 
 
 def _heading(points: Sequence[Point], *, at_start: bool) -> float | None:
@@ -2192,6 +2363,17 @@ def _hidden_before_shown(worded: Sequence[tuple[str, Props | None]]) -> bool:
     """Whether hidden words come before shown ones, which then move into their room."""
     first = next((i for i, (_, style) in enumerate(worded) if style is None), None)
     return first is not None and any(style is not None for _, style in worded[first:])
+
+
+def _frame_corners(frame: Rect, rotation: float) -> list[Point]:
+    """The four corners of a frame turned about its centre."""
+    x, y, w, h = frame
+    turn = math.radians(rotation)
+    cx, cy, cos, sin = x + w / 2, y + h / 2, math.cos(turn), math.sin(turn)
+    return [
+        (cx + dx * cos - dy * sin, cy + dx * sin + dy * cos)
+        for dx, dy in ((-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2))
+    ]
 
 
 def _ids(parts: Sequence[ET.Element]) -> set[str]:
@@ -2698,7 +2880,8 @@ def _frame_record(x: float, y: float, w: float, h: float) -> Record:
     """
     if not (0 < w <= MAX_DIMENSION and 0 < h <= MAX_DIMENSION):
         raise ValueError("the diagram has a shape larger than SimpleDiagrams can hold")
-    return _rect_record(x, y, w, h)
+    # Sizes are written to three decimal places; a speck must not round down to nothing.
+    return _rect_record(x, y, max(w, 0.001), max(h, 0.001))
 
 
 def utf16_length(text: str) -> int:
@@ -2878,7 +3061,7 @@ def label_layout(box: Box, lines: Sequence[Label]) -> Record | None:
         needed = max(e[2] - e[0] for e in extents) * TEXT_ROOM[0] + TEXT_ROOM[1]
         if needed <= w - 2 * LABEL_INSET:
             return None
-        span = max(1.0, needed / w)
+        span = min(8.0, max(1.0, needed / w))  # the format holds a region up to 8 wide
         return {"frame": _rect_record((1 - span) / 2, 0, span, 1), "position": "middle"}
     if align == "center":
         half = max(1.0, min(middle - x, x + w - middle))

@@ -20,9 +20,12 @@ import importlib.util
 import io
 import json
 import math
+import os
 import re
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -72,6 +75,11 @@ def exportable_assets() -> list[Path]:
     return sorted(
         path for path in ASSETS.glob("*.html") if path.name not in {"index.html", "icons.html"}
     )
+
+
+def _tag(element: ET.Element) -> str:
+    """An element's tag without its namespace."""
+    return element.tag.rpartition("}")[2]
 
 
 def core(element: Record) -> Record:
@@ -746,7 +754,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              'stroke="#123456" stroke-linecap="round"', " style="),
             (":root { --o: stroke }", '<path d="M1 1H9" style="paint-order: var(--o)"/>',
              'style="paint-order: stroke"', "var("),
-            ("", '<text style="font: italic 14pt Georgia">Hi</text>', 'style="font: italic 14pt Georgia"', "font-style="),
+            ("", '<text style="font: italic 14pt Georgia">Hi</text>', 'font-size="14pt" font-style="italic"', " style="),
             ("", '<path d="M1 1H9" style="clip-path:url(#c);marker-end:url(#m)"/>',
              'clip-path="url(#c)" marker-end="url(#m)"', " style="),
             (".s { stop-color: #ff0000 }", '<linearGradient id="g"><stop class="s"/></linearGradient>'
@@ -901,7 +909,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             (".d { display: none } .h { visibility: hidden }",
              ('<foreignObject width="90" height="40"><div>Shown <span class="d">one</span>'
               '<span hidden>two</span><span class="h">three</span></div></foreignObject>'),
-             "Shown", {"rich HTML text kept as plain text": 1}),
+             "Shown", {}),
             (".h { visibility: hidden }",
              ('<foreignObject width="90" height="40"><div class="h">gone '
               '<b style="visibility: visible">Shown</b></div></foreignObject>'), "Shown", {}),
@@ -1115,6 +1123,158 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 )
                 self.assertEqual(skipped, notes)
 
+    def test_every_size_written_is_one_the_app_accepts(self) -> None:
+        """A frame rounded to nothing or a label region past 8 makes the app refuse the file."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <circle cx="50" cy="50" r="0.0001" stroke="#000"/>
+          <rect x="100" y="40" width="12" height="12" fill="#fff" stroke="#000"/>
+          <text x="106" y="49" text-anchor="middle" font-size="8">A long label on a tiny box</text>
+          </svg>""")
+        for element in document["pages"][0]["elements"]:
+            frame = core(element)["frame"]
+            self.assertGreater(min(frame["width"], frame["height"]), 0)
+            if region := element["content"].get("text_layout"):
+                self.assertLessEqual(region["frame"]["width"], 8)
+
+    def test_a_use_that_loops_or_multiplies_is_refused_at_once(self) -> None:
+        """A browser skips a looping ``<use>``; the rest of the diagram must still export, fast."""
+        chain = '<g id="a0"><rect width="2" height="2"/></g>' + "".join(
+            f'<g id="a{i}"><use href="#a{i - 1}"/><use href="#a{i - 1}" x="3"/></g>'
+            for i in range(1, 21)
+        )  # each level doubles the work for an export that follows every <use>
+        for placed, count in (
+            ('<g id="a"><use href="#a"/></g>', 1),
+            ('<use href="#a" id="a"/>', 1),
+            ('<g id="a"><use href="#b"/></g><g id="b"><use href="#a"/></g>', 2),  # two placements
+            (f"<defs>{chain}</defs><use href='#a20'/>", 1),
+        ):
+            with self.subTest(placed=placed[:60]):
+                started = time.monotonic()
+                document, skipped = self.export(
+                    f'<svg viewBox="0 0 400 300"><rect width="20" height="20" fill="#123456"/>{placed}</svg>'
+                )
+                self.assertLess(time.monotonic() - started, 10)  # milliseconds, but CI can be slow
+                self.assertIn('"#123456"', json.dumps(document))
+                cannot_store = "icon SimpleDiagrams cannot store safely left out"
+                self.assertEqual(skipped, {cannot_store: count})
+
+    def test_an_icon_is_measured_and_painted_as_the_browser_draws_it(self) -> None:
+        """Each row once cropped, recoloured or wrongly noted an icon placed by ``<use>``."""
+        marker = (
+            '<marker id="tip" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4"'
+            ' orient="auto"><path d="M0 0L10 5L0 10z"/></marker>'
+        )
+        result = self.mod.export_document(
+            f"""<svg viewBox="0 0 400 300"><defs>{marker}
+              <symbol id="i" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M2 12H20" marker-end="url(#tip)"/></symbol></defs>
+              <use href="#i" width="24" height="24"/></svg>""",
+            Path("case.html"),
+        )
+        stored = ET.fromstring(result.assets[0].data.decode().split("?>", 1)[1])
+        [defs, group] = list(stored)
+        # The marker sits outside the placement's paint, which on the page it never inherits.
+        self.assertEqual((_tag(defs), _tag(group)), ("defs", "g"))
+        self.assertEqual(_tag(defs[0]), "marker")
+        for icon, reaches in (
+            (('<rect width="40" height="40" fill="#eee" stroke="#333"/>'
+              '<svg x="50" y="10" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'), 70),
+            ('<path d="M0 10H30" stroke="#000" stroke-width="2" marker-end="url(#ah)"/>', 40),
+        ):  # fmt: skip
+            with self.subTest(icon=icon):
+                result = self.mod.export_document(
+                    f"""<svg viewBox="0 0 400 300"><defs><marker id="ah" markerWidth="5" markerHeight="5"
+                      refY="2.5" orient="auto"><path d="M0 0L5 2.5L0 5z"/></marker>
+                      <g id="g">{icon}</g></defs><use href="#g"/></svg>""",
+                    Path("case.html"),
+                )
+                view = re.search(r'viewBox="([^"]+)"', result.assets[0].data.decode())
+                assert view is not None
+                left, _, width, _ = (float(n) for n in view.group(1).split())
+                self.assertGreaterEqual(left + width, reaches)
+        _, skipped = self.export("""<svg viewBox="0 0 400 300"><defs>
+          <linearGradient id="gr"><stop stop-color="#f00"/></linearGradient>
+          <g id="b"><rect width="20" height="20" fill="url(#gr)"/></g></defs><use href="#b"/></svg>""")
+        self.assertEqual(skipped, {})  # the stored icon keeps its gradient, so nothing is lost
+
+    def test_an_icon_that_stores_nothing_says_why(self) -> None:
+        """Measuring holds its notes back; if nothing can be stored they must still be heard."""
+        for icon, notes in (
+            ('<image href="x.png" width="5" height="5"/>', {"<image> left out": 1}),
+            ('<rect width="5" height="5"/><use href="#g" display="none"/>', {}),
+        ):
+            with self.subTest(icon=icon):
+                _, skipped = self.export(
+                    f'<svg viewBox="0 0 400 300"><defs><g id="g">{icon}</g></defs><use href="#g"/></svg>'
+                )
+                self.assertEqual(skipped, notes)
+
+    def test_the_first_element_with_an_id_is_the_one_used(self) -> None:
+        """Browsers resolve a repeated id to its first element, as pasted snippets often repeat."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300"><defs>
+          <marker id="a" orient="auto"><polygon points="0 0,8 3,0 6"/></marker>
+          <marker id="a"><circle r="3"/></marker></defs>
+          <line x1="10" y1="9" x2="90" y2="9" stroke="#000" marker-end="url(#a)"/></svg>""")
+        [line] = document["pages"][0]["content"]["content"]["connections"]
+        self.assertEqual(line["content"]["end_ending"], "filledArrow")
+
+    def test_text_styling_reads_as_the_browser_reads_it(self) -> None:
+        """Each row once lost a size, weight, colour or word break a browser shows."""
+        styled = {"styled words inside a line take the line's style": 1}
+        rich = {"rich HTML text kept as plain text": 1}
+        lines = {"line breaks in HTML text joined into one line": 1}
+        card = '<foreignObject width="200" height="60">{}</foreignObject>'
+        for css, svg, string, style, notes in (
+            (":root { --b: rgb(200, 0, 0) }", '<text y="20" style="fill: var(--n, var(--b))">A</text>',
+             "A", {"color_hex": "#C80000"}, {}),
+            ("", '<text y="20" font-size="12"><tspan font-weight="700" fill="#bf4520">Gateway</tspan></text>',
+             "Gateway", {"weight": "bold", "color_hex": "#BF4520"}, {}),
+            ("", '<text y="20" font-size="12"><tspan font-weight="700">Name</tspan> rest</text>',
+             "Name rest", {"weight": "bold"}, styled),
+            (".t { font: 600 italic 0.85em serif }", '<g font-size="20"><text y="20" class="t">A</text></g>',
+             "A", {"font_size": 17, "weight": "bold", "is_italic": True}, {}),
+            ("", '<text y="20" font-size="12pt" style="text-transform: capitalize">big world</text>',
+             "Big World", {"font_size": 16}, {}),
+            ("", card.format('<div><span style="display:block">Title</span><span>Sub</span></div>'),
+             "Title Sub", {}, lines),
+            ("", card.format("<table><tr><td>Key</td><td>Value</td></tr></table>"), "Key Value", {}, {}),
+            ("", card.format("<div>Auth<br/>Service</div>"), "Auth Service", {}, lines),
+            ("", card.format("<div>\n  Plain text\n  on source lines\n</div>"), "Plain text on source lines",
+             {}, {}),
+            ("", card.format("<div>Price: <span>10</span></div>"), "Price: 10", {}, {}),
+            ("", card.format('<div style="font-size:14px;color:#000;font-weight:700">A <span style="font-size:1em;'
+                             'color:black"><b>B</b></span></div>'), "A B", {"font_size": 14, "weight": "bold"}, {}),
+            ("", card.format('<div style="display:flex;gap:8px"><div>Icon</div><div>Label</div></div>'),
+             "Icon Label", {}, {}),
+            ("", card.format('<div style="display:flex;flex-direction:column"><div>Icon</div><div>Label</div></div>'),
+             "Icon Label", {}, lines),
+            ("", card.format('<a href="#docs">Docs</a>'), "Docs", {"color_hex": "#0000EE", "is_underlined": True},
+             {}),
+            ("", card.format('<div>See <a href="#docs">docs</a></div>'), "See docs", {}, rich),
+            ("", card.format('<h1 style="font-size: 1em">T</h1>'), "T", {"font_size": 16, "weight": "bold"},
+             {}),
+            ("", card.format('<div style="display: flex; flex-direction: column">Auth</div>'), "Auth", {}, {}),
+            ("", '<text y="20"><tspan font-weight="700"> </tspan>Hello</text>', "Hello", {"weight": "regular"},
+             {}),
+            ("", '<text y="20" style="text-transform: capitalize">(hello) don\'t</text>', "(Hello) Don't", {},
+             {}),
+            ("", card.format("<div><strong>Gateway</strong></div>"), "Gateway", {"weight": "bold"}, {}),
+            ("", card.format("<h3>Gateway</h3>"), "Gateway", {"font_size": 18.72, "weight": "bold"}, {}),
+            ("", card.format('<div style="font-size:14px">Intro <span style="font-size:10px">more</span></div>'),
+             "Intro more", {"font_size": 14}, rich),
+            ("", card.format('<div style="display:flex;justify-content:center;height:100%">Auth</div>'), "Auth", {},
+             {"HTML layout such as flex or grid centring not read; the text sits at the top": 1}),
+        ):  # fmt: skip
+            with self.subTest(css=css, svg=svg):
+                document, skipped = self.export(
+                    f'<svg viewBox="0 0 400 300"><style>{css}</style>{svg}</svg>'
+                )
+                [element] = document["pages"][0]["elements"]
+                text = core(element)["text_content"]
+                self.assertEqual(text["string"], string)
+                self.assertEqual({k: text["base_style"][k] for k in style}, style)
+                self.assertEqual(skipped, notes)
+
     def test_a_mirrored_icon_is_stored_flipped_not_turned(self) -> None:
         """The format mirrors artwork in its frame and then turns it; the corners must land where
         the browser draws them, or an asymmetric icon opens facing the wrong way."""
@@ -1182,6 +1342,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              '<line x1="1" y1="1" x2="90" y2="1" stroke="#000" marker-end="url(#a)"/>',
              "line ending other than an arrow, a circle or a diamond drawn as an arrow"),
             ('<foreignObject width="9" height="9"><div>One</div><div>Two</div></foreignObject>',
+             "line breaks in HTML text joined into one line"),
+            ('<foreignObject width="9" height="9"><div>One <b>Two</b></div></foreignObject>',
              "rich HTML text kept as plain text"),
             ('<text y="9">Left<tspan dx="150">Right</tspan></text>',
              "a wide sideways gap inside a line became one space"),
@@ -1253,6 +1415,29 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 for output in (first, second):
                     self.assertEqual(self.run_cli(str(source), str(output)), 0)
                 self.assertEqual(package_bytes(first), package_bytes(second), name)
+
+    def test_reexport_is_byte_identical_whatever_the_hash_seed(self) -> None:
+        """Python orders sets differently in each process, so nothing written may follow one."""
+        stops = "".join(
+            f'<linearGradient id="g{i}"><stop stop-color="#{i}{i}0000"/></linearGradient>'
+            for i in range(1, 6)
+        )
+        paths = "".join(f'<path fill="url(#g{i})" d="M{i} 0H{i + 1}V10Z"/>' for i in range(1, 6))
+        written = set()
+        with tempfile.TemporaryDirectory() as tmp:
+            page = Path(tmp, "seeded.html")
+            page.write_text(
+                f'<svg viewBox="0 0 400 300"><defs>{stops}<symbol id="i" viewBox="0 0 10 10">'
+                f'{paths}</symbol></defs><use href="#i" width="20" height="20"/></svg>',
+                encoding="utf-8",
+            )
+            for seed in ("1", "2", "3", "4"):
+                output = Path(tmp, f"seeded-{seed}.simplediagram")
+                command = [sys.executable, str(HELPER), str(page), str(output)]
+                environment = {**os.environ, "PYTHONHASHSEED": seed}
+                subprocess.run(command, check=True, capture_output=True, env=environment)
+                written.add(tuple(sorted(package_bytes(output).items())))
+        self.assertEqual(len(written), 1)
 
     def test_an_existing_document_is_never_replaced(self) -> None:
         """An existing output, a wrong suffix and the gallery are all refused untouched."""
