@@ -1742,16 +1742,23 @@ class Reader:
         width, height = self.view[2:]
         return left <= 0.5 and top <= 0.5 and right >= width - 0.5 and bottom >= height - 0.5
 
-    def _take_as_paper(self, props: Props, opacity: float) -> None:
-        """The page itself: its opaque colour becomes the page's background.
+    def _take_as_paper(self, props: Props, opacity: float) -> bool:
+        """Take a page-sized layer under the drawing as the page itself; whether it is used up.
 
-        Decorative layers over it (the dot pattern) are left to the editor's grid.
+        An opaque colour becomes the page's background, the last one drawn showing. A pattern
+        (the dot grid) is left to the editor's grid, and a layer painting nothing draws
+        nothing. A see-through colour is not used up: it is drawn as a shape over the page.
         """
-        fill = props.get("fill", "black")
-        paper = None if "url(" in fill else self._colour(fill, props)
+        fill = props.get("fill", "black").strip()
+        if "url(" in fill or fill.lower() in NO_PAINT:
+            return True
+        if (colour := parse_colour(fill, props)) is None:
+            return False  # drawn as a shape, which notes the colour it cannot show
         alpha = opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)
-        if self.background is None and paper is not None and paper[3] * alpha >= 0.999:
-            self.background = colour_hex(paper)
+        if colour[3] * alpha < 0.999:
+            return False
+        self.background = colour_hex(colour)
+        return True
 
     def _rect(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """A rectangle becomes a Square, Rounded Rectangle or Pill; the paper, the background."""
@@ -1763,8 +1770,8 @@ class Reader:
             return
         # The paper lies under everything; a page frame has a line, a later cover is drawn.
         may_be_paper = not self.items and not self.measuring and not _has_line(props)
-        if may_be_paper and self._covers_canvas(x, y, w, h, matrix):
-            self._take_as_paper(props, opacity)
+        covers = may_be_paper and self._covers_canvas(x, y, w, h, matrix)
+        if covers and self._take_as_paper(props, opacity):
             return
         radius = length(element.get("rx", element.get("ry")))
         corners: list[Segment] = [Line((x + w, y)), Line((x + w, y + h)), Line((x, y + h))]
@@ -2056,14 +2063,17 @@ class Reader:
             # The symbol's own opacity layers on the placement's, as a group's would.
             opacity *= max(0.0, min(1.0, length(context.get("opacity"), 1.0, percent_of=1.0)))
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
-        x, y = length(element.get("x")), length(element.get("y"))
+        x, y = self._place(element)
         view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
         if _local(target) == "symbol" and len(view) == 4 and view[2] > 0 and view[3] > 0:
             # A symbol draws its view box into the placement's width and height.
             symbol_paint = PRESENTATION - EFFECTS - {"opacity"}  # its opacity is in ``paint``
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}
-            w = length(element.get("width"), view[2], percent_of=view[2])
-            h = length(element.get("height"), view[3], percent_of=view[3])
+            # Unsized, it takes the symbol's own size, or else the whole drawing's.
+            width = element.get("width") or target.get("width") or "100%"
+            height = element.get("height") or target.get("height") or "100%"
+            w = length(width, view[2], percent_of=self.view[2])
+            h = length(height, view[3], percent_of=self.view[3])
             icon = self._icon_copy(list(target), context, paint | painted, ancestors)
             if not solid and _uses_current_colour(icon.parts, painted):
                 self._skip("see-through or unknown icon colour stored as solid")
@@ -2089,7 +2099,7 @@ class Reader:
         ancestors: list[ET.Element],
     ) -> None:
         """A nested ``<svg>`` with a view box is an icon in its own frame, as a symbol is."""
-        x, y = length(element.get("x")), length(element.get("y"))
+        x, y = self._place(element)
         path = [*ancestors, element]
         view = [float(v) for v in NUMBER_RE.findall(element.get("viewBox", ""))]
         if len(view) != 4 or view[2] <= 0 or view[3] <= 0:
@@ -2107,6 +2117,13 @@ class Reader:
         icon = self._icon_copy(list(element), props, paint, path)
         box = (view[0], view[1], view[2], view[3])
         self._add_icon(box, icon, paint, self._icon_frame((x, y, w, h), box, element), matrix)
+
+    def _place(self, element: ET.Element) -> Point:
+        """Where a ``<use>`` or nested ``<svg>`` places its content; percentages are of the page."""
+        return (
+            length(element.get("x"), percent_of=self.view[2]),
+            length(element.get("y"), percent_of=self.view[3]),
+        )
 
     def _icon_frame(self, viewport: Rect, view: Rect, element: ET.Element) -> Rect:
         """An icon's frame inside its viewport, noting a crop the frame cannot show."""

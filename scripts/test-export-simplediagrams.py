@@ -934,6 +934,17 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual(page["content"]["background"], {"kind": "solid", "color_hex": "#F5F5F5"})
         fills = [core(e)["style"]["fill_hex"] for e in page["elements"]]
         self.assertEqual(fills, ["#123456", "#FFFFFF80"])  # the cover stays above what it covers
+        for layers, background, shapes in (
+            ('<rect width="100%" height="100%" fill="#000" fill-opacity="0.5"/>', {"kind": "none"},
+             ["#00000080"]),  # a see-through page is drawn, not lost
+            ('<rect width="100%" height="100%" fill="#f5f5f5"/><rect width="100%" height="100%" fill="#222"/>',
+             {"kind": "solid", "color_hex": "#222222"}, []),  # the last opaque page is the one seen
+        ):  # fmt: skip
+            with self.subTest(layers=layers):
+                document, _ = self.export(f'<svg viewBox="0 0 400 300">{layers}</svg>')
+                page = document["pages"][0]
+                self.assertEqual(page["content"]["background"], background)
+                self.assertEqual([core(e)["style"]["fill_hex"] for e in page["elements"]], shapes)
 
     def test_a_symbols_opacity_layers_on_its_placement(self) -> None:
         """Opacity multiplies down the tree; one value replacing the other darkens the icon."""
@@ -1196,6 +1207,26 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
           <linearGradient id="gr"><stop stop-color="#f00"/></linearGradient>
           <g id="b"><rect width="20" height="20" fill="url(#gr)"/></g></defs><use href="#b"/></svg>""")
         self.assertEqual(skipped, {})  # the stored icon keeps its gradient, so nothing is lost
+
+    def test_an_icon_is_placed_where_its_percentages_put_it(self) -> None:
+        """Percentages are of the drawing, and an unsized symbol fills it, as in the browser."""
+        circle = '<circle cx="12" cy="12" r="10"/>'
+        for symbol, placed, frame in (
+            ('viewBox="0 0 24 24"', 'x="50%" y="50%" width="10%" height="10%"',
+             {"x": 205, "y": 150, "width": 30, "height": 30}),
+            ('viewBox="0 0 24 24"', "", {"x": 50, "y": 0, "width": 300, "height": 300}),
+            ('viewBox="0 0 24 24" width="24" height="24"', 'x="10" y="10"',
+             {"x": 10, "y": 10, "width": 24, "height": 24}),
+        ):  # fmt: skip
+            with self.subTest(symbol=symbol, placed=placed):
+                document, _ = self.export(f"""<svg viewBox="0 0 400 300"><defs>
+                  <symbol id="s" {symbol}>{circle}</symbol></defs><use href="#s" {placed}/></svg>""")
+                [artwork] = document["pages"][0]["elements"]
+                self.assertEqual(core(artwork)["frame"], frame)
+        document, _ = self.export(f"""<svg viewBox="0 0 400 300">
+          <svg x="25%" y="10%" width="40" height="40" viewBox="0 0 24 24">{circle}</svg></svg>""")
+        [artwork] = document["pages"][0]["elements"]
+        self.assertEqual(core(artwork)["frame"], {"x": 100, "y": 30, "width": 40, "height": 40})
 
     def test_an_icon_that_stores_nothing_says_why(self) -> None:
         """Measuring holds its notes back; if nothing can be stored they must still be heard."""
