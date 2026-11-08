@@ -164,6 +164,8 @@ A_BOX = 'data-role="box" x="200"'
 AUTH_G = '<g data-name="Auth"'
 AUTH_BOX = ('<rect data-role="box" x="196" y="64.0" width="20" height="32" rx="2" '
             'fill="rgba(45,49,66,0.15)" stroke="#4f5d75" stroke-width="1"/>')
+AUTH_LABEL = ('<text data-name="Auth" x="148" y="84" fill="#2d3142" font-size="11" '
+              'font-weight="600" font-family="\'Geist\', sans-serif" text-anchor="end">Auth</text>')
 CHECKOUT_BOX = ('<rect data-role="box" x="320" y="200.0" width="240" height="32" '
                 'rx="2" fill="rgba(191,69,32,0.12)" stroke="#bf4520"')
 AUTH_MEDIAN = ('<line data-role="median" x1="204" y1="64.0" x2="204" y2="96.0" '
@@ -1215,6 +1217,28 @@ def run_cases(h: Harness) -> int:
             "a stylesheet rule %s is %d never-drawn finding(s)" % (title, count),
             shipped_with(*swaps), count, "never drawn",
         )
+    # A <style> rule can hide a bound label while its series still draws
+    # (#487 item 1). A rule hiding the whole series stays one never-drawn
+    # finding, above.
+    for title, swaps, count in (
+        ("text[data-name]{display:none}", [styled("text[data-name]{display:none}")], 5),
+        ('[data-name="Auth"] text{visibility:hidden}',
+         [styled('[data-name="Auth"] text{visibility:hidden}')], 1),
+        ('text[data-name="Auth"]{opacity:0}', [styled('text[data-name="Auth"]{opacity:0}')], 1),
+        ('text[data-name="Auth"]{fill-opacity:0}',
+         [styled('text[data-name="Auth"]{fill-opacity:0}')], 1),
+        (".tag{display:none} on a group around the label",
+         [styled(".tag{display:none}"), (AUTH_LABEL, '<g class="tag">%s</g>' % AUTH_LABEL)], 1),
+    ):
+        h.expect_findings(
+            "a stylesheet rule %s is %d hidden-label finding(s)" % (title, count),
+            shipped_with(*swaps), count, "hides its bound label",
+        )
+    for title, css in (
+        ("a label rule that only paints", "text[data-name]{fill:#2d3142}"),
+        ("a label rule with a nonzero opacity", "text[data-name]{opacity:0.8}"),
+    ):
+        h.expect_clean("%s passes" % title, shipped_with(styled(css)))
     for title, css in (
         ("a hiding rule on a class used only outside the svg", ".eyebrow{display:none}"),
         ("a type-only hiding rule no chart element can match", "p{opacity:0}"),
