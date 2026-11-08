@@ -236,6 +236,42 @@ def check_flowchart_header_statements(tmp: Path) -> None:
     ok("flowchart statements after the header semicolon are retained")
 
 
+def check_flowchart_apostrophes(tmp: Path) -> None:
+    # Mermaid flowchart strings open only at a double quote, so an apostrophe
+    # is ordinary label text. One apostrophe must not leave the statement
+    # unterminated, and two must not pair up and swallow the edge between them.
+    source = tmp / "flowchart-apostrophes.mmd"
+    source.write_text(
+        "flowchart LR\n"
+        "  accDescr: Bob's flow\n"
+        "  A[Bob's box] -->|it's| B{Don't panic?}\n"
+        "  B -- it's fine --> C(User's cart)\n"
+        "  D[O'Brien] --> E[it's]\n"
+        "  F@{ shape: rect, label: 'a, b' } --> A\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    labels = {node["id"]: node["label"] for node in diagram["nodes"]}
+    edges = [(e["source"], e["target"], e["label"]) for e in diagram["edges"]]
+    if labels != {
+        "A": "Bob's box",
+        "B": "Don't panic?",
+        "C": "User's cart",
+        "D": "O'Brien",
+        "E": "it's",
+        "F": "a, b",
+    }:
+        fail(f"apostrophes in flowchart labels changed node labels: {labels}")
+    if edges != [
+        ("A", "B", "it's"),
+        ("B", "C", "it's fine"),
+        ("D", "E", ""),
+        ("F", "A", ""),
+    ]:
+        fail(f"apostrophes in flowchart labels dropped or changed edges: {edges}")
+    ok("flowchart apostrophes stay label text; @{ } attributes keep YAML quotes")
+
+
 def check_entity_label_codes(tmp: Path) -> None:
     source = tmp / "entity-labels.mmd"
     source.write_text(
@@ -1665,6 +1701,7 @@ def main() -> int:
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
         check_flowchart_header_statements(tmp)
+        check_flowchart_apostrophes(tmp)
         check_edge_ids(tmp)
         check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)

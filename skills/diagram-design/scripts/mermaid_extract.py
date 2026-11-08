@@ -393,7 +393,15 @@ def _kind_and_direction(
     _fail("not a Mermaid file")
 
 
-def _top_level_mask(text: str) -> str:
+# Mermaid's flowchart lexer opens a string only at a double quote (a Markdown
+# string is "`...`"), so an apostrophe is label text: `A[Bob's box]`,
+# `A -->|it's| B`. Expanded `@{ ... }` attributes are YAML, where single
+# quotes do delimit values, so that splitter passes its own quote set.
+FLOWCHART_QUOTES = "\"`"
+ATTRIBUTE_QUOTES = "\"'`"
+
+
+def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
     """Keep top-level syntax positions and blank quoted/bracketed content."""
     output = list(text)
     stack: list[str] = []
@@ -410,7 +418,7 @@ def _top_level_mask(text: str) -> str:
             elif character == quote:
                 quote = None
             continue
-        if character in "\"'`":
+        if character in quotes:
             quote = character
             output[index] = " "
             continue
@@ -428,8 +436,10 @@ def _top_level_mask(text: str) -> str:
     return "".join(output)
 
 
-def _split_top_level(text: str, delimiter: str) -> list[str]:
-    mask = _top_level_mask(text)
+def _split_top_level(
+    text: str, delimiter: str, quotes: str = FLOWCHART_QUOTES
+) -> list[str]:
+    mask = _top_level_mask(text, quotes)
     parts: list[str] = []
     start = 0
     for index, character in enumerate(mask):
@@ -455,7 +465,7 @@ def _statement_complete(text: str) -> bool:
             elif character == quote:
                 quote = None
             continue
-        if character in "\"'`":
+        if character in FLOWCHART_QUOTES:
             quote = character
         elif character in "[({":
             stack.append(character)
@@ -608,7 +618,7 @@ def _parse_expanded_attributes(text: str) -> tuple[str, str] | None:
     if not text.startswith("@{") or not text.endswith("}"):
         return None
     values: dict[str, str] = {}
-    for raw_attribute in _split_top_level(text[2:-1], ","):
+    for raw_attribute in _split_top_level(text[2:-1], ",", ATTRIBUTE_QUOTES):
         key, separator, raw_value = raw_attribute.partition(":")
         if not separator:
             continue
