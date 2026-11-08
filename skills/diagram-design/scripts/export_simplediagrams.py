@@ -967,6 +967,7 @@ FORBIDDEN_IN_SVG = frozenset(
 )  # fmt: skip
 UNSAFE_IN_SVG = re.compile(r"javascript:|vbscript:|data:|file:|https?:|\\", re.IGNORECASE)
 LOCAL_REFERENCE = re.compile(r"#[A-Za-z0-9_.:-]{1,256}")
+LOCAL_URL = re.compile(r"url\(\s*['\"]?#([^'\")\s]+)")
 SVG_TRANSFORM = re.compile(
     r"[\s,]*(?:(?:matrix|translate|scale|rotate|skewX|skewY)\s*\([-+.\deE\s,]*\)[\s,]*)*"
 )
@@ -1454,6 +1455,7 @@ class Reader:
         styles = (element.text or "" for element in root.iter() if _local(element) == "style")
         self.rules = parse_stylesheet("".join(styles))
         self.by_id = {element.get("id"): element for element in root.iter() if element.get("id")}
+        self.parents = {child: parent for parent in root.iter() for child in parent}
         self.markers = {key: e for key, e in self.by_id.items() if _local(e) == "marker"}
         view = [float(v) for v in NUMBER_RE.findall(root.get("viewBox", ""))]
         usable = len(view) == 4 and view[2] > 0 and view[3] > 0 and all(map(math.isfinite, view))
@@ -2017,10 +2019,43 @@ class Reader:
     def _icon_copy(
         self, parts: Sequence[ET.Element], page: Props, paint: Props, ancestors: list[ET.Element]
     ) -> list[ET.Element]:
-        """Copies of icon markup, which is stored without the page's stylesheet."""
+        """Copies of icon markup, which is stored without the page's stylesheet.
+
+        Definitions the icon paints with but does not hold, such as a gradient in the page's
+        shared ``<defs>``, are copied in beside it, so the stored file draws the same paint.
+        """
         stored = computed_properties(ET.Element("g", paint), {}, (), ())
-        copies = (self._frozen(part, page, stored, ancestors) for part in parts)
-        return [copy for copy in copies if copy is not None]
+        frozen = (self._frozen(part, page, stored, ancestors) for part in parts)
+        copies = [copy for copy in frozen if copy is not None]
+        held = _ids(copies)
+        wanted = _references(copies, paint) - held
+        shared: list[ET.Element] = []
+        while wanted:
+            name = wanted.pop()
+            if name in held or (definition := self.by_id.get(name)) is None:
+                continue  # a reference to nothing paints nothing in the browser either
+            inherited, path = self._context_of(definition)
+            if (copy := self._frozen(definition, inherited, stored, path)) is not None:
+                shared.append(copy)
+                held |= _ids([copy])
+                wanted |= _references([copy], {}) - held
+        if shared:
+            defs = ET.Element(f"{{{SVG_NAMESPACE}}}defs")
+            defs.extend(shared)
+            copies.append(defs)
+        return copies
+
+    def _context_of(self, element: ET.Element) -> tuple[Props, list[ET.Element]]:
+        """What an element inherits where it sits on the page, and its ancestors, root first."""
+        path: list[ET.Element] = []
+        node = self.parents.get(element)
+        while node is not None:
+            path.insert(0, node)
+            node = self.parents.get(node)
+        inherited: Props = {}
+        for depth, ancestor in enumerate(path):
+            inherited = computed_properties(ancestor, inherited, self.rules, path[:depth])
+        return inherited, path
 
     def _frozen(
         self, element: ET.Element, page: Props, stored: Props, ancestors: list[ET.Element]
@@ -2159,13 +2194,27 @@ def _hidden_before_shown(worded: Sequence[tuple[str, Props | None]]) -> bool:
     return first is not None and any(style is not None for _, style in worded[first:])
 
 
-def _uses_current_colour(parts: Sequence[ET.Element], paint: Props) -> bool:
-    """Whether stored icon markup paints with ``currentColor``, which its placement sets."""
-    values = [
+def _ids(parts: Sequence[ET.Element]) -> set[str]:
+    """Every ``id`` in some markup."""
+    return {name for part in parts for item in part.iter() if (name := item.get("id"))}
+
+
+def _attribute_values(parts: Sequence[ET.Element], paint: Props) -> list[str]:
+    """Every attribute value in stored icon markup, with the paint of the group around it."""
+    return [
         *paint.values(),
         *(v for part in parts for item in part.iter() for v in item.attrib.values()),
     ]
-    return any("currentcolor" in value.lower() for value in values)
+
+
+def _references(parts: Sequence[ET.Element], paint: Props) -> set[str]:
+    """Every local ``url(#…)`` that markup, or the paint around it, refers to."""
+    return {name for value in _attribute_values(parts, paint) for name in LOCAL_URL.findall(value)}
+
+
+def _uses_current_colour(parts: Sequence[ET.Element], paint: Props) -> bool:
+    """Whether stored icon markup paints with ``currentColor``, which its placement sets."""
+    return any("currentcolor" in value.lower() for value in _attribute_values(parts, paint))
 
 
 def _same_text_style(one: Props, other: Props) -> bool:

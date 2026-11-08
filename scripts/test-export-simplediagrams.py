@@ -20,6 +20,7 @@ import importlib.util
 import io
 import json
 import math
+import re
 import sys
 import tempfile
 import unittest
@@ -939,6 +940,35 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 icon = self.icon(css, f"<defs>{symbol}</defs>{placed}")
                 self.assertEqual(icon.count("opacity="), 1)
                 self.assertIn('opacity="0.25"', icon)
+
+    def test_an_icon_carries_the_shared_definitions_it_paints_with(self) -> None:
+        """A stored icon has no page around it, so a gradient, pattern or marker it uses from
+        the page's shared ``<defs>`` travels with it, or its paint would vanish."""
+        stop = '<stop {} offset="0" stop-color="#ff0000"/>'
+        gradient = f'<linearGradient id="g">{stop}</linearGradient>'
+        square = '<path d="M0 0H10V10Z"/>'
+        for css, shared, symbol, kept in (
+            ("", gradient.format(""), f'<symbol id="i" viewBox="0 0 10 10" fill="url(#g)">{square}</symbol>',
+             ("<linearGradient", 'stop-color="#ff0000"', square.replace("/>", " />"))),
+            (".s { stop-color: #00ff00 }", gradient.format('class="s"'),
+             '<symbol id="i" viewBox="0 0 10 10"><path fill="url(#g)" d="M0 0H10V10Z"/></symbol>',
+             ('stop-color="#00ff00"',)),
+            ("", gradient.format("") + '<pattern id="p" width="2" height="2"><rect fill="url(#g)" width="1" height="1"/></pattern>',
+             f'<symbol id="i" viewBox="0 0 10 10" fill="url(#p)">{square}</symbol>',
+             ("<pattern", "<linearGradient")),
+            ("", '<marker id="m" orient="auto"><path d="M0 0L8 3L0 6Z"/></marker>',
+             '<symbol id="i" viewBox="0 0 10 10"><path d="M1 5H9" stroke="#000" marker-end="url(#m)"/></symbol>',
+             ("<marker",)),
+        ):  # fmt: skip
+            with self.subTest(css=css, shared=shared, symbol=symbol):
+                placed = '<use href="#i" width="20" height="20"/>'
+                icon = self.icon(css, f"<defs>{shared}{symbol}</defs>{placed}")
+                for written in kept:
+                    self.assertIn(written, icon)
+                stored = ET.fromstring(icon.split("?>", 1)[1])
+                names = {item.get("id") for item in stored.iter()}
+                for reference in re.findall(r"url\(#([^)]+)\)", icon):
+                    self.assertIn(reference, names)  # every reference finds its definition
 
     def test_an_icon_keeps_its_proportions_in_its_box(self) -> None:
         """A view box fits its box as ``preserveAspectRatio`` says; the format would stretch it."""
