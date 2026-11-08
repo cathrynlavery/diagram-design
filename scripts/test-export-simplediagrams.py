@@ -760,6 +760,10 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             (".x { display: none }", '<text>Hi <tspan class="x">gone</tspan> there</text>', "there", "gone"),
             (".a { visibility: visible }", '<text visibility="hidden">gone<tspan class="a">Hi</tspan> gone</text>',
              "Hi", "gone"),
+            (".a { font-size: 2em }", '<text class="a">Hi</text>', 'font-size="32"', "em"),
+            ("", '<g style="font-size: 2em"><text>Hi</text></g>', 'font-size="32"', "!"),
+            ("g { font-size: 10px } .a { font-size: 150% }", '<g><text class="a">Hi</text></g>',
+             'font-size="15"', "%"),
         ):  # fmt: skip
             with self.subTest(css=css, part=part):
                 icon = self.icon(css, NESTED_ICON.format(part))
@@ -774,8 +778,6 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             (".a { transform: translate(50%, 0) }", rect),
             (".a { transform: rotate(90deg); transform-origin: 5px 5px }", rect),
             (".a { transform: translate(123456789012345678901234567890px) foo(1) }", rect),  # no hang
-            (".a { font-size: 2em }", '<text class="a">Hi</text>'),
-            ("", '<g style="font-size: 2em"><text>Hi</text></g>'),
             ("", '<image href="a.png" width="9" height="9"/>'),
         ):
             with self.subTest(css=css, part=part):
@@ -881,10 +883,212 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 self.assertNotIn(lost, written)
                 self.assertEqual(skipped, notes)
 
+    def test_words_hidden_deep_inside_text_stay_hidden(self) -> None:
+        """Hiding reaches every level of nested spans and HTML, so no hidden draft word leaks."""
+        moved = {"words after hidden words in a line moved into their place": 1}
+        for css, svg, label, notes in (
+            ("", '<text y="9">Public<tspan> label<tspan display="none"> draft</tspan></tspan></text>',
+             "Public label", {}),
+            (".d { display: none }", '<text y="9"><tspan>Public <tspan class="d">draft</tspan></tspan></text>',
+             "Public", {}),
+            ("", '<text y="9"><tspan>Public <tspan visibility="hidden">draft</tspan> label</tspan></text>',
+             "Public label", moved),
+            ("", '<text y="9">A <tspan visibility="hidden">x<tspan visibility="visible">B</tspan></tspan></text>',
+             "A B", moved),
+            ("", '<text y="9">A <tspan>B <tspan font-weight="700">C</tspan></tspan></text>', "A B C",
+             {"styled words inside a line take the line's style": 1}),
+            (".d { display: none } .h { visibility: hidden }",
+             ('<foreignObject width="90" height="40"><div>Shown <span class="d">one</span>'
+              '<span hidden>two</span><span class="h">three</span></div></foreignObject>'),
+             "Shown", {"rich HTML text kept as plain text": 1}),
+            (".h { visibility: hidden }",
+             ('<foreignObject width="90" height="40"><div class="h">gone '
+              '<b style="visibility: visible">Shown</b></div></foreignObject>'), "Shown", {}),
+        ):  # fmt: skip
+            with self.subTest(css=css, svg=svg):
+                document, skipped = self.export(
+                    f'<svg viewBox="0 0 400 300"><style>{css}</style>{svg}</svg>'
+                )
+                [element] = document["pages"][0]["elements"]
+                self.assertEqual(core(element)["text_content"]["string"], label)
+                self.assertEqual(skipped, notes)
+
+    def test_only_layers_under_everything_become_the_paper(self) -> None:
+        """A full-page layer drawn over the diagram covers it in the browser, so it stays drawn."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <defs><pattern id="dots" width="9" height="9"><circle r="1"/></pattern></defs>
+          <rect width="100%" height="100%" fill="#f5f5f5"/>
+          <rect width="100%" height="100%" fill="url(#dots)"/>
+          <rect x="10" y="10" width="50" height="50" fill="#123456"/>
+          <rect width="400" height="300" fill="#ffffff" fill-opacity="0.5"/></svg>""")
+        page = document["pages"][0]
+        self.assertEqual(page["content"]["background"], {"kind": "solid", "color_hex": "#F5F5F5"})
+        fills = [core(e)["style"]["fill_hex"] for e in page["elements"]]
+        self.assertEqual(fills, ["#123456", "#FFFFFF80"])  # the cover stays above what it covers
+
+    def test_a_symbols_opacity_layers_on_its_placement(self) -> None:
+        """Opacity multiplies down the tree; one value replacing the other darkens the icon."""
+        path = '<path d="M0 0H10V10Z"/>'
+        for css, symbol in (
+            ("", f'<symbol id="s" viewBox="0 0 10 10" opacity="0.5">{path}</symbol>'),
+            (".half { opacity: .5 }", f'<symbol id="s" class="half" viewBox="0 0 10 10">{path}</symbol>'),
+            ("", f'<symbol id="s" opacity="50%">{path}</symbol>'),  # no view box: drawn as placed
+        ):  # fmt: skip
+            with self.subTest(css=css, symbol=symbol):
+                placed = '<use href="#s" width="20" height="20" opacity="0.5"/>'
+                icon = self.icon(css, f"<defs>{symbol}</defs>{placed}")
+                self.assertEqual(icon.count("opacity="), 1)
+                self.assertIn('opacity="0.25"', icon)
+
+    def test_an_icon_keeps_its_proportions_in_its_box(self) -> None:
+        """A view box fits its box as ``preserveAspectRatio`` says; the format would stretch it."""
+        circle = '<circle cx="12" cy="12" r="10"/>'
+        cropped = {"icon cropped to its box drawn whole": 1}
+        for setting, frame, notes in (
+            (None, {"x": 12, "y": 0, "width": 24, "height": 24}, {}),
+            ("xMinYMax meet", {"x": 0, "y": 0, "width": 24, "height": 24}, {}),
+            ("none", {"x": 0, "y": 0, "width": 48, "height": 24}, {}),
+            ("xMidYMid slice", {"x": 0, "y": -12, "width": 48, "height": 48}, cropped),
+        ):
+            aspect = f' preserveAspectRatio="{setting}"' if setting else ""
+            symbol = f'<defs><symbol id="s" viewBox="0 0 24 24"{aspect}>{circle}</symbol></defs>'
+            for placed in (
+                f'{symbol}<use href="#s" width="48" height="24"/>',
+                f'<svg width="48" height="24" viewBox="0 0 24 24"{aspect}>{circle}</svg>',
+            ):
+                with self.subTest(placed=placed):
+                    document, skipped = self.export(f'<svg viewBox="0 0 400 300">{placed}</svg>')
+                    [artwork] = document["pages"][0]["elements"]
+                    self.assertEqual(core(artwork)["frame"], frame)
+                    self.assertEqual(skipped, notes)
+
+    def test_an_icon_of_words_alone_is_kept(self) -> None:
+        """Text counts toward an icon's bounds, so words placed by ``<use>`` are not lost."""
+        result = self.mod.export_document(
+            '<svg viewBox="0 0 400 300"><defs><g id="t"><text font-size="10">Hi</text></g></defs>'
+            '<use href="#t" x="50" y="50"/></svg>',
+            Path("case.html"),
+        )
+        [artwork] = result.document["pages"][0]["elements"]
+        self.assertEqual((core(artwork)["kind"], result.skipped), ("svg_artwork", {}))
+        self.assertIn(">Hi</text>", result.assets[0].data.decode())
+
+    def test_measuring_an_icon_never_takes_its_drawing_as_the_paper(self) -> None:
+        """An icon as large as the page is drawn, and the page keeps its own background."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300"><defs><g id="i">
+          <rect width="400" height="300" fill="#123456"/></g></defs><use href="#i"/></svg>""")
+        page = document["pages"][0]
+        self.assertEqual(page["content"]["background"], {"kind": "none"})
+        self.assertEqual([core(e)["kind"] for e in page["elements"]], ["svg_artwork"])
+        document, _ = self.export("""<svg viewBox="0 0 400 300"><defs><g id="e"/><g id="i">
+          <use href="#e"/><rect width="400" height="300" fill="#123456"/></g></defs>
+          <use href="#i"/></svg>""")  # measuring an icon inside it must not end the measuring
+        self.assertEqual(document["pages"][0]["content"]["background"], {"kind": "none"})
+
+    def test_font_sizes_relative_to_the_parent_follow_it(self) -> None:
+        """``em`` and ``%`` scale the inherited size, as ``rem`` scales the page's."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300"><g font-size="10">
+          <text y="20" font-size="2em">Em</text><text y="60" font-size="150%">Percent</text>
+          <text y="100" font-size="2rem">Rem</text><g font-size="2em"><text y="140">Nested</text>
+          </g></g></svg>""")
+        for string, size in (("Em", 20), ("Percent", 15), ("Rem", 32), ("Nested", 20)):
+            with self.subTest(string=string):
+                label = self.element_labelled(string, document)
+                self.assertEqual(label["text_content"]["base_style"]["font_size"], size)
+
+    def test_a_line_ignoring_its_scale_keeps_its_width(self) -> None:
+        """``non-scaling-stroke`` keeps the line as wide as written, however it is scaled."""
+        for css, line, width in (
+            ("", '<path d="M1 1H20" stroke="#000" vector-effect="non-scaling-stroke"/>', 1),
+            ("path { vector-effect: non-scaling-stroke }", '<path d="M1 1H20" stroke="#000"/>', 1),
+            ("", '<path d="M1 1H20" stroke="#000"/>', 4),
+        ):
+            with self.subTest(css=css, line=line):
+                document, _ = self.export(f"""<svg viewBox="0 0 400 300"><style>{css}</style>
+                  <g transform="scale(4)">{line}</g></svg>""")
+                [element] = document["pages"][0]["elements"]
+                self.assertEqual(core(element)["style"]["line_width"], width)
+
+    def test_markers_sit_at_the_ends_of_the_whole_path(self) -> None:
+        """A path with several subpaths gets its start and end markers once, not on every part."""
+        document, _ = self.export("""<svg viewBox="0 0 400 300">
+          <defs><marker id="a" orient="auto-start-reverse">
+            <polygon points="0 0,8 3,0 6"/></marker></defs>
+          <path d="M10 50 L100 50 M10 80 L100 80 M10 110 L100 110" stroke="#000"
+                marker-start="url(#a)" marker-end="url(#a)"/></svg>""")
+        page = document["pages"][0]
+        lines = [c["content"] for c in page["content"]["content"]["connections"]]
+        endings = [(line["start_ending"], line["end_ending"]) for line in lines]
+        self.assertEqual(endings, [("filledArrow", "none"), ("none", "filledArrow")])
+        self.assertEqual([core(e)["kind"] for e in page["elements"]], ["path"])  # the bare middle
+
+    def test_an_arrowhead_the_page_turns_away_gets_a_note(self) -> None:
+        """SimpleDiagrams' arrows always point away from the line, so any other is noted."""
+        forward, back = 'points="0 0,8 3,0 6"', 'points="8 0,0 3,8 6"'
+        across, down = 'x1="10" y1="9" x2="90" y2="9"', 'x1="50" y1="10" x2="50" y2="90"'
+        turned = {"arrowhead not pointing away from its line drawn pointing away": 1}
+        for orient, shape, end, line, notes in (
+            ("auto", forward, "marker-end", across, {}),
+            ("auto", forward, "marker-start", across, turned),
+            ("auto", back, "marker-start", across, {}),
+            ("auto", back, "marker-end", across, turned),
+            ("auto-start-reverse", forward, "marker-start", across, {}),
+            ("auto-start-reverse", forward, "marker-end", down, {}),
+            ("0", forward, "marker-end", across, {}),  # already points the way the line runs
+            ("0", forward, "marker-end", down, turned),
+            ("90deg", forward, "marker-end", down, {}),
+            ("0.5turn", back, "marker-end", across, {}),
+        ):  # fmt: skip
+            with self.subTest(orient=orient, shape=shape, end=end, line=line):
+                _, skipped = self.export(f"""<svg viewBox="0 0 400 300">
+                  <defs><marker id="a" orient="{orient}"><polygon {shape}/></marker></defs>
+                  <line {line} stroke="#000" {end}="url(#a)"/></svg>""")
+                self.assertEqual(skipped, notes)
+
+    def test_styling_this_export_cannot_read_gets_a_note(self) -> None:
+        """Each row draws differently in the browser; without a note the user cannot know."""
+        geometry = {"sizes, places and corners set in CSS ignored; the SVG's own are used": 1}
+        html_box = {"HTML box background, border or shadow left out; its text is kept": 1}
+        colour = {"see-through or unknown icon colour stored as solid": 1}
+        square = '<path d="M0 0H10V10Z" fill="currentColor"/>'
+        icon = f'<defs><symbol id="s" viewBox="0 0 10 10">{square}</symbol></defs>'
+        card = '<foreignObject width="100" height="50"><div style="{}">Card</div></foreignObject>'
+        for css, svg, notes in (
+            (".n { rx: 10px }", '<rect class="n" width="90" height="40" fill="#fff" stroke="#000"/>', geometry),
+            ("", '<rect style="height: 20px" width="90" height="40" fill="#fff" stroke="#000"/>', geometry),
+            (".i { width: 16px }", f'{icon}<use class="i" href="#s"/>', geometry),
+            (".p { r: 2px }", '<svg width="20" height="20" viewBox="0 0 10 10"><circle class="p" r="3"/></svg>',
+             geometry),
+            ("svg { width: 100%; height: auto }", '<rect width="90" height="40" fill="#fff" stroke="#000"/>', {}),
+            ("", card.format("background: #eef"), html_box),
+            (".b { border: 1px solid #33f }", card.format("").replace("<div", '<div class="b"'), html_box),
+            ("", card.format("border: none; background: transparent"), {}),
+            ("", card.format("border-radius: 8px; border-collapse: collapse; outline-offset: 2px"), {}),
+            ("", card.format("border: 1px solid transparent; outline: 0 none"), {}),
+            ("", card.format("background: rgba(0, 0, 0, 0); border: 0"), {}),
+            (".d { display: none }", card.format("").replace("Card", '<p class="d" style="background: red">x</p>'),
+             {}),
+            ("", f'{icon}<use href="#s" width="20" height="20" style="color: rgba(255,0,0,0.3)"/>', colour),
+            ("", f'{icon}<use href="#s" width="20" height="20" color="hsl(0 50% 50%)"/>', colour),
+            ("", f'{icon}<use href="#s" width="20" height="20" color="#ff0000"/>', {}),
+            ("", icon.replace("currentColor", "#123456") + '<use href="#s" color="rgba(0,0,0,.87)"/>', {}),
+            (".n { rx: 8px }", '<rect class="n" rx="8" width="90" height="40" fill="#fff" stroke="#000"/>', {}),
+            ("", '<text y="20"><tspan>A<tspan x="10" dy="1em">B</tspan></tspan></text>',
+             {"a line placed inside a span joins that span's line": 1}),
+            ("", '<text x="10" y="20">E = mc<tspan dy="-5">2</tspan></text>',
+             {"words moved up or down in a line start a new line": 1}),
+            ("", '<text x="10" y="20">One<tspan x="10" dy="20">Two</tspan></text>', {}),
+        ):  # fmt: skip
+            with self.subTest(css=css, svg=svg):
+                _, skipped = self.export(
+                    f'<svg viewBox="0 0 400 300"><style>{css}</style>{svg}</svg>'
+                )
+                self.assertEqual(skipped, notes)
+
     def test_a_mirrored_icon_is_stored_flipped_not_turned(self) -> None:
         """The format mirrors artwork in its frame and then turns it; the corners must land where
         the browser draws them, or an asymmetric icon opens facing the wrong way."""
-        icon = '<defs><symbol id="s" viewBox="0 0 10 10"><path d="M0 0H10L0 10Z"/></symbol></defs>'
+        icon = '<defs><symbol id="s" viewBox="0 0 40 30"><path d="M0 0H40L0 30Z"/></symbol></defs>'
         for transform, flips in (
             ("translate(100 0) scale(-1 1)", (True, False)),
             ("translate(0 100) scale(1 -1)", (False, True)),
