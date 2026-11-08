@@ -775,8 +775,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              'fill="#ff0000"', " style="),
             (":root { --c: #123456 }", '<path d="M1 1H9" style="stroke:var(--c);stroke-linecap:round"/>',
              'stroke="#123456" stroke-linecap="round"', " style="),
+            (".a { vector-effect: non-scaling-stroke }", line, 'vector-effect="non-scaling-stroke"', " style="),
             (":root { --o: stroke }", '<path d="M1 1H9" style="paint-order: var(--o)"/>',
-             'style="paint-order: stroke"', "var("),
+             'paint-order="stroke"', "var("),
             ("", '<text style="font: italic 14pt Georgia">Hi</text>', 'font-size="14pt" font-style="italic"', " style="),
             ("", '<path d="M1 1H9" style="clip-path:url(#c);marker-end:url(#m)"/>',
              'clip-path="url(#c)" marker-end="url(#m)"', " style="),
@@ -998,6 +999,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", gradient.format("") + '<pattern id="p" width="2" height="2"><rect fill="url(#g)" width="1" height="1"/></pattern>',
              f'<symbol id="i" viewBox="0 0 10 10" fill="url(#p)">{square}</symbol>',
              ("<pattern", "<linearGradient")),
+            ("", gradient.format(""), f'<symbol id="i" viewBox="0 0 10 10" fill="URL(#g)">{square}</symbol>',
+             ("<linearGradient",)),
             ("", '<marker id="m" orient="auto"><path d="M0 0L8 3L0 6Z"/></marker>',
              '<symbol id="i" viewBox="0 0 10 10"><path d="M1 5H9" stroke="#000" marker-end="url(#m)"/></symbol>',
              ("<marker",)),
@@ -1246,6 +1249,16 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                   <symbol id="s" {symbol}>{circle}</symbol></defs><use href="#s" {placed}/></svg>""")
                 [artwork] = document["pages"][0]["elements"]
                 self.assertEqual(core(artwork)["frame"], frame)
+        icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" style="transform: translate(2px, 0)">'
+                         '<rect width="5" height="5"/></symbol></defs><use href="#i" width="20" height="20"/>')  # fmt: skip
+        self.assertIn('transform="translate(2', icon)
+        result = self.mod.export_document('<svg viewBox="0 0 400 10000"><defs><g id="c"><path d="M0 0 Q100 10000'
+                                          ' 300 3000" fill="none" stroke="#000"/></g></defs><use href="#c"/></svg>',
+                                          Path("case.html"))  # fmt: skip
+        view = re.search(r'viewBox="([^"]+)"', result.assets[0].data.decode())
+        assert view is not None
+        _, top, _, height = (float(n) for n in view.group(1).split())
+        self.assertGreater(top + height, 5882.4)  # the curve's peak, which samples missed
         document, _ = self.export(f"""<svg viewBox="0 0 400 300">
           <svg x="25%" y="10%" width="40" height="40" viewBox="0 0 24 24">{circle}</svg></svg>""")
         [artwork] = document["pages"][0]["elements"]
@@ -1369,6 +1382,17 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", ('<g opacity="0.5"><rect width="40" height="40" fill="red"/><rect x="20" y="20" width="40" height="40"'
                   ' fill="red"/></g>'), "see-through groups drawn shape by shape; where shapes overlap they look darker"),
             ("", '<text x="10" y="30" transform="skewX(30)">Skew</text>', "text skewed, stretched or mirrored drawn plainly"),
+            ("", '<rect width="40" height="40" style="translate: 50px 0"/>',
+             "CSS transform this export cannot read may misplace a shape"),
+            ("", ('<defs><path id="p" d="M0 0H100"/></defs><text y="30"><tspan><textPath href="#p">On</textPath>'
+                  "</tspan></text>"), "<textPath> left out"),
+            ("", '<foreignObject width="120" height="80"><div style="padding: 20px">Hi</div></foreignObject>',
+             "HTML padding not read; the text sits at its box's edge"),
+            ("", '<defs><g id="i"><rect x="50%" y="50%" width="10%" height="10%"/></g></defs><use href="#i"/>',
+             "icon SimpleDiagrams cannot store safely left out"),
+            ("", ('<defs><linearGradient id="g"><stop stop-color="red"/></linearGradient><symbol id="s" viewBox="0 0 10 10">'
+                  '<linearGradient id="g"><stop stop-color="blue"/></linearGradient><rect width="9" height="9" fill="url(#g)"/>'
+                  '</symbol></defs><use href="#s" width="20" height="20"/>'), "icon SimpleDiagrams cannot store safely left out"),
         ):  # fmt: skip
             with self.subTest(css=css, svg=svg[:60]):
                 _, skipped = self.export(
@@ -1384,6 +1408,13 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
 
         def strings(document: Record) -> list[str]:
             return [core(e)["text_content"]["string"] for e in document["pages"][0]["elements"]]
+
+        def sizes(document: Record) -> list[float]:
+            elements = document["pages"][0]["elements"]
+            return [core(e)["text_content"]["base_style"]["font_size"] for e in elements]
+
+        def fills(document: Record) -> list[str]:
+            return [core(e)["style"]["fill_hex"] for e in document["pages"][0]["elements"]]
 
         def endings(document: Record) -> list[tuple[str, int]]:
             page = document["pages"][0]["content"]["content"]
@@ -1416,6 +1447,15 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              ' marker-end="url(#a)"/>', endings, []),
             (arrow.format("") + '<path d="M1 1h.001" stroke="#000" marker-end="url(#a)"/>', endings,
              [("filledArrow", 2)]),
+            ('<text y="80" style="font-size: 10px; font: 20px serif; font-size: 30px">Hi</text>', sizes, [30]),
+            ('<style>.n { fill: blue } @layer theme { .n { fill: red } }</style><rect class="n" width="9" height="9"/>',
+             fills, ["#0000FF"]),
+            (('<style>:root { --a: red; --b: var(--a) } .g { --a: blue } rect { fill: var(--b) }</style>'
+              '<g class="g"><rect width="9" height="9"/></g>'), fills, ["#FF0000"]),
+            ('<text y="30"><tspan><title>Tooltip</title>Visible</tspan></text>', strings, ["Visible"]),
+            (('<defs><svg id="i" width="20" height="20" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>'
+              '</defs><use href="#i" x="50" y="60" width="100" height="100"/>'), frames,
+             [{"x": 50, "y": 60, "width": 100, "height": 100}]),
         ):  # fmt: skip
             with self.subTest(svg=svg[:60]):
                 document, _ = self.export(f'<svg viewBox="0 0 400 300">{svg}</svg>')

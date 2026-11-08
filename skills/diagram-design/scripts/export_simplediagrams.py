@@ -141,12 +141,13 @@ ICON_PAINT = frozenset(
 )  # fmt: skip
 ICON_LINE = frozenset(
     {"stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "fill-rule",
-     "marker-start", "marker-end"}
+     "marker-start", "marker-end", "paint-order", "vector-effect"}
 )  # fmt: skip
 ICON_TEXT = frozenset(
     {"font-family", "font-size", "font-style", "font-weight", "letter-spacing", "text-anchor",
      "text-decoration"}
 )  # fmt: skip
+INDIVIDUAL_TRANSFORMS = frozenset({"translate", "rotate", "scale"})  # CSS-only, never read here
 TRANSFORM_FRAME = frozenset({"transform-origin", "transform-box"})  # an icon with one is left out
 GRADIENT_STOP = frozenset({"stop-color", "stop-opacity"})
 EFFECTS = frozenset({"clip-path", "mask"})  # read only to report them: nothing here clips
@@ -160,7 +161,7 @@ PRESENTATION = (
     | EFFECTS
     | TRANSFORM_FRAME
     | GRADIENT_STOP
-    | {"opacity", "display", "transform", "vector-effect", "filter"}
+    | {"opacity", "display", "transform", "vector-effect", "paint-order", "filter"}
 )
 # Sizes and places CSS may set; this export reads them from attributes only, so it notes them.
 PLACED_BOX = frozenset({"x", "y", "width", "height"})
@@ -248,6 +249,7 @@ class CssRule:
     specificity: tuple[int, int, int]
     order: int
     declarations: Props
+    layered: bool = False  # from an @layer block, below every rule outside one
 
     def applies(self, element: ET.Element, ancestors: Sequence[ET.Element]) -> bool:
         """Whether the rule selects the element, given its ancestors from the root down."""
@@ -275,6 +277,7 @@ def _declarations(body: str) -> Props:
                 name, value = name.strip(), IMPORTANT_RE.sub(IMPORTANT, value.strip())
                 name = name if name.startswith("--") else name.lower()
                 if value.endswith(IMPORTANT) or not out.get(name, "").endswith(IMPORTANT):
+                    out.pop(name, None)  # the cascade reads the last place it was declared
                     out[name] = value
             start = index + 1
     return out
@@ -318,7 +321,9 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
             start = index + 1
             if re.fullmatch(r"@layer(\s[^{]*)?", selectors):  # browsers apply it unconditionally
                 layered, layered_unread = parse_stylesheet(body)
-                rules += [replace(rule, order=len(rules) + rule.order) for rule in layered]
+                rules += [
+                    replace(rule, order=len(rules) + rule.order, layered=True) for rule in layered
+                ]
                 unread += layered_unread
                 continue
             if selectors.startswith("@"):
@@ -340,7 +345,7 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
                 rules.append(CssRule(valid, specificity, len(rules), declarations))
         elif char == ";" and depth == 0:
             start = index + 1  # a statement such as @import
-    return sorted(rules, key=lambda rule: (rule.specificity, rule.order)), unread
+    return sorted(rules, key=lambda rule: (not rule.layered, rule.specificity, rule.order)), unread
 
 
 def _readable_part(selector: str) -> tuple[Compound, ...] | None:
@@ -425,7 +430,7 @@ def computed_properties(
             props.update(expand_font_shorthand(resolve_vars(value, props)))
         elif name in PRESENTATION or name.startswith("--"):
             props[name] = value
-    props = {k: v if k.startswith("--") else resolve_vars(v, props) for k, v in props.items()}
+    props = {k: resolve_vars(v, props) for k, v in props.items()}
     for name, value in list(props.items()):
         keyword = value.strip().lower()
         if keyword == "inherit" or (keyword == "unset" and name in INHERITED):
@@ -1050,7 +1055,7 @@ FORBIDDEN_IN_SVG = frozenset(
 )  # fmt: skip
 UNSAFE_IN_SVG = re.compile(r"javascript:|vbscript:|data:|file:|https?:|\\", re.IGNORECASE)
 LOCAL_REFERENCE = re.compile(r"#[A-Za-z0-9_.:-]{1,256}")
-LOCAL_URL = re.compile(r"url\(\s*['\"]?#([^'\")\s]+)")
+LOCAL_URL = re.compile(r"url\(\s*['\"]?#([^'\")\s]+)", re.IGNORECASE)
 SVG_TRANSFORM = re.compile(
     r"[\s,]*(?:(?:matrix|translate|scale|rotate|skewX|skewY)\s*\([-+.\deE\s,]*\)[\s,]*)*"
 )
@@ -1236,6 +1241,7 @@ class IconCopy(NamedTuple):
 
     parts: list[ET.Element]
     shared: list[ET.Element]
+    clashes: bool = False  # holds an id the page gives to another element first
 
 
 @dataclass(frozen=True, slots=True)
@@ -1612,7 +1618,9 @@ class Reader:
         return any(wanted(name, value) for layer in layers for name, value in layer.items())
 
     def _note_css_geometry(self, element: ET.Element, ancestors: list[ET.Element]) -> None:
-        """Note sizes and places set in CSS, which this export reads from attributes only."""
+        """Note sizes, places and transforms only CSS can set, which this export does not read."""
+        if self._declares(element, ancestors, _moves_alone):
+            self._skip("CSS transform this export cannot read may misplace a shape")
         geometry = GEOMETRY.get(_local(element), frozenset())
 
         def differs(name: str, value: str) -> bool:
@@ -2120,9 +2128,12 @@ class Reader:
         pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props, before), style)]
         path = [*ancestors, node]
         for child in node:
+            if _local(child) == "textPath":
+                self._skip("<textPath> left out")
             ahead = before + "".join(words for words, _ in pieces)
             child_props = computed_properties(child, props, self.rules, path)
-            inner = self._text_pieces(child, child_props, path, ahead)
+            drawn = _local(child) not in NOT_DRAWN and _local(child) != "textPath"
+            inner = self._text_pieces(child, child_props, path, ahead) if drawn else []
             placed = any(child.get(key) is not None for key in LINE_PLACEMENT)
             if placed and any(shown is not None and words.strip() for words, shown in inner):
                 self._skip("a line placed inside a span joins that span's line")
@@ -2151,6 +2162,8 @@ class Reader:
             self._skip("HTML box background, border or shadow left out; its text is kept")
         if self._html_declares(element, props, list(self.ancestors), _moves):
             self._skip("CSS transform this export cannot read may misplace a shape")
+        if self._html_declares(element, props, list(self.ancestors), _pads):
+            self._skip("HTML padding not read; the text sits at its box's edge")
         # The text takes the style of the innermost single wrapper, usually one <div>; words
         # beside a wrapper make the text rich, and it keeps the style around them.
         holder, ancestors = element, list(self.ancestors)
@@ -2246,7 +2259,7 @@ class Reader:
         colour = colour_hex(parsed)[:7]
         context = props | {"color": colour}  # what the icon's markup inherits on the page
         ancestors = [self.root]
-        if _local(target) == "symbol":
+        if _local(target) in ("symbol", "svg"):
             context = computed_properties(target, context, self.rules, ancestors)
             self._note_undrawn(context)  # the symbol's own effects, which no copy keeps
             ancestors = [self.root, target]
@@ -2255,10 +2268,12 @@ class Reader:
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
         x, y = self._place(element)
         view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
-        if _local(target) == "symbol" and len(view) == 4 and view[2] > 0 and view[3] > 0:
-            # A symbol draws its view box into the placement's width and height.
+        if _local(target) in ("symbol", "svg") and len(view) == 4 and view[2] > 0 and view[3] > 0:
+            # A symbol or an svg draws its view box into the placement's width and height.
             symbol_paint = PRESENTATION - UNDRAWN.keys() - {"opacity"}  # opacity is in ``paint``
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}
+            if context.get("transform", "none").strip() != "none":  # set by a stylesheet too
+                painted["transform"] = _attribute_transform(context["transform"])
             # Unsized, it takes the symbol's own size, or else the whole drawing's.
             width = element.get("width") or target.get("width") or "100%"
             height = element.get("height") or target.get("height") or "100%"
@@ -2275,6 +2290,9 @@ class Reader:
                 return
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
             icon = self._icon_copy(parts, context, paint, ancestors)
+            if _sized_by_page(icon.parts):  # percentages would read against the icon's own box
+                self._skip("icon SimpleDiagrams cannot store safely left out")
+                return
             if not solid and _uses_current_colour(icon.parts, {}):
                 self._skip("see-through or unknown icon colour stored as solid")
             self._add_icon(extent, icon, paint, local, matrix)
@@ -2341,7 +2359,7 @@ class Reader:
         """Add an icon as artwork, or note that it could not be stored; all hidden adds nothing."""
         if all(_local(item) in ICON_STRUCTURE for part in icon.parts for item in part.iter()):
             return
-        if (asset := svg_asset(view, icon.parts, paint, icon.shared)) is None:
+        if icon.clashes or (asset := svg_asset(view, icon.parts, paint, icon.shared)) is None:
             self._skip("icon SimpleDiagrams cannot store safely left out")
         else:
             self._add_artwork(local, matrix, asset)
@@ -2370,7 +2388,10 @@ class Reader:
                 shared.append(copy)
                 held |= _ids([copy])
                 wanted |= _references([copy], {}) - held
-        return IconCopy(copies, shared)
+        # An id the page resolves to another element would make the copy paint that one's twin.
+        owned = (item for part in parts for item in part.iter() if item.get("id"))
+        clashes = any(self.by_id.get(item.get("id", "")) is not item for item in owned)
+        return IconCopy(copies, shared, clashes)
 
     def _context_of(self, element: ET.Element) -> tuple[Props, list[ET.Element]]:
         """What an element inherits where it sits on the page, and its ancestors, root first."""
@@ -2552,7 +2573,17 @@ def _html_look(props: Props) -> tuple[object, ...]:
 
 def _moves(name: str, value: str) -> bool:
     """Whether an HTML declaration moves its box from where the layout puts it."""
-    return name in ("transform", "translate", "rotate", "scale") and value.strip() != "none"
+    return (name == "transform" or name in INDIVIDUAL_TRANSFORMS) and value.strip() != "none"
+
+
+def _pads(name: str, value: str) -> bool:
+    """Whether an HTML declaration pads its box's content away from the edge."""
+    return name.startswith("padding") and length(value.removesuffix(IMPORTANT)) != 0
+
+
+def _moves_alone(name: str, value: str) -> bool:
+    """Whether a declaration moves an SVG element with a property only CSS has."""
+    return name in INDIVIDUAL_TRANSFORMS and value.strip() != "none"
 
 
 def _stacks(name: str, value: str) -> bool:
@@ -2624,10 +2655,8 @@ def _hidden_before_shown(worded: Sequence[tuple[str, Props | None]]) -> bool:
 
 def _drawn_points(item: Drawn) -> list[Point]:
     """Points bounding what an item draws, before the width of its lines."""
-    if isinstance(item, Box):
-        return list(item.outline)
-    if isinstance(item, Stroke):
-        return item.subpath.flattened()
+    if isinstance(item, (Box, Stroke)):  # the hull of its control points holds every curve
+        return [item.subpath.start, *(point for part in item.subpath.segments for point in part)]
     if isinstance(item, Label):
         left, top, right, bottom = item.page_bounds()
         return [(left, top), (right, bottom)]
@@ -2653,6 +2682,14 @@ def _frame_corners(frame: Rect, rotation: float) -> list[Point]:
         (cx + dx * cos - dy * sin, cy + dx * sin + dy * cos)
         for dx, dy in ((-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2))
     ]
+
+
+def _sized_by_page(parts: Sequence[ET.Element]) -> bool:
+    """Whether copied markup gives a size or place as a percentage of its viewport."""
+    sizes = ("x", "y", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1", "x2", "y2")
+    return any(
+        "%" in item.get(name, "") for part in parts for item in part.iter() for name in sizes
+    )
 
 
 def _ids(parts: Sequence[ET.Element]) -> set[str]:
