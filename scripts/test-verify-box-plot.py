@@ -1229,6 +1229,15 @@ def run_cases(h: Harness) -> int:
          [styled('text[data-name="Auth"]{fill-opacity:0}')], 1),
         (".tag{display:none} on a group around the label",
          [styled(".tag{display:none}"), (AUTH_LABEL, '<g class="tag">%s</g>' % AUTH_LABEL)], 1),
+        (".tag{fill-opacity:0} on a group around the label",
+         [styled(".tag{fill-opacity:0}"), (AUTH_LABEL, '<g class="tag">%s</g>' % AUTH_LABEL)], 1),
+        ('fill-opacity="0" on a group around the label',
+         [(AUTH_LABEL, '<g fill-opacity="0">%s</g>' % AUTH_LABEL)], 1),
+        ("g[data-q1]{fill-opacity:0} on every series", [styled("g[data-q1]{fill-opacity:0}")], 5),
+        ("svg{fill-opacity:0} on the page", [styled("svg{fill-opacity:0}")], 5),
+        (".n{display:none} on the label's tspan",
+         [styled(".n{display:none}"),
+          (AUTH_LABEL, AUTH_LABEL.replace(">Auth</text>", '><tspan class="n">Auth</tspan></text>'))], 1),
     ):
         h.expect_findings(
             "a stylesheet rule %s is %d hidden-label finding(s)" % (title, count),
@@ -1237,6 +1246,8 @@ def run_cases(h: Harness) -> int:
     for title, css in (
         ("a label rule that only paints", "text[data-name]{fill:#2d3142}"),
         ("a label rule with a nonzero opacity", "text[data-name]{opacity:0.8}"),
+        ("a hollow box (fill-opacity:0 still draws its stroke)",
+         '[data-role="box"]{fill-opacity:0}'),
     ):
         h.expect_clean("%s passes" % title, shipped_with(styled(css)))
     for title, css in (

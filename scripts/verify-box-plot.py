@@ -57,8 +57,9 @@ Ten invariants:
 8. BOUND LABELS - each series carries exactly one <text data-name> whose
    data-name and printed text both match the series, on the series' row
    and on the label rail left of the value axis. dx/dy, a positioned
-   <tspan>, and a label hidden by an attribute, inline style or <style>
-   rule (on the label or a group inside its series) are refused.
+   <tspan>, and a hidden label are refused: display, visibility, opacity
+   or fill-opacity from an attribute, inline style or <style> rule on the
+   label, its <tspan>, a group around it or the page.
 
 9. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute.
    A `transform` attribute, an inline `style`, or a rule in a <style> block
@@ -1003,7 +1004,6 @@ def parse_series(source: str, findings: list, name: str) -> list:
     groups = groups_of(source)
     # fail closed: no cascade, so a later rule that restores visibility does not clear a hide
     hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)))
-    # Text is drawn by its fill, so fill-opacity 0 hides a label as well.
     label_hide_rules = selector_rules(
         source, lambda css: declares_hidden(css, ("opacity", "fill-opacity")))
     accent_rules = selector_rules(source, lambda css: any(
@@ -1036,6 +1036,17 @@ def parse_series(source: str, findings: list, name: str) -> list:
               if hides(attrs_of(group.group("attrs")), ("opacity",))
               or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
                              around[group.start()], hide_rules)]
+    # A label is drawn by its fill, so fill-opacity 0 on it or anything
+    # around it hides it too, though a box with fill-opacity 0 still draws.
+    text_opacities = ("opacity", "fill-opacity")
+    page_hides_labels = any(hides(attrs, text_opacities)
+                            or css_matches(tag, outer[index][1], outer[:index], label_hide_rules)
+                            for index, (tag, attrs) in enumerate(page))
+    label_hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
+                    for group in groups
+                    if hides(attrs_of(group.group("attrs")), text_opacities)
+                    or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
+                                   around[group.start()], label_hide_rules)]
     svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
@@ -1289,12 +1300,18 @@ def parse_series(source: str, findings: list, name: str) -> list:
                     % (where, attrs["data-name"])
                 )
             at = body_at + text.start()
+            text_chain = chain_at(at) + [("text", element_tokens(tattrs))]
             # A series already reported never drawn takes its label with it.
             if hides(tattrs) or any(
                     hides(attrs_of(tspan.group("attrs")))
                     for tspan in TSPAN_RE.finditer(text.group("body"))) or (
-                    drawn and (inside_span(at, hiding) or css_matches(
-                        "text", element_tokens(tattrs), chain_at(at), label_hide_rules))):
+                    drawn and (
+                        page_hides_labels or inside_span(at, label_hiding)
+                        or css_matches("text", element_tokens(tattrs), chain_at(at),
+                                       label_hide_rules)
+                        or any(css_matches("tspan", element_tokens(attrs_of(tspan.group("attrs"))),
+                                           text_chain, label_hide_rules)
+                               for tspan in TSPAN_RE.finditer(text.group("body"))))):
                 findings.append(
                     "%s: series %r hides its bound label — the name the "
                     "checker reads is not the name a reader sees"
