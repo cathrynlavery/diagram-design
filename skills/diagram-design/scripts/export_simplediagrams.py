@@ -1866,7 +1866,7 @@ class Reader:
         shows = not _is_invisible(props)  # hidden, it draws only the spans that show themselves
         moved = "words after hidden words in a line moved into their place"
         lines: list[tuple[Point, Props, list[str]]] = [
-            (placed(element, size, 0.0, 0.0), props, [element.text or ""] if shows else [])
+            (placed(element, size, 0.0, 0.0), props, [_cased(element.text, props)] if shows else [])
         ]
         # Hidden words keep their room in the browser; here the words after them move into it.
         after_hidden = not shows and bool((element.text or "").strip())
@@ -1906,7 +1906,7 @@ class Reader:
                     self._skip(moved)
                 if tail and not _same_text_style(lines[-1][1], props):
                     self._skip("styled words inside a line take the line's style")
-                lines[-1][2].append(child.tail or "")
+                lines[-1][2].append(_cased(child.tail, props))
             else:
                 after_hidden = after_hidden or bool(tail)
         for anchor, line_props, parts in lines:
@@ -1925,7 +1925,7 @@ class Reader:
         if props.get("display") == "none":
             return []
         style = None if _is_invisible(props) else props
-        pieces: list[tuple[str, Props | None]] = [(node.text or "", style)]
+        pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props), style)]
         path = [*ancestors, node]
         for child in node:
             inner = self._text_pieces(
@@ -1935,7 +1935,7 @@ class Reader:
             if placed and any(shown is not None and words.strip() for words, shown in inner):
                 self._skip("a line placed inside a span joins that span's line")
             pieces += inner
-            pieces.append((child.tail or "", style))
+            pieces.append((_cased(child.tail, props), style))
         return pieces
 
     def _foreign_object(
@@ -2003,7 +2003,7 @@ class Reader:
         A table cell's words are kept apart from its neighbours' by a space.
         """
         shows = not _is_invisible(props)
-        words = [element.text or ""] if shows else []
+        words = [_cased(element.text, props)] if shows else []
         path = [*ancestors, element]
         flex = props.get("display", "").strip() in ("flex", "inline-flex")
         in_row = flex and not self._declares(element, ancestors, _stacks)  # items side by side
@@ -2023,7 +2023,7 @@ class Reader:
                 gap = " " if cell or in_row else LINE_BREAK if line else ""
                 words += [gap, self._html_text(child, child_props, path), gap]
             if shows:
-                words.append(child.tail or "")
+                words.append(_cased(child.tail, props))
         return "".join(words)
 
     def _use(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
@@ -2240,13 +2240,6 @@ class Reader:
         """Add one line of text, styled as the SVG styles it."""
         if not (string := re.sub(r"\s+", " ", raw).strip()):
             return
-        match props.get("text-transform", ""):
-            case "uppercase":
-                string = string.upper()
-            case "lowercase":
-                string = string.lower()
-            case "capitalize":
-                string = re.sub(r"(?<![\w'’])\w", lambda m: m.group(0).upper(), string)
         turn = decompose(matrix)
         size = max(1.0, length(props.get("font-size"), 16.0))
         text_opacity = opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)
@@ -2298,6 +2291,18 @@ def _html_defaults(element: ET.Element, inherited: Props) -> Props:
         size = length(inherited.get("font-size"), 16.0) * HEADING_SIZES[name]
         defaults["font-size"] = f"{size:g}"
     return defaults
+
+
+def _cased(words: str | None, props: Props) -> str:
+    """Words in the case ``text-transform`` gives them; each span may give its own."""
+    match props.get("text-transform", "").strip():
+        case "uppercase":
+            return (words or "").upper()
+        case "lowercase":
+            return (words or "").lower()
+        case "capitalize":
+            return re.sub(r"(?<![\w'’])\w", lambda m: m.group(0).upper(), words or "")
+    return words or ""
 
 
 def _weight(props: Props) -> Literal["regular", "medium", "bold"]:

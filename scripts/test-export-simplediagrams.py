@@ -1251,6 +1251,10 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", card.format('<a href="#docs">Docs</a>'), "Docs", {"color_hex": "#0000EE", "is_underlined": True},
              {}),
             ("", card.format('<div>See <a href="#docs">docs</a></div>'), "See docs", {}, rich),
+            ("", card.format('<div>Use <span style="text-transform: uppercase">api</span><span> now</span></div>'),
+             "Use API now", {}, {}),
+            ("", ('<text y="20" style="text-transform: uppercase">loud <tspan style="text-transform: none">'
+                  "quiet</tspan></text>"), "LOUD quiet", {}, {}),
             ("", card.format('<h1 style="font-size: 1em">T</h1>'), "T", {"font_size": 16, "weight": "bold"},
              {}),
             ("", card.format('<div style="display: flex; flex-direction: column">Auth</div>'), "Auth", {}, {}),
