@@ -6,9 +6,9 @@ fetches, or executes Mermaid, JavaScript, URLs, directives, or label content.
 Every label and directive value is untrusted data. Click targets and styling are
 counted and discarded; retained labels are emitted only as inert text.
 
-Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2, and
-erDiagram. Inputs may be .mmd, .mermaid, or Markdown files containing fenced
-``mermaid`` blocks.
+Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2 (or
+its older stateDiagram header), and erDiagram. Inputs may be .mmd, .mermaid, or
+Markdown files containing fenced ``mermaid`` blocks.
 
 Usage:
     python3 mermaid_extract.py <file> [--diagram N|all] [--json]
@@ -53,7 +53,6 @@ UNSUPPORTED_KINDS = {
     "gantt",
     "journey",
     "classdiagram",
-    "statediagram",
 }
 MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkd"}
 MERMAID_SUFFIXES = {".mmd", ".mermaid"}
@@ -368,7 +367,7 @@ def _kind_and_direction(
             return "flowchart", match.group(2).upper(), position
         if re.match(r"^sequenceDiagram\b", text, re.I):
             return "sequenceDiagram", "LR", position
-        if re.match(r"^stateDiagram-v2\b", text, re.I):
+        if re.match(r"^stateDiagram(?:-v2)?(?![\w-])", text, re.I):
             return "stateDiagram-v2", "TD", position
         if re.match(r"^erDiagram\b", text, re.I):
             return "erDiagram", "TD", position

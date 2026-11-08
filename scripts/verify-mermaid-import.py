@@ -863,6 +863,20 @@ def check_named_composite_states(tmp: Path) -> None:
     ok("named composite states retain aliases, child membership and transitions")
 
 
+def check_older_state_header(tmp: Path) -> None:
+    """Mermaid parses `stateDiagram` and `stateDiagram-v2` with one grammar."""
+    body = 'state "Waiting for work" as Waiting\n[*] --> Waiting\nWaiting --> Done : finish\nDone --> [*]\n'
+    path = tmp / "older-state-header.mmd"
+    path.write_text("stateDiagram\n" + body, encoding="utf-8")
+    older = run_extract([str(path), "--json"])
+    path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+    if older != run_extract([str(path), "--json"]):
+        fail("`stateDiagram` and `stateDiagram-v2` produced different IR")
+    path.write_text("stateDiagram-v3\nA --> B\n", encoding="utf-8")
+    expect_error([str(path)], "not a Mermaid file at line 1")
+    ok("the older stateDiagram header reads the same as stateDiagram-v2")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1596,6 +1610,7 @@ def main() -> int:
         check_markdown_and_grammars(tmp)
         check_state_descriptions(tmp)
         check_named_composite_states(tmp)
+        check_older_state_header(tmp)
         check_selection_before_parse(tmp)
         check_utf8_bom(tmp)
         check_legacy_stdout_encoding(tmp)
