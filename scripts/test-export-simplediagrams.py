@@ -57,6 +57,8 @@ FLOWCHART = """<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
 
 
 RECOLOURED_ENDINGS = "line endings painted another colour take the line's colour"
+STROKE_STYLE = "line caps, joins, dash details and uneven stroke scaling drawn in the SimpleDiagrams line style"
+SEE_THROUGH = "see-through groups and outlined shapes drawn part by part; where parts overlap they look darker"
 
 # A marker drawing an arrowhead; ``{}`` takes the polygon's own attributes.
 ARROW_MARKER = (
@@ -201,6 +203,17 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         )
         return next(element for element in elements if element["text_content"]["string"] == string)
 
+    def test_the_guide_lists_every_note_the_helper_prints(self) -> None:
+        """The guide is the export's contract: a note it does not list, or one it lists that
+        the helper can no longer print, would leave users unable to tell what was lost."""
+        guide = (ROOT / "skills/diagram-design/references/export-simplediagrams.md").read_text()
+        section = guide.split("## Notes it prints", 1)[1].split("\n## ", 1)[0]
+        listed = re.findall(r"^- `([^`]+)`$", section, re.MULTILINE)
+        self.assertEqual(sorted(listed), sorted(note.worded("element") for note in self.mod.Note))
+        source = HELPER.read_text(encoding="utf-8")
+        unused = [note.name for note in self.mod.Note if f"Note.{note.name}" not in source]
+        self.assertEqual(unused, [])  # every kind the guide lists can be printed
+
     def test_every_shipped_example_exports_a_valid_package(self) -> None:
         """End to end: the files the command line writes for every example keep the format."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -229,7 +242,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                     recoloured = r"example-(datalake|high-level|uml-class)(-dark|-full)?"
                     if re.fullmatch(recoloured, source.stem):
                         expected = {"note: " + RECOLOURED_ENDINGS}
-                    self.assertEqual(notes, expected)
+                    # The shared drawing style deliberately normalizes authored stroke details.
+                    # Dedicated cases below verify when this informational note is raised.
+                    self.assertEqual(notes - {"note: " + STROKE_STYLE}, expected)
                     self.assertEqual(
                         sorted(p.name for p in package.iterdir()),
                         ["assets", "document.json", "manifest.json"],
@@ -710,6 +725,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertNotIn("var(", svgs)
         self.assertNotIn('fill=""', svgs)
         self.assertEqual(result.skipped, {})
+        icon = self.icon("", '<svg width="20" height="20" viewBox="0 0 10 10" fill="#00f">'
+                         '<rect width="9" height="9" fill="red" style="fill: initial"/></svg>')  # fmt: skip
+        self.assertIn('fill="black"', icon)  # the reset, not the attribute nor the paint around it
 
     def test_a_nested_svg_is_an_icon_where_the_browser_draws_it(self) -> None:
         """Ignoring a nested view port piles every icon into the page's top-left corner."""
@@ -782,7 +800,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
              'paint-order="stroke"', "var("),
             (":root { --a: var(--b); --b: var(--a) }", '<path d="M1 1H9" style="stroke-width: var(--a, 6)"/>',
              'stroke-width="6"', "var("),  # properties in a loop are invalid, so the fallback applies
-            ("", '<text style="font: italic 14pt Georgia">Hi</text>', 'font-size="14pt" font-style="italic"', " style="),
+            ("", '<text style="font: italic 14pt Georgia">Hi</text>', 'font-size="18.6667" font-style="italic"', " style="),
             ("", '<path d="M1 1H9" style="clip-path:url(#c);marker-end:url(#m)"/>',
              'clip-path="url(#c)" marker-end="url(#m)"', " style="),
             (".s { stop-color: #ff0000 }", '<linearGradient id="g"><stop class="s"/></linearGradient>'
@@ -1419,7 +1437,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                   ' clip-path="url(#c)"><rect width="9" height="9"/></symbol></defs><use href="#s" width="20" height="20"/>'),
              "clipping and masks left out; shapes are drawn unclipped"),
             ("", ('<g opacity="0.5"><rect width="40" height="40" fill="red"/><rect x="20" y="20" width="40" height="40"'
-                  ' fill="red"/></g>'), "see-through groups drawn shape by shape; where shapes overlap they look darker"),
+                  ' fill="red"/></g>'), SEE_THROUGH),
             ("", '<text x="10" y="30" transform="skewX(30)">Skew</text>', "text skewed, stretched or mirrored drawn plainly"),
             ("", '<rect width="40" height="40" style="translate: 50px 0"/>',
              "CSS transform this export cannot read may misplace a shape"),
@@ -1440,6 +1458,18 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", '<defs><symbol id="d"><circle r="20" fill="#c00"/></symbol></defs><use href="#d" x="100" y="100"/>',
              "icon cropped to its box drawn whole"),  # no view box: the placement crops it
             ("", '<svg x="250" y="150" width="60" height="60"><circle r="30"/></svg>', "icon cropped to its box drawn whole"),
+            ("@layer theme { rect { fill: red } }", '<rect width="40" height="40"/>',
+             "stylesheet rules this export cannot read left unapplied"),  # layers are not read
+            (".n { fill: #00f; .m { fill: red } }", '<g class="n"><rect class="m" width="40" height="40"/></g>',
+             "stylesheet rules this export cannot read left unapplied"),  # nor is CSS nesting
+            ("", '<circle cx="50" cy="50" r="20" fill="red" stroke="blue" stroke-width="10" opacity=".5"/>',
+             SEE_THROUGH),  # a browser fades fill and outline together
+            ("", '<path d="M10 10H110V110H10Z M60 60H160V160H60Z" fill="black" fill-opacity=".5"/>',
+             SEE_THROUGH),  # a browser fills the path once
+            ("", '<circle cx="50" cy="50" r="20" fill="#fff" stroke="#000" stroke-width="20" paint-order="stroke"/>',
+             "outlines the page paints beneath their fill drawn on top of it"),
+            ("", '<text y="30" fill="#000" stroke="#fff" stroke-width="3">Halo</text>',
+             "outlines around filled text left out"),
             ("[data-kind] { fill: red }", '<rect data-kind="db" width="40" height="40"/>',
              "stylesheet rules this export cannot read left unapplied"),
             (".hl { color: #d00 }", '<text y="30" fill="currentColor" color="#000">Status: <tspan class="hl">FAILED</tspan></text>',
@@ -1522,6 +1552,174 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                                   ' stroke-width=".25em"/></svg>')  # fmt: skip
         self.assertIn('"line_width": 2', json.dumps(document))
 
+    def test_the_cascade_settles_values_as_the_browser_does(self) -> None:
+        """Each row once took a value no browser would: an impossible selector matched, a
+        loop of custom properties escaped through a fallback inside it, a font reset or a
+        relative weight was read on its own, or a rule's nested block hid its declarations."""
+
+        def fill(body: str) -> str:
+            document, _ = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+            return str(core(document["pages"][0]["elements"][0])["style"]["fill_hex"])
+
+        rect = '<rect class="n" id="a" width="9" height="9"/>'
+        for css, body, expected in (
+            ("#a#b { fill: red }", rect, "#000000"),  # every ID must match
+            (":root { --a: var(--b, red); --b: var(--a) } rect { fill: var(--a, blue) }", rect,
+             "#0000FF"),  # all of a loop is invalid, so only the outer fallback applies
+            (".n { fill: #00aa00; .m { fill: red } }", rect, "#00AA00"),  # the rule's own value
+            ("rect { fill: revert-layer }", f'<g fill="red">{rect}</g>', "#FF0000"),
+        ):  # fmt: skip
+            with self.subTest(css=css):
+                self.assertEqual(fill(f"<style>{css}</style>{body}"), expected)
+        for body, weight in (
+            ('<g font-weight="100"><text y="40" font-weight="bolder">Hi</text></g>', "regular"),  # 400
+            ('<g font-weight="900"><text y="40" font-weight="lighter">Hi</text></g>', "bold"),  # 700
+            ('<g font-weight="bold"><text y="40" style="font-weight: 300; font: inherit">Hi</text></g>', "bold"),
+            ('<text y="40" style="font-weight: bold; font: 600 12px var(--missing)">Hi</text>', "regular"),
+        ):  # fmt: skip
+            with self.subTest(body=body):
+                document, _ = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+                style = core(document["pages"][0]["elements"][0])["text_content"]["base_style"]
+                self.assertEqual(style["weight"], weight)
+
+    def test_stylesheet_reuses_the_svg_parser_for_nested_rules_and_strings(
+        self,
+    ) -> None:
+        """Unsupported layers still warn, even at the SVG parser's supported depth."""
+        rect = '<rect class="mark" width="9" height="9"/>'
+        for css in (
+            "@LAYER theme { rect { fill: red } }",
+            "@layer theme { rect { width: 50px } }",
+            ".mark { .middle { .inner { fill: red } } }",
+            "@layer a {" * 1000 + "rect { fill: red }" + "}" * 1000,
+        ):
+            with self.subTest(css=css[:70]):
+                _, result = self.export(
+                    f'<svg viewBox="0 0 400 300"><style>{css}</style>{rect}</svg>'
+                )
+                self.assertIn("stylesheet rules this export cannot read left unapplied", result)
+        props = self.mod.computed_properties(
+            ET.fromstring("""<text style="font-family: 'var(--name); {literal}'"/>"""),
+            {},
+            (),
+            (),
+        )
+        self.assertEqual(props["font-family"], "'var(--name); {literal}'")
+        props = self.mod.computed_properties(
+            ET.fromstring('<rect style="fill: green; /* comment */ fill: red"/>'), {}, (), ()
+        )
+        self.assertEqual(props["fill"], "red")
+
+    def test_style_resets_and_invalid_font_values_follow_the_cascade(self) -> None:
+        """A plain invalid shorthand is ignored and a winning invalid var() resets it."""
+        for body, property_name, expected in (
+            (
+                '<text style="font: bold 16px serif; font: italic oblique 14px serif"/>',
+                "font-weight",
+                "700",
+            ),
+            (
+                '<text style="font-weight: bold; font: VAR(--font); --font: invalid"/>',
+                "font-weight",
+                None,
+            ),
+            ('<text style="font: 0 serif"/>', "font-size", "0"),
+            ('<rect style="--ink: initial; fill: var(--ink, red)"/>', "fill", "red"),
+            (
+                '<rect style="--ink: var(--missing, unset); fill: VAR(--ink, red)"/>',
+                "fill",
+                "blue",
+            ),
+        ):
+            with self.subTest(body=body):
+                props = self.mod.computed_properties(ET.fromstring(body), {"--ink": "blue"}, (), ())
+                self.assertEqual(props.get(property_name), expected)
+
+    def test_zero_sized_svg_text_does_not_appear_in_the_export(self) -> None:
+        """A valid zero font size hides a label instead of clamping it into visibility."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 400 300"><text y="30" style="font: 0 serif">Hidden</text></svg>'
+        )
+        self.assertEqual(doc["pages"][0]["elements"], [])
+
+    def test_only_cycle_members_are_invalidated_before_dependents_settle(self) -> None:
+        """A long dependency chain can still reach the fallback of a cyclic property."""
+        variables = {"--a": "var(--b)", "--b": "var(--a, red)", "--0": "var(--a, blue)"}
+        variables.update({f"--{i}": f"var(--{i - 1})" for i in range(1, 2000)})
+        values = self.mod.settle_custom_properties({}, variables)
+        self.assertIsNone(values["--a"])
+        self.assertIsNone(values["--b"])
+        self.assertEqual(values["--1999"], "blue")
+
+    def test_paint_order_only_warns_when_visible_stroke_moves_in_front_of_fill(
+        self,
+    ) -> None:
+        """SVG appends omitted paint operations in their default order."""
+        rect = '<rect width="40" height="40" stroke="red" {} />'
+        for body, warned in (
+            (rect.format('paint-order=""'), False),
+            (rect.format('paint-order="markers"'), False),
+            (rect.format('paint-order="markers stroke"'), True),
+            (rect.format('paint-order="stroke" stroke-opacity="0"'), False),
+            (f'<g paint-order="stroke">{rect.format("")}</g>', True),
+            ('<line x2="40" y2="40" stroke="red" paint-order="stroke"/>', False),
+        ):
+            with self.subTest(body=body):
+                _, result = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+                self.assertEqual(
+                    "outlines the page paints beneath their fill drawn on top of it" in result,
+                    warned,
+                )
+
+    def test_unsupported_paint_reports_the_loss(self) -> None:
+        """A repeated translucent subpath and non-grid paper pattern both report loss."""
+        repeated = "M10 10H110V110H10Z"
+        square = '<rect x="20" width="20" height="20" fill="red"/>'
+        for body, note in (
+            (f'<g opacity=".5">{square}{square}</g>', SEE_THROUGH),
+            (f'<path fill-opacity=".5" d="{repeated} {repeated}"/>', SEE_THROUGH),
+            (
+                '<line x2="40" y2="40" stroke="red" stroke-linecap="square"/>',
+                STROKE_STYLE,
+            ),
+            (
+                '<line x2="40" y2="40" stroke="red" stroke-dasharray="5 15" stroke-dashoffset="9"/>',
+                STROKE_STYLE,
+            ),
+            (
+                (
+                    '<defs><pattern id="stripes" width="4" height="4"><rect width="2" height="4"/></pattern></defs>'
+                    '<rect width="100%" height="100%" fill="url(#stripes)"/>'
+                ),
+                "gradient, pattern or unknown colour, left transparent",
+            ),
+        ):
+            with self.subTest(body=body):
+                _, result = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+                self.assertIn(note, result)
+
+    def test_coincident_strokes_remain_when_the_lower_one_shows_through(self) -> None:
+        """A translucent or dashed covering stroke leaves the one underneath visible."""
+        rect = '<rect width="40" height="40" fill="none" stroke-width="4" stroke="{}" {}/>'
+        for upper_style in ('stroke-opacity=".5"', 'stroke-dasharray="5 5"'):
+            with self.subTest(style=upper_style):
+                body = rect.format("blue", "") + rect.format("red", upper_style)
+                doc, _ = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+                self.assertEqual(len(doc["pages"][0]["elements"]), 2)
+
+    def test_outlined_text_uses_effective_stroke_opacity(self) -> None:
+        """A clear fill leaves visible stroke ink, and a clear stroke leaves no label."""
+        body = (
+            '<text y="30" fill="none" stroke="red" stroke-opacity="0">Hidden</text>'
+            '<text y="80" fill-opacity="0" stroke="red" stroke-opacity=".5">Outline</text>'
+        )
+        doc, result = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+        [label] = doc["pages"][0]["elements"]
+        text = core(label)["text_content"]
+        self.assertEqual(text["string"], "Outline")
+        self.assertEqual(text["base_style"]["color_hex"], "#FF000080")
+        self.assertEqual(result, {"outlined text drawn filled with its outline colour": 1})
+
     def test_drawing_reads_as_the_browser_draws_it(self) -> None:
         """Each row once lost, moved, resized or revealed something, with no note at all."""
 
@@ -1571,6 +1769,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
               '<use href="#s" width="20" height="20"/>'), frames, []),
             ('<svg width="0" height="20"><rect width="9" height="9"/></svg>', frames, []),
             ('<foreignObject width="0" height="20"><div>Hidden</div></foreignObject>', strings, []),
+            (('<rect x="10" y="10" width="40" height="40" fill="none" stroke="#00f" stroke-width="8"/>'
+              '<rect x="10" y="10" width="40" height="40" fill="none" stroke="#f00" stroke-width="2"/>'), frames,
+             [{"x": 10, "y": 10, "width": 40, "height": 40}] * 2),  # a narrower outline hides nothing
             # Text.
             ('<text y="30">Shown <tspan fill-opacity="0">Hidden</tspan> too</text>', strings, ["Shown too"]),
             ('<text y="30"><tspan fill-opacity="0">Hidden</tspan> Shown</text>', strings, ["Shown"]),
@@ -1605,12 +1806,6 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ('<text y="80" style="font-size: 10px; font: 20px serif; font-size: 30px">Hi</text>', sizes, [30]),
             ('<style>.n { fill: blue } @layer theme { .n { fill: red } }</style><rect class="n" width="9" height="9"/>',
              fills, ["#0000FF"]),
-            ('<style>@layer a { rect.n { fill: red } } @layer b { .n { fill: blue } }</style><rect class="n" width="9" height="9"/>',
-             fills, ["#0000FF"]),  # the later layer wins, whatever the selectors' strength
-            (('<style>@layer b, a; @layer a { .n { fill: red } } @layer b { .n { fill: blue } }</style>'
-              '<rect class="n" width="9" height="9"/>'), fills, ["#FF0000"]),
-            (('<style>@layer a { .n { fill: red !important } } @layer b { .n { fill: blue !important } }</style>'
-              '<rect class="n" width="9" height="9"/>'), fills, ["#FF0000"]),  # reversed for !important
             (('<style>:root { --a: red; --b: var(--a) } .g { --a: blue } rect { fill: var(--b) }</style>'
               '<g class="g"><rect width="9" height="9"/></g>'), fills, ["#FF0000"]),
             ('<g fill="red"><rect width="9" height="9" fill="var(--missing)"/></g>', fills, ["#FF0000"]),

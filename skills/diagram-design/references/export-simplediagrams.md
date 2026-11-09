@@ -25,8 +25,69 @@ It reads the diagram through `scripts/export_svg.py`, needs only the Python stan
 - **The output already exists:** refuse and ask for another name. An existing document may hold the user's edits, so it is never replaced.
 - **Source is `assets/index.html`:** refuse, as for SVG/PNG — ask which diagram file.
 - **Icons:** icons placed with `<use>` or a nested `<svg>` are stored in the document as vector artwork, together with any gradient, pattern or marker they use from the page's shared `<defs>`. An icon holding anything active, filtered or linked is left out with a note.
-- **Content SimpleDiagrams cannot hold** (images of any kind, which are never fetched or stored; clipping and masks, whose shapes are drawn unclipped; filters such as blur and shadow; blend modes; gradients; text on a path; holes in filled shapes; styled words inside a line, which take the line's style; a wide sideways gap inside a line, which becomes one space; words after hidden words in a line, which move into their place; rich HTML text, kept as plain text; line breaks in HTML text, joined into one line; HTML layout such as flex or grid centring, which is not read, so the text sits at the top; HTML padding, also not read; visible text inside a hidden HTML block, which is left out; an HTML box's background, border or shadow, which is left out while its text is kept; words moved up or down inside a line, which start a line of their own; a line placed inside another span, which joins that span's line; sizes, places and corners set in CSS rather than as attributes, which are not read; a see-through or unknown icon colour, stored solid; an icon cropped to its box, which is drawn whole; CSS transforms it cannot read; stylesheet rules it cannot read; line endings other than an arrow, a circle or a diamond; arrowheads that do not point away from their line, drawn pointing away; line endings painted another colour, which take the line's colour; markers between a line's ends, on closed shapes or on lines with no stroke; rounded corners of a skewed rectangle, drawn square; see-through words inside a line, and see-through groups whose shapes overlap; outlined text, drawn filled; vertical text, drawn horizontally; crossed-out and overlined text, drawn plain; letters turned one by one, drawn upright; letters placed one by one, sideways gaps inside nested spans and runs of preserved spaces; text that is skewed, stretched or mirrored, or sized beyond 1 to 720 points): the helper prints one `note:` line per kind. Pass the notes on to the user.
-- **Styling it does not read:** only selectors built from tags, `*`, classes, IDs and descendants apply, and only hex, `rgb()`, `rgba()`, `currentColor` and the basic colour names are understood. `dominant-baseline` and `letter-spacing` do not move or space a label.
+- **Notes:** the helper prints one `note:` line per kind of content it could not keep exactly. Pass the notes on to the user.
+
+## What it reads
+
+The export reads the drawing as a browser draws it, within this contract:
+
+- **Elements:** `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `path`, `text` and `tspan`, `g`, nested `svg`, `use` with `symbol`, `marker`, and `foreignObject` holding plain HTML text.
+- **Style:** presentation attributes, inline styles and stylesheet rules whose selectors use tags, `*`, classes, IDs and descendants; `!important`; `var()` with fallbacks; and `inherit`, `initial`, `unset` and `revert`. Rules inside `@layer` blocks, nested rules and other selectors (attributes, children, siblings, pseudo-classes) are not applied. Conditional rules (`@media`, `@supports`) are skipped: the export draws the page's default view.
+- **Values:** lengths in `px`, `pt`, `pc`, `in`, `cm`, `mm`, `em`, `rem` (16 px) and percentages; colours as hex, `rgb()`, `rgba()`, `currentColor` and the basic colour names. A font size given with `calc()`, `clamp()` or viewport units is drawn at the surrounding size.
+
+Lines take SimpleDiagrams' own hand-drawn line style, which the format sets for every shape: line caps, joins, miter limits, dash lengths and dash offsets are drawn in that style, a dash pattern becoming dashed or dotted. `dominant-baseline` and `letter-spacing` do not move or space a label.
+
+## Notes it prints
+
+Each is printed once per kind, with a count. `<element>` stands for the element's tag.
+
+- `stylesheet rules this export cannot read left unapplied`
+- `CSS transform this export cannot read may misplace a shape`
+- `sizes, places and corners set in CSS ignored; the SVG's own are used`
+- `gradient, pattern or unknown colour, left transparent`
+- `clipping and masks left out; shapes are drawn unclipped`
+- `filters such as blur and shadow left out`
+- `blend modes left out; shapes are drawn over one another plainly`
+- `see-through groups and outlined shapes drawn part by part; where parts overlap they look darker`
+- `line caps, joins, dash details and uneven stroke scaling drawn in the SimpleDiagrams line style`
+- `outlines the page paints beneath their fill drawn on top of it`
+- `<element> left out`
+- `visible content inside a hidden <element> left out`
+- `<path> with unreadable data left out`
+- `hole in a filled shape, kept as an outline only`
+- `rounded corners of a skewed rectangle drawn square`
+- `line endings painted another colour take the line's colour`
+- `line ending other than an arrow, a circle or a diamond drawn as an arrow`
+- `arrowhead not pointing away from its line drawn pointing away`
+- `markers between a line's ends left out`
+- `markers on a closed shape or a line with no stroke left out`
+- `vertical text drawn horizontally`
+- `crossed-out and overlined text drawn plain`
+- `letters turned one by one drawn upright`
+- `letters placed one by one drawn as one run of text`
+- `runs of spaces in text joined into one`
+- `words after hidden words in a line moved into their place`
+- `words moved up or down in a line start a new line`
+- `a wide sideways gap inside a line became one space`
+- `styled words inside a line take the line's style`
+- `outlined text drawn filled with its outline colour`
+- `outlines around filled text left out`
+- `see-through words inside a line drawn solid`
+- `a line placed inside a span joins that span's line`
+- `sideways gaps inside nested spans left out`
+- `text skewed, stretched or mirrored drawn plainly`
+- `text sizes beyond 1 to 720 points drawn at the nearest`
+- `<foreignObject> holding more than text left out`
+- `line breaks in HTML text joined into one line`
+- `HTML box background, border or shadow left out; its text is kept`
+- `HTML padding not read; the text sits at its box's edge`
+- `rich HTML text kept as plain text`
+- `HTML layout such as flex or grid centring not read; the text sits at the top`
+- `icon SimpleDiagrams cannot store safely left out`
+- `<use> of nothing left out`
+- `see-through or unknown icon colour stored as solid`
+- `icon cropped to its box drawn whole`
+- `skewed or empty picture left out`
 
 ## What this never does
 

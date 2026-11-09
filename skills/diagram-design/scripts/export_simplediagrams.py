@@ -42,8 +42,10 @@ import sys
 import unicodedata
 import uuid
 import xml.etree.ElementTree as ET
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from enum import Enum
+from graphlib import TopologicalSorter
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Literal, NamedTuple, TypeAlias
@@ -133,7 +135,7 @@ INHERITED = frozenset(
      "stroke-linejoin", "stroke-miterlimit", "fill-rule", "fill-opacity", "stroke-opacity",
      "color", "font-family", "font-size", "font-weight", "font-style", "text-anchor",
      "text-align", "text-transform", "text-decoration", "letter-spacing", "visibility",
-     "marker-start", "marker-mid", "marker-end", "writing-mode"}
+     "marker-start", "marker-mid", "marker-end", "paint-order", "writing-mode"}
 )  # fmt: skip
 ICON_PAINT = frozenset(
     {"fill", "stroke", "stroke-width", "stroke-dasharray", "fill-opacity", "stroke-opacity",
@@ -151,18 +153,12 @@ INDIVIDUAL_TRANSFORMS = frozenset({"translate", "rotate", "scale"})  # CSS-only,
 TRANSFORM_FRAME = frozenset({"transform-origin", "transform-box"})  # an icon with one is left out
 GRADIENT_STOP = frozenset({"stop-color", "stop-opacity"})
 EFFECTS = frozenset({"clip-path", "mask"})  # read only to report them: nothing here clips
-UNDRAWN = {
-    "clip-path": "clipping and masks left out; shapes are drawn unclipped",
-    "mask": "clipping and masks left out; shapes are drawn unclipped",
-    "filter": "filters such as blur and shadow left out",
-    "mix-blend-mode": "blend modes left out; shapes are drawn over one another plainly",
-}
 PRESENTATION = (
     INHERITED
     | EFFECTS
     | TRANSFORM_FRAME
     | GRADIENT_STOP
-    | {"opacity", "display", "transform", "vector-effect", "paint-order", "filter", "mix-blend-mode",
+    | {"opacity", "display", "transform", "vector-effect", "filter", "mix-blend-mode",
        "overflow"}
 )  # fmt: skip
 # Sizes and places CSS may set; this export reads them from attributes only, so it notes them.
@@ -176,6 +172,7 @@ GEOMETRY = {
     "svg": PLACED_BOX,
     "foreignObject": PLACED_BOX,
 }
+CSS_GEOMETRY = frozenset().union(*GEOMETRY.values())
 HTML_BOX_PAINT = frozenset(
     {"background", "background-color", "background-image", "border", "border-top", "border-right",
      "border-bottom", "border-left", "border-style", "box-shadow", "outline", "outline-style"}
@@ -184,6 +181,17 @@ NO_HTML_BOX_PAINT = frozenset({"none", "hidden", "transparent", "initial", "unse
 ZERO_WIDTH = re.compile(r"(?:0+\.?0*|\.0+)(?:px|em|rem)?")  # a border or outline drawing nothing
 LINE_PLACEMENT = ("x", "y", "dy")  # a span with one starts a line of its own
 ICON_ATTRIBUTES = ICON_PAINT | ICON_LINE | EFFECTS | TRANSFORM_FRAME | GRADIENT_STOP
+# The starting value of each property a stored icon writes, which an absent one has.
+INITIAL_VALUES = {
+    "fill": "black", "stroke": "none", "stroke-width": "1", "stroke-dasharray": "none",
+    "fill-opacity": "1", "stroke-opacity": "1", "opacity": "1", "color": "black",
+    "stroke-dashoffset": "0", "stroke-linecap": "butt", "stroke-linejoin": "miter",
+    "stroke-miterlimit": "4", "fill-rule": "nonzero", "marker-start": "none",
+    "marker-end": "none", "paint-order": "normal", "vector-effect": "none", "clip-path": "none",
+    "mask": "none", "stop-color": "black", "stop-opacity": "1", "font-size": "16",
+    "font-family": "serif", "font-style": "normal", "font-weight": "400", "letter-spacing": "normal",
+    "text-anchor": "start", "text-decoration": "none",
+}  # fmt: skip
 ICON_HANDLED = ICON_ATTRIBUTES | ICON_TEXT | {"display", "visibility", "transform"}
 ICON_DROPPED_ATTRIBUTES = frozenset({"class", "style", "display", "visibility"})
 TEXT_STYLE = ("fill", "font-family", "font-size", "font-style", "font-weight", "text-decoration")
@@ -229,6 +237,76 @@ Record: TypeAlias = dict[str, Any]  # a JSON object as written
 TRANSPARENT = "#00000000"
 
 
+class Note(str, Enum):
+    """Every kind of content SimpleDiagrams cannot hold exactly, worded once.
+
+    The helper prints one ``note:`` line per kind it meets, and the guide lists every
+    kind in the same words, so the two cannot drift apart (a test compares them).
+    ``{element}`` stands for the tag a note is about.
+    """
+
+    STYLESHEET_UNREAD = "stylesheet rules this export cannot read left unapplied"
+    CSS_TRANSFORM = "CSS transform this export cannot read may misplace a shape"
+    CSS_GEOMETRY = "sizes, places and corners set in CSS ignored; the SVG's own are used"
+    UNKNOWN_PAINT = "gradient, pattern or unknown colour, left transparent"
+    CLIPPED = "clipping and masks left out; shapes are drawn unclipped"
+    FILTERED = "filters such as blur and shadow left out"
+    BLENDED = "blend modes left out; shapes are drawn over one another plainly"
+    SEE_THROUGH_OVERLAP = "see-through groups and outlined shapes drawn part by part; where parts overlap they look darker"
+    STROKE_STYLE = "line caps, joins, dash details and uneven stroke scaling drawn in the SimpleDiagrams line style"
+    PAINT_ORDER = "outlines the page paints beneath their fill drawn on top of it"
+    ELEMENT_LEFT_OUT = "<{element}> left out"
+    HIDDEN_CONTENT = "visible content inside a hidden <{element}> left out"
+    UNREADABLE_PATH = "<path> with unreadable data left out"
+    HOLE = "hole in a filled shape, kept as an outline only"
+    SKEWED_CORNERS = "rounded corners of a skewed rectangle drawn square"
+    ENDING_RECOLOURED = "line endings painted another colour take the line's colour"
+    ENDING_SHAPE = "line ending other than an arrow, a circle or a diamond drawn as an arrow"
+    ENDING_DIRECTION = "arrowhead not pointing away from its line drawn pointing away"
+    MID_MARKERS = "markers between a line's ends left out"
+    MARKERS_UNDRAWN = "markers on a closed shape or a line with no stroke left out"
+    VERTICAL_TEXT = "vertical text drawn horizontally"
+    CROSSED_TEXT = "crossed-out and overlined text drawn plain"
+    TURNED_LETTERS = "letters turned one by one drawn upright"
+    PLACED_LETTERS = "letters placed one by one drawn as one run of text"
+    PRESERVED_SPACES = "runs of spaces in text joined into one"
+    MOVED_WORDS = "words after hidden words in a line moved into their place"
+    LINE_SHIFT = "words moved up or down in a line start a new line"
+    WIDE_GAP = "a wide sideways gap inside a line became one space"
+    STYLED_WORDS = "styled words inside a line take the line's style"
+    OUTLINED_TEXT = "outlined text drawn filled with its outline colour"
+    TEXT_OUTLINE = "outlines around filled text left out"
+    SEE_THROUGH_WORDS = "see-through words inside a line drawn solid"
+    NESTED_LINE = "a line placed inside a span joins that span's line"
+    NESTED_GAP = "sideways gaps inside nested spans left out"
+    TEXT_DISTORTED = "text skewed, stretched or mirrored drawn plainly"
+    TEXT_SIZE = "text sizes beyond 1 to 720 points drawn at the nearest"
+    FOREIGN_CONTENT = "<foreignObject> holding more than text left out"
+    HTML_BREAKS = "line breaks in HTML text joined into one line"
+    HTML_BOX = "HTML box background, border or shadow left out; its text is kept"
+    HTML_PADDING = "HTML padding not read; the text sits at its box's edge"
+    RICH_HTML = "rich HTML text kept as plain text"
+    HTML_LAYOUT = "HTML layout such as flex or grid centring not read; the text sits at the top"
+    ICON_UNSAFE = "icon SimpleDiagrams cannot store safely left out"
+    USE_OF_NOTHING = "<use> of nothing left out"
+    ICON_COLOUR = "see-through or unknown icon colour stored as solid"
+    ICON_CROPPED = "icon cropped to its box drawn whole"
+    PICTURE_SKEWED = "skewed or empty picture left out"
+
+    def worded(self, element: str = "") -> str:
+        """The note as printed, naming ``element`` where it speaks of one."""
+        return self.value.format(element=element)
+
+
+# The effect each undrawn property asks for, and the note that reports its loss.
+UNDRAWN_NOTES = {
+    "clip-path": Note.CLIPPED,
+    "mask": Note.CLIPPED,
+    "filter": Note.FILTERED,
+    "mix-blend-mode": Note.BLENDED,
+}
+
+
 # --------------------------------------------------------------------------
 # Styles: presentation attributes, the carried stylesheet, inline style
 # --------------------------------------------------------------------------
@@ -243,17 +321,14 @@ class Compound(NamedTuple):
     attributes: frozenset[str] = frozenset()  # only where an unreadable selector is noted
 
     def matches(self, element: ET.Element) -> bool:
-        """Whether the element has this tag, these IDs, classes and attributes."""
+        """Whether the element has this tag, every one of these IDs, classes and attributes."""
         if self.tag is not None and _local(element) != self.tag:
             return False
-        if self.ids and element.get("id") not in self.ids:
+        if any(element.get("id") != name for name in self.ids):
             return False
         if any(element.get(name) is None for name in self.attributes):
             return False
         return self.classes <= set(element.get("class", "").split())
-
-
-UNLAYERED = sys.maxsize  # the cascade place of a rule outside every @layer
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,7 +339,6 @@ class CssRule:
     specificity: tuple[int, int, int]
     order: int
     declarations: Props
-    layer: int = UNLAYERED  # an @layer's place in order of appearance; outside one, above all
 
     def applies(self, element: ET.Element, ancestors: Sequence[ET.Element]) -> bool:
         """Whether the rule selects the element, given its ancestors from the root down."""
@@ -283,18 +357,20 @@ def _declarations(body: str) -> Props:
     A value keeps a normalised ``!important`` ending for the cascade to act on.
     """
     out: Props = {}
-    depth, start = 0, 0
-    for index, char in enumerate(body + ";"):
-        depth += (char == "(") - (char == ")")
-        if char == ";" and depth <= 0:
-            name, colon, value = body[start:index].partition(":")
-            if colon:
-                name, value = name.strip(), IMPORTANT_RE.sub(IMPORTANT, value.strip())
-                name = name if name.startswith("--") else name.lower()
-                if value.endswith(IMPORTANT) or not out.get(name, "").endswith(IMPORTANT):
-                    out.pop(name, None)  # the cascade reads the last place it was declared
-                    out[name] = value
-            start = index + 1
+    for declaration in export_svg._css_segments(export_svg.strip_css_comments(body), ";"):
+        name, colon, value = declaration.partition(":")
+        if not colon:
+            continue
+        name, value = name.strip(), IMPORTANT_RE.sub(IMPORTANT, value.strip())
+        name = name if name.startswith("--") else name.lower()
+        bare = value.removesuffix(IMPORTANT)
+        if not bare and not name.startswith("--"):
+            continue
+        if name == "font" and not _var_calls(bare) and expand_font_shorthand(bare) is None:
+            continue  # a syntactically invalid shorthand never enters the cascade
+        if value.endswith(IMPORTANT) or not out.get(name, "").endswith(IMPORTANT):
+            out.pop(name, None)  # the cascade reads the last place it was declared
+            out[name] = value
     return out
 
 
@@ -312,69 +388,93 @@ def _compound(text: str) -> Compound | None:
 
 
 def parse_stylesheet(css: str, scope: str = "") -> tuple[list[CssRule], list[CssRule]]:
-    """Read the plain top-level rules and the rules of unconditional ``@layer`` blocks.
+    """The rules this export applies, in cascade order, and those it cannot apply.
+
+    Applied: rules whose selectors are built from tags, ``*``, classes and IDs joined by
+    descendant combinators. Every other rule that sets a presentation property, including
+    one inside an ``@layer`` block or nested in another rule, is returned unapplied, with
+    the parts it cannot test dropped, so the export notes it wherever it may apply.
+    Conditional groups (``@media``, ``@supports``) and ``@keyframes`` are skipped: the export
+    draws the page's default view, as the guide states.
 
     ``scope`` is the root's ID, which ``export_svg`` puts in front of each page selector
     other than an ID one; it is left out of specificity, so ``#start`` still beats
     ``#scope rect`` as it beat ``rect`` on the page. It is empty when the page's own rules
     name the root by ID, as those read just like the scoped ones.
-
-    Only descendant selectors built from tags, classes and IDs are understood. Another
-    selector (child, sibling, attribute, structural pseudo-class) that sets paint or type
-    is not applied: it is returned with those parts dropped, so the export can note the loss
-    where what is left of it still selects something.
-    Conditional groups such as dark-mode queries and interactive states are skipped.
     """
-    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    css = export_svg.strip_css_comments(css)
     rules: list[CssRule] = []
     unread: list[CssRule] = []
-    layers: dict[str, int] = {}  # each @layer's place, in order of first appearance
-    depth, start, opening = 0, 0, 0
-    for index, char in enumerate(css):
-        if char == "{":
-            opening = index if depth == 0 else opening
-            depth += 1
-        elif char == "}" and depth:
-            depth -= 1
-            if depth:
+    root = Compound(None, frozenset({scope}), frozenset())
+
+    def set_aside(selector: str) -> None:
+        """Keep a rule this export cannot apply, if it sets anything drawn."""
+        loose = _readable_part(selector)
+        if loose:
+            unread.append(CssRule(loose, (0, 0, 0), len(unread), {}))
+
+    pending = [(rule, False) for rule in reversed(export_svg._css_rule_tree(css))]
+    while pending:
+        rule, layered = pending.pop()
+        prelude = rule.selector
+        if rule.statement:
+            continue
+        if re.match(r"@layer\b", prelude, re.IGNORECASE):
+            pending.extend((child, True) for child in reversed(rule.children))
+            continue
+        if prelude.startswith("@"):
+            continue
+        declarations = _rule_declarations(rule)
+        nested_paint = False
+        descendants = list(rule.children)
+        while descendants and not nested_paint:
+            child = descendants.pop()
+            if not child.statement and not child.selector.startswith("@"):
+                nested_paint = _affects_drawing(_rule_declarations(child))
+                descendants.extend(child.children)
+        for selector in export_svg.selector_list_parts(prelude):
+            if nested_paint:
+                set_aside(selector)  # a nested rule may paint a descendant
+            if layered:
+                if _affects_drawing(declarations):
+                    set_aside(selector)
                 continue
-            selectors, body = css[start:opening].strip(), css[opening + 1 : index]
-            start = index + 1
-            if re.fullmatch(r"@layer(\s[^{]*)?", selectors):  # browsers apply it unconditionally
-                name = selectors.removeprefix("@layer").strip() or f"anonymous {len(layers)}"
-                rank = layers.setdefault(name, len(layers))
-                # Nested layers share this one's place.
-                layered, layered_unread = parse_stylesheet(body, scope)
-                rules += [
-                    replace(rule, order=len(rules) + rule.order, layer=rank) for rule in layered
-                ]
-                unread += layered_unread
+            compounds = [_compound(part) for part in selector.split()]
+            valid = tuple(c for c in compounds if c is not None)
+            if not valid or len(valid) != len(compounds):
+                if _affects_drawing(declarations):
+                    set_aside(selector)
                 continue
-            if selectors.startswith("@"):
-                continue
-            declarations = _declarations(body)
-            for selector in export_svg.selector_list_parts(selectors):
-                compounds = [_compound(part) for part in selector.split()]
-                valid = tuple(c for c in compounds if c is not None)
-                if not valid or len(valid) != len(compounds):
-                    loose = _readable_part(selector)
-                    if loose and PRESENTATION & declarations.keys():
-                        unread.append(CssRule(loose, (0, 0, 0), len(unread), declarations))
-                    continue
-                root = Compound(None, frozenset({scope}), frozenset())
-                scoped = len(valid) > 1 and valid[0] == root
-                specificity = (
-                    sum(len(c.ids) for c in valid) - scoped,
-                    sum(len(c.classes) for c in valid),
-                    sum(c.tag is not None for c in valid),
-                )
-                rules.append(CssRule(valid, specificity, len(rules), declarations))
-        elif char == ";" and depth == 0:
-            if (statement := css[start:index].strip()).startswith("@layer"):  # @layer a, b;
-                for name in statement.removeprefix("@layer").split(","):
-                    layers.setdefault(name.strip(), len(layers))
-            start = index + 1  # a statement such as @import
-    return sorted(rules, key=lambda rule: (rule.layer, rule.specificity, rule.order)), unread
+            scoped = len(valid) > 1 and valid[0] == root
+            specificity = (
+                sum(len(c.ids) for c in valid) - scoped,
+                sum(len(c.classes) for c in valid),
+                sum(c.tag is not None for c in valid),
+            )
+            rules.append(CssRule(valid, specificity, len(rules), declarations))
+    return sorted(rules, key=lambda rule: (rule.specificity, rule.order)), unread
+
+
+def _affects_drawing(declarations: Props) -> bool:
+    """Whether a declaration may affect the drawing, including through a custom property."""
+    return bool(
+        (PRESENTATION | CSS_GEOMETRY | HTML_BOX_PAINT | INDIVIDUAL_TRANSFORMS | {"font", "marker"})
+        & declarations.keys()
+    ) or any(
+        name.startswith("--") for name in declarations
+    )
+
+
+def _rule_declarations(rule: export_svg._CssRule) -> Props:
+    """Read a rule's own declarations, leaving out nested selectors and bodies."""
+    segments = []
+    cursor = rule.start
+    for child in rule.children:
+        before = export_svg._css_segments(rule.css[cursor : child.start - 1], ";")
+        segments.extend(before[:-1])
+        cursor = child.end + 1
+    segments.append(rule.css[cursor : rule.end])
+    return _declarations(";".join(segments))
 
 
 def _readable_part(selector: str) -> tuple[Compound, ...] | None:
@@ -383,10 +483,11 @@ def _readable_part(selector: str) -> tuple[Compound, ...] | None:
     interactive state such as ``:hover``. A part made only of attribute tests keeps the
     attributes' presence, not their values, so it matches what might carry them."""
     if re.search(
-        r":(hover|focus|focus-within|focus-visible|active|visited|link|target)\b", selector
+        r":(hover|focus|focus-within|focus-visible|active|visited|link|target)\b",
+        selector,
     ):
         return None
-    parts = re.sub(r"\s*[>+~]\s*", " ", selector).split()
+    parts = re.sub(r"\s*[>+~&]\s*", " ", selector).split()
     plain = [re.sub(r"::?[\w-]+(\([^)]*\))?|\[[^\]]*\]", "", part) for part in parts]
     if not plain:
         return None
@@ -403,88 +504,235 @@ def _readable_part(selector: str) -> tuple[Compound, ...] | None:
     return tuple(compound for compound in compounds if compound is not None)
 
 
-class _InvalidVar(Exception):
-    """A ``var()`` with no valid value: past ``MAX_VAR_LENGTH``, in a loop of properties that
-    refer to each other, or invalid with no fallback."""
+# --- Custom properties -------------------------------------------------------
+
+CSS_STRING = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
+VAR_NAME = re.compile(r"\s*(--[\w-]+)")
+VAR_TOKEN = re.compile(rf"{CSS_STRING}|(?<![\w-])(?P<var>var\()|(?P<paren>[()])", re.IGNORECASE)
 
 
-def resolve_vars(
-    value: str,
-    props: Props,
-    cache: dict[str, str | None] | None = None,
-    depth: int = 0,
-    pending: set[str] | None = None,
-) -> str | None:
-    """Substitute ``var(--name, fallback)`` from inherited custom properties.
+def _var_calls(value: str) -> list[re.Match[str]]:
+    """The var() calls outside quoted strings, in source order."""
+    return [token for token in VAR_TOKEN.finditer(value) if token.group("var")]
 
-    Each custom property is expanded once per ``cache``, and a value that would grow past
-    ``MAX_VAR_LENGTH`` is ``None``, invalid as in a browser, so properties that each repeat
-    the one before cannot turn a short stylesheet into an exponentially long string.
-    A property that refers back to itself, directly or through others, is invalid too;
-    ``pending`` holds the names being expanded. An invalid property gives way to the
-    ``var()``'s fallback.
+
+def _closing(text: str, opening: int) -> int | None:
+    """The index of the matching closing parenthesis, ignoring quoted strings."""
+    depth = 1
+    for token in VAR_TOKEN.finditer(text, opening + 1):
+        if token.group("var") or token.group("paren") == "(":
+            depth += 1
+        elif token.group("paren") == ")":
+            depth -= 1
+            if depth == 0:
+                return token.start()
+    return None
+
+
+def resolve_vars(value: str, custom: Mapping[str, str | None], depth: int = 0) -> str | None:
+    """``value`` with each ``var(--name, fallback)`` replaced; ``None`` when it is invalid.
+
+    ``custom`` holds settled custom properties, ``None`` for an invalid one. A ``var()``
+    takes its property's value, or else its fallback, which may hold ``var()`` itself. The
+    value is invalid, as in a browser, when a ``var()`` has neither, never closes, or would
+    grow the value past ``MAX_VAR_LENGTH`` (properties that each repeat the one before
+    could otherwise turn a short stylesheet into an exponentially long string).
     """
-    if "var(" not in value:
+    calls = _var_calls(value)
+    if not calls:
         return value
     if depth > MAX_VAR_DEPTH:
         return None
-    cache = {} if cache is None else cache
-    pending = set() if pending is None else pending
-
-    def expanded(text: str) -> str:
-        """``text`` resolved, or else ``_InvalidVar``."""
-        found = resolve_vars(text, props, cache, depth + 1, pending)
-        if found is None:
-            raise _InvalidVar
-        return found
-
-    def substitute(match: re.Match[str]) -> str:
-        """One ``var()``: the property's value, or else its fallback."""
-        name, comma, fallback = match.group(1).partition(",")
-        name = name.strip()
-        if name in props:
-            if name in pending:
-                raise _InvalidVar  # a loop, in which every property is invalid
-            if name not in cache:
-                pending.add(name)
-                cache[name] = resolve_vars(props[name], props, cache, depth + 1, pending)
-                pending.discard(name)
-            found = cache[name]
-            if found is not None:
-                return found
-        if not comma:
-            raise _InvalidVar  # a missing or invalid property with no fallback spoils the value
-        return expanded(fallback.strip())
-
-    pattern = r"var\(\s*(--[\w-]+\s*(?:,(?:[^()]|\([^()]*\))*)?)\)"  # a fallback may hold rgb(…)
-    try:
-        result = re.sub(pattern, substitute, value)
-        if len(result) > MAX_VAR_LENGTH:
+    pieces, size, index = [], 0, 0
+    for call in calls:
+        start = call.start()
+        if start < index:
+            continue  # a fallback is expanded only when it is used
+        if (end := _closing(value, call.end() - 1)) is None:
             return None
-        return expanded(result)
-    except _InvalidVar:
-        return None
+        name, *fallbacks = export_svg._css_segments(value[call.end() : end], ",")
+        name = name.strip()
+        fallback = ",".join(fallbacks).strip() if fallbacks else None
+        if not VAR_NAME.fullmatch(name):
+            return None
+        found = custom.get(name)
+        if found is None and fallback is not None:
+            found = resolve_vars(fallback, custom, depth + 1)
+        if found is None:
+            return None
+        pieces += [value[index:start], found]
+        size += start - index + len(found)  # bound the work as the value grows
+        if size > MAX_VAR_LENGTH:
+            return None
+        index = end + 1
+    pieces.append(value[index:])
+    result = "".join(pieces)
+    return result if len(result) <= MAX_VAR_LENGTH else None
 
 
-def expand_font_shorthand(value: str) -> Props:
-    """Read ``font: italic 600 13px 'Geist', sans-serif`` into its longhand properties."""
-    match = re.fullmatch(
-        r"\s*((?:(?:italic|oblique|normal|small-caps|(?:ultra-|extra-|semi-)?(?:condensed|expanded)"
-        r"|\d{3}|bold|bolder|lighter)\s+)*)"
-        rf"([\d.]+(?:px|rem|em|%|pt)|{'|'.join(FONT_SIZE_KEYWORDS)})(?:\s*/\s*\S+)?\s+(.+)",
-        value,
-    )
-    if match is None:
-        return {}
-    words, size, family = match.group(1).split(), match.group(2), match.group(3)
-    slanted = [word for word in words if word in ("italic", "oblique")]
-    weights = [word for word in words if re.fullmatch(r"\d{3}|bold|bolder|lighter", word)]
-    return {
-        "font-size": size.removesuffix("px"),
-        "font-family": family,
-        "font-style": slanted[0] if slanted else "normal",
-        "font-weight": weights[0] if weights else "normal",
+def _in_loops(graph: Mapping[str, set[str]]) -> set[str]:
+    """The names in a dependency graph that depend, directly or through others, on themselves."""
+
+    # A depth-first pass records finishing order. Walking the reversed edges in
+    # reverse finishing order then visits one strongly connected component at a time.
+    seen: set[str] = set()
+    finished: list[str] = []
+    reverse: dict[str, set[str]] = {name: set() for name in graph}
+    for name, dependencies in graph.items():
+        for dependency in dependencies:
+            reverse[dependency].add(name)
+        if name in seen:
+            continue
+        seen.add(name)
+        stack = [(name, iter(dependencies))]
+        while stack:
+            current, children = stack[-1]
+            child = next(children, None)
+            if child is None:
+                finished.append(current)
+                stack.pop()
+            elif child not in seen:
+                seen.add(child)
+                stack.append((child, iter(graph[child])))
+
+    looped: set[str] = set()
+    seen.clear()
+    for name in reversed(finished):
+        if name in seen:
+            continue
+        component = {name}
+        seen.add(name)
+        frontier = [name]
+        while frontier:
+            for parent in reverse[frontier.pop()] - seen:
+                component.add(parent)
+                seen.add(parent)
+                frontier.append(parent)
+        if len(component) > 1 or name in graph[name]:
+            looped.update(component)
+    return looped
+
+
+def settle_custom_properties(inherited: Props, declared: Props) -> dict[str, str | None]:
+    """Every custom property with its ``var()``s replaced; ``None`` for an invalid one.
+
+    Inherited values are settled already, so only the element's own declarations settle
+    here, each once and after those it refers to. Declarations that refer to one another
+    in a loop are all invalid, whatever fallbacks the loop holds, as in a browser.
+    """
+    settled: dict[str, str | None] = {k: v for k, v in inherited.items() if k.startswith("--")}
+    graph = {
+        name: {
+            match.group(1)
+            for call in _var_calls(value)
+            if (match := VAR_NAME.match(value, call.end()))
+        }
+        & declared.keys()
+        for name, value in declared.items()
     }
+    looped = _in_loops(graph)
+    settled |= dict.fromkeys(looped)
+    order = TopologicalSorter({name: graph[name] - looped for name in graph if name not in looped})
+    for name in order.static_order():
+        value = resolve_vars(declared[name], settled)
+        keyword = value.strip().lower() if value is not None else ""
+        if keyword == "initial":
+            settled[name] = None
+        elif keyword in CSS_WIDE_KEYWORDS:
+            settled[name] = inherited.get(name)
+        else:
+            settled[name] = value
+    return settled
+
+
+# --- The font shorthand and font weights --------------------------------------
+
+FONT_LONGHANDS = ("font-style", "font-weight", "font-size", "font-family")
+CSS_WIDE_KEYWORDS = frozenset({"inherit", "initial", "unset", "revert", "revert-layer"})
+FONT_SHORTHAND = re.compile(
+    r"(?P<prefix>(?:(?:normal|italic|oblique(?:\s+[-+]?[\d.]+(?:deg|rad|grad|turn))?|small-caps"
+    r"|bold|bolder|lighter|[1-9]\d{0,2}(?:\.\d+)?|1000|(?:ultra-|extra-|semi-)?(?:condensed"
+    r"|expanded))\s+){0,4})"
+    r"(?P<size>[\d.]+(?:px|pt|pc|in|cm|mm|q|em|rem|ex|ch|%)|xx-small|x-small|small|medium"
+    r"|large|x-large|xx-large|xxx-large|smaller|larger|0)(?:\s*/\s*\S+)?\s+(?P<family>\S.*)",
+    re.IGNORECASE,
+)
+
+
+def expand_font_shorthand(value: str) -> Props | None:
+    """The longhands ``font: italic 600 13px/1.4 'Geist', sans-serif`` sets, by the CSS
+    grammar; ``None`` for a value a browser rejects, which leaves earlier ones in place.
+
+    A CSS-wide keyword such as ``inherit`` sets every longhand to itself. The variant,
+    stretch and line height it may also give are not drawn by a SimpleDiagrams label.
+    """
+    value = value.strip()
+    if value.lower() in CSS_WIDE_KEYWORDS:
+        return dict.fromkeys(FONT_LONGHANDS, value.lower())
+    if (match := FONT_SHORTHAND.fullmatch(value)) is None:
+        return None
+    prefix = re.sub(
+        r"(oblique)\s+[-+]?[\d.]+(?:deg|rad|grad|turn)\b",
+        r"\1",
+        match.group("prefix").lower(),
+    )
+    words = prefix.split()
+    styles = [word for word in words if word in {"italic", "oblique"}]
+    weights = [word for word in words if re.fullmatch(r"bold|bolder|lighter|[\d.]+", word)]
+    stretches = [word for word in words if word.endswith(("condensed", "expanded"))]
+    if (
+        len(words) > 4
+        or any(len(slot) > 1 for slot in (styles, weights, stretches))
+        or words.count("small-caps") > 1
+    ):
+        return None
+    family = match.group("family").strip()
+    if not all(
+        re.fullmatch(
+            rf"{CSS_STRING}|[-_a-z][\w-]*(?:\s+[-_a-z][\w-]*)*",
+            name.strip(),
+            re.IGNORECASE,
+        )
+        and name.strip().lower() not in CSS_WIDE_KEYWORDS
+        for name in export_svg._css_segments(family, ",")
+    ):
+        return None
+    return {
+        "font-style": styles[0] if styles else "normal",
+        "font-weight": weights[0] if weights else "normal",
+        "font-size": match.group("size"),
+        "font-family": family,
+    }
+
+
+def absolute_weight(value: str, inherited: str) -> str:
+    """A ``font-weight`` as a number: keywords by name, ``bolder`` and ``lighter`` by the
+    CSS table from the inherited weight, and an unreadable one as the inherited weight."""
+    parent = float(inherited) if re.fullmatch(r"[\d.]+", inherited) else 400.0
+    word = value.strip().lower()
+    if word == "bolder":
+        weight = 400 if parent < 350 else 700 if parent < 550 else max(parent, 900)
+    elif word == "lighter":
+        weight = parent if parent < 100 else 100 if parent < 550 else 400 if parent < 750 else 700
+    else:
+        named = {"normal": 400.0, "bold": 700.0}.get(word)
+        number = float(word) if re.fullmatch(r"\d+(?:\.\d+)?", word) else None
+        weight = named or (number if number is not None and 1 <= number <= 1000 else parent)
+    return f"{weight:g}"
+
+
+def settled_font_size(value: str, parent: float) -> float | None:
+    """A ``font-size`` in pixels; ``None`` for one this export cannot read, such as
+    ``calc()``, which the guide says is drawn at the surrounding size."""
+    word = value.strip().lower()
+    if word in FONT_SIZE_KEYWORDS:
+        return FONT_SIZE_KEYWORDS[word] * (parent if word in RELATIVE_KEYWORDS else 1)
+    if not re.fullmatch(rf"{NUMBER}(?:px|pt|pc|in|cm|mm|q|em|rem|ex|ch|%)?", word):
+        return None
+    return length(word, parent, percent_of=parent, font_size=parent)
+
+
+# --- The cascade ----------------------------------------------------------------
 
 
 def computed_properties(
@@ -494,67 +742,72 @@ def computed_properties(
     ancestors: Sequence[ET.Element],
     defaults: Props | None = None,
 ) -> Props:
-    """Cascade a browser's ``defaults``, presentation attributes, stylesheet rules, inline style.
+    """An element's settled style: what it inherits, then a browser's ``defaults``,
+    presentation attributes, stylesheet rules and its inline style, in cascade order.
 
-    The same order runs twice, because an ``!important`` declaration beats every normal one.
-    Custom properties settle first, so ``font`` reads their final values wherever they are set.
+    The order runs twice, because an ``!important`` declaration beats every normal one.
+    Custom properties settle first, so every other value reads their final values. A
+    value whose ``var()`` cannot settle is invalid where it is used, so it acts as
+    ``unset``, as in a browser. CSS-wide keywords resolve last; ``revert`` and, with no
+    layers read, ``revert-layer`` fall back to the browser's own value, as ``unset`` does.
+    Sizes are settled to pixels and weights to numbers, so callers compare like with like.
     """
     props = {k: v for k, v in inherited.items() if k in INHERITED or k.startswith("--")}
     matched = [rule for rule in rules if rule.applies(element, ancestors)]
-    # An !important declaration meets the @layers in reverse: the first layer wins.
-    reversed_layers = sorted(matched, key=lambda rule: (-rule.layer, rule.specificity, rule.order))
-    declared = []
-    for important, order in ((False, matched), (True, reversed_layers)):
-        layers = [defaults or {}, {k: v for k, v in element.attrib.items() if k in PRESENTATION}]
-        layers += [rule.declarations for rule in order]
-        layers.append(_declarations(element.get("style", "")))
-        declared += [
-            item
-            for layer in layers
-            for item in layer.items()
-            if item[1].endswith(IMPORTANT) == important
-        ]
-    declared.sort(key=lambda item: not item[0].startswith("--"))  # stable: keeps the cascade order
-    for name, marked in declared:
-        value = marked.removesuffix(IMPORTANT).rstrip()
+    sources = [
+        defaults or {},
+        {k: v for k, v in element.attrib.items() if k in PRESENTATION},
+    ]
+    sources += [rule.declarations for rule in matched]
+    sources.append(_declarations(element.get("style", "")))
+    declared = [
+        (name, marked.removesuffix(IMPORTANT).rstrip())
+        for important in (False, True)
+        for source in sources
+        for name, marked in source.items()
+        if marked.endswith(IMPORTANT) == important
+    ]
+    own_custom = {name: value for name, value in declared if name.startswith("--")}
+    custom = settle_custom_properties(props, own_custom)
+    props = {k: v for k, v in props.items() if not k.startswith("--")}
+    props |= {name: value for name, value in custom.items() if value is not None}
+    for name, value in declared:
         if name == "font":
-            props.update(expand_font_shorthand(resolve_vars(value, props) or ""))
+            settled = resolve_vars(value, custom)
+            longhands = expand_font_shorthand(settled) if settled is not None else None
+            if longhands is None and _var_calls(value):  # invalid where used
+                longhands = dict.fromkeys(FONT_LONGHANDS, "unset")
+            props.update(longhands or {})
         elif name == "marker":  # the shorthand sets all three; a later longhand still wins
             props.update(dict.fromkeys(("marker-start", "marker-mid", "marker-end"), value))
-        elif name in PRESENTATION or name.startswith("--"):
+        elif name in PRESENTATION:
             props[name] = value
-    cache: dict[str, str | None] = {}
-    # A custom property is read through ``var()``, so it shares the cache that finds loops.
-    resolved = {
-        k: resolve_vars(f"var({k})" if k.startswith("--") else v, props, cache)
-        for k, v in props.items()
-    }
-    props = {k: v for k, v in resolved.items() if v is not None}
-    for name, found in resolved.items():  # an over-long value is invalid: as if unset
-        if found is None and name in INHERITED and name in inherited:
-            props[name] = inherited[name]
     for name, value in list(props.items()):
-        keyword = value.strip().lower()
-        # Author styles reverted fall back to the browser's own, which inherit where unset does.
-        resets = ("unset", "revert", "revert-layer")
-        if keyword == "inherit" or (keyword in resets and name in INHERITED):
+        if name.startswith("--"):
+            continue
+        settled = resolve_vars(value, custom)
+        if settled is None:  # invalid where used
+            settled = "unset"
+        keyword = settled.strip().lower()
+        if keyword == "inherit" or (
+            keyword in CSS_WIDE_KEYWORDS - {"initial"} and name in INHERITED
+        ):
             if name in inherited:
                 props[name] = inherited[name]
             else:
                 del props[name]
-        elif keyword in ("initial", *resets):
-            del props[name]  # the property's own starting value, which an absent one reads as
-        elif name in KEYWORD_VALUED:
-            props[name] = keyword  # CSS keywords ignore case: display: NONE still hides
-    size = props.get("font-size", "").strip().lower()
-    if size != inherited.get("font-size"):
-        parent = length(inherited.get("font-size"), 16.0)  # already settled, in pixels
-        if RELATIVE_SIZE.fullmatch(size):
-            props["font-size"] = f"{length(size, parent, percent_of=parent, font_size=parent):g}"
-        elif size in FONT_SIZE_KEYWORDS:
-            props["font-size"] = (
-                f"{FONT_SIZE_KEYWORDS[size] * (parent if size in RELATIVE_KEYWORDS else 1):g}"
-            )
+        elif keyword in CSS_WIDE_KEYWORDS:
+            del props[name]  # the property's starting value, which an absent one reads as
+        else:
+            props[name] = keyword if name in KEYWORD_VALUED else settled
+    parent_size = length(inherited.get("font-size"), 16.0)  # already settled, in pixels
+    if "font-size" in props and props["font-size"] != inherited.get("font-size"):
+        size = settled_font_size(props["font-size"], parent_size)
+        props["font-size"] = f"{parent_size if size is None else size:g}"
+    if "font-weight" in props and props["font-weight"] != inherited.get("font-weight"):
+        props["font-weight"] = absolute_weight(
+            props["font-weight"], inherited.get("font-weight", "400")
+        )
     return props
 
 
@@ -563,10 +816,21 @@ def _is_invisible(props: Props) -> bool:
     return props.get("visibility") in ("hidden", "collapse")
 
 
+def _paint_opacity(props: Props, paint: str) -> float:
+    """The fill or stroke opacity, independent of the opacity of the finished element."""
+    return length(props.get(f"{paint}-opacity"), 1.0, percent_of=1.0)
+
+
 def _has_line(props: Props) -> bool:
     """Whether an element draws an outline."""
     stroke = props.get("stroke", "none").strip().lower()
-    return bool(stroke) and stroke not in NO_PAINT and length(props.get("stroke-width"), 1.0) > 0
+    return (
+        bool(stroke)
+        and stroke not in NO_PAINT
+        and _paint_opacity(props, "stroke") > 0
+        and length(props.get("stroke-width"), 1.0) > 0
+        and ((colour := parse_colour(stroke, props)) is None or colour[3] > 0)
+    )
 
 
 def parse_colour(value: str, props: Props) -> Colour | None:
@@ -1171,7 +1435,6 @@ FONT_SIZE_KEYWORDS = {
     "x-large": 24.0, "xx-large": 32.0, "xxx-large": 48.0, "smaller": 1 / 1.2, "larger": 1.2,
 }  # fmt: skip
 RELATIVE_KEYWORDS = frozenset({"smaller", "larger"})  # these scale the parent's size
-RELATIVE_SIZE = re.compile(rf"\s*{NUMBER}(?:em|%)\s*", re.IGNORECASE)
 ICON_STRUCTURE = frozenset({"svg", "g", "title", "desc", "metadata", "defs"})  # draw nothing
 KNOWN_NAMESPACES = (f"{{{SVG_NAMESPACE}}}", f"{{{XML_NAMESPACE}}}")
 
@@ -1266,7 +1529,10 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
     written, dropped = ICON_ATTRIBUTES | {"font-size"}, ICON_DROPPED_ATTRIBUTES
     if _local(element) in ("text", "tspan"):
         written |= ICON_TEXT
-    if page.get("transform", "").strip() in ("", "none"):  # nothing for a transform frame to move
+    if page.get("transform", "").strip() in (
+        "",
+        "none",
+    ):  # nothing for a transform frame to move
         written, dropped = written - TRANSFORM_FRAME, dropped | TRANSFORM_FRAME
     kept = {k: v for k, v in element.attrib.items() if k not in dropped}
     clone = ET.Element(element.tag, kept)
@@ -1274,10 +1540,18 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
     if inline := _other_inline_styles(element, page):
         clone.set("style", inline)
     stored = computed_properties(clone, stored, (), ())
-    for name in sorted(written & page.keys()):
-        if page[name] != stored.get(name) and (name in ICON_PAINT or page[name].strip()):
-            clone.set(name, page[name])
-            stored[name] = page[name]
+    # An absent property has its starting value, on the page and in the copy alike, so a
+    # reset such as ``fill: initial`` is written out rather than left to the copied attribute.
+    for name in sorted(written):
+        wanted = page.get(name, INITIAL_VALUES.get(name))
+        stored_default = (
+            None if name == "font-family" and name in page else INITIAL_VALUES.get(name)
+        )
+        if wanted is None or wanted == stored.get(name, stored_default):
+            continue
+        if name in ICON_PAINT or wanted.strip():  # an empty paint is kept, to be refused
+            clone.set(name, wanted)
+            stored[name] = wanted
     if page.get("transform") != stored.get("transform"):
         value = _attribute_transform(page.get("transform", "none"))  # reset: none
         if value.strip() == "none":
@@ -1594,7 +1868,10 @@ class Artwork(Item):
     frame: Rect  # before rotation
     rotation: float
     asset: Asset
-    flips: Flips = (False, False)  # a mirrored placement, mirrored in the frame before turning
+    flips: Flips = (
+        False,
+        False,
+    )  # a mirrored placement, mirrored in the frame before turning
 
     @property
     def area(self) -> float:
@@ -1693,7 +1970,8 @@ class Reader:
         self.background: str | None = None
         self.skipped: dict[str, int] = {}
         self.measuring = False  # walking an icon only to find its bounds
-        self.held_back: set[str] = set()  # notes from measuring, raised if nothing is stored
+        self.in_faded_group = False  # merged boxes would hide a compositing loss
+        self.held_back: set[tuple[Note, str]] = set()  # raised only if nothing is stored
         self.ancestors: list[ET.Element] = []
         self.viewport = (self.view[2], self.view[3])  # what percentages are of, here
         self.handlers: dict[str, Handler] = {
@@ -1713,7 +1991,7 @@ class Reader:
         """Collect every drawn item, with the view box's corner as the page origin."""
         origin: Matrix = (1, 0, 0, 1, -self.view[0], -self.view[1])
         if self._selects_any(self.unread):
-            self._skip("stylesheet rules this export cannot read left unapplied")
+            self._skip(Note.STYLESHEET_UNREAD)
         self._root_background()
         self._walk(self.root, {}, origin, 1.0, [])
         if (count := len(self.items)) > MAX_ITEMS:
@@ -1735,7 +2013,7 @@ class Reader:
         props = computed_properties(self.root, {}, self.rules, [])
         value = resolve_vars(values[-1].removesuffix(IMPORTANT), props) or ""
         if re.search(r"gradient\(|url\(", value, re.IGNORECASE):
-            self._skip("gradient, pattern or unknown colour, left transparent")
+            self._skip(Note.UNKNOWN_PAINT)
             return
         for token in re.findall(r"#[0-9a-fA-F]+|(?:rgba?|hsla?)\([^)]*\)|[a-zA-Z]+", value):
             if (colour := parse_colour(token, props)) is not None:
@@ -1754,18 +2032,21 @@ class Reader:
     def _note_css_geometry(self, element: ET.Element, ancestors: list[ET.Element]) -> None:
         """Note sizes, places and transforms only CSS can set, which this export does not read."""
         if self._declares(element, ancestors, _moves_alone):
-            self._skip("CSS transform this export cannot read may misplace a shape")
+            self._skip(Note.CSS_TRANSFORM)
         geometry = GEOMETRY.get(_local(element), frozenset())
 
         def differs(name: str, value: str) -> bool:
             """Whether CSS sets one of the element's sizes to other than its attribute says."""
             if name not in geometry:
                 return False
-            written, value = element.get(name, "").strip(), value.removesuffix(IMPORTANT).strip()
+            written, value = (
+                element.get(name, "").strip(),
+                value.removesuffix(IMPORTANT).strip(),
+            )
             return value != written and length(value, math.nan) != length(written, math.nan)
 
         if geometry and self._declares(element, ancestors, differs):
-            self._skip("sizes, places and corners set in CSS ignored; the SVG's own are used")
+            self._skip(Note.CSS_GEOMETRY)
 
     def _html_declares(
         self,
@@ -1798,7 +2079,7 @@ class Reader:
 
     def _note_undrawn(self, props: Props) -> None:
         """Note each effect, such as clipping or a blur, that an element asks for."""
-        for name, note in UNDRAWN.items():
+        for name, note in UNDRAWN_NOTES.items():
             if props.get(name, "none").strip().lower() not in ("none", "normal"):
                 self._skip(note)
 
@@ -1813,15 +2094,16 @@ class Reader:
                 return True
         return False
 
-    def _skip(self, what: str) -> None:
+    def _skip(self, note: Note, element: str = "") -> None:
         """Count content that could not be translated, for one note per kind.
 
         Walking an icon only to measure it holds its notes back: the icon is stored as SVG, and
         its copy raises the notes that apply to it. They are raised only if nothing is stored.
         """
         if self.measuring:
-            self.held_back.add(what)
+            self.held_back.add((note, element))
         else:
+            what = note.worded(element)
             self.skipped[what] = self.skipped.get(what, 0) + 1
 
     def _walk(
@@ -1837,13 +2119,13 @@ class Reader:
         if name in NOT_DRAWN:
             return
         if name in UNSUPPORTED:
-            self._skip(f"<{name}> left out")
+            self._skip(Note.ELEMENT_LEFT_OUT, name)
             return
         props = computed_properties(element, inherited, self.rules, ancestors)
         if props.get("display") == "none":
             return
         if not _readable_transform(props):
-            self._skip("CSS transform this export cannot read may misplace a shape")
+            self._skip(Note.CSS_TRANSFORM)
         if element is not self.root:
             self._note_css_geometry(element, ancestors)
         matrix = multiply(matrix, parse_transform(props.get("transform")))
@@ -1857,24 +2139,25 @@ class Reader:
             self._nested_svg(element, props, matrix, opacity, ancestors)
         elif name in CONTAINERS:
             first = len(self.items)
-            for child in element:
-                self._walk(child, props, matrix, opacity, [*ancestors, element])
             faded = length(props.get("opacity"), 1.0, percent_of=1.0) < 1
-            if faded and _overlapping(
-                [item for item in self.items[first:] if isinstance(item, Box)]
-            ):
-                self._skip(
-                    "see-through groups drawn shape by shape; where shapes overlap they look darker"
-                )
+            outer_group = self.in_faded_group
+            self.in_faded_group = faded or outer_group
+            try:
+                for child in element:
+                    self._walk(child, props, matrix, opacity, [*ancestors, element])
+            finally:
+                self.in_faded_group = outer_group
+            if faded and _overlapping(self.items[first:]):
+                self._skip(Note.SEE_THROUGH_OVERLAP)
         elif _is_invisible(props) and name not in SHOWS_VISIBLE_CHILDREN:
             # Hidden drawing; a child of it that shows itself has no equivalent here.
             if self._shows_inside(element, props, ancestors):
-                self._skip(f"visible content inside a hidden <{name}> left out")
+                self._skip(Note.HIDDEN_CONTENT, name)
         elif handler := self.handlers.get(name):
             self.ancestors = ancestors  # text handlers style their children with it
             handler(element, props, matrix, opacity)
         else:
-            self._skip(f"<{name}> left out")
+            self._skip(Note.ELEMENT_LEFT_OUT, name)
 
     # -- paint ------------------------------------------------------------
 
@@ -1883,31 +2166,51 @@ class Reader:
         if value is None or value.strip().lower() in NO_PAINT:
             return None
         if (colour := parse_colour(value, props)) is None:
-            self._skip("gradient, pattern or unknown colour, left transparent")
+            self._skip(Note.UNKNOWN_PAINT)
         return colour
 
-    def _paint(self, props: Props, opacity: float, matrix: Matrix) -> Paint:
+    def _paint(
+        self, props: Props, opacity: float, matrix: Matrix, *, has_area: bool = True
+    ) -> Paint:
         """Fill, line and dash pattern, with line widths scaled as the transform scales."""
         fill = self._colour(props.get("fill", "black"), props)
         stroke = self._colour(props.get("stroke"), props)
         turn = decompose(matrix)
         scale = math.sqrt(turn[1] * turn[2]) if turn else 1.0
-        if props.get("vector-effect", "").strip() == "non-scaling-stroke":
+        non_scaling = props.get("vector-effect", "").strip() == "non-scaling-stroke"
+        if non_scaling:
             scale = 1.0
         size = length(props.get("font-size"), 16.0)  # what a width in em is of
         width = max(0.0, length(props.get("stroke-width"), 1.0, font_size=size)) * scale
-        width = width if stroke else 0.0
+        fill_hex = colour_hex(fill, opacity * _paint_opacity(props, "fill"))
+        stroke_hex = colour_hex(stroke, opacity * _paint_opacity(props, "stroke"))
+        if len(stroke_hex) == 9 and stroke_hex.endswith("00"):
+            width = 0.0
+        if (
+            has_area and not (len(fill_hex) == 9 and fill_hex.endswith("00")) and width > 0
+        ):  # the outline overlaps the fill
+            if opacity < 1:  # a browser fades the two together, as one picture
+                self._skip(Note.SEE_THROUGH_OVERLAP)
+            order = props.get("paint-order", "").lower().split()
+            if set(order) <= {"fill", "stroke", "markers"} and len(set(order)) == len(order):
+                order += [part for part in ("fill", "stroke", "markers") if part not in order]
+                if order.index("stroke") < order.index("fill"):
+                    self._skip(Note.PAINT_ORDER)
         dash_values = re.split(r"[\s,]+", props.get("stroke-dasharray", "none").strip())
         dashes = [length(v) for v in dash_values if v and v != "none"]
         pattern: LinePattern = "solid"
         if any(dashes):
             pattern = "dotted" if dashes[0] <= max(1.5, width * 1.5) else "dashed"
-        return Paint(
-            colour_hex(fill, opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)),
-            colour_hex(stroke, opacity * length(props.get("stroke-opacity"), 1.0, percent_of=1.0)),
-            round(min(10_000.0, width), 3),
-            pattern,
-        )
+        if width > 0 and (
+            props.get("stroke-linecap", "butt") != "butt"
+            or props.get("stroke-linejoin", "miter") != "miter"
+            or length(props.get("stroke-miterlimit"), 4) != 4
+            or (pattern != "solid" and length(props.get("stroke-dashoffset")) != 0)
+            or (pattern != "solid" and len(set(dashes)) > 1)
+            or (not non_scaling and (turn is None or not math.isclose(turn[1], turn[2])))
+        ):
+            self._skip(Note.STROKE_STYLE)
+        return Paint(fill_hex, stroke_hex, round(min(10_000.0, width), 3), pattern)
 
     def _marker(self, reference: str | None) -> ET.Element | None:
         """The ``<marker>`` a ``marker-start`` or ``marker-end`` value names, if any."""
@@ -1974,7 +2277,7 @@ class Reader:
         hollow = not filled or (outlined and painted_as_paper)
         ink = colour if filled and not hollow else parse_colour(props.get("stroke", "none"), props)
         if ink is not None and colour_hex(ink)[:7] != line[:7]:
-            self._skip("line endings painted another colour take the line's colour")
+            self._skip(Note.ENDING_RECOLOURED)
         if _local(shape) in ("circle", "ellipse"):
             return "circle" if hollow else "solidCircle"
         numbers = NUMBER_RE.findall(shape.get("points") or shape.get("d") or "")
@@ -1982,14 +2285,14 @@ class Reader:
         if _is_diamond(coordinates):
             return "openDiamond" if hollow else "diamond"
         if len(coordinates) not in (6, 8):
-            self._skip("line ending other than an arrow, a circle or a diamond drawn as an arrow")
+            self._skip(Note.ENDING_SHAPE)
         if heading is not None and (xs := coordinates[0::2]):
             # The tip is the one point at an end of the shape; at the left end, it points to -x.
             tip_behind = xs.count(min(xs)) == 1 and xs.count(max(xs)) > 1
             tip = _marker_axis(marker.get("orient"), heading, at_start) + 180 * tip_behind
             away = heading + 180 * at_start
             if abs((tip - away + 180) % 360 - 180) > 1:
-                self._skip("arrowhead not pointing away from its line drawn pointing away")
+                self._skip(Note.ENDING_DIRECTION)
         closed = _local(shape) == "polygon" or "z" in (shape.get("d") or "").lower()
         if len(coordinates) == 6 and hollow and (filled or (closed and _has_line(props))):
             return "solidArrow"  # an outlined triangle, which the format draws hollow
@@ -1998,7 +2301,12 @@ class Reader:
     # -- shapes -----------------------------------------------------------
 
     def _add_box(
-        self, basic: str | None, local: Rect, matrix: Matrix, paint: Paint, subpath: Subpath
+        self,
+        basic: str | None,
+        local: Rect,
+        matrix: Matrix,
+        paint: Paint,
+        subpath: Subpath,
     ) -> None:
         """Add a box: a Basic shape set in its frame, or else its exact closed path."""
         page_subpath = subpath.transformed(matrix)
@@ -2016,7 +2324,21 @@ class Reader:
         else:  # a skewed rectangle or circle is no longer one
             box = Box(order, (0, 0, 1, 1), 0.0, page_subpath, paint, None)
             box.keep_exact()
-        if self.items and isinstance(below := self.items[-1], Box) and _same_place(below, box):
+        if (
+            not self.in_faded_group
+            and self.items
+            and isinstance(below := self.items[-1], Box)
+            and _same_place(below, box)
+            and (
+                below.paint.line_width == 0
+                or box.paint.line_width == 0
+                or (
+                    box.paint.line_width >= below.paint.line_width
+                    and len(box.paint.stroke) == 7
+                    and box.paint.pattern == "solid"
+                )
+            )
+        ):  # keep both outlines if the lower one still shows through the upper one
             # A tint drawn over a copy of the same shape is one shape, its fill the two mixed
             # as the page shows them, so an opaque copy still hides what is behind it.
             fill = _over(box.paint.fill, below.paint.fill) if box.paint.filled else below.paint.fill
@@ -2036,8 +2358,8 @@ class Reader:
     def _take_as_paper(self, props: Props, opacity: float) -> bool:
         """Take a page-sized layer under the drawing as the page itself; whether it is used up.
 
-        An opaque colour becomes the page's background, the last one drawn showing. A pattern
-        (the dot grid) is left to the editor's grid, and a layer painting nothing draws
+        An opaque colour becomes the page's background, the last one drawn showing. The
+        skill's dot pattern is left to the editor's grid, and a layer painting nothing draws
         nothing. A see-through colour is not used up: it is drawn as a shape over the page.
         """
         fill = props.get("fill", "black").strip()
@@ -2045,7 +2367,13 @@ class Reader:
             return True
         if match := re.fullmatch(r"url\(\s*['\"]?#([^'\")]+)['\"]?\s*\)", fill):
             server = self.by_id.get(match.group(1))
-            return server is not None and _local(server) == "pattern"  # a gradient is noted
+            return (
+                server is not None
+                and _local(server) == "pattern"
+                and re.fullmatch(r"(?:[\w-]+-)?dots(?:-\d+)?", match.group(1)) is not None
+                and len(server) == 1
+                and _local(server[0]) == "circle"
+            )  # other patterns and gradients go through the ordinary paint note
         if (colour := parse_colour(fill, props)) is None:
             return False  # drawn as a shape, which notes the colour it cannot show
         alpha = opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)
@@ -2068,7 +2396,10 @@ class Reader:
         rx_given, ry_given = element.get("rx"), element.get("ry")
         rx = self._across(rx_given, props=props) if rx_given is not None else None
         ry = self._down(ry_given, props=props) if ry_given is not None else None
-        rx, ry = (rx if rx is not None else ry or 0.0), (ry if ry is not None else rx or 0.0)
+        rx, ry = (
+            (rx if rx is not None else ry or 0.0),
+            (ry if ry is not None else rx or 0.0),
+        )
         radius = rx if min(rx, ry) > 0 else 0.0
         upright = abs(matrix[1]) < 1e-9 and abs(matrix[2]) < 1e-9 and radius <= 0
         # The paper lies under everything; a page frame has a line, a later cover is drawn.
@@ -2077,8 +2408,12 @@ class Reader:
         if covers and self._take_as_paper(props, opacity):
             return
         if radius > 0 and decompose(matrix) is None:
-            self._skip("rounded corners of a skewed rectangle drawn square")
-        corners: list[Segment] = [Line((x + w, y)), Line((x + w, y + h)), Line((x, y + h))]
+            self._skip(Note.SKEWED_CORNERS)
+        corners: list[Segment] = [
+            Line((x + w, y)),
+            Line((x + w, y + h)),
+            Line((x, y + h)),
+        ]
         outline = Subpath((x, y), corners, closed=True)
         paint = self._paint(props, opacity, matrix)
         self._add_box(rectangle_shape(w, h, radius), (x, y, w, h), matrix, paint, outline)
@@ -2109,7 +2444,7 @@ class Reader:
             self._across(element.get("x2"), props=props),
             self._down(element.get("y2"), props=props),
         )
-        paint = self._paint(props, opacity, matrix)
+        paint = self._paint(props, opacity, matrix, has_area=False)
         self._add_outline(Subpath(start, [Line(end)]), paint, props, matrix)
 
     def _polyline(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
@@ -2119,32 +2454,60 @@ class Reader:
         if len(points) >= 2 and all(map(math.isfinite, values)):
             closed = _local(element) == "polygon"
             subpath = Subpath(points[0], [Line(p) for p in points[1:]], closed)
-            self._add_outline(subpath, self._paint(props, opacity, matrix), props, matrix)
+            paint = self._paint(
+                props, opacity, matrix, has_area=painted_area(points) > MIN_FILLED_AREA
+            )
+            self._add_outline(subpath, paint, props, matrix)
 
     def _path(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """Each subpath becomes its own outline; a hole in a filled shape keeps its line."""
         try:
             subpaths = parse_path_data(element.get("d", ""))
         except ValueError:
-            self._skip("<path> with unreadable data left out")
+            self._skip(Note.UNREADABLE_PATH)
             return
-        paint = self._paint(props, opacity, matrix)
-        outlines = [(s, s.flattened()) for s in subpaths if s.closed]
-        for index, subpath in enumerate(subpaths):
+        flattened = [subpath.flattened() for subpath in subpaths]
+        paint = self._paint(
+            props,
+            opacity,
+            matrix,
+            has_area=any(painted_area(points) > MIN_FILLED_AREA for points in flattened),
+        )
+        outlines = [(s, points) for s, points in zip(subpaths, flattened, strict=True) if s.closed]
+        filled_extents: list[Bounds] = []
+        for index, (subpath, points) in enumerate(zip(subpaths, flattened, strict=True)):
             # Markers sit at the whole path's start and end, not at each subpath's.
-            ends = {"marker-start": index == 0, "marker-end": index == len(subpaths) - 1}
+            ends = {
+                "marker-start": index == 0,
+                "marker-end": index == len(subpaths) - 1,
+            }
             subpath_props = {name: value for name, value in props.items() if ends.get(name, True)}
             if subpath.closed and paint.filled and _is_hole(subpath, outlines, props):
                 # A path cannot cut a hole in another, so a hole keeps only its outline.
-                self._skip("hole in a filled shape, kept as an outline only")
+                self._skip(Note.HOLE)
                 if paint.line_width > 0:
                     rim = Paint(TRANSPARENT, paint.stroke, paint.line_width, paint.pattern)
                     self._add_outline(subpath, rim, subpath_props, matrix, len(subpaths) > 1)
                 continue
             self._add_outline(subpath, paint, subpath_props, matrix, len(subpaths) > 1)
+            if (
+                paint.filled
+                and len(filled_extents) < 200
+                and painted_area(points) > MIN_FILLED_AREA
+            ):
+                filled_extents.append(bounds(points))
+        # A browser fills a path once; here each part is filled, so a see-through overlap darkens.
+        see_through = paint.filled and len(paint.fill) == 9
+        if see_through and _bounds_overlap(filled_extents):
+            self._skip(Note.SEE_THROUGH_OVERLAP)
 
     def _add_outline(
-        self, subpath: Subpath, paint: Paint, props: Props, matrix: Matrix, joined: bool = False
+        self,
+        subpath: Subpath,
+        paint: Paint,
+        props: Props,
+        matrix: Matrix,
+        joined: bool = False,
     ) -> None:
         """A closed outline becomes a box, an open one a stroke; one painting nothing is dropped.
 
@@ -2153,10 +2516,10 @@ class Reader:
         """
         between = joined or len(subpath.segments) > 1 or subpath.closed  # where marker-mid draws
         if between and self._marker(props.get("marker-mid")) is not None:
-            self._skip("markers between a line's ends left out")
+            self._skip(Note.MID_MARKERS)
         marked = any(self._marker(props.get(end)) for end in ("marker-start", "marker-end"))
         if marked and (subpath.closed or paint.line_width <= 0):
-            self._skip("markers on a closed shape or a line with no stroke left out")
+            self._skip(Note.MARKERS_UNDRAWN)
         if subpath.closed and len(subpath.flattened()) >= 3:
             if paint.filled or paint.line_width > 0:
                 self._add_box(None, (0, 0, 0, 0), matrix, paint, subpath)
@@ -2171,7 +2534,12 @@ class Reader:
         if paint.line_width > 0:  # an open shape with no line draws no line to keep
             points = subpath.flattened()
             ends = [
-                self._ending(props.get(end), _heading(points, at_start=first), first, paint.stroke)
+                self._ending(
+                    props.get(end),
+                    _heading(points, at_start=first),
+                    first,
+                    paint.stroke,
+                )
                 for end, first in (("marker-start", True), ("marker-end", False))
             ]
             start, end = ends
@@ -2187,11 +2555,11 @@ class Reader:
         if _is_invisible(props):
             return
         if props.get("writing-mode", "").startswith(("vertical", "tb", "sideways")):
-            self._skip("vertical text drawn horizontally")
+            self._skip(Note.VERTICAL_TEXT)
         if {"line-through", "overline"} & set(props.get("text-decoration", "").split()):
-            self._skip("crossed-out and overlined text drawn plain")
+            self._skip(Note.CROSSED_TEXT)
         if any(float(turn) % 360 for turn in NUMBER_RE.findall(node.get("rotate") or "")):
-            self._skip("letters turned one by one drawn upright")
+            self._skip(Note.TURNED_LETTERS)
 
     def _text(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """Each ``<text>``, and each separately placed ``<tspan>`` in it, becomes one line."""
@@ -2202,7 +2570,7 @@ class Reader:
             if any(
                 len(NUMBER_RE.findall(node.get(key) or "")) > 1 for key in ("x", "y", "dx", "dy")
             ):
-                self._skip("letters placed one by one drawn as one run of text")
+                self._skip(Note.PLACED_LETTERS)
             sized = {"font-size": f"{size:g}"}  # em is of the text's own size
             x = self._across(node.get("x"), x, props=sized)
             y = self._down(node.get("y"), y, props=sized)
@@ -2213,17 +2581,21 @@ class Reader:
         size = length(props.get("font-size"), 16.0)
         preserved = element.get(f"{{{XML_NAMESPACE}}}space") == "preserve"
         if preserved and re.search(r"\S {2,}\S", "".join(element.itertext())):
-            self._skip("runs of spaces in text joined into one")
+            self._skip(Note.PRESERVED_SPACES)
         shows = not _is_invisible(props)  # hidden, it draws only the spans that show themselves
-        moved = "words after hidden words in a line moved into their place"
+        moved = Note.MOVED_WORDS
         lines: list[tuple[Point, Props, list[str]]] = [
-            (placed(element, size, 0.0, 0.0), props, [_cased(element.text, props)] if shows else [])
+            (
+                placed(element, size, 0.0, 0.0),
+                props,
+                [_cased(element.text, props)] if shows else [],
+            )
         ]
         # Hidden words keep their room in the browser; here the words after them move into it.
         after_hidden = not shows and bool((element.text or "").strip())
         for child in element:
             if _local(child) == "textPath":
-                self._skip("<textPath> left out")
+                self._skip(Note.ELEMENT_LEFT_OUT, "textPath")
             elif _local(child) in ("tspan", "a"):
                 ancestors = [*self.ancestors, element]
                 child_props = computed_properties(child, props, self.rules, ancestors)
@@ -2235,7 +2607,7 @@ class Reader:
                     child_size = length(child_props.get("font-size"), 16.0)
                     if any(child.get(key) is not None for key in LINE_PLACEMENT):
                         if child.get("x") is None and "".join(lines[-1][2]).strip():
-                            self._skip("words moved up or down in a line start a new line")
+                            self._skip(Note.LINE_SHIFT)
                         anchor = placed(child, child_size, *lines[-1][0])
                         lines.append((anchor, child_props, [text]))
                         after_hidden = False
@@ -2245,10 +2617,10 @@ class Reader:
                         gap = length(child.get("dx"), font_size=child_size)
                         lines[-1][2].append(f" {text}" if gap > 0 else text)
                         if abs(gap) > child_size:
-                            self._skip("a wide sideways gap inside a line became one space")
+                            self._skip(Note.WIDE_GAP)
                     styles = [style for _, style in worded if style is not None]
                     if not all(_same_text_style(style, lines[-1][1]) for style in styles):
-                        self._skip("styled words inside a line take the line's style")
+                        self._skip(Note.STYLED_WORDS)
                     if styles and (after_hidden or _hidden_before_shown(worded)):
                         self._skip(moved)
                 after_hidden = after_hidden or any(style is None for _, style in worded)
@@ -2257,21 +2629,32 @@ class Reader:
                 if after_hidden and tail:
                     self._skip(moved)
                 if tail and not _same_text_style(lines[-1][1], props):
-                    self._skip("styled words inside a line take the line's style")
+                    self._skip(Note.STYLED_WORDS)
                 lines[-1][2].append(_cased(child.tail, props, "".join(lines[-1][2])))
             else:
                 after_hidden = after_hidden or bool(tail)
         for anchor, line_props, parts in lines:
             align = _alignment(line_props.get("text-anchor", ""))
             paint = line_props.get("fill", "black")
-            if (
+            text = "".join(parts)
+            colour = parse_colour(paint, line_props)
+            unfilled = (
                 paint.strip().lower() in NO_PAINT
-                and _has_line(line_props)
-                and "".join(parts).strip()
-            ):
-                self._skip("outlined text drawn filled with its outline colour")
-                paint = line_props["stroke"]
-            self._add_label("".join(parts), anchor, line_props, matrix, opacity, align, paint)
+                or _paint_opacity(line_props, "fill") <= 0
+                or (colour is not None and colour[3] == 0)
+            )
+            if _has_line(line_props) and text.strip():
+                if unfilled:
+                    self._skip(Note.OUTLINED_TEXT)
+                    paint = line_props["stroke"]
+                    line_props = line_props | {
+                        "fill-opacity": line_props.get("stroke-opacity", "1")
+                    }
+                    unfilled = False
+                else:
+                    self._skip(Note.TEXT_OUTLINE)
+            if not unfilled:
+                self._add_label(text, anchor, line_props, matrix, opacity, align, paint)
 
     def _text_pieces(
         self,
@@ -2292,7 +2675,7 @@ class Reader:
         self._note_text_effects(node, props)
         fade = length(props.get("opacity"), 1.0, percent_of=1.0)
         if 0 < fade < 1:
-            self._skip("see-through words inside a line drawn solid")
+            self._skip(Note.SEE_THROUGH_WORDS)
         # A see-nothing span keeps its words' room but shows none of them, nor its children's.
         faded = faded or fade <= 0
         # Words with no fill opacity and no outline show nothing; a child may fill them again.
@@ -2303,16 +2686,16 @@ class Reader:
         path = [*ancestors, node]
         for child in node:
             if _local(child) == "textPath":
-                self._skip("<textPath> left out")
+                self._skip(Note.ELEMENT_LEFT_OUT, "textPath")
             ahead = before + "".join(words for words, _ in pieces)
             child_props = computed_properties(child, props, self.rules, path)
             drawn = _local(child) not in NOT_DRAWN and _local(child) != "textPath"
             inner = self._text_pieces(child, child_props, path, ahead, faded) if drawn else []
             placed = any(child.get(key) is not None for key in LINE_PLACEMENT)
             if placed and any(shown is not None and words.strip() for words, shown in inner):
-                self._skip("a line placed inside a span joins that span's line")
+                self._skip(Note.NESTED_LINE)
             elif length(child.get("dx")):
-                self._skip("sideways gaps inside nested spans left out")
+                self._skip(Note.NESTED_GAP)
             pieces += inner
             ahead = before + "".join(words for words, _ in pieces)
             pieces.append((_cased(child.tail, props, ahead), style))
@@ -2324,7 +2707,7 @@ class Reader:
         """Plain HTML text in a box wraps in SimpleDiagrams as it does in the browser."""
         embedded = ("img", "svg", "video", "canvas", "iframe")
         if any(_local(child) in embedded for child in element.iter()):
-            self._skip("<foreignObject> holding more than text left out")
+            self._skip(Note.FOREIGN_CONTENT)
             return
         x, y = self._place(element, props)
         w = self._across(element.get("width"), props=props)
@@ -2333,14 +2716,14 @@ class Reader:
             return  # a viewport with no width or height shows nothing, as in a browser
         words = self._html_text(element, props, list(self.ancestors))
         if re.search(rf"\S\s*{LINE_BREAK}[\s{LINE_BREAK}]*\S", words):
-            self._skip("line breaks in HTML text joined into one line")
+            self._skip(Note.HTML_BREAKS)
         words = words.replace(LINE_BREAK, " ")
         if self._html_declares(element, props, list(self.ancestors), _paints_box):
-            self._skip("HTML box background, border or shadow left out; its text is kept")
+            self._skip(Note.HTML_BOX)
         if self._html_declares(element, props, list(self.ancestors), _moves):
-            self._skip("CSS transform this export cannot read may misplace a shape")
+            self._skip(Note.CSS_TRANSFORM)
         if self._html_declares(element, props, list(self.ancestors), _pads):
-            self._skip("HTML padding not read; the text sits at its box's edge")
+            self._skip(Note.HTML_PADDING)
         # The text takes the style of the innermost single wrapper, usually one <div>; words
         # beside a wrapper make the text rich, and it keeps the style around them.
         holder, ancestors = element, list(self.ancestors)
@@ -2357,11 +2740,9 @@ class Reader:
             layout = props.get("display", "").strip().startswith(HTML_LAYOUTS)
             centred = centred or (layout and self._declares(holder, ancestors, _aligns))
         if self._restyled_html(holder, props, ancestors):
-            self._skip("rich HTML text kept as plain text")
+            self._skip(Note.RICH_HTML)
         if centred:
-            self._skip(
-                "HTML layout such as flex or grid centring not read; the text sits at the top"
-            )
+            self._skip(Note.HTML_LAYOUT)
         align = _alignment(props.get("text-align", ""))
         wrap_box = (x, y, w, h) if w > 0 and h > 0 else None
         paint = props.get("color", "black")
@@ -2386,7 +2767,11 @@ class Reader:
         return False
 
     def _html_text(
-        self, element: ET.Element, props: Props, ancestors: list[ET.Element], before: str = ""
+        self,
+        element: ET.Element,
+        props: Props,
+        ancestors: list[ET.Element],
+        before: str = "",
     ) -> str:
         """The words an HTML fragment shows, with ``LINE_BREAK`` where the browser starts a line.
 
@@ -2404,7 +2789,7 @@ class Reader:
             fade = length(child_props.get("opacity"), 1.0, percent_of=1.0)
             gone = child.get("hidden") is not None or display == "none" or fade <= 0
             if 0 < fade < 1 and name not in ("style", "script"):
-                self._skip("see-through words inside a line drawn solid")
+                self._skip(Note.SEE_THROUGH_WORDS)
             if name == "br" and not gone:
                 words.append(LINE_BREAK)
             elif name not in ("br", "style", "script") and not gone:
@@ -2424,12 +2809,12 @@ class Reader:
         one, and following it could loop or multiply without end.
         """
         if self.measuring:
-            self._skip("icon SimpleDiagrams cannot store safely left out")  # never kept in a copy
+            self._skip(Note.ICON_UNSAFE)  # never kept in a copy
             return
         reference = element.get("href") or element.get(XLINK_HREF) or ""
         target = self.by_id.get(reference[1:]) if reference.startswith("#") else None
         if target is None:
-            self._skip("<use> of nothing left out")
+            self._skip(Note.USE_OF_NOTHING)
             return
         parsed = parse_colour(props.get("color", "black"), props)
         solid = parsed is not None and parsed[3] >= 0.999  # else stored solid, as noted if used
@@ -2450,7 +2835,8 @@ class Reader:
         x, y = self._place(element, props)
         if framed:
             # A symbol or an svg draws its view box into the placement's width and height.
-            symbol_paint = PRESENTATION - UNDRAWN.keys() - {"opacity"}  # opacity is in ``paint``
+            # Its own paint, but not its effects (noted) nor its opacity (already in ``paint``).
+            symbol_paint = PRESENTATION - UNDRAWN_NOTES.keys() - {"opacity"}
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}
             if context.get("transform", "none").strip() != "none":  # set by a stylesheet too
                 painted["transform"] = _attribute_transform(context["transform"])
@@ -2461,7 +2847,7 @@ class Reader:
             h = self._down(height, view[3], props=props)
             icon = self._icon_copy(list(target), context, paint | painted, ancestors)
             if not solid and _uses_current_colour(icon.parts, painted):
-                self._skip("see-through or unknown icon colour stored as solid")
+                self._skip(Note.ICON_COLOUR)
             box = (view[0], view[1], view[2], view[3])
             frame = self._icon_frame((x, y, w, h), box, target)
             self._add_icon(box, icon, paint | painted, frame, matrix)
@@ -2476,10 +2862,10 @@ class Reader:
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
             icon = self._icon_copy(parts, context, paint, ancestors)
             if _sized_by_page(icon.parts):  # percentages would read against the icon's own box
-                self._skip("icon SimpleDiagrams cannot store safely left out")
+                self._skip(Note.ICON_UNSAFE)
                 return
             if not solid and _uses_current_colour(icon.parts, {}):
-                self._skip("see-through or unknown icon colour stored as solid")
+                self._skip(Note.ICON_COLOUR)
             self._add_icon(extent, icon, paint, local, matrix)
 
     def _nested_svg(
@@ -2543,13 +2929,13 @@ class Reader:
         left, top, width, height = extent
         reach = 2.0  # past the room ``_extent`` leaves around lines, so a crop shows
         if left < -reach or top < -reach or left + width > w + reach or top + height > h + reach:
-            self._skip("icon cropped to its box drawn whole")
+            self._skip(Note.ICON_CROPPED)
 
     def _icon_frame(self, viewport: Rect, view: Rect, element: ET.Element) -> Rect:
         """An icon's frame inside its viewport, noting a crop the frame cannot show."""
         frame, cropped = fit_view_box(viewport, view, element.get("preserveAspectRatio"))
         if cropped:
-            self._skip("icon cropped to its box drawn whole")
+            self._skip(Note.ICON_CROPPED)
         return frame
 
     def _add_icon(
@@ -2559,7 +2945,7 @@ class Reader:
         if all(_local(item) in ICON_STRUCTURE for part in icon.parts for item in part.iter()):
             return
         if icon.clashes or (asset := svg_asset(view, icon.parts, paint, icon.shared)) is None:
-            self._skip("icon SimpleDiagrams cannot store safely left out")
+            self._skip(Note.ICON_UNSAFE)
         else:
             self._add_artwork(local, matrix, asset)
 
@@ -2649,8 +3035,8 @@ class Reader:
         self.items, self.measuring, self.held_back = saved, measuring, held_back
         points = [point for item in drawn for point in _drawn_points(item)]
         if not points:
-            for what in sorted(noted):  # nothing is stored, so what the icon lost is noted here
-                self._skip(what)
+            for note, element in sorted(noted):  # nothing is stored, so its losses are noted here
+                self._skip(note, element)
             return None
         left, top, right, bottom = bounds(points)
         lines = [item.paint.line_width / 2 for item in drawn if isinstance(item, (Box, Stroke))]
@@ -2662,7 +3048,7 @@ class Reader:
         """Add a picture in its frame; a skewed or empty one cannot be shown."""
         placed, turn = placed_frame(local, matrix), decompose(matrix)
         if placed is None or turn is None or local[2] <= 0 or local[3] <= 0:
-            self._skip("skewed or empty picture left out")
+            self._skip(Note.PICTURE_SKEWED)
             return
         self.items.append(Artwork(len(self.items), *placed, asset, turn[3]))
 
@@ -2682,11 +3068,14 @@ class Reader:
             return
         turn = decompose(matrix)
         if turn is None or not math.isclose(turn[1], turn[2]) or turn[3] != (False, False):
-            self._skip("text skewed, stretched or mirrored drawn plainly")
-        size = max(1.0, length(props.get("font-size"), 16.0))
-        if not 1 <= size * (turn[2] if turn else 1.0) <= 720:
-            self._skip("text sizes beyond 1 to 720 points drawn at the nearest")
-        text_opacity = opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)
+            self._skip(Note.TEXT_DISTORTED)
+        raw_size = length(props.get("font-size"), 16.0)
+        if raw_size <= 0:
+            return
+        size = max(1.0, raw_size)
+        if not 1 <= raw_size * (turn[2] if turn else 1.0) <= 720:
+            self._skip(Note.TEXT_SIZE)
+        text_opacity = opacity * _paint_opacity(props, "fill")
         style = TextStyle(
             font_family=_font_family(props.get("font-family")),
             font_size=size * (turn[2] if turn else 1.0),
@@ -2697,7 +3086,17 @@ class Reader:
         )
         spacing = length(props.get("letter-spacing"), font_size=size)
         self.items.append(
-            Label(len(self.items), string, anchor, matrix, align, style, size, spacing, wrap_box)
+            Label(
+                len(self.items),
+                string,
+                anchor,
+                matrix,
+                align,
+                style,
+                size,
+                spacing,
+                wrap_box,
+            )
         )
 
 
@@ -2761,11 +3160,9 @@ def _cased(words: str | None, props: Props, before: str = "") -> str:
 
 
 def _weight(props: Props) -> Literal["regular", "medium", "bold"]:
-    """The SimpleDiagrams weight a CSS ``font-weight`` comes closest to."""
-    weight = props.get("font-weight", "400").lower()
-    if weight in ("bold", "bolder") or length(weight) >= 600:
-        return "bold"
-    return "medium" if length(weight) >= 500 else "regular"
+    """The SimpleDiagrams weight a settled ``font-weight``, a number, comes closest to."""
+    weight = length(props.get("font-weight"), 400.0)
+    return "bold" if weight >= 600 else "medium" if weight >= 500 else "regular"
 
 
 def _html_look(props: Props) -> tuple[object, ...]:
@@ -2873,8 +3270,17 @@ def _drawn_points(item: Drawn) -> list[Point]:
 
 
 def _overlapping(items: Sequence[Drawn]) -> bool:
-    """Whether any two of the items' bounds overlap."""
-    extents = [bounds(_drawn_points(item)) for item in items[:200]]  # a group's own shapes
+    """Whether the drawn bounds of two items may overlap, including stroke widths."""
+    extents = []
+    for item in items[:200]:
+        left, top, right, bottom = bounds(_drawn_points(item))
+        radius = item.paint.line_width / 2 if isinstance(item, (Box, Stroke)) else 0
+        extents.append((left - radius, top - radius, right + radius, bottom + radius))
+    return _bounds_overlap(extents)
+
+
+def _bounds_overlap(extents: Sequence[Bounds]) -> bool:
+    """Whether two bounding rectangles intersect with positive area."""
     return any(
         a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
         for index, a in enumerate(extents)
@@ -2925,7 +3331,7 @@ def _uses_current_colour(parts: Sequence[ET.Element], paint: Props) -> bool:
 
 
 def _text_look(props: Props) -> tuple[object, ...]:
-    """What a style draws words with: the fill as a colour, the weight as a number."""
+    """What a style draws words with: the fill as a colour, and its settled font."""
     fill = props.get("fill", "black")
     paint: object = parse_colour(fill, props)
     if isinstance(paint, tuple):
@@ -2933,10 +3339,8 @@ def _text_look(props: Props) -> tuple[object, ...]:
         paint = (*paint[:3], round(paint[3] * max(0.0, min(1.0, alpha)), 3))
     else:
         paint = fill.strip().lower()  # a gradient or an unread colour compares as written
-    weight = props.get("font-weight", "normal")
-    weight = {"normal": "400", "bold": "700"}.get(weight, weight)
-    others = (props.get(name) for name in TEXT_STYLE if name not in ("fill", "font-weight"))
-    return (paint, weight, *others)
+    others = (props.get(name, INITIAL_VALUES.get(name)) for name in TEXT_STYLE if name != "fill")
+    return (paint, *others)
 
 
 def _holds_text(element: ET.Element) -> bool:
