@@ -18,20 +18,41 @@ STYLE_RE = re.compile(
 CSS_COMMENT_OR_STRING_RE = re.compile(
     r"""/\*.*?(?:\*/|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'""", re.DOTALL
 )
-GROUP_SELECTOR_RE = re.compile(r"\[\s*data-event-stage\s*(?:[~|^$*]?=|\])", re.IGNORECASE)
+CSS_ESCAPE = r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])"
+CSS_ESCAPE_RE = re.compile(CSS_ESCAPE)
+CSS_IDENTIFIER = rf"(?:[\w-]|{CSS_ESCAPE})+"
+CSS_ATTRIBUTE_RE = re.compile(
+    rf"{CSS_ESCAPE}|\[\s*(?:(?:{CSS_IDENTIFIER}|\*)?\|)?"
+    rf"(?P<name>{CSS_IDENTIFIER})\s*(?:[~|^$*]?=|\])"
+)
 KINDS = {"command": "CMD-", "event": "EVT-", "read-model": "VIEW-"}
 LINKS = {"emits": ("command", "event"), "projects": ("event", "read-model")}
 
 
-def hidden(node: ET.Element) -> bool:
-    tag = node.tag.rsplit("}", 1)[-1]
-    style = {
-        key.strip().casefold(): value.strip().casefold()
+def decode_css_escape(match: re.Match[str]) -> str:
+    token = match[0][1:]
+    if token[0] not in "0123456789abcdefABCDEF":
+        return token
+    codepoint = int(token.strip(), 16)
+    if 0 < codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF:
+        return chr(codepoint)
+    return "\ufffd"
+
+
+def inline_style(node: ET.Element) -> dict[str, str]:
+    declarations = CSS_COMMENT_OR_STRING_RE.sub(" ", node.attrib.get("style", ""))
+    return {
+        CSS_ESCAPE_RE.sub(decode_css_escape, key.strip()).casefold(): value.strip().casefold()
         for key, separator, value in (
-            part.partition(":") for part in node.attrib.get("style", "").split(";")
+            part.partition(":") for part in declarations.split(";")
         )
         if key and separator
     }
+
+
+def hidden(node: ET.Element) -> bool:
+    tag = node.tag.rsplit("}", 1)[-1]
+    style = inline_style(node)
     return (
         tag in {"defs", "title", "desc"}
         or node.attrib.get("aria-hidden") == "true"
@@ -93,7 +114,13 @@ def check(path: Path) -> list[str]:
         if body is None:
             continue
         css = CSS_COMMENT_OR_STRING_RE.sub(" ", body)
-        if any(GROUP_SELECTOR_RE.search(selector) for selector in re.findall(r"([^{}]+)\{", css)):
+        selectors = re.findall(r"([^{}]+)\{", css)
+        if any(
+            CSS_ESCAPE_RE.sub(decode_css_escape, name).casefold() == "data-event-stage"
+            for selector in selectors
+            for match in CSS_ATTRIBUTE_RE.finditer(selector)
+            if (name := match.group("name")) is not None
+        ):
             errors.append("stylesheet must not select data-event-stage")
             break
 
@@ -105,7 +132,7 @@ def check(path: Path) -> list[str]:
     global_ids: set[str] = set()
     for index, stage in enumerate(stages, 1):
         stage_id = stage.attrib["data-event-stage"]
-        if "transform" in stage.attrib:
+        if "transform" in stage.attrib or {"transform", "translate", "rotate", "scale"} & inline_style(stage).keys():
             errors.append(f"{stage_id}: event stage must not use transform")
         if not stage_id or stage_id in stage_ids:
             errors.append(f"blank or duplicate stage ID: {stage_id!r}")

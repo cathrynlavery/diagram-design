@@ -26,7 +26,12 @@ def main() -> None:
         (first_group, first_group.replace("<g ", '<g style="display:none" '), "is not printed"),
         (first_group, first_group.replace("<g ", '<g opacity="0" '), "is not printed"),
         (first_group, first_group.replace("<g ", '<g transform="scale(0)" '), "event stage must not use transform"),
+        (first_group, first_group.replace("<g ", '<g style="transform:scale(0)" '), "event stage must not use transform"),
+        (first_group, first_group.replace("<g ", '<g style="scale:0" '), "event stage must not use transform"),
         ("</style>", "g[data-event-stage]{display:none}</style>", "stylesheet must not select data-event-stage"),
+        ("</style>", "g[*|data-event-stage]{display:none}</style>", "stylesheet must not select data-event-stage"),
+        ("</style>", "g[|data-event-stage]{display:none}</style>", "stylesheet must not select data-event-stage"),
+        ("</style>", r"g[data-\65 vent-stage]{display:none}</style>", "stylesheet must not select data-event-stage"),
         ('data-stage-order="2"', 'data-stage-order="1"', "stage order"),
         ('data-event-stage="STAGE-02"', 'data-event-stage="STAGE-01"', "duplicate stage ID"),
         ('data-diagram-role="timeframe"', 'data-diagram-role="unknown"', "stage role must be timeframe"),
@@ -59,6 +64,12 @@ def main() -> None:
         if not any("STAGE-01:" in error and "is not printed" in error for error in errors):
             failures.append(("hidden SVG wrapper", "is not printed", errors))
         assert not failures, failures
+
+        # A comment and an escaped bracket in a class name are not attribute selectors.
+        inert_css = r"/* g[data-event-stage]{display:none} */ .literal\[data-event-stage\]{display:none}"
+        assert "</style>" in source
+        candidate.write_text(source.replace("</style>", inert_css + "</style>", 1), encoding="utf-8")
+        assert module.check(candidate) == []
     print("OK event modeling: ordered stages, typed roles, and link endpoints")
 
 
