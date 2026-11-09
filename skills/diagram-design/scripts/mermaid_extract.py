@@ -123,11 +123,12 @@ def _er_tokens(tokens: dict[str, object]) -> str:
     """Return a regex alternation over tokens, longest first like Mermaid's lexer.
 
     As in Mermaid (jison), a token that ends in a word character must end at a
-    word boundary, so `to` does not match the start of `tomany`.
+    word boundary, so `to` does not match the start of `tomany`. Mermaid ignores
+    only ASCII case, so `(?a:...)` keeps `İ` and `ı` from matching `i`.
     """
     ordered = sorted(tokens, key=len, reverse=True)
     return "|".join(
-        _ER_TOKEN_CONTEXT.get(token, re.escape(token) + (r"\b" if token[-1].isalnum() else ""))
+        _ER_TOKEN_CONTEXT.get(token, "(?a:" + re.escape(token) + (r"\b" if token[-1].isalnum() else "") + ")")
         for token in ordered
     )
 

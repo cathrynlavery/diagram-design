@@ -1596,9 +1596,16 @@ def check_er_cardinality_aliases(tmp: Path) -> None:
     if edges != expected:
         fail(f"ER cardinality aliases were dropped or misread: {edges}")
 
-    # As in Mermaid, a bare `1` must touch its link, and a word must end at a
-    # word boundary, so these are not relationships.
-    for body in ("A 1 -- 1 B : r\n", "A ||--x B : r\n", "A 1 tozero or more B : r\n"):
+    # As in Mermaid, a bare `1` must touch its link, a word must end at a word
+    # boundary, and only ASCII letters match in either case, so these are not
+    # relationships.
+    for body in (
+        "A 1 -- 1 B : r\n",
+        "A ||--x B : r\n",
+        "A 1 tozero or more B : r\n",
+        "A only one optİonally to many B : r\n",
+        "A only one optıonally to many B : r\n",
+    ):
         path.write_text("erDiagram\n" + body, encoding="utf-8")
         if "--" in body:
             expect_error([str(path)], "malformed edge at line 2")
