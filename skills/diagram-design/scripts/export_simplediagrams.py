@@ -188,6 +188,7 @@ TEXT_STYLE = ("fill", "font-family", "font-size", "font-style", "font-weight", "
 NO_PAINT = frozenset({"none", "transparent"})
 IMPORTANT = "!important"
 MAX_VAR_LENGTH = 4096  # characters a var() may expand to; browsers also refuse long ones
+MAX_VAR_DEPTH = 64  # nested var()s followed before a value counts as invalid
 IMPORTANT_RE = re.compile(r"\s*!\s*important$", re.IGNORECASE)
 GENERIC_FONTS = frozenset(
     {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-serif",
@@ -377,26 +378,36 @@ def _readable_part(selector: str) -> tuple[Compound, ...] | None:
 
 
 class _InvalidVar(Exception):
-    """A ``var()`` with no valid value: past ``MAX_VAR_LENGTH``, or invalid with no fallback."""
+    """A ``var()`` with no valid value: past ``MAX_VAR_LENGTH``, in a loop of properties that
+    refer to each other, or invalid with no fallback."""
 
 
 def resolve_vars(
-    value: str, props: Props, cache: dict[str, str | None] | None = None, depth: int = 0
+    value: str,
+    props: Props,
+    cache: dict[str, str | None] | None = None,
+    depth: int = 0,
+    pending: set[str] | None = None,
 ) -> str | None:
     """Substitute ``var(--name, fallback)`` from inherited custom properties.
 
     Each custom property is expanded once per ``cache``, and a value that would grow past
     ``MAX_VAR_LENGTH`` is ``None``, invalid as in a browser, so properties that each repeat
     the one before cannot turn a short stylesheet into an exponentially long string.
-    A property that is invalid this way gives way to the ``var()``'s fallback.
+    A property that refers back to itself, directly or through others, is invalid too;
+    ``pending`` holds the names being expanded. An invalid property gives way to the
+    ``var()``'s fallback.
     """
-    if "var(" not in value or depth > 8:
+    if "var(" not in value:
         return value
+    if depth > MAX_VAR_DEPTH:
+        return None
     cache = {} if cache is None else cache
+    pending = set() if pending is None else pending
 
     def expanded(text: str) -> str:
         """``text`` resolved, or else ``_InvalidVar``."""
-        found = resolve_vars(text, props, cache, depth + 1)
+        found = resolve_vars(text, props, cache, depth + 1, pending)
         if found is None:
             raise _InvalidVar
         return found
@@ -406,8 +417,12 @@ def resolve_vars(
         name, comma, fallback = match.group(1).partition(",")
         name = name.strip()
         if name in props:
+            if name in pending:
+                raise _InvalidVar  # a loop, in which every property is invalid
             if name not in cache:
-                cache[name] = resolve_vars(props[name], props, cache, depth + 1)
+                pending.add(name)
+                cache[name] = resolve_vars(props[name], props, cache, depth + 1, pending)
+                pending.discard(name)
             found = cache[name]
             if found is not None:
                 return found
@@ -480,7 +495,11 @@ def computed_properties(
         elif name in PRESENTATION or name.startswith("--"):
             props[name] = value
     cache: dict[str, str | None] = {}
-    resolved = {k: resolve_vars(v, props, cache) for k, v in props.items()}
+    # A custom property is read through ``var()``, so it shares the cache that finds loops.
+    resolved = {
+        k: resolve_vars(f"var({k})" if k.startswith("--") else v, props, cache)
+        for k, v in props.items()
+    }
     props = {k: v for k, v in resolved.items() if v is not None}
     for name, found in resolved.items():  # an over-long value is invalid: as if unset
         if found is None and name in INHERITED and name in inherited:

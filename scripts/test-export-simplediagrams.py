@@ -778,6 +778,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             (".a { vector-effect: non-scaling-stroke }", line, 'vector-effect="non-scaling-stroke"', " style="),
             (":root { --o: stroke }", '<path d="M1 1H9" style="paint-order: var(--o)"/>',
              'paint-order="stroke"', "var("),
+            (":root { --a: var(--b); --b: var(--a) }", '<path d="M1 1H9" style="stroke-width: var(--a, 6)"/>',
+             'stroke-width="6"', "var("),  # properties in a loop are invalid, so the fallback applies
             ("", '<text style="font: italic 14pt Georgia">Hi</text>', 'font-size="14pt" font-style="italic"', " style="),
             ("", '<path d="M1 1H9" style="clip-path:url(#c);marker-end:url(#m)"/>',
              'clip-path="url(#c)" marker-end="url(#m)"', " style="),
