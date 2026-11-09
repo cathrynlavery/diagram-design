@@ -26,6 +26,7 @@ import unicodedata
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Callable
 from urllib.parse import urlparse
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -71,6 +72,7 @@ WIDE_ADVANCE = 1.0
 TEXT_FIT_PROPERTIES = ("font-size", "font-family", "text-anchor", "letter-spacing")
 # Weight and style move real glyph widths, but the budget already averages over them.
 TEXT_FIT_IGNORED = {"font-weight", "font-style"}
+PAINT_PROPERTIES = frozenset({"fill", "stroke", "stroke-width"})
 # Half a narrow glyph. The budget is an average that runs wide of Geist (about 0.52em
 # sans, 0.60em mono drawn), so a smaller overshoot is budget error on a label that
 # draws inside its box; a whole character past the edge is the real defect.
@@ -705,16 +707,28 @@ def check_viewbox(source: str, errors: list[str]) -> None:
             )
 
 
-def text_css_subjects(source: str) -> list[tuple[str, set[str], set[str], set[str]]]:
-    """Selector subjects of stylesheet rules that change how wide text sets."""
+def declaring_css_subjects(
+    source: str, declares: Callable[[str], bool]
+) -> list[tuple[str, set[str], set[str], set[str]]]:
+    """Selector subjects of stylesheet rules that declare a property `declares` accepts."""
     styles = re.findall(r"<style\b[^>]*>(.*?)</style\s*>", source, re.IGNORECASE | re.DOTALL)
     sheet = CSS_KEYFRAMES_RE.sub("", CSS_COMMENT_RE.sub("", "\n".join(styles)))
     subjects = []
     for selector, declarations in CSS_RULE_RE.findall(sheet):
         names = {part.split(":", 1)[0].strip().casefold() for part in declarations.split(";")}
-        if any(restyles_text_width(name) for name in names):
+        if any(declares(name) for name in names):
             subjects.extend(selector_subjects(selector))
     return subjects
+
+
+def inline_paint(attrs: dict[str, str]) -> dict[str, str]:
+    values = {name: attrs[name].strip().casefold() for name in PAINT_PROPERTIES if name in attrs}
+    for declaration in attrs.get("style", "").split(";"):
+        name, _, value = declaration.partition(":")
+        name = name.strip().casefold()
+        if name in PAINT_PROPERTIES:
+            values[name] = value.strip().casefold()
+    return values
 
 
 def inline_text_style(attrs: dict[str, str]) -> dict[str, str]:
@@ -774,9 +788,13 @@ class TextFitParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.svgs: list[dict[str, object]] = []
         self._css_subjects = unstatic_css_subjects(source)
-        self._text_subjects = text_css_subjects(source)
-        # (tag, offset, inherited text style or None when CSS restyles it)
-        self._frames: list[tuple[str, tuple[float, float] | None, dict[str, str] | None]] = []
+        self._text_subjects = declaring_css_subjects(source, restyles_text_width)
+        self._paint_subjects = declaring_css_subjects(source, PAINT_PROPERTIES.__contains__)
+        # (tag, offset, inherited text style, inherited paint); a style or paint is None
+        # once a stylesheet rule can change it, since its value is then unknown here.
+        self._frames: list[
+            tuple[str, tuple[float, float] | None, dict[str, str] | None, dict[str, str] | None]
+        ] = []
         self._text: dict[str, object] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -785,30 +803,29 @@ class TextFitParser(HTMLParser):
         if not self._frames:
             if tag == "svg":
                 self.svgs.append({"attrs": data, "rects": [], "lines": [], "papers": set()})
-                self._frames.append((tag, (0.0, 0.0), {}))
+                style, paint = self._inherit(tag, data, {}, {})
+                self._frames.append((tag, (0.0, 0.0), style, paint))
             return
-        _parent_tag, parent_offset, parent_style = self._frames[-1]
+        _parent_tag, parent_offset, parent_style, parent_paint = self._frames[-1]
         offset = child_offset(tag, data, parent_offset, self._css_subjects)
-        style: dict[str, str] | None = None
-        if parent_style is not None and not any(
-            matches_subject(tag, data, subject) for subject in self._text_subjects
-        ):
-            own = inline_text_style(data)
-            style = None if "" in own.values() else {**parent_style, **own}
-        self._frames.append((tag, offset, style))
+        style, paint = self._inherit(tag, data, parent_style, parent_paint)
+        self._frames.append((tag, offset, style, paint))
         svg = self.svgs[-1]
         if offset is None:
             if tag in {"text", "tspan"} and self._text is not None:
                 self._text["static"] = False
             return
         if tag == "rect" and self._text is None:
-            fill = data.get("fill", "black").strip().casefold()
-            stroke = data.get("stroke", "none").strip().casefold()
-            stroked = stroke not in {"none", "transparent"} and data.get("stroke-width") != "0"
-            if data.get("width", "").strip() == "100%":
-                papers = svg["papers"]
-                assert isinstance(papers, set)
-                papers.add(fill)
+            fill: str | None = None
+            stroked = False
+            if paint is not None:
+                fill = paint.get("fill", "black")
+                stroke = paint.get("stroke", "none")
+                stroked = stroke not in {"none", "transparent"} and paint.get("stroke-width") != "0"
+                if data.get("width", "").strip() == "100%":
+                    papers = svg["papers"]
+                    assert isinstance(papers, set)
+                    papers.add(fill)
             points = painted_points(tag, data)
             if points and (fill not in {"none", "transparent"} or stroked):
                 (x0, y0), (x1, y1) = points
@@ -819,7 +836,8 @@ class TextFitParser(HTMLParser):
                 )
         elif tag == "text" and self._text is None:
             x, y = svg_length(data, "x"), svg_length(data, "y")
-            self._text = {"static": x is not None and y is not None, "lines": []}
+            shifted = any(name in data for name in ("dx", "dy", "rotate", "textlength"))
+            self._text = {"static": x is not None and y is not None and not shifted, "lines": []}
             if x is not None and y is not None:
                 self._start_line(x + offset[0], y + offset[1], style)
         elif tag == "tspan" and self._text is not None:
@@ -839,6 +857,26 @@ class TextFitParser(HTMLParser):
                 self._start_line(x + offset[0], line_y, style)
             elif "y" in data or "dy" in data:
                 self._text["static"] = False
+
+    def _inherit(
+        self,
+        tag: str,
+        data: dict[str, str],
+        parent_style: dict[str, str] | None,
+        parent_paint: dict[str, str] | None,
+    ) -> tuple[dict[str, str] | None, dict[str, str] | None]:
+        style: dict[str, str] | None = None
+        if parent_style is not None and not any(
+            matches_subject(tag, data, subject) for subject in self._text_subjects
+        ):
+            own = inline_text_style(data)
+            style = None if "" in own.values() else {**parent_style, **own}
+        paint: dict[str, str] | None = None
+        if parent_paint is not None and not any(
+            matches_subject(tag, data, subject) for subject in self._paint_subjects
+        ):
+            paint = {**parent_paint, **inline_paint(data)}
+        return style, paint
 
     def _start_line(self, x: float, y: float, style: dict[str, str] | None) -> None:
         assert self._text is not None
@@ -919,11 +957,14 @@ def check_text_fit(source: str, errors: list[str]) -> None:
             # only where something crosses behind, which is a collision, not a fit problem.
             # Nodes paint such a mask under their tinted body, so it only decides when it
             # is strictly smaller than every visible rect around the anchor.
-            visible = [rect for rect in behind if rect[5] or rect[4] not in papers]
+            visible = [
+                rect for rect in behind
+                if rect[5] or (rect[4] is not None and rect[4] not in papers)
+            ]
             if not visible:
                 continue
             box = min(visible, key=rect_area)
-            if min(rect_area(rect) for rect in behind) < rect_area(box):
+            if min(rect_area(rect) for rect in behind) < rect_area(box) or box[4] is None:
                 continue
             left, right = box[0], box[2]
             anchor = line["anchor"]

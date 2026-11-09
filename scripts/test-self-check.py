@@ -391,6 +391,32 @@ def main() -> int:
     check_source_pass("stylesheet font size leaves the estimate to the browser",
                       styled("text.wide { font-size: 4px; }", "").replace(
                           '>Astro Origin</text>', ' class="wide">Astro Origin Server Cluster</text>', 1))
+    def fit_svg(body: str, root: str = "") -> str:
+        return re.sub(r"(<svg viewBox=\"0 0 1000 480\"[^>]*)>", r"\1" + root + ">", static, count=1).replace(
+            "</svg>", body + "</svg>", 1)
+
+    box = '<rect x="0" y="12" width="100" height="40" fill="#ececec" stroke="#2d3142"/>'
+    check_source_pass("root svg text-anchor centers the label",
+                      fit_svg(box + '<text x="50" y="32" font-size="10">ABCDEFGHIJ</text>',
+                              ' text-anchor="middle"'))
+    check_fail("root svg font-size is inherited",
+               fit_svg(box + '<text x="4" y="32">ABCDEFGHIJKLMNOPQRST</text>', ' font-size="10"'),
+               "overflows its 100px box")
+    check_fail("box painted through inline style",
+               fit_svg('<rect x="0" y="12" width="100" height="40" style="fill:#ececec;stroke:#2d3142"/>'
+                       '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'),
+               "overflows its 100px box")
+    check_fail("box painted by its group",
+               fit_svg('<g fill="#ececec" stroke="#2d3142"><rect x="0" y="12" width="100" height="40"/></g>'
+                       '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'),
+               "overflows its 100px box")
+    check_source_pass("box painted by a stylesheet rule is left alone",
+                      styled(".box { fill: #f5f5f5; }",
+                             '<rect class="box" x="0" y="12" width="100" height="40"/>'
+                             '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'))
+    for attribute in ('dx="-40"', 'dy="2"', 'rotate="0"', 'textLength="90"'):
+        check_source_pass(f"text with {attribute} is not measured",
+                          fit_svg(box + f'<text x="60" y="32" {attribute} font-size="10">ABCDEFGHIJ</text>'))
     overflowing_assets = []
     for asset in sorted(ASSET_DIR.glob("*.html")):
         fit_errors: list[str] = []
