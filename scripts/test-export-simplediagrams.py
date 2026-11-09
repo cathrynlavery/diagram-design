@@ -1513,6 +1513,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             with self.subTest(placed=placed[:20]):
                 body = f'<defs><symbol id="s" viewBox="0 0 10 10">{icon}</symbol></defs><g font-size="10">{placed}</g>'
                 self.assertEqual(frames(body), [{"x": 20, "y": 20, "width": 40, "height": 40}])
+        icon = self.icon("", '<g font-size="10"><svg width="40" height="40" viewBox="0 0 40 40">'
+                         '<rect width="2em" height="2em"/></svg></g>')  # fmt: skip
+        self.assertIn('font-size="10"', icon)  # a stored icon keeps what its em lengths are of
         html = '<g font-size="10"><foreignObject x="2em" y="2em" width="10em" height="4em"><div>Hi</div></foreignObject></g>'
         self.assertEqual(frames(html)[0], {"x": 20, "y": 20, "width": 100, "height": 40})
         document, _ = self.export('<svg viewBox="0 0 400 300"><line x2="100" stroke="#000" font-size="8"'

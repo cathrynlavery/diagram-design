@@ -1262,7 +1262,8 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
     cannot lose to an inline style in the copy. Other inline declarations stay inline.
     Returns the copy and what its children inherit in the stored icon.
     """
-    written, dropped = ICON_ATTRIBUTES, ICON_DROPPED_ATTRIBUTES
+    # Any element keeps its font size, which lengths such as width="2em" are measured by.
+    written, dropped = ICON_ATTRIBUTES | {"font-size"}, ICON_DROPPED_ATTRIBUTES
     if _local(element) in ("text", "tspan"):
         written |= ICON_TEXT
     if page.get("transform", "").strip() in ("", "none"):  # nothing for a transform frame to move
