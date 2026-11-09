@@ -325,7 +325,7 @@ The model already understood the content. What it was missing was taste, so I wr
 </tr>
 </table>
 
-Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko.
+Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko; Dependency covers arc diagram.
 
 Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagram-design/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagram-design/references/type-architecture.md).
 
@@ -484,7 +484,7 @@ What never carries over: source or renderer coordinates, source palette, source 
 
 ## Export to PNG / SVG
 
-Diagrams ship as self-contained HTML, but you can export the diagram itself for Figma, slides, or social cards. SVG export also carries CDATA-wrapped diagram CSS, including selectors bound to the original SVG root, and preserves quoted selector values containing comment delimiters. Use the slash command for your agent:
+Diagrams ship as self-contained HTML, but you can export the diagram itself for Figma, slides, or social cards. SVG export also carries CDATA-wrapped diagram CSS, including selectors bound to the original SVG root, and preserves quoted selector values containing comment delimiters. Numeric character references in SVG text and attributes retain their HTML meaning (for example, `&#128;` stays `€`). Use the slash command for your agent:
 
 **Pi:**
 
