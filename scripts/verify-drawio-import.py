@@ -369,6 +369,50 @@ def check_nested_relative_geometry(tmp: Path) -> None:
     ok("nested relative groups, offsets, depth and bounds match all six cell orders")
 
 
+def check_table_rows(tmp: Path) -> None:
+    # draw.io's Table / Entity Relation shapes: a shape=table container whose
+    # rows are shape=tableRow cells holding shape=partialRectangle cells.
+    row_style = (
+        "shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;"
+        "fillColor=none;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];"
+        "portConstraint=eastwest;top=0;left=0;right=0;bottom=1;"
+    )
+    cell_style = (
+        "shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;"
+        "bottom=0;right=0;overflow=hidden;whiteSpace=wrap;html=1;"
+    )
+    cells = [
+        '<mxCell id="users" value="users" style="shape=table;startSize=30;container=1;'
+        'collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;'
+        'align=center;resizeLast=1;html=1;" vertex="1" parent="1">'
+        '<mxGeometry x="40" y="40" width="180" height="90" as="geometry"/></mxCell>'
+    ]
+    for row, (key, column) in enumerate((("PK", "id"), ("", "email")), 1):
+        y = 30 * row
+        cells.append(
+            f'<mxCell id="r{row}" value="" style="{row_style}" vertex="1" parent="users">'
+            f'<mxGeometry y="{y}" width="180" height="30" as="geometry"/></mxCell>'
+            f'<mxCell id="r{row}k" value="{key}" style="{cell_style}" vertex="1" parent="r{row}">'
+            '<mxGeometry width="30" height="30" as="geometry"/></mxCell>'
+            f'<mxCell id="r{row}v" value="{column}" style="{cell_style}" vertex="1" parent="r{row}">'
+            '<mxGeometry x="30" width="150" height="30" as="geometry"/></mxCell>'
+        )
+    source = tmp / "er-table.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        + "".join(cells) + "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    shapes = {node["id"]: node["shape"] for node in page["nodes"]}
+    if shapes["users"] != "table" or {shapes["r1"], shapes["r2"]} != {"table-row"}:
+        fail(f"draw.io table rows must not be classified as tables: {shapes}")
+    counts = page["analysis"]["shapes"]
+    if counts.get("table") != 1 or counts.get("table-row") != 6:
+        fail(f"one draw.io table must count as one table: {counts}")
+    ok("draw.io tableRow cells are rows, so one table counts once")
+
+
 def check_bom_prefixed(tmp: Path) -> None:
     model = re.search(
         r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
@@ -936,6 +980,7 @@ def main() -> int:
         check_relative_geometry(tmp)
         check_nested_geometry(tmp)
         check_nested_relative_geometry(tmp)
+        check_table_rows(tmp)
         check_bom_prefixed(tmp)
         check_plain_angle_brackets(tmp)
         check_hidden_cells(tmp)
