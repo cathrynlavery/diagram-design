@@ -178,15 +178,22 @@ def accent_colors(source: str) -> set:
                 inside = bool(stack) and (stack[-1][1] or KEYFRAMES_RE.match(stack[-1][0]) is not None)
                 stack.append((text.strip(), inside))
             else:
-                found = COLOR_ACCENT_RE.search(text)
-                if found and stack and not stack[-1][1] and reaches_figure(stack[-1][0], elements):
-                    color = rgb_of(found.group("value"))
-                    if color is not None:
-                        declared.append(color)
+                declared += accent_declared(text, stack, elements)
                 if char == "}" and stack:
                     stack.pop()
             text = ""
+        # CSS closes a declaration and its blocks left open at the end of a stylesheet.
+        declared += accent_declared(text, stack, elements)
     return DEFAULT_ACCENTS | set(declared[-1:])
+
+
+def accent_declared(text: str, stack: list, elements: set) -> list:
+    """The accent one declaration sets, if its innermost block reaches the figure."""
+    found = COLOR_ACCENT_RE.search(text)
+    if not (found and stack and not stack[-1][1] and reaches_figure(stack[-1][0], elements)):
+        return []
+    color = rgb_of(found.group("value"))
+    return [] if color is None else [color]
 ARC_D_RE = re.compile(
     r"^\s*M\s*(?P<x1>-?\d+(?:\.\d+)?)\s*,\s*(?P<y1>-?\d+(?:\.\d+)?)"
     r"\s*A\s*(?P<rx>-?\d+(?:\.\d+)?)\s*,\s*(?P<ry>-?\d+(?:\.\d+)?)"
