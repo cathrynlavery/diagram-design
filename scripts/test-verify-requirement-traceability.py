@@ -31,7 +31,12 @@ def main() -> None:
         (first_group, first_group.replace("<g ", '<g style="display:none" '), "is not printed"),
         (first_group, first_group.replace("<g ", '<g opacity="0" '), "is not printed"),
         (first_group, first_group.replace("<g ", '<g transform="scale(0)" '), "requirement row must not use transform"),
+        (first_group, first_group.replace("<g ", '<g style="transform:scale(0)" '), "requirement row must not use transform"),
+        (first_group, first_group.replace("<g ", '<g style="scale:0" '), "requirement row must not use transform"),
         ("</style>", "g[data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
+        ("</style>", "g[*|data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
+        ("</style>", "g[|data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
+        ("</style>", r"g[data-\74 race-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
         ('data-trace-source="Review brief §1"', 'data-trace-source=""', "missing source reference"),
         ('data-trace-row="REQ-02"', 'data-trace-row="REQ-01"', "duplicate requirement row ID"),
         ('data-trace-from="DES-01"', 'data-trace-from="DES-99"', "source does not resolve"),
@@ -61,6 +66,12 @@ def main() -> None:
         if not any("REQ-01:" in error and "is not printed" in error for error in errors):
             failures.append(("hidden SVG wrapper", "is not printed", errors))
         assert not failures, failures
+
+        # A comment and an escaped bracket in a class name are not attribute selectors.
+        inert_css = r"/* g[data-trace-row]{display:none} */ .literal\[data-trace-row\]{display:none}"
+        assert "</style>" in source
+        candidate.write_text(source.replace("</style>", inert_css + "</style>", 1), encoding="utf-8")
+        assert verifier.check(candidate) == []
     print("OK requirement traceability: source, IDs, typed links, and explicit gaps")
 
 

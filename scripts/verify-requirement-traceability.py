@@ -18,7 +18,13 @@ STYLE_RE = re.compile(
 CSS_COMMENT_OR_STRING_RE = re.compile(
     r"""/\*.*?(?:\*/|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'""", re.DOTALL
 )
-GROUP_SELECTOR_RE = re.compile(r"\[\s*data-trace-row\s*(?:[~|^$*]?=|\])", re.IGNORECASE)
+CSS_ESCAPE = r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])"
+CSS_ESCAPE_RE = re.compile(CSS_ESCAPE)
+CSS_IDENTIFIER = rf"(?:[\w-]|{CSS_ESCAPE})+"
+CSS_ATTRIBUTE_RE = re.compile(
+    rf"{CSS_ESCAPE}|\[\s*(?:(?:{CSS_IDENTIFIER}|\*)?\|)?"
+    rf"(?P<name>{CSS_IDENTIFIER})\s*(?:[~|^$*]?=|\])"
+)
 KINDS = {"source": "SRC-", "requirement": "REQ-", "design": "DES-", "test": "TST-"}
 RELATIONS = {"derives": "source", "satisfies": "design", "verifies": "test"}
 
@@ -27,15 +33,30 @@ def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def hidden(node: ET.Element) -> bool:
-    tag = local(node.tag)
-    style = {
-        key.strip().casefold(): value.strip().casefold()
+def decode_css_escape(match: re.Match[str]) -> str:
+    token = match[0][1:]
+    if token[0] not in "0123456789abcdefABCDEF":
+        return token
+    codepoint = int(token.strip(), 16)
+    if 0 < codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF:
+        return chr(codepoint)
+    return "\ufffd"
+
+
+def inline_style(node: ET.Element) -> dict[str, str]:
+    declarations = CSS_COMMENT_OR_STRING_RE.sub(" ", node.attrib.get("style", ""))
+    return {
+        CSS_ESCAPE_RE.sub(decode_css_escape, key.strip()).casefold(): value.strip().casefold()
         for key, separator, value in (
-            part.partition(":") for part in node.attrib.get("style", "").split(";")
+            part.partition(":") for part in declarations.split(";")
         )
         if key and separator
     }
+
+
+def hidden(node: ET.Element) -> bool:
+    tag = local(node.tag)
+    style = inline_style(node)
     return (
         tag in {"defs", "title", "desc"}
         or node.attrib.get("aria-hidden") == "true"
@@ -97,7 +118,13 @@ def check(path: Path) -> list[str]:
         if body is None:
             continue
         css = CSS_COMMENT_OR_STRING_RE.sub(" ", body)
-        if any(GROUP_SELECTOR_RE.search(selector) for selector in re.findall(r"([^{}]+)\{", css)):
+        selectors = re.findall(r"([^{}]+)\{", css)
+        if any(
+            CSS_ESCAPE_RE.sub(decode_css_escape, name).casefold() == "data-trace-row"
+            for selector in selectors
+            for match in CSS_ATTRIBUTE_RE.finditer(selector)
+            if (name := match.group("name")) is not None
+        ):
             errors.append("stylesheet must not select data-trace-row")
             break
 
@@ -109,7 +136,7 @@ def check(path: Path) -> list[str]:
     row_ids: set[str] = set()
     for row in rows:
         requirement_id = row.attrib["data-trace-row"].strip()
-        if "transform" in row.attrib:
+        if "transform" in row.attrib or {"transform", "translate", "rotate", "scale"} & inline_style(row).keys():
             errors.append(f"{requirement_id}: requirement row must not use transform")
         if not requirement_id or requirement_id in row_ids:
             errors.append(f"blank or duplicate requirement row ID: {requirement_id!r}")
