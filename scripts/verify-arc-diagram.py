@@ -32,8 +32,8 @@ Nine invariants:
    lands on Catalog is a different import.
 
 6. AT MOST ONE ACCENT ARC - one focal claim per figure, on either skin.
-   The accent is the shipped orange or the document's active --color-accent
-   (the last declaration outside comments), compared as an RGB value.
+   The accent is the shipped orange or the active --color-accent (the last
+   one set by a <style> rule that reaches the figure), compared as RGB.
    A <style> rule that sets stroke or fill is refused: it outranks the
    stroke attributes this count reads.
 
@@ -49,10 +49,10 @@ Nine invariants:
    <mask>, <clipPath>, <pattern>) is refused: a seat readers cannot see
    must not count toward a span. So is a <style> rule that hides or resets
    (display, visibility, zero opacity, zero stroke width or the all
-   shorthand) when its subject can match a checked mark, an element inside
-   one or one around it (by type, class, id or attribute name); a subject with
-   nothing to match, such as `*` or :root, reaches everything. Nested rules
-   count; @keyframes steps do not.
+   shorthand) when its subject can match an <svg> holding a checked mark,
+   anything inside it or anything around it (by type, class, id or attribute
+   name); a subject with nothing to match, such as `*` or :root, reaches
+   everything. Nested rules count; @keyframes steps do not.
 
 8. BOUND NAMES, BOTH WAYS - every node circle has exactly one label bound
    to the same `data-name`, the visible text matches, and the name is
@@ -155,9 +155,22 @@ def rgb_of(value: str):
 
 
 def accent_colors(source: str) -> set:
-    """The shipped accents plus the active --color-accent: the last one declared, outside comments."""
-    text = re.sub(r"/\*.*?\*/", " ", source, flags=re.DOTALL)
-    declared = [rgb_of(found.group("value")) for found in COLOR_ACCENT_RE.finditer(text)]
+    """The shipped accents plus the active --color-accent.
+
+    Only <style> rules whose subject reaches the figure count, and the last
+    one outside comments wins: another component's accent never re-skins
+    the diagram.
+    shortcut: an inline style="--color-accent:..." is not read; add it if a
+    template ever sets the skin inline.
+    """
+    elements = figure_elements(source)
+    declared = []
+    for match in STYLE_RE.finditer(source):
+        css = re.sub(r"/\*.*?\*/", " ", match.group("body"), flags=re.DOTALL)
+        for selector, body, in_keyframes in css_blocks(css.replace("<!--", " ").replace("-->", " ")):
+            if in_keyframes or not reaches_figure(selector, elements):
+                continue
+            declared += [rgb_of(found.group("value")) for found in COLOR_ACCENT_RE.finditer(body)]
     return DEFAULT_ACCENTS | set([color for color in declared if color is not None][-1:])
 ARC_D_RE = re.compile(
     r"^\s*M\s*(?P<x1>-?\d+(?:\.\d+)?)\s*,\s*(?P<y1>-?\d+(?:\.\d+)?)"
@@ -389,22 +402,32 @@ def is_checked_mark(tag: str, raw_attrs: str) -> bool:
 
 
 def figure_elements(source: str) -> set:
-    """(tag, tokens) for every checked mark, everything inside one and every element around one."""
-    found, stack = set(), []
+    """(tag, tokens) for each <svg> holding a checked mark, everything inside it and everything around it.
+
+    An <svg> with no checked mark, such as a logo, is left out.
+    """
+    found, stack, capture = set(), [], None
     for tag in OPEN_TAG_RE.finditer(source):
         name = tag.group("tag").lower()
         if tag.group("close"):
-            if any(entry[0] == name for entry in stack):
+            if any(open_name == name for open_name, _tokens in stack):
                 while stack.pop()[0] != name:
                     pass
+            if capture is not None and len(stack) <= capture["depth"]:
+                if capture["marked"]:
+                    found.update(capture["elements"] + capture["around"])
+                capture = None
             continue
-        entry = (name, frozenset(tokens_of(attrs_of(tag.group("attrs")))),
-                 is_checked_mark(name, tag.group("attrs")) or any(open_[2] for open_ in stack))
-        if entry[2]:
-            found.add(entry[:2])
-            found.update(open_[:2] for open_ in stack)
+        entry = (name, frozenset(tokens_of(attrs_of(tag.group("attrs")))))
+        if capture is None and name == "svg":
+            capture = {"depth": len(stack), "around": list(stack), "elements": [], "marked": False}
+        if capture is not None:
+            capture["elements"].append(entry)
+            capture["marked"] |= is_checked_mark(name, tag.group("attrs"))
         if not tag.group("selfclose") and name not in VOID_TAGS:
             stack.append(entry)
+    if capture is not None and capture["marked"]:
+        found.update(capture["elements"] + capture["around"])
     return found
 
 

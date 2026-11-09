@@ -262,6 +262,15 @@ def run_cases(h: Harness) -> int:
             "</head>", "<style>path[data-from]{display:none}</style></head>", 1),
         1, "<style> rule",
     )
+    h.expect_findings(
+        "a rule hiding the unbound arrowhead inside the diagram is one finding",
+        light.replace("</head>", "<style>polygon{display:none}</style></head>", 1),
+        1, "<style> rule",
+    )
+    h.expect_clean(
+        "another component's --color-accent does not re-skin the diagram",
+        custom.replace("</style>", ".card{--color-accent:#008800}\n</style>", 1),
+    )
     h.expect_clean(
         "a --color-accent inside a CSS comment is ignored",
         light.replace("</style>", "/* --color-accent: #2d3142; */\n</style>", 1),
