@@ -241,6 +241,9 @@ class Compound(NamedTuple):
         return self.classes <= set(element.get("class", "").split())
 
 
+UNLAYERED = sys.maxsize  # the cascade place of a rule outside every @layer
+
+
 @dataclass(frozen=True, slots=True)
 class CssRule:
     """One plain stylesheet rule: descendant selectors and their declarations."""
@@ -249,7 +252,7 @@ class CssRule:
     specificity: tuple[int, int, int]
     order: int
     declarations: Props
-    layered: bool = False  # from an @layer block, below every rule outside one
+    layer: int = UNLAYERED  # an @layer's place in order of appearance; outside one, above all
 
     def applies(self, element: ET.Element, ancestors: Sequence[ET.Element]) -> bool:
         """Whether the rule selects the element, given its ancestors from the root down."""
@@ -308,6 +311,7 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
     rules: list[CssRule] = []
     unread: list[CssRule] = []
+    layers: dict[str, int] = {}  # each @layer's place, in order of first appearance
     depth, start, opening = 0, 0, 0
     for index, char in enumerate(css):
         if char == "{":
@@ -320,9 +324,11 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
             selectors, body = css[start:opening].strip(), css[opening + 1 : index]
             start = index + 1
             if re.fullmatch(r"@layer(\s[^{]*)?", selectors):  # browsers apply it unconditionally
-                layered, layered_unread = parse_stylesheet(body)
+                name = selectors.removeprefix("@layer").strip() or f"anonymous {len(layers)}"
+                rank = layers.setdefault(name, len(layers))
+                layered, layered_unread = parse_stylesheet(body)  # nested layers share its place
                 rules += [
-                    replace(rule, order=len(rules) + rule.order, layered=True) for rule in layered
+                    replace(rule, order=len(rules) + rule.order, layer=rank) for rule in layered
                 ]
                 unread += layered_unread
                 continue
@@ -344,8 +350,11 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
                 )
                 rules.append(CssRule(valid, specificity, len(rules), declarations))
         elif char == ";" and depth == 0:
+            if (statement := css[start:index].strip()).startswith("@layer"):  # @layer a, b;
+                for name in statement.removeprefix("@layer").split(","):
+                    layers.setdefault(name.strip(), len(layers))
             start = index + 1  # a statement such as @import
-    return sorted(rules, key=lambda rule: (not rule.layered, rule.specificity, rule.order)), unread
+    return sorted(rules, key=lambda rule: (rule.layer, rule.specificity, rule.order)), unread
 
 
 def _readable_part(selector: str) -> tuple[Compound, ...] | None:
@@ -413,16 +422,20 @@ def computed_properties(
     Custom properties settle first, so ``font`` reads their final values wherever they are set.
     """
     props = {k: v for k, v in inherited.items() if k in INHERITED or k.startswith("--")}
-    layers = [defaults or {}, {k: v for k, v in element.attrib.items() if k in PRESENTATION}]
-    layers += [rule.declarations for rule in rules if rule.applies(element, ancestors)]
-    layers.append(_declarations(element.get("style", "")))
-    declared = [
-        item
-        for important in (False, True)
-        for layer in layers
-        for item in layer.items()
-        if item[1].endswith(IMPORTANT) == important
-    ]
+    matched = [rule for rule in rules if rule.applies(element, ancestors)]
+    # An !important declaration meets the @layers in reverse: the first layer wins.
+    reversed_layers = sorted(matched, key=lambda rule: (-rule.layer, rule.specificity, rule.order))
+    declared = []
+    for important, order in ((False, matched), (True, reversed_layers)):
+        layers = [defaults or {}, {k: v for k, v in element.attrib.items() if k in PRESENTATION}]
+        layers += [rule.declarations for rule in order]
+        layers.append(_declarations(element.get("style", "")))
+        declared += [
+            item
+            for layer in layers
+            for item in layer.items()
+            if item[1].endswith(IMPORTANT) == important
+        ]
     declared.sort(key=lambda item: not item[0].startswith("--"))  # stable: keeps the cascade order
     for name, marked in declared:
         value = marked.removesuffix(IMPORTANT).rstrip()
@@ -2259,7 +2272,9 @@ class Reader:
         colour = colour_hex(parsed)[:7]
         context = props | {"color": colour}  # what the icon's markup inherits on the page
         ancestors = [self.root]
-        if _local(target) in ("symbol", "svg"):
+        view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
+        framed = _local(target) in ("symbol", "svg") and len(view) == 4 and min(view[2:]) > 0
+        if framed or _local(target) == "symbol":  # its children are copied, not the target
             context = computed_properties(target, context, self.rules, ancestors)
             self._note_undrawn(context)  # the symbol's own effects, which no copy keeps
             ancestors = [self.root, target]
@@ -2267,8 +2282,7 @@ class Reader:
             opacity *= max(0.0, min(1.0, length(context.get("opacity"), 1.0, percent_of=1.0)))
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
         x, y = self._place(element)
-        view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
-        if _local(target) in ("symbol", "svg") and len(view) == 4 and view[2] > 0 and view[3] > 0:
+        if framed:
             # A symbol or an svg draws its view box into the placement's width and height.
             symbol_paint = PRESENTATION - UNDRAWN.keys() - {"opacity"}  # opacity is in ``paint``
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}

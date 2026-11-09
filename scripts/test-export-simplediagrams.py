@@ -983,6 +983,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 icon = self.icon(css, f"<defs>{symbol}</defs>{placed}")
                 self.assertEqual(icon.count("opacity="), 1)
                 self.assertIn('opacity="0.25"', icon)
+        icon = self.icon("", '<defs><svg id="i" width="20" height="20" opacity="0.5"><rect width="9" height="9"/>'
+                             '</svg></defs><use href="#i"/>')  # fmt: skip
+        self.assertEqual(icon.count('opacity="0.5"'), 1)  # copied whole, it keeps its opacity once
 
     def test_an_icon_carries_the_shared_definitions_it_paints_with(self) -> None:
         """A stored icon has no page around it, so a gradient, pattern or marker it uses from
@@ -1450,6 +1453,12 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ('<text y="80" style="font-size: 10px; font: 20px serif; font-size: 30px">Hi</text>', sizes, [30]),
             ('<style>.n { fill: blue } @layer theme { .n { fill: red } }</style><rect class="n" width="9" height="9"/>',
              fills, ["#0000FF"]),
+            ('<style>@layer a { rect.n { fill: red } } @layer b { .n { fill: blue } }</style><rect class="n" width="9" height="9"/>',
+             fills, ["#0000FF"]),  # the later layer wins, whatever the selectors' strength
+            (('<style>@layer b, a; @layer a { .n { fill: red } } @layer b { .n { fill: blue } }</style>'
+              '<rect class="n" width="9" height="9"/>'), fills, ["#FF0000"]),
+            (('<style>@layer a { .n { fill: red !important } } @layer b { .n { fill: blue !important } }</style>'
+              '<rect class="n" width="9" height="9"/>'), fills, ["#FF0000"]),  # reversed for !important
             (('<style>:root { --a: red; --b: var(--a) } .g { --a: blue } rect { fill: var(--b) }</style>'
               '<g class="g"><rect width="9" height="9"/></g>'), fills, ["#FF0000"]),
             ('<text y="30"><tspan><title>Tooltip</title>Visible</tspan></text>', strings, ["Visible"]),
