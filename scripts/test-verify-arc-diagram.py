@@ -201,17 +201,20 @@ def run_cases(h: Harness) -> int:
                 "path{stroke:#bf4520}",
                 "[data-span]{fill:#bf4520}",
                 "path[data-from]{display:none}",
-                "g{visibility:hidden}",
+                "circle{visibility:hidden}",
                 "svg{opacity:0}",
                 "svg{opacity:0 !important}",
                 "[data-span]{stroke-opacity:0}",
-                ".frame{display:none}",
+                "[role]{display:none}",
+                "body{display:none}",
                 "@media print{path{display:none}}"):
         h.expect_findings("a <style> rule %s is one finding" % css,
                           styled(css), 1, "<style> rule")
     for css in ("svg{display:block;width:100%}",
                 "body{display:flex}",
                 "h1{display:none}",
+                ".footer{display:none}",
+                "g{visibility:hidden}",
                 "p.note{opacity:0}",
                 "path{stroke-width:2}",
                 "svg{opacity:0.9}"):
@@ -237,6 +240,19 @@ def run_cases(h: Harness) -> int:
     ):
         h.expect_findings("a <style> block with %s is one finding" % title,
                           headed(block), 1, "<style> rule")
+    # A custom skin's --color-accent is the accent: its leftward import is
+    # legal and a second arc in that color is a second focal claim.
+    custom = re.sub("(?i)#bf4520", "#2a6fdb", SHIPPED[0].read_text(encoding="utf-8"))
+    h.expect_clean("the light example re-skinned with a custom accent passes", custom)
+    muted = [m for m in re.finditer(r"<path[^>]*data-from[^>]*>", custom)
+             if "2a6fdb" not in m.group(0)][0]
+    h.expect_findings(
+        "a second arc in the custom accent is one finding",
+        custom[:muted.start()]
+        + re.sub(r'stroke="[^"]+"', 'stroke="#2a6fdb"', muted.group(0), count=1)
+        + custom[muted.end():],
+        1, "wear the accent",
+    )
     h.expect_named(
         "a <style> rule that moves marks inside <!-- --> is still refused",
         headed("<style><!--\npath{transform:translate(1px)}\n--></style>"),

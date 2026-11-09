@@ -92,7 +92,7 @@ What each binding buys, and what it costs to omit:
 
 **Nothing may position a mark except its own attributes.** The checker reads raw `cx`/`d`/`x`, so anything applied afterwards invalidates the check that passed. Every carrier is refused — the `transform` attribute, an inline `style="…"`, and a rule in a `<style>` block — on a node, on an arc, on a bound label, or on an ancestor `<g>`/`<svg>`. Bake the offset into the coordinates.
 
-**Nothing may paint or hide a mark except its own attributes.** A `<style>` rule outranks every presentation attribute, so the checker refuses one that sets `stroke` or `fill`, and one that hides or resets (display, visibility, zero opacity, zero stroke width or `all`) an element the figure is drawn from. Give each import its own literal `stroke`.
+**Nothing may paint or hide a mark except its own attributes.** A `<style>` rule outranks every presentation attribute, so the checker refuses one that sets `stroke` or `fill`, and one that hides or resets (display, visibility, zero opacity, zero stroke width or `all`) the `<svg>`, anything inside it, or an element around it. A rule for page-only chrome, such as `.footer{display:none}`, is fine. The accent arc is read as the shipped orange or the page's own `--color-accent`. Give each import its own literal `stroke`.
 
 #### Anti-patterns
 

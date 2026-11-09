@@ -32,6 +32,8 @@ Nine invariants:
    lands on Catalog is a different import.
 
 6. AT MOST ONE ACCENT ARC - one focal claim per figure, on either skin.
+   The accent is the shipped orange or the document's own --color-accent,
+   compared as an RGB value.
    A <style> rule that sets stroke or fill is refused: it outranks the
    stroke attributes this count reads.
 
@@ -47,8 +49,9 @@ Nine invariants:
    <mask>, <clipPath>, <pattern>) is refused: a seat readers cannot see
    must not count toward a span. So is a <style> rule that hides or resets
    (display, visibility, zero opacity, zero stroke width or the all
-   shorthand) when its selector can reach the figure: an svg, g, path,
-   circle, text or tspan type, `*`, or a subject with no type. Nested rules
+   shorthand) when its subject can match the <svg>, an element inside it or
+   one around it (by type, class, id or attribute name); a subject with
+   nothing to match, such as `*` or :root, reaches everything. Nested rules
    count; @keyframes steps do not.
 
 8. BOUND NAMES, BOTH WAYS - every node circle has exactly one label bound
@@ -128,11 +131,32 @@ LITERAL_PAINT_RE = re.compile(
     r"^\s*(?:#[0-9a-f]{3,8}|rgba?\([^()]*\)|[a-z]+)\s*$", re.IGNORECASE
 )
 UNREADABLE_PAINT = {"currentcolor", "inherit", "initial", "unset", "revert", "context-stroke"}
-ACCENT_RE = re.compile(
-    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|"
-    r"rgba\(\s*240\s*,\s*138\s*,\s*89\b",
-    re.IGNORECASE,
-)
+# The shipped accent on the light and dark skins; a custom skin adds its own
+# --color-accent, read from the document.
+DEFAULT_ACCENTS = {(191, 69, 32), (240, 138, 89)}
+COLOR_ACCENT_RE = re.compile(r"--color-accent\s*:\s*(?P<value>[^;}]+)", re.IGNORECASE)
+HEX_RE = re.compile(r"#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})", re.IGNORECASE)
+RGB_RE = re.compile(r"rgba?\(\s*([\d.]+)\s*[,\s]\s*([\d.]+)\s*[,\s]\s*([\d.]+)", re.IGNORECASE)
+
+
+def rgb_of(value: str):
+    """(r, g, b) of a literal hex or rgb()/rgba() paint, else None."""
+    text = value.split("!")[0].strip()
+    found = HEX_RE.fullmatch(text)
+    if found:
+        digits = found.group(1)
+        if len(digits) in (3, 4):
+            digits = "".join(char * 2 for char in digits[:3])
+        return tuple(int(digits[i:i + 2], 16) for i in (0, 2, 4))
+    found = RGB_RE.match(text)
+    if found:
+        return tuple(round(float(part)) for part in found.groups())
+    return None
+
+
+def accent_colors(source: str) -> set:
+    declared = {rgb_of(found.group("value")) for found in COLOR_ACCENT_RE.finditer(source)}
+    return DEFAULT_ACCENTS | (declared - {None})
 ARC_D_RE = re.compile(
     r"^\s*M\s*(?P<x1>-?\d+(?:\.\d+)?)\s*,\s*(?P<y1>-?\d+(?:\.\d+)?)"
     r"\s*A\s*(?P<rx>-?\d+(?:\.\d+)?)\s*,\s*(?P<ry>-?\d+(?:\.\d+)?)"
@@ -343,9 +367,37 @@ CSS_ALL_RE = re.compile(r"(?:^|[{};\s])all\s*:", re.IGNORECASE)
 KEYFRAMES_RE = re.compile(r"@(?:-[a-z]+-)?keyframes\b", re.IGNORECASE)
 CSS_STROKE_WIDTH_RE = re.compile(r"(?:^|[{};\s])stroke-width\s*:\s*(?P<amount>[^;}]*)",
                                  re.IGNORECASE)
-# Element types a rule can reach inside the figure; an untyped subject
-# (class, id, attribute or pseudo-class only) can reach them too.
-FIGURE_TYPES = {"svg", "g", "path", "circle", "text", "tspan", "*"}
+OPEN_TAG_RE = re.compile(r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>")
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+             "meta", "source", "track", "wbr"}
+
+
+def tokens_of(attrs: dict) -> set:
+    tokens = {"attr:" + key.lower() for key in attrs}
+    tokens |= {"class:" + name for name in attrs.get("class", "").split()}
+    if attrs.get("id"):
+        tokens.add("id:" + attrs["id"].strip())
+    return tokens
+
+
+def figure_elements(source: str) -> list:
+    """(tag, tokens) for the first <svg>, everything inside it and every element around it."""
+    start = re.search(r"<svg\b", source, re.IGNORECASE)
+    if start is None:
+        return []
+    stack = []
+    for tag in OPEN_TAG_RE.finditer(source, 0, start.start()):
+        name = tag.group("tag").lower()
+        if tag.group("close"):
+            if any(open_name == name for open_name, _tokens in stack):
+                while stack.pop()[0] != name:
+                    pass
+        elif not tag.group("selfclose") and name not in VOID_TAGS:
+            stack.append((name, tokens_of(attrs_of(tag.group("attrs")))))
+    end = re.search(r"</svg\s*>", source[start.start():], re.IGNORECASE)
+    inside = source[start.start():start.start() + end.end()] if end else source[start.start():]
+    return stack + [(tag.group("tag").lower(), tokens_of(attrs_of(tag.group("attrs"))))
+                    for tag in OPEN_TAG_RE.finditer(inside) if not tag.group("close")]
 
 
 def css_hides(declarations: str) -> bool:
@@ -383,19 +435,34 @@ def css_blocks(css: str) -> list:
     return blocks
 
 
-def reaches_figure(selector: str) -> bool:
-    # Attribute values, arguments and strings may hold spaces, commas or combinators.
-    selector = re.sub(r"\[[^\]]*\]|\([^)]*\)|\"[^\"]*\"|'[^']*'", "[]", selector)
+def reaches_figure(selector: str, elements: list) -> bool:
+    """Could a selector's subject match the <svg>, an element inside it or one around it?
+
+    Only the subject compound is matched (type, classes, id, attribute
+    names), so a rule naming page-only chrome such as .footer passes. A
+    subject with nothing to match (`*`, :root, &) reaches everything.
+    """
+    selector = re.sub(r"\"[^\"]*\"|'[^']*'", '""', selector)
+    selector = re.sub(r"\([^)]*\)", "()", selector)
+    selector = re.sub(r"\[\s*([\w:-]+)[^\]]*\]", r"[\1]", selector)
     for alternative in selector.split(","):
         subject = re.split(r"\s*[\s>+~]\s*", alternative.strip())[-1]
-        typed = re.match(r"[A-Za-z][\w-]*|\*", subject)
-        if typed is None or typed.group().lower() in FIGURE_TYPES:
+        typed = re.match(r"[A-Za-z][\w-]*", subject)
+        tag = typed.group().lower() if typed else None
+        need = {"class:" + name for name in re.findall(r"\.([\w-]+)", subject)}
+        need |= {"id:" + name for name in re.findall(r"#([\w-]+)", subject)}
+        need |= {"attr:" + name.lower() for name in re.findall(r"\[([\w:-]+)\]", subject)}
+        if tag is None and not need:
+            return True
+        if any((tag is None or tag == element) and need <= tokens
+               for element, tokens in elements):
             return True
     return False
 
 
 def check_style_rules(source: str, findings: list, name: str) -> None:
     """A <style> rule outranks every stroke and visibility attribute read here."""
+    elements = figure_elements(source)
     for match in STYLE_RE.finditer(source):
         css = re.sub(r"/\*.*?\*/", " ", match.group("body"), flags=re.DOTALL)
         css = css.replace("<!--", " ").replace("-->", " ")
@@ -408,7 +475,7 @@ def check_style_rules(source: str, findings: list, name: str) -> None:
                     % (name, line_of(source, match.start()), selector)
                 )
             elif (CSS_ALL_RE.search(body) or (not in_keyframes and css_hides(body))) \
-                    and reaches_figure(selector):
+                    and reaches_figure(selector, elements):
                 findings.append(
                     "%s:%d: a <style> rule %r hides or resets elements the figure "
                     "is drawn from (display, visibility, zero opacity, zero stroke "
@@ -509,6 +576,7 @@ def parse_nodes(source: str, findings: list, name: str) -> list:
 
 def parse_arcs(source: str, findings: list, name: str) -> list:
     arcs = []
+    accents = accent_colors(source)
     for match in PATH_RE.finditer(source):
         raw = match.group("attrs")
         # A path that binds any endpoint or span is an import; only fully
@@ -604,7 +672,7 @@ def parse_arcs(source: str, findings: list, name: str) -> list:
             x1=nums["x1"], y1=nums["y1"], x2=nums["x2"], y2=nums["y2"],
             rx=nums["rx"], ry=nums["ry"],
             sweep=parsed.group("sweep"),
-            accent=bool(ACCENT_RE.search(attrs.get("stroke", ""))),
+            accent=rgb_of(attrs.get("stroke", "")) in accents,
             offset=match.start(),
         ))
     return arcs
