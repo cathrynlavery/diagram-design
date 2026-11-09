@@ -123,9 +123,10 @@ The current type checkers verify **internal consistency** of the chart and its d
 
 Keep native plugin and marketplace `description` fields within 500 characters
 for Cowork installation compatibility ([#208](https://github.com/cathrynlavery/diagram-design/issues/208)).
-They must still name every visual type; keep fuller feature details in the skill
-frontmatter and Codex `longDescription`. The docs-sync gate checks both length
-and routing vocabulary, and the package gate keeps native descriptions aligned.
+They summarize the main families and don't need to name a new type. The skill
+frontmatter description and the Codex `longDescription` must name every visual
+type. The docs-sync gate checks the length and the routing vocabulary, and the
+package gate keeps native descriptions aligned.
 
 The Codex `interface` block doubles as the OpenAI plugin directory listing, so
 `displayName` and `shortDescription` stay within 30 characters and
@@ -338,7 +339,7 @@ Settled policies live as short records in `docs/adr/` — one pinned motion cont
 ## Adding a new diagram type
 
 1. Write `skills/diagram-design/references/type-<name>.md` — layout conventions, anti-patterns, and a worked pattern for that type. Mirror an existing reference's structure.
-2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` — `verify-docs-sync.py` fails if the description loses or lacks a type's lexical hook.
+2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` and the Codex `interface.longDescription` in `.codex-plugin/plugin.json`. `verify-docs-sync.py` fails if either loses or lacks a type's lexical hook.
 3. Add the three example variants (see above) and register them in the gallery (`assets/index.html`) with the next type number; extra examples of an existing type go directly after it as lettered variants (`data-parent-type`, eyebrow `04a`). `verify-docs-sync.py` fails on any shipped example the gallery can't reach and on any numbered tab without a matching `type-*.md`.
 4. Run the full gate suite — new examples are linted automatically by `--all`.
 5. After merge, the maintainer updates the GitHub About description, Cathryn's profile README, and diagramdesign.dev to the new count, then checks the live pages. Contributors do not need write access to those surfaces.
