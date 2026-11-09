@@ -325,7 +325,7 @@ The model already understood the content. What it was missing was taste, so I wr
 </tr>
 </table>
 
-Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko.
+Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko; Dependency covers arc diagram.
 
 Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagram-design/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagram-design/references/type-architecture.md).
 
@@ -619,7 +619,8 @@ diagram-design/
 │       │   ├── excalidraw_extract.py  # Excalidraw → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
 │       │   ├── export_png.py         # Playwright PNG renderer
-│       │   └── self_check.py         # packaged output self-check (runs installed)
+│       │   ├── self_check.py         # packaged output self-check (runs installed)
+│       │   └── verify_geometry.py    # label, connector and port geometry (runs installed)
 │       └── assets/
 │           ├── index.html            # live gallery, tabbed
 │           ├── icons.html            # icon library browser
@@ -636,7 +637,7 @@ diagram-design/
 │   ├── lint-skin.py                  # palette, fonts, a11y, single-file safety
 │   ├── lint-render.py                # Chromium rendered-layout checker
 │   ├── verify-docs-sync.py           # routing, gallery, README and count sync
-│   ├── verify-geometry.py            # label, connector and port geometry
+│   ├── verify-geometry.py            # repo entry point for the packaged geometry check
 │   ├── render-canonical-screenshots.py  # deterministic per-type PNG catalog renderer
 │   ├── build-readme-thumbs.py        # regenerates docs/screenshots/thumbs/
 │   └── fixtures/                     # draw.io, Mermaid and Excalidraw test inputs
