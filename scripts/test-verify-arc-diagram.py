@@ -232,6 +232,8 @@ def run_cases(h: Harness) -> int:
          '<style>circle[data-name="Order Service"]{display:none}</style>'),
         ("the all shorthand", "<style>path[data-from]{all:unset}</style>"),
         ("stroke-width:0", "<style>path{stroke-width:0}</style>"),
+        ("stroke-width:0px !important", "<style>path{stroke-width:0px !important}</style>"),
+        ("a block left open at the end", "<style>path[data-from]{display:none</style>"),
     ):
         h.expect_findings("a <style> block with %s is one finding" % title,
                           headed(block), 1, "<style> rule")
@@ -245,6 +247,9 @@ def run_cases(h: Harness) -> int:
          "<!-- <style>path{stroke:#bf4520}</style> -->"),
         ("a 0%/100% fade keyframe", "<style>@keyframes fade{0%{opacity:0}100%{opacity:1}}</style>"),
         ("a from/to fade keyframe", "<style>@keyframes fade{from{opacity:0}to{opacity:1}}</style>"),
+        ("a prefixed fade keyframe",
+         "<style>@-webkit-keyframes fade{0%{opacity:0}to{opacity:1}}</style>"),
+        ("an all reset on page chrome", "<style>button{all:unset}</style>"),
     ):
         h.expect_clean("%s passes" % title, headed(block))
 
