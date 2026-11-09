@@ -222,7 +222,7 @@ Non-negotiable, and §9 checks each one. Full text and edge cases: [primitives-c
 3. **No overlaps.** No shared or stacked strokes: offset parallel routes by 12px or more, and use the bridge/hop at a single crossing.
 4. **Fan attach points.** Connectors on one box edge each get their own point at `L * k / (N + 1)`, 12px or more apart (8px on very small boxes).
 5. **No transit behind a non-endpoint box.** Reroute. Only when the box is geometrically unavoidable: dashed stroke (`4,3`), label at the visible end, no marker on the intervening box.
-6. **Mask before node.** A label mask must not overlap a node drawn after it; badge masks fully inside a node and masks over earlier zones are fine. From a repository checkout, verify with `python3 <repo-root>/scripts/verify-geometry.py <file>`.
+6. **Mask before node.** A label mask must not overlap a node drawn after it; badge masks fully inside a node and masks over earlier zones are fine. From the installed skill directory, verify with `python3 scripts/verify_geometry.py <file>`.
 
 ---
 
@@ -290,7 +290,7 @@ Run before producing any diagram.
 - [ ] **§6 rule 3:** no overlapping or stacked connectors; bridge/hop at crossings?
 - [ ] **§6 rule 4:** a distinct attach point per connector on a shared edge, 12px or more apart, none hiding another?
 - [ ] **§6 rule 5:** no transit behind a non-endpoint box, except the unavoidable case (dashed, label at the visible end)?
-- [ ] **§6 rule 6:** no label mask overlapping a node drawn after it? (From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py <file>`.)
+- [ ] **§6 rule 6:** no label mask overlapping a node drawn after it? (From the installed skill directory, run `python3 scripts/verify_geometry.py <file>`.)
 - [ ] Every arrow label has an opaque `fill="{paper}"` rect behind it?
 - [ ] Legend is a horizontal bottom strip, not floating?
 - [ ] No vertical `writing-mode` text?
