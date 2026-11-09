@@ -253,6 +253,23 @@ def run_cases(h: Harness) -> int:
         + custom[muted.end():],
         1, "wear the accent",
     )
+    light = SHIPPED[0].read_text(encoding="utf-8")
+    logo = '<svg class="logo" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>'
+    first_svg = light.index("<svg")
+    h.expect_findings(
+        "a hiding rule still reaches the imports when a logo <svg> comes first",
+        (light[:first_svg] + logo + light[first_svg:]).replace(
+            "</head>", "<style>path[data-from]{display:none}</style></head>", 1),
+        1, "<style> rule",
+    )
+    h.expect_clean(
+        "a --color-accent inside a CSS comment is ignored",
+        light.replace("</style>", "/* --color-accent: #2d3142; */\n</style>", 1),
+    )
+    h.expect_clean(
+        "an earlier --color-accent overridden by the skin's own is ignored",
+        light.replace("<style>", "<style>:root{--color-accent:#2d3142}", 1),
+    )
     h.expect_named(
         "a <style> rule that moves marks inside <!-- --> is still refused",
         headed("<style><!--\npath{transform:translate(1px)}\n--></style>"),

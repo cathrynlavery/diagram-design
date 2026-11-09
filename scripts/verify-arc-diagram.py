@@ -32,8 +32,8 @@ Nine invariants:
    lands on Catalog is a different import.
 
 6. AT MOST ONE ACCENT ARC - one focal claim per figure, on either skin.
-   The accent is the shipped orange or the document's own --color-accent,
-   compared as an RGB value.
+   The accent is the shipped orange or the document's active --color-accent
+   (the last declaration outside comments), compared as an RGB value.
    A <style> rule that sets stroke or fill is refused: it outranks the
    stroke attributes this count reads.
 
@@ -49,8 +49,8 @@ Nine invariants:
    <mask>, <clipPath>, <pattern>) is refused: a seat readers cannot see
    must not count toward a span. So is a <style> rule that hides or resets
    (display, visibility, zero opacity, zero stroke width or the all
-   shorthand) when its subject can match the <svg>, an element inside it or
-   one around it (by type, class, id or attribute name); a subject with
+   shorthand) when its subject can match a checked mark, an element inside
+   one or one around it (by type, class, id or attribute name); a subject with
    nothing to match, such as `*` or :root, reaches everything. Nested rules
    count; @keyframes steps do not.
 
@@ -155,8 +155,10 @@ def rgb_of(value: str):
 
 
 def accent_colors(source: str) -> set:
-    declared = {rgb_of(found.group("value")) for found in COLOR_ACCENT_RE.finditer(source)}
-    return DEFAULT_ACCENTS | (declared - {None})
+    """The shipped accents plus the active --color-accent: the last one declared, outside comments."""
+    text = re.sub(r"/\*.*?\*/", " ", source, flags=re.DOTALL)
+    declared = [rgb_of(found.group("value")) for found in COLOR_ACCENT_RE.finditer(text)]
+    return DEFAULT_ACCENTS | set([color for color in declared if color is not None][-1:])
 ARC_D_RE = re.compile(
     r"^\s*M\s*(?P<x1>-?\d+(?:\.\d+)?)\s*,\s*(?P<y1>-?\d+(?:\.\d+)?)"
     r"\s*A\s*(?P<rx>-?\d+(?:\.\d+)?)\s*,\s*(?P<ry>-?\d+(?:\.\d+)?)"
@@ -380,24 +382,30 @@ def tokens_of(attrs: dict) -> set:
     return tokens
 
 
-def figure_elements(source: str) -> list:
-    """(tag, tokens) for the first <svg>, everything inside it and every element around it."""
-    start = re.search(r"<svg\b", source, re.IGNORECASE)
-    if start is None:
-        return []
-    stack = []
-    for tag in OPEN_TAG_RE.finditer(source, 0, start.start()):
+def is_checked_mark(tag: str, raw_attrs: str) -> bool:
+    if tag == "path":
+        return DECLARES_ARC_RE.search(raw_attrs) is not None
+    return tag in ("circle", "text") and "data-name" in attrs_of(raw_attrs)
+
+
+def figure_elements(source: str) -> set:
+    """(tag, tokens) for every checked mark, everything inside one and every element around one."""
+    found, stack = set(), []
+    for tag in OPEN_TAG_RE.finditer(source):
         name = tag.group("tag").lower()
         if tag.group("close"):
-            if any(open_name == name for open_name, _tokens in stack):
+            if any(entry[0] == name for entry in stack):
                 while stack.pop()[0] != name:
                     pass
-        elif not tag.group("selfclose") and name not in VOID_TAGS:
-            stack.append((name, tokens_of(attrs_of(tag.group("attrs")))))
-    end = re.search(r"</svg\s*>", source[start.start():], re.IGNORECASE)
-    inside = source[start.start():start.start() + end.end()] if end else source[start.start():]
-    return stack + [(tag.group("tag").lower(), tokens_of(attrs_of(tag.group("attrs"))))
-                    for tag in OPEN_TAG_RE.finditer(inside) if not tag.group("close")]
+            continue
+        entry = (name, frozenset(tokens_of(attrs_of(tag.group("attrs")))),
+                 is_checked_mark(name, tag.group("attrs")) or any(open_[2] for open_ in stack))
+        if entry[2]:
+            found.add(entry[:2])
+            found.update(open_[:2] for open_ in stack)
+        if not tag.group("selfclose") and name not in VOID_TAGS:
+            stack.append(entry)
+    return found
 
 
 def css_hides(declarations: str) -> bool:
@@ -435,8 +443,8 @@ def css_blocks(css: str) -> list:
     return blocks
 
 
-def reaches_figure(selector: str, elements: list) -> bool:
-    """Could a selector's subject match the <svg>, an element inside it or one around it?
+def reaches_figure(selector: str, elements: set) -> bool:
+    """Could a selector's subject match a checked mark, an element inside one or one around it?
 
     Only the subject compound is matched (type, classes, id, attribute
     names), so a rule naming page-only chrome such as .footer passes. A
