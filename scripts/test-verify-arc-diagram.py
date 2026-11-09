@@ -190,6 +190,33 @@ def run_cases(h: Harness) -> int:
 
     h.expect_clean("an honest synthetic arc diagram passes", honest())
 
+    # A <style> rule outranks every stroke and visibility attribute, so it can
+    # repaint or hide the imports the checker read. Paint is refused outright
+    # (stroke and fill are SVG-only); a hiding rule is refused when its
+    # selector can reach the figure.
+    def styled(css: str) -> str:
+        return honest().replace("</head>", "<style>%s</style></head>" % css, 1)
+
+    for css in ("path[data-from]{stroke:#bf4520 !important}",
+                "path{stroke:#bf4520}",
+                "[data-span]{fill:#bf4520}",
+                "path[data-from]{display:none}",
+                "g{visibility:hidden}",
+                "svg{opacity:0}",
+                "svg{opacity:0 !important}",
+                "[data-span]{stroke-opacity:0}",
+                ".frame{display:none}",
+                "@media print{path{display:none}}"):
+        h.expect_findings("a <style> rule %s is one finding" % css,
+                          styled(css), 1, "<style> rule")
+    for css in ("svg{display:block;width:100%}",
+                "body{display:flex}",
+                "h1{display:none}",
+                "p.note{opacity:0}",
+                "path{stroke-width:2}",
+                "svg{opacity:0.9}"):
+        h.expect_clean("a <style> rule %s passes" % css, styled(css))
+
     tall = honest().replace(
         arc("A", "B", 1, 0, 1),
         arc("A", "B", 1, 0, 1, r=140),

@@ -32,6 +32,8 @@ Nine invariants:
    lands on Catalog is a different import.
 
 6. AT MOST ONE ACCENT ARC - one focal claim per figure, on either skin.
+   A <style> rule that sets stroke or fill is refused: it outranks the
+   stroke attributes this count reads.
 
 7. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute.
    A `transform` attribute, an inline `style`, or a rule in a <style> block
@@ -43,7 +45,9 @@ Nine invariants:
    hidden (display none, visibility hidden, zero opacity) or sits inside a
    hidden ancestor or a non-rendered container (<defs>, <symbol>, <marker>,
    <mask>, <clipPath>, <pattern>) is refused: a seat readers cannot see
-   must not count toward a span.
+   must not count toward a span. So is a <style> rule that hides when its
+   selector can reach the figure (an svg, g, path, circle, text or tspan
+   type, `*`, or a class, id or attribute alone).
 
 8. BOUND NAMES, BOTH WAYS - every node circle has exactly one label bound
    to the same `data-name`, the visible text matches, and the name is
@@ -234,7 +238,7 @@ def transform_carrier(attrs: dict):
 
 
 def invisible_amount(value) -> bool:
-    text = str(value).strip().lower()
+    text = str(value).split("!")[0].strip().lower()
     scale = 1.0
     if text.endswith("%"):
         text, scale = text[:-1], 0.01
@@ -324,7 +328,55 @@ def is_bound(match) -> bool:
     return "data-name" in attrs_of(raw)
 
 
+CSS_PAINT_RE = re.compile(r"(?:^|[{;\s])(?P<prop>stroke|fill)\s*:", re.IGNORECASE)
+CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+# Element types a rule can reach inside the figure; an untyped subject
+# (class, id, attribute or pseudo-class only) can reach them too.
+FIGURE_TYPES = {"svg", "g", "path", "circle", "text", "tspan", "*"}
+
+
+def css_hides(declarations: str) -> bool:
+    for found in CSS_HIDES_RE.finditer(declarations):
+        if found.group("opacity") and not invisible_amount(found.group("amount")):
+            continue
+        return True
+    return False
+
+
+def reaches_figure(selector: str) -> bool:
+    for alternative in selector.split(","):
+        subject = re.split(r"\s*[\s>+~]\s*", alternative.strip())[-1]
+        typed = re.match(r"[A-Za-z][\w-]*|\*", subject)
+        if typed is None or typed.group().lower() in FIGURE_TYPES:
+            return True
+    return False
+
+
+def check_style_rules(source: str, findings: list, name: str) -> None:
+    """A <style> rule outranks every stroke and visibility attribute read here."""
+    for match in STYLE_RE.finditer(source):
+        css = re.sub(r"/\*.*?\*/", " ", match.group("body"), flags=re.DOTALL)
+        for rule in CSS_RULE_RE.finditer(css):
+            selector, body = rule.group(1).strip(), rule.group(2)
+            if CSS_PAINT_RE.search(body):
+                findings.append(
+                    "%s:%d: a <style> rule %r sets stroke or fill, which outranks "
+                    "the stroke attributes the one-accent count reads — paint "
+                    "each mark with its own literal attribute"
+                    % (name, line_of(source, match.start()), selector)
+                )
+            elif css_hides(body) and reaches_figure(selector):
+                findings.append(
+                    "%s:%d: a <style> rule %r hides elements the figure is drawn "
+                    "from (display, visibility or zero opacity), so a seat or "
+                    "import readers cannot see could still count — remove the "
+                    "rule or aim it at a non-SVG element"
+                    % (name, line_of(source, match.start()), selector)
+                )
+
+
 def check_transforms(source: str, findings: list, name: str) -> None:
+    check_style_rules(source, findings, name)
     for match in STYLE_RE.finditer(source):
         if CSS_MOVES_MARK_RE.search(match.group("body")):
             findings.append(
