@@ -1226,7 +1226,7 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
             clone.set(name, page[name])
             stored[name] = page[name]
     if page.get("transform") != stored.get("transform"):
-        value = _attribute_transform(page["transform"])
+        value = _attribute_transform(page.get("transform", "none"))  # reset: none
         if value.strip() == "none":
             clone.attrib.pop("transform", None)
         else:
@@ -2164,21 +2164,27 @@ class Reader:
             self._add_label("".join(parts), anchor, line_props, matrix, opacity, align, paint)
 
     def _text_pieces(
-        self, node: ET.Element, props: Props, ancestors: list[ET.Element], before: str
+        self,
+        node: ET.Element,
+        props: Props,
+        ancestors: list[ET.Element],
+        before: str,
+        faded: bool = False,
     ) -> list[tuple[str, Props | None]]:
         """A span's words in order, each with the style that shows it, or ``None`` when hidden.
 
         A span under ``display: none`` takes no room, so it has no pieces; a hidden one keeps
-        its place in the line. ``before`` is the line's text ahead of the span.
+        its place in the line. ``before`` is the line's text ahead of the span. ``faded`` says
+        an enclosing span has no opacity, which hides it all, as ``visibility`` cannot undo.
         """
         if props.get("display") == "none":
             return []
         fade = length(props.get("opacity"), 1.0, percent_of=1.0)
         if 0 < fade < 1:
             self._skip("see-through words inside a line drawn solid")
-        style = None if _is_invisible(props) or fade <= 0 else props
-        if fade <= 0:  # its words keep their room but show nothing, nor do its children's
-            props = props | {"visibility": "hidden"}
+        # A see-nothing span keeps its words' room but shows none of them, nor its children's.
+        faded = faded or fade <= 0
+        style = None if _is_invisible(props) or faded else props
         pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props, before), style)]
         path = [*ancestors, node]
         for child in node:
@@ -2187,7 +2193,7 @@ class Reader:
             ahead = before + "".join(words for words, _ in pieces)
             child_props = computed_properties(child, props, self.rules, path)
             drawn = _local(child) not in NOT_DRAWN and _local(child) != "textPath"
-            inner = self._text_pieces(child, child_props, path, ahead) if drawn else []
+            inner = self._text_pieces(child, child_props, path, ahead, faded) if drawn else []
             placed = any(child.get(key) is not None for key in LINE_PLACEMENT)
             if placed and any(shown is not None and words.strip() for words, shown in inner):
                 self._skip("a line placed inside a span joins that span's line")
@@ -2341,7 +2347,7 @@ class Reader:
             self._add_icon(box, icon, paint | painted, frame, matrix)
         else:
             parts = list(target) if _local(target) == "symbol" else [target]
-            if (extent := self._extent(parts, props)) is None:
+            if (extent := self._extent(parts, context, ancestors)) is None:
                 return
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
             icon = self._icon_copy(parts, context, paint, ancestors)
@@ -2489,12 +2495,18 @@ class Reader:
             child.tail = None
         return clone
 
-    def _extent(self, parts: Sequence[ET.Element], props: Props) -> Rect | None:
-        """The bounds of drawing that has no view box of its own, with room for its lines."""
+    def _extent(
+        self, parts: Sequence[ET.Element], props: Props, ancestors: list[ET.Element]
+    ) -> Rect | None:
+        """The bounds of drawing that has no view box of its own, with room for its lines.
+
+        ``props`` and ``ancestors`` are those the stored copy is made with, so a symbol's own
+        styling, such as its font size, sizes the frame as it sizes the copy.
+        """
         saved, measuring, held_back = self.items, self.measuring, self.held_back
         self.items, self.measuring, self.held_back = [], True, set()
         for part in parts:
-            self._walk(part, props, IDENTITY, 1.0, [])
+            self._walk(part, props, IDENTITY, 1.0, ancestors)
         drawn, noted = self.items, self.held_back
         self.items, self.measuring, self.held_back = saved, measuring, held_back
         points = [point for item in drawn for point in _drawn_points(item)]

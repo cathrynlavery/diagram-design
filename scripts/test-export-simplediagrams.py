@@ -1250,6 +1250,14 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 assert view is not None
                 left, _, width, _ = (float(n) for n in view.group(1).split())
                 self.assertGreaterEqual(left + width, reaches)
+        result = self.mod.export_document(
+            '<svg viewBox="0 0 400 300"><defs><symbol id="s" font-size="40"><text y="40">Hello</text>'
+            '</symbol></defs><use href="#s"/></svg>', Path("case.html"),
+        )  # fmt: skip
+        view = re.search(r'viewBox="([^"]+)"', result.assets[0].data.decode())
+        assert view is not None
+        left, _, width, _ = (float(n) for n in view.group(1).split())
+        self.assertGreaterEqual(left + width, 100)  # measured at the symbol's size, not at 16
         _, skipped = self.export("""<svg viewBox="0 0 400 300"><defs>
           <linearGradient id="gr"><stop stop-color="#f00"/></linearGradient>
           <g id="b"><rect width="20" height="20" fill="url(#gr)"/></g></defs><use href="#b"/></svg>""")
@@ -1273,6 +1281,12 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" style="transform: translate(2px, 0)">'
                          '<rect width="5" height="5"/></symbol></defs><use href="#i" width="20" height="20"/>')  # fmt: skip
         self.assertIn('transform="translate(2', icon)
+        icon = self.icon(
+            ".a { transform: initial }",
+            '<svg x="10" y="10" width="20" height="20" viewBox="0 0 10 10">'
+            '<rect class="a" transform="translate(2 0)" width="5" height="5"/></svg>',
+        )
+        self.assertNotIn("transform", icon)  # a stylesheet reset wins over the attribute
         result = self.mod.export_document('<svg viewBox="0 0 400 10000"><defs><g id="c"><path d="M0 0 Q100 10000'
                                           ' 300 3000" fill="none" stroke="#000"/></g></defs><use href="#c"/></svg>',
                                           Path("case.html"))  # fmt: skip
@@ -1457,6 +1471,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ('<text x="10" y="20" transform="scale(0)">Hidden</text>', frames, []),
             ('<g visibility="hidden"><text y="30" visibility="inherit">Hidden</text></g>', frames, []),
             ('<text y="30">Shown <tspan opacity="0">Hidden</tspan></text>', strings, ["Shown"]),
+            (('<text y="30">Shown<tspan opacity="0"><tspan visibility="visible">Hidden</tspan></tspan>'
+              "</text>"), strings, ["Shown"]),  # no opacity hides a span whatever is inside it
             (('<foreignObject width="99" height="40"><div>Shown <span style="opacity:0">gone</span></div>'
               "</foreignObject>"), strings, ["Shown"]),
             ('<foreignObject width="99" height="40"><div>A<br style="display:none"/>B</div></foreignObject>',
