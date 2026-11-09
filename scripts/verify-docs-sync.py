@@ -130,6 +130,7 @@ SCANNER_VISIBLE_SUPPORT_REFERENCE = re.compile(
 REQUIRED_PACKAGED_RUNTIME_FILES = frozenset(
     {
         "scripts/self_check.py",
+        "scripts/verify_geometry.py",
         "scripts/drawio_extract.py",
         "scripts/mermaid_extract.py",
         "scripts/excalidraw_extract.py",

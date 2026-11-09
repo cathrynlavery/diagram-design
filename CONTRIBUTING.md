@@ -274,7 +274,7 @@ Treemaps get a second geometric gate, because their whole claim is that area *is
 
 The same count check covers this guide, `SKILL.md`, and the current onboarding and semantic-pattern references. Historical changelog entries and ADRs keep the count that was accurate when they were written. After a new type merges, a maintainer must also update the repository's GitHub About description, [Cathryn's profile README](https://github.com/cathrynlavery/cathrynlavery/blob/main/README.md), and [diagramdesign.dev](https://diagramdesign.dev); those live outside this CI check.
 
-The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest.
+The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. The geometry checker ships the same way as `skills/diagram-design/scripts/verify_geometry.py`; `scripts/verify-geometry.py` only runs it, so the gate commands stay the same.
 
 ### Render lint
 

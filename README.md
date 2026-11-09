@@ -625,7 +625,8 @@ diagram-design/
 │       │   ├── plantuml_extract.py   # PlantUML → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
 │       │   ├── export_png.py         # Playwright PNG renderer
-│       │   └── self_check.py         # packaged output self-check (runs installed)
+│       │   ├── self_check.py         # packaged output self-check (runs installed)
+│       │   └── verify_geometry.py    # label, connector and port geometry (runs installed)
 │       └── assets/
 │           ├── index.html            # live gallery, tabbed
 │           ├── icons.html            # icon library browser
@@ -643,7 +644,7 @@ diagram-design/
 │   ├── lint-skin.py                  # palette, fonts, a11y, single-file safety
 │   ├── lint-render.py                # Chromium rendered-layout checker
 │   ├── verify-docs-sync.py           # routing, gallery, README and count sync
-│   ├── verify-geometry.py            # label, connector and port geometry
+│   ├── verify-geometry.py            # repo entry point for the packaged geometry check
 │   ├── render-canonical-screenshots.py  # deterministic per-type PNG catalog renderer
 │   ├── build-readme-thumbs.py        # regenerates docs/screenshots/thumbs/
 │   └── fixtures/                     # draw.io, Mermaid, Excalidraw and PlantUML test inputs
