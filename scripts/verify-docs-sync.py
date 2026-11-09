@@ -86,7 +86,6 @@ DESCRIPTION_ALIASES = {
     "user journey": "journey",
     "service blueprint": "blueprint",
     "dependency graph": "dependency",
-    "uml class": "uml",
 }
 DISCOVERY_HOOKS = ("lifecycle phase",)
 ROUTING_SURFACES = {
