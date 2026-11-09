@@ -157,9 +157,10 @@ def rgb_of(value: str):
 def accent_colors(source: str) -> set:
     """The shipped accents plus the active --color-accent.
 
-    Only <style> rules whose subject reaches the figure count, and the last
-    one outside comments wins: another component's accent never re-skins
-    the diagram.
+    Declarations are read in document order, each belonging to the innermost
+    block around it; only blocks whose selector reaches the figure count, and
+    the last such declaration outside comments wins, so another component's
+    accent never re-skins the diagram.
     shortcut: an inline style="--color-accent:..." is not read; add it if a
     template ever sets the skin inline.
     """
@@ -167,11 +168,25 @@ def accent_colors(source: str) -> set:
     declared = []
     for match in STYLE_RE.finditer(source):
         css = re.sub(r"/\*.*?\*/", " ", match.group("body"), flags=re.DOTALL)
-        for selector, body, in_keyframes in css_blocks(css.replace("<!--", " ").replace("-->", " ")):
-            if in_keyframes or not reaches_figure(selector, elements):
+        css = css.replace("<!--", " ").replace("-->", " ")
+        stack, text = [], ""
+        for char in css:
+            if char not in ";{}":
+                text += char
                 continue
-            declared += [rgb_of(found.group("value")) for found in COLOR_ACCENT_RE.finditer(body)]
-    return DEFAULT_ACCENTS | set([color for color in declared if color is not None][-1:])
+            if char == "{":
+                inside = bool(stack) and (stack[-1][1] or KEYFRAMES_RE.match(stack[-1][0]) is not None)
+                stack.append((text.strip(), inside))
+            else:
+                found = COLOR_ACCENT_RE.search(text)
+                if found and stack and not stack[-1][1] and reaches_figure(stack[-1][0], elements):
+                    color = rgb_of(found.group("value"))
+                    if color is not None:
+                        declared.append(color)
+                if char == "}" and stack:
+                    stack.pop()
+            text = ""
+    return DEFAULT_ACCENTS | set(declared[-1:])
 ARC_D_RE = re.compile(
     r"^\s*M\s*(?P<x1>-?\d+(?:\.\d+)?)\s*,\s*(?P<y1>-?\d+(?:\.\d+)?)"
     r"\s*A\s*(?P<rx>-?\d+(?:\.\d+)?)\s*,\s*(?P<ry>-?\d+(?:\.\d+)?)"

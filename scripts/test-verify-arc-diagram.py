@@ -272,6 +272,11 @@ def run_cases(h: Harness) -> int:
         custom.replace("</style>", ".card{--color-accent:#008800}\n</style>", 1),
     )
     h.expect_clean(
+        "a nested skin's accent wins over its parent's",
+        custom.replace("--color-accent: #2a6fdb;",
+                       "--color-accent: #bf4520;\n      .frame { --color-accent: #2a6fdb; }", 1),
+    )
+    h.expect_clean(
         "a --color-accent inside a CSS comment is ignored",
         light.replace("</style>", "/* --color-accent: #2d3142; */\n</style>", 1),
     )
