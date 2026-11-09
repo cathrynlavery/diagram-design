@@ -5,8 +5,8 @@
     python3 <skill-dir>/scripts/export_simplediagrams.py my-diagram.html "Flow.simplediagram"
 
 SimpleDiagrams is a diagram editor for macOS whose documents are folder
-packages ending in ``.simplediagram``. This writes document format 19:
-https://github.com/mcquilleninteractive/simplediagrams-file-formats/tree/main/document/19
+packages ending in ``.simplediagram``. This writes SimpleDiagrams document
+format 19.
 
 The diagram is translated shape by shape into SimpleDiagrams' hand-drawn
 style, so it opens as something to keep editing rather than as a picture:
@@ -187,6 +187,7 @@ ICON_DROPPED_ATTRIBUTES = frozenset({"class", "style", "display", "visibility"})
 TEXT_STYLE = ("fill", "font-family", "font-size", "font-style", "font-weight", "text-decoration")
 NO_PAINT = frozenset({"none", "transparent"})
 IMPORTANT = "!important"
+MAX_VAR_LENGTH = 4096  # characters a var() may expand to; browsers also refuse long ones
 IMPORTANT_RE = re.compile(r"\s*!\s*important$", re.IGNORECASE)
 GENERIC_FONTS = frozenset(
     {"serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-serif",
@@ -375,18 +376,53 @@ def _readable_part(selector: str) -> tuple[Compound, ...] | None:
     return tuple(compound for compound in compounds if compound is not None)
 
 
-def resolve_vars(value: str, props: Props, depth: int = 0) -> str:
-    """Substitute ``var(--name, fallback)`` from inherited custom properties."""
+class _InvalidVar(Exception):
+    """A ``var()`` with no valid value: past ``MAX_VAR_LENGTH``, or invalid with no fallback."""
+
+
+def resolve_vars(
+    value: str, props: Props, cache: dict[str, str | None] | None = None, depth: int = 0
+) -> str | None:
+    """Substitute ``var(--name, fallback)`` from inherited custom properties.
+
+    Each custom property is expanded once per ``cache``, and a value that would grow past
+    ``MAX_VAR_LENGTH`` is ``None``, invalid as in a browser, so properties that each repeat
+    the one before cannot turn a short stylesheet into an exponentially long string.
+    A property that is invalid this way gives way to the ``var()``'s fallback.
+    """
     if "var(" not in value or depth > 8:
         return value
+    cache = {} if cache is None else cache
+
+    def expanded(text: str) -> str:
+        """``text`` resolved, or else ``_InvalidVar``."""
+        found = resolve_vars(text, props, cache, depth + 1)
+        if found is None:
+            raise _InvalidVar
+        return found
 
     def substitute(match: re.Match[str]) -> str:
         """One ``var()``: the property's value, or else its fallback."""
-        name, _, fallback = match.group(1).partition(",")
-        return resolve_vars(props.get(name.strip(), fallback.strip()), props, depth + 1)
+        name, comma, fallback = match.group(1).partition(",")
+        name = name.strip()
+        if name in props:
+            if name not in cache:
+                cache[name] = resolve_vars(props[name], props, cache, depth + 1)
+            found = cache[name]
+            if found is not None:
+                return found
+            if not comma:
+                raise _InvalidVar  # an invalid property with no fallback spoils the whole value
+        return expanded(fallback.strip())
 
     pattern = r"var\(\s*(--[\w-]+\s*(?:,(?:[^()]|\([^()]*\))*)?)\)"  # a fallback may hold rgb(…)
-    return resolve_vars(re.sub(pattern, substitute, value), props, depth + 1)
+    try:
+        result = re.sub(pattern, substitute, value)
+        if len(result) > MAX_VAR_LENGTH:
+            return None
+        return expanded(result)
+    except _InvalidVar:
+        return None
 
 
 def expand_font_shorthand(value: str) -> Props:
@@ -440,10 +476,15 @@ def computed_properties(
     for name, marked in declared:
         value = marked.removesuffix(IMPORTANT).rstrip()
         if name == "font":
-            props.update(expand_font_shorthand(resolve_vars(value, props)))
+            props.update(expand_font_shorthand(resolve_vars(value, props) or ""))
         elif name in PRESENTATION or name.startswith("--"):
             props[name] = value
-    props = {k: resolve_vars(v, props) for k, v in props.items()}
+    cache: dict[str, str | None] = {}
+    resolved = {k: resolve_vars(v, props, cache) for k, v in props.items()}
+    props = {k: v for k, v in resolved.items() if v is not None}
+    for name, found in resolved.items():  # an over-long value is invalid: as if unset
+        if found is None and name in INHERITED and name in inherited:
+            props[name] = inherited[name]
     for name, value in list(props.items()):
         keyword = value.strip().lower()
         if keyword == "inherit" or (keyword == "unset" and name in INHERITED):
@@ -1154,7 +1195,7 @@ def _other_inline_styles(element: ET.Element, page: Props) -> str:
     """An element's inline declarations this export has no attribute for, with tokens resolved."""
     kept = []
     for name, marked in _declarations(element.get("style", "")).items():
-        value = resolve_vars(marked.removesuffix(IMPORTANT).rstrip(), page)
+        value = resolve_vars(marked.removesuffix(IMPORTANT).rstrip(), page) or ""
         if name in ICON_HANDLED or name.startswith("--") or not value.strip():
             continue
         if name != "font" or not expand_font_shorthand(value):

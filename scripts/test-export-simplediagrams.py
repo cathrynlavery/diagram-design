@@ -1198,6 +1198,24 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 cannot_store = "icon SimpleDiagrams cannot store safely left out"
                 self.assertEqual(skipped, {cannot_store: count})
 
+    def test_custom_properties_that_multiply_are_refused_at_once(self) -> None:
+        """Ten ``var()``s per level once grew 1 KB of CSS into gigabytes and never finished;
+        a browser refuses an over-long substitution and uses the fallback, and so must this."""
+        levels = ["--p0: #123456"] + [
+            f"--p{i}: " + " ".join([f"var(--p{i - 1})"] * 10) for i in range(1, 10)
+        ]  # --p9 would be ten thousand million characters
+        started = time.monotonic()
+        document, _ = self.export(
+            f'<svg viewBox="0 0 400 300"><style>:root {{ {"; ".join(levels)} }}</style>'
+            '<rect x="10" y="10" width="80" height="40" fill="var(--p0)" stroke="var(--p9, #00ff00)"/>'
+            '<text x="20" y="80" fill="var(--p9)">Kept</text></svg>'
+        )  # fmt: skip
+        self.assertLess(time.monotonic() - started, 10)  # milliseconds, but CI can be slow
+        stored = json.dumps(document)
+        self.assertIn('"#123456"', stored)
+        self.assertIn('"#00FF00"', stored)  # the over-long --p9 gives way to its fallback
+        self.assertIn("Kept", stored)
+
     def test_an_icon_is_measured_and_painted_as_the_browser_draws_it(self) -> None:
         """Each row once cropped, recoloured or wrongly noted an icon placed by ``<use>``."""
         marker = (

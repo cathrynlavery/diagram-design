@@ -8,7 +8,7 @@ Load this file when the user invokes `/diagram-design:export-diagram <html-file>
 
 ## Scope
 
-The output is a new document in [document format 19](https://github.com/mcquilleninteractive/simplediagrams-file-formats/tree/main/document/19), drawn in SimpleDiagrams' hand-drawn style. Like the other exports it holds the `<svg>` diagram only. Boxes become shapes from SimpleDiagrams' built-in Basic library and keep their text; arrows become connectors attached to the boxes they touch, carrying their labels, and a square route keeps only its corners (rounded corners and hops over crossing lines are drawn plain); lanes become a Swimlanes shape; anything drawn on a box is grouped with it; other lines and text keep their place. An outline is replaced by a Basic shape only when it is labelled or an arrow ends on it, so the faces of an exploded or axonometric drawing keep their exact geometry.
+The output is a new document in SimpleDiagrams document format 19, drawn in SimpleDiagrams' hand-drawn style. Like the other exports it holds the `<svg>` diagram only. Boxes become shapes from SimpleDiagrams' built-in Basic library and keep their text; arrows become connectors attached to the boxes they touch, carrying their labels, and a square route keeps only its corners (rounded corners and hops over crossing lines are drawn plain); lanes become a Swimlanes shape; anything drawn on a box is grouped with it; other lines and text keep their place. An outline is replaced by a Basic shape only when it is labelled or an arrow ends on it, so the faces of an exploded or axonometric drawing keep their exact geometry.
 
 ## Procedure
 
