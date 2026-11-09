@@ -9,7 +9,11 @@ data, so the same holds for an arc and its ancestor groups. Every connector draw
 must be a declared arc, except legend samples inside <g data-role="legend">.
 Arcs are flattened to their drawn stroke (curves and elliptical arcs sampled)
 and may not cross, touch, overlap, or end on another arc, except at a shared
-glyph port or under the documented hop over exactly one other route. Files without data-diagram="sbgn" are
+glyph port or under the documented hop over exactly one other route. An arc
+is one subpath that starts on its data-from glyph's edge, ends on its data-to
+glyph's edge, and meets no glyph anywhere else; it may not be hidden by
+display, visibility, opacity, stroke-opacity, stroke or stroke-width. Every
+drawn part of a glyph group stays inside its bounds rect. Files without data-diagram="sbgn" are
 skipped. This verifies authored declarations, not whether they describe an
 external SBML model.
 
@@ -550,6 +554,7 @@ class Route:
     pieces: list[tuple[str, Point, Point]]
     head: Point
     tail: Point
+    subpaths: int = 1
 
 
 def _quadratic(p0: Point, p1: Point, p2: Point) -> list[Point]:
@@ -655,6 +660,7 @@ def flatten_route(node: Node, name: str) -> Route:
     current: Point | None = None
     start: Point | None = None
     first: Point | None = None
+    subpaths = 0
     control: Point | None = None  # last control point, for S and T reflection
     previous_command = ""
     command = ""
@@ -690,6 +696,7 @@ def flatten_route(node: Node, name: str) -> Route:
         if upper == "M":
             current = start = at(0)
             first = first or current
+            subpaths += 1
             command = "l" if command.islower() else "L"
             control, previous_command = None, "M"
             continue
@@ -731,7 +738,7 @@ def flatten_route(node: Node, name: str) -> Route:
         current, previous_command = target, upper
     if first is None or current is None:
         raise ValueError("empty path")
-    return Route(node, name, segments, pieces, first, current)
+    return Route(node, name, segments, pieces, first, current, subpaths)
 
 
 def _cross(ax: float, ay: float, bx: float, by: float) -> float:
@@ -785,6 +792,106 @@ def on_bounds_edge(point: Point, box: Box) -> bool:
     inside_y = box.y - TOUCH <= y <= box.bottom + TOUCH
     return ((inside_x and (abs(y - box.y) <= TOUCH or abs(y - box.bottom) <= TOUCH))
             or (inside_y and (abs(x - box.x) <= TOUCH or abs(x - box.right) <= TOUCH)))
+
+
+def segment_box_contact(s0: Point, s1: Point, box: Box) -> tuple[Point, Point] | None:
+    """The run of a segment inside or on a glyph's bounds (Liang-Barsky), or None."""
+    low, high = 0.0, 1.0
+    dx, dy = s1[0] - s0[0], s1[1] - s0[1]
+    for delta, offset in ((-dx, s0[0] - (box.x - TOUCH)), (dx, (box.right + TOUCH) - s0[0]),
+                          (-dy, s0[1] - (box.y - TOUCH)), (dy, (box.bottom + TOUCH) - s0[1])):
+        if abs(delta) <= 1e-12:
+            if offset < 0:
+                return None
+            continue
+        ratio = offset / delta
+        if delta < 0:
+            low = max(low, ratio)
+        else:
+            high = min(high, ratio)
+        if low > high:
+            return None
+    return ((s0[0] + low * dx, s0[1] + low * dy), (s0[0] + high * dx, s0[1] + high * dy))
+
+
+HIDING_PROPERTIES = ("display", "visibility", "opacity", "stroke-opacity", "stroke", "stroke-width")
+COLOR_FUNCTION_RE = re.compile(r"(?:rgba?|hsla?)\((.*)\)\Z", re.DOTALL)
+
+
+def _is_zero(value: str) -> bool:
+    raw = value.strip().rstrip("%").strip()
+    try:
+        return float(raw) == 0
+    except ValueError:
+        return False
+
+
+def _transparent_color(value: str) -> bool:
+    if value in {"none", "transparent"}:
+        return True
+    if re.fullmatch(r"#[0-9a-f]{4}", value):
+        return value[4] == "0"
+    if re.fullmatch(r"#[0-9a-f]{8}", value):
+        return value[7:9] == "00"
+    match = COLOR_FUNCTION_RE.fullmatch(value)
+    if match:
+        parts = [part for part in re.split(r"[\s,/]+", match.group(1).strip()) if part]
+        return len(parts) == 4 and _is_zero(parts[3])
+    return False
+
+
+def hiding_value(name: str, value: str) -> bool:
+    value = _css_unescape(CSS_COMMENT_RE.sub("", value)).replace("!important", "").strip().lower()
+    if name == "display":
+        return value == "none"
+    if name == "visibility":
+        return value in {"hidden", "collapse"}
+    if name in {"opacity", "stroke-opacity", "stroke-width"}:
+        return _is_zero(value)
+    if name == "stroke":
+        return _transparent_color(value)
+    return False
+
+
+def hiding_declarations(declarations: str) -> list[str]:
+    """Declarations in a CSS block that hide a stroke, as "name: value"."""
+    found = []
+    for declaration in _split_top_level(CSS_COMMENT_RE.sub("", declarations), ";"):
+        name, colon, value = declaration.partition(":")
+        name = _css_unescape(name).strip().lower()
+        if colon and name in HIDING_PROPERTIES and hiding_value(name, value):
+            found.append(f"{name}: {value.strip()}")
+    return found
+
+
+def hidden_by(node: Node) -> list[str]:
+    """Presentation attributes and inline style on one element that hide it."""
+    found = [f'{name}="{node.attrs[name]}"' for name in HIDING_PROPERTIES
+             if name in node.attrs and hiding_value(name, node.attrs[name])]
+    found.extend(hiding_declarations(node.attrs.get("style", "")))
+    return found
+
+
+def drawn_extent(node: Node) -> tuple[float, float, float, float] | None:
+    """Extent of a drawn glyph part; None for an anchorless tspan. Raises if unmeasurable."""
+    attrs = node.attrs
+    if node.tag in {"path", "line", "polyline", "polygon"}:
+        route = flatten_route(node, node.tag)
+        points = [route.head, *[point for segment in route.segments for point in segment[:2]]]
+        xs, ys = [p[0] for p in points], [p[1] for p in points]
+        return min(xs), min(ys), max(xs), max(ys)
+    if node.tag == "ellipse":
+        cx, cy = number(attrs.get("cx", "0")), number(attrs.get("cy", "0"))
+        rx, ry = number(attrs.get("rx", "")), number(attrs.get("ry", ""))
+        return cx - rx, cy - ry, cx + rx, cy + ry
+    if node.tag in {"rect", "circle"}:
+        return sample_extent(node)
+    if node.tag in {"text", "tspan"}:
+        if node.tag == "tspan" and "x" not in attrs and "y" not in attrs:
+            return None
+        x, y = number(attrs.get("x", "0")), number(attrs.get("y", "0"))
+        return x, y, x, y
+    raise ValueError(f"<{node.tag}> cannot be measured")
 
 
 def route_contacts(a: Route, b: Route) -> list[tuple[Point, int, int, bool]]:
@@ -896,6 +1003,35 @@ def check_source(path: Path, source: str) -> list[str]:
         if owner and node.tag in {"svg", "symbol"}:
             fail(node, f"{owner} sits inside a nested <{node.tag}>, which offsets and scales it")
 
+    def check_glyph_parts(carrier: Node, box: Box, owner: str) -> None:
+        """Everything a glyph group draws stays inside its bounds rect.
+
+        The undeclared-connector check exempts glyph content, so a glyph's
+        own <g> could otherwise draw a connector between two other glyphs.
+        """
+        pending = list(carrier.children)
+        while pending:
+            part = pending.pop(0)
+            if part.tag in NON_RENDERED or part.attrs.get("data-role") == "bounds":
+                continue
+            check_position(part, f"<{part.tag}> inside {owner}")
+            pending.extend(part.children)
+            if part.tag == "g":
+                continue
+            try:
+                extent = drawn_extent(part)
+            except ValueError as error:
+                fail(part, f"<{part.tag}> inside {owner} cannot be measured ({error}); "
+                           "draw glyph parts with rect, circle, ellipse, line, polyline, polygon, path or text")
+                continue
+            if extent is None:
+                continue
+            x0, y0, x1, y1 = extent
+            if (x0 + EPS < box.x or y0 + EPS < box.y
+                    or x1 > box.right + EPS or y1 > box.bottom + EPS):
+                fail(part, f"<{part.tag}> inside {owner} draws outside its bounds; "
+                           "keep glyph parts inside the bounds rect and draw connectors as declared arcs")
+
     def check_ancestors(node: Node, owner: str, **kwargs: str) -> None:
         for ancestor in node.ancestors():
             if ancestor is root:
@@ -928,17 +1064,30 @@ def check_source(path: Path, source: str) -> list[str]:
                         break
             compartment = node.attrs.get("data-compartment") or None
             glyphs[identity] = Box(node, identity, kind, x, y, w, h, compartment)
+            if kind != "compartment":
+                check_glyph_parts(node, glyphs[identity], owner)
 
     # The crossing check below compares raw path data, so a transform or
     # positional CSS on an arc or its ancestors would move the drawn stroke
     # without moving what is measured.
     arc_remedy = "draw arcs in map coordinates with path data only"
+    arc_chains: list[Node] = []
     for node in scanner.nodes:
         if root not in node.ancestors() or node.attrs.get("data-kind") not in ARC_KINDS:
             continue
         owner = f'arc {node.attrs.get("data-from", "?")} to {node.attrs.get("data-to", "?")}'
         check_position(node, f"<{node.tag}> of {owner}", owner, remedy=arc_remedy)
         check_ancestors(node, owner, remedy=arc_remedy)
+        # A hidden arc passes every check below while another element draws
+        # the connection the reader sees.
+        for item in [node, *node.ancestors()]:
+            if item is root:
+                break
+            hiding = hidden_by(item)
+            if hiding:
+                where = f"<{item.tag}> of {owner}" if item is node else f"ancestor <{item.tag}> of {owner}"
+                fail(item, f"{where} is hidden ({', '.join(hiding)}); every declared arc must be drawn")
+        arc_chains.extend(item for item in [node, *node.ancestors()] if item is not root and root in item.ancestors())
 
     blockers = [g for g in glyphs.values() if g.kind != "compartment"]
     for node in scanner.nodes:
@@ -1013,6 +1162,18 @@ def check_source(path: Path, source: str) -> list[str]:
                 findings.append(
                     f"{path.name}:{at}: stylesheet rule {', '.join(reaching)!r} sets {', '.join(moved)} "
                     "on elements the diagram's glyphs or arcs can match; place glyphs with x, y, width and height only")
+        for match in CSS_BLOCK_RE.finditer(sheet):
+            hiding = hiding_declarations(match.group(2))
+            if not hiding:
+                continue
+            selectors = [selector.strip() for selector in _split_top_level(match.group(1), ",")]
+            reaching = [selector for selector in selectors if selector and any(
+                selector_matches(selector, node, parent_of) is not False for node in arc_chains)]
+            if reaching:
+                at = line + sheet[:match.start(2)].count("\n")
+                findings.append(
+                    f"{path.name}:{at}: stylesheet rule {', '.join(reaching)!r} sets {', '.join(hiding)} "
+                    "on elements the diagram's arcs can match; every declared arc must be drawn")
 
     compartment_ids = {g.identity for g in compartments}
     for box in glyphs.values():
@@ -1078,6 +1239,28 @@ def check_source(path: Path, source: str) -> list[str]:
     # stroke must actually start on the first glyph's edge and end on the
     # second's; otherwise an arc can declare a valid pair and draw another.
     for route in routes:
+        if route.subpaths > 1:
+            fail(route.node, f"arc {route.name} draws {route.subpaths} subpaths; use a single M")
+        own = {route.node.attrs.get("data-from", ""): route.head, route.node.attrs.get("data-to", ""): route.tail}
+        for glyph in glyphs.values():
+            if glyph.kind == "compartment":
+                continue
+            allowed = own.get(glyph.identity)
+            for s0, s1, _piece in route.segments:
+                run = segment_box_contact(s0, s1, glyph)
+                if run is None:
+                    continue
+                if allowed is not None and _same(run[0], allowed) and _same(run[1], allowed):
+                    continue
+                x, y = round(run[0][0], 2), round(run[0][1], 2)
+                if allowed is None:
+                    message = (f'arc {route.name} touches glyph "{glyph.identity}" at ({x:g}, {y:g}); '
+                               "an arc may meet only its own two glyphs")
+                else:
+                    message = (f'arc {route.name} runs into its own glyph "{glyph.identity}" at ({x:g}, {y:g}); '
+                               "it may meet its glyphs only where it starts and ends")
+                fail(route.node, message)
+                break
         for end, attr, point in (("start", "data-from", route.head), ("end", "data-to", route.tail)):
             glyph = glyphs.get(route.node.attrs.get(attr, ""))
             if glyph is None or glyph.kind == "compartment":

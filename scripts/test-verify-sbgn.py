@@ -306,6 +306,73 @@ class ContractTests(unittest.TestCase):
         self.rejects(GOOD.replace('d="M 192,60 H 240"', 'd="M 200,60 H 240"', 1),
                      'must start on the edge of data-from glyph "p"')
 
+    def test_second_subpath_is_rejected(self):
+        # Owner review on #402: a second M draws a separate stroke whose ends
+        # the endpoint check never sees.
+        for d in ("M 112,60 H 136 M 168,40 V 44 M 136,76 H 160",
+                  "M 112,60 H 136 m 0,40 h 24 M 140,60 H 160"):
+            with self.subTest(d=d):
+                self.rejects(GOOD.replace('d="M 112,60 H 160"', f'd="{d}"', 1), "subpaths; use a single M")
+
+    def test_shipped_second_subpath_is_rejected(self):
+        path = ROOT / "skills/diagram-design/assets/example-sbgn.html"
+        source = path.read_text(encoding="utf-8")
+        arc = re.search(r'<path data-kind="consumption" data-from="bcar" data-to="v1"\s+d="([^"]*)"', source)
+        self.assertIsNotNone(arc, "shipped bcar to v1 arc not found")
+        split = source.replace(arc.group(0), arc.group(0).replace(arc.group(1), "M 100,144 V 168 M 296,140 V 128"), 1)
+        findings = "\n".join(checker.check_source(path, split))
+        self.assertIn("arc bcar to v1 draws 2 subpaths", findings)
+
+    def test_detour_through_another_glyph_is_rejected(self):
+        # Both routes start and end on their declared glyphs but pass b.
+        for d in ("M 72,80 V 120 H 280 V 80 V 120 H 176 V 76", "M 112,50 H 240 H 192"):
+            with self.subTest(d=d):
+                self.rejects(GOOD.replace('d="M 112,60 H 160"', f'd="{d}"', 1), 'arc a to p touches glyph "b"')
+        # Passing through its own process before ending on it also fails.
+        self.rejects(GOOD.replace('d="M 112,60 H 160"', 'd="M 112,60 H 200 V 76 H 176"', 1),
+                     'runs into its own glyph "p"')
+        # Running along its own glyph's edge is not a single port contact.
+        self.rejects(GOOD.replace('d="M 112,60 H 160"', 'd="M 112,48 V 72 H 160"', 1),
+                     'runs into its own glyph "a"')
+
+    def test_hidden_arc_is_rejected(self):
+        # Owner review on #402: a hidden declared arc passed while glyph a's
+        # own group drew the a to b stroke.
+        arc = '<path data-kind="consumption" data-from="a" data-to="p"'
+        for extra in ('display="none"', 'visibility="hidden"', 'opacity="0"', 'stroke-opacity="0"',
+                      'stroke="none"', 'stroke="transparent"', 'stroke="rgba(0,0,0,0)"', 'stroke="#0000"',
+                      'stroke-width="0"', 'style="display:none"', 'style="stroke-opacity: 0.0"',
+                      'style="opacity:0%"'):
+            with self.subTest(extra=extra):
+                self.rejects(GOOD.replace(arc, f"{arc} {extra}", 1), "is hidden")
+        grouped = GOOD.replace(arc, f'<g display="none">{arc}', 1).replace(
+            'd="M 112,60 H 160"/>', 'd="M 112,60 H 160"/></g>', 1)
+        self.rejects(grouped, "ancestor <g> of arc a to p is hidden")
+        for rule in ("[data-kind=consumption] { display: none; }", "path { stroke: transparent }",
+                     "svg > path { visibility: hidden; }"):
+            with self.subTest(rule=rule):
+                sheet = GOOD.replace("<html><body>", f"<html><head><style>{rule}</style></head><body>", 1)
+                self.rejects(sheet, "every declared arc must be drawn")
+        visible = GOOD.replace(arc, f'{arc} stroke="#2d3142" opacity="0.8"', 1)
+        self.clean(visible)
+        self.clean(GOOD.replace("<html><body>", "<html><head><style>.note { display: none; }</style></head><body>", 1))
+
+    def test_glyph_parts_stay_inside_bounds(self):
+        glyph = '<rect data-role="bounds" x="32" y="40" width="80" height="40" rx="16"/>'
+        for part in ('<path d="M 112,60 H 240"/>', '<line x1="72" y1="60" x2="240" y2="60"/>',
+                     '<polyline points="72,60 240,60"/>', '<circle cx="104" cy="60" r="12"/>',
+                     '<rect x="100" y="50" width="40" height="10"/>', '<text x="200" y="60">a</text>'):
+            with self.subTest(part=part):
+                self.rejects(GOOD.replace(glyph, glyph + part, 1), "draws outside its bounds")
+        for part in ('<use href="#shared-arc"/>', '<image href="x.png" x="40" y="44" width="8" height="8"/>'):
+            with self.subTest(part=part):
+                self.rejects(GOOD.replace(glyph, glyph + part, 1), "cannot be measured")
+        moved = '<rect x="40" y="44" width="8" height="8" transform="translate(200,0)"/>'
+        self.rejects(GOOD.replace(glyph, glyph + moved, 1), "transform attribute")
+        inside = ('<rect x="32" y="40" width="80" height="40" rx="16"/><text x="72" y="64">a</text>'
+                  '<g><circle cx="44" cy="52" r="4"/></g>')
+        self.clean(GOOD.replace(glyph, glyph + inside, 1))
+
     def test_unreadable_arc_path_is_rejected(self):
         self.rejects(GOOD.replace('d="M 112,60 H 160"', 'd="M 112,60 X 160"', 1), "path data")
 
