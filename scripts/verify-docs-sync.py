@@ -759,7 +759,7 @@ COUNT_SURFACES = (
 
 # Reader-facing docs may state the count, but it must match the shipped type
 # references. Import commands stay count-free and route to SKILL.md instead.
-VERIFIED_COUNT_SURFACES = frozenset(COUNT_SURFACES[3:])
+VERIFIED_COUNT_SURFACES = frozenset(p for p in COUNT_SURFACES if p.parts[0] != "commands")
 TYPE_REFERENCE_GLOB = "skills/diagram-design/references/type-*.md"
 
 

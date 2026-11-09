@@ -916,6 +916,9 @@ def check_architecture_delta_discovery(verify) -> None:
 def main() -> int:
     verify = load_verify_module()
     check_architecture_delta_discovery(verify)
+    stated = sorted(p.as_posix() for p in verify.VERIFIED_COUNT_SURFACES if p.parts[0] == "commands")
+    if stated:
+        raise AssertionError(f"import commands must stay count-free, not count-verified: {stated}")
 
     # Keep real routing vocabulary in the fixtures so the size check cannot
     # accidentally replace the existing lexical-hook validation.
