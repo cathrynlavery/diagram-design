@@ -920,8 +920,11 @@ def main() -> int:
     if stated:
         raise AssertionError(f"import commands must stay count-free, not count-verified: {stated}")
 
-    # Keep real routing vocabulary in the fixtures so the size check cannot
-    # accidentally replace the existing lexical-hook validation.
+    # Real manifest text keeps the size and discovery-hook checks honest.
+    checked = {relative.as_posix() for relative, _ in verify.MANIFEST_DESCRIPTIONS}
+    for native in (".claude-plugin", ".codex-plugin", ".factory-plugin", ".qoder-plugin"):
+        if f"{native}/plugin.json" not in checked:
+            raise AssertionError(f"{native}/plugin.json description is not checked")
     short = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["description"]
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
@@ -949,57 +952,69 @@ def main() -> int:
                     raise AssertionError(f"manifest size boundary failed: {errors}")
             path.write_text(original, encoding="utf-8")
 
-        # Architecture alone must not accidentally satisfy Architecture delta.
-        # Mutate each native discovery surface independently, including Codex's
-        # long description; a correct hook elsewhere cannot hide this omission.
-        for relative, keys in verify.MANIFEST_DESCRIPTIONS:
+        # The 500-character descriptions summarize the families: a type missing
+        # there is fine. Codex's longDescription keeps every hook, and
+        # Architecture alone must not satisfy Architecture delta there.
+        codex = root / ".codex-plugin/plugin.json"
+        pristine = codex.read_text(encoding="utf-8")
+        long_text = json.loads(pristine)["interface"]["longDescription"]
+        if "Wardley map" not in short:
+            raise AssertionError("plugin description fixture lacks Wardley map")
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
             path = root / relative
             original = path.read_text(encoding="utf-8")
-            for key in keys:
-                document = json.loads(original)
-                container = (
-                    document["interface"] if key == "longDescription"
-                    else document["metadata"] if "metadata" in document
-                    else document
-                )
-                before = container[key]
-                container[key] = before.replace("architecture delta, ", "")
-                if container[key] == before:
-                    raise AssertionError(f"{relative} {key} lacks Architecture delta")
-                path.write_text(json.dumps(document), encoding="utf-8")
-                errors = []
-                verify.check_manifest_descriptions(errors, root)
-                if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
-                    raise AssertionError(f"missing delta hook was not rejected: {errors}")
+            document = json.loads(original)
+            container = document["metadata"] if "metadata" in document else document
+            container["description"] = short.replace("Wardley map", "map")
+            path.write_text(json.dumps(document), encoding="utf-8")
+            errors = []
+            verify.check_manifest_descriptions(errors, root)
+            if errors:
+                raise AssertionError(f"{relative} summary description must not need every type: {errors}")
             path.write_text(original, encoding="utf-8")
 
-        codex = root / ".codex-plugin/plugin.json"
-        document = json.loads(codex.read_text(encoding="utf-8"))
-        document["interface"]["longDescription"] = short + " More detail." * 50
+        document = json.loads(pristine)
+        if "architecture delta, " not in long_text:
+            raise AssertionError("Codex longDescription lacks Architecture delta")
+        document["interface"]["longDescription"] = long_text.replace("architecture delta, ", "")
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
+            raise AssertionError(f"missing delta hook was not rejected: {errors}")
+
+        document["interface"]["longDescription"] = long_text + " More detail." * 50
         codex.write_text(json.dumps(document), encoding="utf-8")
         errors = []
         verify.check_manifest_descriptions(errors, root)
         if errors:
             raise AssertionError(f"longDescription incorrectly limited: {errors}")
 
-        document["description"] = short.replace("Wardley map", "map")
+        document["interface"]["longDescription"] = long_text.replace("Wardley map", "map")
         codex.write_text(json.dumps(document), encoding="utf-8")
         errors = []
         verify.check_manifest_descriptions(errors, root)
         if len(errors) != 1 or "lost the lexical hook" not in errors[0]:
             raise AssertionError(f"missing routing hook was not rejected: {errors}")
+        codex.write_text(pristine, encoding="utf-8")
 
-        document = json.loads(codex.read_text(encoding="utf-8"))
-        document["description"] = short.replace("lifecycle phase", "subject progress")
-        document["interface"]["longDescription"] = document["interface"]["longDescription"].replace(
-            "lifecycle phase", "subject progress"
-        )
-        codex.write_text(json.dumps(document), encoding="utf-8")
-        errors = []
-        verify.check_manifest_descriptions(errors, root)
-        lifecycle_errors = [error for error in errors if "discovery hook 'lifecycle phase'" in error]
-        if len(lifecycle_errors) != 2:
-            raise AssertionError(f"missing lifecycle discovery hooks were not rejected: {errors}")
+        for relative, keys in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            original = path.read_text(encoding="utf-8")
+            document = json.loads(original)
+            container = document["metadata"] if "metadata" in document else document
+            container["description"] = short.replace("lifecycle phase", "subject progress")
+            if "longDescription" in keys:
+                document["interface"]["longDescription"] = long_text.replace(
+                    "lifecycle phase", "subject progress"
+                )
+            path.write_text(json.dumps(document), encoding="utf-8")
+            errors = []
+            verify.check_manifest_descriptions(errors, root)
+            lifecycle_errors = [error for error in errors if "discovery hook 'lifecycle phase'" in error]
+            if len(lifecycle_errors) != len(keys):
+                raise AssertionError(f"{relative} missing lifecycle hook was not rejected: {errors}")
+            path.write_text(original, encoding="utf-8")
 
     for length in (1024, 1025):
         errors: list[str] = []
