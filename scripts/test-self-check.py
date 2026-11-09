@@ -372,6 +372,36 @@ def main() -> int:
     else:
         print("OK: every shipped asset stays inside its viewBox")
 
+    # Text fit: a label budgeted wider than the visible box it sits in (0.60em sans,
+    # 0.62em mono per character, style-guide.md) overflows its border.
+    check_mutation_fail("sans node name overflows its box", ">Astro Origin</text>",
+                        ">Astro Origin Server Cluster</text>", "overflows its 160px box")
+    check_mutation_fail("mono sublabel overflows its box", ">src/content/*.mdx</text>",
+                        ">src/content/blog/posts/*.mdx</text>", "overflows its 144px box")
+    check_mutation_fail("end-anchored ghost number flipped to start",
+                        'text-anchor="end">01</text>', 'text-anchor="start">01</text>',
+                        "overflows its 144px box")
+    check_mutation_pass("longer name that still fits", ">Astro Origin</text>",
+                        ">Astro Origin SSR</text>")
+    check_mutation_pass("connector label past its paper mask", ">HTTPS</text>",
+                        ">HTTPS · TLS 1.3 · H2</text>")
+    check_mutation_pass("free caption with no box",
+                        "</svg>", '<text x="20" y="470" font-size="12">'
+                        + "A caption with no box behind it runs as long as it likes</text></svg>")
+    check_source_pass("stylesheet font size leaves the estimate to the browser",
+                      styled("text.wide { font-size: 4px; }", "").replace(
+                          '>Astro Origin</text>', ' class="wide">Astro Origin Server Cluster</text>', 1))
+    overflowing_assets = []
+    for asset in sorted(ASSET_DIR.glob("*.html")):
+        fit_errors: list[str] = []
+        module.check_text_fit(asset.read_text(encoding="utf-8"), fit_errors)
+        if fit_errors:
+            overflowing_assets.append(f"{asset.name}: {fit_errors}")
+    if overflowing_assets:
+        failures.append(f"shipped assets reported text overflowing its box: {overflowing_assets}")
+    else:
+        print("OK: every shipped asset's boxed text fits the width budget")
+
     # --offline: system-font output must make no network request, so the one
     # remote stylesheet the default contract allows becomes a failure.
     if module.verify(STATIC_EXAMPLE, offline=False):
