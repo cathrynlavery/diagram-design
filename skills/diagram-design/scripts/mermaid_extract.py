@@ -71,6 +71,71 @@ def _er_name(name: str) -> bool:
 ER_QUOTED_NAME = r'"[^"%\r\n\v\b\\]+"'
 ER_NAME = rf"(?:{ER_QUOTED_NAME}|{ER_IDENTIFIER})"
 
+# Mermaid's ER cardinality tokens, each with the symbol it draws at the
+# (left, right) end of a relationship. Mermaid reads the words as
+# case-insensitive aliases for the symbols.
+_ER_ZERO_OR_ONE = ("|o", "o|")
+_ER_ONLY_ONE = ("||", "||")
+_ER_ZERO_OR_MORE = ("}o", "o{")
+_ER_ONE_OR_MORE = ("}|", "|{")
+ER_CARDINALITIES = {
+    "|o": _ER_ZERO_OR_ONE,
+    "o|": _ER_ZERO_OR_ONE,
+    "zero or one": _ER_ZERO_OR_ONE,
+    "one or zero": _ER_ZERO_OR_ONE,
+    "||": _ER_ONLY_ONE,
+    "1": _ER_ONLY_ONE,
+    "one": _ER_ONLY_ONE,
+    "only one": _ER_ONLY_ONE,
+    "}o": _ER_ZERO_OR_MORE,
+    "o{": _ER_ZERO_OR_MORE,
+    "0+": _ER_ZERO_OR_MORE,
+    "many": _ER_ZERO_OR_MORE,
+    "many(0)": _ER_ZERO_OR_MORE,
+    "zero or more": _ER_ZERO_OR_MORE,
+    "zero or many": _ER_ZERO_OR_MORE,
+    "}|": _ER_ONE_OR_MORE,
+    "|{": _ER_ONE_OR_MORE,
+    "1+": _ER_ONE_OR_MORE,
+    "many(1)": _ER_ONE_OR_MORE,
+    "one or more": _ER_ONE_OR_MORE,
+    "one or many": _ER_ONE_OR_MORE,
+    "u": ("u", "u"),
+}
+# Identifying relationships draw solid (`--`), non-identifying ones dashed (`..`).
+ER_IDENTIFICATIONS = {
+    "--": "--",
+    "to": "--",
+    "..": "..",
+    ".-": "..",
+    "-.": "..",
+    "optionally to": "..",
+}
+# Mermaid reads `1` as a cardinality only right before a link or before a
+# spaced word, and `u` (its MD_PARENT end) only right before `.`, `-` or `|`.
+_ER_TOKEN_CONTEXT = {
+    "1": r"1(?=\s+[A-Za-z_\"'0-9]|--|\.\.|\.-|-\.)",
+    "u": r"u(?=[.|-])",
+}
+
+
+def _er_tokens(tokens: dict[str, object]) -> str:
+    """Return a regex alternation over tokens, longest first like Mermaid's lexer.
+
+    As in Mermaid (jison), a token that ends in a word character must end at a
+    word boundary, so `to` does not match the start of `tomany`. Mermaid ignores
+    only ASCII case, so `(?a:...)` keeps `İ` and `ı` from matching `i`.
+    """
+    ordered = sorted(tokens, key=len, reverse=True)
+    return "|".join(
+        _ER_TOKEN_CONTEXT.get(token, "(?a:" + re.escape(token) + (r"\b" if token[-1].isalnum() else "") + ")")
+        for token in ordered
+    )
+
+
+ER_CARDINALITY = _er_tokens(ER_CARDINALITIES)
+ER_IDENTIFICATION = _er_tokens(ER_IDENTIFICATIONS)
+
 
 def _er_entity(token: str) -> str | None:
     """Return the entity name of an ER name token, or None if it is not one."""
@@ -1176,7 +1241,8 @@ def _parse_er(
     current: Node | None = None
     aliased_names: set[str] = set()
     relationship = re.compile(
-        rf"^({ER_NAME})\s+(\S*(?:--|\.\.)\S*)\s+"
+        rf"^({ER_NAME})\s+"
+        rf"(?i:({ER_CARDINALITY})\s*({ER_IDENTIFICATION})\s*({ER_CARDINALITY}))\s+"
         rf"({ER_NAME})\s*(?::\s*(.*))?$"
     )
     # `p[Person]` shows the alias in place of the entity name. Relationships
@@ -1203,14 +1269,14 @@ def _parse_er(
             current.fields.append(clean_label(text))
             continue
         edge = relationship.match(text)
-        if edge and _er_entity(edge.group(1)) and _er_entity(edge.group(3)):
-            source_token, cardinality, target_token, relationship_label = edge.groups()
+        if edge and _er_entity(edge.group(1)) and _er_entity(edge.group(5)):
+            source_token, left, link, right, target_token, relationship_label = edge.groups()
             source = _er_table(diagram, aliased_names, _er_entity(source_token), _er_label(source_token)).id
             target = _er_table(diagram, aliased_names, _er_entity(target_token), _er_label(target_token)).id
-            left, separator, right = cardinality.partition("--")
-            if not separator:
-                left, separator, right = cardinality.partition("..")
-            label_parts = [f"{left} {separator} {right}".strip()]
+            separator = ER_IDENTIFICATIONS[link.casefold()]
+            left = ER_CARDINALITIES[left.casefold()][0]
+            right = ER_CARDINALITIES[right.casefold()][1]
+            label_parts = [f"{left} {separator} {right}"]
             if relationship_label:
                 label_parts.append(clean_label(relationship_label))
             diagram.add_edge(
