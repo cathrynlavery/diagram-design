@@ -240,6 +240,13 @@ jobs:
           python scripts/verify-excalidraw-import.py
           python scripts/test-verify-excalidraw-import.py
 
+      - name: Verify PlantUML import script
+        if: always()
+        id: plantuml
+        run: |
+          python scripts/verify-plantuml-import.py
+          python scripts/test-verify-plantuml-import.py
+
       - name: Verify optional motion contract
         if: always()
         id: motion
@@ -439,6 +446,16 @@ jobs:
         id: box_plot_tests
         run: python scripts/test-verify-box-plot.py
 
+      - name: Verify arc-diagram span geometry
+        if: always()
+        id: arc_diagram
+        run: python scripts/verify-arc-diagram.py --all
+
+      - name: Verify arc-diagram checker
+        if: always()
+        id: arc_diagram_tests
+        run: python scripts/test-verify-arc-diagram.py
+
       - name: Verify architecture delta snapshots and ledger
         if: always()
         id: architecture_delta
@@ -592,6 +609,7 @@ jobs:
           echo "| Draw.io Import Extractor | ${{ steps.drawio.outcome == 'success' && '✅ Passed' || (steps.drawio.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Mermaid Import Extractor | ${{ steps.mermaid.outcome == 'success' && '✅ Passed' || (steps.mermaid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Excalidraw Import Extractor | ${{ steps.excalidraw.outcome == 'success' && '✅ Passed' || (steps.excalidraw.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| PlantUML Import Extractor | ${{ steps.plantuml.outcome == 'success' && '✅ Passed' || (steps.plantuml.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Optional Motion Contract | ${{ steps.motion.outcome == 'success' && '✅ Passed' || (steps.motion.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Doctor Diagnostics Contract | ${{ steps.doctor.outcome == 'success' && '✅ Passed' || (steps.doctor.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Doctor Diagnostics Tests | ${{ steps.doctor_tests.outcome == 'success' && '✅ Passed' || (steps.doctor_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -631,6 +649,8 @@ jobs:
           echo "| Beeswarm Checker | ${{ steps.beeswarm_tests.outcome == 'success' && '✅ Passed' || (steps.beeswarm_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Box-Plot Five-Number Geometry | ${{ steps.box_plot.outcome == 'success' && '✅ Passed' || (steps.box_plot.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Box-Plot Checker | ${{ steps.box_plot_tests.outcome == 'success' && '✅ Passed' || (steps.box_plot_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Arc-Diagram Span Geometry | ${{ steps.arc_diagram.outcome == 'success' && '✅ Passed' || (steps.arc_diagram.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Arc-Diagram Checker | ${{ steps.arc_diagram_tests.outcome == 'success' && '✅ Passed' || (steps.arc_diagram_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Checker | ${{ steps.architecture_delta_tests.outcome == 'success' && '✅ Passed' || (steps.architecture_delta_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Containment Scopes | ${{ steps.architecture_containment.outcome == 'success' && '✅ Passed' || (steps.architecture_containment.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"

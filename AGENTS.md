@@ -8,7 +8,7 @@ Follow "Adding a new diagram type" in CONTRIBUTING.md. The suite fails until the
 
 - **Gallery.** Register every example in `skills/diagram-design/assets/index.html`. A new type gets the next number. Any other example of an existing type is a lettered variant: it goes directly after its parent with `data-parent-type` and a lettered eyebrow (`28c`). GitHub Pages publishes `skills/diagram-design/assets/` when the PR merges, so the live gallery needs no separate step.
 - **Type count (new type).** Raise `VISUAL_TYPE_COUNT` in `scripts/verify-docs-sync.py` and `scripts/verify-semantic-motion.py`, and the hardcoded count in `scripts/verify-screenshot-freshness.py` and `scripts/render-canonical-screenshots.py`. Then fix every count the suite reports: the README, SKILL.md, CONTRIBUTING, `onboarding.md` and `semantic-patterns.md`, plus a new amendment in ADR 0002.
-- **Plugin manifests.** Keep `description` and `keywords` identical across `.claude-plugin`, `.codex-plugin`, `.factory-plugin` and `.qoder-plugin`. A type whose selection-table name differs from the word used in the descriptions needs a `DESCRIPTION_ALIASES` entry in `verify-docs-sync.py`. Leave `version` alone; main bumps it after merge (ADR 0009).
+- **Plugin manifests.** Keep `description` and `keywords` identical across `.claude-plugin`, `.codex-plugin`, `.factory-plugin` and `.qoder-plugin`. A new type goes in the SKILL.md frontmatter description and the Codex `longDescription`; the 500-character `description` only summarizes the families (ADR 0004). A type whose selection-table name differs from the word used there needs a `DESCRIPTION_ALIASES` entry in `verify-docs-sync.py`. Leave `version` alone; main bumps it after merge (ADR 0009).
 
 Nothing checks these, so do them in the same PR:
 
