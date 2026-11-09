@@ -12,40 +12,57 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
+STYLE_RE = re.compile(
+    r"<!--.*?(?:-->|$)|<style\b[^>]*>(?P<body>.*?)</style\s*>", re.IGNORECASE | re.DOTALL
+)
+CSS_COMMENT_OR_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'""", re.DOTALL
+)
+GROUP_SELECTOR_RE = re.compile(r"\[\s*data-event-stage\s*(?:[~|^$*]?=|\])", re.IGNORECASE)
 KINDS = {"command": "CMD-", "event": "EVT-", "read-model": "VIEW-"}
 LINKS = {"emits": ("command", "event"), "projects": ("event", "read-model")}
 
 
-def visible(element: ET.Element) -> str:
-    """Read SVG text while excluding metadata and hidden descendants."""
+def hidden(node: ET.Element) -> bool:
+    tag = node.tag.rsplit("}", 1)[-1]
+    style = {
+        key.strip().casefold(): value.strip().casefold()
+        for key, separator, value in (
+            part.partition(":") for part in node.attrib.get("style", "").split(";")
+        )
+        if key and separator
+    }
+    return (
+        tag in {"defs", "title", "desc"}
+        or node.attrib.get("aria-hidden") == "true"
+        or "hidden" in node.attrib
+        or node.attrib.get("display") == "none"
+        or node.attrib.get("visibility") == "hidden"
+        or node.attrib.get("opacity") in {"0", "0.0"}
+        or node.attrib.get("fill") in {"none", "transparent"}
+        or node.attrib.get("fill-opacity") in {"0", "0.0"}
+        or style.get("display") == "none"
+        or style.get("visibility") == "hidden"
+        or style.get("opacity") in {"0", "0.0"}
+        or style.get("fill") in {"none", "transparent"}
+        or style.get("fill-opacity") in {"0", "0.0"}
+    )
+
+
+def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
+    """Read SVG text outside hidden and non-rendering subtrees."""
+    ancestor = parents.get(element)
+    while ancestor is not None:
+        if hidden(ancestor):
+            return ""
+        ancestor = parents.get(ancestor)
+
     chunks: list[str] = []
 
     def walk(node: ET.Element, in_text: bool = False) -> None:
-        tag = node.tag.rsplit("}", 1)[-1]
-        style = {
-            key.strip().casefold(): value.strip().casefold()
-            for key, separator, value in (
-                part.partition(":") for part in node.attrib.get("style", "").split(";")
-            )
-            if key and separator
-        }
-        if (
-            tag in {"defs", "title", "desc"}
-            or node.attrib.get("aria-hidden") == "true"
-            or "hidden" in node.attrib
-            or node.attrib.get("display") == "none"
-            or node.attrib.get("visibility") == "hidden"
-            or node.attrib.get("opacity") in {"0", "0.0"}
-            or node.attrib.get("fill") in {"none", "transparent"}
-            or node.attrib.get("fill-opacity") in {"0", "0.0"}
-            or style.get("display") == "none"
-            or style.get("visibility") == "hidden"
-            or style.get("opacity") in {"0", "0.0"}
-            or style.get("fill") in {"none", "transparent"}
-            or style.get("fill-opacity") in {"0", "0.0"}
-        ):
+        if hidden(node):
             return
-        in_text = in_text or tag == "text"
+        in_text = in_text or node.tag.rsplit("}", 1)[-1] == "text"
         if in_text and node.text:
             chunks.append(node.text)
         for child in node:
@@ -70,6 +87,17 @@ def check(path: Path) -> list[str]:
         return ["SVG must declare data-diagram-type=event-modeling"]
 
     errors: list[str] = []
+    # Rules targeting structural groups can override the attributes checked below.
+    for style in STYLE_RE.finditer(source):
+        body = style.group("body")
+        if body is None:
+            continue
+        css = CSS_COMMENT_OR_STRING_RE.sub(" ", body)
+        if any(GROUP_SELECTOR_RE.search(selector) for selector in re.findall(r"([^{}]+)\{", css)):
+            errors.append("stylesheet must not select data-event-stage")
+            break
+
+    parents = {child: parent for parent in svg.iter() for child in parent}
     stages = [element for element in svg.iter() if "data-event-stage" in element.attrib]
     if not 1 <= len(stages) <= 6:
         errors.append("expected 1 to 6 ordered stages")
@@ -77,6 +105,8 @@ def check(path: Path) -> list[str]:
     global_ids: set[str] = set()
     for index, stage in enumerate(stages, 1):
         stage_id = stage.attrib["data-event-stage"]
+        if "transform" in stage.attrib:
+            errors.append(f"{stage_id}: event stage must not use transform")
         if not stage_id or stage_id in stage_ids:
             errors.append(f"blank or duplicate stage ID: {stage_id!r}")
         stage_ids.add(stage_id)
@@ -99,7 +129,7 @@ def check(path: Path) -> list[str]:
                 if not element_id.startswith(KINDS[kind]) or element_id in global_ids:
                     errors.append(f"{stage_id}: invalid or duplicate {kind} ID {element_id!r}")
                 global_ids.add(element_id)
-                if element_id and element_id not in visible(element):
+                if element_id and element_id not in visible(element, parents):
                     errors.append(f"{stage_id}: {kind} ID {element_id!r} is not printed")
             rel = element.attrib.get("data-event-rel")
             if rel is not None:
@@ -123,7 +153,7 @@ def check(path: Path) -> list[str]:
             to_id = elements[to_kind][0].attrib.get("data-event-id", "")
             if found[0].attrib.get("data-from") != from_id or found[0].attrib.get("data-to") != to_id:
                 errors.append(f"{stage_id}: {rel} endpoints do not match the stage")
-    headings = visible(svg).casefold()
+    headings = visible(svg, parents).casefold()
     for heading in ("command", "event", "read model", "time moves left to right"):
         if heading not in headings:
             errors.append(f"missing visible {heading} label")

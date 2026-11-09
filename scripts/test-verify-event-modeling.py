@@ -19,7 +19,14 @@ def main() -> None:
     spec.loader.exec_module(module)
     source = EXAMPLE.read_text(encoding="utf-8")
     assert module.check(EXAMPLE) == []
+    first_group = '<g data-event-stage="STAGE-01"'
+    second_group = '<g data-event-stage="STAGE-02"'
     cases = (
+        (first_group, first_group.replace("<g ", '<g display="none" '), "is not printed"),
+        (first_group, first_group.replace("<g ", '<g style="display:none" '), "is not printed"),
+        (first_group, first_group.replace("<g ", '<g opacity="0" '), "is not printed"),
+        (first_group, first_group.replace("<g ", '<g transform="scale(0)" '), "event stage must not use transform"),
+        ("</style>", "g[data-event-stage]{display:none}</style>", "stylesheet must not select data-event-stage"),
         ('data-stage-order="2"', 'data-stage-order="1"', "stage order"),
         ('data-event-stage="STAGE-02"', 'data-event-stage="STAGE-01"', "duplicate stage ID"),
         ('data-diagram-role="timeframe"', 'data-diagram-role="unknown"', "stage role must be timeframe"),
@@ -37,11 +44,21 @@ def main() -> None:
     )
     with tempfile.TemporaryDirectory() as directory:
         candidate = Path(directory) / "candidate.html"
+        failures = []
         for old, new, expected in cases:
             assert old in source, old
             candidate.write_text(source.replace(old, new, 1), encoding="utf-8")
             errors = module.check(candidate)
-            assert any(expected in error for error in errors), (old, errors)
+            if not any(expected in error for error in errors):
+                failures.append((new, expected, errors))
+        assert first_group in source and second_group in source
+        wrapped = source.replace(first_group, '<g display="none">' + first_group, 1)
+        wrapped = wrapped.replace(second_group, "</g>" + second_group, 1)
+        candidate.write_text(wrapped, encoding="utf-8")
+        errors = module.check(candidate)
+        if not any("STAGE-01:" in error and "is not printed" in error for error in errors):
+            failures.append(("hidden SVG wrapper", "is not printed", errors))
+        assert not failures, failures
     print("OK event modeling: ordered stages, typed roles, and link endpoints")
 
 
