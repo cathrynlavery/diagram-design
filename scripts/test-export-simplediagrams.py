@@ -702,12 +702,13 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             Path("painted-icons.html"),
         )
         svgs = "".join(asset.data.decode() for asset in result.assets)
-        self.assertEqual(len(result.assets), 3)
+        self.assertEqual(len(result.assets), 4)  # the lost fill is invalid, so the path is black
         for written in ('fill="#bf4520"', 'stroke="#123456"', 'fill="#2e5aa8"'):
             self.assertIn(written, svgs)
         self.assertNotIn("class=", svgs)
         self.assertNotIn("var(", svgs)
-        self.assertEqual(result.skipped, {"icon SimpleDiagrams cannot store safely left out": 1})
+        self.assertNotIn('fill=""', svgs)
+        self.assertEqual(result.skipped, {})
 
     def test_a_nested_svg_is_an_icon_where_the_browser_draws_it(self) -> None:
         """Ignoring a nested view port piles every icon into the page's top-left corner."""
@@ -1497,6 +1498,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
               '<rect class="n" width="9" height="9"/>'), fills, ["#FF0000"]),  # reversed for !important
             (('<style>:root { --a: red; --b: var(--a) } .g { --a: blue } rect { fill: var(--b) }</style>'
               '<g class="g"><rect width="9" height="9"/></g>'), fills, ["#FF0000"]),
+            ('<g fill="red"><rect width="9" height="9" fill="var(--missing)"/></g>', fills, ["#FF0000"]),
             ('<text y="30"><tspan><title>Tooltip</title>Visible</tspan></text>', strings, ["Visible"]),
             (('<defs><svg id="i" width="20" height="20" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>'
               '</defs><use href="#i" x="50" y="60" width="100" height="100"/>'), frames,

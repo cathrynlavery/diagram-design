@@ -426,8 +426,8 @@ def resolve_vars(
             found = cache[name]
             if found is not None:
                 return found
-            if not comma:
-                raise _InvalidVar  # an invalid property with no fallback spoils the whole value
+        if not comma:
+            raise _InvalidVar  # a missing or invalid property with no fallback spoils the value
         return expanded(fallback.strip())
 
     pattern = r"var\(\s*(--[\w-]+\s*(?:,(?:[^()]|\([^()]*\))*)?)\)"  # a fallback may hold rgb(…)
@@ -1894,7 +1894,9 @@ class Reader:
         """
         if (marker := self._marker(reference)) is None:
             return "none"
-        outer = computed_properties(marker, {}, self.rules, [self.root])
+        # A marker inherits where it is defined, not from the line that uses it.
+        inherited, path = self._context_of(marker)
+        outer = computed_properties(marker, inherited, self.rules, path)
         if (shown := self._marker_shape(marker, outer)) is None:
             return "none"
         shape, props = shown
