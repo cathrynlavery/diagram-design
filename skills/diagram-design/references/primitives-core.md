@@ -116,7 +116,7 @@ Rules:
 - Never `writing-mode` vertical.
 - For vertical segments, place the label to the side (not on the line) with the same 6–10px horizontal gap.
 
-**Font substitution.** Don't estimate per-character widths — use the `style-guide.md` budget (0.60em sans / 0.62em mono per char). A production run sized mono labels at ~0.47em/char and clipped twice; the calibrated budget fits both the default skin's mono face (Geist Mono) and the common substituted mono faces (Menlo, Courier New, Monaco, all ≈0.60em). Previews via `rsvg`/`inkscape` can't fetch the injected Google Fonts, so verify with `python3 scripts/verify_geometry.py <file>` from the skill directory — it checks masks against later-painted nodes, not text fit; holding the budget is yours.
+**Font substitution.** Don't estimate per-character widths — use the `style-guide.md` budget (0.60em sans / 0.62em mono per char). A production run sized mono labels at ~0.47em/char and clipped twice; the calibrated budget fits both the default skin's mono face (Geist Mono) and the common substituted mono faces (Menlo, Courier New, Monaco, all ≈0.60em). Previews via `rsvg`/`inkscape` can't fetch the injected Google Fonts, so verify with `python3 scripts/verify_geometry.py <file>` from the skill directory — it checks masks against later-painted nodes, not text fit. `scripts/self_check.py` checks text against the visible box it sits in, but not against an arrow-label mask, so on masks holding the budget is yours.
 
 ## Legend — horizontal strip at the bottom
 
