@@ -12,6 +12,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
+STYLE_RE = re.compile(
+    r"<!--.*?(?:-->|$)|<style\b[^>]*>(?P<body>.*?)</style\s*>", re.IGNORECASE | re.DOTALL
+)
+CSS_COMMENT_OR_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'""", re.DOTALL
+)
+GROUP_SELECTOR_RE = re.compile(r"\[\s*data-trace-row\s*(?:[~|^$*]?=|\])", re.IGNORECASE)
 KINDS = {"source": "SRC-", "requirement": "REQ-", "design": "DES-", "test": "TST-"}
 RELATIONS = {"derives": "source", "satisfies": "design", "verifies": "test"}
 
@@ -20,36 +27,46 @@ def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
 
-def visible(element: ET.Element) -> str:
-    """Read painted SVG text, excluding metadata and hidden descendants."""
+def hidden(node: ET.Element) -> bool:
+    tag = local(node.tag)
+    style = {
+        key.strip().casefold(): value.strip().casefold()
+        for key, separator, value in (
+            part.partition(":") for part in node.attrib.get("style", "").split(";")
+        )
+        if key and separator
+    }
+    return (
+        tag in {"defs", "title", "desc"}
+        or node.attrib.get("aria-hidden") == "true"
+        or "hidden" in node.attrib
+        or node.attrib.get("display") == "none"
+        or node.attrib.get("visibility") == "hidden"
+        or node.attrib.get("opacity") in {"0", "0.0"}
+        or node.attrib.get("fill") in {"none", "transparent"}
+        or node.attrib.get("fill-opacity") in {"0", "0.0"}
+        or style.get("display") == "none"
+        or style.get("visibility") == "hidden"
+        or style.get("opacity") in {"0", "0.0"}
+        or style.get("fill") in {"none", "transparent"}
+        or style.get("fill-opacity") in {"0", "0.0"}
+    )
+
+
+def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
+    """Read SVG text outside hidden and non-rendering subtrees."""
+    ancestor = parents.get(element)
+    while ancestor is not None:
+        if hidden(ancestor):
+            return ""
+        ancestor = parents.get(ancestor)
+
     chunks: list[str] = []
 
     def walk(node: ET.Element, in_text: bool = False) -> None:
-        tag = local(node.tag)
-        style = {
-            key.strip().casefold(): value.strip().casefold()
-            for key, separator, value in (
-                part.partition(":") for part in node.attrib.get("style", "").split(";")
-            )
-            if key and separator
-        }
-        if (
-            tag in {"defs", "title", "desc"}
-            or node.attrib.get("aria-hidden") == "true"
-            or "hidden" in node.attrib
-            or node.attrib.get("display") == "none"
-            or node.attrib.get("visibility") == "hidden"
-            or node.attrib.get("opacity") in {"0", "0.0"}
-            or node.attrib.get("fill") in {"none", "transparent"}
-            or node.attrib.get("fill-opacity") in {"0", "0.0"}
-            or style.get("display") == "none"
-            or style.get("visibility") == "hidden"
-            or style.get("opacity") in {"0", "0.0"}
-            or style.get("fill") in {"none", "transparent"}
-            or style.get("fill-opacity") in {"0", "0.0"}
-        ):
+        if hidden(node):
             return
-        in_text = in_text or tag == "text"
+        in_text = in_text or local(node.tag) == "text"
         if in_text and node.text:
             chunks.append(node.text)
         for child in node:
@@ -74,6 +91,17 @@ def check(path: Path) -> list[str]:
         return ["SVG must declare data-diagram-type=requirement-traceability"]
 
     errors: list[str] = []
+    # Rules targeting structural groups can override the attributes checked below.
+    for style in STYLE_RE.finditer(source):
+        body = style.group("body")
+        if body is None:
+            continue
+        css = CSS_COMMENT_OR_STRING_RE.sub(" ", body)
+        if any(GROUP_SELECTOR_RE.search(selector) for selector in re.findall(r"([^{}]+)\{", css)):
+            errors.append("stylesheet must not select data-trace-row")
+            break
+
+    parents = {child: parent for parent in svg.iter() for child in parent}
     rows = [element for element in svg.iter() if "data-trace-row" in element.attrib]
     if not 1 <= len(rows) <= 6:
         errors.append("expected 1 to 6 requirement rows")
@@ -81,6 +109,8 @@ def check(path: Path) -> list[str]:
     row_ids: set[str] = set()
     for row in rows:
         requirement_id = row.attrib["data-trace-row"].strip()
+        if "transform" in row.attrib:
+            errors.append(f"{requirement_id}: requirement row must not use transform")
         if not requirement_id or requirement_id in row_ids:
             errors.append(f"blank or duplicate requirement row ID: {requirement_id!r}")
         row_ids.add(requirement_id)
@@ -101,7 +131,7 @@ def check(path: Path) -> list[str]:
                 if not element_id.startswith(KINDS[kind]) or element_id in ids:
                     errors.append(f"{requirement_id}: invalid or duplicate {kind} ID {element_id!r}")
                 ids.add(element_id)
-                if element_id and element_id not in visible(element):
+                if element_id and element_id not in visible(element, parents):
                     errors.append(f"{requirement_id}: {kind} ID {element_id!r} is not printed")
             rel = element.attrib.get("data-trace-rel")
             if rel is not None:
@@ -116,7 +146,7 @@ def check(path: Path) -> list[str]:
             errors.append(f"{requirement_id}: at most one design and one test in an overview row")
         if by_kind["source"] and by_kind["source"][0].attrib.get("data-source-ref") != source_ref:
             errors.append(f"{requirement_id}: source reference does not match row")
-        if by_kind["source"] and source_ref not in visible(by_kind["source"][0]):
+        if by_kind["source"] and source_ref not in visible(by_kind["source"][0], parents):
             errors.append(f"{requirement_id}: source citation is not printed")
         if by_kind["requirement"] and by_kind["requirement"][0].attrib.get("data-trace-id") != requirement_id:
             errors.append(f"{requirement_id}: printed requirement cell has a different ID")
@@ -134,16 +164,16 @@ def check(path: Path) -> list[str]:
             if missing:
                 if rel == "derives" or endpoint or link.attrib.get("data-trace-from"):
                     errors.append(f"{requirement_id}: invalid missing {rel} relationship")
-                if not any(term in visible(link).casefold() for term in ("no ", "missing", "open")):
+                if not any(term in visible(link, parents).casefold() for term in ("no ", "missing", "open")):
                     errors.append(f"{requirement_id}: missing {rel} relationship needs a visible gap label")
             elif not endpoint or link.attrib.get("data-trace-from") != endpoint:
                 errors.append(f"{requirement_id}: {rel} source does not resolve to a {kind} cell")
 
         for kind, rel_word in (("design", "satisfies"), ("test", "verifies")):
-            if by_kind[kind] and rel_word not in visible(by_kind[kind][0]).casefold():
+            if by_kind[kind] and rel_word not in visible(by_kind[kind][0], parents).casefold():
                 errors.append(f"{requirement_id}: {kind} cell must print {rel_word}")
 
-    headings = visible(svg).casefold()
+    headings = visible(svg, parents).casefold()
     for heading in ("source", "requirement", "satisfied by", "verified by"):
         if heading not in headings:
             errors.append(f"missing visible {heading} heading")

@@ -24,7 +24,14 @@ def main() -> None:
     verifier = load_verifier()
     source = EXAMPLE.read_text(encoding="utf-8")
     assert verifier.check(EXAMPLE) == []
+    first_group = '<g data-trace-row="REQ-01"'
+    second_group = '<g data-trace-row="REQ-02"'
     cases = (
+        (first_group, first_group.replace("<g ", '<g display="none" '), "is not printed"),
+        (first_group, first_group.replace("<g ", '<g style="display:none" '), "is not printed"),
+        (first_group, first_group.replace("<g ", '<g opacity="0" '), "is not printed"),
+        (first_group, first_group.replace("<g ", '<g transform="scale(0)" '), "requirement row must not use transform"),
+        ("</style>", "g[data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
         ('data-trace-source="Review brief §1"', 'data-trace-source=""', "missing source reference"),
         ('data-trace-row="REQ-02"', 'data-trace-row="REQ-01"', "duplicate requirement row ID"),
         ('data-trace-from="DES-01"', 'data-trace-from="DES-99"', "source does not resolve"),
@@ -39,11 +46,21 @@ def main() -> None:
     )
     with tempfile.TemporaryDirectory() as directory:
         candidate = Path(directory) / "candidate.html"
+        failures = []
         for old, new, expected in cases:
             assert old in source, old
             candidate.write_text(source.replace(old, new, 1), encoding="utf-8")
             errors = verifier.check(candidate)
-            assert any(expected in error for error in errors), (old, errors)
+            if not any(expected in error for error in errors):
+                failures.append((new, expected, errors))
+        assert first_group in source and second_group in source
+        wrapped = source.replace(first_group, '<g display="none">' + first_group, 1)
+        wrapped = wrapped.replace(second_group, "</g>" + second_group, 1)
+        candidate.write_text(wrapped, encoding="utf-8")
+        errors = verifier.check(candidate)
+        if not any("REQ-01:" in error and "is not printed" in error for error in errors):
+            failures.append(("hidden SVG wrapper", "is not printed", errors))
+        assert not failures, failures
     print("OK requirement traceability: source, IDs, typed links, and explicit gaps")
 
 
