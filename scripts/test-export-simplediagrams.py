@@ -335,6 +335,29 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual((label["position"], label["normal_offset"]), (0.75, -14))  # above the line
         self.assertEqual(len(page["elements"]), 2)  # the label's box is gone
 
+    def test_decorated_connector_label_keeps_its_group(self) -> None:
+        """A connector's own label has no group to carry other items hosted by its box."""
+        document, _ = self.export("""<svg viewBox="0 0 400 200">
+          <defs><marker id="a"><polygon points="0 0,8 3,0 6"/></marker></defs>
+          <rect x="20" y="80" width="80" height="40" fill="#fff" stroke="#000"/>
+          <rect x="300" y="80" width="80" height="40" fill="#fff" stroke="#000"/>
+          <line x1="100" y1="100" x2="300" y2="100" stroke="#000" marker-end="url(#a)"/>
+          <rect x="230" y="80" width="40" height="12" fill="#fff"/>
+          <text x="250" y="89" font-size="8" text-anchor="middle">SENDS</text>
+          <text x="265" y="90" font-size="4" text-anchor="end">zz</text>
+        </svg>""")
+        page = document["pages"][0]
+        [arrow] = page["content"]["content"]["connections"]
+        self.assertIsNone(arrow["content"].get("label"))
+        [group] = page["content"]["groups"]
+        ids = {
+            core(item)["id"]
+            for item in page["elements"]
+            if core(item)["text_content"]["string"] in {"SENDS", "zz"}
+        }
+        self.assertEqual(len(ids), 2)
+        self.assertEqual({member["id"] for member in group["members"]}, ids)
+
     def test_lanes_drawn_as_dividers_become_a_swimlanes_shape(self) -> None:
         """Lanes become one Swimlanes shape holding their content; a legend rule stays a line."""
         source = ASSETS / "example-swimlane.html"
@@ -1686,6 +1709,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 '<line x2="40" y2="40" stroke="red" stroke-dasharray="5 15" stroke-dashoffset="9"/>',
                 STROKE_STYLE,
             ),
+            ('<line x2="90" y2="40" stroke="red" stroke-dasharray="50 50"/>', STROKE_STYLE),
+            ('<line x2="90" y2="40" stroke="red" stroke-dasharray="50% 50%"/>', STROKE_STYLE),
             (
                 (
                     '<defs><pattern id="stripes" width="4" height="4"><rect width="2" height="4"/></pattern></defs>'
@@ -1719,6 +1744,85 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual(text["string"], "Outline")
         self.assertEqual(text["base_style"]["color_hex"], "#FF000080")
         self.assertEqual(result, {"outlined text drawn filled with its outline colour": 1})
+
+    def test_invisible_spans_leave_visible_words_and_their_style(self) -> None:
+        """Invisible words never set line style or hide a separately visible descendant."""
+        hidden = "words after hidden words in a line moved into their place"
+        for words, expected, notes_hidden_gap in (
+            ('<tspan font-size="0">Hidden</tspan> Visible', "Visible", False),
+            ('<tspan fill="none">Hidden</tspan> Visible', "Visible", True),
+            ('Visible <tspan fill="transparent">Hidden</tspan>', "Visible", False),
+            ('Visible <tspan font-size="0">Hidden</tspan>', "Visible", False),
+            ("<tspan>One</tspan><tspan> </tspan><tspan>Two</tspan>", "One Two", False),
+            ('<tspan fill="none"><tspan fill="red">Visible</tspan></tspan>', "Visible", False),
+            ('<tspan fill="#00ff0000">Hidden</tspan><tspan fill="red">Visible</tspan>', "Visible", True),
+        ):
+            with self.subTest(words=words):
+                doc, notes = self.export(f'<svg viewBox="0 0 100 100"><text y="30">{words}</text></svg>')
+                text = self.element_labelled(expected, doc)["text_content"]
+                self.assertIn(text["base_style"]["color_hex"], {"#000000", "#FF0000"})
+                if notes_hidden_gap:
+                    self.assertIn(hidden, notes)
+
+    def test_svg_selectors_keep_their_authored_specificity(self) -> None:
+        """The isolated reader has no scoping prefix to distort the authored CSS cascade."""
+        rect = '<rect id="start" class="n" width="9" height="9"/>'
+        for css, markup, expected in (
+            ("#d { color: black } .n { fill: red } #start { fill: blue }", rect, "#0000FF"),
+            (".n { fill: red } #start { fill: blue }", "<title>#d</title>" + rect, "#0000FF"),
+            (".n.n { fill: red } .n { fill: blue }", rect, "#FF0000"),
+            ("#start#start { fill: red } #start { fill: blue }", rect, "#FF0000"),
+            ("#d .n { fill: red } .n { fill: blue }", rect, "#FF0000"),
+            ("svg .n { fill: red } .n { fill: blue }", rect, "#FF0000"),
+            (":root .n { fill: red } .n { fill: blue }", rect, "#FF0000"),
+            ("body { color: red !important }", '<rect fill="currentColor" width="9" height="9"/>', "#0000FF"),
+            ("", '<g color="red"><rect color="currentColor" fill="currentColor" width="9" height="9"/></g>', "#FF0000"),
+        ):
+            with self.subTest(css=css, markup=markup):
+                doc, _ = self.export(f'<style>{css}</style><svg id="d" color="blue" viewBox="0 0 100 100">{markup}</svg>')
+                [box] = doc["pages"][0]["elements"]
+                self.assertEqual(core(box)["style"]["fill_hex"], expected)
+
+    def test_root_background_uses_the_same_cascade_as_shape_paint(self) -> None:
+        """Background shorthand and color longhand compete in source order and by importance."""
+        for css, inline, expected in (
+            ("", "background-color:red;background:blue", "#0000FF"),
+            ("", "background:red!important;background-color:blue", "#FF0000"),
+            ("#d { background-color: red !important }", "background:blue", "#FF0000"),
+            ("#d { background: var(--paper); --paper: blue }", "", "#0000FF"),
+        ):
+            with self.subTest(css=css, inline=inline):
+                doc, _ = self.export(f'<style>{css}</style><svg id="d" viewBox="0 0 100 100" style="{inline}"><text y="30">Label</text></svg>')
+                self.assertEqual(doc["pages"][0]["content"]["background"], {"kind": "solid", "color_hex": expected})
+
+    def test_stored_icons_preserve_marker_definitions_and_report_renderer_losses(self) -> None:
+        """Artwork carries its safe marker reference and flags styles the canvas cannot draw."""
+        result = self.mod.export_document(
+            """<style>.upper { text-transform: uppercase } .line { marker-mid: url(#m) }</style>
+            <svg viewBox="0 0 100 100">
+              <defs><marker id="m"><circle r="3" fill="red"/></marker></defs>
+              <svg width="80" height="40" viewBox="0 0 80 40">
+                <text class="upper" y="20">api</text>
+                <polyline class="line" points="10 10,20 20,30 10" fill="none" stroke="red"/>
+              </svg>
+            </svg>""",
+            Path("case.html"),
+        )
+        [asset] = result.assets
+        svg = ET.fromstring(asset.data)
+        [marker] = svg.findall(".//{*}marker")
+        [line] = svg.findall(".//{*}polyline")
+        self.assertEqual(line.get("marker-mid"), f'url(#{marker.get("id")})')
+        self.assertIn("letter case set by CSS left unchanged in stored icons", result.skipped)
+        self.assertIn("middle markers in stored icons may be left out by the desktop renderer", result.skipped)
+
+    def test_large_translucent_path_reports_possible_overlap(self) -> None:
+        """Exceeding the pair-check budget cannot hide an overlap late in the path."""
+        parts = [f"M{i * 2} 0h1v1h-1z" for i in range(201)]
+        parts.append(parts[-1])
+        path = " ".join(parts)
+        _, notes = self.export(f'<svg viewBox="0 0 450 20"><path fill-opacity=".5" d="{path}"/></svg>')
+        self.assertIn(SEE_THROUGH, notes)
 
     def test_drawing_reads_as_the_browser_draws_it(self) -> None:
         """Each row once lost, moved, resized or revealed something, with no note at all."""

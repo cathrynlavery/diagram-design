@@ -72,6 +72,7 @@ MAX_FONT_FAMILY_BYTES = 256
 MAX_NAME_BYTES = 512
 # Arranging compares shapes with one another, so stop well before that is slow.
 MAX_ITEMS = 5_000
+OVERLAP_CHECK_LIMIT = 200  # larger translucent sets conservatively report possible overlap
 
 # How the drawing is read as a diagram. Lengths are in SVG units.
 # A line end this close to an outline attaches to it; arrows stop short for the head.
@@ -143,7 +144,7 @@ ICON_PAINT = frozenset(
 )  # fmt: skip
 ICON_LINE = frozenset(
     {"stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "fill-rule",
-     "marker-start", "marker-end", "paint-order", "vector-effect"}
+     "marker-start", "marker-mid", "marker-end", "paint-order", "vector-effect"}
 )  # fmt: skip
 ICON_TEXT = frozenset(
     {"font-family", "font-size", "font-style", "font-weight", "letter-spacing", "text-anchor",
@@ -187,7 +188,7 @@ INITIAL_VALUES = {
     "fill-opacity": "1", "stroke-opacity": "1", "opacity": "1", "color": "black",
     "stroke-dashoffset": "0", "stroke-linecap": "butt", "stroke-linejoin": "miter",
     "stroke-miterlimit": "4", "fill-rule": "nonzero", "marker-start": "none",
-    "marker-end": "none", "paint-order": "normal", "vector-effect": "none", "clip-path": "none",
+    "marker-mid": "none", "marker-end": "none", "paint-order": "normal", "vector-effect": "none", "clip-path": "none",
     "mask": "none", "stop-color": "black", "stop-opacity": "1", "font-size": "16",
     "font-family": "serif", "font-style": "normal", "font-weight": "400", "letter-spacing": "normal",
     "text-anchor": "start", "text-decoration": "none",
@@ -289,6 +290,8 @@ class Note(str, Enum):
     HTML_LAYOUT = "HTML layout such as flex or grid centring not read; the text sits at the top"
     ICON_UNSAFE = "icon SimpleDiagrams cannot store safely left out"
     USE_OF_NOTHING = "<use> of nothing left out"
+    ICON_TEXT_CASE = "letter case set by CSS left unchanged in stored icons"
+    ICON_MID_MARKERS = "middle markers in stored icons may be left out by the desktop renderer"
     ICON_COLOUR = "see-through or unknown icon colour stored as solid"
     ICON_CROPPED = "icon cropped to its box drawn whole"
     PICTURE_SKEWED = "skewed or empty picture left out"
@@ -316,19 +319,22 @@ class Compound(NamedTuple):
     """One compound selector, such as ``rect.node#main``."""
 
     tag: str | None
-    ids: frozenset[str]
-    classes: frozenset[str]
+    ids: tuple[str, ...]
+    classes: tuple[str, ...]
     attributes: frozenset[str] = frozenset()  # only where an unreadable selector is noted
 
-    def matches(self, element: ET.Element) -> bool:
+    root_tests: int = 0
+
+    def matches(self, element: ET.Element, *, is_root: bool) -> bool:
         """Whether the element has this tag, every one of these IDs, classes and attributes."""
-        if self.tag is not None and _local(element) != self.tag:
+        if (self.root_tests and not is_root) or (self.tag is not None and _local(element) != self.tag):
             return False
         if any(element.get("id") != name for name in self.ids):
             return False
         if any(element.get(name) is None for name in self.attributes):
             return False
-        return self.classes <= set(element.get("class", "").split())
+        classes = set(element.get("class", "").split())
+        return all(name in classes for name in self.classes)
 
 
 @dataclass(frozen=True, slots=True)
@@ -343,10 +349,10 @@ class CssRule:
     def applies(self, element: ET.Element, ancestors: Sequence[ET.Element]) -> bool:
         """Whether the rule selects the element, given its ancestors from the root down."""
         *outer, last = self.compounds
-        if not last.matches(element):
+        if not last.matches(element, is_root=not ancestors):
             return False
-        for ancestor in reversed(ancestors):
-            if outer and outer[-1].matches(ancestor):
+        for index in range(len(ancestors) - 1, -1, -1):
+            if outer and outer[-1].matches(ancestors[index], is_root=index == 0):
                 outer.pop()
         return not outer
 
@@ -376,18 +382,19 @@ def _declarations(body: str) -> Props:
 
 def _compound(text: str) -> Compound | None:
     """Read a compound selector built from a tag or ``*``, IDs and classes; ``None`` for any other."""
-    match = re.fullmatch(r"(\*|[A-Za-z][\w-]*)?((?:[.#][\w-]+)*)", text)
+    match = re.fullmatch(r"(\*|[A-Za-z][\w-]*)?((?:[.#][\w-]+|:root)*)", text)
     if match is None or not text:
         return None
     parts = re.findall(r"([.#])([\w-]+)", match.group(2))
     return Compound(
         None if match.group(1) == "*" else match.group(1),
-        frozenset(name for kind, name in parts if kind == "#"),
-        frozenset(name for kind, name in parts if kind == "."),
+        tuple(name for kind, name in parts if kind == "#"),
+        tuple(name for kind, name in parts if kind == "."),
+        root_tests=match.group(2).count(":root"),
     )
 
 
-def parse_stylesheet(css: str, scope: str = "") -> tuple[list[CssRule], list[CssRule]]:
+def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
     """The rules this export applies, in cascade order, and those it cannot apply.
 
     Applied: rules whose selectors are built from tags, ``*``, classes and IDs joined by
@@ -397,15 +404,10 @@ def parse_stylesheet(css: str, scope: str = "") -> tuple[list[CssRule], list[Css
     Conditional groups (``@media``, ``@supports``) and ``@keyframes`` are skipped: the export
     draws the page's default view, as the guide states.
 
-    ``scope`` is the root's ID, which ``export_svg`` puts in front of each page selector
-    other than an ID one; it is left out of specificity, so ``#start`` still beats
-    ``#scope rect`` as it beat ``rect`` on the page. It is empty when the page's own rules
-    name the root by ID, as those read just like the scoped ones.
     """
     css = export_svg.strip_css_comments(css)
     rules: list[CssRule] = []
     unread: list[CssRule] = []
-    root = Compound(None, frozenset({scope}), frozenset())
 
     def set_aside(selector: str) -> None:
         """Keep a rule this export cannot apply, if it sets anything drawn."""
@@ -445,10 +447,9 @@ def parse_stylesheet(css: str, scope: str = "") -> tuple[list[CssRule], list[Css
                 if _affects_drawing(declarations):
                     set_aside(selector)
                 continue
-            scoped = len(valid) > 1 and valid[0] == root
             specificity = (
-                sum(len(c.ids) for c in valid) - scoped,
-                sum(len(c.classes) for c in valid),
+                sum(len(c.ids) for c in valid),
+                sum(len(c.classes) + c.root_tests for c in valid),
                 sum(c.tag is not None for c in valid),
             )
             rules.append(CssRule(valid, specificity, len(rules), declarations))
@@ -497,7 +498,7 @@ def _readable_part(selector: str) -> tuple[Compound, ...] | None:
             compounds.append(_compound(kept))
         else:  # only attribute tests, such as [data-kind]: it selects what has the attribute
             names = re.findall(r"\[\s*([\w-]+)", part)
-            tested = Compound(None, frozenset(), frozenset(), frozenset(names))
+            tested = Compound(None, (), (), frozenset(names))
             compounds.append(tested if names else None)
     if None in compounds:
         return None
@@ -735,6 +736,29 @@ def settled_font_size(value: str, parent: float) -> float | None:
 # --- The cascade ----------------------------------------------------------------
 
 
+def _cascaded_declarations(
+    element: ET.Element,
+    rules: Sequence[CssRule],
+    ancestors: Sequence[ET.Element],
+    defaults: Props | None = None,
+) -> list[tuple[str, str]]:
+    """Declarations from lowest to highest priority, including source order."""
+    matched = [rule for rule in rules if rule.applies(element, ancestors)]
+    sources = [
+        defaults or {},
+        {k: v for k, v in element.attrib.items() if k in PRESENTATION},
+    ]
+    sources += [rule.declarations for rule in matched]
+    sources.append(_declarations(element.get("style", "")))
+    return [
+        (name, marked.removesuffix(IMPORTANT).rstrip())
+        for important in (False, True)
+        for source in sources
+        for name, marked in source.items()
+        if marked.endswith(IMPORTANT) == important
+    ]
+
+
 def computed_properties(
     element: ET.Element,
     inherited: Props,
@@ -753,20 +777,7 @@ def computed_properties(
     Sizes are settled to pixels and weights to numbers, so callers compare like with like.
     """
     props = {k: v for k, v in inherited.items() if k in INHERITED or k.startswith("--")}
-    matched = [rule for rule in rules if rule.applies(element, ancestors)]
-    sources = [
-        defaults or {},
-        {k: v for k, v in element.attrib.items() if k in PRESENTATION},
-    ]
-    sources += [rule.declarations for rule in matched]
-    sources.append(_declarations(element.get("style", "")))
-    declared = [
-        (name, marked.removesuffix(IMPORTANT).rstrip())
-        for important in (False, True)
-        for source in sources
-        for name, marked in source.items()
-        if marked.endswith(IMPORTANT) == important
-    ]
+    declared = _cascaded_declarations(element, rules, ancestors, defaults)
     own_custom = {name: value for name, value in declared if name.startswith("--")}
     custom = settle_custom_properties(props, own_custom)
     props = {k: v for k, v in props.items() if not k.startswith("--")}
@@ -789,8 +800,10 @@ def computed_properties(
         if settled is None:  # invalid where used
             settled = "unset"
         keyword = settled.strip().lower()
-        if keyword == "inherit" or (
-            keyword in CSS_WIDE_KEYWORDS - {"initial"} and name in INHERITED
+        if (
+            keyword == "inherit"
+            or (name == "color" and keyword == "currentcolor")
+            or (keyword in CSS_WIDE_KEYWORDS - {"initial"} and name in INHERITED)
         ):
             if name in inherited:
                 props[name] = inherited[name]
@@ -819,6 +832,25 @@ def _is_invisible(props: Props) -> bool:
 def _paint_opacity(props: Props, paint: str) -> float:
     """The fill or stroke opacity, independent of the opacity of the finished element."""
     return length(props.get(f"{paint}-opacity"), 1.0, percent_of=1.0)
+
+
+def _has_text_fill(props: Props) -> bool:
+    """Whether the text's fill can show, allowing unknown paint to get a loss note."""
+    fill = props.get("fill", "black")
+    return (
+        fill.strip().lower() not in NO_PAINT
+        and _paint_opacity(props, "fill") > 0
+        and ((colour := parse_colour(fill, props)) is None or colour[3] > 0)
+    )
+
+
+def _visible_text(props: Props) -> bool:
+    """Whether this run can show any glyphs independently of its children."""
+    return (
+        not _is_invisible(props)
+        and length(props.get("font-size"), 16.0) > 0
+        and (_has_text_fill(props) or _has_line(props))
+    )
 
 
 def _has_line(props: Props) -> bool:
@@ -1943,16 +1975,24 @@ def _clip_utf8(text: str, max_bytes: int, drop: Sequence[str] = ("Cc",)) -> str:
 class Reader:
     """Walks the exported SVG once and collects boxes, strokes and labels in drawing order."""
 
-    def __init__(self, root: ET.Element, scoped: bool = True) -> None:
-        """Prepare to read ``root``: its stylesheet, its IDs and its page size.
-
-        ``scoped`` says every page rule led by the root's ID was put there by ``export_svg``,
-        which is so unless the page's own CSS names its ``<svg>`` by an ID.
-        """
+    def __init__(self, root: ET.Element) -> None:
+        """Prepare to read ``root``: its stylesheet, its IDs and its page size."""
         self.root = root
         styles = (element.text or "" for element in root.iter() if _local(element) == "style")
-        scope = root.get("id", "") if scoped else ""
-        self.rules, self.unread = parse_stylesheet("".join(styles), scope)
+        self.rules, self.unread = parse_stylesheet("".join(styles))
+        # The isolated SVG exporter carries inheritable body styles. Their theme tokens
+        # come from the HTML root and settle before the SVG's own declarations apply.
+        body_rules = [rule for rule in self.rules if rule.compounds == (Compound("body", (), ()),)]
+        root_rules = [
+            rule for rule in self.rules
+            if rule.compounds == (Compound(None, (), (), root_tests=1),)
+        ]
+        root_tokens = {
+            name: value
+            for name, value in computed_properties(ET.Element("html"), {}, root_rules, ()).items()
+            if name.startswith("--")
+        }
+        self.root_inherited = computed_properties(ET.Element("body"), root_tokens, body_rules, ())
         self.by_id: dict[str, ET.Element] = {}
         for element in root.iter():
             if name := element.get("id"):
@@ -1993,7 +2033,7 @@ class Reader:
         if self._selects_any(self.unread):
             self._skip(Note.STYLESHEET_UNREAD)
         self._root_background()
-        self._walk(self.root, {}, origin, 1.0, [])
+        self._walk(self.root, self.root_inherited, origin, 1.0, [])
         if (count := len(self.items)) > MAX_ITEMS:
             raise ValueError(
                 f"the diagram draws {count} shapes; this export handles up to {MAX_ITEMS}"
@@ -2002,24 +2042,39 @@ class Reader:
 
     def _root_background(self) -> None:
         """Take an opaque colour the root ``<svg>`` is painted with as the page's background."""
-        layers = [rule.declarations for rule in self.rules if rule.applies(self.root, [])]
-        layers.append(_declarations(self.root.get("style", "")))
         values = [
-            layer[name] for layer in layers for name in ("background", "background-color")
-            if name in layer
-        ]  # fmt: skip
+            (name, value)
+            for name, value in _cascaded_declarations(self.root, self.rules, ())
+            if name in {"background", "background-color", "background-image"}
+        ]
         if not values:
             return
-        props = computed_properties(self.root, {}, self.rules, [])
-        value = resolve_vars(values[-1].removesuffix(IMPORTANT), props) or ""
-        if re.search(r"gradient\(|url\(", value, re.IGNORECASE):
+        props = computed_properties(self.root, self.root_inherited, self.rules, ())
+        colour = None
+        has_image = False
+        for name, raw in values:
+            value = resolve_vars(raw, props) or ""
+            if name != "background-color":
+                has_image = bool(re.search(r"gradient\(|url\(", value, re.IGNORECASE))
+            if name == "background-image":
+                continue
+            if name == "background":
+                # The shorthand resets the colour when it specifies only an image or none.
+                colour = None
+                if has_image:
+                    continue
+            if value.lower() in CSS_WIDE_KEYWORDS | NO_PAINT or not value:
+                colour = None
+                continue
+            tokens = re.findall(r"#[0-9a-fA-F]+|(?:rgba?|hsla?)\([^)]*\)|[a-zA-Z]+", value)
+            for token in tokens:
+                if (parsed := parse_colour(token, props)) is not None:
+                    colour = parsed
+                    break
+        if has_image:
             self._skip(Note.UNKNOWN_PAINT)
-            return
-        for token in re.findall(r"#[0-9a-fA-F]+|(?:rgba?|hsla?)\([^)]*\)|[a-zA-Z]+", value):
-            if (colour := parse_colour(token, props)) is not None:
-                if colour[3] >= 0.999:
-                    self.background = colour_hex(colour)
-                return
+        if colour is not None and colour[3] >= 0.999:
+            self.background = colour_hex(colour)
 
     def _declares(
         self, element: ET.Element, ancestors: list[ET.Element], wanted: Callable[[str, str], bool]
@@ -2197,7 +2252,7 @@ class Reader:
                 if order.index("stroke") < order.index("fill"):
                     self._skip(Note.PAINT_ORDER)
         dash_values = re.split(r"[\s,]+", props.get("stroke-dasharray", "none").strip())
-        dashes = [length(v) for v in dash_values if v and v != "none"]
+        dashes = [self._either(value, props) for value in dash_values if value and value != "none"]
         pattern: LinePattern = "solid"
         if any(dashes):
             pattern = "dotted" if dashes[0] <= max(1.5, width * 1.5) else "dashed"
@@ -2205,8 +2260,7 @@ class Reader:
             props.get("stroke-linecap", "butt") != "butt"
             or props.get("stroke-linejoin", "miter") != "miter"
             or length(props.get("stroke-miterlimit"), 4) != 4
-            or (pattern != "solid" and length(props.get("stroke-dashoffset")) != 0)
-            or (pattern != "solid" and len(set(dashes)) > 1)
+            or pattern != "solid"
             or (not non_scaling and (turn is None or not math.isclose(turn[1], turn[2])))
         ):
             self._skip(Note.STROKE_STYLE)
@@ -2492,7 +2546,7 @@ class Reader:
             self._add_outline(subpath, paint, subpath_props, matrix, len(subpaths) > 1)
             if (
                 paint.filled
-                and len(filled_extents) < 200
+                and len(filled_extents) <= OVERLAP_CHECK_LIMIT
                 and painted_area(points) > MIN_FILLED_AREA
             ):
                 filled_extents.append(bounds(points))
@@ -2582,7 +2636,7 @@ class Reader:
         preserved = element.get(f"{{{XML_NAMESPACE}}}space") == "preserve"
         if preserved and re.search(r"\S {2,}\S", "".join(element.itertext())):
             self._skip(Note.PRESERVED_SPACES)
-        shows = not _is_invisible(props)  # hidden, it draws only the spans that show themselves
+        shows = _visible_text(props)
         moved = Note.MOVED_WORDS
         lines: list[tuple[Point, Props, list[str]]] = [
             (
@@ -2602,33 +2656,38 @@ class Reader:
                 before = "".join(lines[-1][2])
                 pieces = self._text_pieces(child, child_props, ancestors, before)
                 worded = [(words, style) for words, style in pieces if words.strip()]
-                if any(style is not None for _, style in pieces):
-                    text = "".join(words for words, style in pieces if style is not None)
+                styles = [style for _, style in worded if style is not None]
+                text = "".join(words for words, style in pieces if style is not None)
+                if styles:
                     child_size = length(child_props.get("font-size"), 16.0)
                     if any(child.get(key) is not None for key in LINE_PLACEMENT):
                         if child.get("x") is None and "".join(lines[-1][2]).strip():
                             self._skip(Note.LINE_SHIFT)
                         anchor = placed(child, child_size, *lines[-1][0])
-                        lines.append((anchor, child_props, [text]))
+                        lines.append((anchor, styles[0], [text]))
                         after_hidden = False
                     else:
                         if text.strip() and not "".join(lines[-1][2]).strip():  # it starts the line
-                            lines[-1] = (lines[-1][0], child_props, lines[-1][2])
+                            lines[-1] = (lines[-1][0], styles[0], lines[-1][2])
                         gap = length(child.get("dx"), font_size=child_size)
                         lines[-1][2].append(f" {text}" if gap > 0 else text)
                         if abs(gap) > child_size:
                             self._skip(Note.WIDE_GAP)
-                    styles = [style for _, style in worded if style is not None]
                     if not all(_same_text_style(style, lines[-1][1]) for style in styles):
                         self._skip(Note.STYLED_WORDS)
-                    if styles and (after_hidden or _hidden_before_shown(worded)):
+                    if after_hidden or _hidden_before_shown(worded):
                         self._skip(moved)
+                elif text and not any(child.get(key) is not None for key in LINE_PLACEMENT):
+                    # Visible separators contribute spacing without choosing the line style.
+                    lines[-1][2].append(text)
                 after_hidden = after_hidden or any(style is None for _, style in worded)
             tail = (child.tail or "").strip()
             if shows:
                 if after_hidden and tail:
                     self._skip(moved)
-                if tail and not _same_text_style(lines[-1][1], props):
+                if tail and not "".join(lines[-1][2]).strip():
+                    lines[-1] = (lines[-1][0], props, lines[-1][2])
+                elif tail and not _same_text_style(lines[-1][1], props):
                     self._skip(Note.STYLED_WORDS)
                 lines[-1][2].append(_cased(child.tail, props, "".join(lines[-1][2])))
             else:
@@ -2637,12 +2696,7 @@ class Reader:
             align = _alignment(line_props.get("text-anchor", ""))
             paint = line_props.get("fill", "black")
             text = "".join(parts)
-            colour = parse_colour(paint, line_props)
-            unfilled = (
-                paint.strip().lower() in NO_PAINT
-                or _paint_opacity(line_props, "fill") <= 0
-                or (colour is not None and colour[3] == 0)
-            )
+            unfilled = not _has_text_fill(line_props)
             if _has_line(line_props) and text.strip():
                 if unfilled:
                     self._skip(Note.OUTLINED_TEXT)
@@ -2678,10 +2732,7 @@ class Reader:
             self._skip(Note.SEE_THROUGH_WORDS)
         # A see-nothing span keeps its words' room but shows none of them, nor its children's.
         faded = faded or fade <= 0
-        # Words with no fill opacity and no outline show nothing; a child may fill them again.
-        unfilled = length(props.get("fill-opacity"), 1.0, percent_of=1.0) <= 0
-        clear = unfilled and not _has_line(props)
-        style = None if _is_invisible(props) or faded or clear else props
+        style = props if not faded and _visible_text(props) else None
         pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props, before), style)]
         path = [*ancestors, node]
         for child in node:
@@ -2985,7 +3036,7 @@ class Reader:
         while node is not None:
             path.insert(0, node)
             node = self.parents.get(node)
-        inherited: Props = {}
+        inherited = self.root_inherited
         for depth, ancestor in enumerate(path):
             inherited = computed_properties(ancestor, inherited, self.rules, path[:depth])
         return inherited, path
@@ -3001,6 +3052,18 @@ class Reader:
         if page.get("display") == "none":
             return None
         self._note_css_geometry(element, ancestors)
+        tag = _local(element)
+        if tag in {"text", "tspan"} and any(
+            _cased(words, page) != (words or "") for words in (
+                element.text, *(child.tail for child in element)
+            )
+        ):
+            self._skip(Note.ICON_TEXT_CASE)
+        if (
+            tag in {"path", "polyline", "polygon", "rect", "circle", "ellipse"}
+            and self._marker(page.get("marker-mid")) is not None
+        ):
+            self._skip(Note.ICON_MID_MARKERS)
         clone, stored = _styled_clone(element, page, stored)
         path = [*ancestors, element]
         for child in element:
@@ -3272,7 +3335,7 @@ def _drawn_points(item: Drawn) -> list[Point]:
 def _overlapping(items: Sequence[Drawn]) -> bool:
     """Whether the drawn bounds of two items may overlap, including stroke widths."""
     extents = []
-    for item in items[:200]:
+    for item in items[: OVERLAP_CHECK_LIMIT + 1]:
         left, top, right, bottom = bounds(_drawn_points(item))
         radius = item.paint.line_width / 2 if isinstance(item, (Box, Stroke)) else 0
         extents.append((left - radius, top - radius, right + radius, bottom + radius))
@@ -3280,7 +3343,9 @@ def _overlapping(items: Sequence[Drawn]) -> bool:
 
 
 def _bounds_overlap(extents: Sequence[Bounds]) -> bool:
-    """Whether two bounding rectangles intersect with positive area."""
+    """Whether two bounds may intersect, conservatively warning beyond the work limit."""
+    if len(extents) > OVERLAP_CHECK_LIMIT:
+        return True
     return any(
         a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
         for index, a in enumerate(extents)
@@ -3422,12 +3487,16 @@ def arrange(items: Sequence[Drawn], paper: str) -> list[Swimlanes]:
     lane_lines = {id(line) for shape in swimlanes for line in shape.dividers}
     strokes = [stroke for stroke in strokes if id(stroke) not in lane_lines]
     connections = _classify_strokes(strokes, boxes, hosts)
-    _settle_boxes(boxes, containers, hosts, connections, paper)
     for artwork in (item for item in items if isinstance(item, Artwork)):
         artwork.kind, artwork.host = (
             "artwork",
             hosts.of([artwork.centre], artwork.order, artwork.area),
         )
+
+    for box in boxes:
+        box.kind, box.host = "box", hosts.of([box.centre], box.order, box.area)
+    occupied = {id(item.host) for item in items if item.kind and item.host is not None}
+    _settle_boxes(boxes, containers, occupied, connections, paper)
 
     for stroke, start, end in connections:
         flat = stroke.subpath.flattened()
@@ -3546,7 +3615,7 @@ def _classify_strokes(
 def _settle_boxes(
     boxes: Sequence[Box],
     containers: set[int],
-    hosts: Hosts,
+    occupied: set[int],
     connections: Sequence[Connection],
     paper: str,
 ) -> None:
@@ -3565,16 +3634,16 @@ def _settle_boxes(
         for box in boxes
         if id(box) not in attached
         and id(box) not in containers
-        and hosts.of([box.centre], box.order, box.area) is None
+        and id(box) not in occupied
+        and box.host is None
     ]
     plain = [box for box in free_standing if box.paint.fill in (TRANSPARENT, paper)]
     labelling = _label_connectors(plain, [stroke for stroke, _, _ in connections])
     for box in boxes:
         if id(box) in labelling:
-            continue  # drawn as its connector's label
-        if box.matched and not box.labels and id(box) not in connected:
+            box.kind = ""  # drawn as its connector's label
+        elif box.matched and not box.labels and id(box) not in connected:
             box.keep_exact()
-        box.kind, box.host = "box", hosts.of([box.centre], box.order, box.area)
 
 
 def _label_connectors(boxes: Sequence[Box], connectors: Sequence[Stroke]) -> set[int]:
@@ -4423,23 +4492,11 @@ class Export(NamedTuple):
     assets: list[Asset]
 
 
-def _names_its_root(html: str) -> bool:
-    """Whether the page's CSS selects its diagram ``<svg>`` by that element's own ID.
-
-    ``export_svg`` gives the root a new ID and rewrites such selectors to it, so they read
-    like the ones it scopes; then no rule led by the root's ID can be told apart.
-    """
-    opening = re.match(r"<svg\b[^>]*", export_svg.extract_first_svg(html))
-    found = re.search(r"""\sid\s*=\s*["']([^"']+)["']""", opening.group(0) if opening else "")
-    if found is None:
-        return False
-    return re.search(rf"#{re.escape(found.group(1))}(?![\w-])", html) is not None
-
-
 def export_document(html: str, source_path: Path) -> Export:
     """Translate source HTML into a SimpleDiagrams document."""
-    root = ET.fromstring(export_svg.export_svg_document(html, source_path, system_fonts=True))
-    reader = Reader(root, not _names_its_root(html)).read()
+    svg = export_svg.export_svg_document(html, source_path, system_fonts=True, scope_rules=False)
+    root = ET.fromstring(svg)
+    reader = Reader(root).read()
     titles = (element.text for element in root if _local(element) == "title" and element.text)
     title = next(titles, None) or source_path.stem
     name = _clip_utf8(re.sub(r"\s+", " ", title).strip(), MAX_NAME_BYTES)

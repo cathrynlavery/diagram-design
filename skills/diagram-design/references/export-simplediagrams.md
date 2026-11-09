@@ -32,14 +32,14 @@ It reads the diagram through `scripts/export_svg.py`, needs only the Python stan
 The export reads the drawing as a browser draws it, within this contract:
 
 - **Elements:** `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `path`, `text` and `tspan`, `g`, nested `svg`, `use` with `symbol`, `marker`, and `foreignObject` holding plain HTML text.
-- **Style:** presentation attributes, inline styles and stylesheet rules whose selectors use tags, `*`, classes, IDs and descendants; `!important`; `var()` with fallbacks; and `inherit`, `initial`, `unset` and `revert`. Rules inside `@layer` blocks, nested rules and other selectors (attributes, children, siblings, pseudo-classes) are not applied. Conditional rules (`@media`, `@supports`) are skipped: the export draws the page's default view.
+- **Style:** presentation attributes, inline styles and stylesheet rules whose selectors use tags, `*`, classes, IDs, `:root` and descendants; `!important`; `var()` with fallbacks; and `inherit`, `initial`, `unset` and `revert`. Rules inside `@layer` blocks, nested rules and other selectors (attributes, children, siblings, pseudo-classes) are not applied. Conditional rules (`@media`, `@supports`) are skipped: the export draws the page's default view. It evaluates `:root` on the exported SVG and carries the HTML body's inherited text defaults into it.
 - **Values:** lengths in `px`, `pt`, `pc`, `in`, `cm`, `mm`, `em`, `rem` (16 px) and percentages; colours as hex, `rgb()`, `rgba()`, `currentColor` and the basic colour names. A font size given with `calc()`, `clamp()` or viewport units is drawn at the surrounding size.
 
 Lines take SimpleDiagrams' own hand-drawn line style, which the format sets for every shape: line caps, joins, miter limits, dash lengths and dash offsets are drawn in that style, a dash pattern becoming dashed or dotted. `dominant-baseline` and `letter-spacing` do not move or space a label.
 
 ## Notes it prints
 
-Each is printed once per kind, with a count. `<element>` stands for the element's tag.
+Each is printed once per kind, with a count. The exporter conservatively reports possible overlap when a translucent group or path is too large to check every pair of parts. `<element>` stands for the element's tag.
 
 - `stylesheet rules this export cannot read left unapplied`
 - `CSS transform this export cannot read may misplace a shape`
@@ -85,6 +85,8 @@ Each is printed once per kind, with a count. `<element>` stands for the element'
 - `HTML layout such as flex or grid centring not read; the text sits at the top`
 - `icon SimpleDiagrams cannot store safely left out`
 - `<use> of nothing left out`
+- `letter case set by CSS left unchanged in stored icons`
+- `middle markers in stored icons may be left out by the desktop renderer`
 - `see-through or unknown icon colour stored as solid`
 - `icon cropped to its box drawn whole`
 - `skewed or empty picture left out`

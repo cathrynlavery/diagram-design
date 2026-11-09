@@ -618,7 +618,7 @@ def scope_selector(selector: str, root_id: str) -> str:
     return ", ".join(scoped)
 
 
-def body_inherited_css(selector: str, body: str, root_id: str) -> str:
+def body_inherited_css(selector: str, body: str, root_id: str, *, scope_rules: bool = True) -> str:
     """Bind `color` / `font-family` from a dropped `body` rule to the SVG root."""
     parts = [part.strip().lower() for part in selector_list_parts(selector)]
     if "body" not in parts:
@@ -628,7 +628,8 @@ def body_inherited_css(selector: str, body: str, root_id: str) -> str:
     ]
     if not declarations:
         return ""
-    return f"#{root_id} {{ {'; '.join(declarations)}; }}"
+    target = f"#{root_id}" if scope_rules else "body"
+    return f"{target} {{ {'; '.join(declarations)}; }}"
 
 
 def escape_css_for_xml(css: str) -> str:
@@ -956,7 +957,7 @@ def namespace_inline_animations(svg: str, names: dict[str, str]) -> str:
     return _rewrite_start_tags(svg, rewrite_tag)
 
 
-def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], original_root_id: str, system_fonts: bool) -> str:
+def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], original_root_id: str, system_fonts: bool, scope_rules: bool) -> str:
     kept: list[str] = []
     selector = rule.selector.strip()
     if rule.statement:
@@ -1010,16 +1011,21 @@ def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], origi
                 if len(parts) > 1 and key in ("animation", "animation-name"):
                     raise ValueError("unsupported nested CSS animation declaration in SVG export")
     body = _animation_declarations(body, names)
-    inherited = body_inherited_css(selector, body, root_id)
+    inherited = body_inherited_css(selector, body, root_id, scope_rules=scope_rules)
     if inherited:
         kept.append(escape_css_for_xml(inherited))
     if is_chrome_selector(selector):
         return "\n      ".join(kept)
-    kept.append(escape_css_for_xml(f"{scope_selector(selector, root_id)} {{ {body} }}"))
+    if scope_rules:
+        selector = scope_selector(selector, root_id)
+    kept.append(escape_css_for_xml(f"{selector} {{ {body} }}"))
     return "\n      ".join(kept)
 
 
-def _diagram_css_rules(rules: list[_CssRule], root_id: str, names: dict[str, str], original_root_id: str = "", system_fonts: bool = False) -> str:
+def _diagram_css_rules(
+    rules: list[_CssRule], root_id: str, names: dict[str, str], original_root_id: str = "",
+    system_fonts: bool = False, *, scope_rules: bool = True,
+) -> str:
     # Determine empty groups bottom-up, then emit without recursive string copies.
     nodes = list(_css_rule_nodes(rules))
     ordinary: dict[_CssRule, bool] = {}
@@ -1028,7 +1034,7 @@ def _diagram_css_rules(rules: list[_CssRule], root_id: str, names: dict[str, str
     for rule in nodes:
         if rule.group and ordinary[rule] and re.match(r"@scope\b", rule.selector, re.IGNORECASE):
             raise ValueError("unsupported CSS scope with paint rules in SVG export; move paint outside @scope")
-    leaves = {rule: _diagram_css_leaf(rule, root_id, names, original_root_id, system_fonts)
+    leaves = {rule: _diagram_css_leaf(rule, root_id, names, original_root_id, system_fonts, scope_rules)
               for rule in nodes if not rule.group}
     retained: dict[_CssRule, bool] = {}
     for rule in reversed(nodes):
@@ -1536,8 +1542,10 @@ def assert_export_gate(svg: str) -> None:
         )
 
 
-def export_svg_document(html: str, source_path: Path, system_fonts: bool = False) -> str:
-    """Transform source HTML into a standalone SVG document string."""
+def export_svg_document(
+    html: str, source_path: Path, system_fonts: bool = False, *, scope_rules: bool = True,
+) -> str:
+    """Build an SVG, scoping selectors for embedding unless it will be read in isolation."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
     svg = normalize_html_entities(xmlify_attributes(extract_first_svg(html)))
@@ -1554,7 +1562,9 @@ def export_svg_document(html: str, source_path: Path, system_fonts: bool = False
     svg = set_root_id(svg, root_id)
     rules = _html_css_rules(html)
     names = _keyframe_names(rules, root_id)
-    diagram_css = _diagram_css_rules(rules, root_id, names, original_root_id, system_fonts)
+    diagram_css = _diagram_css_rules(
+        rules, root_id, names, original_root_id, system_fonts, scope_rules=scope_rules,
+    )
     svg = namespace_inline_animations(svg, names)
     svg = merge_style_into_defs(svg, diagram_css, system_fonts)
     svg = namespace_defs_ids(svg, slug)
