@@ -417,6 +417,29 @@ def main() -> int:
     for attribute in ('dx="-40"', 'dy="2"', 'rotate="0"', 'textLength="90"'):
         check_source_pass(f"text with {attribute} is not measured",
                           fit_svg(box + f'<text x="60" y="32" {attribute} font-size="10">ABCDEFGHIJ</text>'))
+    long_label = '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'
+    for hidden in ('opacity="0"', 'fill-opacity="0"', 'fill="rgba(0,0,0,0)"', 'fill="#0000"',
+                   'fill="#ececec00"', 'fill="hsl(0 0% 50% / 0%)"'):
+        check_source_pass(f"label over a box that draws nothing ({hidden})",
+                          fit_svg(f'<rect x="0" y="12" width="100" height="40" {hidden}/>' + long_label))
+    check_source_pass("label over a box inside a transparent group",
+                      fit_svg('<g opacity="0"><rect x="0" y="12" width="100" height="40" fill="#ececec"'
+                              ' stroke="#2d3142"/></g>' + long_label))
+    check_fail("stroke still draws when only the fill is transparent",
+               fit_svg('<rect x="0" y="12" width="100" height="40" fill-opacity="0" stroke="#2d3142"/>'
+                       + long_label), "overflows its 100px box")
+    check_fail("box still draws when a child resets opacity",
+               fit_svg('<g opacity="0.5"><rect x="0" y="12" width="100" height="40" fill="#ececec"/></g>'
+                       + long_label), "overflows its 100px box")
+    for layout in ('direction="rtl"', 'unicode-bidi="bidi-override"', 'writing-mode="tb"',
+                   'xml:space="preserve"', 'style="white-space:pre"', 'style="direction:rtl"'):
+        check_source_pass(f"text with {layout} is not measured",
+                          fit_svg(box + f'<text x="96" y="32" {layout} font-size="10">ABCDEFGHIJ</text>'))
+    check_source_pass("root svg direction is inherited",
+                      fit_svg(box + '<text x="96" y="32" font-size="10">ABCDEFGHIJ</text>', ' direction="rtl"'))
+    check_source_pass("stylesheet direction leaves the text alone",
+                      styled("text.r { direction: rtl; }", box + '<text class="r" x="96" y="32" '
+                             'font-size="10">ABCDEFGHIJ</text>'))
     overflowing_assets = []
     for asset in sorted(ASSET_DIR.glob("*.html")):
         fit_errors: list[str] = []

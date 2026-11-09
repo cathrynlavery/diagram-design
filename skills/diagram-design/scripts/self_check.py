@@ -72,7 +72,9 @@ WIDE_ADVANCE = 1.0
 TEXT_FIT_PROPERTIES = ("font-size", "font-family", "text-anchor", "letter-spacing")
 # Weight and style move real glyph widths, but the budget already averages over them.
 TEXT_FIT_IGNORED = {"font-weight", "font-style"}
-PAINT_PROPERTIES = frozenset({"fill", "stroke", "stroke-width"})
+PAINT_PROPERTIES = frozenset({"fill", "stroke", "stroke-width", "fill-opacity", "stroke-opacity", "opacity"})
+# Bidi, vertical and preserved-space text lays out in ways the left-to-right budget can't place.
+TEXT_LAYOUT_PROPERTIES = ("direction", "unicode-bidi", "writing-mode", "white-space", "xml:space")
 # Half a narrow glyph. The budget is an average that runs wide of Geist (about 0.52em
 # sans, 0.60em mono drawn), so a smaller overshoot is budget error on a label that
 # draws inside its box; a whole character past the edge is the real defect.
@@ -733,6 +735,7 @@ def inline_paint(attrs: dict[str, str]) -> dict[str, str]:
 
 def inline_text_style(attrs: dict[str, str]) -> dict[str, str]:
     values = {name: attrs[name] for name in TEXT_FIT_PROPERTIES if name in attrs}
+    values.update({name: "" for name in TEXT_LAYOUT_PROPERTIES if name in attrs})
     for declaration in attrs.get("style", "").split(";"):
         name, _, value = declaration.partition(":")
         name = name.strip().casefold()
@@ -744,7 +747,28 @@ def inline_text_style(attrs: dict[str, str]) -> dict[str, str]:
 def restyles_text_width(name: str) -> bool:
     if name in TEXT_FIT_IGNORED:
         return False
-    return name.startswith(("font", "letter-spacing", "word-spacing")) or name == "text-anchor"
+    return (
+        name.startswith(("font", "letter-spacing", "word-spacing"))
+        or name == "text-anchor"
+        or name in TEXT_LAYOUT_PROPERTIES
+    )
+
+
+def zero_alpha(value: str) -> bool | None:
+    """True for an opacity or colour that paints nothing; None when it can't be read."""
+    value = value.strip().casefold()
+    if value in {"none", "transparent"}:
+        return True
+    number = re.fullmatch(rf"({SVG_NUMBER})(%?)", value)
+    if number:
+        return float(number.group(1)) <= 0
+    if re.fullmatch(r"#[0-9a-f]{4}|#[0-9a-f]{8}", value):
+        return int(value[4] if len(value) == 5 else value[7:], 16) == 0
+    function = re.fullmatch(r"(?:rgba?|hsla?)\((.*)\)", value)
+    if function:
+        parts = [part for part in re.split(r"[\s,/]+", function.group(1).strip()) if part]
+        return zero_alpha(parts[3]) if len(parts) == 4 else False
+    return False if value.startswith("#") or value.isalpha() else None
 
 
 def text_advance(text: str, mono: bool) -> float:
@@ -822,6 +846,18 @@ class TextFitParser(HTMLParser):
                 fill = paint.get("fill", "black")
                 stroke = paint.get("stroke", "none")
                 stroked = stroke not in {"none", "transparent"} and paint.get("stroke-width") != "0"
+                faded = [
+                    zero_alpha(value) for value in (
+                        paint["opacity"], fill, paint.get("fill-opacity", "1"),
+                        stroke, paint.get("stroke-opacity", "1"),
+                    )
+                ]
+                if None in faded:
+                    fill, stroked = None, False
+                else:
+                    if faded[0] or faded[1] or faded[2]:
+                        fill = "none"
+                    stroked = stroked and not (faded[0] or faded[3] or faded[4])
                 if data.get("width", "").strip() == "100%":
                     papers = svg["papers"]
                     assert isinstance(papers, set)
@@ -875,7 +911,11 @@ class TextFitParser(HTMLParser):
         if parent_paint is not None and not any(
             matches_subject(tag, data, subject) for subject in self._paint_subjects
         ):
-            paint = {**parent_paint, **inline_paint(data)}
+            own = inline_paint(data)
+            hidden = parent_paint.get("opacity") == "0" or zero_alpha(own.get("opacity", "1"))
+            paint = {**parent_paint, **own, "opacity": "0" if hidden else "1"}
+            if hidden is None:
+                paint = None
         return style, paint
 
     def _start_line(self, x: float, y: float, style: dict[str, str] | None) -> None:
@@ -922,9 +962,10 @@ def check_text_fit(source: str, errors: list[str]) -> None:
     """Flag text whose budgeted width runs past the rect it sits in.
 
     A line's box is the smallest rect painted before it that contains the line's
-    anchor point. Text with no such rect (a free label, a caption), text on a
-    paper-coloured mask, and text whose size, spacing or position CSS can change
-    are not checked.
+    anchor point; a rect whose opacity, fill and stroke draw nothing is no box.
+    Text with no such rect (a free label, a caption), text on a paper-coloured
+    mask, bidi, vertical or space-preserving text, and text whose size, spacing,
+    layout or position CSS can change are not checked.
     """
     parser = TextFitParser(source)
     parser.feed(source)
