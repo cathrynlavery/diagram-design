@@ -217,6 +217,37 @@ def run_cases(h: Harness) -> int:
                 "svg{opacity:0.9}"):
         h.expect_clean("a <style> rule %s passes" % css, styled(css))
 
+    def headed(block: str) -> str:
+        return honest().replace("</head>", block + "</head>", 1)
+
+    for title, block in (
+        ("rules wrapped in <!-- --> inside <style>",
+         "<style><!--\npath[data-from]{stroke:#bf4520}\n--></style>"),
+        ("an end tag written </style >", "<style>path[data-from]{stroke:#bf4520}</style >"),
+        ("an unclosed <style>", "<style>path[data-from]{stroke:#bf4520}"),
+        ("a nested rule after stroke", "<style>path[data-from]{stroke:#bf4520;&:hover{color:red}}</style>"),
+        ("a nested rule after display:none",
+         "<style>path[data-from]{display:none;&:hover{color:red}}</style>"),
+        ("an attribute value holding a space",
+         '<style>circle[data-name="Order Service"]{display:none}</style>'),
+        ("the all shorthand", "<style>path[data-from]{all:unset}</style>"),
+        ("stroke-width:0", "<style>path{stroke-width:0}</style>"),
+    ):
+        h.expect_findings("a <style> block with %s is one finding" % title,
+                          headed(block), 1, "<style> rule")
+    h.expect_named(
+        "a <style> rule that moves marks inside <!-- --> is still refused",
+        headed("<style><!--\npath{transform:translate(1px)}\n--></style>"),
+        "positions a mark with CSS",
+    )
+    for title, block in (
+        ("a <style> inside a real HTML comment",
+         "<!-- <style>path{stroke:#bf4520}</style> -->"),
+        ("a 0%/100% fade keyframe", "<style>@keyframes fade{0%{opacity:0}100%{opacity:1}}</style>"),
+        ("a from/to fade keyframe", "<style>@keyframes fade{from{opacity:0}to{opacity:1}}</style>"),
+    ):
+        h.expect_clean("%s passes" % title, headed(block))
+
     tall = honest().replace(
         arc("A", "B", 1, 0, 1),
         arc("A", "B", 1, 0, 1, r=140),

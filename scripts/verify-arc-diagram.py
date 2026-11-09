@@ -32,8 +32,8 @@ Nine invariants:
    lands on Catalog is a different import.
 
 6. AT MOST ONE ACCENT ARC - one focal claim per figure, on either skin.
-   A <style> rule that sets stroke or fill is refused: it outranks the
-   stroke attributes this count reads.
+   A <style> rule that sets stroke, fill or the all shorthand is refused:
+   it outranks the stroke attributes this count reads.
 
 7. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute.
    A `transform` attribute, an inline `style`, or a rule in a <style> block
@@ -45,9 +45,10 @@ Nine invariants:
    hidden (display none, visibility hidden, zero opacity) or sits inside a
    hidden ancestor or a non-rendered container (<defs>, <symbol>, <marker>,
    <mask>, <clipPath>, <pattern>) is refused: a seat readers cannot see
-   must not count toward a span. So is a <style> rule that hides when its
-   selector can reach the figure (an svg, g, path, circle, text or tspan
-   type, `*`, or a class, id or attribute alone).
+   must not count toward a span. So is a <style> rule that hides (display,
+   visibility, zero opacity or zero stroke width) when its selector can
+   reach the figure: an svg, g, path, circle, text or tspan type, `*`, or a
+   subject with no type. Nested rules count; @keyframes steps do not.
 
 8. BOUND NAMES, BOTH WAYS - every node circle has exactly one label bound
    to the same `data-name`, the visible text matches, and the name is
@@ -105,7 +106,7 @@ CSS_HIDES_RE = re.compile(
     r")",
     re.IGNORECASE,
 )
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>",
+STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)(?:</style\s*>|\Z)",
                       re.IGNORECASE | re.DOTALL)
 CSS_MOVES_MARK_RE = re.compile(
     r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
@@ -168,8 +169,16 @@ def line_of(source: str, offset: int) -> int:
     return source.count("\n", 0, offset) + 1
 
 
+# A <style> body is raw text, so comment markers inside it do not hide its
+# rules; the leftmost match wins, so a <style> inside a real comment is blanked.
+STYLE_OR_COMMENT_RE = re.compile(
+    r"<style\b[^>]*>.*?(?:</style\s*>|\Z)|<!--.*?-->", re.IGNORECASE | re.DOTALL)
+
+
 def blank_comments(source: str) -> str:
-    return COMMENT_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), source)
+    return STYLE_OR_COMMENT_RE.sub(
+        lambda m: m.group(0) if m.group(0)[:6].lower() == "<style"
+        else re.sub(r"[^\n]", " ", m.group(0)), source)
 
 
 def attrs_of(raw: str) -> dict:
@@ -328,8 +337,9 @@ def is_bound(match) -> bool:
     return "data-name" in attrs_of(raw)
 
 
-CSS_PAINT_RE = re.compile(r"(?:^|[{;\s])(?P<prop>stroke|fill)\s*:", re.IGNORECASE)
-CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+CSS_PAINT_RE = re.compile(r"(?:^|[{};\s])(?P<prop>stroke|fill|all)\s*:", re.IGNORECASE)
+CSS_STROKE_WIDTH_RE = re.compile(r"(?:^|[{};\s])stroke-width\s*:\s*(?P<amount>[^;}]*)",
+                                 re.IGNORECASE)
 # Element types a rule can reach inside the figure; an untyped subject
 # (class, id, attribute or pseudo-class only) can reach them too.
 FIGURE_TYPES = {"svg", "g", "path", "circle", "text", "tspan", "*"}
@@ -340,10 +350,34 @@ def css_hides(declarations: str) -> bool:
         if found.group("opacity") and not invisible_amount(found.group("amount")):
             continue
         return True
-    return False
+    return any(invisible_amount(found.group("amount").strip().lower().removesuffix("px"))
+               for found in CSS_STROKE_WIDTH_RE.finditer(declarations))
+
+
+def css_blocks(css: str) -> list:
+    """(selector, its own declarations, inside @keyframes) for every block, nested ones included."""
+    blocks, stack, text = [], [], ""
+    for char in css:
+        if char == "{":
+            own, _sep, selector = text.rpartition(";")
+            if stack:
+                stack[-1][1].append(own)
+            inside = bool(stack) and (stack[-1][2] or stack[-1][0].lower().startswith("@keyframes"))
+            stack.append([selector.strip(), [], inside])
+            text = ""
+        elif char == "}":
+            if stack:
+                selector, own, inside = stack.pop()
+                blocks.append((selector, ";".join(own + [text]), inside))
+            text = ""
+        else:
+            text += char
+    return blocks
 
 
 def reaches_figure(selector: str) -> bool:
+    # Attribute values, arguments and strings may hold spaces, commas or combinators.
+    selector = re.sub(r"\[[^\]]*\]|\([^)]*\)|\"[^\"]*\"|'[^']*'", "[]", selector)
     for alternative in selector.split(","):
         subject = re.split(r"\s*[\s>+~]\s*", alternative.strip())[-1]
         typed = re.match(r"[A-Za-z][\w-]*|\*", subject)
@@ -356,16 +390,16 @@ def check_style_rules(source: str, findings: list, name: str) -> None:
     """A <style> rule outranks every stroke and visibility attribute read here."""
     for match in STYLE_RE.finditer(source):
         css = re.sub(r"/\*.*?\*/", " ", match.group("body"), flags=re.DOTALL)
-        for rule in CSS_RULE_RE.finditer(css):
-            selector, body = rule.group(1).strip(), rule.group(2)
+        css = css.replace("<!--", " ").replace("-->", " ")
+        for selector, body, in_keyframes in css_blocks(css):
             if CSS_PAINT_RE.search(body):
                 findings.append(
-                    "%s:%d: a <style> rule %r sets stroke or fill, which outranks "
+                    "%s:%d: a <style> rule %r sets stroke, fill or all, which outranks "
                     "the stroke attributes the one-accent count reads — paint "
                     "each mark with its own literal attribute"
                     % (name, line_of(source, match.start()), selector)
                 )
-            elif css_hides(body) and reaches_figure(selector):
+            elif not in_keyframes and css_hides(body) and reaches_figure(selector):
                 findings.append(
                     "%s:%d: a <style> rule %r hides elements the figure is drawn "
                     "from (display, visibility or zero opacity), so a seat or "
