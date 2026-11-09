@@ -1893,7 +1893,9 @@ class Reader:
         scale = math.sqrt(turn[1] * turn[2]) if turn else 1.0
         if props.get("vector-effect", "").strip() == "non-scaling-stroke":
             scale = 1.0
-        width = max(0.0, length(props.get("stroke-width"), 1.0)) * scale if stroke else 0.0
+        size = length(props.get("font-size"), 16.0)  # what a width in em is of
+        width = max(0.0, length(props.get("stroke-width"), 1.0, font_size=size)) * scale
+        width = width if stroke else 0.0
         dash_values = re.split(r"[\s,]+", props.get("stroke-dasharray", "none").strip())
         dashes = [length(v) for v in dash_values if v and v != "none"]
         pattern: LinePattern = "solid"
@@ -2200,8 +2202,9 @@ class Reader:
                 len(NUMBER_RE.findall(node.get(key) or "")) > 1 for key in ("x", "y", "dx", "dy")
             ):
                 self._skip("letters placed one by one drawn as one run of text")
-            x = self._across(node.get("x"), x)
-            y = self._down(node.get("y"), y)
+            sized = {"font-size": f"{size:g}"}  # em is of the text's own size
+            x = self._across(node.get("x"), x, props=sized)
+            y = self._down(node.get("y"), y, props=sized)
             dx = length(node.get("dx"), font_size=size)
             dy = length(node.get("dy"), font_size=size)
             return x + dx, y + dy
@@ -2322,8 +2325,9 @@ class Reader:
         if any(_local(child) in embedded for child in element.iter()):
             self._skip("<foreignObject> holding more than text left out")
             return
-        x, y = self._place(element)
-        w, h = self._across(element.get("width")), self._down(element.get("height"))
+        x, y = self._place(element, props)
+        w = self._across(element.get("width"), props=props)
+        h = self._down(element.get("height"), props=props)
         if w <= 0 or h <= 0:
             return  # a viewport with no width or height shows nothing, as in a browser
         words = self._html_text(element, props, list(self.ancestors))
@@ -2442,7 +2446,7 @@ class Reader:
             # The symbol's own opacity layers on the placement's, as a group's would.
             opacity *= max(0.0, min(1.0, length(context.get("opacity"), 1.0, percent_of=1.0)))
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
-        x, y = self._place(element)
+        x, y = self._place(element, props)
         if framed:
             # A symbol or an svg draws its view box into the placement's width and height.
             symbol_paint = PRESENTATION - UNDRAWN.keys() - {"opacity"}  # opacity is in ``paint``
@@ -2452,7 +2456,8 @@ class Reader:
             # Unsized, it takes the symbol's own size, or else the whole drawing's.
             width = element.get("width") or target.get("width") or "100%"
             height = element.get("height") or target.get("height") or "100%"
-            w, h = self._across(width, view[2]), self._down(height, view[3])
+            w = self._across(width, view[2], props=props)
+            h = self._down(height, view[3], props=props)
             icon = self._icon_copy(list(target), context, paint | painted, ancestors)
             if not solid and _uses_current_colour(icon.parts, painted):
                 self._skip("see-through or unknown icon colour stored as solid")
@@ -2464,8 +2469,8 @@ class Reader:
             if (extent := self._extent(parts, context, ancestors)) is None:
                 return
             if _local(target) == "symbol" and not _holds_text(target):  # its placement crops it
-                w = self._across(element.get("width") or target.get("width") or "100%")
-                h = self._down(element.get("height") or target.get("height") or "100%")
+                w = self._across(element.get("width") or target.get("width") or "100%", props=props)
+                h = self._down(element.get("height") or target.get("height") or "100%", props=props)
                 self._note_overflow(extent, w, h, context)
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
             icon = self._icon_copy(parts, context, paint, ancestors)
@@ -2485,11 +2490,11 @@ class Reader:
         ancestors: list[ET.Element],
     ) -> None:
         """A nested ``<svg>`` with a view box is an icon in its own frame, as a symbol is."""
-        x, y = self._place(element)
+        x, y = self._place(element, props)
         path = [*ancestors, element]
         view = [float(v) for v in NUMBER_RE.findall(element.get("viewBox", ""))]
-        w = self._across(element.get("width"), self.viewport[0])
-        h = self._down(element.get("height"), self.viewport[1])
+        w = self._across(element.get("width"), self.viewport[0], props=props)
+        h = self._down(element.get("height"), self.viewport[1], props=props)
         if w <= 0 or h <= 0:
             return  # a viewport with no width or height shows nothing, as in a browser
         if len(view) != 4 or view[2] <= 0 or view[3] <= 0:
@@ -2510,9 +2515,10 @@ class Reader:
         box = (view[0], view[1], view[2], view[3])
         self._add_icon(box, icon, paint, self._icon_frame((x, y, w, h), box, element), matrix)
 
-    def _place(self, element: ET.Element) -> Point:
+    def _place(self, element: ET.Element, props: Props) -> Point:
         """Where a ``<use>`` or nested ``<svg>`` places its content in the current viewport."""
-        return self._across(element.get("x")), self._down(element.get("y"))
+        x = self._across(element.get("x"), props=props)
+        return x, self._down(element.get("y"), props=props)
 
     def _across(self, value: str | None, default: float = 0.0, props: Props | None = None) -> float:
         """A horizontal length, a percentage of the viewport's width."""

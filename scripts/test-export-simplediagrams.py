@@ -1495,6 +1495,30 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         kinds = [core(e)["kind"] for e in document["pages"][0]["elements"]]
         self.assertEqual(kinds[-1], "text")  # the label stays above the picture, not in the box
 
+    def test_em_lengths_are_of_the_elements_own_font_size(self) -> None:
+        """Positions, sizes and line widths in em once read against 16 px wherever an element
+        sat, so a label, icon, HTML box or line under a smaller font moved or grew."""
+
+        def frames(body: str) -> list[Record]:
+            document, _ = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+            return [core(e)["frame"] for e in document["pages"][0]["elements"]]
+
+        self.assertEqual(frames('<text font-size="10" x="2em" y="4em">Hi</text>'),
+                         frames('<text font-size="10" x="20" y="40">Hi</text>'))  # fmt: skip
+        icon = '<rect width="10" height="10"/>'
+        for placed in (
+            f'<svg x="2em" y="2em" width="4em" height="4em" viewBox="0 0 10 10">{icon}</svg>',
+            '<use href="#s" x="2em" y="2em" width="4em" height="4em"/>',
+        ):
+            with self.subTest(placed=placed[:20]):
+                body = f'<defs><symbol id="s" viewBox="0 0 10 10">{icon}</symbol></defs><g font-size="10">{placed}</g>'
+                self.assertEqual(frames(body), [{"x": 20, "y": 20, "width": 40, "height": 40}])
+        html = '<g font-size="10"><foreignObject x="2em" y="2em" width="10em" height="4em"><div>Hi</div></foreignObject></g>'
+        self.assertEqual(frames(html)[0], {"x": 20, "y": 20, "width": 100, "height": 40})
+        document, _ = self.export('<svg viewBox="0 0 400 300"><line x2="100" stroke="#000" font-size="8"'
+                                  ' stroke-width=".25em"/></svg>')  # fmt: skip
+        self.assertIn('"line_width": 2', json.dumps(document))
+
     def test_drawing_reads_as_the_browser_draws_it(self) -> None:
         """Each row once lost, moved, resized or revealed something, with no note at all."""
 
