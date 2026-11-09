@@ -133,7 +133,7 @@ INHERITED = frozenset(
      "stroke-linejoin", "stroke-miterlimit", "fill-rule", "fill-opacity", "stroke-opacity",
      "color", "font-family", "font-size", "font-weight", "font-style", "text-anchor",
      "text-align", "text-transform", "text-decoration", "letter-spacing", "visibility",
-     "marker-start", "marker-mid", "marker-end"}
+     "marker-start", "marker-mid", "marker-end", "writing-mode"}
 )  # fmt: skip
 ICON_PAINT = frozenset(
     {"fill", "stroke", "stroke-width", "stroke-dasharray", "fill-opacity", "stroke-opacity",
@@ -155,14 +155,16 @@ UNDRAWN = {
     "clip-path": "clipping and masks left out; shapes are drawn unclipped",
     "mask": "clipping and masks left out; shapes are drawn unclipped",
     "filter": "filters such as blur and shadow left out",
+    "mix-blend-mode": "blend modes left out; shapes are drawn over one another plainly",
 }
 PRESENTATION = (
     INHERITED
     | EFFECTS
     | TRANSFORM_FRAME
     | GRADIENT_STOP
-    | {"opacity", "display", "transform", "vector-effect", "paint-order", "filter"}
-)
+    | {"opacity", "display", "transform", "vector-effect", "paint-order", "filter", "mix-blend-mode",
+       "overflow"}
+)  # fmt: skip
 # Sizes and places CSS may set; this export reads them from attributes only, so it notes them.
 PLACED_BOX = frozenset({"x", "y", "width", "height"})
 GEOMETRY = {
@@ -187,6 +189,11 @@ ICON_DROPPED_ATTRIBUTES = frozenset({"class", "style", "display", "visibility"})
 TEXT_STYLE = ("fill", "font-family", "font-size", "font-style", "font-weight", "text-decoration")
 NO_PAINT = frozenset({"none", "transparent"})
 IMPORTANT = "!important"
+# Properties whose values are keywords, read the same in any case.
+KEYWORD_VALUED = frozenset(
+    {"display", "visibility", "font-style", "font-weight", "text-anchor", "text-transform",
+     "text-decoration", "writing-mode", "white-space", "overflow"}
+)  # fmt: skip
 MAX_VAR_LENGTH = 4096  # characters a var() may expand to; browsers also refuse long ones
 MAX_VAR_DEPTH = 64  # nested var()s followed before a value counts as invalid
 IMPORTANT_RE = re.compile(r"\s*!\s*important$", re.IGNORECASE)
@@ -233,12 +240,15 @@ class Compound(NamedTuple):
     tag: str | None
     ids: frozenset[str]
     classes: frozenset[str]
+    attributes: frozenset[str] = frozenset()  # only where an unreadable selector is noted
 
     def matches(self, element: ET.Element) -> bool:
-        """Whether the element has this tag, these IDs and these classes."""
+        """Whether the element has this tag, these IDs, classes and attributes."""
         if self.tag is not None and _local(element) != self.tag:
             return False
         if self.ids and element.get("id") not in self.ids:
+            return False
+        if any(element.get(name) is None for name in self.attributes):
             return False
         return self.classes <= set(element.get("class", "").split())
 
@@ -289,20 +299,25 @@ def _declarations(body: str) -> Props:
 
 
 def _compound(text: str) -> Compound | None:
-    """Read a compound selector built from a tag, IDs and classes; ``None`` for any other."""
-    match = re.fullmatch(r"([A-Za-z][\w-]*)?((?:[.#][\w-]+)*)", text)
+    """Read a compound selector built from a tag or ``*``, IDs and classes; ``None`` for any other."""
+    match = re.fullmatch(r"(\*|[A-Za-z][\w-]*)?((?:[.#][\w-]+)*)", text)
     if match is None or not text:
         return None
     parts = re.findall(r"([.#])([\w-]+)", match.group(2))
     return Compound(
-        match.group(1),
+        None if match.group(1) == "*" else match.group(1),
         frozenset(name for kind, name in parts if kind == "#"),
         frozenset(name for kind, name in parts if kind == "."),
     )
 
 
-def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
+def parse_stylesheet(css: str, scope: str = "") -> tuple[list[CssRule], list[CssRule]]:
     """Read the plain top-level rules and the rules of unconditional ``@layer`` blocks.
+
+    ``scope`` is the root's ID, which ``export_svg`` puts in front of each page selector
+    other than an ID one; it is left out of specificity, so ``#start`` still beats
+    ``#scope rect`` as it beat ``rect`` on the page. It is empty when the page's own rules
+    name the root by ID, as those read just like the scoped ones.
 
     Only descendant selectors built from tags, classes and IDs are understood. Another
     selector (child, sibling, attribute, structural pseudo-class) that sets paint or type
@@ -328,7 +343,8 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
             if re.fullmatch(r"@layer(\s[^{]*)?", selectors):  # browsers apply it unconditionally
                 name = selectors.removeprefix("@layer").strip() or f"anonymous {len(layers)}"
                 rank = layers.setdefault(name, len(layers))
-                layered, layered_unread = parse_stylesheet(body)  # nested layers share its place
+                # Nested layers share this one's place.
+                layered, layered_unread = parse_stylesheet(body, scope)
                 rules += [
                     replace(rule, order=len(rules) + rule.order, layer=rank) for rule in layered
                 ]
@@ -345,8 +361,10 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
                     if loose and PRESENTATION & declarations.keys():
                         unread.append(CssRule(loose, (0, 0, 0), len(unread), declarations))
                     continue
+                root = Compound(None, frozenset({scope}), frozenset())
+                scoped = len(valid) > 1 and valid[0] == root
                 specificity = (
-                    sum(len(c.ids) for c in valid),
+                    sum(len(c.ids) for c in valid) - scoped,
                     sum(len(c.classes) for c in valid),
                     sum(c.tag is not None for c in valid),
                 )
@@ -361,17 +379,25 @@ def parse_stylesheet(css: str) -> tuple[list[CssRule], list[CssRule]]:
 
 def _readable_part(selector: str) -> tuple[Compound, ...] | None:
     """An unreadable selector with its attribute tests, pseudo-classes and combinators
-    dropped; ``None`` when it needs an interactive state such as ``:hover``, or when any of
-    its parts is known only by what was dropped, such as a state a script sets."""
+    dropped, so the export can note it where it may apply; ``None`` when it needs an
+    interactive state such as ``:hover``. A part made only of attribute tests keeps the
+    attributes' presence, not their values, so it matches what might carry them."""
     if re.search(
         r":(hover|focus|focus-within|focus-visible|active|visited|link|target)\b", selector
     ):
         return None
     parts = re.sub(r"\s*[>+~]\s*", " ", selector).split()
     plain = [re.sub(r"::?[\w-]+(\([^)]*\))?|\[[^\]]*\]", "", part) for part in parts]
-    if not plain or not all(plain):
+    if not plain:
         return None
-    compounds = [_compound(part) for part in plain]
+    compounds = []
+    for part, kept in zip(parts, plain):
+        if kept:
+            compounds.append(_compound(kept))
+        else:  # only attribute tests, such as [data-kind]: it selects what has the attribute
+            names = re.findall(r"\[\s*([\w-]+)", part)
+            tested = Compound(None, frozenset(), frozenset(), frozenset(names))
+            compounds.append(tested if names else None)
     if None in compounds:
         return None
     return tuple(compound for compound in compounds if compound is not None)
@@ -443,7 +469,8 @@ def resolve_vars(
 def expand_font_shorthand(value: str) -> Props:
     """Read ``font: italic 600 13px 'Geist', sans-serif`` into its longhand properties."""
     match = re.fullmatch(
-        r"\s*((?:(?:italic|oblique|normal|\d{3}|bold|bolder|lighter)\s+)*)"
+        r"\s*((?:(?:italic|oblique|normal|small-caps|(?:ultra-|extra-|semi-)?(?:condensed|expanded)"
+        r"|\d{3}|bold|bolder|lighter)\s+)*)"
         rf"([\d.]+(?:px|rem|em|%|pt)|{'|'.join(FONT_SIZE_KEYWORDS)})(?:\s*/\s*\S+)?\s+(.+)",
         value,
     )
@@ -451,7 +478,7 @@ def expand_font_shorthand(value: str) -> Props:
         return {}
     words, size, family = match.group(1).split(), match.group(2), match.group(3)
     slanted = [word for word in words if word in ("italic", "oblique")]
-    weights = [word for word in words if word not in ("italic", "oblique", "normal")]
+    weights = [word for word in words if re.fullmatch(r"\d{3}|bold|bolder|lighter", word)]
     return {
         "font-size": size.removesuffix("px"),
         "font-family": family,
@@ -492,6 +519,8 @@ def computed_properties(
         value = marked.removesuffix(IMPORTANT).rstrip()
         if name == "font":
             props.update(expand_font_shorthand(resolve_vars(value, props) or ""))
+        elif name == "marker":  # the shorthand sets all three; a later longhand still wins
+            props.update(dict.fromkeys(("marker-start", "marker-mid", "marker-end"), value))
         elif name in PRESENTATION or name.startswith("--"):
             props[name] = value
     cache: dict[str, str | None] = {}
@@ -506,13 +535,17 @@ def computed_properties(
             props[name] = inherited[name]
     for name, value in list(props.items()):
         keyword = value.strip().lower()
-        if keyword == "inherit" or (keyword == "unset" and name in INHERITED):
+        # Author styles reverted fall back to the browser's own, which inherit where unset does.
+        resets = ("unset", "revert", "revert-layer")
+        if keyword == "inherit" or (keyword in resets and name in INHERITED):
             if name in inherited:
                 props[name] = inherited[name]
             else:
                 del props[name]
-        elif keyword in ("initial", "unset", "revert", "revert-layer"):
+        elif keyword in ("initial", *resets):
             del props[name]  # the property's own starting value, which an absent one reads as
+        elif name in KEYWORD_VALUED:
+            props[name] = keyword  # CSS keywords ignore case: display: NONE still hides
     size = props.get("font-size", "").strip().lower()
     if size != inherited.get("font-size"):
         parent = length(inherited.get("font-size"), 16.0)  # already settled, in pixels
@@ -800,17 +833,16 @@ def _arc_segments(
     dx, dy = (start[0] - end[0]) / 2, (start[1] - end[1]) / 2
     x1, y1 = cos_phi * dx + sin_phi * dy, -sin_phi * dx + cos_phi * dy
     rx, ry = abs(rx), abs(ry)
-    if rx * rx == 0 or ry * ry == 0:  # too small to square: grown to reach the end, as below
-        if not 0 < (ratio := ry / rx) < math.inf:
-            return [Line(end)]
-        rx = math.hypot(x1, y1 / ratio)
-        ry = rx * ratio
-    if (scale := x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry)) > 1:
-        rx, ry = rx * math.sqrt(scale), ry * math.sqrt(scale)
-    numerator = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1
-    root = math.sqrt(max(0.0, numerator / (rx * rx * y1 * y1 + ry * ry * x1 * x1)))
+    # The half chord measured in radii, with no squared radius that tiny radii could underflow.
+    u, v = x1 / rx, y1 / ry
+    reach = math.hypot(u, v)
+    if not 0 < reach < math.inf:
+        return [Line(end)]
+    if reach > 1:  # radii too small to reach the end grow until they just do
+        rx, ry, u, v, reach = rx * reach, ry * reach, u / reach, v / reach, 1.0
+    root = math.sqrt(max(0.0, 1 / (reach * reach) - 1))
     root = -root if large == sweep else root
-    cx1, cy1 = root * rx * y1 / ry, -root * ry * x1 / rx
+    cx1, cy1 = root * rx * v, -root * ry * u
     cx = cos_phi * cx1 - sin_phi * cy1 + (start[0] + end[0]) / 2
     cy = sin_phi * cx1 + cos_phi * cy1 + (start[1] + end[1]) / 2
 
@@ -818,8 +850,9 @@ def _arc_segments(
         """The signed angle from one vector to another."""
         return math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
 
-    theta = angle(1, 0, (x1 - cx1) / rx, (y1 - cy1) / ry)
-    delta = angle((x1 - cx1) / rx, (y1 - cy1) / ry, (-x1 - cx1) / rx, (-y1 - cy1) / ry)
+    # The start and end as seen from the centre, in radii: (x1 - cx1) / rx and so on.
+    theta = angle(1, 0, u - root * v, v + root * u)
+    delta = angle(u - root * v, v + root * u, -u - root * v, -v + root * u)
     if not sweep and delta > 0:
         delta -= 2 * math.pi
     elif sweep and delta < 0:
@@ -1632,11 +1665,16 @@ def _clip_utf8(text: str, max_bytes: int, drop: Sequence[str] = ("Cc",)) -> str:
 class Reader:
     """Walks the exported SVG once and collects boxes, strokes and labels in drawing order."""
 
-    def __init__(self, root: ET.Element) -> None:
-        """Prepare to read ``root``: its stylesheet, its IDs and its page size."""
+    def __init__(self, root: ET.Element, scoped: bool = True) -> None:
+        """Prepare to read ``root``: its stylesheet, its IDs and its page size.
+
+        ``scoped`` says every page rule led by the root's ID was put there by ``export_svg``,
+        which is so unless the page's own CSS names its ``<svg>`` by an ID.
+        """
         self.root = root
         styles = (element.text or "" for element in root.iter() if _local(element) == "style")
-        self.rules, self.unread = parse_stylesheet("".join(styles))
+        scope = root.get("id", "") if scoped else ""
+        self.rules, self.unread = parse_stylesheet("".join(styles), scope)
         self.by_id: dict[str, ET.Element] = {}
         for element in root.iter():
             if name := element.get("id"):
@@ -1675,12 +1713,34 @@ class Reader:
         origin: Matrix = (1, 0, 0, 1, -self.view[0], -self.view[1])
         if self._selects_any(self.unread):
             self._skip("stylesheet rules this export cannot read left unapplied")
+        self._root_background()
         self._walk(self.root, {}, origin, 1.0, [])
         if (count := len(self.items)) > MAX_ITEMS:
             raise ValueError(
                 f"the diagram draws {count} shapes; this export handles up to {MAX_ITEMS}"
             )
         return self
+
+    def _root_background(self) -> None:
+        """Take an opaque colour the root ``<svg>`` is painted with as the page's background."""
+        layers = [rule.declarations for rule in self.rules if rule.applies(self.root, [])]
+        layers.append(_declarations(self.root.get("style", "")))
+        values = [
+            layer[name] for layer in layers for name in ("background", "background-color")
+            if name in layer
+        ]  # fmt: skip
+        if not values:
+            return
+        props = computed_properties(self.root, {}, self.rules, [])
+        value = resolve_vars(values[-1].removesuffix(IMPORTANT), props) or ""
+        if re.search(r"gradient\(|url\(", value, re.IGNORECASE):
+            self._skip("gradient, pattern or unknown colour, left transparent")
+            return
+        for token in re.findall(r"#[0-9a-fA-F]+|(?:rgba?|hsla?)\([^)]*\)|[a-zA-Z]+", value):
+            if (colour := parse_colour(token, props)) is not None:
+                if colour[3] >= 0.999:
+                    self.background = colour_hex(colour)
+                return
 
     def _declares(
         self, element: ET.Element, ancestors: list[ET.Element], wanted: Callable[[str, str], bool]
@@ -1738,7 +1798,7 @@ class Reader:
     def _note_undrawn(self, props: Props) -> None:
         """Note each effect, such as clipping or a blur, that an element asks for."""
         for name, note in UNDRAWN.items():
-            if props.get(name, "none").strip().lower() != "none":
+            if props.get(name, "none").strip().lower() not in ("none", "normal"):
                 self._skip(note)
 
     def _shows_inside(self, element: ET.Element, props: Props, ancestors: list[ET.Element]) -> bool:
@@ -1901,8 +1961,11 @@ class Reader:
             return "none"
         shape, props = shown
         fill = props.get("fill", "black").strip().lower()
-        filled = fill not in NO_PAINT
         colour = parse_colour(fill, props)
+        fade = length(props.get("fill-opacity"), 1.0, percent_of=1.0)
+        filled = fill not in NO_PAINT and fade > 0 and (colour is None or colour[3] > 0)
+        if not filled and not _has_line(props):
+            return "none"  # a marker painting nothing draws nothing
         painted_as_paper = colour_hex(colour)[:7] in (self.background, "#FFFFFF")
         outlined = _has_line(props) and parse_colour(props["stroke"], props) != colour
         hollow = not filled or (outlined and painted_as_paper)
@@ -1924,8 +1987,9 @@ class Reader:
             away = heading + 180 * at_start
             if abs((tip - away + 180) % 360 - 180) > 1:
                 self._skip("arrowhead not pointing away from its line drawn pointing away")
-        if len(coordinates) == 6 and filled and hollow:
-            return "solidArrow"
+        closed = _local(shape) == "polygon" or "z" in (shape.get("d") or "").lower()
+        if len(coordinates) == 6 and hollow and (filled or (closed and _has_line(props))):
+            return "solidArrow"  # an outlined triangle, which the format draws hollow
         return "filledArrow" if filled else "arrow"
 
     # -- shapes -----------------------------------------------------------
@@ -1950,12 +2014,9 @@ class Reader:
             box = Box(order, (0, 0, 1, 1), 0.0, page_subpath, paint, None)
             box.keep_exact()
         if self.items and isinstance(below := self.items[-1], Box) and _same_place(below, box):
-            # A tint drawn over an opaque copy of the same shape, so lines behind it stay
-            # hidden: one shape. Over a paper-coloured copy the tint keeps its own opacity;
-            # over any other colour the two mix, as the page shows them.
-            paper = (self.background or "#FFFFFF", "#FFFFFF")
-            under = below.paint.fill if below.paint.fill[:7] not in paper else TRANSPARENT
-            fill = _over(box.paint.fill, under) if box.paint.filled else below.paint.fill
+            # A tint drawn over a copy of the same shape is one shape, its fill the two mixed
+            # as the page shows them, so an opaque copy still hides what is behind it.
+            fill = _over(box.paint.fill, below.paint.fill) if box.paint.filled else below.paint.fill
             line = box.paint if box.paint.line_width > 0 else below.paint
             box.paint = Paint(fill, line.stroke, line.line_width, line.pattern)
             box.order = below.order
@@ -2000,7 +2061,12 @@ class Reader:
         h = self._down(element.get("height"), props=props)
         if w <= 0 or h <= 0:
             return
-        radius = length(element.get("rx", element.get("ry")))
+        # One radius stands for both; either at zero squares the corners, as in a browser.
+        rx_given, ry_given = element.get("rx"), element.get("ry")
+        rx = self._across(rx_given, props=props) if rx_given is not None else None
+        ry = self._down(ry_given, props=props) if ry_given is not None else None
+        rx, ry = (rx if rx is not None else ry or 0.0), (ry if ry is not None else rx or 0.0)
+        radius = rx if min(rx, ry) > 0 else 0.0
         upright = abs(matrix[1]) < 1e-9 and abs(matrix[2]) < 1e-9 and radius <= 0
         # The paper lies under everything; a page frame has a line, a later cover is drawn.
         may_be_paper = upright and not self.items and not self.measuring and not _has_line(props)
@@ -2070,13 +2136,20 @@ class Reader:
                 self._skip("hole in a filled shape, kept as an outline only")
                 if paint.line_width > 0:
                     rim = Paint(TRANSPARENT, paint.stroke, paint.line_width, paint.pattern)
-                    self._add_outline(subpath, rim, subpath_props, matrix)
+                    self._add_outline(subpath, rim, subpath_props, matrix, len(subpaths) > 1)
                 continue
-            self._add_outline(subpath, paint, subpath_props, matrix)
+            self._add_outline(subpath, paint, subpath_props, matrix, len(subpaths) > 1)
 
-    def _add_outline(self, subpath: Subpath, paint: Paint, props: Props, matrix: Matrix) -> None:
-        """A closed outline becomes a box, an open one a stroke; one painting nothing is dropped."""
-        if self._marker(props.get("marker-mid")) is not None:
+    def _add_outline(
+        self, subpath: Subpath, paint: Paint, props: Props, matrix: Matrix, joined: bool = False
+    ) -> None:
+        """A closed outline becomes a box, an open one a stroke; one painting nothing is dropped.
+
+        ``joined`` says the subpath is one of several in a path, whose meeting points are
+        middle vertices too.
+        """
+        between = joined or len(subpath.segments) > 1 or subpath.closed  # where marker-mid draws
+        if between and self._marker(props.get("marker-mid")) is not None:
             self._skip("markers between a line's ends left out")
         marked = any(self._marker(props.get(end)) for end in ("marker-start", "marker-end"))
         if marked and (subpath.closed or paint.line_width <= 0):
@@ -2106,8 +2179,20 @@ class Reader:
 
     # -- text -------------------------------------------------------------
 
+    def _note_text_effects(self, node: ET.Element, props: Props) -> None:
+        """Note what a text or span asks for that a SimpleDiagrams label cannot draw."""
+        if _is_invisible(props):
+            return
+        if props.get("writing-mode", "").startswith(("vertical", "tb", "sideways")):
+            self._skip("vertical text drawn horizontally")
+        if {"line-through", "overline"} & set(props.get("text-decoration", "").split()):
+            self._skip("crossed-out and overlined text drawn plain")
+        if any(float(turn) % 360 for turn in NUMBER_RE.findall(node.get("rotate") or "")):
+            self._skip("letters turned one by one drawn upright")
+
     def _text(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """Each ``<text>``, and each separately placed ``<tspan>`` in it, becomes one line."""
+        self._note_text_effects(element, props)
 
         def placed(node: ET.Element, size: float, x: float, y: float) -> Point:
             """Where a node places its text, from its own position or the one before."""
@@ -2200,12 +2285,16 @@ class Reader:
         """
         if props.get("display") == "none":
             return []
+        self._note_text_effects(node, props)
         fade = length(props.get("opacity"), 1.0, percent_of=1.0)
         if 0 < fade < 1:
             self._skip("see-through words inside a line drawn solid")
         # A see-nothing span keeps its words' room but shows none of them, nor its children's.
         faded = faded or fade <= 0
-        style = None if _is_invisible(props) or faded else props
+        # Words with no fill opacity and no outline show nothing; a child may fill them again.
+        unfilled = length(props.get("fill-opacity"), 1.0, percent_of=1.0) <= 0
+        clear = unfilled and not _has_line(props)
+        style = None if _is_invisible(props) or faded or clear else props
         pieces: list[tuple[str, Props | None]] = [(_cased(node.text, props, before), style)]
         path = [*ancestors, node]
         for child in node:
@@ -2235,6 +2324,8 @@ class Reader:
             return
         x, y = self._place(element)
         w, h = self._across(element.get("width")), self._down(element.get("height"))
+        if w <= 0 or h <= 0:
+            return  # a viewport with no width or height shows nothing, as in a browser
         words = self._html_text(element, props, list(self.ancestors))
         if re.search(rf"\S\s*{LINE_BREAK}[\s{LINE_BREAK}]*\S", words):
             self._skip("line breaks in HTML text joined into one line")
@@ -2344,6 +2435,8 @@ class Reader:
         framed = _local(target) in ("symbol", "svg") and len(view) == 4 and min(view[2:]) > 0
         if framed or _local(target) == "symbol":  # its children are copied, not the target
             context = computed_properties(target, context, self.rules, ancestors)
+            if _local(target) == "svg" and context.get("display") == "none":
+                return  # a hidden <svg> stays hidden where a <use> places it
             self._note_undrawn(context)  # the symbol's own effects, which no copy keeps
             ancestors = [self.root, target]
             # The symbol's own opacity layers on the placement's, as a group's would.
@@ -2370,6 +2463,10 @@ class Reader:
             parts = list(target) if _local(target) == "symbol" else [target]
             if (extent := self._extent(parts, context, ancestors)) is None:
                 return
+            if _local(target) == "symbol" and not _holds_text(target):  # its placement crops it
+                w = self._across(element.get("width") or target.get("width") or "100%")
+                h = self._down(element.get("height") or target.get("height") or "100%")
+                self._note_overflow(extent, w, h, context)
             local = (x + extent[0], y + extent[1], extent[2], extent[3])
             icon = self._icon_copy(parts, context, paint, ancestors)
             if _sized_by_page(icon.parts):  # percentages would read against the icon's own box
@@ -2393,9 +2490,13 @@ class Reader:
         view = [float(v) for v in NUMBER_RE.findall(element.get("viewBox", ""))]
         w = self._across(element.get("width"), self.viewport[0])
         h = self._down(element.get("height"), self.viewport[1])
+        if w <= 0 or h <= 0:
+            return  # a viewport with no width or height shows nothing, as in a browser
         if len(view) != 4 or view[2] <= 0 or view[3] <= 0:
             moved = multiply(matrix, (1, 0, 0, 1, x, y))
             outer, self.viewport = self.viewport, (w, h)  # its children's percentages are of it
+            if not self.measuring and not _holds_text(element):  # text widths are estimated
+                self._note_overflow(self._extent(list(element), props, path), w, h, props)
             for child in element:
                 self._walk(child, props, moved, opacity, path)
             self.viewport = outer
@@ -2427,6 +2528,15 @@ class Reader:
         """A length along no one axis, such as a radius: a percentage of the viewport's diagonal."""
         diagonal = math.hypot(*self.viewport) / math.sqrt(2)
         return length(value, percent_of=diagonal, font_size=length(props.get("font-size"), 16.0))
+
+    def _note_overflow(self, extent: Rect | None, w: float, h: float, props: Props) -> None:
+        """Note drawing past a viewport with no view box, which a browser crops at its edges."""
+        if extent is None or props.get("overflow", "hidden") in ("visible", "auto"):
+            return
+        left, top, width, height = extent
+        reach = 2.0  # past the room ``_extent`` leaves around lines, so a crop shows
+        if left < -reach or top < -reach or left + width > w + reach or top + height > h + reach:
+            self._skip("icon cropped to its box drawn whole")
 
     def _icon_frame(self, viewport: Rect, view: Rect, element: ET.Element) -> Rect:
         """An icon's frame inside its viewport, noting a crop the frame cannot show."""
@@ -2592,8 +2702,12 @@ def _alignment(value: str) -> Alignment:
 
 
 HTML_LINE_TAGS = frozenset(
-    {"div", "p", "li", "ul", "ol", "table", "tr", "h1", "h2", "h3", "h4", "h5", "h6"}
-)  # elements a browser starts on a line of their own
+    {"div", "p", "li", "ul", "ol", "table", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "header",
+     "footer", "section", "article", "aside", "nav", "main", "figure", "figcaption", "dl", "dt",
+     "dd", "pre", "hr", "blockquote", "address", "details", "summary", "fieldset", "legend",
+     "form", "hgroup"}
+)  # fmt: skip
+# Above: the elements a browser starts on a line of their own.
 HTML_LINES = ("block", "flex", "grid", "list-item", "table")  # displays that start a line
 LINE_BREAK = "\u2028"  # where HTML text starts a line, unlike a newline in its source
 HTML_LAYOUTS = ("flex", "grid", "inline-flex", "inline-grid")  # place text by rules not read here
@@ -2803,9 +2917,29 @@ def _uses_current_colour(parts: Sequence[ET.Element], paint: Props) -> bool:
     return any("currentcolor" in value.lower() for value in _attribute_values(parts, paint))
 
 
+def _text_look(props: Props) -> tuple[object, ...]:
+    """What a style draws words with: the fill as a colour, the weight as a number."""
+    fill = props.get("fill", "black")
+    paint: object = parse_colour(fill, props)
+    if isinstance(paint, tuple):
+        alpha = length(props.get("fill-opacity"), 1.0, percent_of=1.0)
+        paint = (*paint[:3], round(paint[3] * max(0.0, min(1.0, alpha)), 3))
+    else:
+        paint = fill.strip().lower()  # a gradient or an unread colour compares as written
+    weight = props.get("font-weight", "normal")
+    weight = {"normal": "400", "bold": "700"}.get(weight, weight)
+    others = (props.get(name) for name in TEXT_STYLE if name not in ("fill", "font-weight"))
+    return (paint, weight, *others)
+
+
+def _holds_text(element: ET.Element) -> bool:
+    """Whether an element holds text, whose drawn width this export only estimates."""
+    return any(_local(item) in ("text", "foreignObject") for item in element.iter())
+
+
 def _same_text_style(one: Props, other: Props) -> bool:
     """Whether two styles draw words alike, as far as one SimpleDiagrams line can show."""
-    return all(one.get(name) == other.get(name) for name in TEXT_STYLE)
+    return _text_look(one) == _text_look(other)
 
 
 def _paints_box(name: str, value: str) -> bool:
@@ -2954,7 +3088,14 @@ def _covered(label: Label, box: Box, items: Sequence[Drawn]) -> bool:
     inset_x, inset_y = (right - left) * 0.15, (bottom - top) * 0.3
     left, right, top, bottom = left + inset_x, right - inset_x, top + inset_y, bottom - inset_y
     for item in items:
-        if not box.order < item.order < label.order or not isinstance(item, (Box, Stroke)):
+        if not box.order < item.order < label.order:
+            continue
+        if isinstance(item, Artwork):  # a picture may hide the words if they move below it
+            a, b, w, h = item.frame  # unturned, which is close enough to keep the words above
+            if a < right and a + w > left and b < bottom and b + h > top:
+                return True
+            continue
+        if not isinstance(item, (Box, Stroke)):
             continue
         lined = item.paint.line_width > 0 and item.paint.stroke != TRANSPARENT
         fill = parse_colour(item.paint.fill, {})
@@ -3871,10 +4012,23 @@ class Export(NamedTuple):
     assets: list[Asset]
 
 
+def _names_its_root(html: str) -> bool:
+    """Whether the page's CSS selects its diagram ``<svg>`` by that element's own ID.
+
+    ``export_svg`` gives the root a new ID and rewrites such selectors to it, so they read
+    like the ones it scopes; then no rule led by the root's ID can be told apart.
+    """
+    opening = re.match(r"<svg\b[^>]*", export_svg.extract_first_svg(html))
+    found = re.search(r"""\sid\s*=\s*["']([^"']+)["']""", opening.group(0) if opening else "")
+    if found is None:
+        return False
+    return re.search(rf"#{re.escape(found.group(1))}(?![\w-])", html) is not None
+
+
 def export_document(html: str, source_path: Path) -> Export:
     """Translate source HTML into a SimpleDiagrams document."""
     root = ET.fromstring(export_svg.export_svg_document(html, source_path, system_fonts=True))
-    reader = Reader(root).read()
+    reader = Reader(root, not _names_its_root(html)).read()
     titles = (element.text for element in root if _local(element) == "title" and element.text)
     title = next(titles, None) or source_path.stem
     name = _clip_utf8(re.sub(r"\s+", " ", title).strip(), MAX_NAME_BYTES)
@@ -3955,6 +4109,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         write_package(output, export)
     except RecursionError:
         print("error: the diagram is nested too deeply to export", file=sys.stderr)
+        return 2
+    except ArithmeticError:  # numbers past what floating point holds, such as skewX(1e308)
+        print("error: the diagram holds numbers too large or small to export", file=sys.stderr)
         return 2
     except (ValueError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)

@@ -367,7 +367,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertGreaterEqual(region["width"] * 40, 7 * 8 * 0.7)
 
     def test_a_tint_over_an_opaque_copy_is_one_labelled_shape(self) -> None:
-        """The skill's tinted node over a paper-coloured copy becomes one shape at the tint."""
+        """The skill's tinted node over a paper-coloured copy becomes one opaque shape, so a line
+        or the grid behind it stays hidden as the copy hid it on the page."""
         document, _ = self.export("""<svg viewBox="0 0 200 100">
           <rect width="100%" height="100%" fill="#f5f5f5"/>
           <rect x="10" y="10" width="160" height="48" rx="6" fill="#f5f5f5"/>
@@ -375,7 +376,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
           <text x="90" y="38" text-anchor="middle">Write a skill</text></svg>""")
         [node] = [core(e) for e in document["pages"][0]["elements"]]
         self.assertEqual(node["text_content"]["string"], "Write a skill")
-        self.assertEqual(node["style"]["fill_hex"], "#BF452014")
+        self.assertEqual(node["style"]["fill_hex"], "#F1E7E4")  # 8% rust over #f5f5f5
         self.assertEqual(node["style"]["stroke_hex"], "#BF4520")
         document, _ = self.export("""<svg viewBox="0 0 200 100">
           <rect x="10" y="10" width="40" height="40" fill="#0000ff"/>
@@ -1431,12 +1432,68 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", ('<defs><linearGradient id="g"><stop stop-color="red"/></linearGradient><symbol id="s" viewBox="0 0 10 10">'
                   '<linearGradient id="g"><stop stop-color="blue"/></linearGradient><rect width="9" height="9" fill="url(#g)"/>'
                   '</symbol></defs><use href="#s" width="20" height="20"/>'), "icon SimpleDiagrams cannot store safely left out"),
+            ("", '<text x="50" y="30" writing-mode="vertical-rl">AB</text>', "vertical text drawn horizontally"),
+            ("", '<text y="30" text-decoration="line-through">Old</text>', "crossed-out and overlined text drawn plain"),
+            ("", '<text x="50" y="50" rotate="90">A</text>', "letters turned one by one drawn upright"),
+            ("", '<rect width="40" height="40" style="mix-blend-mode: multiply"/>',
+             "blend modes left out; shapes are drawn over one another plainly"),
+            ("", '<defs><symbol id="d"><circle r="20" fill="#c00"/></symbol></defs><use href="#d" x="100" y="100"/>',
+             "icon cropped to its box drawn whole"),  # no view box: the placement crops it
+            ("", '<svg x="250" y="150" width="60" height="60"><circle r="30"/></svg>', "icon cropped to its box drawn whole"),
+            ("[data-kind] { fill: red }", '<rect data-kind="db" width="40" height="40"/>',
+             "stylesheet rules this export cannot read left unapplied"),
+            (".hl { color: #d00 }", '<text y="30" fill="currentColor" color="#000">Status: <tspan class="hl">FAILED</tspan></text>',
+             "styled words inside a line take the line's style"),  # its own currentColor is red
         ):  # fmt: skip
             with self.subTest(css=css, svg=svg[:60]):
                 _, skipped = self.export(
                     f'<svg viewBox="0 0 400 300"><style>{css}</style>{svg}</svg>'
                 )
                 self.assertEqual(skipped, {note: 1})
+
+    def test_the_page_colour_extreme_numbers_and_labels_over_pictures(self) -> None:
+        """Each case once whitened a dark page, stopped the export, noted a difference that does
+        not show, or hid a label behind a picture drawn after its box."""
+        document, _ = self.export('<svg viewBox="0 0 400 300" style="background: #1e1e2e">'
+                                  '<rect x="10" y="10" width="50" height="50" fill="#fff"/></svg>')  # fmt: skip
+        self.assertEqual(
+            document["pages"][0]["content"]["background"], {"kind": "solid", "color_hex": "#1E1E2E"}
+        )
+        for arc in ("A1e-100 1e-100 0 0 1 1e-100 0", "A1e-300 1e-300 0 0 1 1e-300 0", "A1 1e-300 0 0 1 1 0"):
+            document, _ = self.export(f'<svg viewBox="0 0 100 100"><path d="M0 0{arc}" fill="none" stroke="#000"/>'
+                                      '<rect width="9" height="9" fill="#123456"/></svg>')  # fmt: skip
+            self.assertIn('"#123456"', json.dumps(document))  # a tiny radius no longer divides by zero
+        errors = io.StringIO()
+        failing = mock.patch.object(self.mod, "export_document", side_effect=OverflowError("big"))
+        with failing, contextlib.redirect_stderr(errors), tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp, "big.html")
+            source.write_text("<svg/>", encoding="utf-8")
+            self.assertEqual(self.mod.main([str(source)]), 2)
+        self.assertIn("error:", errors.getvalue())
+        _, skipped = self.export('<svg viewBox="0 0 400 300"><text y="30" fill="#000" font-weight="bold">A '
+                                 '<tspan fill="#000000" font-weight="700">B</tspan></text>'
+                                 + ARROW_MARKER.format("") + '<line x1="10" y1="90" x2="90" y2="90" stroke="#000"'
+                                 ' style="marker-mid: url(#a)"/></svg>')  # fmt: skip
+        self.assertEqual(skipped, {})  # the same look spelt two ways, and a line with no middle
+        _, skipped = self.export('<svg viewBox="0 0 400 300">' + ARROW_MARKER.format("")
+                                 + '<path d="M10 10L50 10M60 10L100 10" stroke="#000" fill="none"'
+                                 ' marker-mid="url(#a)"/></svg>')  # fmt: skip
+        self.assertEqual(skipped, {"markers between a line's ends left out": 2})  # where they meet
+        _, skipped = self.export('<svg viewBox="0 0 400 300"><text y="30" fill="hsl(0, 100%, 50%)">A '
+                                 '<tspan fill="hsl(120, 100%, 30%)">B</tspan></text></svg>')  # fmt: skip
+        self.assertIn("styled words inside a line take the line's style", skipped)  # unread, yet unlike
+        page = ("<html><head><style>#d .node { fill: #00aa00 } #start { fill: red }</style></head><body>"
+                '<svg id="d" viewBox="0 0 100 100"><rect class="node" id="start" width="9" height="9"/></svg>'
+                "</body></html>")  # fmt: skip
+        document = self.mod.export_document(page, Path("case.html")).document
+        self.assertIn('"#00AA00"', json.dumps(document))  # the page's own root-ID rule still wins
+        document, _ = self.export(
+            '<svg viewBox="0 0 200 100"><rect x="20" y="20" width="100" height="60" fill="#fff" stroke="#000"/>'
+            '<svg x="20" y="20" width="100" height="60" viewBox="0 0 100 60"><rect width="100" height="60"/></svg>'
+            '<text x="70" y="55" text-anchor="middle" fill="red">TOP</text></svg>'
+        )  # fmt: skip
+        kinds = [core(e)["kind"] for e in document["pages"][0]["elements"]]
+        self.assertEqual(kinds[-1], "text")  # the label stays above the picture, not in the box
 
     def test_drawing_reads_as_the_browser_draws_it(self) -> None:
         """Each row once lost, moved, resized or revealed something, with no note at all."""
@@ -1459,8 +1516,39 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             lines = [connection["content"] for connection in page["connections"]]
             return [(line["end_ending"], len(line["points"])) for line in lines]
 
+        def shapes(document: Record) -> list[str]:
+            elements = document["pages"][0]["elements"]
+            return [core(e)["symbol_reference"]["item_id"] for e in elements]
+
         arrow = ARROW_MARKER
+        line = '<line x1="10" y1="9" x2="90" y2="9" stroke="#000" {}/>'
         for svg, read, expected in (
+            # Selectors, the cascade and keywords.
+            ('<style>rect { fill: #fff } #start { fill: #00aa00 }</style><rect id="start" width="9" height="9"/>',
+             fills, ["#00AA00"]),  # an ID rule still beats a tag rule once the page's CSS is scoped
+            ('<style>.grp * { fill: #00aa00 }</style><g class="grp"><rect width="9" height="9"/></g>', fills, ["#00AA00"]),
+            ('<style>g { fill: #ff0000 } .n { fill: revert }</style><g><rect class="n" width="9" height="9"/></g>',
+             fills, ["#FF0000"]),  # reverted, an inherited property inherits
+            (('<text y="30" visibility="HIDDEN">draft</text><text y="60" style="display: NONE">gone</text>'
+              '<text y="90">kept</text>'), strings, ["kept"]),  # keywords ignore case
+            ('<text y="40" style="font: small-caps 700 20px Georgia">Hi</text>', sizes, [20]),
+            # Markers.
+            (arrow.format("") + line.format('style="marker: url(#a)"'), endings, [("filledArrow", 2)]),
+            ('<defs><marker id="a" orient="auto"><polygon points="0 0,8 3,0 6" fill="none" stroke="#000"/></marker>'
+             "</defs>" + line.format('marker-end="url(#a)"'), endings, [("solidArrow", 2)]),  # drawn hollow
+            (arrow.format('fill-opacity="0"') + line.format('marker-end="url(#a)"'), endings, []),  # a plain line
+            # Shapes and viewports.
+            ('<rect width="100" height="40" rx="20" ry="0" fill="#eee"/>', shapes, ["Square"]),
+            ('<rect width="100" height="40" rx="50%" fill="#eee"/>', shapes, ["pill"]),
+            (('<defs><svg id="s" viewBox="0 0 10 10" style="display:none"><rect width="9" height="9"/></svg></defs>'
+              '<use href="#s" width="20" height="20"/>'), frames, []),
+            ('<svg width="0" height="20"><rect width="9" height="9"/></svg>', frames, []),
+            ('<foreignObject width="0" height="20"><div>Hidden</div></foreignObject>', strings, []),
+            # Text.
+            ('<text y="30">Shown <tspan fill-opacity="0">Hidden</tspan> too</text>', strings, ["Shown too"]),
+            ('<text y="30"><tspan fill-opacity="0">Hidden</tspan> Shown</text>', strings, ["Shown"]),
+            (('<foreignObject width="200" height="80"><div><header>Title</header><section>Body</section></div>'
+              "</foreignObject>"), strings, ["Title Body"]),  # each block starts a line, joined with a note
             ('<rect x="10" y="10" width="1in" height="1in"/>', frames, [{"x": 10, "y": 10, "width": 96, "height": 96}]),
             ('<g font-size="10"><rect width="2em" height="2em"/></g>', frames, [{"x": 0, "y": 0, "width": 20, "height": 20}]),
             ('<svg x="20" y="20" width="100" height="100"><rect width="50%" height="50%"/></svg>', frames,
