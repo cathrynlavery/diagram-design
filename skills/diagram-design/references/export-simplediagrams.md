@@ -55,6 +55,8 @@ Each is printed once per kind, with a count. The exporter conservatively reports
 - `visible content inside a hidden <element> left out`
 - `<path> with unreadable data left out`
 - `hole in a filled shape, kept as an outline only`
+- `holes in a path with many contours may be filled in`
+- `overlapping even-odd contours may fill areas that were clear`
 - `rounded corners of a skewed rectangle drawn square`
 - `line endings painted another colour take the line's colour`
 - `line ending other than an arrow, a circle or a diamond drawn as an arrow`

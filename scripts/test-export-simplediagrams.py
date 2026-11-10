@@ -242,6 +242,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                     recoloured = r"example-(datalake|high-level|uml-class)(-dark|-full)?"
                     if re.fullmatch(recoloured, source.stem):
                         expected = {"note: " + RECOLOURED_ENDINGS}
+                    nested_svg_css = r"example-(datalake|high-level(-vertical)?)(-dark|-full)?"
+                    if re.fullmatch(nested_svg_css, source.stem):
+                        expected.add("note: sizes, places and corners set in CSS ignored; the SVG's own are used")
                     # The shared drawing style deliberately normalizes authored stroke details.
                     # Dedicated cases below verify when this informational note is raised.
                     self.assertEqual(notes - {"note: " + STROKE_STYLE}, expected)
@@ -318,6 +321,26 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual(
             self.mod.right_angle_route(step), [(400, 104), (340, 104), (340, 120), (280, 120)]
         )
+
+    def test_a_short_chord_does_not_hide_a_deep_connector_bend(self) -> None:
+        """A bend that is narrow but deep is geometry, rather than a small crossing hop."""
+        diagram = ARROW_MARKER.format("") + (
+            '<path d="M10 180H50 C50 20 80 20 80 180H150"'
+            ' stroke="black" fill="none" marker-end="url(#a)"/>'
+        )
+        doc, _ = self.export(f'<svg viewBox="0 0 200 200">{diagram}</svg>')
+        [connection] = doc["pages"][0]["content"]["content"]["connections"]
+        self.assertNotIn("routing", connection)
+        self.assertLess(min(point["y"] for point in connection["content"]["points"]), 100)
+
+    def test_stroke_width_percentage_uses_the_viewport_diagonal(self) -> None:
+        """Percentage stroke width measures the normalized SVG diagonal before scaling."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 200 200"><line x1="10" y1="10" x2="100" y2="10"'
+            ' stroke="black" stroke-width="10%"/></svg>'
+        )
+        [line] = doc["pages"][0]["elements"]
+        self.assertEqual(core(line)["style"]["line_width"], 20)
 
     def test_an_arrow_label_becomes_the_connector_label(self) -> None:
         """The skill's arrow label, text on a small paper-coloured box, rides on the connector."""
@@ -581,9 +604,12 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         outer, inner, reversed_inner = "M10 10H110V110H10Z", "M40 40H80V80H40Z", "M40 40V80H80V40Z"
         for d, rule, fills, notes in (
             (outer + reversed_inner, "nonzero", ["#000000", "#00000000"], hole),
+            (outer + reversed_inner.removesuffix("Z"), "nonzero", ["#000000", "#00000000"], hole),
             (outer + inner, "evenodd", ["#000000", "#00000000"], hole),
             (outer + inner, "nonzero", ["#000000", "#000000"], {}),  # wound alike: filled
             (outer + "M60 60H160V160H60Z", "nonzero", ["#000000", "#000000"], {}),  # overlapping
+            (outer + "M60 60H160V160H60Z", "evenodd", ["#000000", "#000000"],
+             {"overlapping even-odd contours may fill areas that were clear": 1}),
             (outer + reversed_inner + "M55 55H65V65H55Z", "nonzero", ["#000000", "#000000", "#00000000"],
              hole),  # an island inside the hole is filled again
         ):  # fmt: skip
@@ -1783,6 +1809,44 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 [box] = doc["pages"][0]["elements"]
                 self.assertEqual(core(box)["style"]["fill_hex"], expected)
 
+    def test_page_styles_reach_the_isolated_reader_once_in_source_order(self) -> None:
+        """Bare SVG paint applies, and inline SVG styles keep their order among page styles."""
+        for html, expected in (
+            (
+                ('<style>svg { fill: red }</style><svg class="diagram" viewBox="0 0 100 100">'
+                 '<rect width="20" height="20"/></svg>'),
+                "#FF0000",
+            ),
+            (
+                ('<svg viewBox="0 0 100 100"><style>.n { fill: red }</style>'
+                 '<rect class="n" width="20" height="20"/></svg><style>.n { fill: blue }</style>'),
+                "#0000FF",
+            ),
+        ):
+            with self.subTest(html=html):
+                doc, _ = self.export(html)
+                [box] = doc["pages"][0]["elements"]
+                self.assertEqual(core(box)["style"]["fill_hex"], expected)
+
+    def test_html_body_typography_is_inherited_by_svg_labels(self) -> None:
+        """The page contributes font size and weight without overriding the SVG's own styles."""
+        doc, _ = self.export(
+            '<style>body { font-size: 10px; font-weight: bold }</style>'
+            '<svg viewBox="0 0 100 100"><text y="30">Label</text></svg>'
+        )
+        style = self.element_labelled("Label", doc)["text_content"]["base_style"]
+        self.assertEqual((style["font_size"], style["weight"]), (10, "bold"))
+
+    def test_html_text_can_show_inside_a_zero_size_wrapper(self) -> None:
+        """A visible descendant supplies the label style when its wrapper cannot show text."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 200 100"><foreignObject width="180" height="60">'
+            '<div style="font-size:0">Hidden<span style="font-size:16px">Visible</span></div>'
+            '</foreignObject></svg>'
+        )
+        text = self.element_labelled("Visible", doc)["text_content"]
+        self.assertEqual(text["base_style"]["font_size"], 16)
+
     def test_root_background_uses_the_same_cascade_as_shape_paint(self) -> None:
         """Background shorthand and color longhand compete in source order and by importance."""
         for css, inline, expected in (
@@ -1798,7 +1862,10 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
     def test_stored_icons_preserve_marker_definitions_and_report_renderer_losses(self) -> None:
         """Artwork carries its safe marker reference and flags styles the canvas cannot draw."""
         result = self.mod.export_document(
-            """<style>.upper { text-transform: uppercase } .line { marker-mid: url(#m) }</style>
+            """<style>
+              .upper { text-transform: uppercase; writing-mode: vertical-rl }
+              .line { marker-mid: url(#m); filter: blur(3px) }
+            </style>
             <svg viewBox="0 0 100 100">
               <defs><marker id="m"><circle r="3" fill="red"/></marker></defs>
               <svg width="80" height="40" viewBox="0 0 80 40">
@@ -1814,6 +1881,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         [line] = svg.findall(".//{*}polyline")
         self.assertEqual(line.get("marker-mid"), f'url(#{marker.get("id")})')
         self.assertIn("letter case set by CSS left unchanged in stored icons", result.skipped)
+        self.assertIn("vertical text drawn horizontally", result.skipped)
+        self.assertIn("filters such as blur and shadow left out", result.skipped)
         self.assertIn("middle markers in stored icons may be left out by the desktop renderer", result.skipped)
 
     def test_large_translucent_path_reports_possible_overlap(self) -> None:
@@ -1821,8 +1890,12 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         parts = [f"M{i * 2} 0h1v1h-1z" for i in range(201)]
         parts.append(parts[-1])
         path = " ".join(parts)
-        _, notes = self.export(f'<svg viewBox="0 0 450 20"><path fill-opacity=".5" d="{path}"/></svg>')
+        with mock.patch.object(self.mod, "_is_hole", side_effect=AssertionError("contour budget exceeded")):
+            _, notes = self.export(
+                f'<svg viewBox="0 0 450 20"><path fill-opacity=".5" d="{path}"/></svg>'
+            )
         self.assertIn(SEE_THROUGH, notes)
+        self.assertIn("holes in a path with many contours may be filled in", notes)
 
     def test_drawing_reads_as_the_browser_draws_it(self) -> None:
         """Each row once lost, moved, resized or revealed something, with no note at all."""

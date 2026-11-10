@@ -260,6 +260,8 @@ class Note(str, Enum):
     HIDDEN_CONTENT = "visible content inside a hidden <{element}> left out"
     UNREADABLE_PATH = "<path> with unreadable data left out"
     HOLE = "hole in a filled shape, kept as an outline only"
+    COMPLEX_HOLES = "holes in a path with many contours may be filled in"
+    EVENODD_OVERLAP = "overlapping even-odd contours may fill areas that were clear"
     SKEWED_CORNERS = "rounded corners of a skewed rectangle drawn square"
     ENDING_RECOLOURED = "line endings painted another colour take the line's colour"
     ENDING_SHAPE = "line ending other than an arrow, a circle or a diamond drawn as an arrow"
@@ -844,6 +846,22 @@ def _has_text_fill(props: Props) -> bool:
     )
 
 
+def _visible_html_text(props: Props) -> bool:
+    """Whether HTML's text can show, even if its descendants choose other styles."""
+    colour = props.get("color", "black")
+    return (
+        not _is_invisible(props)
+        and length(props.get("font-size"), 16.0) > 0
+        and colour.lower() != "transparent"
+        and ((rgba := parse_colour(colour, props)) is None or rgba[3] > 0)
+    )
+
+
+def _uses_vertical_text(props: Props) -> bool:
+    """Whether the author asks to lay glyphs out vertically."""
+    return props.get("writing-mode", "").startswith(("vertical", "tb", "sideways"))
+
+
 def _visible_text(props: Props) -> bool:
     """Whether this run can show any glyphs independently of its children."""
     return (
@@ -860,7 +878,7 @@ def _has_line(props: Props) -> bool:
         bool(stroke)
         and stroke not in NO_PAINT
         and _paint_opacity(props, "stroke") > 0
-        and length(props.get("stroke-width"), 1.0) > 0
+        and length(props.get("stroke-width"), 1.0, percent_of=1.0) > 0
         and ((colour := parse_colour(stroke, props)) is None or colour[3] > 0)
     )
 
@@ -2235,8 +2253,7 @@ class Reader:
         non_scaling = props.get("vector-effect", "").strip() == "non-scaling-stroke"
         if non_scaling:
             scale = 1.0
-        size = length(props.get("font-size"), 16.0)  # what a width in em is of
-        width = max(0.0, length(props.get("stroke-width"), 1.0, font_size=size)) * scale
+        width = max(0.0, self._either(props.get("stroke-width"), props, default=1.0)) * scale
         fill_hex = colour_hex(fill, opacity * _paint_opacity(props, "fill"))
         stroke_hex = colour_hex(stroke, opacity * _paint_opacity(props, "stroke"))
         if len(stroke_hex) == 9 and stroke_hex.endswith("00"):
@@ -2521,13 +2538,17 @@ class Reader:
             self._skip(Note.UNREADABLE_PATH)
             return
         flattened = [subpath.flattened() for subpath in subpaths]
-        paint = self._paint(
-            props,
-            opacity,
-            matrix,
-            has_area=any(painted_area(points) > MIN_FILLED_AREA for points in flattened),
-        )
-        outlines = [(s, points) for s, points in zip(subpaths, flattened, strict=True) if s.closed]
+        # SVG closes open contours for fill only. Keep their strokes open.
+        outlines = [
+            (subpath, points, bounds(points))
+            for subpath, points in zip(subpaths, flattened, strict=True)
+            if painted_area(points) > 0
+        ]
+        extents = {id(subpath): extent for subpath, _, extent in outlines}
+        paint = self._paint(props, opacity, matrix, has_area=bool(outlines))
+        check_holes = len(outlines) <= OVERLAP_CHECK_LIMIT
+        if paint.filled and not check_holes:
+            self._skip(Note.COMPLEX_HOLES)
         filled_extents: list[Bounds] = []
         for index, (subpath, points) in enumerate(zip(subpaths, flattened, strict=True)):
             # Markers sit at the whole path's start and end, not at each subpath's.
@@ -2536,7 +2557,11 @@ class Reader:
                 "marker-end": index == len(subpaths) - 1,
             }
             subpath_props = {name: value for name, value in props.items() if ends.get(name, True)}
-            if subpath.closed and paint.filled and _is_hole(subpath, outlines, props):
+            extent = extents.get(id(subpath))
+            if (
+                check_holes and paint.filled and extent is not None
+                and _is_hole(subpath, points, extent, outlines, props)
+            ):
                 # A path cannot cut a hole in another, so a hole keeps only its outline.
                 self._skip(Note.HOLE)
                 if paint.line_width > 0:
@@ -2547,13 +2572,17 @@ class Reader:
             if (
                 paint.filled
                 and len(filled_extents) <= OVERLAP_CHECK_LIMIT
-                and painted_area(points) > MIN_FILLED_AREA
+                and extent is not None
             ):
-                filled_extents.append(bounds(points))
+                filled_extents.append(extent)
         # A browser fills a path once; here each part is filled, so a see-through overlap darkens.
         see_through = paint.filled and len(paint.fill) == 9
-        if see_through and _bounds_overlap(filled_extents):
-            self._skip(Note.SEE_THROUGH_OVERLAP)
+        evenodd = props.get("fill-rule", "").strip().lower() == "evenodd"
+        if (see_through or evenodd) and _bounds_overlap(filled_extents):
+            if see_through:
+                self._skip(Note.SEE_THROUGH_OVERLAP)
+            if evenodd:
+                self._skip(Note.EVENODD_OVERLAP)
 
     def _add_outline(
         self,
@@ -2608,7 +2637,7 @@ class Reader:
         """Note what a text or span asks for that a SimpleDiagrams label cannot draw."""
         if _is_invisible(props):
             return
-        if props.get("writing-mode", "").startswith(("vertical", "tb", "sideways")):
+        if _uses_vertical_text(props):
             self._skip(Note.VERTICAL_TEXT)
         if {"line-through", "overline"} & set(props.get("text-decoration", "").split()):
             self._skip(Note.CROSSED_TEXT)
@@ -2765,7 +2794,7 @@ class Reader:
         h = self._down(element.get("height"), props=props)
         if w <= 0 or h <= 0:
             return  # a viewport with no width or height shows nothing, as in a browser
-        words = self._html_text(element, props, list(self.ancestors))
+        words, first_visible = self._html_text(element, props, list(self.ancestors))
         if re.search(rf"\S\s*{LINE_BREAK}[\s{LINE_BREAK}]*\S", words):
             self._skip(Note.HTML_BREAKS)
         words = words.replace(LINE_BREAK, " ")
@@ -2794,6 +2823,10 @@ class Reader:
             self._skip(Note.RICH_HTML)
         if centred:
             self._skip(Note.HTML_LAYOUT)
+        if first_visible is None:
+            return
+        if not _visible_html_text(props):
+            props = first_visible
         align = _alignment(props.get("text-align", ""))
         wrap_box = (x, y, w, h) if w > 0 and h > 0 else None
         paint = props.get("color", "black")
@@ -2823,19 +2856,21 @@ class Reader:
         props: Props,
         ancestors: list[ET.Element],
         before: str = "",
-    ) -> str:
-        """The words an HTML fragment shows, with ``LINE_BREAK`` where the browser starts a line.
+    ) -> tuple[str, Props | None]:
+        """Visible HTML words and the style of the first visible nonblank text.
 
-        A table cell's words are kept apart from its neighbours' by a space.
+        Block breaks and table-cell spaces are kept apart until the label is assembled.
         """
-        shows = not _is_invisible(props)
+        shows = _visible_html_text(props)
         words = [_cased(element.text, props, before)] if shows else []
+        first = props if shows and (element.text or "").strip() else None
         path = [*ancestors, element]
         flex = props.get("display", "").strip() in ("flex", "inline-flex")
         in_row = flex and not self._declares(element, ancestors, _stacks)  # items side by side
         for child in element:
             name = _local(child)
-            child_props = computed_properties(child, props, self.rules, path)
+            defaults = _html_defaults(child, props)
+            child_props = computed_properties(child, props, self.rules, path, defaults)
             display = child_props.get("display", "").strip()
             fade = length(child_props.get("opacity"), 1.0, percent_of=1.0)
             gone = child.get("hidden") is not None or display == "none" or fade <= 0
@@ -2848,10 +2883,15 @@ class Reader:
                 line = display.startswith(HTML_LINES) if display else name in HTML_LINE_TAGS
                 gap = " " if cell or in_row else LINE_BREAK if line else ""
                 ahead = before + "".join(words) + gap
-                words += [gap, self._html_text(child, child_props, path, ahead), gap]
+                inner, inner_style = self._html_text(child, child_props, path, ahead)
+                words += [gap, inner, gap]
+                if first is None:
+                    first = inner_style
             if shows:
                 words.append(_cased(child.tail, props, before + "".join(words)))
-        return "".join(words)
+                if first is None and (child.tail or "").strip():
+                    first = props
+        return "".join(words), first
 
     def _use(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """An icon placed by reference becomes SVG artwork, painted as the placement paints it.
@@ -2968,10 +3008,12 @@ class Reader:
         size = length((props or {}).get("font-size"), 16.0)
         return length(value, default, percent_of=self.viewport[1], font_size=size)
 
-    def _either(self, value: str | None, props: Props) -> float:
-        """A length along no one axis, such as a radius: a percentage of the viewport's diagonal."""
+    def _either(self, value: str | None, props: Props, default: float = 0.0) -> float:
+        """An undirected SVG length resolves percentages against the normalized diagonal."""
         diagonal = math.hypot(*self.viewport) / math.sqrt(2)
-        return length(value, percent_of=diagonal, font_size=length(props.get("font-size"), 16.0))
+        return length(
+            value, default, percent_of=diagonal, font_size=length(props.get("font-size"), 16.0)
+        )
 
     def _note_overflow(self, extent: Rect | None, w: float, h: float, props: Props) -> None:
         """Note drawing past a viewport with no view box, which a browser crops at its edges."""
@@ -3053,6 +3095,10 @@ class Reader:
             return None
         self._note_css_geometry(element, ancestors)
         tag = _local(element)
+        if page.get("filter", "none").strip().lower() not in {"none", "normal"}:
+            self._skip(Note.FILTERED)
+        if tag in {"text", "tspan"} and _uses_vertical_text(page):
+            self._skip(Note.VERTICAL_TEXT)
         if tag in {"text", "tspan"} and any(
             _cased(words, page) != (words or "") for words in (
                 element.text, *(child.tail for child in element)
@@ -3295,22 +3341,28 @@ def _marker_axis(orient: str | None, heading: float, at_start: bool) -> float:
 
 
 def _is_hole(
-    subpath: Subpath, outlines: Sequence[tuple[Subpath, list[Point]]], props: Props
+    subpath: Subpath,
+    own: Sequence[Point],
+    extent: Bounds,
+    outlines: Sequence[tuple[Subpath, list[Point], Bounds]],
+    props: Props,
 ) -> bool:
-    """Whether a closed contour cuts an empty hole in a filled path, under its fill rule.
+    """Whether an implicitly closed contour cuts an empty hole in a filled path, under its fill rule.
 
     Only a contour wholly inside others can be a hole; one that merely overlaps them adds
     its own area to the fill.
     """
-    own = subpath.flattened()
+    left, top, right, bottom = extent
     around = [
         flat
-        for other, flat in outlines
-        if other is not subpath and all(point_in_polygon(point, flat) for point in own)
+        for other, flat, (x1, y1, x2, y2) in outlines
+        if other is not subpath
+        and x1 <= left and y1 <= top and x2 >= right and y2 >= bottom
+        and all(point_in_polygon(point, flat) for point in own)
     ]
     if not around:
         return False
-    if props.get("fill-rule", "nonzero").strip() == "evenodd":
+    if props.get("fill-rule", "nonzero").strip().lower() == "evenodd":
         return len(around) % 2 == 1
     winding = sum(1 if signed_area(flat) > 0 else -1 for flat in [*around, own])
     return winding == 0  # nonzero: the region inside it is left unpainted
@@ -4054,8 +4106,9 @@ def right_angle_route(subpath: Subpath) -> list[Point] | None:
     for segment in subpath.segments:
         start, current = current, segment.end
         if not isinstance(segment, Line):
-            if math.dist(start, current) > ROUNDING_SIZE:
-                return None  # a real curve, not a rounding or a hop
+            hull = (start, *segment)
+            if any(math.dist(a, b) > ROUNDING_SIZE for a, b in itertools.combinations(hull, 2)):
+                return None  # the control hull is too large for a rounding or a hop
             continue
         horizontal = abs(current[1] - start[1]) <= 0.5
         if not horizontal and abs(current[0] - start[0]) > 0.5:

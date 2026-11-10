@@ -618,7 +618,7 @@ def scope_selector(selector: str, root_id: str) -> str:
     return ", ".join(scoped)
 
 
-def body_inherited_css(selector: str, body: str, root_id: str, *, scope_rules: bool = True) -> str:
+def body_inherited_css(selector: str, body: str, root_id: str) -> str:
     """Bind `color` / `font-family` from a dropped `body` rule to the SVG root."""
     parts = [part.strip().lower() for part in selector_list_parts(selector)]
     if "body" not in parts:
@@ -628,8 +628,7 @@ def body_inherited_css(selector: str, body: str, root_id: str, *, scope_rules: b
     ]
     if not declarations:
         return ""
-    target = f"#{root_id}" if scope_rules else "body"
-    return f"{target} {{ {'; '.join(declarations)}; }}"
+    return f"#{root_id} {{ {'; '.join(declarations)}; }}"
 
 
 def escape_css_for_xml(css: str) -> str:
@@ -1011,12 +1010,11 @@ def _diagram_css_leaf(rule: _CssRule, root_id: str, names: dict[str, str], origi
                 if len(parts) > 1 and key in ("animation", "animation-name"):
                     raise ValueError("unsupported nested CSS animation declaration in SVG export")
     body = _animation_declarations(body, names)
-    inherited = body_inherited_css(selector, body, root_id, scope_rules=scope_rules)
-    if inherited:
-        kept.append(escape_css_for_xml(inherited))
-    if is_chrome_selector(selector):
-        return "\n      ".join(kept)
     if scope_rules:
+        if inherited := body_inherited_css(selector, body, root_id):
+            kept.append(escape_css_for_xml(inherited))
+        if is_chrome_selector(selector):
+            return "\n      ".join(kept)
         selector = scope_selector(selector, root_id)
     kept.append(escape_css_for_xml(f"{selector} {{ {body} }}"))
     return "\n      ".join(kept)
@@ -1542,13 +1540,28 @@ def assert_export_gate(svg: str) -> None:
         )
 
 
+def _without_style_elements(svg: str) -> str:
+    """Remove styles already collected in source order for the isolated reader."""
+    pieces = []
+    cursor = 0
+    for token, _, _, end in html_tokens(svg):
+        if (token.group("tag") or "").lower() == "style" and not token.group("close"):
+            pieces.append(svg[cursor:token.start()])
+            cursor = end
+    pieces.append(svg[cursor:])
+    return "".join(pieces)
+
+
 def export_svg_document(
     html: str, source_path: Path, system_fonts: bool = False, *, scope_rules: bool = True,
 ) -> str:
     """Build an SVG, scoping selectors for embedding unless it will be read in isolation."""
     slug = slug_for(source_path)
     root_id = f"{slug}-root"
-    svg = normalize_html_entities(xmlify_attributes(extract_first_svg(html)))
+    svg = extract_first_svg(html)
+    if not scope_rules:
+        svg = _without_style_elements(svg)
+    svg = normalize_html_entities(xmlify_attributes(svg))
     ensure_viewbox(svg)
     svg = ensure_xmlns(svg)
     opening = START_TAG_RE.match(svg)
