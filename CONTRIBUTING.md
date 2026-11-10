@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 45 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, and Excalidraw sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 45 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -53,6 +53,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | draw.io import path (real extractor vs fixtures + docs sync) | `python3 scripts/verify-drawio-import.py && python3 scripts/test-verify-drawio-import.py` |
 | Mermaid import path (grammars, adversarial input, caps, docs sync) | `python3 scripts/verify-mermaid-import.py` |
 | Excalidraw import path (scenes, adversarial input, caps, docs sync) | `python3 scripts/verify-excalidraw-import.py && python3 scripts/test-verify-excalidraw-import.py` |
+| PlantUML import path (sequence/class, adversarial input, caps, docs sync) | `python3 scripts/verify-plantuml-import.py && python3 scripts/test-verify-plantuml-import.py` |
 | Optional motion contract (fallbacks, controls, budgets, determinism) | `python3 scripts/test-verify-motion.py` |
 | Doctor diagnostics contract (env checks, script presence, routing wiring) | `python3 scripts/verify-doctor.py` |
 | Doctor diagnostics adversarial tests | `python3 scripts/test-verify-doctor.py` |
@@ -122,9 +123,10 @@ The current type checkers verify **internal consistency** of the chart and its d
 
 Keep native plugin and marketplace `description` fields within 500 characters
 for Cowork installation compatibility ([#208](https://github.com/cathrynlavery/diagram-design/issues/208)).
-They must still name every visual type; keep fuller feature details in the skill
-frontmatter and Codex `longDescription`. The docs-sync gate checks both length
-and routing vocabulary, and the package gate keeps native descriptions aligned.
+They summarize the main families and don't need to name a new type. The skill
+frontmatter description and the Codex `longDescription` must name every visual
+type. The docs-sync gate checks the length and the routing vocabulary, and the
+package gate keeps native descriptions aligned.
 
 The Codex `interface` block doubles as the OpenAI plugin directory listing, so
 `displayName` and `shortDescription` stay within 30 characters and
@@ -160,6 +162,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-mermaid-import.py \
   && python3 scripts/verify-excalidraw-import.py \
   && python3 scripts/test-verify-excalidraw-import.py \
+  && python3 scripts/verify-plantuml-import.py \
+  && python3 scripts/test-verify-plantuml-import.py \
   && python3 scripts/test-verify-motion.py \
   && python3 scripts/verify-doctor.py \
   && python3 scripts/test-verify-doctor.py \
@@ -271,7 +275,7 @@ Treemaps get a second geometric gate, because their whole claim is that area *is
 
 The same count check covers this guide, `SKILL.md`, and the current onboarding and semantic-pattern references. Historical changelog entries and ADRs keep the count that was accurate when they were written. After a new type merges, a maintainer must also update the repository's GitHub About description, [Cathryn's profile README](https://github.com/cathrynlavery/cathrynlavery/blob/main/README.md), and [diagramdesign.dev](https://diagramdesign.dev); those live outside this CI check.
 
-The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest.
+The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. The geometry checker ships the same way as `skills/diagram-design/scripts/verify_geometry.py`; `scripts/verify-geometry.py` only runs it, so the gate commands stay the same.
 
 ### Render lint
 
@@ -335,7 +339,7 @@ Settled policies live as short records in `docs/adr/` — one pinned motion cont
 ## Adding a new diagram type
 
 1. Write `skills/diagram-design/references/type-<name>.md` — layout conventions, anti-patterns, and a worked pattern for that type. Mirror an existing reference's structure.
-2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` — `verify-docs-sync.py` fails if the description loses or lacks a type's lexical hook.
+2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` and the Codex `interface.longDescription` in `.codex-plugin/plugin.json`. `verify-docs-sync.py` fails if either loses or lacks a type's lexical hook.
 3. Add the three example variants (see above) and register them in the gallery (`assets/index.html`) with the next type number; extra examples of an existing type go directly after it as lettered variants (`data-parent-type`, eyebrow `04a`). `verify-docs-sync.py` fails on any shipped example the gallery can't reach and on any numbered tab without a matching `type-*.md`.
 4. Run the full gate suite — new examples are linted automatically by `--all`.
 5. After merge, the maintainer updates the GitHub About description, Cathryn's profile README, and diagramdesign.dev to the new count, then checks the live pages. Contributors do not need write access to those surfaces.
@@ -357,8 +361,9 @@ git diff --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-d
 - draw.io: `skills/diagram-design/scripts/drawio_extract.py` — must pass `scripts/verify-drawio-import.py`, which drives the extractor against `scripts/fixtures/sample-architecture.drawio` in all four container formats (raw XML, deflate+base64, PNG-embedded, SVG-embedded).
 - Mermaid: `skills/diagram-design/scripts/mermaid_extract.py` — must pass `scripts/verify-mermaid-import.py`, which covers every supported grammar, multi-block Markdown, adversarial labels, trust-boundary behavior, resource caps, and named failures.
 - Excalidraw: `skills/diagram-design/scripts/excalidraw_extract.py` — must pass `scripts/verify-excalidraw-import.py`, which covers scene parsing, bound labels, groups and frames, adversarial labels, trust-boundary behavior, resource caps, and named failures.
+- PlantUML: `skills/diagram-design/scripts/plantuml_extract.py` — must pass `scripts/verify-plantuml-import.py`, which covers sequence and class grammars, multi-block files, adversarial labels, trust-boundary behavior, resource caps, and named failures.
 
-All three scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
+All four scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
 
 Documentation and wiring must stay in sync: the import references, `SKILL.md` §11, the slash commands in `commands/`, and the Pi prompt templates in `prompts/` each describe the same flows. The verifiers check this — keep both sides updated in one PR.
 
