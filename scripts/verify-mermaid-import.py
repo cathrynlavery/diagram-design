@@ -1477,6 +1477,7 @@ def check_hyphenated_node_ids(tmp: Path) -> None:
         ("node-x", "node-x", "node-x"),
         ("x-o", "x-o", "x-o"),
         ("info-only", "info-only", "info-only"),
+        ("flag>flag =o]", "flag", "flag =o"),
     ):
         flow.write_text(f"flowchart LR\n  {declaration}\n  A --> B\n", encoding="utf-8")
         diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]

@@ -973,13 +973,14 @@ def _parse_flowchart(
                             operator.undirected,
                         )
             continue
-        # A spaced `-x`/`=o` token is a one-character link Mermaid rejects.
-        if re.search(r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo](?!\S)", _top_level_mask(text)):
-            _fail(f"malformed edge at line {line_number}")
         parsed = _parse_node_expression(text)
         if parsed is not None:
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
+            continue
+        # A spaced `-x`/`=o` token is a one-character link Mermaid rejects.
+        if re.search(r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo](?!\S)", _top_level_mask(text)):
+            _fail(f"malformed edge at line {line_number}")
     if invisible_links:
         diagram.notes.append(f"{invisible_links} invisible layout links ignored")
 
