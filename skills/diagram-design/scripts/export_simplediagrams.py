@@ -690,6 +690,9 @@ def _custom_value_of(props: Props) -> CustomValue:
 
 FONT_LONGHANDS = ("font-style", "font-weight", "font-size", "font-family")
 CSS_WIDE_KEYWORDS = frozenset({"inherit", "initial", "unset", "revert", "revert-layer"})
+# Unquoted family words can start with Unicode letters as well as ASCII letters.
+FONT_FAMILY_WORD = r"(?:[^\W\d]|-)[\w-]*"
+FONT_FAMILY_NAME = re.compile(rf"{CSS_STRING}|{FONT_FAMILY_WORD}(?:\s+{FONT_FAMILY_WORD})*")
 FONT_SHORTHAND = re.compile(
     r"(?P<prefix>(?:(?:normal|italic|oblique(?:\s+[-+]?[\d.]+(?:deg|rad|grad|turn))?|small-caps"
     r"|bold|bolder|lighter|[1-9]\d{0,2}(?:\.\d+)?|1000|(?:ultra-|extra-|semi-)?(?:condensed"
@@ -729,11 +732,7 @@ def expand_font_shorthand(value: str) -> Props | None:
         return None
     family = match.group("family").strip()
     if not all(
-        re.fullmatch(
-            rf"{CSS_STRING}|[-_a-z][\w-]*(?:\s+[-_a-z][\w-]*)*",
-            name.strip(),
-            re.IGNORECASE,
-        )
+        FONT_FAMILY_NAME.fullmatch(name.strip())
         and name.strip().lower() not in CSS_WIDE_KEYWORDS
         for name in export_svg._css_segments(family, ",")
     ):

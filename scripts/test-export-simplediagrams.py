@@ -1140,6 +1140,20 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 )
                 self.assertIn(f'"font_size": {size},', json.dumps(document))
 
+    def test_a_font_shorthand_keeps_unquoted_non_latin_family_names(self) -> None:
+        """An unquoted family name must keep the shorthand's size and weight."""
+        for family in ("微软雅黑", "Noto 明朝", "맑은 고딕"):
+            with self.subTest(family=family):
+                document, _ = self.export(
+                    '<svg viewBox="0 0 400 300">'
+                    f'<text y="50" style="font: 600 20px {family}, sans-serif">Hi</text></svg>'
+                )
+                label = core(document["pages"][0]["elements"][0])
+                style = label["text_content"]["base_style"]
+                self.assertEqual(style.get("font_family"), family)
+                self.assertEqual(style["font_size"], 20)
+                self.assertEqual(style["weight"], "bold")
+
     def test_ordinary_diagram_constructs_keep_their_meaning(self) -> None:
         """Each row once lost or misdrew something a browser shows, with no note."""
         label = '<text x="200" y="150" text-anchor="middle">A</text>'
