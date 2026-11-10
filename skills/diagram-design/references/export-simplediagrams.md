@@ -39,7 +39,7 @@ Lines take SimpleDiagrams' own hand-drawn line style, which the format sets for 
 
 ## Notes it prints
 
-Each is printed once per kind, with a count. The exporter conservatively reports possible overlap when a translucent group or path is too large to check every pair of parts. When a marker contains several painted shapes, the largest one supplies the native ending. Artwork cropped to fit its content is left out if it still uses lengths relative to the original viewport. `<element>` stands for the element's tag.
+Each is printed once per kind, with a count. The exporter conservatively reports possible overlap when a translucent group or path is too large to check every pair of parts. Native line endings use simple triangles, circles and diamonds. An unrecognized outline becomes an arrow with a note. When a marker contains several painted shapes, the largest one supplies the native ending. Artwork cropped to fit its content is left out if it still uses lengths relative to the original viewport. `<element>` stands for the element's tag.
 
 - `stylesheet rules this export cannot read left unapplied`
 - `CSS transform this export cannot read may misplace a shape`
@@ -64,6 +64,8 @@ Each is printed once per kind, with a count. The exporter conservatively reports
 - `line endings with different opacity take the line's opacity`
 - `line ending other than an arrow, a circle or a diamond drawn as an arrow`
 - `arrowhead not pointing away from its line drawn pointing away`
+- `arrowhead direction this export cannot read drawn pointing away`
+- `rotated or skewed diamond line endings drawn along the line`
 - `markers between a line's ends left out`
 - `markers on a closed shape or a line with no stroke left out`
 - `vertical text drawn horizontally`
@@ -95,6 +97,8 @@ Each is printed once per kind, with a count. The exporter conservatively reports
 - `markers in stored icons may be left out by the desktop renderer`
 - `see-through or unknown icon colour stored as solid`
 - `icon cropped to its box drawn whole`
+- `text offsets in stored icons may be left out by the desktop renderer`
+- `estimated text bounds in unframed icons may crop letters`
 - `skewed or empty picture left out`
 
 ## What this never does

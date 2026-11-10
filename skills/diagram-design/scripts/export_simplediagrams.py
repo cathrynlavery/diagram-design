@@ -269,6 +269,8 @@ class Note(str, Enum):
     ENDING_RECOLOURED = "line endings painted another colour take the line's colour"
     ENDING_SHAPE = "line ending other than an arrow, a circle or a diamond drawn as an arrow"
     ENDING_DIRECTION = "arrowhead not pointing away from its line drawn pointing away"
+    ENDING_DIRECTION_UNKNOWN = "arrowhead direction this export cannot read drawn pointing away"
+    ENDING_DIAMOND_ORIENTATION = "rotated or skewed diamond line endings drawn along the line"
     MID_MARKERS = "markers between a line's ends left out"
     MARKERS_UNDRAWN = "markers on a closed shape or a line with no stroke left out"
     VERTICAL_TEXT = "vertical text drawn horizontally"
@@ -300,6 +302,8 @@ class Note(str, Enum):
     ICON_MARKERS = "markers in stored icons may be left out by the desktop renderer"
     ICON_COLOUR = "see-through or unknown icon colour stored as solid"
     ICON_CROPPED = "icon cropped to its box drawn whole"
+    ICON_TEXT_BOUNDS = "estimated text bounds in unframed icons may crop letters"
+    ICON_TEXT_OFFSETS = "text offsets in stored icons may be left out by the desktop renderer"
     PICTURE_SKEWED = "skewed or empty picture left out"
 
     def worded(self, element: str = "") -> str:
@@ -978,13 +982,19 @@ def length(
 IDENTITY: Matrix = (1, 0, 0, 1, 0, 0)
 NUMBER = r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?"
 NUMBER_RE = re.compile(NUMBER)
-FONT_RELATIVE_LENGTH = re.compile(rf"{NUMBER}(?:em|ex|ch)", re.IGNORECASE)
+FONT_RELATIVE_LENGTH = re.compile(rf"{NUMBER}(?:rem|em|ex|ch)", re.IGNORECASE)
 STROKE_LENGTHS = ("stroke-width", "stroke-dasharray", "stroke-dashoffset")
+ICON_GEOMETRY_LENGTHS = frozenset({
+    "x", "y", "dx", "dy", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1", "x2", "y2",
+})
 
 
-def _stroke_tokens(value: str) -> list[str]:
-    """Split a stroke length or dash list, preserving its separators."""
-    return re.split(r"([,\s]+)", value)
+def _font_lengths_in_pixels(value: str, size: float) -> str:
+    """Settle font-relative lengths, preserving other units and list separators."""
+    return "".join(
+        f"{length(token, font_size=size):g}" if FONT_RELATIVE_LENGTH.fullmatch(token) else token
+        for token in re.split(r"([,\s]+)", value)
+    )
 
 
 def _settle_stroke_lengths(props: Props) -> None:
@@ -992,10 +1002,8 @@ def _settle_stroke_lengths(props: Props) -> None:
     size = length(props.get("font-size"), 16.0)
     for name in STROKE_LENGTHS:
         if value := props.get(name):
-            props[name] = "".join(
-                f"{length(token, font_size=size):g}" if FONT_RELATIVE_LENGTH.fullmatch(token) else token
-                for token in _stroke_tokens(value)
-            )
+            props[name] = _font_lengths_in_pixels(value, size)
+
 
 
 
@@ -1644,7 +1652,12 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
         "none",
     ):  # nothing for a transform frame to move
         written, dropped = written - TRANSFORM_FRAME, dropped | TRANSFORM_FRAME
-    kept = {k: v for k, v in element.attrib.items() if k not in dropped}
+    size = length(page.get("font-size"), 16.0)
+    kept = {
+        name: _font_lengths_in_pixels(value, size) if name in ICON_GEOMETRY_LENGTHS else value
+        for name, value in element.attrib.items()
+        if name not in dropped
+    }
     clone = ET.Element(element.tag, kept)
     clone.text, clone.tail = element.text, element.tail
     if inline := _other_inline_styles(element, page):
@@ -1657,10 +1670,10 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
         stored_default = (
             None if name == "font-family" and name in page else INITIAL_VALUES.get(name)
         )
-        relative_stroke = name in STROKE_LENGTHS and any(
-            FONT_RELATIVE_LENGTH.fullmatch(token) for token in _stroke_tokens(clone.get(name, ""))
-        )
         raw = clone.get(name)
+        relative_stroke = (
+            name in STROKE_LENGTHS and raw is not None and _font_lengths_in_pixels(raw, size) != raw
+        )
         relative_font = name == "font-size" and raw is not None and not ABSOLUTE_SIZE.fullmatch(raw)
         if wanted is None or (
             wanted == stored.get(name, stored_default) and not (relative_stroke or relative_font)
@@ -1686,12 +1699,17 @@ def _keep_words_after_removed_child(parent: ET.Element, tail: str | None) -> Non
         parent.text = (parent.text or "") + tail
 
 
-def _is_diamond(coordinates: Sequence[float]) -> bool:
-    """Whether four points are a diamond: its diagonals cross at their middles, a notch's do not."""
-    if len(coordinates) != 8:
+def _is_diamond(points: Sequence[Point]) -> bool:
+    """A simple marker diamond has centered horizontal and vertical diagonals."""
+    if len(points) != 4:
         return False
-    x0, y0, x1, y1, x2, y2, x3, y3 = coordinates
-    return abs(x0 + x2 - x1 - x3) + abs(y0 + y2 - y1 - y3) < 0.01
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = points
+    if abs(x0 + x2 - x1 - x3) + abs(y0 + y2 - y1 - y3) >= 0.01:
+        return False
+    first, second = (abs(x2 - x0), abs(y2 - y0)), (abs(x3 - x1), abs(y3 - y1))
+    if first[0] < first[1]:
+        first, second = second, first
+    return first[0] >= 0.01 and first[1] < 0.01 and second[0] < 0.01 and second[1] >= 0.01
 
 
 def _attribute_transform(value: str) -> str:
@@ -2542,21 +2560,29 @@ class Reader:
         returns_to_start = len(points) > 1 and points[-1] == points[0]
         if returns_to_start:
             points.pop()
-        coordinates = [coordinate for point in points for coordinate in apply(transform, point)]
-        if tag != "rect" and _is_diamond(coordinates):
+        closed = outline.closed or returns_to_start
+        direction = math.degrees(math.atan2(transform[1], transform[0]))
+        if (closed or not stroked) and _is_diamond(points):
+            if heading is not None:
+                angle = _marker_axis(marker.get("orient"), heading, at_start) + direction - heading
+                if decompose(transform) is None or abs((angle + 90) % 180 - 90) > 1:
+                    self._skip(Note.ENDING_DIAMOND_ORIENTATION)
             return "openDiamond" if hollow else "diamond"
-        if tag == "rect" or len(points) not in (3, 4):
+        if len(points) != 3:
             self._skip(Note.ENDING_SHAPE)
-        if heading is not None and points:
-            # Infer whether the authored tip is on the left, then transform its axis.
+        elif heading is not None:
+            # A simple triangle points left or right along the authored marker's axis.
             xs = [point[0] for point in points]
-            tip_behind = xs.count(min(xs)) == 1 and xs.count(max(xs)) > 1
-            direction = math.degrees(math.atan2(transform[1], transform[0])) + 180 * tip_behind
-            tip = _marker_axis(marker.get("orient"), heading, at_start) + direction
-            away = heading + 180 * at_start
-            if abs((tip - away + 180) % 360 - 180) > 1:
-                self._skip(Note.ENDING_DIRECTION)
-        if len(points) == 3 and hollow and (filled or (stroked and (outline.closed or returns_to_start))):
+            at_left = sum(math.isclose(x, min(xs), abs_tol=0.01) for x in xs)
+            at_right = sum(math.isclose(x, max(xs), abs_tol=0.01) for x in xs)
+            if (at_left, at_right) in {(1, 2), (2, 1)}:
+                tip = _marker_axis(marker.get("orient"), heading, at_start) + direction + 180 * (at_left == 1)
+                away = heading + 180 * at_start
+                if abs((tip - away + 180) % 360 - 180) > 1:
+                    self._skip(Note.ENDING_DIRECTION)
+            else:
+                self._skip(Note.ENDING_DIRECTION_UNKNOWN)
+        if len(points) == 3 and hollow and (filled or (stroked and closed)):
             return "solidArrow"  # an outlined triangle, which the format draws hollow
         return "filledArrow" if filled else "arrow"
 
@@ -3117,6 +3143,10 @@ class Reader:
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}
             if (size := painted.get("font-size")) is not None and not ABSOLUTE_SIZE.fullmatch(size):
                 painted["font-size"] = context.get("font-size", INITIAL_VALUES["font-size"])
+            font_size = length(context.get("font-size"), 16.0)
+            for name in STROKE_LENGTHS:
+                if (raw := painted.get(name)) is not None and _font_lengths_in_pixels(raw, font_size) != raw:
+                    painted[name] = context.get(name, INITIAL_VALUES[name])
             if context.get("transform", "none").strip() != "none":  # set by a stylesheet too
                 painted["transform"] = _attribute_transform(context["transform"])
             # Unsized, it takes the symbol's own size, or else the whole drawing's.
@@ -3145,6 +3175,8 @@ class Reader:
                 return
             if not solid and _uses_current_colour(icon.parts, {}):
                 self._skip(Note.ICON_COLOUR)
+            if any(_holds_text(part) for part in icon.parts):
+                self._skip(Note.ICON_TEXT_BOUNDS)
             self._add_icon(extent, icon, paint, local, matrix)
 
     def _nested_svg(
@@ -3300,6 +3332,10 @@ class Reader:
                 self._skip(UNDRAWN_NOTES[name])
         if tag in {"text", "tspan"} and _uses_vertical_text(page):
             self._skip(Note.VERTICAL_TEXT)
+        if tag in {"text", "tspan"} and any(
+            float(value) != 0 for name in ("dx", "dy") for value in NUMBER_RE.findall(element.get(name, ""))
+        ):
+            self._skip(Note.ICON_TEXT_OFFSETS)
         if tag in {"text", "tspan"} and any(
             _cased(words, page) != (words or "") for words in (
                 element.text, *(child.tail for child in element)
@@ -3638,10 +3674,6 @@ def _frame_corners(frame: Rect, rotation: float) -> list[Point]:
 
 def _sized_by_page(parts: Sequence[ET.Element], paint: Props) -> bool:
     """Whether unframed artwork uses percentages that would change in its cropped viewport."""
-    sizes = {
-        "x", "y", "dx", "dy", "width", "height", "r", "rx", "ry", "cx", "cy", "x1", "y1",
-        "x2", "y2",
-    }
     box_units = {
         "linearGradient": "gradientUnits",
         "radialGradient": "gradientUnits",
@@ -3654,8 +3686,12 @@ def _sized_by_page(parts: Sequence[ET.Element], paint: Props) -> bool:
         for item in part.iter():
             # Percentages in a paint server's bounding-box region keep the same meaning.
             unit = box_units.get(_local(item))
-            viewport_sizes = sizes if unit is None or item.get(unit) == "userSpaceOnUse" else set()
-            if any("%" in item.get(name, "") for name in viewport_sizes.union(STROKE_LENGTHS)):
+            names = (
+                ICON_GEOMETRY_LENGTHS.union(STROKE_LENGTHS)
+                if unit is None or item.get(unit) == "userSpaceOnUse"
+                else STROKE_LENGTHS
+            )
+            if any("%" in item.get(name, "") for name in names):
                 return True
     return False
 

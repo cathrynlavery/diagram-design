@@ -1353,7 +1353,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             Path("case.html"),
         )
         [artwork] = result.document["pages"][0]["elements"]
-        self.assertEqual((core(artwork)["kind"], result.skipped), ("svg_artwork", {}))
+        self.assertEqual(core(artwork)["kind"], "svg_artwork")
+        self.assertEqual(result.skipped, {self.mod.Note.ICON_TEXT_BOUNDS.value: 1})
         self.assertIn(">Hi</text>", result.assets[0].data.decode())
 
     def test_a_stored_icon_writes_relative_font_size_attributes_as_absolute(self) -> None:
@@ -1376,6 +1377,47 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         )
         self.assertIn('font-size="32"', symbol)
         self.assertIn(">Hi</text>", symbol)
+
+    def test_artwork_settles_font_relative_geometry_before_storage(self) -> None:
+        """Equivalent lengths must paint in the same frame after export to artwork."""
+        for placement in (
+            '<defs><g id="i" font-size="10">{}</g></defs><use href="#i"/>',
+            '<svg width="50" height="50" viewBox="0 0 50 50" font-size="10">{}</svg>',
+        ):
+            with self.subTest(placement=placement):
+                template = '<svg viewBox="0 0 200 100">' + placement + '</svg>'
+                relative = self.mod.export_document(
+                    template.format('<rect x="2em" y="2em" width="2em" height="2em"/>'),
+                    Path("case.html"),
+                )
+                absolute = self.mod.export_document(
+                    template.format('<rect x="20" y="20" width="20" height="20"/>'),
+                    Path("case.html"),
+                )
+                self.assertEqual(relative.document, absolute.document)
+                self.assertEqual(len(relative.assets), 1)
+                self.assertEqual(relative.assets[0].data, absolute.assets[0].data)
+
+        symbol = self.icon(
+            "",
+            '<defs><symbol id="i" viewBox="0 0 100 50" font-size="10" stroke="red" stroke-width="1em">'
+            '<line x1="10" y1="20" x2="90" y2="20"/></symbol></defs>'
+            '<use href="#i" width="100" height="50"/>',
+        )
+        self.assertIn('stroke-width="10"', symbol)
+        self.assertNotIn('stroke-width="1em"', symbol)
+
+    def test_stored_text_offsets_warn_about_native_rendering(self) -> None:
+        """Keep the SVG artwork and report offsets the desktop canvas may omit."""
+        for offset, warning in (('dx="0"', False), ('dx="5"', True), ('dy="10%"', True)):
+            with self.subTest(offset=offset):
+                result = self.mod.export_document(
+                    '<svg viewBox="0 0 200 100"><svg width="100" height="50" viewBox="0 0 100 50">'
+                    f'<text x="10" y="30" {offset}>Hi</text></svg></svg>',
+                    Path("case.html"),
+                )
+                self.assertEqual(len(result.assets), 1)
+                self.assertEqual(self.mod.Note.ICON_TEXT_OFFSETS.value in result.skipped, warning)
 
     def test_measuring_an_icon_never_takes_its_drawing_as_the_paper(self) -> None:
         """An icon as large as the page is drawn, and the page keeps its own background."""
@@ -1467,6 +1509,32 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 [connection] = document["pages"][0]["content"]["content"]["connections"]
                 self.assertEqual(connection["content"]["end_ending"], ending)
                 self.assertEqual(self.mod.Note.ENDING_DIRECTION.value in notes, points_back)
+
+    def test_unsupported_marker_outlines_get_a_fallback_note(self) -> None:
+        """Rectangles and open strokes must not silently acquire a diamond's meaning."""
+        for shape, ending, warning in (
+            ('<rect width="8" height="6"/>', "filledArrow", "ENDING_SHAPE"),
+            ('<path d="M0 0H8V6H0Z"/>', "filledArrow", "ENDING_SHAPE"),
+            ('<polyline points="0 5,9 0,18 5,9 10" fill="none" stroke="black"/>',
+             "arrow", "ENDING_SHAPE"),
+            ('<polyline points="0 5,9 0,18 5,9 10"/>', "diamond", ""),
+            ('<g transform="rotate(45 9 5)"><polygon points="0 5,9 0,18 5,9 10"/></g>',
+             "diamond", "ENDING_DIAMOND_ORIENTATION"),
+            ('<polygon points="6 0,3 8,0 0"/>', "filledArrow", "ENDING_DIRECTION_UNKNOWN"),
+        ):
+            with self.subTest(shape=shape):
+                doc, notes = self.export(
+                    '<svg viewBox="0 0 200 100"><defs>'
+                    f'<marker id="m" orient="auto" viewBox="0 0 18 10">{shape}</marker></defs>'
+                    '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/>'
+                    '</svg>'
+                )
+                [connection] = doc["pages"][0]["content"]["content"]["connections"]
+                self.assertEqual(connection["content"]["end_ending"], ending)
+                if warning:
+                    self.assertIn(self.mod.Note[warning].value, notes)
+                else:
+                    self.assertNotIn(self.mod.Note.ENDING_SHAPE.value, notes)
 
     def test_styling_this_export_cannot_read_gets_a_note(self) -> None:
         """Each row draws differently in the browser; without a note the user cannot know."""
