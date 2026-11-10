@@ -59,6 +59,7 @@ Each is printed once per kind, with a count. The exporter conservatively reports
 - `overlapping contours may fill areas that were clear`
 - `rounded corners of a skewed rectangle drawn square`
 - `line endings painted another colour take the line's colour`
+- `line endings with different opacity take the line's opacity`
 - `line ending other than an arrow, a circle or a diamond drawn as an arrow`
 - `arrowhead not pointing away from its line drawn pointing away`
 - `markers between a line's ends left out`

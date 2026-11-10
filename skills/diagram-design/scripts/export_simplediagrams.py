@@ -263,6 +263,7 @@ class Note(str, Enum):
     COMPLEX_HOLES = "holes in a path with many contours may be filled in"
     CONTOUR_OVERLAP = "overlapping contours may fill areas that were clear"
     SKEWED_CORNERS = "rounded corners of a skewed rectangle drawn square"
+    ENDING_OPACITY = "line endings with different opacity take the line's opacity"
     ENDING_RECOLOURED = "line endings painted another colour take the line's colour"
     ENDING_SHAPE = "line ending other than an arrow, a circle or a diamond drawn as an arrow"
     ENDING_DIRECTION = "arrowhead not pointing away from its line drawn pointing away"
@@ -799,7 +800,9 @@ def computed_properties(
         if settled is None:  # invalid where used
             settled = "unset"
         keyword = settled.strip().lower()
-        if (
+        if keyword in {"revert", "revert-layer"} and defaults and name in defaults:
+            props[name] = defaults[name]
+        elif (
             keyword == "inherit"
             or (name == "color" and keyword == "currentcolor")
             or (keyword in CSS_WIDE_KEYWORDS - {"initial"} and name in INHERITED)
@@ -831,11 +834,16 @@ def _is_invisible(props: Props) -> bool:
 
 def _paint_opacity(props: Props, paint: str) -> float:
     """The fill or stroke opacity, independent of the opacity of the finished element."""
-    return length(props.get(f"{paint}-opacity"), 1.0, percent_of=1.0)
+    return _opacity(props.get(f"{paint}-opacity"))
 
 
-def _has_text_fill(props: Props) -> bool:
-    """Whether the text's fill can show, allowing unknown paint to get a loss note."""
+def _opacity(value: str | None) -> float:
+    """Clamp each SVG/CSS opacity before multiplying it with other alpha values."""
+    return max(0.0, min(1.0, length(value, 1.0, percent_of=1.0)))
+
+
+def _has_fill(props: Props) -> bool:
+    """Whether fill can show, allowing unknown paint to get a loss note."""
     fill = props.get("fill", "black")
     return (
         fill.strip().lower() not in NO_PAINT
@@ -865,7 +873,7 @@ def _visible_text(props: Props) -> bool:
     return (
         not _is_invisible(props)
         and length(props.get("font-size"), 16.0) > 0
-        and (_has_text_fill(props) or _has_line(props))
+        and (_has_fill(props) or _has_line(props))
     )
 
 
@@ -1704,11 +1712,12 @@ class Paint:
     stroke: str
     line_width: float
     pattern: LinePattern
+    opacity: float = 1.0  # element and ancestor opacity also applies to its markers
 
     @property
     def filled(self) -> bool:
         """Whether there is a fill, rather than none."""
-        return self.fill != TRANSPARENT
+        return not (len(self.fill) == 9 and self.fill.endswith("00"))
 
 
 NO_PAINT_AT_ALL = Paint(TRANSPARENT, TRANSPARENT, 0, "solid")
@@ -2224,24 +2233,14 @@ class Reader:
         matrix = multiply(matrix, parse_transform(props.get("transform")))
         if abs(matrix[0] * matrix[3] - matrix[1] * matrix[2]) < 1e-12:
             return  # a transform that cannot be undone, such as scale(0), draws nothing
-        opacity *= max(0.0, min(1.0, length(props.get("opacity"), 1.0, percent_of=1.0)))
+        opacity *= _opacity(props.get("opacity"))
         if opacity <= 0:
             return
         self._note_undrawn(props)
         if name == "svg" and element is not self.root:
             self._nested_svg(element, props, matrix, opacity, ancestors)
         elif name in CONTAINERS:
-            first = len(self.items)
-            faded = length(props.get("opacity"), 1.0, percent_of=1.0) < 1
-            outer_group = self.in_faded_group
-            self.in_faded_group = faded or outer_group
-            try:
-                for child in element:
-                    self._walk(child, props, matrix, opacity, [*ancestors, element])
-            finally:
-                self.in_faded_group = outer_group
-            if faded and _overlapping(self.items[first:]):
-                self._skip(Note.SEE_THROUGH_OVERLAP)
+            self._walk_group(element, props, matrix, opacity, [*ancestors, element])
         elif _is_invisible(props) and name not in SHOWS_VISIBLE_CHILDREN:
             # Hidden drawing; a child of it that shows itself has no equivalent here.
             if self._shows_inside(element, props, ancestors):
@@ -2252,6 +2251,22 @@ class Reader:
         else:
             self._skip(Note.ELEMENT_LEFT_OUT, name)
 
+    def _walk_group(
+        self, element: ET.Element, props: Props, matrix: Matrix, opacity: float, path: list[ET.Element]
+    ) -> None:
+        """Walk a composited container without hiding overlapping parts in a box merge."""
+        first = len(self.items)
+        faded = _opacity(props.get("opacity")) < 1
+        outer_group = self.in_faded_group
+        self.in_faded_group = faded or outer_group
+        try:
+            for child in element:
+                self._walk(child, props, matrix, opacity, path)
+        finally:
+            self.in_faded_group = outer_group
+        if faded and _overlapping(self.items[first:]):
+            self._skip(Note.SEE_THROUGH_OVERLAP)
+
     # -- paint ------------------------------------------------------------
 
     def _colour(self, value: str | None, props: Props) -> Colour | None:
@@ -2260,6 +2275,9 @@ class Reader:
             return None
         if (colour := parse_colour(value, props)) is None:
             self._skip(Note.UNKNOWN_PAINT)
+            # A stored icon may keep this paint. Include its geometry when measuring.
+            if self.measuring:
+                return (0, 0, 0, 1.0)
         return colour
 
     def _paint(
@@ -2301,7 +2319,7 @@ class Reader:
             or (not non_scaling and (turn is None or not math.isclose(turn[1], turn[2])))
         ):
             self._skip(Note.STROKE_STYLE)
-        return Paint(fill_hex, stroke_hex, round(min(10_000.0, width), 3), pattern)
+        return Paint(fill_hex, stroke_hex, round(min(10_000.0, width), 3), pattern, opacity)
 
     def _marker(self, reference: str | None) -> ET.Element | None:
         """The ``<marker>`` a ``marker-start`` or ``marker-end`` value names, if any."""
@@ -2310,25 +2328,32 @@ class Reader:
 
     def _marker_shape(
         self, marker: ET.Element, outer: Props, ancestors: list[ET.Element]
-    ) -> tuple[ET.Element, Props] | None:
-        """The first shape a marker shows, with its style; hidden ones draw nothing."""
+    ) -> tuple[ET.Element, Props, float] | None:
+        """The first visible shape in a marker, with its style and effective opacity."""
         drawable = ("polygon", "path", "polyline", "circle", "ellipse", "rect", "line")
 
         def walk(
-            node: ET.Element, inherited: Props, path: list[ET.Element]
-        ) -> tuple[ET.Element, Props] | None:
+            node: ET.Element, inherited: Props, path: list[ET.Element], opacity: float
+        ) -> tuple[ET.Element, Props, float] | None:
             for child in node:
                 props = computed_properties(child, inherited, self.rules, path)
-                opacity = length(props.get("opacity"), 1.0, percent_of=1.0)
-                if props.get("display") == "none" or opacity <= 0:
+                child_opacity = opacity * _opacity(props.get("opacity"))
+                if props.get("display") == "none" or child_opacity <= 0:
                     continue
-                if _local(child) in drawable and not _is_invisible(props):
-                    return child, props
-                if (found := walk(child, props, [*path, child])) is not None:
+                tag = _local(child)
+                if (
+                    tag in drawable
+                    and not _is_invisible(props)
+                    and (_has_line(props) or (tag != "line" and _has_fill(props)))
+                ):
+                    return child, props, child_opacity
+                if (found := walk(child, props, [*path, child], child_opacity)) is not None:
                     return found
             return None
 
-        return walk(marker, outer, [*ancestors, marker])
+        if outer.get("display") == "none":
+            return None
+        return walk(marker, outer, [*ancestors, marker], _opacity(outer.get("opacity")))
 
     def _marker_reach(self, props: Props, line_width: float) -> float:
         """How far a line's markers can reach past its end, so an icon's bounds include them."""
@@ -2343,13 +2368,12 @@ class Reader:
         return reach
 
     def _ending(
-        self, reference: str | None, heading: float | None, at_start: bool, line: str
+        self, reference: str | None, heading: float | None, at_start: bool, line: Paint
     ) -> Ending:
         """The line ending a ``marker-start`` or ``marker-end`` reference draws.
 
         ``heading`` is the way the line runs at that end. SimpleDiagrams draws an ending
-        pointing away from the line, in the ``line``'s colour, so an arrowhead the page
-        points another way or paints another colour is noted.
+        pointing away from the line, in its stroke colour and opacity. Differences are noted.
         """
         if (marker := self._marker(reference)) is None:
             return "none"
@@ -2358,19 +2382,25 @@ class Reader:
         outer = computed_properties(marker, inherited, self.rules, path)
         if (shown := self._marker_shape(marker, outer, path)) is None:
             return "none"
-        shape, props = shown
+        shape, props, marker_opacity = shown
         fill = props.get("fill", "black").strip().lower()
         colour = parse_colour(fill, props)
-        fade = length(props.get("fill-opacity"), 1.0, percent_of=1.0)
-        filled = fill not in NO_PAINT and fade > 0 and (colour is None or colour[3] > 0)
+        filled = _local(shape) != "line" and _has_fill(props)
         if not filled and not _has_line(props):
             return "none"  # a marker painting nothing draws nothing
         painted_as_paper = colour_hex(colour)[:7] in (self.background, "#FFFFFF")
         outlined = _has_line(props) and parse_colour(props["stroke"], props) != colour
         hollow = not filled or (outlined and painted_as_paper)
-        ink = colour if filled and not hollow else parse_colour(props.get("stroke", "none"), props)
-        if ink is not None and colour_hex(ink)[:7] != line[:7]:
-            self._skip(Note.ENDING_RECOLOURED)
+        use_fill = filled and not hollow
+        ink = colour if use_fill else parse_colour(props.get("stroke", "none"), props)
+        if ink is not None:
+            channel = "fill" if use_fill else "stroke"
+            opacity = line.opacity * marker_opacity * _paint_opacity(props, channel)
+            ending = colour_hex(ink, opacity)
+            if ending[:7] != line.stroke[:7]:
+                self._skip(Note.ENDING_RECOLOURED)
+            if (ending[7:] or "FF") != (line.stroke[7:] or "FF"):
+                self._skip(Note.ENDING_OPACITY)
         if _local(shape) in ("circle", "ellipse"):
             return "circle" if hollow else "solidCircle"
         numbers = NUMBER_RE.findall(shape.get("points") or shape.get("d") or "")
@@ -2401,7 +2431,9 @@ class Reader:
         paint: Paint,
         subpath: Subpath,
     ) -> None:
-        """Add a box: a Basic shape set in its frame, or else its exact closed path."""
+        """Add a painted box: a Basic shape set in its frame, or else its exact closed path."""
+        if not paint.filled and paint.line_width <= 0:
+            return
         page_subpath = subpath.transformed(matrix)
         order = len(self.items)
         if basic is None:
@@ -2436,7 +2468,7 @@ class Reader:
             # as the page shows them, so an opaque copy still hides what is behind it.
             fill = _over(box.paint.fill, below.paint.fill) if box.paint.filled else below.paint.fill
             line = box.paint if box.paint.line_width > 0 else below.paint
-            box.paint = Paint(fill, line.stroke, line.line_width, line.pattern)
+            box.paint = replace(line, fill=fill)
             box.order = below.order
             self.items[-1] = box
         else:
@@ -2469,7 +2501,7 @@ class Reader:
             )  # other patterns and gradients go through the ordinary paint note
         if (colour := parse_colour(fill, props)) is None:
             return False  # drawn as a shape, which notes the colour it cannot show
-        alpha = opacity * length(props.get("fill-opacity"), 1.0, percent_of=1.0)
+        alpha = opacity * _paint_opacity(props, "fill")
         if colour[3] * alpha < 0.999:
             return False
         self.background = colour_hex(colour)
@@ -2587,7 +2619,7 @@ class Reader:
                 # A path cannot cut a hole in another, so a hole keeps only its outline.
                 self._skip(Note.HOLE)
                 if paint.line_width > 0:
-                    rim = Paint(TRANSPARENT, paint.stroke, paint.line_width, paint.pattern)
+                    rim = replace(paint, fill=TRANSPARENT)
                     self._add_outline(subpath, rim, subpath_props, matrix, len(subpaths) > 1)
                 continue
             self._add_outline(subpath, paint, subpath_props, matrix, len(subpaths) > 1)
@@ -2645,7 +2677,7 @@ class Reader:
                     props.get(end),
                     _heading(points, at_start=first),
                     first,
-                    paint.stroke,
+                    paint,
                 )
                 for end, first in (("marker-start", True), ("marker-end", False))
             ]
@@ -2749,7 +2781,7 @@ class Reader:
             align = _alignment(line_props.get("text-anchor", ""))
             paint = line_props.get("fill", "black")
             text = "".join(parts)
-            unfilled = not _has_text_fill(line_props)
+            unfilled = not _has_fill(line_props)
             if _has_line(line_props) and text.strip():
                 if unfilled:
                     self._skip(Note.OUTLINED_TEXT)
@@ -2818,7 +2850,8 @@ class Reader:
         h = self._down(element.get("height"), props=props)
         if w <= 0 or h <= 0:
             return  # a viewport with no width or height shows nothing, as in a browser
-        words, first_visible = self._html_text(element, props, list(self.ancestors))
+        looks: set[tuple[object, ...]] = set()
+        words, first_visible = self._html_text(element, props, list(self.ancestors), looks)
         if re.search(rf"\S\s*{LINE_BREAK}[\s{LINE_BREAK}]*\S", words):
             self._skip(Note.HTML_BREAKS)
         words = words.replace(LINE_BREAK, " ")
@@ -2843,14 +2876,14 @@ class Reader:
             props = computed_properties(holder, props, self.rules, ancestors, defaults)
             layout = props.get("display", "").strip().startswith(HTML_LAYOUTS)
             centred = centred or (layout and self._declares(holder, ancestors, _aligns))
-        if self._restyled_html(holder, props, ancestors):
-            self._skip(Note.RICH_HTML)
         if centred:
             self._skip(Note.HTML_LAYOUT)
         if first_visible is None:
             return
         if not _visible_html_text(props):
             props = first_visible
+        if looks - {_html_look(props)}:
+            self._skip(Note.RICH_HTML)
         align = _alignment(props.get("text-align", ""))
         wrap_box = (x, y, w, h) if w > 0 and h > 0 else None
         paint = props.get("color", "black")
@@ -2859,29 +2892,12 @@ class Reader:
             words, (x, y), props | {"fill-opacity": "1"}, matrix, opacity, align, paint, wrap_box
         )
 
-    def _restyled_html(
-        self, element: ET.Element, props: Props, ancestors: list[ET.Element]
-    ) -> bool:
-        """Whether HTML that shows inside an element styles some of its words differently."""
-        path = [*ancestors, element]
-        for child in element:
-            if _local(child) in ("br", "style", "script") or child.get("hidden") is not None:
-                continue
-            defaults = _html_defaults(child, props)
-            child_props = computed_properties(child, props, self.rules, path, defaults)
-            if child_props.get("display") == "none" or _is_invisible(child_props):
-                continue
-            if _html_look(child_props) != _html_look(props):
-                return True
-            if self._restyled_html(child, child_props, path):
-                return True
-        return False
-
     def _html_text(
         self,
         element: ET.Element,
         props: Props,
         ancestors: list[ET.Element],
+        looks: set[tuple[object, ...]],
         before: str = "",
     ) -> tuple[str, Props | None]:
         """Visible HTML words and the style of the first visible nonblank text.
@@ -2891,6 +2907,8 @@ class Reader:
         shows = _visible_html_text(props)
         words = [_cased(element.text, props, before)] if shows else []
         first = props if shows and (element.text or "").strip() else None
+        if first is not None:
+            looks.add(_html_look(props))
         path = [*ancestors, element]
         flex = props.get("display", "").strip() in ("flex", "inline-flex")
         in_row = flex and not self._declares(element, ancestors, _stacks)  # items side by side
@@ -2901,8 +2919,6 @@ class Reader:
             display = child_props.get("display", "").strip()
             fade = length(child_props.get("opacity"), 1.0, percent_of=1.0)
             gone = child.get("hidden") is not None or display == "none" or fade <= 0
-            if 0 < fade < 1 and name not in ("style", "script"):
-                self._skip(Note.SEE_THROUGH_WORDS)
             if name == "br" and not gone:
                 words.append(LINE_BREAK)
             elif name not in ("br", "style", "script") and not gone:
@@ -2910,14 +2926,20 @@ class Reader:
                 line = display.startswith(HTML_LINES) if display else name in HTML_LINE_TAGS
                 gap = " " if cell or in_row else LINE_BREAK if line else ""
                 ahead = before + "".join(words) + gap
-                inner, inner_style = self._html_text(child, child_props, path, ahead)
+                inner, inner_style = self._html_text(child, child_props, path, looks, ahead)
+                if inner_style is not None:
+                    self._note_undrawn(child_props)
+                    if fade < 1:
+                        self._skip(Note.SEE_THROUGH_WORDS)
                 words += [gap, inner, gap]
                 if first is None:
                     first = inner_style
             if shows:
                 words.append(_cased(child.tail, props, before + "".join(words)))
-                if first is None and (child.tail or "").strip():
-                    first = props
+                if (child.tail or "").strip():
+                    looks.add(_html_look(props))
+                    if first is None:
+                        first = props
         return "".join(words), first
 
     def _use(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
@@ -3005,11 +3027,12 @@ class Reader:
         if len(view) != 4 or view[2] <= 0 or view[3] <= 0:
             moved = multiply(matrix, (1, 0, 0, 1, x, y))
             outer, self.viewport = self.viewport, (w, h)  # its children's percentages are of it
-            if not self.measuring and not _holds_text(element):  # text widths are estimated
-                self._note_overflow(self._extent(list(element), props, path), w, h, props)
-            for child in element:
-                self._walk(child, props, moved, opacity, path)
-            self.viewport = outer
+            try:
+                if not self.measuring and not _holds_text(element):  # text widths are estimated
+                    self._note_overflow(self._extent(list(element), props, path), w, h, props)
+                self._walk_group(element, props, moved, opacity, path)
+            finally:
+                self.viewport = outer
             return
         paint = {name: props[name] for name in sorted(ICON_PAINT & props.keys())}
         paint |= {k: props[k] for k in sorted(ICON_LINE & props.keys()) if props[k].strip()}
@@ -3270,7 +3293,9 @@ def _html_defaults(element: ET.Element, inherited: Props) -> Props:
     """A browser's own styles for an HTML element, beneath any the page declares."""
     name = _local(element)
     defaults: Props = {}
-    if name in ("b", "strong", "th") or name in HEADING_SIZES:
+    if name in ("b", "strong"):
+        defaults["font-weight"] = "bolder"
+    elif name == "th" or name in HEADING_SIZES:
         defaults["font-weight"] = "bold"
     if name in ("em", "i"):
         defaults["font-style"] = "italic"

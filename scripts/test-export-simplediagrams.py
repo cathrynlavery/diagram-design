@@ -56,6 +56,7 @@ FLOWCHART = """<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
 </svg>"""
 
 
+FADED_ENDINGS = "line endings with different opacity take the line's opacity"
 RECOLOURED_ENDINGS = "line endings painted another colour take the line's colour"
 STROKE_STYLE = "line caps, joins, dash details and uneven stroke scaling drawn in the SimpleDiagrams line style"
 SEE_THROUGH = "see-through groups and outlined shapes drawn part by part; where parts overlap they look darker"
@@ -244,7 +245,10 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                         expected = {"note: " + RECOLOURED_ENDINGS}
                     nested_svg_css = r"example-(datalake|high-level(-vertical)?)(-dark|-full)?"
                     if re.fullmatch(nested_svg_css, source.stem):
-                        expected.add("note: sizes, places and corners set in CSS ignored; the SVG's own are used")
+                        expected.update({
+                            "note: sizes, places and corners set in CSS ignored; the SVG's own are used",
+                            "note: " + FADED_ENDINGS,
+                        })
                     # The shared drawing style deliberately normalizes authored stroke details.
                     # Dedicated cases below verify when this informational note is raised.
                     self.assertEqual(notes - {"note: " + STROKE_STYLE}, expected)
@@ -332,6 +336,50 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         )
         [connection] = doc["pages"][0]["content"]["content"]["connections"]
         self.assertEqual(connection["content"]["end_ending"], "solidArrow")
+
+    def test_invisible_boxes_cannot_capture_connectors_or_labels(self) -> None:
+        """Only visible drawing can own an arrow endpoint or host a nearby label."""
+        diagram = ARROW_MARKER.format("") + (
+            '<rect x="20" y="20" width="100" height="40" fill="#eee" stroke="black"/>{}'
+            '<text x="115" y="45" font-size="5" text-anchor="end">Label</text>'
+            '<line x1="180" y1="40" x2="120" y2="40" stroke="black" marker-end="url(#a)"/>'
+        )
+        base, _ = self.export(f'<svg viewBox="0 0 200 100">{diagram.format("")}</svg>')
+        for paint in ('fill="none"', 'fill="#f000"', 'fill="red" fill-opacity="0"'):
+            with self.subTest(paint=paint):
+                invisible = f'<rect x="110" y="20" width="10" height="40" {paint}/>'
+                actual, _ = self.export(f'<svg viewBox="0 0 200 100">{diagram.format(invisible)}</svg>')
+                self.assertEqual(actual, base)
+
+    def test_marker_opacity_warns_only_when_it_differs_from_the_line(self) -> None:
+        """A faded marker loses its own alpha, while a shared fade reaches both paints."""
+        line = '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#a)" {}/>'
+        for marker, attrs, expected in (
+            ('fill-opacity=".5"', "", True),
+            ("", 'stroke-opacity=".5"', True),
+            ("", 'opacity=".5"', False),
+        ):
+            with self.subTest(marker=marker, attrs=attrs):
+                body = ARROW_MARKER.format(marker) + line.format(attrs)
+                _, notes = self.export(f'<svg viewBox="0 0 200 100">{body}</svg>')
+                self.assertEqual(FADED_ENDINGS in notes, expected)
+
+        body = ARROW_MARKER.format("") + (
+            '<path d="M10 10H110V110H10Z M40 40V80H80V40"'
+            ' stroke="black" opacity=".5" marker-end="url(#a)"/>'
+        )
+        _, notes = self.export(f'<svg viewBox="0 0 200 200">{body}</svg>')
+        self.assertNotIn(FADED_ENDINGS, notes)
+
+    def test_marker_uses_its_first_painted_shape(self) -> None:
+        """An empty contour in a marker does not hide the following arrowhead."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 200 100"><defs><marker id="m" orient="auto">'
+            '<path d="M0 0H8V4Z" fill="none"/><polygon points="0 0,8 3,0 6"/></marker></defs>'
+            '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/></svg>'
+        )
+        [connection] = doc["pages"][0]["content"]["content"]["connections"]
+        self.assertEqual(connection["content"]["end_ending"], "filledArrow")
 
     def test_font_relative_stroke_inherits_its_settled_value(self) -> None:
         """Changing the child's font size does not reinterpret the parent's outline."""
@@ -1898,6 +1946,61 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         )
         style = self.element_labelled("Visible", doc)["text_content"]["base_style"]
         self.assertEqual(style["color_hex"], "#FF000040")
+
+    def test_html_revert_restores_default_emphasis_and_link_appearance(self) -> None:
+        """Reverting an author style exposes the HTML element's default style."""
+        for markup, expected in (
+            ('<strong style="font-weight:revert">Visible</strong>', {"weight": "bold"}),
+            ('<a href="#" style="color:revert;text-decoration:revert">Visible</a>',
+             {"color_hex": "#0000EE", "is_underlined": True}),
+        ):
+            with self.subTest(markup=markup):
+                doc, _ = self.export(
+                    '<svg viewBox="0 0 200 100"><foreignObject width="180" height="60">'
+                    f'{markup}</foreignObject></svg>'
+                )
+                style = self.element_labelled("Visible", doc)["text_content"]["base_style"]
+                self.assertEqual({key: style[key] for key in expected}, expected)
+
+    def test_html_reports_effects_and_style_changes_through_hidden_wrappers(self) -> None:
+        """Only the descendant's visible words count, even when the wrapper is hidden."""
+        doc, notes = self.export(
+            '<svg viewBox="0 0 200 100"><foreignObject width="180" height="60"><div>Black '
+            '<span style="visibility:hidden;filter:blur(3px);mix-blend-mode:multiply">'
+            '<span style="visibility:visible;color:red">Red</span></span>'
+            '</div></foreignObject></svg>'
+        )
+        self.element_labelled("Black Red", doc)
+        self.assertIn("rich HTML text kept as plain text", notes)
+        self.assertIn("filters such as blur and shadow left out", notes)
+        self.assertIn("blend modes left out; shapes are drawn over one another plainly", notes)
+
+    def test_viewport_without_view_box_keeps_faded_parts_separate(self) -> None:
+        """The same group compositing warning applies inside an unframed SVG viewport."""
+        doc, notes = self.export(
+            '<svg viewBox="0 0 200 100"><svg width="100" height="80" opacity=".5">'
+            '<rect width="40" height="40" fill="red"/><rect width="40" height="40" fill="blue"/>'
+            '</svg></svg>'
+        )
+        fills = [core(e)["style"]["fill_hex"] for e in doc["pages"][0]["elements"]]
+        self.assertEqual(fills, ["#FF000080", "#0000FF80"])
+        self.assertIn(SEE_THROUGH, notes)
+
+    def test_paint_opacity_is_clamped_before_multiplying_color_alpha(self) -> None:
+        """An opacity above one must leave a translucent color translucent."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 200 100">'
+            '<rect width="30" height="30" style="fill:rgba(255,0,0,.5);fill-opacity:2;'
+            'stroke:rgba(0,0,255,.5);stroke-opacity:200%"/>'
+            '<text x="60" y="30" style="fill:rgba(255,0,0,.5);fill-opacity:2">Label</text>'
+            '</svg>'
+        )
+        box, _ = doc["pages"][0]["elements"]
+        self.assertEqual(core(box)["style"]["fill_hex"], "#FF000080")
+        self.assertEqual(core(box)["style"]["stroke_hex"], "#0000FF80")
+        self.assertEqual(
+            self.element_labelled("Label", doc)["text_content"]["base_style"]["color_hex"], "#FF000080"
+        )
 
     def test_html_text_can_show_inside_a_zero_size_wrapper(self) -> None:
         """A visible descendant supplies the label style when its wrapper cannot show text."""
