@@ -462,23 +462,18 @@ def _kind_and_direction(
 # string is "`...`"), so an apostrophe is label text: `A[Bob's box]`,
 # `A -->|it's| B`. Expanded `@{ ... }` attributes are YAML, where single
 # quotes do delimit values (`label: '['`), so the scanners switch to the
-# attribute quote set inside one.
+# attribute quote set inside one. They count open `@{` entries alongside the
+# bracket stack, so that test stays constant-time at any nesting depth.
 FLOWCHART_QUOTES = "\"`"
 ATTRIBUTE_QUOTES = "\"'`"
 ATTRIBUTE_OPEN = "@{"
-
-
-def _opening(text: str, index: int) -> str:
-    """Return the stack entry for the bracket at *index*; `@{` marks attributes."""
-    if text[index] == "{" and text[index - 1 : index] == "@":
-        return ATTRIBUTE_OPEN
-    return text[index]
 
 
 def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
     """Keep top-level syntax positions and blank quoted/bracketed content."""
     output = list(text)
     stack: list[str] = []
+    attributes = 0
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
@@ -492,17 +487,22 @@ def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
             elif character == quote:
                 quote = None
             continue
-        if character in (ATTRIBUTE_QUOTES if ATTRIBUTE_OPEN in stack else quotes):
+        if character in (ATTRIBUTE_QUOTES if attributes else quotes):
             quote = character
             output[index] = " "
             continue
         if character in "[({":
-            stack.append(_opening(text, index))
+            if character == "{" and text[index - 1 : index] == "@":
+                stack.append(ATTRIBUTE_OPEN)
+                attributes += 1
+            else:
+                stack.append(character)
             output[index] = " "
             continue
         if character in "])}":
             if stack and stack[-1][-1] == pairs[character]:
-                stack.pop()
+                if stack.pop() == ATTRIBUTE_OPEN:
+                    attributes -= 1
             output[index] = " "
             continue
         if stack:
@@ -527,6 +527,7 @@ def _split_top_level(
 def _statement_complete(text: str) -> bool:
     """Return whether quotes and node delimiters close within a statement."""
     stack: list[str] = []
+    attributes = 0
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
@@ -539,13 +540,18 @@ def _statement_complete(text: str) -> bool:
             elif character == quote:
                 quote = None
             continue
-        if character in (ATTRIBUTE_QUOTES if ATTRIBUTE_OPEN in stack else FLOWCHART_QUOTES):
+        if character in (ATTRIBUTE_QUOTES if attributes else FLOWCHART_QUOTES):
             quote = character
         elif character in "[({":
-            stack.append(_opening(text, index))
+            if character == "{" and text[index - 1 : index] == "@":
+                stack.append(ATTRIBUTE_OPEN)
+                attributes += 1
+            else:
+                stack.append(character)
         elif character in "])}":
             if stack and stack[-1][-1] == pairs[character]:
-                stack.pop()
+                if stack.pop() == ATTRIBUTE_OPEN:
+                    attributes -= 1
     return quote is None and not stack
 
 

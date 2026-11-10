@@ -1304,6 +1304,17 @@ def check_errors_and_limits(tmp: Path) -> None:
             "a minified line followed by a multiline label must parse every statement: "
             f"{len(minified_multiline['edges'])} edges"
         )
+    # Deep bracket nesting wrapped across lines is rescanned on every line, so
+    # the scanners must not pay for the nesting depth on each character.
+    deep_brackets = tmp / "statement-deep-brackets.mmd"
+    deep_lines: list[str] = []
+    for index in range(10):
+        statement = f"N{index}" + "[" * 2000 + "]" * 2000
+        deep_lines += [statement[start : start + 100] for start in range(0, len(statement), 100)]
+    deep_brackets.write_text("flowchart TD\n" + "\n".join(deep_lines) + "\n", encoding="utf-8")
+    deep_nodes = json.loads(run_extract([str(deep_brackets), "--json"]))["diagrams"][0]["nodes"]
+    if len(deep_nodes) != 10:
+        fail(f"deeply nested wrapped statements must each parse: {len(deep_nodes)} nodes")
     unterminated_one_line = tmp / "statement-unterminated-one-line.mmd"
     unterminated_one_line.write_text(
         'flowchart TD\nA["' + "x" * (statement_cap + 10) + "\n",
