@@ -7,9 +7,8 @@ connectors editable, malformed input fails clearly instead of hanging or
 writing a broken document, re-exports are byte-identical, and an existing
 document is never replaced.
 
-``format_problems`` checks the format rules most likely to break, so CI
-catches a bad document without the app. Opening one in SimpleDiagrams remains
-the final check.
+``format_problems`` checks the document directly. The exporter and this suite
+run with the Python standard library, including on machines without SimpleDiagrams.
 """
 
 from __future__ import annotations
@@ -1617,10 +1616,17 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         levels = ["--p0: #123456"] + [
             f"--p{i}: " + " ".join([f"var(--p{i - 1})"] * 10) for i in range(1, 10)
         ]  # --p9 would be ten thousand million characters
+        source = f'<svg viewBox="0 0 400 300"><style>:root {{ {"; ".join(levels)} }}</style>'
+        with mock.patch.object(self.mod, "resolve_vars", wraps=self.mod.resolve_vars) as resolve:
+            unused, _ = self.export(
+                source + '<rect width="80" height="40" fill="#123456"/><text y="80">Kept</text></svg>'
+            )
+        self.assertTrue(all("var(--p" not in call.args[0] for call in resolve.call_args_list))
+        self.assertIn('"#123456"', json.dumps(unused))
         started = time.monotonic()
         document, _ = self.export(
-            f'<svg viewBox="0 0 400 300"><style>:root {{ {"; ".join(levels)} }}</style>'
-            '<rect x="10" y="10" width="80" height="40" fill="var(--p0)" stroke="var(--p9, #00ff00)"/>'
+            source
+            + '<rect x="10" y="10" width="80" height="40" fill="var(--p0)" stroke="var(--p9, #00ff00)"/>'
             '<text x="20" y="80" fill="var(--p9)">Kept</text></svg>'
         )  # fmt: skip
         self.assertLess(time.monotonic() - started, 10)  # milliseconds, but CI can be slow
@@ -2075,10 +2081,10 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         """A long dependency chain can still reach the fallback of a cyclic property."""
         variables = {"--a": "var(--b)", "--b": "var(--a, red)", "--0": "var(--a, blue)"}
         variables.update({f"--{i}": f"var(--{i - 1})" for i in range(1, 2000)})
-        values = self.mod.settle_custom_properties({}, variables)
-        self.assertIsNone(values["--a"])
-        self.assertIsNone(values["--b"])
-        self.assertEqual(values["--1999"], "blue")
+        lookup = self.mod.custom_property_lookup({}.get, variables)
+        self.assertEqual(lookup("--1999"), "blue")
+        self.assertIsNone(lookup("--a"))
+        self.assertIsNone(lookup("--b"))
 
     def test_paint_order_only_warns_when_visible_stroke_moves_in_front_of_fill(
         self,

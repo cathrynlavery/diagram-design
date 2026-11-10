@@ -18,7 +18,7 @@ From this skill's directory run:
 python3 scripts/export_simplediagrams.py <html-file> [<out.simplediagram>]
 ```
 
-It reads the diagram through `scripts/export_svg.py`, needs only the Python standard library, and makes no network request. The default output is `<basename>.simplediagram` next to the source. Re-exporting an unchanged diagram produces identical files.
+It reads the diagram through `scripts/export_svg.py`, needs only the Python standard library, and makes no network request. SimpleDiagrams is needed only to open and edit the finished document. The default output is `<basename>.simplediagram` next to the source. Re-exporting an unchanged diagram produces identical files.
 
 ## Edge cases
 
@@ -32,7 +32,7 @@ It reads the diagram through `scripts/export_svg.py`, needs only the Python stan
 The export reads the drawing as a browser draws it, within this contract:
 
 - **Elements:** `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `path`, `text` and `tspan`, `g`, nested `svg`, `use` with `symbol`, `marker`, and `foreignObject` holding plain HTML text.
-- **Style:** presentation attributes, inline styles and stylesheet rules whose selectors use tags, `*`, classes, IDs, `:root` and descendants; `!important`; `var()` with fallbacks; and `inherit`, `initial`, `unset` and `revert`. Rules inside `@layer` blocks, nested rules and other selectors (attributes, children, siblings, pseudo-classes) are not applied. Conditional rules (`@media`, `@supports`) are skipped: the export draws the page's default view. Selectors can match the HTML root and body as ancestors of an embedded SVG. For a standalone SVG, `:root` selects the drawing itself.
+- **Style:** presentation attributes, inline styles and stylesheet rules whose selectors use tags, `*`, classes, IDs, `:root` and descendants; `!important`; `var()` with fallbacks; and `inherit`, `initial`, `unset` and `revert`. Custom properties resolve when a supported style reads them. A substitution over 4,096 characters is invalid. Rules inside `@layer` blocks, nested rules and other selectors (attributes, children, siblings, pseudo-classes) are not applied. Conditional rules (`@media`, `@supports`) are skipped: the export draws the page's default view. Selectors can match the HTML root and body as ancestors of an embedded SVG. For a standalone SVG, `:root` selects the drawing itself.
 - **Values:** lengths in `px`, `pt`, `pc`, `in`, `cm`, `mm`, `em`, `rem` (16 px) and percentages; colours as hex, `rgb()`, `rgba()`, `currentColor` and the basic colour names. A font size given with `calc()`, `clamp()` or viewport units is drawn at the surrounding size.
 
 Lines take SimpleDiagrams' own hand-drawn line style, which the format sets for every shape: line caps, joins, miter limits, dash lengths and dash offsets are drawn in that style, a dash pattern becoming dashed or dotted. `dominant-baseline` and `letter-spacing` do not move or space a label.

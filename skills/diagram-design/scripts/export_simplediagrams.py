@@ -537,11 +537,14 @@ def _closing(text: str, opening: int) -> int | None:
     return None
 
 
-def resolve_vars(value: str, custom: Mapping[str, str | None], depth: int = 0) -> str | None:
+CustomValue: TypeAlias = Callable[[str], str | None]
+
+
+def resolve_vars(value: str, custom_value: CustomValue, depth: int = 0) -> str | None:
     """``value`` with each ``var(--name, fallback)`` replaced; ``None`` when it is invalid.
 
-    ``custom`` holds settled custom properties, ``None`` for an invalid one. A ``var()``
-    takes its property's value, or else its fallback, which may hold ``var()`` itself. The
+    ``custom_value`` reads a settled custom property, returning ``None`` for an invalid one.
+    A ``var()`` takes that value or its fallback, which may hold ``var()`` itself. The
     value is invalid, as in a browser, when a ``var()`` has neither, never closes, or would
     grow the value past ``MAX_VAR_LENGTH`` (properties that each repeat the one before
     could otherwise turn a short stylesheet into an exponentially long string).
@@ -563,9 +566,9 @@ def resolve_vars(value: str, custom: Mapping[str, str | None], depth: int = 0) -
         fallback = ",".join(fallbacks).strip() if fallbacks else None
         if not VAR_NAME.fullmatch(name):
             return None
-        found = custom.get(name)
+        found = custom_value(name)
         if found is None and fallback is not None:
-            found = resolve_vars(fallback, custom, depth + 1)
+            found = resolve_vars(fallback, custom_value, depth + 1)
         if found is None:
             return None
         pieces += [value[index:start], found]
@@ -573,9 +576,10 @@ def resolve_vars(value: str, custom: Mapping[str, str | None], depth: int = 0) -
         if size > MAX_VAR_LENGTH:
             return None
         index = end + 1
+    if size + len(value) - index > MAX_VAR_LENGTH:
+        return None
     pieces.append(value[index:])
-    result = "".join(pieces)
-    return result if len(result) <= MAX_VAR_LENGTH else None
+    return "".join(pieces)
 
 
 def _in_loops(graph: Mapping[str, set[str]]) -> set[str]:
@@ -621,36 +625,65 @@ def _in_loops(graph: Mapping[str, set[str]]) -> set[str]:
     return looped
 
 
-def settle_custom_properties(inherited: Props, declared: Props) -> dict[str, str | None]:
-    """Every custom property with its ``var()``s replaced; ``None`` for an invalid one.
+def custom_property_lookup(inherited: CustomValue, declared: Props) -> CustomValue:
+    """Read custom properties on demand in the scope where they were declared.
 
-    Inherited values are settled already, so only the element's own declarations settle
-    here, each once and after those it refers to. Declarations that refer to one another
-    in a loop are all invalid, whatever fallbacks the loop holds, as in a browser.
+    Settle each local value once, after its dependencies. Include fallback references
+    when detecting cycles, because CSS invalidates every declaration in such a cycle.
     """
-    settled: dict[str, str | None] = {k: v for k, v in inherited.items() if k.startswith("--")}
-    graph = {
-        name: {
-            match.group(1)
-            for call in _var_calls(value)
-            if (match := VAR_NAME.match(value, call.end()))
-        }
-        & declared.keys()
-        for name, value in declared.items()
-    }
-    looped = _in_loops(graph)
-    settled |= dict.fromkeys(looped)
-    order = TopologicalSorter({name: graph[name] - looped for name in graph if name not in looped})
-    for name in order.static_order():
-        value = resolve_vars(declared[name], settled)
-        keyword = value.strip().lower() if value is not None else ""
-        if keyword == "initial":
-            settled[name] = None
-        elif keyword in CSS_WIDE_KEYWORDS:
-            settled[name] = inherited.get(name)
-        else:
-            settled[name] = value
-    return settled
+    if not declared:
+        return inherited
+    settled: dict[str, str | None] = {}
+
+    def value_of(name: str) -> str | None:
+        return settled[name] if name in settled else inherited(name)
+
+    def lookup(name: str) -> str | None:
+        if name in settled or name not in declared:
+            return value_of(name)
+
+        graph: dict[str, set[str]] = {}
+        pending = {name}
+        while pending:
+            current = pending.pop()
+            raw = declared[current]
+            references = (
+                match.group(1)
+                for call in _var_calls(raw)
+                if (match := VAR_NAME.match(raw, call.end()))
+            )
+            dependencies = {
+                ref for ref in references if ref in declared and ref not in settled
+            }
+            graph[current] = dependencies
+            pending.update(dependencies - graph.keys())
+
+        looped = _in_loops(graph)
+        settled.update(dict.fromkeys(looped))
+        order = TopologicalSorter({key: graph[key] - looped for key in graph if key not in looped})
+        for key in order.static_order():
+            value = resolve_vars(declared[key], value_of)
+            keyword = value.strip().lower() if value is not None else ""
+            if keyword == "initial":
+                value = None
+            elif keyword in CSS_WIDE_KEYWORDS:
+                value = inherited(key)
+            settled[key] = value
+        return settled[name]
+
+    return lookup
+
+
+class _ComputedProperties(dict[str, str]):
+    """Paint properties and the custom-property scope inherited by descendants."""
+
+    def __init__(self, props: Props, custom_value: CustomValue) -> None:
+        super().__init__(props)
+        self.custom_value = custom_value
+
+
+def _custom_value_of(props: Props) -> CustomValue:
+    return props.custom_value if isinstance(props, _ComputedProperties) else props.get
 
 
 # --- The font shorthand and font weights --------------------------------------
@@ -772,26 +805,24 @@ def computed_properties(
     rules: Sequence[CssRule],
     ancestors: Sequence[ET.Element],
     defaults: Props | None = None,
-) -> Props:
+) -> _ComputedProperties:
     """An element's settled style: what it inherits, then a browser's ``defaults``,
     presentation attributes, stylesheet rules and its inline style, in cascade order.
 
     The order runs twice, because an ``!important`` declaration beats every normal one.
-    Custom properties settle first, so every other value reads their final values. A
+    Custom properties settle on demand when another declaration reads them. A
     value whose ``var()`` cannot settle is invalid where it is used, so it acts as
     ``unset``, as in a browser. CSS-wide keywords resolve last; ``revert`` and, with no
     layers read, ``revert-layer`` fall back to the browser's own value, as ``unset`` does.
     Sizes are settled to pixels and weights to numbers, so callers compare like with like.
     """
-    props = {k: v for k, v in inherited.items() if k in INHERITED or k.startswith("--")}
+    props = {k: v for k, v in inherited.items() if k in INHERITED}
     declared = _cascaded_declarations(element, rules, ancestors, defaults)
     own_custom = {name: value for name, value in declared if name.startswith("--")}
-    custom = settle_custom_properties(props, own_custom)
-    props = {k: v for k, v in props.items() if not k.startswith("--")}
-    props |= {name: value for name, value in custom.items() if value is not None}
+    custom_value = custom_property_lookup(_custom_value_of(inherited), own_custom)
     for name, value in declared:
         if name == "font":
-            settled = resolve_vars(value, custom)
+            settled = resolve_vars(value, custom_value)
             longhands = expand_font_shorthand(settled) if settled is not None else None
             if longhands is None and _var_calls(value):  # invalid where used
                 longhands = dict.fromkeys(FONT_LONGHANDS, "unset")
@@ -801,9 +832,7 @@ def computed_properties(
         elif name in PRESENTATION:
             props[name] = value
     for name, value in list(props.items()):
-        if name.startswith("--"):
-            continue
-        settled = resolve_vars(value, custom)
+        settled = resolve_vars(value, custom_value)
         if settled is None:  # invalid where used
             settled = "unset"
         keyword = settled.strip().lower()
@@ -831,7 +860,7 @@ def computed_properties(
             props["font-weight"], inherited.get("font-weight", "400")
         )
     _settle_stroke_lengths(props)
-    return props
+    return _ComputedProperties(props, custom_value)
 
 
 def _is_invisible(props: Props) -> bool:
@@ -1624,19 +1653,21 @@ def is_safe_svg(root: ET.Element) -> bool:
     return True
 
 
-def _other_inline_styles(element: ET.Element, page: Props) -> str:
+def _other_inline_styles(element: ET.Element, page: _ComputedProperties) -> str:
     """An element's inline declarations this export has no attribute for, with tokens resolved."""
     kept = []
     for name, marked in _declarations(element.get("style", "")).items():
-        value = resolve_vars(marked.removesuffix(IMPORTANT).rstrip(), page) or ""
-        if name in ICON_HANDLED or name.startswith("--") or not value.strip():
+        if name in ICON_HANDLED or name.startswith("--"):
             continue
-        if name != "font" or not expand_font_shorthand(value):
+        value = resolve_vars(marked.removesuffix(IMPORTANT).rstrip(), page.custom_value) or ""
+        if value.strip() and (name != "font" or not expand_font_shorthand(value)):
             kept.append(f"{name}: {value}")
     return "; ".join(kept)
 
 
-def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.Element, Props]:
+def _styled_clone(
+    element: ET.Element, page: _ComputedProperties, stored: Props
+) -> tuple[ET.Element, Props]:
     """An element without its children and with the page's styling written onto it.
 
     Anything the export understands becomes an attribute, so a stylesheet's ``!important``
@@ -2165,7 +2196,7 @@ class Reader:
         colour = None
         has_image = False
         for name, raw in values:
-            value = resolve_vars(raw, props) or ""
+            value = resolve_vars(raw, props.custom_value) or ""
             if name != "background-color":
                 has_image = bool(re.search(r"gradient\(|url\(", value, re.IGNORECASE))
             if name == "background-image":
@@ -3122,7 +3153,7 @@ class Reader:
         parsed = parse_colour(props.get("color", "black"), props)
         solid = parsed is not None and parsed[3] >= 0.999  # else stored solid, as noted if used
         colour = colour_hex(parsed)[:7]
-        context = props | {"color": colour}  # what the icon's markup inherits on the page
+        context = _ComputedProperties(props | {"color": colour}, _custom_value_of(props))
         ancestors = self._ancestors_of(target)
         view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
         framed = _local(target) in ("symbol", "svg") and len(view) == 4 and min(view[2:]) > 0
@@ -3312,7 +3343,7 @@ class Reader:
     def _frozen(
         self,
         element: ET.Element,
-        page: Props,
+        inherited: Props,
         stored: Props,
         ancestors: list[ET.Element],
         text_runs: list[tuple[str, Props | None]] | None = None,
@@ -3322,7 +3353,7 @@ class Reader:
 
         The app's renderer ignores ``display`` and ``visibility``, so what they hide is left out.
         """
-        page = computed_properties(element, page, self.rules, ancestors)
+        page = computed_properties(element, inherited, self.rules, ancestors)
         if page.get("display") == "none":
             return None
         self._note_css_geometry(element, ancestors)
