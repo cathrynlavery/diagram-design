@@ -263,6 +263,7 @@ class Note(str, Enum):
     COMPLEX_HOLES = "holes in a path with many contours may be filled in"
     CONTOUR_OVERLAP = "overlapping contours may fill areas that were clear"
     SKEWED_CORNERS = "rounded corners of a skewed rectangle drawn square"
+    ENDING_PAINT_UNREAD = "line endings with paint this export cannot read take the line's colour"
     ENDING_OPACITY = "line endings with different opacity take the line's opacity"
     ENDING_RECOLOURED = "line endings painted another colour take the line's colour"
     ENDING_SHAPE = "line ending other than an arrow, a circle or a diamond drawn as an arrow"
@@ -1013,6 +1014,11 @@ def apply(m: Matrix, point: Point) -> Point:
     return m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]
 
 
+def _collapses(matrix: Matrix) -> bool:
+    """Whether the transform collapses a drawing to a point or a line."""
+    return abs(matrix[0] * matrix[3] - matrix[1] * matrix[2]) < 1e-12
+
+
 def parse_transform(value: str | None) -> Matrix:
     """Read an SVG ``transform`` list; a malformed step is ignored, as browsers do."""
     result = IDENTITY
@@ -1330,6 +1336,32 @@ def ellipse_subpath(cx: float, cy: float, rx: float, ry: float) -> Subpath:
         ],
         closed=True,
     )
+
+
+def rectangle_subpath(frame: Rect, rx: float, ry: float) -> Subpath:
+    """The authored rectangle outline, including its clamped elliptical corners."""
+    x, y, w, h = frame
+    right, bottom = x + w, y + h
+    rx, ry = min(rx, w / 2), min(ry, h / 2)
+    if rx <= 0 or ry <= 0:
+        return Subpath((x, y), [Line((right, y)), Line((right, bottom)), Line((x, bottom))], True)
+    corners = (
+        ((right - rx, y), (right, y + ry)),
+        ((right, bottom - ry), (right - rx, bottom)),
+        ((x + rx, bottom), (x, bottom - ry)),
+        ((x, y + ry), (x + rx, y)),
+    )
+    segments: list[Segment] = []
+    for start, end in corners:
+        segments.append(Line(start))
+        segments.extend(_arc_segments(start, rx, ry, 0, False, True, end))
+    return Subpath((x + rx, y), segments, True)
+
+
+def _polyline_points(value: str) -> list[Point]:
+    """Finite points of a polygon or polyline, dropping an unmatched final number."""
+    values = [float(token) for token in NUMBER_RE.findall(value)]
+    return list(zip(values[::2], values[1::2], strict=False)) if all(map(math.isfinite, values)) else []
 
 
 def bounds(points: Iterable[Point]) -> Bounds:
@@ -1702,6 +1734,16 @@ class IconCopy(NamedTuple):
     parts: list[ET.Element]
     shared: list[ET.Element]
     clashes: bool = False  # holds an id the page gives to another element first
+
+
+class MarkerShape(NamedTuple):
+    """The first visible marker mark and the channels its geometry paints."""
+
+    element: ET.Element
+    props: Props
+    opacity: float
+    filled: bool
+    stroked: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -2231,8 +2273,8 @@ class Reader:
         if element is not self.root:
             self._note_css_geometry(element, ancestors)
         matrix = multiply(matrix, parse_transform(props.get("transform")))
-        if abs(matrix[0] * matrix[3] - matrix[1] * matrix[2]) < 1e-12:
-            return  # a transform that cannot be undone, such as scale(0), draws nothing
+        if _collapses(matrix):
+            return
         opacity *= _opacity(props.get("opacity"))
         if opacity <= 0:
             return
@@ -2324,36 +2366,89 @@ class Reader:
     def _marker(self, reference: str | None) -> ET.Element | None:
         """The ``<marker>`` a ``marker-start`` or ``marker-end`` value names, if any."""
         match = re.fullmatch(r"\s*url\(\s*['\"]?#([^'\")]+)['\"]?\s*\)\s*", reference or "")
-        return self.markers.get(match.group(1)) if match else None
+        marker = self.markers.get(match.group(1)) if match else None
+        if marker is None or any(
+            length(marker.get(name), 3.0, percent_of=1.0) <= 0
+            for name in ("markerWidth", "markerHeight")
+        ):
+            return None
+        return marker
+
+    def _marker_paint(self, element: ET.Element, props: Props) -> tuple[bool, bool]:
+        """Whether a supported marker shape has geometry for its fill and stroke."""
+        tag = _local(element)
+        fill, stroke = _has_fill(props), _has_line(props)
+        if not (fill or stroke):
+            return False, False
+        if tag == "circle":
+            has_area = self._either(element.get("r"), props) > 0
+        elif tag == "ellipse":
+            has_area = self._across(element.get("rx"), props=props) > 0 and self._down(
+                element.get("ry"), props=props
+            ) > 0
+        elif tag == "rect":
+            has_area = self._across(element.get("width"), props=props) > 0 and self._down(
+                element.get("height"), props=props
+            ) > 0
+        else:
+            if tag == "line":
+                points = [
+                    (self._across(element.get(x), props=props), self._down(element.get(y), props=props))
+                    for x, y in (("x1", "y1"), ("x2", "y2"))
+                ]
+                contours = [points]
+            elif tag in {"polygon", "polyline"}:
+                contours = [_polyline_points(element.get("points", ""))]
+            elif tag == "path":
+                try:
+                    contours = [path.flattened() for path in parse_path_data(element.get("d", ""))]
+                except ValueError:
+                    return False, False
+            else:
+                return False, False
+            capped = props.get("stroke-linecap", "butt").lower() in {"round", "square"}
+            return fill and any(painted_area(points) > 0 for points in contours), stroke and any(
+                len(points) > 1 and (capped or any(point != points[0] for point in points[1:]))
+                for points in contours
+            )
+        return fill and has_area, stroke and has_area
 
     def _marker_shape(
         self, marker: ET.Element, outer: Props, ancestors: list[ET.Element]
-    ) -> tuple[ET.Element, Props, float] | None:
-        """The first visible shape in a marker, with its style and effective opacity."""
-        drawable = ("polygon", "path", "polyline", "circle", "ellipse", "rect", "line")
-
+    ) -> MarkerShape | None:
+        """The first visible shape in a marker, with the effects on its path reported."""
         def walk(
             node: ET.Element, inherited: Props, path: list[ET.Element], opacity: float
-        ) -> tuple[ET.Element, Props, float] | None:
+        ) -> MarkerShape | None:
             for child in node:
+                tag = _local(child)
+                if tag in NOT_DRAWN:
+                    continue
                 props = computed_properties(child, inherited, self.rules, path)
                 child_opacity = opacity * _opacity(props.get("opacity"))
-                if props.get("display") == "none" or child_opacity <= 0:
-                    continue
-                tag = _local(child)
                 if (
-                    tag in drawable
-                    and not _is_invisible(props)
-                    and (_has_line(props) or (tag != "line" and _has_fill(props)))
+                    props.get("display") == "none"
+                    or child_opacity <= 0
+                    or _collapses(parse_transform(props.get("transform")))
                 ):
-                    return child, props, child_opacity
+                    continue
+                if not _is_invisible(props):
+                    self._note_css_geometry(child, path)
+                    fill, stroke = self._marker_paint(child, props)
+                    if fill or stroke:
+                        self._note_undrawn(props)
+                        return MarkerShape(child, props, child_opacity, fill, stroke)
                 if (found := walk(child, props, [*path, child], child_opacity)) is not None:
+                    self._note_undrawn(props)
                     return found
             return None
 
         if outer.get("display") == "none":
             return None
-        return walk(marker, outer, [*ancestors, marker], _opacity(outer.get("opacity")))
+        found = walk(marker, outer, [*ancestors, marker], _opacity(outer.get("opacity")))
+        if found is not None:
+            self._note_undrawn(outer)
+        return found
 
     def _marker_reach(self, props: Props, line_width: float) -> float:
         """How far a line's markers can reach past its end, so an icon's bounds include them."""
@@ -2382,25 +2477,28 @@ class Reader:
         outer = computed_properties(marker, inherited, self.rules, path)
         if (shown := self._marker_shape(marker, outer, path)) is None:
             return "none"
-        shape, props, marker_opacity = shown
-        fill = props.get("fill", "black").strip().lower()
-        colour = parse_colour(fill, props)
-        filled = _local(shape) != "line" and _has_fill(props)
-        if not filled and not _has_line(props):
-            return "none"  # a marker painting nothing draws nothing
-        painted_as_paper = colour_hex(colour)[:7] in (self.background, "#FFFFFF")
-        outlined = _has_line(props) and parse_colour(props["stroke"], props) != colour
-        hollow = not filled or (outlined and painted_as_paper)
-        use_fill = filled and not hollow
-        ink = colour if use_fill else parse_colour(props.get("stroke", "none"), props)
-        if ink is not None:
-            channel = "fill" if use_fill else "stroke"
+        shape, props, marker_opacity, filled, stroked = shown
+        fill = parse_colour(props.get("fill", "black"), props) if filled else None
+        stroke = parse_colour(props.get("stroke", "none"), props) if stroked else None
+        painted_as_paper = fill is not None and colour_hex(fill)[:7] in (self.background, "#FFFFFF")
+        hollow = not filled or (stroked and fill != stroke and painted_as_paper)
+        recoloured = changed_opacity = unread_paint = False
+        for channel, colour, draws in (("fill", fill, filled and not hollow), ("stroke", stroke, stroked)):
+            if not draws:
+                continue
+            if colour is None:
+                unread_paint = True
+                continue
             opacity = line.opacity * marker_opacity * _paint_opacity(props, channel)
-            ending = colour_hex(ink, opacity)
-            if ending[:7] != line.stroke[:7]:
-                self._skip(Note.ENDING_RECOLOURED)
-            if (ending[7:] or "FF") != (line.stroke[7:] or "FF"):
-                self._skip(Note.ENDING_OPACITY)
+            ending = colour_hex(colour, opacity)
+            recoloured |= ending[:7] != line.stroke[:7]
+            changed_opacity |= (ending[7:] or "FF") != (line.stroke[7:] or "FF")
+        if recoloured:
+            self._skip(Note.ENDING_RECOLOURED)
+        if changed_opacity:
+            self._skip(Note.ENDING_OPACITY)
+        if unread_paint:
+            self._skip(Note.ENDING_PAINT_UNREAD)
         if _local(shape) in ("circle", "ellipse"):
             return "circle" if hollow else "solidCircle"
         numbers = NUMBER_RE.findall(shape.get("points") or shape.get("d") or "")
@@ -2417,7 +2515,7 @@ class Reader:
             if abs((tip - away + 180) % 360 - 180) > 1:
                 self._skip(Note.ENDING_DIRECTION)
         closed = _local(shape) == "polygon" or "z" in (shape.get("d") or "").lower()
-        if len(coordinates) == 6 and hollow and (filled or (closed and _has_line(props))):
+        if len(coordinates) == 6 and hollow and (filled or (closed and stroked)):
             return "solidArrow"  # an outlined triangle, which the format draws hollow
         return "filledArrow" if filled else "arrow"
 
@@ -2534,14 +2632,11 @@ class Reader:
             return
         if radius > 0 and decompose(matrix) is None:
             self._skip(Note.SKEWED_CORNERS)
-        corners: list[Segment] = [
-            Line((x + w, y)),
-            Line((x + w, y + h)),
-            Line((x, y + h)),
-        ]
-        outline = Subpath((x, y), corners, closed=True)
+            rx = ry = 0
+        frame = (x, y, w, h)
+        outline = rectangle_subpath(frame, rx, ry)
         paint = self._paint(props, opacity, matrix)
-        self._add_box(rectangle_shape(w, h, radius), (x, y, w, h), matrix, paint, outline)
+        self._add_box(rectangle_shape(w, h, radius), frame, matrix, paint, outline)
 
     def _ellipse(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """A circle or ellipse becomes a Circle."""
@@ -2574,9 +2669,8 @@ class Reader:
 
     def _polyline(self, element: ET.Element, props: Props, matrix: Matrix, opacity: float) -> None:
         """A polyline is an open outline of straight segments; a polygon, a closed one."""
-        values = [float(v) for v in NUMBER_RE.findall(element.get("points", ""))]
-        points = list(zip(values[0::2], values[1::2], strict=False))  # an odd last value is ignored
-        if len(points) >= 2 and all(map(math.isfinite, values)):
+        points = _polyline_points(element.get("points", ""))
+        if len(points) >= 2:
             closed = _local(element) == "polygon"
             subpath = Subpath(points[0], [Line(p) for p in points[1:]], closed)
             paint = self._paint(
@@ -2813,8 +2907,6 @@ class Reader:
             return []
         self._note_text_effects(node, props)
         fade = length(props.get("opacity"), 1.0, percent_of=1.0)
-        if 0 < fade < 1:
-            self._skip(Note.SEE_THROUGH_WORDS)
         # A see-nothing span keeps its words' room but shows none of them, nor its children's.
         faded = faded or fade <= 0
         style = props if not faded and _visible_text(props) else None
@@ -2835,6 +2927,10 @@ class Reader:
             pieces += inner
             ahead = before + "".join(words for words, _ in pieces)
             pieces.append((_cased(child.tail, props, ahead), style))
+        if any(shown is not None and words.strip() for words, shown in pieces):
+            self._note_undrawn(props)
+            if fade < 1:
+                self._skip(Note.SEE_THROUGH_WORDS)
         return pieces
 
     def _foreign_object(
@@ -3139,7 +3235,13 @@ class Reader:
         return inherited, path
 
     def _frozen(
-        self, element: ET.Element, page: Props, stored: Props, ancestors: list[ET.Element]
+        self,
+        element: ET.Element,
+        page: Props,
+        stored: Props,
+        ancestors: list[ET.Element],
+        text_runs: list[tuple[str, Props | None]] | None = None,
+        text_visible: bool = True,
     ) -> ET.Element | None:
         """Copy one element for a stored icon; ``None`` when nothing of it shows.
 
@@ -3166,13 +3268,29 @@ class Reader:
             and any(self._marker(page.get(name)) is not None for name in ("marker-start", "marker-mid", "marker-end"))
         ):
             self._skip(Note.ICON_MARKERS)
+        if tag == "text":
+            text_runs = []
+        elif tag in NOT_DRAWN:
+            text_runs = None
+        text_visible = text_visible and _opacity(page.get("opacity")) > 0
+        removed = _is_invisible(page)
+        shown = text_visible and _visible_text(page) if text_runs is not None else False
+
+        def record(words: str | None) -> None:
+            if text_runs is not None and words and words.strip() and (removed or shown):
+                text_runs.append((words, None if removed else page))
+
+        record(element.text)
         clone, stored = _styled_clone(element, page, stored)
         path = [*ancestors, element]
         for child in element:
-            if (copy := self._frozen(child, page, stored, path)) is not None:
+            if (copy := self._frozen(child, page, stored, path, text_runs, text_visible)) is not None:
                 clone.append(copy)
             else:
                 _keep_words_after_removed_child(clone, child.tail)
+            record(child.tail)
+        if tag == "text" and text_runs is not None and _hidden_before_shown(text_runs):
+            self._skip(Note.MOVED_WORDS)
         if not _is_invisible(page):
             return clone
         draws = _local(element) in self.handlers or _local(element) in CONTAINERS
@@ -3708,7 +3826,8 @@ def _classify_strokes(
     for stroke in strokes:
         flat = stroke.subpath.flattened()
         others = [box for box in boxes if box is not stroke.fill]  # never its own fill
-        start, end = _touching(others, flat[0]), _touching(others, flat[-1])
+        start = _touching(others, flat[0], marked=stroke.marked)
+        end = _touching(others, flat[-1], marked=stroke.marked)
         joins = (
             start is not None
             and end is not None
@@ -3856,19 +3975,34 @@ def _folds_into(label: Label, box: Box) -> bool:
     )
 
 
-def _touching(boxes: Sequence[Box], point: Point) -> Box | None:
-    """The smallest box whose outline passes within attaching distance of ``point``."""
+def _touching(boxes: Sequence[Box], point: Point, *, marked: bool) -> Box | None:
+    """Prefer direct contact for authored arrows, keeping an overlapping inset as one target."""
 
     def reach(box: Box) -> float:
-        """How near the outline a line end attaches, allowing for the line's own width."""
+        """How near a line end attaches, including the width of the box's stroke."""
         return ATTACH_TOLERANCE + box.paint.line_width / 2
 
     near = [
-        box
+        (distance, box)
         for box in boxes
-        if box.near(point, reach(box)) and distance_to_outline(point, box.outline) <= reach(box)
+        if box.near(point, reach(box))
+        and (distance := distance_to_outline(point, box.outline)) <= reach(box)
     ]
-    return min(near, key=attrgetter("area"), default=None)
+    if not near:
+        return None
+    smallest = min(near, key=lambda candidate: candidate[1].area)[1]
+    if marked:
+        # A nearby annotation should not steal an arrow that touches a node.
+        # Overlapping boxes can be the visible border and label of the same node.
+        direct = [
+            (distance, box)
+            for distance, box in near
+            if distance <= 0.5
+            and (box is smallest or not _intersects_bounds(box.extent, smallest.extent))
+        ]
+        if direct:
+            return min(direct, key=lambda candidate: (candidate[0], candidate[1].area))[1]
+    return smallest
 
 
 class Along(NamedTuple):

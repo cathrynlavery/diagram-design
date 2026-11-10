@@ -326,6 +326,88 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             self.mod.right_angle_route(step), [(400, 104), (340, 104), (340, 120), (280, 120)]
         )
 
+    def test_arrow_attaches_to_a_rounded_edge_but_not_its_cut_off_corner(self) -> None:
+        """Editable attachment follows the drawn radius rather than a square approximation."""
+        for tip, expected in (((30, 40), True), ((20, 20), False)):
+            with self.subTest(tip=tip):
+                x, y = tip
+                markup = ARROW_MARKER.format("") + (
+                    '<rect x="20" y="20" width="200" height="100" rx="50"/>'
+                    f'<line x1="0" y1="{y}" x2="{x}" y2="{y}" stroke="black" marker-end="url(#a)"/>'
+                )
+                doc, _ = self.export(f'<svg viewBox="0 0 240 140">{markup}</svg>')
+                [connection] = doc["pages"][0]["content"]["content"]["connections"]
+                self.assertEqual("end_attachment" in connection["content"], expected)
+
+    def test_arrow_prefers_the_closer_outline_over_a_smaller_nearby_box(self) -> None:
+        """A small annotation within tolerance cannot take an endpoint on the node itself."""
+        body = ARROW_MARKER.format("") + (
+            '<rect x="120" y="20" width="100" height="40"/>'
+            '<rect x="106" y="34" width="10" height="12" fill="white"/>'
+            '<line x1="20" y1="40" x2="120" y2="40" stroke="black" marker-end="url(#a)"/>'
+        )
+        doc, _ = self.export(f'<svg viewBox="0 0 240 100">{body}</svg>')
+        page = doc["pages"][0]
+        [target] = [core(element) for element in page["elements"] if core(element)["frame"]["x"] == 120]
+        [connection] = page["content"]["content"]["connections"]
+        self.assertEqual(connection["content"]["end_attachment"]["element_id"], target["id"])
+
+    def test_arrow_keeps_the_labeled_inset_as_its_target(self) -> None:
+        """The border and inset of one node should keep the connector on its editable label."""
+        body = ARROW_MARKER.format("") + (
+            '<rect x="120" y="20" width="100" height="40" fill="white" stroke="black"/>'
+            '<rect x="124" y="24" width="92" height="32" fill="none" stroke="black"/>'
+            '<text x="170" y="45" text-anchor="middle" font-size="10">Node</text>'
+            '<line x1="20" y1="40" x2="120" y2="40" stroke="black" marker-end="url(#a)"/>'
+        )
+        doc, _ = self.export(f'<svg viewBox="0 0 240 100">{body}</svg>')
+        [connection] = doc["pages"][0]["content"]["content"]["connections"]
+        self.assertEqual(
+            connection["content"]["end_attachment"]["element_id"], self.element_labelled("Node", doc)["id"]
+        )
+
+    def test_marker_ignores_empty_shapes_and_nondrawing_branches(self) -> None:
+        """Empty geometry and definitions cannot replace a visible marker triangle."""
+        prefix = (
+            '<circle r="0"/><rect width="0" height="10"/><path d="M0 0"/>'
+            '<defs><circle r="3"/></defs><circle r="3" transform="scale(0)"/>'
+        )
+        triangle = '<polygon points="0 0,8 3,0 6"/>'
+        for attrs, shape, expected, css_note in (
+            ("", prefix, "none", False),
+            ("", prefix + triangle, "filledArrow", False),
+            ('markerWidth="0"', triangle, "none", False),
+            ("", '<circle style="r:3px"/>' + triangle, "filledArrow", True),
+        ):
+            with self.subTest(attrs=attrs, shape=shape):
+                doc, notes = self.export(
+                    '<svg viewBox="0 0 200 100"><defs>'
+                    f'<marker id="m" orient="auto" {attrs}>{shape}</marker></defs>'
+                    '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/></svg>'
+                )
+                connections = doc["pages"][0]["content"]["content"]["connections"]
+                ending = connections[0]["content"]["end_ending"] if connections else "none"
+                self.assertEqual(ending, expected)
+                self.assertEqual(
+                    "sizes, places and corners set in CSS ignored; the SVG's own are used" in notes,
+                    css_note,
+                )
+
+    def test_marker_notes_visible_outline_colors_and_unreadable_paint(self) -> None:
+        """A line ending cannot retain a separate outline color or an SVG gradient."""
+        for paint, expected in (
+            ('stroke="red" stroke-width="2"', RECOLOURED_ENDINGS),
+            ('fill="url(#g)"', "line endings with paint this export cannot read take the line's colour"),
+        ):
+            with self.subTest(paint=paint):
+                body = (
+                    '<defs><linearGradient id="g"><stop stop-color="red"/></linearGradient></defs>'
+                    + ARROW_MARKER.format(paint)
+                    + '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#a)"/>'
+                )
+                _, notes = self.export(f'<svg viewBox="0 0 200 100">{body}</svg>')
+                self.assertIn(expected, notes)
+
     def test_marker_paint_matches_the_ancestors_where_it_is_defined(self) -> None:
         """A descendant rule using defs still applies when a line uses the marker."""
         doc, _ = self.export(
@@ -2023,6 +2105,36 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             with self.subTest(css=css, inline=inline):
                 doc, _ = self.export(f'<style>{css}</style><svg id="d" viewBox="0 0 100 100" style="{inline}"><text y="30">Label</text></svg>')
                 self.assertEqual(doc["pages"][0]["content"]["background"], {"kind": "solid", "color_hex": expected})
+
+    def test_effects_on_visible_svg_descendants_are_reported(self) -> None:
+        """SVG text spans and marker wrappers can ask for effects independently of their parents."""
+        markup = (
+            '<defs><marker id="m" orient="auto"><g style="mix-blend-mode:multiply">'
+            '<polygon points="0 0,8 3,0 6"/></g></marker></defs>'
+            '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/>'
+            '<text y="50"><tspan style="filter:blur(3px)">Visible</tspan></text>'
+        )
+        _, notes = self.export(f'<svg viewBox="0 0 200 100">{markup}</svg>')
+        self.assertIn("filters such as blur and shadow left out", notes)
+        self.assertIn("blend modes left out; shapes are drawn over one another plainly", notes)
+
+    def test_stored_icon_reports_lost_spacing_after_visibility_hidden_text(self) -> None:
+        """Only hidden words that reserved space can move a visible suffix when removed."""
+        note = "words after hidden words in a line moved into their place"
+        for style, tail, expected in (
+            ("visibility:hidden", "End", True),
+            ("display:none", "End", False),
+            ("visibility:hidden", "", False),
+        ):
+            with self.subTest(style=style, tail=tail):
+                result = self.mod.export_document(
+                    '<svg viewBox="0 0 100 100"><svg width="80" height="40" viewBox="0 0 80 40">'
+                    f'<text y="20">Start <tspan style="{style}">Hidden </tspan>{tail}</text>'
+                    '</svg></svg>',
+                    Path("case.html"),
+                )
+                self.assertEqual(len(result.assets), 1)
+                self.assertEqual(note in result.skipped, expected)
 
     def test_stored_icons_preserve_marker_definitions_and_report_renderer_losses(self) -> None:
         """Artwork carries its safe marker reference and flags styles the canvas cannot draw."""
