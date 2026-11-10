@@ -176,8 +176,12 @@ NUMBER_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?"
 )
 DIGIT_RE = re.compile(r"\d")
+# An attribute as the HTML tokenizer reads it: a quoted value, an unquoted
+# value (`display=none`), or no value at all (`<div hidden>`), which a
+# browser treats as present with an empty value.
 ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+    r"""(?P<name>[\w:-]+)(?:\s*=\s*(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)"""
+    r"""|(?P<bare>[^\s"'=<>`]+)))?""",
     re.DOTALL,
 )
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
@@ -299,7 +303,8 @@ def attrs_of(raw: str) -> dict:
     for match in ATTR_RE.finditer(raw):
         name = match.group("name").lower()
         if name not in found:
-            found[name] = html.unescape(match.group("value"))
+            value = match.group("value") if match.group("quote") else match.group("bare")
+            found[name] = html.unescape(value or "")
     return found
 
 
