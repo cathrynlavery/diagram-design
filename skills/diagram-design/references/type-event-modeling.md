@@ -4,6 +4,8 @@
 
 **Not this type:** Use [Sequence](type-sequence.md) for actor lifelines, message calls, and replies in temporal order. Use [Data flow](type-data-flow.md) for movement or transformation between systems when commands and resulting events are not the question. Use [Timeline](type-timeline.md) for dated occurrences without command and projection roles. Do not infer an event store, broker, or persistence mechanism from this view.
 
+Keep the shipped SVG static: place each paper rectangle behind its own labels, use explicit house ink and readable text, and keep page styles off SVG marks. The verifier checks this bounded layout; the browser render gate checks the shipped pages. Draw each typed arrow with visible, nonzero straight path segments.
+
 ## Layout grammar
 
 - Arrange numbered stages left to right. Align **Command**, **Event**, and **Read model** in three fixed horizontal lanes. Within each stage, the command sits above the resulting event, and the read model sits below it.

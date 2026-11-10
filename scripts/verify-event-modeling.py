@@ -9,65 +9,13 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from verify_static_svg_visibility import check_static_svg, hidden, local
+
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
-STYLE_RE = re.compile(
-    r"<!--.*?(?:-->|$)|<style\b[^>]*>(?P<body>.*?)</style\s*>", re.IGNORECASE | re.DOTALL
-)
-CSS_COMMENT_OR_STRING_RE = re.compile(
-    r"""/\*.*?(?:\*/|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'""", re.DOTALL
-)
-CSS_ESCAPE = r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])"
-CSS_ESCAPE_RE = re.compile(CSS_ESCAPE)
-CSS_IDENTIFIER = rf"(?:[\w-]|{CSS_ESCAPE})+"
-CSS_ATTRIBUTE_RE = re.compile(
-    rf"{CSS_ESCAPE}|\[\s*(?:(?:{CSS_IDENTIFIER}|\*)?\|)?"
-    rf"(?P<name>{CSS_IDENTIFIER})\s*(?:[~|^$*]?=|\])"
-)
 KINDS = {"command": "CMD-", "event": "EVT-", "read-model": "VIEW-"}
 LINKS = {"emits": ("command", "event"), "projects": ("event", "read-model")}
-
-
-def decode_css_escape(match: re.Match[str]) -> str:
-    token = match[0][1:]
-    if token[0] not in "0123456789abcdefABCDEF":
-        return token
-    codepoint = int(token.strip(), 16)
-    if 0 < codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF:
-        return chr(codepoint)
-    return "\ufffd"
-
-
-def inline_style(node: ET.Element) -> dict[str, str]:
-    declarations = CSS_COMMENT_OR_STRING_RE.sub(" ", node.attrib.get("style", ""))
-    return {
-        CSS_ESCAPE_RE.sub(decode_css_escape, key.strip()).casefold(): value.strip().casefold()
-        for key, separator, value in (
-            part.partition(":") for part in declarations.split(";")
-        )
-        if key and separator
-    }
-
-
-def hidden(node: ET.Element) -> bool:
-    tag = node.tag.rsplit("}", 1)[-1]
-    style = inline_style(node)
-    return (
-        tag in {"defs", "title", "desc"}
-        or node.attrib.get("aria-hidden") == "true"
-        or "hidden" in node.attrib
-        or node.attrib.get("display") == "none"
-        or node.attrib.get("visibility") == "hidden"
-        or node.attrib.get("opacity") in {"0", "0.0"}
-        or node.attrib.get("fill") in {"none", "transparent"}
-        or node.attrib.get("fill-opacity") in {"0", "0.0"}
-        or style.get("display") == "none"
-        or style.get("visibility") == "hidden"
-        or style.get("opacity") in {"0", "0.0"}
-        or style.get("fill") in {"none", "transparent"}
-        or style.get("fill-opacity") in {"0", "0.0"}
-    )
 
 
 def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
@@ -83,7 +31,7 @@ def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
     def walk(node: ET.Element, in_text: bool = False) -> None:
         if hidden(node):
             return
-        in_text = in_text or node.tag.rsplit("}", 1)[-1] == "text"
+        in_text = in_text or local(node.tag) == "text"
         if in_text and node.text:
             chunks.append(node.text)
         for child in node:
@@ -107,24 +55,8 @@ def check(path: Path) -> list[str]:
     if svg.attrib.get("data-diagram-type") != "event-modeling":
         return ["SVG must declare data-diagram-type=event-modeling"]
 
-    errors: list[str] = []
-    # Rules targeting structural groups can override the attributes checked below.
-    for style in STYLE_RE.finditer(source):
-        body = style.group("body")
-        if body is None:
-            continue
-        css = CSS_COMMENT_OR_STRING_RE.sub(" ", body)
-        selectors = re.findall(r"([^{}]+)\{", css)
-        if any(
-            CSS_ESCAPE_RE.sub(decode_css_escape, name).casefold() == "data-event-stage"
-            for selector in selectors
-            for match in CSS_ATTRIBUTE_RE.finditer(selector)
-            if (name := match.group("name")) is not None
-        ):
-            errors.append("stylesheet must not select data-event-stage")
-            break
-
     parents = {child: parent for parent in svg.iter() for child in parent}
+    errors = check_static_svg(source, svg, parents, "data-event-stage", "data-event-kind", link_attr="data-event-rel")
     stages = [element for element in svg.iter() if "data-event-stage" in element.attrib]
     if not 1 <= len(stages) <= 6:
         errors.append("expected 1 to 6 ordered stages")
@@ -132,8 +64,6 @@ def check(path: Path) -> list[str]:
     global_ids: set[str] = set()
     for index, stage in enumerate(stages, 1):
         stage_id = stage.attrib["data-event-stage"]
-        if "transform" in stage.attrib or {"transform", "translate", "rotate", "scale"} & inline_style(stage).keys():
-            errors.append(f"{stage_id}: event stage must not use transform")
         if not stage_id or stage_id in stage_ids:
             errors.append(f"blank or duplicate stage ID: {stage_id!r}")
         stage_ids.add(stage_id)
