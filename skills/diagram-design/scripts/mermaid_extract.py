@@ -974,12 +974,21 @@ def _parse_flowchart(
                         )
             continue
         parsed = _parse_node_expression(text)
-        if parsed is not None:
+        # A bare ID can absorb an unfinished link token, but a shaped node's
+        # label may legitimately contain the same characters.
+        masked = _top_level_mask(text)
+        malformed_link = re.search(
+            r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo](?!\S)",
+            masked,
+        )
+        bare_link_start = re.search(r"--|==|-\.", masked)
+        if parsed is not None and not (
+            parsed[1] == parsed[0] and not parsed[2] and (malformed_link or bare_link_start)
+        ):
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
             continue
-        # A spaced `-x`/`=o` token is a one-character link Mermaid rejects.
-        if re.search(r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo](?!\S)", _top_level_mask(text)):
+        if malformed_link or bare_link_start:
             _fail(f"malformed edge at line {line_number}")
     if invisible_links:
         diagram.notes.append(f"{invisible_links} invisible layout links ignored")

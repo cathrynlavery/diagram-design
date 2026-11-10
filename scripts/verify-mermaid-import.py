@@ -1510,7 +1510,7 @@ def check_hyphenated_node_ids(tmp: Path) -> None:
         fail(f"real circle/cross links between hyphenated ids changed: {edges!r}")
 
     # Mermaid rejects a spaced single-dash or single-equals x/o operator.
-    for broken in ("A -->", "A --x", "user-profile -->", "A -x B", "A -o B", "A =o B", "A -x"):
+    for broken in ("A -->", "A --x", "A--foo", "A--bar", "A-.x", "user-profile -->", "A -x B", "A -o B", "A =o B", "A -x"):
         flow.write_text(f"flowchart LR\n{broken}\n", encoding="utf-8")
         expect_error([str(flow)], "malformed edge at line 2")
     ok("hyphenated flowchart node ids stay whole; only real link operators split them")
