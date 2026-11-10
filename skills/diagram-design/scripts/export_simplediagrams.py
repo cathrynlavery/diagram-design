@@ -261,7 +261,7 @@ class Note(str, Enum):
     UNREADABLE_PATH = "<path> with unreadable data left out"
     HOLE = "hole in a filled shape, kept as an outline only"
     COMPLEX_HOLES = "holes in a path with many contours may be filled in"
-    EVENODD_OVERLAP = "overlapping even-odd contours may fill areas that were clear"
+    CONTOUR_OVERLAP = "overlapping contours may fill areas that were clear"
     SKEWED_CORNERS = "rounded corners of a skewed rectangle drawn square"
     ENDING_RECOLOURED = "line endings painted another colour take the line's colour"
     ENDING_SHAPE = "line ending other than an arrow, a circle or a diamond drawn as an arrow"
@@ -293,7 +293,7 @@ class Note(str, Enum):
     ICON_UNSAFE = "icon SimpleDiagrams cannot store safely left out"
     USE_OF_NOTHING = "<use> of nothing left out"
     ICON_TEXT_CASE = "letter case set by CSS left unchanged in stored icons"
-    ICON_MID_MARKERS = "middle markers in stored icons may be left out by the desktop renderer"
+    ICON_MARKERS = "markers in stored icons may be left out by the desktop renderer"
     ICON_COLOUR = "see-through or unknown icon colour stored as solid"
     ICON_CROPPED = "icon cropped to its box drawn whole"
     PICTURE_SKEWED = "skewed or empty picture left out"
@@ -481,30 +481,27 @@ def _rule_declarations(rule: export_svg._CssRule) -> Props:
 
 
 def _readable_part(selector: str) -> tuple[Compound, ...] | None:
-    """An unreadable selector with its attribute tests, pseudo-classes and combinators
-    dropped, so the export can note it where it may apply; ``None`` when it needs an
-    interactive state such as ``:hover``. A part made only of attribute tests keeps the
-    attributes' presence, not their values, so it matches what might carry them."""
+    """Keep the constraints that can tell whether an unsupported selector may apply.
+
+    Attribute tests keep presence, not values. Drop pseudo-classes and approximate
+    combinators, except for interactive states that are outside the default view.
+    """
     if re.search(
         r":(hover|focus|focus-within|focus-visible|active|visited|link|target)\b",
         selector,
     ):
         return None
     parts = re.sub(r"\s*[>+~&]\s*", " ", selector).split()
-    plain = [re.sub(r"::?[\w-]+(\([^)]*\))?|\[[^\]]*\]", "", part) for part in parts]
-    if not plain:
-        return None
-    compounds = []
-    for part, kept in zip(parts, plain):
-        if kept:
-            compounds.append(_compound(kept))
-        else:  # only attribute tests, such as [data-kind]: it selects what has the attribute
-            names = re.findall(r"\[\s*([\w-]+)", part)
-            tested = Compound(None, (), (), frozenset(names))
-            compounds.append(tested if names else None)
-    if None in compounds:
-        return None
-    return tuple(compound for compound in compounds if compound is not None)
+    compounds: list[Compound] = []
+    for part in parts:
+        without_pseudos = re.sub(r"::?[\w-]+(\([^)]*\))?", "", part)
+        names = frozenset(re.findall(r"\[\s*([\w-]+)", without_pseudos))
+        plain = re.sub(r"\[[^\]]*\]", "", without_pseudos)
+        if compound := _compound(plain or ("*" if names else "")):
+            compounds.append(compound._replace(attributes=names))
+        else:
+            return None
+    return tuple(compounds) if compounds else None
 
 
 # --- Custom properties -------------------------------------------------------
@@ -823,6 +820,7 @@ def computed_properties(
         props["font-weight"] = absolute_weight(
             props["font-weight"], inherited.get("font-weight", "400")
         )
+    _settle_stroke_lengths(props)
     return props
 
 
@@ -969,6 +967,26 @@ def length(
 IDENTITY: Matrix = (1, 0, 0, 1, 0, 0)
 NUMBER = r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?"
 NUMBER_RE = re.compile(NUMBER)
+FONT_RELATIVE_LENGTH = re.compile(rf"{NUMBER}(?:em|ex|ch)", re.IGNORECASE)
+STROKE_LENGTHS = ("stroke-width", "stroke-dasharray", "stroke-dashoffset")
+
+
+def _stroke_tokens(value: str) -> list[str]:
+    """Split a stroke length or dash list, preserving its separators."""
+    return re.split(r"([,\s]+)", value)
+
+
+def _settle_stroke_lengths(props: Props) -> None:
+    """Freeze font-relative stroke lengths at the declaring element's font size."""
+    size = length(props.get("font-size"), 16.0)
+    for name in STROKE_LENGTHS:
+        if value := props.get(name):
+            props[name] = "".join(
+                f"{length(token, font_size=size):g}" if FONT_RELATIVE_LENGTH.fullmatch(token) else token
+                for token in _stroke_tokens(value)
+            )
+
+
 
 
 def multiply(m: Matrix, n: Matrix) -> Matrix:
@@ -1597,7 +1615,10 @@ def _styled_clone(element: ET.Element, page: Props, stored: Props) -> tuple[ET.E
         stored_default = (
             None if name == "font-family" and name in page else INITIAL_VALUES.get(name)
         )
-        if wanted is None or wanted == stored.get(name, stored_default):
+        relative_stroke = name in STROKE_LENGTHS and any(
+            FONT_RELATIVE_LENGTH.fullmatch(token) for token in _stroke_tokens(clone.get(name, ""))
+        )
+        if wanted is None or (wanted == stored.get(name, stored_default) and not relative_stroke):
             continue
         if name in ICON_PAINT or wanted.strip():  # an empty paint is kept, to be refused
             clone.set(name, wanted)
@@ -1993,24 +2014,17 @@ def _clip_utf8(text: str, max_bytes: int, drop: Sequence[str] = ("Cc",)) -> str:
 class Reader:
     """Walks the exported SVG once and collects boxes, strokes and labels in drawing order."""
 
-    def __init__(self, root: ET.Element) -> None:
+    def __init__(self, root: ET.Element, page: tuple[ET.Element, ET.Element] | tuple[()]) -> None:
         """Prepare to read ``root``: its stylesheet, its IDs and its page size."""
         self.root = root
         styles = (element.text or "" for element in root.iter() if _local(element) == "style")
         self.rules, self.unread = parse_stylesheet("".join(styles))
-        # The isolated SVG exporter carries inheritable body styles. Their theme tokens
-        # come from the HTML root and settle before the SVG's own declarations apply.
-        body_rules = [rule for rule in self.rules if rule.compounds == (Compound("body", (), ()),)]
-        root_rules = [
-            rule for rule in self.rules
-            if rule.compounds == (Compound(None, (), (), root_tests=1),)
-        ]
-        root_tokens = {
-            name: value
-            for name, value in computed_properties(ET.Element("html"), {}, root_rules, ()).items()
-            if name.startswith("--")
-        }
-        self.root_inherited = computed_properties(ET.Element("body"), root_tokens, body_rules, ())
+        self.page_ancestors = list(page)
+        self.root_inherited: Props = {}
+        if page:
+            html, body = page
+            html_style = computed_properties(html, {}, self.rules, ())
+            self.root_inherited = computed_properties(body, html_style, self.rules, (html,))
         self.by_id: dict[str, ET.Element] = {}
         for element in root.iter():
             if name := element.get("id"):
@@ -2051,7 +2065,7 @@ class Reader:
         if self._selects_any(self.unread):
             self._skip(Note.STYLESHEET_UNREAD)
         self._root_background()
-        self._walk(self.root, self.root_inherited, origin, 1.0, [])
+        self._walk(self.root, self.root_inherited, origin, 1.0, self.page_ancestors)
         if (count := len(self.items)) > MAX_ITEMS:
             raise ValueError(
                 f"the diagram draws {count} shapes; this export handles up to {MAX_ITEMS}"
@@ -2062,12 +2076,12 @@ class Reader:
         """Take an opaque colour the root ``<svg>`` is painted with as the page's background."""
         values = [
             (name, value)
-            for name, value in _cascaded_declarations(self.root, self.rules, ())
+            for name, value in _cascaded_declarations(self.root, self.rules, self.page_ancestors)
             if name in {"background", "background-color", "background-image"}
         ]
         if not values:
             return
-        props = computed_properties(self.root, self.root_inherited, self.rules, ())
+        props = computed_properties(self.root, self.root_inherited, self.rules, self.page_ancestors)
         colour = None
         has_image = False
         for name, raw in values:
@@ -2142,7 +2156,13 @@ class Reader:
 
     def _selects_any(self, rules: Sequence[CssRule]) -> bool:
         """Whether any of the rules selects an element of the drawing."""
-        stack: list[tuple[ET.Element, list[ET.Element]]] = [(self.root, [])]
+        if any(
+            rule.applies(node, self.page_ancestors[:index])
+            for index, node in enumerate(self.page_ancestors)
+            for rule in rules
+        ):
+            return True  # an unread page declaration may set an inherited value
+        stack = [(self.root, self.page_ancestors)]
         while stack:
             element, path = stack.pop()
             if any(rule.applies(element, path) for rule in rules):
@@ -2288,7 +2308,9 @@ class Reader:
         match = re.fullmatch(r"\s*url\(\s*['\"]?#([^'\")]+)['\"]?\s*\)\s*", reference or "")
         return self.markers.get(match.group(1)) if match else None
 
-    def _marker_shape(self, marker: ET.Element, outer: Props) -> tuple[ET.Element, Props] | None:
+    def _marker_shape(
+        self, marker: ET.Element, outer: Props, ancestors: list[ET.Element]
+    ) -> tuple[ET.Element, Props] | None:
         """The first shape a marker shows, with its style; hidden ones draw nothing."""
         drawable = ("polygon", "path", "polyline", "circle", "ellipse", "rect", "line")
 
@@ -2306,7 +2328,7 @@ class Reader:
                     return found
             return None
 
-        return walk(marker, outer, [self.root, marker])
+        return walk(marker, outer, [*ancestors, marker])
 
     def _marker_reach(self, props: Props, line_width: float) -> float:
         """How far a line's markers can reach past its end, so an icon's bounds include them."""
@@ -2334,7 +2356,7 @@ class Reader:
         # A marker inherits where it is defined, not from the line that uses it.
         inherited, path = self._context_of(marker)
         outer = computed_properties(marker, inherited, self.rules, path)
-        if (shown := self._marker_shape(marker, outer)) is None:
+        if (shown := self._marker_shape(marker, outer, path)) is None:
             return "none"
         shape, props = shown
         fill = props.get("fill", "black").strip().lower()
@@ -2549,7 +2571,7 @@ class Reader:
         check_holes = len(outlines) <= OVERLAP_CHECK_LIMIT
         if paint.filled and not check_holes:
             self._skip(Note.COMPLEX_HOLES)
-        filled_extents: list[Bounds] = []
+        filled_contours: list[tuple[Bounds, bool]] = []
         for index, (subpath, points) in enumerate(zip(subpaths, flattened, strict=True)):
             # Markers sit at the whole path's start and end, not at each subpath's.
             ends = {
@@ -2571,18 +2593,20 @@ class Reader:
             self._add_outline(subpath, paint, subpath_props, matrix, len(subpaths) > 1)
             if (
                 paint.filled
-                and len(filled_extents) <= OVERLAP_CHECK_LIMIT
+                and len(filled_contours) <= OVERLAP_CHECK_LIMIT
                 and extent is not None
             ):
-                filled_extents.append(extent)
-        # A browser fills a path once; here each part is filled, so a see-through overlap darkens.
+                filled_contours.append((extent, signed_area(points) > 0))
+        # SVG fills a path once, cancelling areas by its fill rule before applying opacity.
         see_through = paint.filled and len(paint.fill) == 9
+        if see_through and _bounds_overlap([extent for extent, _ in filled_contours]):
+            self._skip(Note.SEE_THROUGH_OVERLAP)
         evenodd = props.get("fill-rule", "").strip().lower() == "evenodd"
-        if (see_through or evenodd) and _bounds_overlap(filled_extents):
-            if see_through:
-                self._skip(Note.SEE_THROUGH_OVERLAP)
-            if evenodd:
-                self._skip(Note.EVENODD_OVERLAP)
+        if check_holes and any(
+            (evenodd or forward != reverse) and _intersects_bounds(a, b)
+            for (a, forward), (b, reverse) in itertools.combinations(filled_contours, 2)
+        ):
+            self._skip(Note.CONTOUR_OVERLAP)
 
     def _add_outline(
         self,
@@ -2657,8 +2681,8 @@ class Reader:
             sized = {"font-size": f"{size:g}"}  # em is of the text's own size
             x = self._across(node.get("x"), x, props=sized)
             y = self._down(node.get("y"), y, props=sized)
-            dx = length(node.get("dx"), font_size=size)
-            dy = length(node.get("dy"), font_size=size)
+            dx = self._across(node.get("dx"), props=sized)
+            dy = self._down(node.get("dy"), props=sized)
             return x + dx, y + dy
 
         size = length(props.get("font-size"), 16.0)
@@ -2698,7 +2722,7 @@ class Reader:
                     else:
                         if text.strip() and not "".join(lines[-1][2]).strip():  # it starts the line
                             lines[-1] = (lines[-1][0], styles[0], lines[-1][2])
-                        gap = length(child.get("dx"), font_size=child_size)
+                        gap = self._across(child.get("dx"), props=child_props)
                         lines[-1][2].append(f" {text}" if gap > 0 else text)
                         if abs(gap) > child_size:
                             self._skip(Note.WIDE_GAP)
@@ -2774,7 +2798,7 @@ class Reader:
             placed = any(child.get(key) is not None for key in LINE_PLACEMENT)
             if placed and any(shown is not None and words.strip() for words, shown in inner):
                 self._skip(Note.NESTED_LINE)
-            elif length(child.get("dx")):
+            elif self._across(child.get("dx"), props=child_props):
                 self._skip(Note.NESTED_GAP)
             pieces += inner
             ahead = before + "".join(words for words, _ in pieces)
@@ -2830,7 +2854,10 @@ class Reader:
         align = _alignment(props.get("text-align", ""))
         wrap_box = (x, y, w, h) if w > 0 and h > 0 else None
         paint = props.get("color", "black")
-        self._add_label(words, (x, y), props, matrix, opacity, align, paint, wrap_box)
+        # HTML glyphs use CSS color and group opacity, independently of SVG fill opacity.
+        self._add_label(
+            words, (x, y), props | {"fill-opacity": "1"}, matrix, opacity, align, paint, wrap_box
+        )
 
     def _restyled_html(
         self, element: ET.Element, props: Props, ancestors: list[ET.Element]
@@ -2911,7 +2938,7 @@ class Reader:
         solid = parsed is not None and parsed[3] >= 0.999  # else stored solid, as noted if used
         colour = colour_hex(parsed)[:7]
         context = props | {"color": colour}  # what the icon's markup inherits on the page
-        ancestors = [self.root]
+        ancestors = self._ancestors_of(target)
         view = [float(v) for v in NUMBER_RE.findall(target.get("viewBox", ""))]
         framed = _local(target) in ("symbol", "svg") and len(view) == 4 and min(view[2:]) > 0
         if framed or _local(target) == "symbol":  # its children are copied, not the target
@@ -2919,7 +2946,7 @@ class Reader:
             if _local(target) == "svg" and context.get("display") == "none":
                 return  # a hidden <svg> stays hidden where a <use> places it
             self._note_undrawn(context)  # the symbol's own effects, which no copy keeps
-            ancestors = [self.root, target]
+            ancestors = [*ancestors, target]
             # The symbol's own opacity layers on the placement's, as a group's would.
             opacity *= max(0.0, min(1.0, length(context.get("opacity"), 1.0, percent_of=1.0)))
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
@@ -3071,16 +3098,21 @@ class Reader:
         clashes = any(self.by_id.get(item.get("id", "")) is not item for item in owned)
         return IconCopy(copies, shared, clashes)
 
-    def _context_of(self, element: ET.Element) -> tuple[Props, list[ET.Element]]:
-        """What an element inherits where it sits on the page, and its ancestors, root first."""
-        path: list[ET.Element] = []
+    def _ancestors_of(self, element: ET.Element) -> list[ET.Element]:
+        """The original definition's ancestors, including the HTML context if present."""
+        path = []
         node = self.parents.get(element)
         while node is not None:
-            path.insert(0, node)
+            path.append(node)
             node = self.parents.get(node)
+        return [*self.page_ancestors, *reversed(path)]
+
+    def _context_of(self, element: ET.Element) -> tuple[Props, list[ET.Element]]:
+        """What an element inherits where it sits on the page, and its ancestors, root first."""
+        path = self._ancestors_of(element)
         inherited = self.root_inherited
-        for depth, ancestor in enumerate(path):
-            inherited = computed_properties(ancestor, inherited, self.rules, path[:depth])
+        for depth in range(len(self.page_ancestors), len(path)):
+            inherited = computed_properties(path[depth], inherited, self.rules, path[:depth])
         return inherited, path
 
     def _frozen(
@@ -3095,8 +3127,9 @@ class Reader:
             return None
         self._note_css_geometry(element, ancestors)
         tag = _local(element)
-        if page.get("filter", "none").strip().lower() not in {"none", "normal"}:
-            self._skip(Note.FILTERED)
+        for name in ("filter", "mix-blend-mode"):
+            if page.get(name, "none").strip().lower() not in {"none", "normal"}:
+                self._skip(UNDRAWN_NOTES[name])
         if tag in {"text", "tspan"} and _uses_vertical_text(page):
             self._skip(Note.VERTICAL_TEXT)
         if tag in {"text", "tspan"} and any(
@@ -3106,10 +3139,10 @@ class Reader:
         ):
             self._skip(Note.ICON_TEXT_CASE)
         if (
-            tag in {"path", "polyline", "polygon", "rect", "circle", "ellipse"}
-            and self._marker(page.get("marker-mid")) is not None
+            tag in {"line", "path", "polyline", "polygon", "rect", "circle", "ellipse"}
+            and any(self._marker(page.get(name)) is not None for name in ("marker-start", "marker-mid", "marker-end"))
         ):
-            self._skip(Note.ICON_MID_MARKERS)
+            self._skip(Note.ICON_MARKERS)
         clone, stored = _styled_clone(element, page, stored)
         path = [*ancestors, element]
         for child in element:
@@ -3394,15 +3427,16 @@ def _overlapping(items: Sequence[Drawn]) -> bool:
     return _bounds_overlap(extents)
 
 
+def _intersects_bounds(a: Bounds, b: Bounds) -> bool:
+    """Whether the two bounds overlap with positive area."""
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
 def _bounds_overlap(extents: Sequence[Bounds]) -> bool:
     """Whether two bounds may intersect, conservatively warning beyond the work limit."""
     if len(extents) > OVERLAP_CHECK_LIMIT:
         return True
-    return any(
-        a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
-        for index, a in enumerate(extents)
-        for b in extents[index + 1 :]
-    )
+    return any(_intersects_bounds(a, b) for a, b in itertools.combinations(extents, 2))
 
 
 def _frame_corners(frame: Rect, rotation: float) -> list[Point]:
@@ -4545,11 +4579,42 @@ class Export(NamedTuple):
     assets: list[Asset]
 
 
+def _page_style_elements(source: str) -> tuple[ET.Element, ET.Element] | tuple[()]:
+    """Read HTML ancestors, or leave a standalone SVG as the root of its own cascade."""
+    html, body = ET.Element("html"), ET.Element("body")
+    elements = {"html": html, "body": body}
+    page = False
+    svg_depth = 0
+    for token, _, _, _ in export_svg.html_tokens(source):
+        name = (token.group("tag") or "").lower()
+        if name == "svg":
+            if page and not svg_depth:
+                break
+            if token.group("close"):
+                svg_depth -= 1
+            elif not token.group().endswith("/>"):
+                svg_depth += 1
+            continue
+        if svg_depth or token.group("close") or not name:
+            continue
+        page = True
+        if name not in elements:
+            continue
+        markup = export_svg.normalize_html_entities(export_svg.xmlify_attributes(token.group()))
+        if (opening := export_svg.START_TAG_RE.fullmatch(markup)) is not None:
+            for attr in export_svg.TAG_ATTR_RE.finditer(opening.group(2)):
+                if raw := attr.group(4):
+                    elements[name].attrib.setdefault(
+                        attr.group(2).lower(), export_svg.decode_xml_references(raw[1:-1])
+                    )
+    return (html, body) if page else ()
+
+
 def export_document(html: str, source_path: Path) -> Export:
     """Translate source HTML into a SimpleDiagrams document."""
     svg = export_svg.export_svg_document(html, source_path, system_fonts=True, scope_rules=False)
     root = ET.fromstring(svg)
-    reader = Reader(root).read()
+    reader = Reader(root, _page_style_elements(html)).read()
     titles = (element.text for element in root if _local(element) == "title" and element.text)
     title = next(titles, None) or source_path.stem
     name = _clip_utf8(re.sub(r"\s+", " ", title).strip(), MAX_NAME_BYTES)

@@ -322,6 +322,40 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             self.mod.right_angle_route(step), [(400, 104), (340, 104), (340, 120), (280, 120)]
         )
 
+    def test_marker_paint_matches_the_ancestors_where_it_is_defined(self) -> None:
+        """A descendant rule using defs still applies when a line uses the marker."""
+        doc, _ = self.export(
+            '<style>defs polygon { fill: none; stroke: black }</style>'
+            '<svg viewBox="0 0 200 100">'
+            + ARROW_MARKER.format("")
+            + '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#a)"/></svg>'
+        )
+        [connection] = doc["pages"][0]["content"]["content"]["connections"]
+        self.assertEqual(connection["content"]["end_ending"], "solidArrow")
+
+    def test_font_relative_stroke_inherits_its_settled_value(self) -> None:
+        """Changing the child's font size does not reinterpret the parent's outline."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 200 100"><g font-size="10" stroke="black" stroke-width="1em">'
+            '<line x2="100" y1="20" y2="20" font-size="20"/></g></svg>'
+        )
+        [line] = doc["pages"][0]["elements"]
+        self.assertEqual(core(line)["style"]["line_width"], 10)
+        svg = self.icon(
+            "",
+            '<svg width="20" height="20" viewBox="0 0 20 20">'
+            '<path d="M1 1H9" stroke="red" stroke-width="1em" style="font-size:20px;stroke-width:16px"/>'
+            '</svg>',
+        )
+        self.assertIn('stroke-width="16px"', svg)
+
+    def test_text_percentage_offsets_use_the_viewport(self) -> None:
+        """Percentage dx and dy are equivalent to their viewport-relative lengths."""
+        template = '<svg viewBox="0 0 200 100"><text x="10" y="30" dx="{}" dy="{}">A</text></svg>'
+        relative, _ = self.export(template.format("50%", "25%"))
+        absolute, _ = self.export(template.format("100", "25"))
+        self.assertEqual(relative, absolute)
+
     def test_a_short_chord_does_not_hide_a_deep_connector_bend(self) -> None:
         """A bend that is narrow but deep is geometry, rather than a small crossing hop."""
         diagram = ARROW_MARKER.format("") + (
@@ -609,7 +643,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             (outer + inner, "nonzero", ["#000000", "#000000"], {}),  # wound alike: filled
             (outer + "M60 60H160V160H60Z", "nonzero", ["#000000", "#000000"], {}),  # overlapping
             (outer + "M60 60H160V160H60Z", "evenodd", ["#000000", "#000000"],
-             {"overlapping even-odd contours may fill areas that were clear": 1}),
+             {"overlapping contours may fill areas that were clear": 1}),
+            (outer + "M60 60V160H160V60Z", "nonzero", ["#000000", "#000000"],
+             {"overlapping contours may fill areas that were clear": 1}),
             (outer + reversed_inner + "M55 55H65V65H55Z", "nonzero", ["#000000", "#000000", "#00000000"],
              hole),  # an island inside the hole is filled again
         ):  # fmt: skip
@@ -1837,6 +1873,32 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         style = self.element_labelled("Label", doc)["text_content"]["base_style"]
         self.assertEqual((style["font_size"], style["weight"]), (10, "bold"))
 
+    def test_compound_body_selectors_supply_inherited_typography(self) -> None:
+        """Rules matching the authored body class and ancestor can style SVG labels."""
+        doc, _ = self.export(
+            '<html class="theme"><head><style>'
+            'html.theme { font-size:20px; color:red }'
+            'html.theme body.article { font-size:80%; font-weight:bold }'
+            'body.article rect { fill: blue }'
+            '</style></head><body class="article"><svg viewBox="0 0 100 100">'
+            '<rect width="10" height="10"/><text y="30" fill="currentColor">Label</text>'
+            '</svg></body></html>'
+        )
+        style = self.element_labelled("Label", doc)["text_content"]["base_style"]
+        self.assertEqual((style["font_size"], style["weight"], style["color_hex"]), (16, "bold", "#FF0000"))
+        [box] = [core(element) for element in doc["pages"][0]["elements"] if core(element)["kind"] != "text"]
+        self.assertEqual(box["style"]["fill_hex"], "#0000FF")
+
+    def test_html_uses_its_color_alpha_and_group_opacity(self) -> None:
+        """SVG fill opacity cannot hide HTML glyphs inside a foreignObject."""
+        doc, _ = self.export(
+            '<svg viewBox="0 0 200 100" fill-opacity="0"><g opacity=".5">'
+            '<foreignObject width="180" height="60"><div style="color:rgba(255,0,0,.5)">Visible</div>'
+            '</foreignObject></g></svg>'
+        )
+        style = self.element_labelled("Visible", doc)["text_content"]["base_style"]
+        self.assertEqual(style["color_hex"], "#FF000040")
+
     def test_html_text_can_show_inside_a_zero_size_wrapper(self) -> None:
         """A visible descendant supplies the label style when its wrapper cannot show text."""
         doc, _ = self.export(
@@ -1864,7 +1926,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         result = self.mod.export_document(
             """<style>
               .upper { text-transform: uppercase; writing-mode: vertical-rl }
-              .line { marker-mid: url(#m); filter: blur(3px) }
+              .line { marker-mid: url(#m); filter: blur(3px); mix-blend-mode: multiply }
             </style>
             <svg viewBox="0 0 100 100">
               <defs><marker id="m"><circle r="3" fill="red"/></marker></defs>
@@ -1883,7 +1945,8 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertIn("letter case set by CSS left unchanged in stored icons", result.skipped)
         self.assertIn("vertical text drawn horizontally", result.skipped)
         self.assertIn("filters such as blur and shadow left out", result.skipped)
-        self.assertIn("middle markers in stored icons may be left out by the desktop renderer", result.skipped)
+        self.assertIn("blend modes left out; shapes are drawn over one another plainly", result.skipped)
+        self.assertIn("markers in stored icons may be left out by the desktop renderer", result.skipped)
 
     def test_large_translucent_path_reports_possible_overlap(self) -> None:
         """Exceeding the pair-check budget cannot hide an overlap late in the path."""
