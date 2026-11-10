@@ -352,6 +352,19 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         [connection] = page["content"]["content"]["connections"]
         self.assertEqual(connection["content"]["end_attachment"]["element_id"], target["id"])
 
+    def test_nested_node_cannot_take_an_arrow_touching_the_outer_border(self) -> None:
+        """An overlapping inner node is a different target when it is not a decorative inset."""
+        body = ARROW_MARKER.format("") + (
+            '<rect x="120" y="20" width="260" height="240"/>'
+            '<rect x="124" y="100" width="80" height="40" fill="white"/>'
+            '<line x1="20" y1="120" x2="120" y2="120" stroke="black" marker-end="url(#a)"/>'
+        )
+        document, _ = self.export(f'<svg viewBox="0 0 400 300">{body}</svg>')
+        page = document["pages"][0]
+        [outer] = [item for item in map(core, page["elements"]) if item["frame"]["x"] == 120]
+        [connection] = page["content"]["content"]["connections"]
+        self.assertEqual(connection["content"]["end_attachment"]["element_id"], outer["id"])
+
     def test_arrow_keeps_the_labeled_inset_as_its_target(self) -> None:
         """The border and inset of one node should keep the connector on its editable label."""
         body = ARROW_MARKER.format("") + (
@@ -362,9 +375,9 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         )
         doc, _ = self.export(f'<svg viewBox="0 0 240 100">{body}</svg>')
         [connection] = doc["pages"][0]["content"]["content"]["connections"]
-        self.assertEqual(
-            connection["content"]["end_attachment"]["element_id"], self.element_labelled("Node", doc)["id"]
-        )
+        inset = self.element_labelled("Node", doc)
+        self.assertEqual(inset["frame"]["x"], 124)
+        self.assertEqual(connection["content"]["end_attachment"]["element_id"], inset["id"])
 
     def test_marker_ignores_empty_shapes_and_nondrawing_branches(self) -> None:
         """Empty geometry and definitions cannot replace a visible marker triangle."""
@@ -407,6 +420,21 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                 )
                 _, notes = self.export(f'<svg viewBox="0 0 200 100">{body}</svg>')
                 self.assertIn(expected, notes)
+
+    def test_reused_marker_geometry_is_read_once_with_warnings_for_each_use(self) -> None:
+        """Shared marker definitions do not repeat the geometric analysis for every line."""
+        body = (
+            '<defs><marker id="m" orient="auto">'
+            '<circle cx="4" cy="3" r="1"/><polygon points="0 0,8 3,0 6"/>'
+            '</marker></defs>'
+            '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/>'
+            '<line x1="10" y1="60" x2="100" y2="60" stroke="black" marker-end="url(#m)"/>'
+        )
+        read_marker = self.mod.Reader._marker_shape
+        with mock.patch.object(self.mod.Reader, "_marker_shape", autospec=True, side_effect=read_marker) as read:
+            _, notes = self.export(f'<svg viewBox="0 0 200 100">{body}</svg>')
+        self.assertEqual(read.call_count, 1)
+        self.assertEqual(notes[self.mod.Note.ENDING_COMPOSITE.value], 2)
 
     def test_marker_paint_matches_the_ancestors_where_it_is_defined(self) -> None:
         """A descendant rule using defs still applies when a line uses the marker."""
@@ -453,7 +481,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         _, notes = self.export(f'<svg viewBox="0 0 200 200">{body}</svg>')
         self.assertNotIn(FADED_ENDINGS, notes)
 
-    def test_marker_uses_its_first_painted_shape(self) -> None:
+    def test_marker_ignores_a_contour_that_does_not_paint(self) -> None:
         """An empty contour in a marker does not hide the following arrowhead."""
         doc, _ = self.export(
             '<svg viewBox="0 0 200 100"><defs><marker id="m" orient="auto">'
@@ -462,6 +490,22 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         )
         [connection] = doc["pages"][0]["content"]["content"]["connections"]
         self.assertEqual(connection["content"]["end_ending"], "filledArrow")
+
+    def test_marker_uses_the_largest_painted_shape_and_reports_the_combination(self) -> None:
+        """A small dot cannot change an arrow to a circle just by changing drawing order."""
+        dot = '<circle cx="4" cy="3" r="1"/>'
+        triangle = '<polygon points="0 0,8 3,0 6"/>'
+        line = '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/>'
+        for shapes in (dot + triangle, triangle + dot):
+            with self.subTest(shapes=shapes):
+                document, notes = self.export(
+                    '<svg viewBox="0 0 200 100"><defs>'
+                    f'<marker id="m" orient="auto" viewBox="0 0 8 6">{shapes}</marker></defs>'
+                    f'{line}</svg>'
+                )
+                [connection] = document["pages"][0]["content"]["content"]["connections"]
+                self.assertEqual(connection["content"]["end_ending"], "filledArrow")
+                self.assertIn(self.mod.Note.ENDING_COMPOSITE.value, notes)
 
     def test_font_relative_stroke_inherits_its_settled_value(self) -> None:
         """Changing the child's font size does not reinterpret the parent's outline."""
@@ -581,6 +625,30 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual(record["settings"]["direction"], "vertical")
         self.assertEqual([lane["text"]["string"] for lane in record["parts"]], ["L0", "L1", "L2"])
         self.assertEqual([len(lane["members"]) for lane in record["parts"]], [0, 1, 0])
+
+    def test_bidirectional_arrow_cannot_become_a_lane_divider(self) -> None:
+        """Two equal arrowheads still distinguish a connector from a plain title divider."""
+        dividers = "".join(
+            f'<line x1="20" y1="{y}" x2="380" y2="{y}" stroke="black"/>' for y in (20, 140, 260)
+        )
+        markers = ARROW_MARKER.format("").replace('orient="auto"', 'orient="auto-start-reverse"')
+        titles = '<text x="40" y="85">First</text><text x="40" y="205">Second</text>'
+        for endings in ("", 'marker-start="url(#a)" marker-end="url(#a)"'):
+            with self.subTest(endings=endings):
+                document, _ = self.export(
+                    f'<svg viewBox="0 0 400 300">{markers}{dividers}{titles}'
+                    f'<line x1="100" y1="20" x2="100" y2="260" stroke="black" {endings}/></svg>'
+                )
+                page = document["pages"][0]
+                has_lanes = any("complex_shape" in item for item in page["elements"])
+                self.assertEqual(has_lanes, not endings)
+                connections = page["content"]["content"]["connections"]
+                if endings:
+                    [connection] = connections
+                    self.assertEqual(connection["content"]["start_ending"], "filledArrow")
+                    self.assertEqual(connection["content"]["end_ending"], "filledArrow")
+                else:
+                    self.assertEqual(connections, [])
 
     def test_a_small_tag_keeps_its_word_on_one_line(self) -> None:
         """A tag too small for the default label margins gets a region wide enough for its word."""
@@ -1288,6 +1356,27 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual((core(artwork)["kind"], result.skipped), ("svg_artwork", {}))
         self.assertIn(">Hi</text>", result.assets[0].data.decode())
 
+    def test_a_stored_icon_writes_relative_font_size_attributes_as_absolute(self) -> None:
+        """Settled sizes must be written even when the clone computes the same sizes."""
+        for relative, size in (("2em", 32), ("150%", 24), ("2rem", 32)):
+            with self.subTest(relative=relative):
+                icon = self.icon(
+                    "",
+                    '<svg width="100" height="50" viewBox="0 0 100 50">'
+                    f'<text y="30" font-size="{relative}">Hi</text></svg>',
+                )
+                [label] = [node for node in ET.fromstring(icon).iter() if _tag(node) == "text"]
+                self.assertEqual(label.text, "Hi")
+                self.assertEqual(float(label.attrib["font-size"].removesuffix("px")), size)
+
+        symbol = self.icon(
+            "",
+            '<defs><symbol id="i" viewBox="0 0 100 50" font-size="2em">'
+            '<text y="30">Hi</text></symbol></defs><use href="#i" width="100" height="50"/>',
+        )
+        self.assertIn('font-size="32"', symbol)
+        self.assertIn(">Hi</text>", symbol)
+
     def test_measuring_an_icon_never_takes_its_drawing_as_the_paper(self) -> None:
         """An icon as large as the page is drawn, and the page keeps its own background."""
         document, _ = self.export("""<svg viewBox="0 0 400 300"><defs><g id="i">
@@ -1359,6 +1448,25 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
                   <defs><marker id="a" orient="{orient}"><polygon {shape}/></marker></defs>
                   <line {line} stroke="#000" {end}="url(#a)"/></svg>""")
                 self.assertEqual(skipped, notes)
+
+    def test_marker_classification_uses_normalized_transformed_points(self) -> None:
+        """Path notation does not change the ending, but turning its triangle changes direction."""
+        line = '<line x1="10" y1="20" x2="100" y2="20" stroke="black" marker-end="url(#m)"/>'
+        rotated = '<g transform="rotate(180 4 3)"><polygon points="0 0,8 3,0 6"/></g>'
+        for shape, ending, points_back in (
+            ('<path d="M0 5l9 -5 9 5-9 5z"/>', "diamond", False),
+            ('<path d="M0 5 L9 0 L18 5 L9 10Z"/>', "diamond", False),
+            (rotated, "filledArrow", True),
+        ):
+            with self.subTest(shape=shape):
+                document, notes = self.export(
+                    '<svg viewBox="0 0 200 100"><defs>'
+                    f'<marker id="m" orient="auto" viewBox="0 0 18 10">{shape}</marker></defs>'
+                    f'{line}</svg>'
+                )
+                [connection] = document["pages"][0]["content"]["content"]["connections"]
+                self.assertEqual(connection["content"]["end_ending"], ending)
+                self.assertEqual(self.mod.Note.ENDING_DIRECTION.value in notes, points_back)
 
     def test_styling_this_export_cannot_read_gets_a_note(self) -> None:
         """Each row draws differently in the browser; without a note the user cannot know."""
@@ -1536,6 +1644,44 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         [artwork] = document["pages"][0]["elements"]
         self.assertEqual(core(artwork)["frame"], {"x": 100, "y": 30, "width": 40, "height": 40})
 
+    def test_unframed_icons_report_lengths_that_need_the_original_viewport(self) -> None:
+        """Measuring an unframed icon changes what the saved SVG's percentages would mean."""
+        line = '<line x1="10" y1="30" x2="100" y2="30" stroke="black" {}/>'
+        for content in (
+            '<text x="10" y="30" dx="50%">Label</text>',
+            '<text x="10" y="30" dy="25%">Label</text>',
+            line.format('stroke-width="10%"'),
+            line.format('style="stroke-dasharray:5% 2px"'),
+            line.format('stroke-dasharray="2 2" stroke-dashoffset="5%"'),
+        ):
+            with self.subTest(content=content):
+                result = self.mod.export_document(
+                    f'<svg viewBox="0 0 400 300"><defs><g id="i">{content}</g></defs>'
+                    '<use href="#i"/></svg>',
+                    Path("case.html"),
+                )
+                self.assertEqual(result.assets, [])
+                self.assertIn(self.mod.Note.ICON_VIEWPORT.value, result.skipped)
+
+        icon = self.icon(
+            "",
+            '<svg width="100" height="50" viewBox="0 0 100 50">'
+            '<text x="10" y="30" dx="50%">Label</text></svg>',
+        )
+        self.assertIn('dx="50%"', icon)  # its explicit viewport is kept
+
+        for units, expected in (("userSpaceOnUse", False), ("objectBoundingBox", True)):
+            with self.subTest(pattern_units=units):
+                result = self.mod.export_document(
+                    '<svg viewBox="0 0 400 300"><defs>'
+                    f'<pattern id="p" patternUnits="{units}" width="50%" height="50%">'
+                    '<circle r="1"/></pattern><g id="i"><rect width="30" height="40" fill="url(#p)"/>'
+                    '</g></defs><use href="#i"/></svg>',
+                    Path("case.html"),
+                )
+                self.assertEqual(bool(result.assets), expected)
+                self.assertEqual(self.mod.Note.ICON_VIEWPORT.value in result.skipped, not expected)
+
     def test_an_icon_that_stores_nothing_says_why(self) -> None:
         """Measuring holds its notes back; if nothing can be stored they must still be heard."""
         for icon, notes in (
@@ -1661,7 +1807,7 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ("", '<foreignObject width="120" height="80"><div style="padding: 20px">Hi</div></foreignObject>',
              "HTML padding not read; the text sits at its box's edge"),
             ("", '<defs><g id="i"><rect x="50%" y="50%" width="10%" height="10%"/></g></defs><use href="#i"/>',
-             "icon SimpleDiagrams cannot store safely left out"),
+             self.mod.Note.ICON_VIEWPORT.value),
             ("", ('<defs><linearGradient id="g"><stop stop-color="red"/></linearGradient><symbol id="s" viewBox="0 0 10 10">'
                   '<linearGradient id="g"><stop stop-color="blue"/></linearGradient><rect width="9" height="9" fill="url(#g)"/>'
                   '</symbol></defs><use href="#s" width="20" height="20"/>'), "icon SimpleDiagrams cannot store safely left out"),

@@ -39,7 +39,7 @@ Lines take SimpleDiagrams' own hand-drawn line style, which the format sets for 
 
 ## Notes it prints
 
-Each is printed once per kind, with a count. The exporter conservatively reports possible overlap when a translucent group or path is too large to check every pair of parts. `<element>` stands for the element's tag.
+Each is printed once per kind, with a count. The exporter conservatively reports possible overlap when a translucent group or path is too large to check every pair of parts. When a marker contains several painted shapes, the largest one supplies the native ending. Artwork cropped to fit its content is left out if it still uses lengths relative to the original viewport. `<element>` stands for the element's tag.
 
 - `stylesheet rules this export cannot read left unapplied`
 - `CSS transform this export cannot read may misplace a shape`
@@ -59,6 +59,7 @@ Each is printed once per kind, with a count. The exporter conservatively reports
 - `overlapping contours may fill areas that were clear`
 - `rounded corners of a skewed rectangle drawn square`
 - `line endings painted another colour take the line's colour`
+- `line endings made of several marks drawn as one ending`
 - `line endings with paint this export cannot read take the line's colour`
 - `line endings with different opacity take the line's opacity`
 - `line ending other than an arrow, a circle or a diamond drawn as an arrow`
@@ -87,6 +88,7 @@ Each is printed once per kind, with a count. The exporter conservatively reports
 - `HTML padding not read; the text sits at its box's edge`
 - `rich HTML text kept as plain text`
 - `HTML layout such as flex or grid centring not read; the text sits at the top`
+- `unframed icon with viewport-relative lengths left out`
 - `icon SimpleDiagrams cannot store safely left out`
 - `<use> of nothing left out`
 - `letter case set by CSS left unchanged in stored icons`
