@@ -14,9 +14,9 @@ ADR 0004 split:
 4. Every relative references/*.md link in SKILL.md must resolve, and a link
    into a style-guide.md section must name one of its headings.
 5. Claude and Pi command/prompt surfaces must route to the matching reference.
-6. Plugin descriptions must fit Cowork's installation limit while retaining
-   every type's lexical hook. The skill and Codex longDescription keep the
-   fuller feature summary without inheriting the short-description limit.
+6. Plugin descriptions must fit Cowork's installation limit. They summarize
+   the main families; the Codex longDescription, like the skill description,
+   keeps every type's lexical hook without inheriting that limit.
 7. Factory Droid's README install commands and native manifest path must agree
    with the package metadata instead of becoming a second hand-maintained API.
 8. Every support path a strict skill bundler can extract from SKILL.md must be
@@ -42,7 +42,7 @@ ADR 0004 split:
    serif face, which Google Fonts also slices Cyrillic into, and the
    template's own font link must request it.
 15. Every surface that lists the size presets for selection — the SKILL.md
-   and README output-dial tables and the three import commands — must name
+   and README output-dial tables and the import commands — must name
    exactly the presets in the output-spec.md size table, in its order.
 16. Every SKILL.md section the ADR 0004 split thinned must keep the exact link
    to each block it moved out, or that content ships unreachable.
@@ -93,11 +93,13 @@ ROUTING_SURFACES = {
     Path("commands/import-drawio.md"): "references/import-drawio.md",
     Path("commands/import-mermaid.md"): "references/import-mermaid.md",
     Path("commands/import-excalidraw.md"): "references/import-excalidraw.md",
+    Path("commands/import-plantuml.md"): "references/import-plantuml.md",
     Path("commands/profile.md"): "references/profiles.md",
     Path("commands/doctor.md"): "references/doctor.md",
     Path("prompts/export-diagram.md"): "references/export.md",
     Path("prompts/import-mermaid.md"): "references/import-mermaid.md",
     Path("prompts/import-excalidraw.md"): "references/import-excalidraw.md",
+    Path("prompts/import-plantuml.md"): "references/import-plantuml.md",
     Path("prompts/profile.md"): "references/profiles.md",
     Path("prompts/doctor.md"): "references/doctor.md",
 }
@@ -110,6 +112,7 @@ SIZE_PRESET_SURFACES = {
     Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-excalidraw.md"): "- `--size` — any preset in `output-spec.md` §2:",
+    Path("commands/import-plantuml.md"): "- `--size` — any preset in `output-spec.md` §2:",
 }
 FACTORY_MANIFEST = Path(".factory-plugin/plugin.json")
 FACTORY_MARKETPLACE = Path(".factory-plugin/marketplace.json")
@@ -127,9 +130,11 @@ SCANNER_VISIBLE_SUPPORT_REFERENCE = re.compile(
 REQUIRED_PACKAGED_RUNTIME_FILES = frozenset(
     {
         "scripts/self_check.py",
+        "scripts/verify_geometry.py",
         "scripts/drawio_extract.py",
         "scripts/mermaid_extract.py",
         "scripts/excalidraw_extract.py",
+        "scripts/plantuml_extract.py",
         "scripts/export_svg.py",
         "scripts/export_png.py",
         "assets/template.html",
@@ -458,7 +463,7 @@ def readme_tree_tokens(markdown: str) -> list[str]:
     tokens: list[str] = []
     for block in blocks:
         tokens.extend(
-            re.findall(r"([A-Za-z0-9][A-Za-z0-9_.*-]*\.(?:md|html|py|yml|yaml|json|txt|mmd|drawio|png))", block)
+            re.findall(r"([A-Za-z0-9][A-Za-z0-9_.*-]*\.(?:md|html|py|yml|yaml|json|txt|mmd|drawio|png|puml|excalidraw))", block)
         )
     return tokens
 
@@ -744,6 +749,7 @@ COUNT_SURFACES = (
     Path("commands/import-drawio.md"),
     Path("commands/import-mermaid.md"),
     Path("commands/import-excalidraw.md"),
+    Path("commands/import-plantuml.md"),
     Path("README.md"),
     Path("CONTRIBUTING.md"),
     Path("skills/diagram-design/SKILL.md"),
@@ -754,7 +760,7 @@ COUNT_SURFACES = (
 
 # Reader-facing docs may state the count, but it must match the shipped type
 # references. Import commands stay count-free and route to SKILL.md instead.
-VERIFIED_COUNT_SURFACES = frozenset(COUNT_SURFACES[3:])
+VERIFIED_COUNT_SURFACES = frozenset(p for p in COUNT_SURFACES if p.parts[0] != "commands")
 TYPE_REFERENCE_GLOB = "skills/diagram-design/references/type-*.md"
 
 
@@ -1508,6 +1514,7 @@ MANIFEST_DESCRIPTIONS = (
     (Path(".claude-plugin/marketplace.json"), ("description",)),
     (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
     (FACTORY_MANIFEST, ("description",)),
+    (Path(".qoder-plugin/plugin.json"), ("description",)),
 )
 
 
@@ -1551,7 +1558,8 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     f"({len(value)} > {PLUGIN_DESCRIPTION_MAX} characters)"
                 )
             text = normalized(value)
-            for name in types:
+            # The 500-character description cannot hold every type; it summarizes.
+            for name in types if key == "longDescription" else ():
                 hook = DESCRIPTION_ALIASES.get(normalized(name), normalized(name))
                 if hook not in text:
                     errors.append(

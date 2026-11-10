@@ -863,6 +863,20 @@ def check_named_composite_states(tmp: Path) -> None:
     ok("named composite states retain aliases, child membership and transitions")
 
 
+def check_older_state_header(tmp: Path) -> None:
+    """Mermaid parses `stateDiagram` and `stateDiagram-v2` with one grammar."""
+    body = 'state "Waiting for work" as Waiting\n[*] --> Waiting\nWaiting --> Done : finish\nDone --> [*]\n'
+    path = tmp / "older-state-header.mmd"
+    path.write_text("stateDiagram\n" + body, encoding="utf-8")
+    older = run_extract([str(path), "--json"])
+    path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+    if older != run_extract([str(path), "--json"]):
+        fail("`stateDiagram` and `stateDiagram-v2` produced different IR")
+    path.write_text("stateDiagram-v3\nA --> B\n", encoding="utf-8")
+    expect_error([str(path)], "not a Mermaid file at line 1")
+    ok("the older stateDiagram header reads the same as stateDiagram-v2")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1489,6 +1503,117 @@ def check_unicode_er_regression(tmp: Path) -> None:
     ok("Unicode ER entity blocks and relationships keep identifiers, fields and endpoints")
 
 
+def check_er_aliases_and_quoted_names(tmp: Path) -> None:
+    # The alias example from Mermaid's ER syntax reference.
+    path = tmp / "er-aliases.mmd"
+    path.write_text(
+        'erDiagram\n'
+        'p[Person] {\n string firstName\n string lastName\n}\n'
+        'a["Customer Account"] {\n string email\n}\n'
+        'p ||--o| a : has\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if (
+        set(nodes) != {"p", "a"}
+        or nodes["p"]["label"] != "Person"
+        or nodes["p"]["fields"] != ["string firstName", "string lastName"]
+        or nodes["a"]["label"] != "Customer Account"
+        or nodes["a"]["fields"] != ["string email"]
+        or [(edge["source"], edge["target"]) for edge in payload["edges"]] != [("p", "a")]
+    ):
+        fail(f"ER entity aliases lost their label or attributes: {payload['nodes']}")
+
+    path = tmp / "er-quoted-names.mmd"
+    path.write_text(
+        'erDiagram\n'
+        '"This ❤ Unicode"\n'
+        '"Line Item" {\n string sku\n}\n'
+        'ORDER ||--|{ "Line Item" : contains\n'
+        '"Pre--paid"\n'
+        'c [Client]\n'
+        'ORDER }o--|| c : "billed to"\n'
+        'ORDER["Sales Order"]\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    edges = [(edge["source"], edge["target"]) for edge in payload["edges"]]
+    if (
+        set(nodes) != {"This ❤ Unicode", "Line Item", "ORDER", "Pre--paid", "c"}
+        or any(node["shape"] != "table" for node in nodes.values())
+        or nodes["Line Item"]["fields"] != ["string sku"]
+        or nodes["c"]["label"] != "Client"
+        or nodes["ORDER"]["label"] != "Sales Order"
+        or edges != [("ORDER", "Line Item"), ("ORDER", "c")]
+    ):
+        fail(f"ER quoted entity names were dropped or misread: {payload['nodes']} {edges}")
+
+    # Mermaid keeps the first alias and ignores later ones, including one
+    # that repeats the entity name.
+    path.write_text("erDiagram\np[Person]\np[Other]\np[p]\np ||--o| a : has\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    label = next(node["label"] for node in payload["nodes"] if node["id"] == "p")
+    if label != "Person":
+        fail(f"a later ER alias replaced the first one: {label!r}")
+
+    # Mermaid rejects an empty quoted name, and an alias is not an endpoint.
+    for body in ('"" ||--o{ B : x\n', 'p[Person] ||--o| a : has\n'):
+        path.write_text("erDiagram\n" + body, encoding="utf-8")
+        expect_error([str(path)], "malformed edge at line 2")
+    ok("ER entity aliases and quoted names keep labels, attributes and endpoints")
+
+
+def check_er_cardinality_aliases(tmp: Path) -> None:
+    # Mermaid's word aliases for cardinality and identification, its `.-` / `-.`
+    # links, and spaced symbols all draw the same crow's-foot ends as `||--o{`.
+    path = tmp / "er-cardinality-aliases.mmd"
+    path.write_text(
+        "erDiagram\n"
+        "CAR 1 to zero or more NAMED-DRIVER : allows\n"
+        "PERSON one or zero to many CAR : owns\n"
+        "PERSON only one optionally to 1+ ACCOUNT : holds\n"
+        "SHOP many(0) to many(1) ITEM : stocks\n"
+        "SHOP Zero Or Many TO One Or More SUPPLIER : buys\n"
+        "ORDER ||.-o{ LINE : has\n"
+        "ORDER }|-.|| BATCH : in\n"
+        "CUSTOMER || -- o{ INVOICE : places\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    edges = [(edge["source"], edge["target"], edge["label"], edge["style"]) for edge in payload["edges"]]
+    expected = [
+        ("CAR", "NAMED-DRIVER", "|| -- o{ · allows", "solid"),
+        ("PERSON", "CAR", "|o -- o{ · owns", "solid"),
+        ("PERSON", "ACCOUNT", "|| .. |{ · holds", "dashed"),
+        ("SHOP", "ITEM", "}o -- |{ · stocks", "solid"),
+        ("SHOP", "SUPPLIER", "}o -- |{ · buys", "solid"),
+        ("ORDER", "LINE", "|| .. o{ · has", "dashed"),
+        ("ORDER", "BATCH", "}| .. || · in", "dashed"),
+        ("CUSTOMER", "INVOICE", "|| -- o{ · places", "solid"),
+    ]
+    if edges != expected:
+        fail(f"ER cardinality aliases were dropped or misread: {edges}")
+
+    # As in Mermaid, a bare `1` must touch its link, a word must end at a word
+    # boundary, and only ASCII letters match in either case, so these are not
+    # relationships.
+    for body in (
+        "A 1 -- 1 B : r\n",
+        "A ||--x B : r\n",
+        "A 1 tozero or more B : r\n",
+        "A only one optİonally to many B : r\n",
+        "A only one optıonally to many B : r\n",
+    ):
+        path.write_text("erDiagram\n" + body, encoding="utf-8")
+        if "--" in body:
+            expect_error([str(path)], "malformed edge at line 2")
+        elif json.loads(run_extract([str(path), "--json"]))["diagrams"][0]["edges"]:
+            fail(f"an ER relationship Mermaid rejects was accepted: {body!r}")
+    ok("ER cardinality word aliases, dotted links and spaced symbols keep their ends")
+
+
 def check_standalone_er_regression(tmp: Path) -> None:
     path = tmp / "standalone-er.mmd"
     path.write_text('erDiagram\nINDEPENDENT\n客户\nÉquipe\n_独立\nCUSTOMER ||--o{ ORDER : places\n', encoding="utf-8")
@@ -1579,6 +1704,8 @@ def main() -> int:
         check_unicode_state_regression(tmp)
         check_unicode_er_regression(tmp)
         check_standalone_er_regression(tmp)
+        check_er_aliases_and_quoted_names(tmp)
+        check_er_cardinality_aliases(tmp)
         check_standalone_state_regression(tmp)
         check_files()
         expect_error([str(FLOW), "--diagram", "²"], "--diagram must be an index")
@@ -1596,6 +1723,7 @@ def main() -> int:
         check_markdown_and_grammars(tmp)
         check_state_descriptions(tmp)
         check_named_composite_states(tmp)
+        check_older_state_header(tmp)
         check_selection_before_parse(tmp)
         check_utf8_bom(tmp)
         check_legacy_stdout_encoding(tmp)
