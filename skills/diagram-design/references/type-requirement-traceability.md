@@ -4,6 +4,8 @@
 
 **Not this type:** A generic package dependency graph has no required requirement or verification column; use [Dependency graph](type-dependency.md) for that. Use [Heatmap](type-heatmap.md) when each cell encodes a value rather than a cited element ID and a typed relationship. Use [UML class](type-uml-class.md) for type structure and inheritance.
 
+Keep the shipped SVG static: place each paper rectangle behind its own labels, use explicit house ink and readable text, and keep page styles off SVG marks. The verifier checks this bounded layout; the browser render gate checks the shipped pages.
+
 ## Layout conventions
 
 - One row per requirement, in a stable source order. Four fixed columns: **Source**, **Requirement**, **Satisfied by**, **Verified by**. The latter two headings state the relationship direction without relying on arrow placement.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import tempfile
 from pathlib import Path
 
@@ -26,17 +27,48 @@ def main() -> None:
     assert verifier.check(EXAMPLE) == []
     first_group = '<g data-trace-row="REQ-01"'
     second_group = '<g data-trace-row="REQ-02"'
+    label_tag = re.search(r'<text\b[^>]*>(?=REQ-01</text>)', source)
+    assert label_tag is not None
+    label_tag = label_tag[0]
     cases = (
+        *((first_group, first_group.replace("<g ", f"<g {attributes} "), "hidden or too faint")
+          for attributes in (
+              'style="display:none !important"', 'style="opacity:0 !important"',
+              'opacity="0.00"', 'opacity="0%"', 'style="opacity:.0"', 'opacity="0.01"',
+              'display="NONE"', 'display=" none"', 'visibility="collapse"',
+          )),
+        *((first_group, first_group.replace("<g ", f"<g {attributes} "), "unsupported SVG")
+          for attributes in (
+              'style="filter:opacity(0)"', 'clip-path="inset(50%)"',
+              'clip-path="url(#empty)"', 'mask="url(#empty)"',
+          )),
+        *((label_tag, label_tag.replace('fill="#4f5d75"', f'fill="{paint}"').replace('fill="#2e5aa8"', f'fill="{paint}"'),
+           "house ink")
+          for paint in ("rgba(0,0,0,0)", "#0000", "#f5f5f5")),
+        (label_tag, re.sub(r'font-size="[^"]+"', 'font-size="0"', label_tag), "font size"),
+        ('data-trace-kind="source"', 'transform="scale(0)" data-trace-kind="source"', "unsupported SVG"),
+        *((label_tag, motion + label_tag, "unsupported SVG")
+          for motion in ('<set attributeName="display" to="none"/>',
+                         '<animate attributeName="opacity" to="0" fill="freeze"/>')),
+        ("</svg>", '<rect width="1200" height="720" fill="#f5f5f5"/></svg>', "cover"),
+        ("</svg>", '<line x1="0" x2="1200" y1="360" y2="360" stroke="#f5f5f5" stroke-width="720"/></svg>', "cover"),
+        (first_group, first_group.replace("<g ", r'<g style="display:n\6f ne" '), "hidden or too faint"),
+        *((("</style>", rule + "</style>", "stylesheet")
+          for rule in (
+              '[data-trace-kind]{display:none}', 'g g{display:none}', 'svg>g{display:none}',
+              '@media screen{svg g g{opacity:0}}', 'g text{fill:transparent!important}',
+              'text{visibility:hidden}', 'svg{display:none!important}',
+          ))),
         (first_group, first_group.replace("<g ", '<g display="none" '), "is not printed"),
         (first_group, first_group.replace("<g ", '<g style="display:none" '), "is not printed"),
         (first_group, first_group.replace("<g ", '<g opacity="0" '), "is not printed"),
-        (first_group, first_group.replace("<g ", '<g transform="scale(0)" '), "requirement row must not use transform"),
-        (first_group, first_group.replace("<g ", '<g style="transform:scale(0)" '), "requirement row must not use transform"),
-        (first_group, first_group.replace("<g ", '<g style="scale:0" '), "requirement row must not use transform"),
-        ("</style>", "g[data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
-        ("</style>", "g[*|data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
-        ("</style>", "g[|data-trace-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
-        ("</style>", r"g[data-\74 race-row]{display:none}</style>", "stylesheet must not select data-trace-row"),
+        (first_group, first_group.replace("<g ", '<g transform="scale(0)" '), "unsupported SVG"),
+        (first_group, first_group.replace("<g ", '<g style="transform:scale(0)" '), "unsupported SVG"),
+        (first_group, first_group.replace("<g ", '<g style="scale:0" '), "unsupported SVG"),
+        ("</style>", "g[data-trace-row]{display:none}</style>", "stylesheet must not select SVG"),
+        ("</style>", "g[*|data-trace-row]{display:none}</style>", "stylesheet must not select SVG"),
+        ("</style>", "g[|data-trace-row]{display:none}</style>", "stylesheet must not select SVG"),
+        ("</style>", r"g[data-\74 race-row]{display:none}</style>", "stylesheet must not select SVG"),
         ('data-trace-source="Review brief §1"', 'data-trace-source=""', "missing source reference"),
         ('data-trace-row="REQ-02"', 'data-trace-row="REQ-01"', "duplicate requirement row ID"),
         ('data-trace-from="DES-01"', 'data-trace-from="DES-99"', "source does not resolve"),
@@ -53,7 +85,7 @@ def main() -> None:
         candidate = Path(directory) / "candidate.html"
         failures = []
         for old, new, expected in cases:
-            assert old in source, old
+            assert old in source and old != new, (old, new)
             candidate.write_text(source.replace(old, new, 1), encoding="utf-8")
             errors = verifier.check(candidate)
             if not any(expected in error for error in errors):
@@ -65,6 +97,19 @@ def main() -> None:
         errors = verifier.check(candidate)
         if not any("REQ-01:" in error and "is not printed" in error for error in errors):
             failures.append(("hidden SVG wrapper", "is not printed", errors))
+        transformed = wrapped.replace('display="none"', 'transform="scale(0)"', 1)
+        candidate.write_text(transformed, encoding="utf-8")
+        errors = verifier.check(candidate)
+        if not any("unsupported SVG property on g: transform" in error for error in errors):
+            failures.append(("transformed SVG wrapper", "unsupported SVG", errors))
+        boxes = list(re.finditer(r"<rect\b[^>]*/>", source))
+        assert len(boxes) > 2
+        last_box = boxes[-1]
+        cover = '<rect x="0" y="0" width="1200" height="720" fill="#f5f5f5"/>'
+        candidate.write_text(source[:last_box.start()] + cover + source[last_box.end():], encoding="utf-8")
+        errors = verifier.check(candidate)
+        if not any("overlaps another cell" in error for error in errors):
+            failures.append(("cross-cell cover", "overlaps another cell", errors))
         assert not failures, failures
 
         # A comment and an escaped bracket in a class name are not attribute selectors.

@@ -9,69 +9,13 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from verify_static_svg_visibility import check_static_svg, hidden, local
+
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
-STYLE_RE = re.compile(
-    r"<!--.*?(?:-->|$)|<style\b[^>]*>(?P<body>.*?)</style\s*>", re.IGNORECASE | re.DOTALL
-)
-CSS_COMMENT_OR_STRING_RE = re.compile(
-    r"""/\*.*?(?:\*/|$)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'""", re.DOTALL
-)
-CSS_ESCAPE = r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])"
-CSS_ESCAPE_RE = re.compile(CSS_ESCAPE)
-CSS_IDENTIFIER = rf"(?:[\w-]|{CSS_ESCAPE})+"
-CSS_ATTRIBUTE_RE = re.compile(
-    rf"{CSS_ESCAPE}|\[\s*(?:(?:{CSS_IDENTIFIER}|\*)?\|)?"
-    rf"(?P<name>{CSS_IDENTIFIER})\s*(?:[~|^$*]?=|\])"
-)
 KINDS = {"source": "SRC-", "requirement": "REQ-", "design": "DES-", "test": "TST-"}
 RELATIONS = {"derives": "source", "satisfies": "design", "verifies": "test"}
-
-
-def local(tag: str) -> str:
-    return tag.rsplit("}", 1)[-1]
-
-
-def decode_css_escape(match: re.Match[str]) -> str:
-    token = match[0][1:]
-    if token[0] not in "0123456789abcdefABCDEF":
-        return token
-    codepoint = int(token.strip(), 16)
-    if 0 < codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF:
-        return chr(codepoint)
-    return "\ufffd"
-
-
-def inline_style(node: ET.Element) -> dict[str, str]:
-    declarations = CSS_COMMENT_OR_STRING_RE.sub(" ", node.attrib.get("style", ""))
-    return {
-        CSS_ESCAPE_RE.sub(decode_css_escape, key.strip()).casefold(): value.strip().casefold()
-        for key, separator, value in (
-            part.partition(":") for part in declarations.split(";")
-        )
-        if key and separator
-    }
-
-
-def hidden(node: ET.Element) -> bool:
-    tag = local(node.tag)
-    style = inline_style(node)
-    return (
-        tag in {"defs", "title", "desc"}
-        or node.attrib.get("aria-hidden") == "true"
-        or "hidden" in node.attrib
-        or node.attrib.get("display") == "none"
-        or node.attrib.get("visibility") == "hidden"
-        or node.attrib.get("opacity") in {"0", "0.0"}
-        or node.attrib.get("fill") in {"none", "transparent"}
-        or node.attrib.get("fill-opacity") in {"0", "0.0"}
-        or style.get("display") == "none"
-        or style.get("visibility") == "hidden"
-        or style.get("opacity") in {"0", "0.0"}
-        or style.get("fill") in {"none", "transparent"}
-        or style.get("fill-opacity") in {"0", "0.0"}
-    )
 
 
 def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
@@ -111,24 +55,8 @@ def check(path: Path) -> list[str]:
     if svg.attrib.get("data-diagram-type") != "requirement-traceability":
         return ["SVG must declare data-diagram-type=requirement-traceability"]
 
-    errors: list[str] = []
-    # Rules targeting structural groups can override the attributes checked below.
-    for style in STYLE_RE.finditer(source):
-        body = style.group("body")
-        if body is None:
-            continue
-        css = CSS_COMMENT_OR_STRING_RE.sub(" ", body)
-        selectors = re.findall(r"([^{}]+)\{", css)
-        if any(
-            CSS_ESCAPE_RE.sub(decode_css_escape, name).casefold() == "data-trace-row"
-            for selector in selectors
-            for match in CSS_ATTRIBUTE_RE.finditer(selector)
-            if (name := match.group("name")) is not None
-        ):
-            errors.append("stylesheet must not select data-trace-row")
-            break
-
     parents = {child: parent for parent in svg.iter() for child in parent}
+    errors = check_static_svg(source, svg, parents, "data-trace-row", "data-trace-kind", gap_attr="data-trace-missing")
     rows = [element for element in svg.iter() if "data-trace-row" in element.attrib]
     if not 1 <= len(rows) <= 6:
         errors.append("expected 1 to 6 requirement rows")
@@ -136,8 +64,6 @@ def check(path: Path) -> list[str]:
     row_ids: set[str] = set()
     for row in rows:
         requirement_id = row.attrib["data-trace-row"].strip()
-        if "transform" in row.attrib or {"transform", "translate", "rotate", "scale"} & inline_style(row).keys():
-            errors.append(f"{requirement_id}: requirement row must not use transform")
         if not requirement_id or requirement_id in row_ids:
             errors.append(f"blank or duplicate requirement row ID: {requirement_id!r}")
         row_ids.add(requirement_id)
