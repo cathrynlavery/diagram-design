@@ -106,6 +106,15 @@
       "thumb_sha256": "ecd1f6bff9f6841a3ad1e623de73151dbb5cf58008227f91695d167f1e0a6152"
     },
     {
+      "thumb": "event-modeling.webp",
+      "source": "docs/screenshots/event-modeling.png",
+      "source_sha256": "9b16f4b4e6683ecb553312b9935cad1fd70de0711165a231bab4e2002f7ed8dc",
+      "width": 600,
+      "height": 360,
+      "quality": 82,
+      "thumb_sha256": "215789b710c689d8884c0dff110a78a7c39bb805487d25bbc11e4f5937339ae0"
+    },
+    {
       "thumb": "exploded.webp",
       "source": "docs/screenshots/exploded.png",
       "source_sha256": "bc5447fb4af265086848e870da6b8c4584112eab713fdf45a16d8d32ed9d9b49",
@@ -293,6 +302,15 @@
       "height": 300,
       "quality": 82,
       "thumb_sha256": "d3298c4d10fb41c0e3d3ba58eaaa6785e5a0291ea34d9e70be0ddcd96bcbbb66"
+    },
+    {
+      "thumb": "requirement-traceability.webp",
+      "source": "docs/screenshots/requirement-traceability.png",
+      "source_sha256": "7e9c46dabe5ac42138fd55ed632736ba6d418b84ea09da13379dc9138da921f4",
+      "width": 600,
+      "height": 360,
+      "quality": 82,
+      "thumb_sha256": "8ccfcc33dfb8007f54dd2e68f9a18830c1d6ea12719a01fbb52e7e674859bd37"
     },
     {
       "thumb": "sankey.webp",
