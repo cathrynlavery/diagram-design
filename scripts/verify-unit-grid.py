@@ -63,8 +63,9 @@ DRAWABLES = {"rect", "path", "polygon", "polyline", "line", "circle", "ellipse",
 MAX_CELL_STROKE = 2.0
 GLYPH_EM = 0.65  # shortcut: a Geist upper bound; a wider face or all-caps W/M runs can exceed it
 TEXT_INHERITED = ("font-size", "text-anchor", "letter-spacing")
-# A tspan with none of these draws inside its parent's line.
-TSPAN_MOVES = ("x", "y", "dx", "dy", "rotate", "textlength", "font-size", "letter-spacing", "style", "transform")
+# A tspan with none of these draws inside its parent's line and box.
+TSPAN_MOVES = ("x", "y", "dx", "dy", "rotate", "textlength", "font-size", "letter-spacing", "style", "transform",
+               "stroke", "stroke-width")
 MIN_EMPTY_DISTANCE = 64.0  # RGB distance; the shipped empty fills sit above 150
 HEX_RE = re.compile(r"#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})")
 RGB_RE = re.compile(r"rgba?\(([^)]*)\)")
@@ -98,7 +99,7 @@ def number(value: str | None, default: float | None = None) -> float | None:
 
 
 def color(value: str | None) -> tuple[float, float, float, float] | None:
-    """Literal hex or rgb()/rgba() as RGBA; anything else is unresolvable."""
+    """Literal hex or rgb()/rgba() as RGBA with channels on 0..255 and alpha on 0..1; anything else is unresolvable."""
     value = (value or "").strip().lower()
     if match := HEX_RE.fullmatch(value):
         digits = match.group(1)
@@ -108,12 +109,15 @@ def color(value: str | None) -> tuple[float, float, float, float] | None:
         return (*channels[:3], channels[3] / 255 if len(channels) == 4 else 1.0)
     if match := RGB_RE.fullmatch(value):
         parts = [part for part in re.split(r"[\s,/]+", match.group(1)) if part]
+        if len(parts) not in (3, 4):
+            return None
         try:
-            numbers = [float(part[:-1]) / 100 if part.endswith("%") else float(part) for part in parts]
+            # A percentage is of 255 for a colour channel and of 1 for alpha.
+            numbers = [float(part[:-1]) * (2.55 if index < 3 else 0.01) if part.endswith("%") else float(part)
+                       for index, part in enumerate(parts)]
         except ValueError:
             return None
-        if len(numbers) in (3, 4):
-            return (*numbers[:3], numbers[3] if len(numbers) == 4 else 1.0)
+        return (*numbers[:3], numbers[3] if len(numbers) == 4 else 1.0)
     return None
 
 
@@ -246,10 +250,8 @@ def drawn_box(tag: str, attributes: dict[str, str], text: str,
         return None
     if found is None or stroke_width is None:
         return None
-    if tag == "text":
-        return found
-    # Half the stroke falls outside the geometry; markers and miters can reach further.
-    pad = stroke_width * (2 if tag in {"path", "polygon", "polyline", "line"} else 0.5)
+    # Half the stroke falls outside the geometry; markers and miters on outlines can reach further.
+    pad = stroke_width * (2 if tag in {"path", "polygon", "polyline", "line", "text"} else 0.5)
     return found[0] - pad, found[1] - pad, found[2] + pad, found[3] + pad
 
 
@@ -379,8 +381,11 @@ class Presentation(HTMLParser):
     def drawable(self, tag: str, attributes: dict[str, str]) -> None:
         moved = any("transform" in element or "style" in element or (name == "svg" and depth)
                     for depth, (name, element) in enumerate(self.open))
-        stroke_width = next((element.get("stroke-width") for _, element in reversed(self.open + [(tag, attributes)])
-                             if "stroke-width" in element), None)
+        chain = list(reversed(self.open + [(tag, attributes)]))
+        stroke_width = next((element.get("stroke-width") for _, element in chain if "stroke-width" in element), None)
+        stroke = next((element.get("stroke") for _, element in chain if "stroke" in element), None)
+        if tag == "text" and (stroke or "none").strip().lower() == "none":
+            stroke_width = "0"  # unstroked glyphs draw only their fill
         if tag == "text":  # font-size, anchor and spacing inherit from the nearest group that sets them
             attributes = {**{name: value for name in TEXT_INHERITED for _, element in self.open
                              if (value := element.get(name)) is not None}, **attributes}

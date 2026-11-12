@@ -71,7 +71,7 @@ def after_cells(source: str, snippet: str) -> str:
     return source[:end] + snippet + source[end:]
 
 
-def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str | tuple[str, ...] | None]]:
+def adversarial(source: str, ink: str, empty: str, accent: str = ACCENT) -> list[tuple[str, str, str | tuple[str, ...] | None]]:
     """Edits that change what a browser draws while the declared state stays the same."""
     def css(rule: str) -> str:
         return source.replace("</style>", rule + "</style>", 1)
@@ -167,10 +167,25 @@ def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str |
         # 9. smooth curves reflect control points the path box does not track
         ("overlay smooth quadratic", after_cells(source, f'<path d="M650 100 Q800 200 650 200 T650 300" fill="{ink}"/>'), "later <path> cannot be bounded"),
         ("overlay smooth cubic", after_cells(source, f'<path d="M650 100 C700 100 700 150 650 150 S700 300 650 300" fill="{ink}"/>'), "later <path> cannot be bounded"),
+        # 10. percent rgb() channels sit on the same 0..255 scale as hex
+        ("empty fill percent rgb near ink", source.replace(f'fill="{empty}"', f'fill="{percent_rgb(ink, 0.4)}"'), "too close"),
+        ("empty fill percent rgb near accent", source.replace(f'fill="{empty}"', f'fill="{percent_rgb(accent, 0.4)}"'), "too close"),
+        ("empty fill as percent rgb allowed", source.replace(f'fill="{empty}"', f'fill="{percent_rgb(empty)}"'), None),
+        # 11. a stroke widens a later text's box
+        ("stroked X beside grid", after_cells(source, f'<text x="626" y="200" font-size="20" stroke="{ink}" stroke-width="40">X</text>'), "later <text> covers"),
+        ("group-stroked X beside grid", after_cells(source, f'<g stroke="{ink}" stroke-width="40"><text x="626" y="200" font-size="20">X</text></g>'), "later <text> covers"),
+        ("stroked tspan beside grid", after_cells(source, f'<text x="626" y="200" font-size="20">X<tspan stroke="{ink}" stroke-width="40">Y</tspan></text>'), "later <text> cannot be bounded"),
+        ("unstroked X beside grid allowed", after_cells(source, '<text x="626" y="200" font-size="20">X</text>'), None),
         # 6. a second :root rule must not break token parsing
         ("second :root rule", re.sub(r"(:root\{[^}]*?)(--accent:[^;}]*);([^}]*)\}", r"\1\3;\2}", source, count=1).replace("</style>", ":root{--grid-gap:4px}</style>", 1), None),
         ("later :root moves --ink", source.replace("</style>", f":root{{--ink:{empty}}}</style>", 1), "painted"),
     ]
+
+
+def percent_rgb(hex_color: str, nudge: float = 0.0) -> str:
+    """The same colour written as rgb() percentages, optionally nudged by a fraction of a percent."""
+    channels = [int(hex_color[i:i + 2], 16) / 2.55 for i in (1, 3, 5)]
+    return "rgb(" + ",".join(f"{min(100.0, channel + nudge):.1f}%" for channel in channels) + ")"
 
 
 def cell_fill(source: str, index: int) -> str:
@@ -247,6 +262,7 @@ def main() -> int:
         cases.append((f"{path.name} valid", source, None))
         cases.append((f"{path.name} wrong headline", source.replace('>64%</text>', '>74%</text>'), "printed percentage"))
         ink, empty = cell_fill(source, 0), cell_fill(source, 99)
+        accent = re.search(r"--accent:(#[0-9a-f]{6})", source).group(1)
         cases.extend([
             (f"{path.name} filled cell painted empty", edit_cell(source, 0, fill=empty), "painted"),
             (f"{path.name} empty cell painted filled", edit_cell(source, 99, fill=ink), "painted"),
@@ -265,7 +281,7 @@ def main() -> int:
             (f"{path.name} SMIL set", source.replace("</svg>", f'<set href="#c0" attributeName="fill" to="{empty}"/></svg>', 1), "can repaint or move"),
             (f"{path.name} overlay rect", source.replace("</svg>", f'<rect x="0" y="0" width="1000" height="390" fill="{empty}"/></svg>', 1), "later <rect>"),
         ])
-        cases.extend((f"{path.name} {name}", mutated, expected) for name, mutated, expected in adversarial(source, ink, empty))
+        cases.extend((f"{path.name} {name}", mutated, expected) for name, mutated, expected in adversarial(source, ink, empty, accent))
         cases.append((f"{path.name} moved cell", source.replace('<rect data-unit-cell=', '<rect transform="translate(300 0)" data-unit-cell=', 1), "transform"))
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as directory:
