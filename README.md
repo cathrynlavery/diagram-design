@@ -7,7 +7,7 @@
   </picture>
 </h1>
 
-**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>49 diagram types. No shadows. No Mermaid slop.**
+**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>50 diagram types. No shadows. No Mermaid slop.**
 
 [![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
 [![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
@@ -245,7 +245,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-49 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+50 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -330,7 +330,7 @@ The model already understood the content. What it was missing was taste, so I wr
 </tr>
 <tr>
   <td align="center" width="33%"><a href="docs/screenshots/steps.png"><img src="docs/screenshots/thumbs/steps.webp" alt="Steps"></a><br><b>Steps</b><br><sub>Numbered stages on one ordered rail</sub></td>
-  <td align="center" width="33%"></td>
+  <td align="center" width="33%"><a href="docs/screenshots/unit-grid.png"><img src="docs/screenshots/thumbs/unit-grid.webp" alt="Unit Grid"></a><br><b>Unit Grid</b><br><sub>Equal discrete units</sub></td>
   <td align="center" width="33%"></td>
 </tr>
 </table>
@@ -347,7 +347,7 @@ Axonometric plan uses the same projection for one floor or one site: walls cut a
 
 SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagram-design/assets/example-sbgn.html) and its [reference](skills/diagram-design/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 49; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 50; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
 ---
 
@@ -631,6 +631,7 @@ diagram-design/
 │       │   ├── type-tree.md
 │       │   ├── type-treemap.md
 │       │   ├── type-uml-class.md
+│       │   ├── type-unit-grid.md
 │       │   ├── type-venn.md
 │       │   ├── type-wardley.md
 │       │   └── type-waterfall.md

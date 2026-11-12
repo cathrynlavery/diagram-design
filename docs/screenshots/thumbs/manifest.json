@@ -430,6 +430,15 @@
       "thumb_sha256": "0884f5b18001518e4b5aeda408eb011fc84bd45f859f54d735f559044fc0c3b5"
     },
     {
+      "thumb": "unit-grid.webp",
+      "source": "docs/screenshots/unit-grid.png",
+      "source_sha256": "0aa355eabdc6ccc6d33becb8b287a3c2245fc094353d6ae247e0d654398990fb",
+      "width": 600,
+      "height": 234,
+      "quality": 82,
+      "thumb_sha256": "cecf9266d5cb90d1d871647f52de914612c0558d92f45f21f0aa49a83457037b"
+    },
+    {
       "thumb": "venn.webp",
       "source": "docs/screenshots/venn.png",
       "source_sha256": "eb5aa2993241b44d64742bb398f7695180b3f8e362db3a2a0c054ce9b0ad60dc",

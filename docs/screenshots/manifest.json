@@ -451,6 +451,15 @@
       "screenshot_sha256": "9b16f4b4e6683ecb553312b9935cad1fd70de0711165a231bab4e2002f7ed8dc",
       "width": 2400,
       "height": 1440
+    },
+    {
+      "slug": "unit-grid",
+      "source": "skills/diagram-design/assets/example-unit-grid.html",
+      "screenshot": "docs/screenshots/unit-grid.png",
+      "source_sha256": "a09af380f38271521a32d5f0959a440d736071d0a96ebf97586d19e2c96c83e0",
+      "screenshot_sha256": "0aa355eabdc6ccc6d33becb8b287a3c2245fc094353d6ae247e0d654398990fb",
+      "width": 2076,
+      "height": 810
     }
   ]
 }

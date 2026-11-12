@@ -47,4 +47,6 @@ Behavior is a separate axis. The semantic patterns in `references/semantic-patte
 
 **2026-11-12 · the count is 49.** Steps was admitted under the same escape clause: a single ordered rail with numbered icon medallions and one compact explanation per stage is a layout grammar no existing type provides (timeline encodes elapsed time, process exposes actors and payload handoffs, swimlane exposes ownership, and flowchart branches). It ships the full §10 set and moves the canonical counters 48 → 49 together; see [ADR 0018](0018-steps-is-an-ordered-stage-rail-grammar.md).
 
+**2026-11-12 · the count is 50.** Unit Grid was admitted under the same escape clause: a bounded whole represented by equal discrete cells in reading order is a layout grammar no existing type provides (treemap uses unequal areas, heatmap encodes values across categorical axes, bar uses length). It ships the full §10 set and moves the canonical counters 49 → 50 together.
+
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.

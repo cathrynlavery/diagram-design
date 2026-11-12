@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, steps, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm, box plot), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph (arc diagram), UML class, story map, database schema, SBGN, requirement traceability, or event modeling diagrams as HTML/SVG/PNG, with .drawio, Mermaid, .excalidraw, and PlantUML import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
+description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, steps, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, unit grid, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm, box plot), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph (arc diagram), UML class, story map, database schema, SBGN, requirement traceability, or event modeling diagrams as HTML/SVG/PNG, with .drawio, Mermaid, .excalidraw, and PlantUML import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
 license: MIT
 metadata:
   version: "2.6"
@@ -10,7 +10,7 @@ metadata:
 
 Create diagrams as self-contained HTML files with inline SVG and an editorial design system.
 
-Forty-nine visual types. Semantic patterns describe behavior; type references describe layout.
+Fifty visual types. Semantic patterns describe behavior; type references describe layout.
 
 ---
 
@@ -49,7 +49,7 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 49 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 50 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
 
@@ -80,7 +80,7 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
-### Visual-type guide (49)
+### Visual-type guide (50)
 
 | If you're showing… | Use | Reference |
 |---|---|---|
@@ -133,6 +133,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | A biological process as a bipartite species/process graph | **SBGN** | [type-sbgn.md](references/type-sbgn.md) |
 | Source requirements, design elements, and tests linked by stable IDs, with gaps explicit | **Requirement traceability** | [type-requirement-traceability.md](references/type-requirement-traceability.md) |
 | Commands, resulting events, and read models across ordered stages | **Event modeling** | [type-event-modeling.md](references/type-event-modeling.md) |
+| One bounded whole counted in equal discrete units out of 100 | **Unit Grid** | [type-unit-grid.md](references/type-unit-grid.md) |
 
 Rules of thumb:
 
