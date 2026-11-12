@@ -152,13 +152,15 @@ MARIMEKKO_SELECTOR_CASES = tuple(
 GUARDED_RULES = {
     "arc-diagram": ("circle { display: none }", "circle { fill: red }"),
     "architecture-delta": ("rect { display: none }", "rect { width: 1px; height: 1px }"),
-    "box-plot": ("rect { display: none }",),
+    # Box plot matches attribute values: a quoted value must reach the boxes as written.
+    "box-plot": ("rect { display: none }", 'rect[fill="rgba(245,245,245,0.14)"] { display: none }',
+                 "rect[fill='rgba(245,245,245,0.14)'] { display: none }"),
     "polar": ("body { display: none }", "body { background: url(x.png) }"),
     "service-blueprint": ("rect { width: 1px; height: 1px }",),
 }
 WRAPPERS = (
-    ("selector strings", 'body[data-q="/*"] {{ --z: 1 }} {rule} html[data-q="*/"] {{ --z: 1 }}'),
-    ("declaration strings", 'body {{ --q: "/*" }} {rule} html {{ --q: "*/" }}'),
+    ("between selector strings", 'body[data-q="/*"] {{ --z: 1 }} {rule} html[data-q="*/"] {{ --z: 1 }}'),
+    ("between declaration strings", 'body {{ --q: "/*" }} {rule} html {{ --q: "*/" }}'),
 )
 
 def passes_check(kind: str, page: Path) -> bool:
@@ -200,7 +202,7 @@ def main() -> int:
                     page = Path(scratch) / f"{kind}-guarded-{number}.html"
                     page.write_text(place(source, kind, "head", wrapper.format(rule=rule)), encoding="utf-8")
                     if passes_check(kind, page):
-                        failures.append(f"{kind}: {rule} between {label} should fail")
+                        failures.append(f"{kind}: {rule} ({label}) should fail")
         source = sorted(ASSET_DIR.glob("example-marimekko*.html"))[0].read_text(encoding="utf-8")
         for number, rule in enumerate(MARIMEKKO_SELECTOR_CASES):
             page = Path(scratch) / f"marimekko-segment-{number}.html"

@@ -132,12 +132,6 @@ CSS_MOVES_MARK_RE = re.compile(
     r"\s*:",
     re.IGNORECASE,
 )
-# A CSS comment is whitespace to the browser, so `/**/transform:` is a live
-# declaration. CSS_MOVES_MARK_RE allows only whitespace between a declaration
-# boundary and the property name, which let a comment sitting there hide the
-# property from it while Chromium applied it. Non-greedy and DOTALL: a comment
-# spans lines, and a stylesheet holds many. See css_moves_mark.
-CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 # Detection only - a raw-text signal read BEFORE the parser, because the parser
 # is exactly what a broken quote defeats (see declares_series). Scoped to a
 # <line> start tag: `data-series` on a <path> is the bump chart's vocabulary.
@@ -183,9 +177,10 @@ MARK_TAGS = ("line",)                         # the element this contract binds
 # stay, so each offset and line number still points into the CSS as written.
 # Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
 # sits in a selector or an at-rule prelude, as does one in a statement that starts with
-# `@`; it keeps its quotes and name characters, because the selectors a checker reads
-# must not lose it. Its other characters, and those inside a url(), become `_`, so no
-# `/*`, `*/`, brace or `;` in them can steer a comment remover or a rule parser.
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
 # CSS the browser may read differently comes back unblanked: a character reference
 # (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
 # left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
@@ -213,13 +208,24 @@ def blank_css_strings(css: str) -> str:
         after = re.compile(r"[{;}]").search(masked, found.end())
         start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
         if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
-            return text[0] + re.sub(r"[^\w\n-]", "_", text[1:-1]) + text[-1]
+            return text
         return re.sub(r"[^\n]", " ", text)
 
     blanked = CSS_STRING_RE.sub(blank, css)
     if "\\" in blanked or html.unescape(css) != css:
         return css.replace("/*", "  ").replace("*/", "  ")
     return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 class Element:
@@ -418,8 +424,7 @@ def css_moves_mark(css: str):
     an offset into `css` as written, and a <style> finding that counts
     newlines up to the property names the right line.
     """
-    stripped = CSS_COMMENT_RE.sub(
-        lambda found: re.sub(r"[^\n]", " ", found.group()), blank_css_strings(css))
+    stripped = blank_comments_outside_strings(blank_css_strings(css))
     return CSS_MOVES_MARK_RE.search(stripped)
 
 

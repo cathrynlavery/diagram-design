@@ -132,7 +132,6 @@ TEXT_RE = re.compile(r"<text\b(?P<attrs>" + TAG_BODY + r"*)>(?P<body>.*?)</text>
 G_OPEN_RE = re.compile(r"<g\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 G_CLOSE_RE = re.compile(r"</g\s*>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b" + TAG_BODY + r"*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>",
@@ -305,12 +304,11 @@ def blank_comments(source: str) -> str:
 
 
 def blank_css_comments(css: str) -> str:
-    """CSS with every `/* ... */` replaced by whitespace a browser would see.
+    """CSS with quoted data blanked and every comment replaced by whitespace a browser would see.
 
     Newlines inside the comment are kept so a match still counts lines.
     """
-    return CSS_COMMENT_RE.sub(
-        lambda found: " " + "\n" * found.group().count("\n"), blank_css_strings(css))
+    return blank_comments_outside_strings(blank_css_strings(css))
 
 
 # Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
@@ -324,9 +322,10 @@ def blank_css_comments(css: str) -> str:
 # stay, so each offset and line number still points into the CSS as written.
 # Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
 # sits in a selector or an at-rule prelude, as does one in a statement that starts with
-# `@`; it keeps its quotes and name characters, because the selectors a checker reads
-# must not lose it. Its other characters, and those inside a url(), become `_`, so no
-# `/*`, `*/`, brace or `;` in them can steer a comment remover or a rule parser.
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
 # CSS the browser may read differently comes back unblanked: a character reference
 # (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
 # left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
@@ -354,13 +353,24 @@ def blank_css_strings(css: str) -> str:
         after = re.compile(r"[{;}]").search(masked, found.end())
         start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
         if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
-            return text[0] + re.sub(r"[^\w\n-]", "_", text[1:-1]) + text[-1]
+            return text
         return re.sub(r"[^\n]", " ", text)
 
     blanked = CSS_STRING_RE.sub(blank, css)
     if "\\" in blanked or html.unescape(css) != css:
         return css.replace("/*", "  ").replace("*/", "  ")
     return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 def attrs_of(raw: str) -> dict:
