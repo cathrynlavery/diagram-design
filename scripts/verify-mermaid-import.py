@@ -1516,7 +1516,8 @@ def check_hyphenated_node_ids(tmp: Path) -> None:
         flow.write_text(f"flowchart LR\n{broken}\n", encoding="utf-8")
         expect_error([str(flow)], "malformed edge at line 2")
     # A broken link that is not a node either must fail, not vanish.
-    for broken in ("A- >B", "A - > B"):
+    for broken in ("A- >B", "A - > B", "A -xB", "A -oB", "A -x|yes| B", "A[x] -x B[y]", "A[x] -o B[y]", "A[x] -- B[y]",
+                   "A --> B[x] -x C[y]", "A --> B--foo"):
         flow.write_text(f"flowchart LR\nC --> D\n{broken}\n", encoding="utf-8")
         expect_error([str(flow)], "malformed edge at line 3")
     ok("hyphenated flowchart node ids stay whole; only real link operators split them")

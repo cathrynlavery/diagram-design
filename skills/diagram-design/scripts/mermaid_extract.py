@@ -857,6 +857,9 @@ def _endpoint_group(
         if parsed is None:
             return None
         node_id, label, shape = parsed
+        # A link token outside any shape means a link that did not parse.
+        if shape != "asymmetric" and re.search(r"--|==|-\.|\s[-=][xo]", _top_level_mask(raw)):
+            return None
         diagram.add_node(node_id, label, shape, parent)
         identifiers.append(node_id)
     return identifiers or None
@@ -974,16 +977,16 @@ def _parse_flowchart(
                         )
             continue
         parsed = _parse_node_expression(text)
-        # A bare ID can absorb an unfinished link token, but a shaped node's
-        # label may legitimately contain the same characters.
+        # The mask blanks shaped labels, so a link token left in it sits
+        # outside any shape. The asymmetric `>` opener is not masked.
         masked = _top_level_mask(text)
         malformed_link = re.search(
-            r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo](?!\S)",
+            r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo]",
             masked,
         )
         bare_link_start = re.search(r"--|==|-\.", masked)
         if parsed is not None and not (
-            parsed[1] == parsed[0] and not parsed[2] and (malformed_link or bare_link_start)
+            parsed[2] != "asymmetric" and (malformed_link or bare_link_start)
         ):
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
