@@ -988,7 +988,13 @@ def _parse_flowchart(
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
             continue
-        if malformed_link or bare_link_start:
+        if (
+            malformed_link
+            or bare_link_start
+            # Not a node but link-like (`A- >B`): fail instead of dropping it.
+            # The dot matches any character on purpose.
+            or (parsed is None and re.search(r"(?:==|-.).*?(?:>|x|o|-)", masked))
+        ):
             _fail(f"malformed edge at line {line_number}")
     if invisible_links:
         diagram.notes.append(f"{invisible_links} invisible layout links ignored")

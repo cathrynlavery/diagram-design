@@ -1465,6 +1465,8 @@ def check_edge_ids(tmp: Path) -> None:
     if result["nodes"][0]["label"] != "Retry retry@-1":
         fail("edge ID parsing changed an unquoted subgraph title")
     ok("edge IDs cover circle/cross operators without changing literal labels or titles")
+
+
 def check_hyphenated_node_ids(tmp: Path) -> None:
     # Mermaid keeps a single `-` inside a node id; only `--`, `==` and the
     # dotted `-.` forms open a link, so a hyphenated id is never an edge.
@@ -1513,7 +1515,13 @@ def check_hyphenated_node_ids(tmp: Path) -> None:
     for broken in ("A -->", "A --x", "A--foo", "A--bar", "A-.x", "user-profile -->", "A -x B", "A -o B", "A =o B", "A -x"):
         flow.write_text(f"flowchart LR\n{broken}\n", encoding="utf-8")
         expect_error([str(flow)], "malformed edge at line 2")
+    # A broken link that is not a node either must fail, not vanish.
+    for broken in ("A- >B", "A - > B"):
+        flow.write_text(f"flowchart LR\nC --> D\n{broken}\n", encoding="utf-8")
+        expect_error([str(flow)], "malformed edge at line 3")
     ok("hyphenated flowchart node ids stay whole; only real link operators split them")
+
+
 def check_unicode_state_regression(tmp: Path) -> None:
     path = tmp / "unicode-state.mmd"
     path.write_text('stateDiagram-v2\n待机 : 等待输入\n待机 --> 完成\n', encoding="utf-8")
