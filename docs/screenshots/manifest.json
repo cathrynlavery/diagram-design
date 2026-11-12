@@ -426,6 +426,15 @@
       "height": 1442
     },
     {
+      "slug": "requirement-traceability",
+      "source": "skills/diagram-design/assets/example-requirement-traceability.html",
+      "screenshot": "docs/screenshots/requirement-traceability.png",
+      "source_sha256": "2714f14ef1b15264a566997ae523b46ca0c13a4f2cc145817f43eb78ae56de39",
+      "screenshot_sha256": "7e9c46dabe5ac42138fd55ed632736ba6d418b84ea09da13379dc9138da921f4",
+      "width": 2400,
+      "height": 1440
+    },
+    {
       "slug": "event-modeling",
       "source": "skills/diagram-design/assets/example-event-modeling.html",
       "screenshot": "docs/screenshots/event-modeling.png",
