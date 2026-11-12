@@ -236,6 +236,46 @@ def check_flowchart_header_statements(tmp: Path) -> None:
     ok("flowchart statements after the header semicolon are retained")
 
 
+def check_flowchart_apostrophes(tmp: Path) -> None:
+    # Mermaid flowchart strings open only at a double quote, so an apostrophe
+    # is ordinary label text. One apostrophe must not leave the statement
+    # unterminated, and two must not pair up and swallow the edge between them.
+    source = tmp / "flowchart-apostrophes.mmd"
+    source.write_text(
+        "flowchart LR\n"
+        "  accDescr: Bob's flow\n"
+        "  A[Bob's box] -->|it's| B{Don't panic?}\n"
+        "  B -- it's fine --> C(User's cart)\n"
+        "  D[O'Brien] --> E[it's]\n"
+        "  F@{ shape: rect, label: 'a, b' } --> A\n"
+        "  G@{ shape: rect, label: '[' } --> H@{ label: '(' }\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    labels = {node["id"]: node["label"] for node in diagram["nodes"]}
+    edges = [(e["source"], e["target"], e["label"]) for e in diagram["edges"]]
+    if labels != {
+        "A": "Bob's box",
+        "B": "Don't panic?",
+        "C": "User's cart",
+        "D": "O'Brien",
+        "E": "it's",
+        "F": "a, b",
+        "G": "[",
+        "H": "(",
+    }:
+        fail(f"apostrophes in flowchart labels changed node labels: {labels}")
+    if edges != [
+        ("A", "B", "it's"),
+        ("B", "C", "it's fine"),
+        ("D", "E", ""),
+        ("F", "A", ""),
+        ("G", "H", ""),
+    ]:
+        fail(f"apostrophes in flowchart labels dropped or changed edges: {edges}")
+    ok("flowchart apostrophes stay label text; @{ } attributes keep YAML quotes")
+
+
 def check_entity_label_codes(tmp: Path) -> None:
     source = tmp / "entity-labels.mmd"
     source.write_text(
@@ -1264,6 +1304,17 @@ def check_errors_and_limits(tmp: Path) -> None:
             "a minified line followed by a multiline label must parse every statement: "
             f"{len(minified_multiline['edges'])} edges"
         )
+    # Deep bracket nesting wrapped across lines is rescanned on every line, so
+    # the scanners must not pay for the nesting depth on each character.
+    deep_brackets = tmp / "statement-deep-brackets.mmd"
+    deep_lines: list[str] = []
+    for index in range(10):
+        statement = f"N{index}" + "[" * 2000 + "]" * 2000
+        deep_lines += [statement[start : start + 100] for start in range(0, len(statement), 100)]
+    deep_brackets.write_text("flowchart TD\n" + "\n".join(deep_lines) + "\n", encoding="utf-8")
+    deep_nodes = json.loads(run_extract([str(deep_brackets), "--json"]))["diagrams"][0]["nodes"]
+    if len(deep_nodes) != 10:
+        fail(f"deeply nested wrapped statements must each parse: {len(deep_nodes)} nodes")
     unterminated_one_line = tmp / "statement-unterminated-one-line.mmd"
     unterminated_one_line.write_text(
         'flowchart TD\nA["' + "x" * (statement_cap + 10) + "\n",
@@ -1715,6 +1766,7 @@ def main() -> int:
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
         check_flowchart_header_statements(tmp)
+        check_flowchart_apostrophes(tmp)
         check_edge_ids(tmp)
         check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
