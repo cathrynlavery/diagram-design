@@ -236,6 +236,46 @@ def check_flowchart_header_statements(tmp: Path) -> None:
     ok("flowchart statements after the header semicolon are retained")
 
 
+def check_flowchart_apostrophes(tmp: Path) -> None:
+    # Mermaid flowchart strings open only at a double quote, so an apostrophe
+    # is ordinary label text. One apostrophe must not leave the statement
+    # unterminated, and two must not pair up and swallow the edge between them.
+    source = tmp / "flowchart-apostrophes.mmd"
+    source.write_text(
+        "flowchart LR\n"
+        "  accDescr: Bob's flow\n"
+        "  A[Bob's box] -->|it's| B{Don't panic?}\n"
+        "  B -- it's fine --> C(User's cart)\n"
+        "  D[O'Brien] --> E[it's]\n"
+        "  F@{ shape: rect, label: 'a, b' } --> A\n"
+        "  G@{ shape: rect, label: '[' } --> H@{ label: '(' }\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    labels = {node["id"]: node["label"] for node in diagram["nodes"]}
+    edges = [(e["source"], e["target"], e["label"]) for e in diagram["edges"]]
+    if labels != {
+        "A": "Bob's box",
+        "B": "Don't panic?",
+        "C": "User's cart",
+        "D": "O'Brien",
+        "E": "it's",
+        "F": "a, b",
+        "G": "[",
+        "H": "(",
+    }:
+        fail(f"apostrophes in flowchart labels changed node labels: {labels}")
+    if edges != [
+        ("A", "B", "it's"),
+        ("B", "C", "it's fine"),
+        ("D", "E", ""),
+        ("F", "A", ""),
+        ("G", "H", ""),
+    ]:
+        fail(f"apostrophes in flowchart labels dropped or changed edges: {edges}")
+    ok("flowchart apostrophes stay label text; @{ } attributes keep YAML quotes")
+
+
 def check_entity_label_codes(tmp: Path) -> None:
     source = tmp / "entity-labels.mmd"
     source.write_text(
@@ -312,6 +352,22 @@ A --> B; B --> C
         ("B", "C"),
     ]:
         fail("semicolon-separated flowchart statements were not split")
+
+    # Mermaid lengthens a dotted link with dots, not dashes.
+    dotted_file = tmp / "dotted-lengths.mmd"
+    dotted_file.write_text(
+        "flowchart LR\nA -..-> B\nB -...-> C\nC -..- D\nD -...- E\n",
+        encoding="utf-8",
+    )
+    dotted = json.loads(run_extract([str(dotted_file), "--json"]))["diagrams"][0]
+    expected_dotted = [("A", "B", False), ("B", "C", False), ("C", "D", True), ("D", "E", True)]
+    actual_dotted = [
+        (edge["source"], edge["target"], edge["undirected"])
+        for edge in dotted["edges"]
+        if edge["style"] == "dashed"
+    ]
+    if actual_dotted != expected_dotted or len(dotted["nodes"]) != 5:
+        fail(f"longer dotted links were not read as dashed edges: {dotted['edges']}")
 
     labeled_file = tmp / "labeled-links.mmd"
     labeled_file.write_text(
@@ -847,6 +903,20 @@ def check_named_composite_states(tmp: Path) -> None:
     ok("named composite states retain aliases, child membership and transitions")
 
 
+def check_older_state_header(tmp: Path) -> None:
+    """Mermaid parses `stateDiagram` and `stateDiagram-v2` with one grammar."""
+    body = 'state "Waiting for work" as Waiting\n[*] --> Waiting\nWaiting --> Done : finish\nDone --> [*]\n'
+    path = tmp / "older-state-header.mmd"
+    path.write_text("stateDiagram\n" + body, encoding="utf-8")
+    older = run_extract([str(path), "--json"])
+    path.write_text("stateDiagram-v2\n" + body, encoding="utf-8")
+    if older != run_extract([str(path), "--json"]):
+        fail("`stateDiagram` and `stateDiagram-v2` produced different IR")
+    path.write_text("stateDiagram-v3\nA --> B\n", encoding="utf-8")
+    expect_error([str(path)], "not a Mermaid file at line 1")
+    ok("the older stateDiagram header reads the same as stateDiagram-v2")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -1234,6 +1304,17 @@ def check_errors_and_limits(tmp: Path) -> None:
             "a minified line followed by a multiline label must parse every statement: "
             f"{len(minified_multiline['edges'])} edges"
         )
+    # Deep bracket nesting wrapped across lines is rescanned on every line, so
+    # the scanners must not pay for the nesting depth on each character.
+    deep_brackets = tmp / "statement-deep-brackets.mmd"
+    deep_lines: list[str] = []
+    for index in range(10):
+        statement = f"N{index}" + "[" * 2000 + "]" * 2000
+        deep_lines += [statement[start : start + 100] for start in range(0, len(statement), 100)]
+    deep_brackets.write_text("flowchart TD\n" + "\n".join(deep_lines) + "\n", encoding="utf-8")
+    deep_nodes = json.loads(run_extract([str(deep_brackets), "--json"]))["diagrams"][0]["nodes"]
+    if len(deep_nodes) != 10:
+        fail(f"deeply nested wrapped statements must each parse: {len(deep_nodes)} nodes")
     unterminated_one_line = tmp / "statement-unterminated-one-line.mmd"
     unterminated_one_line.write_text(
         'flowchart TD\nA["' + "x" * (statement_cap + 10) + "\n",
@@ -1437,6 +1518,62 @@ def check_edge_ids(tmp: Path) -> None:
     ok("edge IDs cover circle/cross operators without changing literal labels or titles")
 
 
+def check_hyphenated_node_ids(tmp: Path) -> None:
+    # Mermaid keeps a single `-` inside a node id; only `--`, `==` and the
+    # dotted `-.` forms open a link, so a hyphenated id is never an edge.
+    flow = tmp / "hyphenated-ids.mmd"
+    for declaration, node_id, label in (
+        ("user-profile", "user-profile", "user-profile"),
+        ("api-proxy", "api-proxy", "api-proxy"),
+        ("user-profile[User profile]", "user-profile", "User profile"),
+        ("user-onboarding", "user-onboarding", "user-onboarding"),
+        ("node-x", "node-x", "node-x"),
+        ("x-o", "x-o", "x-o"),
+        ("info-only", "info-only", "info-only"),
+        ("flag>flag =o]", "flag", "flag =o"),
+    ):
+        flow.write_text(f"flowchart LR\n  {declaration}\n  A --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node["label"] for node in diagram["nodes"]}
+        edges = [(edge["source"], edge["target"]) for edge in diagram["edges"]]
+        if nodes != {node_id: label, "A": "A", "B": "B"} or edges != [("A", "B")]:
+            fail(f"standalone {declaration!r} must stay one unconnected node: {nodes!r} {edges!r}")
+
+    for source in ("user-option", "api-xray", "my-object", "box-office"):
+        flow.write_text(f"flowchart LR\n{source} --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        edges = [(edge["source"], edge["target"], edge["arrowhead"]) for edge in diagram["edges"]]
+        if sorted(node["id"] for node in diagram["nodes"]) != sorted([source, "B"]) or edges != [
+            (source, "B", "arrow")
+        ]:
+            fail(f"{source!r} was split into an edge instead of staying one node: {edges!r}")
+
+    flow.write_text(
+        "flowchart LR\nuser-option --o api-xray\nnode-x x--x box-office\n", encoding="utf-8"
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    edges = [
+        (edge["source"], edge["target"], edge["arrowhead"], edge["bidirectional"])
+        for edge in diagram["edges"]
+    ]
+    if edges != [
+        ("user-option", "api-xray", "circle", False),
+        ("node-x", "box-office", "cross", True),
+    ]:
+        fail(f"real circle/cross links between hyphenated ids changed: {edges!r}")
+
+    # Mermaid rejects a spaced single-dash or single-equals x/o operator.
+    for broken in ("A -->", "A --x", "A--foo", "A--bar", "A-.x", "user-profile -->", "A -x B", "A -o B", "A =o B", "A -x"):
+        flow.write_text(f"flowchart LR\n{broken}\n", encoding="utf-8")
+        expect_error([str(flow)], "malformed edge at line 2")
+    # A broken link that is not a node either must fail, not vanish.
+    for broken in ("A- >B", "A - > B", "A -xB", "A -oB", "A -x|yes| B", "A[x] -x B[y]", "A[x] -o B[y]", "A[x] -- B[y]",
+                   "A --> B[x] -x C[y]", "A --> B--foo"):
+        flow.write_text(f"flowchart LR\nC --> D\n{broken}\n", encoding="utf-8")
+        expect_error([str(flow)], "malformed edge at line 3")
+    ok("hyphenated flowchart node ids stay whole; only real link operators split them")
+
+
 def check_unicode_state_regression(tmp: Path) -> None:
     path = tmp / "unicode-state.mmd"
     path.write_text('stateDiagram-v2\n待机 : 等待输入\n待机 --> 完成\n', encoding="utf-8")
@@ -1471,6 +1608,117 @@ def check_unicode_er_regression(tmp: Path) -> None:
     if {node["id"] for node in payload["nodes"]} != {"CUSTOMER", "ORDER"}:
         fail("ER identifiers led by a non-decimal numeral were accepted")
     ok("Unicode ER entity blocks and relationships keep identifiers, fields and endpoints")
+
+
+def check_er_aliases_and_quoted_names(tmp: Path) -> None:
+    # The alias example from Mermaid's ER syntax reference.
+    path = tmp / "er-aliases.mmd"
+    path.write_text(
+        'erDiagram\n'
+        'p[Person] {\n string firstName\n string lastName\n}\n'
+        'a["Customer Account"] {\n string email\n}\n'
+        'p ||--o| a : has\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    if (
+        set(nodes) != {"p", "a"}
+        or nodes["p"]["label"] != "Person"
+        or nodes["p"]["fields"] != ["string firstName", "string lastName"]
+        or nodes["a"]["label"] != "Customer Account"
+        or nodes["a"]["fields"] != ["string email"]
+        or [(edge["source"], edge["target"]) for edge in payload["edges"]] != [("p", "a")]
+    ):
+        fail(f"ER entity aliases lost their label or attributes: {payload['nodes']}")
+
+    path = tmp / "er-quoted-names.mmd"
+    path.write_text(
+        'erDiagram\n'
+        '"This ❤ Unicode"\n'
+        '"Line Item" {\n string sku\n}\n'
+        'ORDER ||--|{ "Line Item" : contains\n'
+        '"Pre--paid"\n'
+        'c [Client]\n'
+        'ORDER }o--|| c : "billed to"\n'
+        'ORDER["Sales Order"]\n',
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    nodes = {node["id"]: node for node in payload["nodes"]}
+    edges = [(edge["source"], edge["target"]) for edge in payload["edges"]]
+    if (
+        set(nodes) != {"This ❤ Unicode", "Line Item", "ORDER", "Pre--paid", "c"}
+        or any(node["shape"] != "table" for node in nodes.values())
+        or nodes["Line Item"]["fields"] != ["string sku"]
+        or nodes["c"]["label"] != "Client"
+        or nodes["ORDER"]["label"] != "Sales Order"
+        or edges != [("ORDER", "Line Item"), ("ORDER", "c")]
+    ):
+        fail(f"ER quoted entity names were dropped or misread: {payload['nodes']} {edges}")
+
+    # Mermaid keeps the first alias and ignores later ones, including one
+    # that repeats the entity name.
+    path.write_text("erDiagram\np[Person]\np[Other]\np[p]\np ||--o| a : has\n", encoding="utf-8")
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    label = next(node["label"] for node in payload["nodes"] if node["id"] == "p")
+    if label != "Person":
+        fail(f"a later ER alias replaced the first one: {label!r}")
+
+    # Mermaid rejects an empty quoted name, and an alias is not an endpoint.
+    for body in ('"" ||--o{ B : x\n', 'p[Person] ||--o| a : has\n'):
+        path.write_text("erDiagram\n" + body, encoding="utf-8")
+        expect_error([str(path)], "malformed edge at line 2")
+    ok("ER entity aliases and quoted names keep labels, attributes and endpoints")
+
+
+def check_er_cardinality_aliases(tmp: Path) -> None:
+    # Mermaid's word aliases for cardinality and identification, its `.-` / `-.`
+    # links, and spaced symbols all draw the same crow's-foot ends as `||--o{`.
+    path = tmp / "er-cardinality-aliases.mmd"
+    path.write_text(
+        "erDiagram\n"
+        "CAR 1 to zero or more NAMED-DRIVER : allows\n"
+        "PERSON one or zero to many CAR : owns\n"
+        "PERSON only one optionally to 1+ ACCOUNT : holds\n"
+        "SHOP many(0) to many(1) ITEM : stocks\n"
+        "SHOP Zero Or Many TO One Or More SUPPLIER : buys\n"
+        "ORDER ||.-o{ LINE : has\n"
+        "ORDER }|-.|| BATCH : in\n"
+        "CUSTOMER || -- o{ INVOICE : places\n",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+    edges = [(edge["source"], edge["target"], edge["label"], edge["style"]) for edge in payload["edges"]]
+    expected = [
+        ("CAR", "NAMED-DRIVER", "|| -- o{ · allows", "solid"),
+        ("PERSON", "CAR", "|o -- o{ · owns", "solid"),
+        ("PERSON", "ACCOUNT", "|| .. |{ · holds", "dashed"),
+        ("SHOP", "ITEM", "}o -- |{ · stocks", "solid"),
+        ("SHOP", "SUPPLIER", "}o -- |{ · buys", "solid"),
+        ("ORDER", "LINE", "|| .. o{ · has", "dashed"),
+        ("ORDER", "BATCH", "}| .. || · in", "dashed"),
+        ("CUSTOMER", "INVOICE", "|| -- o{ · places", "solid"),
+    ]
+    if edges != expected:
+        fail(f"ER cardinality aliases were dropped or misread: {edges}")
+
+    # As in Mermaid, a bare `1` must touch its link, a word must end at a word
+    # boundary, and only ASCII letters match in either case, so these are not
+    # relationships.
+    for body in (
+        "A 1 -- 1 B : r\n",
+        "A ||--x B : r\n",
+        "A 1 tozero or more B : r\n",
+        "A only one optİonally to many B : r\n",
+        "A only one optıonally to many B : r\n",
+    ):
+        path.write_text("erDiagram\n" + body, encoding="utf-8")
+        if "--" in body:
+            expect_error([str(path)], "malformed edge at line 2")
+        elif json.loads(run_extract([str(path), "--json"]))["diagrams"][0]["edges"]:
+            fail(f"an ER relationship Mermaid rejects was accepted: {body!r}")
+    ok("ER cardinality word aliases, dotted links and spaced symbols keep their ends")
 
 
 def check_standalone_er_regression(tmp: Path) -> None:
@@ -1563,6 +1811,8 @@ def main() -> int:
         check_unicode_state_regression(tmp)
         check_unicode_er_regression(tmp)
         check_standalone_er_regression(tmp)
+        check_er_aliases_and_quoted_names(tmp)
+        check_er_cardinality_aliases(tmp)
         check_standalone_state_regression(tmp)
         check_files()
         expect_error([str(FLOW), "--diagram", "²"], "--diagram must be an index")
@@ -1571,7 +1821,9 @@ def main() -> int:
         check_node_shape_updates(tmp)
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
+        check_hyphenated_node_ids(tmp)
         check_flowchart_header_statements(tmp)
+        check_flowchart_apostrophes(tmp)
         check_edge_ids(tmp)
         check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
@@ -1580,6 +1832,7 @@ def main() -> int:
         check_markdown_and_grammars(tmp)
         check_state_descriptions(tmp)
         check_named_composite_states(tmp)
+        check_older_state_header(tmp)
         check_selection_before_parse(tmp)
         check_utf8_bom(tmp)
         check_legacy_stdout_encoding(tmp)
