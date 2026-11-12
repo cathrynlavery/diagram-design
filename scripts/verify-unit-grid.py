@@ -51,6 +51,10 @@ ANIMATIONS = {"animate", "set", "animatetransform", "animatemotion", "animatecol
 DRAWABLES = {"rect", "path", "polygon", "polyline", "line", "circle", "ellipse", "text",
              "image", "use", "foreignobject", "svg"}
 MAX_CELL_STROKE = 2.0
+GLYPH_EM = 0.65  # shortcut: a Geist upper bound; a wider face or all-caps W/M runs can exceed it
+TEXT_INHERITED = ("font-size", "text-anchor", "letter-spacing")
+# A tspan with none of these draws inside its parent's line.
+TSPAN_MOVES = ("x", "y", "dx", "dy", "rotate", "textlength", "font-size", "letter-spacing", "style", "transform")
 MIN_EMPTY_DISTANCE = 64.0  # RGB distance; the shipped empty fills sit above 150
 HEX_RE = re.compile(r"#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})")
 RGB_RE = re.compile(r"rgba?\(([^)]*)\)")
@@ -179,7 +183,7 @@ def path_box(d: str) -> tuple[float, float, float, float] | None:
 
 
 def text_box(attributes: dict[str, str], text: str) -> tuple[float, float, float, float] | None:
-    """Generous bounds for one line of text: every glyph at most 1em wide, 1.2em above and 0.4em below."""
+    """Generous bounds for one line of text: each glyph at most 0.65em wide (Geist), 1.2em above and 0.4em below."""
     if any(name in attributes for name in ("dx", "dy", "rotate", "textlength", "writing-mode", "direction")):
         return None
     x, y, size = number(attributes.get("x"), 0.0), number(attributes.get("y"), 0.0), number(attributes.get("font-size"), 16.0)
@@ -187,7 +191,7 @@ def text_box(attributes: dict[str, str], text: str) -> tuple[float, float, float
     spacing = number(spacing_value[:-2]) if spacing_value.endswith("em") else number(spacing_value.removesuffix("px"))
     if x is None or y is None or size is None or spacing is None:
         return None
-    em = size * (1 + (spacing if spacing_value.endswith("em") else spacing / size if size else 0))
+    em = size * (GLYPH_EM + (spacing if spacing_value.endswith("em") else spacing / size if size else 0))
     width = len(" ".join(text.split())) * em
     anchor = (attributes.get("text-anchor") or "start").strip()
     left = {"start": x, "middle": x - width / 2, "end": x - width}.get(anchor)
@@ -279,7 +283,7 @@ class Presentation(HTMLParser):
                 self.cell(tag_attrs, style)
             elif self.paints and tag in DRAWABLES:
                 self.drawable(tag, tag_attrs)
-            if tag in {"tspan", "textpath"}:
+            if tag == "textpath" or (tag == "tspan" and any(name in tag_attrs for name in TSPAN_MOVES)):
                 for text in self.active_texts:
                     text["exact"] = False
             self.open.append((tag, tag_attrs))
@@ -336,6 +340,9 @@ class Presentation(HTMLParser):
                     for depth, (name, element) in enumerate(self.open))
         stroke_width = next((element.get("stroke-width") for _, element in reversed(self.open + [(tag, attributes)])
                              if "stroke-width" in element), None)
+        if tag == "text":  # font-size, anchor and spacing inherit from the nearest group that sets them
+            attributes = {**{name: value for name in TEXT_INHERITED for _, element in self.open
+                             if (value := element.get(name)) is not None}, **attributes}
         record: dict[str, object] = {
             "tag": tag, "attrs": attributes, "text": [],
             "exact": not moved and "transform" not in attributes and "style" not in attributes,

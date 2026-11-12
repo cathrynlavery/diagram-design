@@ -71,7 +71,7 @@ def after_cells(source: str, snippet: str) -> str:
     return source[:end] + snippet + source[end:]
 
 
-def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str | None]]:
+def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str | tuple[str, ...] | None]]:
     """Edits that change what a browser draws while the declared state stays the same."""
     def css(rule: str) -> str:
         return source.replace("</style>", rule + "</style>", 1)
@@ -86,7 +86,8 @@ def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str |
         # 2. unrendered, conditional or moving ancestors
         *[(f"cells in <{tag}>", wrap(source, 53, 62, f"<{tag}>", f"</{tag}>"), f"<{tag.lower()}> ancestor")
           for tag in ("desc", "text", "foreignObject", "switch", "metadata", "svg", "symbol", "clipPath")],
-        ("cells in title", wrap(source, 53, 62, "<title>", "</title>"), "has 90 data-unit-cell"),
+        # Python 3.13+ parses <title> as raw text (cells vanish); older versions see a <title> ancestor.
+        ("cells in title", wrap(source, 53, 62, "<title>", "</title>"), ("has 90 data-unit-cell", "<title> ancestor")),
         *[(f"group {attr}", wrap(source, 53, 62, f'<g {attr}="zz">', "</g>"), attr.lower())
           for attr in ("systemLanguage", "requiredExtensions", "requiredFeatures")],
         ("anchor transform", wrap(source, 53, 62, '<a href="#" transform="translate(5000 0)">', "</a>"), "transform"),
@@ -136,6 +137,12 @@ def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str |
               ("rect in moved group", f'<g transform="translate(382 230)"><rect width="1" height="1" fill="{ink}"/></g>'),
           )],
         ("label outside grid", after_cells(source, '<text x="40" y="380" font-size="9">Note</text>'), None),
+        ("source note beside grid", after_cells(source, '<text x="40" y="130" font-size="11">Source: illustrative release checklist</text>'), None),
+        ("note with plain tspan", after_cells(source, '<text x="660" y="230" font-size="11">Focal <tspan font-weight="600">check 64</tspan></text>'), None),
+        ("source note reaching grid", after_cells(source, '<text x="300" y="130" font-size="11">Source: illustrative release checklist</text>'), "later <text> covers"),
+        ("note with inherited font-size on grid", after_cells(source, '<g font-size="40"><text x="200" y="200">WWWWWWWW</text></g>'), "later <text> covers"),
+        ("note with inherited end anchor on grid", after_cells(source, '<g text-anchor="end"><text x="700" y="200" font-size="11">Source note here</text></g>'), "later <text> covers"),
+        ("note with positioned tspan", after_cells(source, '<text x="660" y="230" font-size="11">Focal <tspan x="400">check</tspan></text>'), "later <text> cannot be bounded"),
         ("path outside grid", after_cells(source, f'<path d="M40 340 h200 c10 0 10 10 0 10 z" fill="{ink}"/>'), None),
         # 6. a second :root rule must not break token parsing
         ("second :root rule", re.sub(r"(:root\{[^}]*?)(--accent:[^;}]*);([^}]*)\}", r"\1\3;\2}", source, count=1).replace("</style>", ":root{--grid-gap:4px}</style>", 1), None),
@@ -245,7 +252,8 @@ def main() -> int:
             findings = verifier.check(path)
             if expected is None and findings:
                 failures.append(f"{name} failed: {findings}")
-            elif expected is not None and not any(expected in finding for finding in findings):
+            elif expected is not None and not any(wanted in finding for finding in findings
+                                                  for wanted in (expected if isinstance(expected, tuple) else (expected,))):
                 failures.append(f"{name} did not report {expected!r}: {findings}")
             else:
                 print(f"OK: {name}")
