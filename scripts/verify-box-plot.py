@@ -112,10 +112,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-# One character of a tag's inside, where a quoted value after `=` is one unit,
-# so a `>` in it does not end the tag. A quote anywhere else is a plain
-# character, and each input has one parse, so a tag with no end fails fast.
-TAG_BODY = r"""(?:[^>=]|=[\t\n\f\r ]*(?:"[^"]*"|'[^']*'|(?![\t\n\f\r "'])))"""
+# One unit of a tag's inside, read as the HTML tokenizer does: a separator
+# (ASCII whitespace or `/`), or one attribute. A name runs to whitespace, `/`,
+# `>` or `=`; a quoted value opens only right after `name=`, so a `>` in it
+# does not end the tag; an unquoted value runs to whitespace or `>`, quotes
+# and all. The lookaheads keep every name and value whole, so each input has
+# one parse and a tag with no end fails in linear time.
+TAG_BODY = (
+    r"""(?:[\t\n\f\r /]|[^\t\n\f\r />][^\t\n\f\r />=]*(?![^\t\n\f\r />=])"""
+    r"""(?:[\t\n\f\r ]*=[\t\n\f\r ]*(?:"[^"]*"|'[^']*'"""
+    r"""|[^\t\n\f\r >"'][^\t\n\f\r >]*(?![^\t\n\f\r >])|(?=>))"""
+    r"""|(?![\t\n\f\r ]*=)))"""
+)
 CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
 RECT_RE = re.compile(r"<rect\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
 LINE_RE = re.compile(r"<line\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
@@ -183,11 +191,12 @@ DIGIT_RE = re.compile(r"\d")
 # An attribute as the HTML tokenizer reads it: a quoted value, an unquoted
 # value (`display=none`), or no value at all (`<div hidden>`), which a
 # browser treats as present with an empty value. An unquoted value ends only
-# at whitespace or `>`, and a name at whitespace, quote, `/`, `=`, `<` or `>`.
-# Whitespace is ASCII only, as in HTML: a no-break space is a value character.
+# at whitespace or `>`, and a name at whitespace, `/`, `=` or `>` (a quote is
+# part of it), as in TAG_BODY. Whitespace is ASCII only, as in HTML: a
+# no-break space is a value character.
 ATTR_RE = re.compile(
-    r"""(?P<name>[^\t\n\f\r "'<>/=]+)(?:[\t\n\f\r ]*=[\t\n\f\r ]*"""
-    r"""(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)|(?P<bare>[^\t\n\f\r >]+)))?""",
+    r"""(?P<name>[^\t\n\f\r />][^\t\n\f\r />=]*)(?:[\t\n\f\r ]*=[\t\n\f\r ]*"""
+    r"""(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)|(?P<bare>[^\t\n\f\r >]*)))?""",
     re.DOTALL,
 )
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)

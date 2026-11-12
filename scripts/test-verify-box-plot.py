@@ -162,6 +162,7 @@ A_LABEL = '<text data-name="A" x="148" y="84" text-anchor="end">A</text>'
 A_BOX = 'data-role="box" x="200"'
 
 AUTH_G = '<g data-name="Auth"'
+SVG_OPEN = '<svg viewBox="0 0 1000 500"'
 AUTH_BOX = ('<rect data-role="box" x="196" y="64.0" width="20" height="32" rx="2" '
             'fill="rgba(45,49,66,0.15)" stroke="#4f5d75" stroke-width="1"/>')
 AUTH_LABEL = ('<text data-name="Auth" x="148" y="84" fill="#2d3142" font-size="11" '
@@ -1122,6 +1123,16 @@ def run_cases(h: Harness) -> int:
          1, "never drawn"),
         ("display:none after = in an unquoted style",
          [(AUTH_G, '<g style=a=b;display:none data-name="Auth"')], 1, "never drawn"),
+        ("display=none after a stray quote in an unquoted value",
+         [(AUTH_G, '<g title=x"y display=none data-name="Auth"')], 1, "never drawn"),
+        # A quote inside an unquoted value does not open a quoted one, so the
+        # wrapper's tag still ends at its `>`, before the <svg>, and hides it.
+        ("an unquoted style holding =\" on a wrapper around the svg",
+         [(SVG_OPEN, '<span style=display:none;x="y>' + SVG_OPEN)],
+         5, "never drawn"),
+        ("an unquoted style holding =' on a wrapper around the svg",
+         [(SVG_OPEN, "<span style=display:none;x='y>" + SVG_OPEN)],
+         5, "never drawn"),
     ):
         h.expect_findings(
             "%s is %d finding(s)" % (title, count),
@@ -1143,7 +1154,10 @@ def run_cases(h: Harness) -> int:
         # HTML splits attributes only at ASCII whitespace, so NBSP is a value
         # character.
         ("an unquoted value holding a no-break space",
-         [(AUTH_G, '<g data-note=foo hidden data-name="Auth"')]),
+         [(AUTH_G, '<g data-note=foo\u00a0hidden data-name="Auth"')]),
+        # A quote inside a name belongs to the name: this is `x"display`.
+        ("a valueful attribute whose name holds a quote",
+         [(AUTH_G, '<g x"display=none data-name="Auth"')]),
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
     # A bound mark may state paint that draws nothing. Its coordinates still
