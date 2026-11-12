@@ -22,6 +22,7 @@
         <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="var(--dot)"/></pattern>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="var(--muted)"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="var(--accent)"/></marker>
+        <marker id="arrow-focal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="var(--accent)"/></marker>
         <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="var(--link)"/></marker>
         <marker id="arrow-sm" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto"><polygon points="0 0,6 2.5,0 5" fill="var(--muted)"/></marker>
         <marker id="arrow-dim" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="var(--soft)"/></marker>
@@ -37,13 +38,13 @@
       <rect width="1200" height="664" fill="var(--paper)"/><rect width="1200" height="664" fill="url(#dots)" opacity=".55"/>
       <rect class="zone" x="260" y="72" width="696" height="336" rx="8" stroke-width="1"/>
       <!-- Connectors are emitted before all node rectangles. -->
-      <path class="connector primary" d="M200 124 H360 Q368 124 368 132 V180 Q368 188 376 188 H400" marker-end="url(#arrow-accent)"/>
-      <line class="connector primary" x1="200" y1="212" x2="400" y2="212" marker-end="url(#arrow-accent)"/>
-      <path class="connector primary" d="M200 300 H360 Q368 300 368 292 V244 Q368 236 376 236 H400" marker-end="url(#arrow-accent)"/>
-      <line class="connector primary" x1="560" y1="212" x2="656" y2="212" marker-end="url(#arrow-accent)"/>
-      <path class="connector primary" d="M816 188 H960 Q968 188 968 180 V132 Q968 124 976 124 H1000" marker-end="url(#arrow-accent)"/>
-      <line class="connector primary" x1="816" y1="212" x2="1000" y2="212" marker-end="url(#arrow-accent)"/>
-      <path class="connector primary" d="M816 236 H960 Q968 236 968 244 V292 Q968 300 976 300 H1000" marker-end="url(#arrow-accent)"/>
+      <path class="connector primary" d="M200 124 H360 Q368 124 368 132 V180 Q368 188 376 188 H400" marker-end="url(#arrow-focal)"/>
+      <line class="connector primary" x1="200" y1="212" x2="400" y2="212" marker-end="url(#arrow-focal)"/>
+      <path class="connector primary" d="M200 300 H360 Q368 300 368 292 V244 Q368 236 376 236 H400" marker-end="url(#arrow-focal)"/>
+      <line class="connector primary" x1="560" y1="212" x2="656" y2="212" marker-end="url(#arrow-focal)"/>
+      <path class="connector primary" d="M816 188 H960 Q968 188 968 180 V132 Q968 124 976 124 H1000" marker-end="url(#arrow-focal)"/>
+      <line class="connector primary" x1="816" y1="212" x2="1000" y2="212" marker-end="url(#arrow-focal)"/>
+      <path class="connector primary" d="M816 236 H960 Q968 236 968 244 V292 Q968 300 976 300 H1000" marker-end="url(#arrow-focal)"/>
       <line class="connector trigger" x1="480" y1="160" x2="480" y2="176" marker-end="url(#arrow)"/><line class="connector trigger" x1="736" y1="160" x2="736" y2="176" marker-end="url(#arrow)"/>
       <line class="connector auth" x1="592" y1="460" x2="592" y2="408" marker-end="url(#arrow-accent)"/>
       <!-- Dashed transit crosses the identity footer without treating it as an endpoint. -->

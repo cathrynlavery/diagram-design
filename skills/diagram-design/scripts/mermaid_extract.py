@@ -6,9 +6,9 @@ fetches, or executes Mermaid, JavaScript, URLs, directives, or label content.
 Every label and directive value is untrusted data. Click targets and styling are
 counted and discarded; retained labels are emitted only as inert text.
 
-Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2, and
-erDiagram. Inputs may be .mmd, .mermaid, or Markdown files containing fenced
-``mermaid`` blocks.
+Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2 (or
+its older stateDiagram header), and erDiagram. Inputs may be .mmd, .mermaid, or
+Markdown files containing fenced ``mermaid`` blocks.
 
 Usage:
     python3 mermaid_extract.py <file> [--diagram N|all] [--json]
@@ -36,6 +36,10 @@ MAX_EDGES = 5000
 # with others. Real statements are a few hundred characters at most; the cap
 # keeps per-statement parsing work bounded.
 MAX_STATEMENT_CHARS = 4096
+# Sequence `autonumber` start and step. Mermaid numbers steps with JS numbers,
+# which stay exact up to 15 digits. Checking the length first also keeps the
+# error the same on Pythons with and without an int-from-string digit limit.
+MAX_AUTONUMBER_DIGITS = 15
 SUPPORTED_KINDS = "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram"
 UNSUPPORTED_KINDS = {
     "pie",
@@ -49,7 +53,6 @@ UNSUPPORTED_KINDS = {
     "gantt",
     "journey",
     "classdiagram",
-    "statediagram",
 }
 MARKDOWN_SUFFIXES = {".md", ".markdown", ".mdown", ".mkd"}
 MERMAID_SUFFIXES = {".mmd", ".mermaid"}
@@ -61,6 +64,84 @@ ER_IDENTIFIER = r"[^\W\d][\w.-]*"
 
 def _er_name(name: str) -> bool:
     return name[:1] == "_" or name[:1].isalpha()
+
+
+# A quoted ER name may hold spaces and any character except these, as in
+# Mermaid's ER lexer. Mermaid drops the quotes to get the entity name.
+ER_QUOTED_NAME = r'"[^"%\r\n\v\b\\]+"'
+ER_NAME = rf"(?:{ER_QUOTED_NAME}|{ER_IDENTIFIER})"
+
+# Mermaid's ER cardinality tokens, each with the symbol it draws at the
+# (left, right) end of a relationship. Mermaid reads the words as
+# case-insensitive aliases for the symbols.
+_ER_ZERO_OR_ONE = ("|o", "o|")
+_ER_ONLY_ONE = ("||", "||")
+_ER_ZERO_OR_MORE = ("}o", "o{")
+_ER_ONE_OR_MORE = ("}|", "|{")
+ER_CARDINALITIES = {
+    "|o": _ER_ZERO_OR_ONE,
+    "o|": _ER_ZERO_OR_ONE,
+    "zero or one": _ER_ZERO_OR_ONE,
+    "one or zero": _ER_ZERO_OR_ONE,
+    "||": _ER_ONLY_ONE,
+    "1": _ER_ONLY_ONE,
+    "one": _ER_ONLY_ONE,
+    "only one": _ER_ONLY_ONE,
+    "}o": _ER_ZERO_OR_MORE,
+    "o{": _ER_ZERO_OR_MORE,
+    "0+": _ER_ZERO_OR_MORE,
+    "many": _ER_ZERO_OR_MORE,
+    "many(0)": _ER_ZERO_OR_MORE,
+    "zero or more": _ER_ZERO_OR_MORE,
+    "zero or many": _ER_ZERO_OR_MORE,
+    "}|": _ER_ONE_OR_MORE,
+    "|{": _ER_ONE_OR_MORE,
+    "1+": _ER_ONE_OR_MORE,
+    "many(1)": _ER_ONE_OR_MORE,
+    "one or more": _ER_ONE_OR_MORE,
+    "one or many": _ER_ONE_OR_MORE,
+    "u": ("u", "u"),
+}
+# Identifying relationships draw solid (`--`), non-identifying ones dashed (`..`).
+ER_IDENTIFICATIONS = {
+    "--": "--",
+    "to": "--",
+    "..": "..",
+    ".-": "..",
+    "-.": "..",
+    "optionally to": "..",
+}
+# Mermaid reads `1` as a cardinality only right before a link or before a
+# spaced word, and `u` (its MD_PARENT end) only right before `.`, `-` or `|`.
+_ER_TOKEN_CONTEXT = {
+    "1": r"1(?=\s+[A-Za-z_\"'0-9]|--|\.\.|\.-|-\.)",
+    "u": r"u(?=[.|-])",
+}
+
+
+def _er_tokens(tokens: dict[str, object]) -> str:
+    """Return a regex alternation over tokens, longest first like Mermaid's lexer.
+
+    As in Mermaid (jison), a token that ends in a word character must end at a
+    word boundary, so `to` does not match the start of `tomany`. Mermaid ignores
+    only ASCII case, so `(?a:...)` keeps `İ` and `ı` from matching `i`.
+    """
+    ordered = sorted(tokens, key=len, reverse=True)
+    return "|".join(
+        _ER_TOKEN_CONTEXT.get(token, "(?a:" + re.escape(token) + (r"\b" if token[-1].isalnum() else "") + ")")
+        for token in ordered
+    )
+
+
+ER_CARDINALITY = _er_tokens(ER_CARDINALITIES)
+ER_IDENTIFICATION = _er_tokens(ER_IDENTIFICATIONS)
+
+
+def _er_entity(token: str) -> str | None:
+    """Return the entity name of an ER name token, or None if it is not one."""
+    if token.startswith('"'):
+        return token[1:-1]
+    return token if _er_name(token) else None
 
 
 def _configure_stdout_utf8() -> None:
@@ -115,8 +196,10 @@ class Diagram:
     edges: list[Edge] = field(default_factory=list)
     fragments: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    # Sequence `autonumber` directives: step numbers are content, prose cites them.
+    autonumber: list[dict[str, Any]] = field(default_factory=list)
     discarded: dict[str, int] = field(
-        default_factory=lambda: {"style_directives": 0, "click_handlers": 0}
+        default_factory=lambda: {"style_directives": 0, "click_handlers": 0, "config_directives": 0}
     )
     _nodes_by_id: dict[str, Node] = field(default_factory=dict, init=False, repr=False)
     _state_descriptions: dict[str, list[str]] = field(default_factory=dict, init=False, repr=False)
@@ -317,11 +400,13 @@ def _frontmatter_end(lines: list[str]) -> int:
     return -1
 
 
-def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
+def _prepared_lines(block: SourceBlock) -> tuple[list[tuple[int, str]], int]:
+    """Blank out comments and config, returning the lines and the number of config directives."""
     prepared: list[tuple[int, str]] = []
     in_directive = False
     lines = block.text.splitlines()
     frontmatter_end = _frontmatter_end(lines)
+    config_directives = 1 if frontmatter_end >= 0 else 0
     for offset, raw in enumerate(lines):
         line_number = block.source_line + offset
         stripped = raw.strip()
@@ -336,6 +421,7 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         if stripped.startswith("%%{"):
+            config_directives += 1
             if "}%%" not in stripped:
                 in_directive = True
             prepared.append((line_number, ""))
@@ -344,7 +430,7 @@ def _prepared_lines(block: SourceBlock) -> list[tuple[int, str]]:
             prepared.append((line_number, ""))
             continue
         prepared.append((line_number, raw.rstrip()))
-    return prepared
+    return prepared, config_directives
 
 
 def _kind_and_direction(
@@ -359,7 +445,7 @@ def _kind_and_direction(
             return "flowchart", match.group(2).upper(), position
         if re.match(r"^sequenceDiagram\b", text, re.I):
             return "sequenceDiagram", "LR", position
-        if re.match(r"^stateDiagram-v2\b", text, re.I):
+        if re.match(r"^stateDiagram(?:-v2)?(?![\w-])", text, re.I):
             return "stateDiagram-v2", "TD", position
         if re.match(r"^erDiagram\b", text, re.I):
             return "erDiagram", "TD", position
@@ -731,8 +817,9 @@ def _edge_operators(text: str) -> list[_Operator]:
             )
             occupied.append((operator_start, match.end()))
 
+    # A dotted link grows by dots: `-.->`, `-..->`, `-...->` and `-.-`, `-..-`.
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.-+>|=+>|-+(?:>|x|o)|-+\.-+|={3,}|-{3,}|~{3,}"
+        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.+-+>|=+>|-+(?:>|x|o)|-+\.+-+|={3,}|-{3,}|~{3,}"
     )
     for match in pattern.finditer(mask):
         if any(start <= match.start() < end for start, end in occupied):
@@ -777,6 +864,28 @@ def _endpoint_group(
 STYLE_DIRECTIVES = ("style ", "classDef ", "class ", "linkStyle ")
 
 
+_EDGE_ID = re.compile(r"(?<![\w.:@-])([A-Za-z_][\w-]*)@")
+
+
+def _strip_edge_ids(text: str) -> tuple[str, list[str]]:
+    """Drop Mermaid v11.6+ edge IDs (`A e1@--> B`) and return the IDs found."""
+    mask = _top_level_mask(text)
+    operator_starts = {operator.start for operator in _edge_operators(text)}
+    ids: list[str] = []
+    pieces: list[str] = []
+    cursor = 0
+    for match in _EDGE_ID.finditer(mask):
+        if match.end() not in operator_starts:
+            continue
+        pieces.append(text[cursor : match.start()])
+        cursor = match.end()
+        ids.append(match.group(1))
+    if not ids:
+        return text, ids
+    pieces.append(text[cursor:])
+    return "".join(pieces), ids
+
+
 def _discard_nonsemantic(diagram: Diagram, text: str) -> bool:
     lowered = text.casefold()
     if any(lowered.startswith(prefix.casefold()) for prefix in STYLE_DIRECTIVES):
@@ -793,12 +902,17 @@ def _parse_flowchart(
 ) -> None:
     containers: list[str] = []
     invisible_links = 0
+    edge_ids: set[str] = set()
     for line_number, raw in _logical_statements(lines[header_position + 1 :]):
         text = raw.strip()
         if not text:
             continue
         lowered = text.casefold()
         if _discard_nonsemantic(diagram, text):
+            continue
+        id_match = re.match(r"^([A-Za-z_][\w-]*)@\{", text)
+        if id_match and id_match.group(1) in edge_ids:
+            # `e1@{ animate: true }` styles an edge, not a node.
             continue
         if lowered.startswith("direction "):
             if not containers:
@@ -823,6 +937,8 @@ def _parse_flowchart(
                 containers.pop()
             continue
 
+        text, found_ids = _strip_edge_ids(text)
+        edge_ids.update(found_ids)
         operators = _edge_operators(text)
         parent = containers[-1] if containers else None
         if operators:
@@ -940,6 +1056,19 @@ def _parse_sequence(
                 semantic_depth -= 1
             continue
         if lowered.startswith(("activate ", "deactivate ", "+", "-")):
+            continue
+        numbering = re.match(r"^autonumber(?:\s+(off)|\s+(\d+)(?:\s+(\d+))?)?$", text, re.I)
+        if numbering:
+            off, start, step = numbering.groups()
+            entry = {"line": line_number, "off": bool(off)}
+            if not off:
+                if any(len(value or "") > MAX_AUTONUMBER_DIGITS for value in (start, step)):
+                    _fail(
+                        f"autonumber value exceeds {MAX_AUTONUMBER_DIGITS} digits "
+                        f"at line {line_number}"
+                    )
+                entry.update(start=int(start or 1), step=int(step or 1))
+            diagram.autonumber.append(entry)
             continue
         if lowered.startswith("note "):
             _, separator, note = text.partition(":")
@@ -1110,10 +1239,15 @@ def _parse_er(
     diagram: Diagram, lines: list[tuple[int, str]], header_position: int
 ) -> None:
     current: Node | None = None
+    aliased_names: set[str] = set()
     relationship = re.compile(
-        rf"^({ER_IDENTIFIER})\s+(\S*(?:--|\.\.)\S*)\s+"
-        rf"({ER_IDENTIFIER})\s*(?::\s*(.*))?$"
+        rf"^({ER_NAME})\s+"
+        rf"(?i:({ER_CARDINALITY})\s*({ER_IDENTIFICATION})\s*({ER_CARDINALITY}))\s+"
+        rf"({ER_NAME})\s*(?::\s*(.*))?$"
     )
+    # `p[Person]` shows the alias in place of the entity name. Relationships
+    # use the name, so an alias is valid only on a declaration.
+    declaration = re.compile(rf"^({ER_NAME})(?:\s*\[({ER_NAME})\])?\s*(\{{)?$")
     for line_number, raw in lines[header_position + 1 :]:
         text = raw.strip()
         if not text:
@@ -1127,22 +1261,22 @@ def _parse_er(
         if direction_match and current is None:
             diagram.direction = direction_match.group(1).upper()
             continue
-        entity = re.match(rf"^({ER_IDENTIFIER})\s*\{{$", text)
-        if entity and _er_name(entity.group(1)):
-            current = diagram.add_node(entity.group(1), entity.group(1), "table")
+        declared = _er_declaration(declaration.match(text))
+        if declared is not None and declared[3]:
+            current = _er_table(diagram, aliased_names, *declared[:3])
             continue
         if current is not None:
             current.fields.append(clean_label(text))
             continue
         edge = relationship.match(text)
-        if edge and _er_name(edge.group(1)) and _er_name(edge.group(3)):
-            source, cardinality, target, relationship_label = edge.groups()
-            diagram.add_node(source, source, "table")
-            diagram.add_node(target, target, "table")
-            left, separator, right = cardinality.partition("--")
-            if not separator:
-                left, separator, right = cardinality.partition("..")
-            label_parts = [f"{left} {separator} {right}".strip()]
+        if edge and _er_entity(edge.group(1)) and _er_entity(edge.group(5)):
+            source_token, left, link, right, target_token, relationship_label = edge.groups()
+            source = _er_table(diagram, aliased_names, _er_entity(source_token), _er_label(source_token)).id
+            target = _er_table(diagram, aliased_names, _er_entity(target_token), _er_label(target_token)).id
+            separator = ER_IDENTIFICATIONS[link.casefold()]
+            left = ER_CARDINALITIES[left.casefold()][0]
+            right = ER_CARDINALITIES[right.casefold()][1]
+            label_parts = [f"{left} {separator} {right}"]
             if relationship_label:
                 label_parts.append(clean_label(relationship_label))
             diagram.add_edge(
@@ -1154,14 +1288,57 @@ def _parse_er(
                 undirected=True,
             )
             continue
-        if "--" in text or ".." in text:
+        # A quoted name may contain `--` or `..` as plain text.
+        unquoted = re.sub(ER_QUOTED_NAME, '""', text)
+        if "--" in unquoted or ".." in unquoted:
             _fail(f"malformed edge at line {line_number}")
-        if re.fullmatch(ER_IDENTIFIER, text) and _er_name(text):
-            diagram.add_node(text, text, "table")
+        if declared is not None:
+            _er_table(diagram, aliased_names, *declared[:3])
+
+
+def _er_label(token: str) -> str:
+    """Return the display text of an ER name token."""
+    return clean_label(token) if token.startswith('"') else token
+
+
+def _er_declaration(
+    match: re.Match[str] | None,
+) -> tuple[str, str, bool, bool] | None:
+    """Return (name, label, aliased, opens_block) for an ER entity declaration."""
+    if match is None:
+        return None
+    name_token, alias_token, block = match.groups()
+    name = _er_entity(name_token)
+    if name is None:
+        return None
+    if alias_token is None:
+        return name, _er_label(name_token), False, block is not None
+    if _er_entity(alias_token) is None:
+        return None
+    return name, _er_label(alias_token), True, block is not None
+
+
+def _er_table(
+    diagram: Diagram,
+    aliased_names: set[str],
+    name: str,
+    label: str,
+    aliased: bool = False,
+) -> Node:
+    """Add an ER table. As in Mermaid, only an entity's first alias sets its label."""
+    existing = diagram.node_map.get(name)
+    if aliased and name not in aliased_names:
+        aliased_names.add(name)
+        if existing is not None:
+            existing.label = label
+            return existing
+    elif existing is not None:
+        return existing
+    return diagram.add_node(name, label, "table")
 
 
 def parse_block(block: SourceBlock) -> Diagram:
-    lines = _prepared_lines(block)
+    lines, config_directives = _prepared_lines(block)
     kind, direction, header_position = _kind_and_direction(lines)
     if kind == "flowchart":
         # `graph TD; A-->B;` is valid: statements may follow the header's
@@ -1173,6 +1350,7 @@ def parse_block(block: SourceBlock) -> Diagram:
             lines[header_position] = (line_number, header[: rest.end()])
             lines.insert(header_position + 1, (line_number, tail[1:]))
     diagram = Diagram(block.index, kind, block.source_line, direction=direction)
+    diagram.discarded["config_directives"] = config_directives
     if kind == "flowchart":
         _parse_flowchart(diagram, lines, header_position)
     elif kind == "sequenceDiagram":
@@ -1322,6 +1500,16 @@ def _block_summary(block: SourceBlock, selected: list[Diagram]) -> str:
     return f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
 
 
+# The keyword that opens each extra region of a fragment: `else` in alt, `and` in par, `option` in critical.
+REGION_KEYWORDS = {"alt": "else", "par": "and", "critical": "option"}
+
+
+def _fragment_digest(item: dict[str, Any]) -> str:
+    keyword = REGION_KEYWORDS.get(item["kind"], "else")
+    parts = [item["label"] or "unlabeled"] + [f"{keyword}: {region or 'unlabeled'}" for region in item["regions"]]
+    return " | ".join(_escape_table(part) for part in parts)
+
+
 def digest(
     path: Path,
     blocks: list[SourceBlock],
@@ -1351,17 +1539,23 @@ def digest(
                 f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
             ]
         )
-        if diagram.discarded["style_directives"] or diagram.discarded["click_handlers"]:
+        if any(diagram.discarded.values()):
             output.append(
                 f"- discarded: {diagram.discarded['style_directives']} style directives, "
-                f"{diagram.discarded['click_handlers']} click handlers"
+                f"{diagram.discarded['click_handlers']} click handlers, "
+                f"{diagram.discarded['config_directives']} config directives"
             )
         if diagram.fragments:
             fragments = ", ".join(
-                f"{item['kind']}({_escape_markdown(item['label'] or 'unlabeled')})"
-                for item in diagram.fragments
+                f"{item['kind']}({_fragment_digest(item)})" for item in diagram.fragments
             )
             output.append(f"- fragments: {fragments}")
+        if diagram.autonumber:
+            numbering = "; ".join(
+                "off" if item["off"] else f"from {item['start']}, step {item['step']}"
+                for item in diagram.autonumber
+            )
+            output.append(f"- autonumber: {numbering}")
         if diagram.notes:
             output.append(
                 f"- notes: {'; '.join(_escape_markdown(note) for note in diagram.notes[:6])}"
@@ -1458,6 +1652,7 @@ def to_json(path: Path, blocks: list[SourceBlock], selected: list[Diagram]) -> s
                     "discarded": diagram.discarded,
                     "fragments": diagram.fragments,
                     "notes": diagram.notes,
+                    "autonumber": diagram.autonumber,
                     "nodes": [asdict(node) for node in diagram.nodes],
                     "edges": [asdict(edge) for edge in diagram.edges],
                 }

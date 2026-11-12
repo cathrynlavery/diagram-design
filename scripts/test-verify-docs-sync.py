@@ -145,12 +145,22 @@ TITLE_ORDER = "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'"
 
 
 def mutate(path: Path, old: str, new: str) -> bytes:
-    """Replace *old* once in *path* and return the original bytes."""
+    """Replace *old* once in *path* and return the original bytes.
+
+    Fixtures are authored in LF, but only SKILL.md is pinned to LF in .gitattributes,
+    so a Windows checkout with ``core.autocrlf=true`` hands these files back as CRLF.
+    Retry the search on a newline-normalised copy, and write the result back in the
+    file's own line endings so the mutation stays confined to the needle.
+    """
     original = path.read_bytes()
     text = original.decode("utf-8")
-    if old not in text:
+    if old in text:
+        path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+        return original
+    normalised = text.replace("\r\n", "\n")
+    if old not in normalised:
         raise AssertionError(f"{path.name} no longer contains {old!r}; update the fixture")
-    path.write_bytes(text.replace(old, new, 1).encode("utf-8"))
+    path.write_bytes(normalised.replace(old, new, 1).replace("\n", "\r\n").encode("utf-8"))
     return original
 
 
@@ -552,6 +562,44 @@ def split_route_error(heading: str, target: str) -> str:
     )
 
 
+def check_mutate_line_endings() -> None:
+    """A CRLF fixture mutates in place, restores its original bytes, and rejects a stale needle."""
+    fixture = b"# Title\r\n\r\n### 4px grid\r\nbody\r\n"
+    with tempfile.TemporaryDirectory(prefix="verify-docs-sync-mutate-") as temporary:
+        path = Path(temporary) / "layout-budget.md"
+        path.write_bytes(fixture)
+
+        returned = mutate(path, "### 4px grid\n", "### Grid\n")
+
+        if returned != fixture:
+            raise AssertionError("mutate() must return the unmutated bytes")
+        mutated = path.read_bytes()
+        if b"### Grid\r\n" not in mutated:
+            raise AssertionError("the CRLF fixture was not mutated")
+        if b"### 4px grid" in mutated:
+            raise AssertionError("the needle survived the mutation")
+        if b"\n" in mutated.replace(b"\r\n", b""):
+            raise AssertionError("the mutation rewrote the fixture's line endings")
+
+        lf_path = Path(temporary) / "lf.md"
+        lf_fixture = b"# Title\n\n### 4px grid\nbody\n"
+        lf_path.write_bytes(lf_fixture)
+        if mutate(lf_path, "### 4px grid\n", "### Grid\n") != lf_fixture:
+            raise AssertionError("mutate() must return an LF fixture's original bytes")
+        if lf_path.read_bytes() != b"# Title\n\n### Grid\nbody\n":
+            raise AssertionError("the LF fixture was not mutated in place")
+
+        try:
+            mutate(path, "### never present\n", "### Grid\n")
+        except AssertionError as error:
+            if "no longer contains" not in str(error):
+                raise AssertionError(f"a stale needle raised an unrelated error: {error}") from error
+        else:
+            raise AssertionError("a stale needle must still raise")
+
+    print("OK mutate: a CRLF fixture mutates in place and a stale needle still raises")
+
+
 def check_export_surface_parity(verify) -> None:
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-export-") as temp_dir:
         fake_root = Path(temp_dir)
@@ -604,6 +652,42 @@ def check_export_surface_parity(verify) -> None:
             (ROOT / "prompts/export-diagram.md").read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+        # #474: the produce-both Defaults bullet once listed the single-format flags.
+        for fake, name in ((fake_cmd, "commands"), (fake_prompt, "prompts")):
+            shipped = fake.read_text(encoding="utf-8")
+            fake.write_text(
+                shipped.replace(
+                    "only `--scale`/`--output`",
+                    "`--svg-only`/`--png-only`/`--scale`/`--output`",
+                ),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_export_surface_parity(errors, fake_root)
+            expected = (
+                f"{name}/export-diagram.md Defaults lists --svg-only, --png-only among "
+                "the cases that produce both .svg and .png; each restricts output to "
+                "its one format"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{name} single-format flags in Defaults not caught: {errors}")
+            print(f"OK export surface parity: {name} Defaults listing --svg-only caught")
+
+            fake.write_text(
+                re.sub(r"^- .*produce\W+both.*\n", "", shipped, flags=re.MULTILINE | re.IGNORECASE),
+                encoding="utf-8",
+            )
+            errors = []
+            verify.check_export_surface_parity(errors, fake_root)
+            expected = (
+                f"{name}/export-diagram.md Defaults has no bullet saying when both "
+                ".svg and .png are produced"
+            )
+            if errors != [expected]:
+                raise AssertionError(f"{name} missing produce-both bullet not caught: {errors}")
+            print(f"OK export surface parity: {name} missing produce-both bullet caught")
+            fake.write_text(shipped, encoding="utf-8")
+
         fake_cmd.unlink()
         errors = []
         verify.check_export_surface_parity(errors, fake_root)
@@ -730,6 +814,7 @@ SIZE_SURFACES = {
     "commands/import-drawio.md": ", ",
     "commands/import-mermaid.md": ", ",
     "commands/import-excalidraw.md": ", ",
+    "commands/import-plantuml.md": ", ",
 }
 OUTPUT_SPEC = "skills/diagram-design/references/output-spec.md"
 LETTER_ROW = "| `print-letter-landscape` | `0 0 1056 816` |"
@@ -831,9 +916,15 @@ def check_architecture_delta_discovery(verify) -> None:
 def main() -> int:
     verify = load_verify_module()
     check_architecture_delta_discovery(verify)
+    stated = sorted(p.as_posix() for p in verify.VERIFIED_COUNT_SURFACES if p.parts[0] == "commands")
+    if stated:
+        raise AssertionError(f"import commands must stay count-free, not count-verified: {stated}")
 
-    # Keep real routing vocabulary in the fixtures so the size check cannot
-    # accidentally replace the existing lexical-hook validation.
+    # Real manifest text keeps the size and discovery-hook checks honest.
+    checked = {relative.as_posix() for relative, _ in verify.MANIFEST_DESCRIPTIONS}
+    for native in (".claude-plugin", ".codex-plugin", ".factory-plugin", ".qoder-plugin"):
+        if f"{native}/plugin.json" not in checked:
+            raise AssertionError(f"{native}/plugin.json description is not checked")
     short = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["description"]
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
@@ -861,63 +952,69 @@ def main() -> int:
                     raise AssertionError(f"manifest size boundary failed: {errors}")
             path.write_text(original, encoding="utf-8")
 
-        # Architecture alone must not accidentally satisfy Architecture delta.
-        # Mutate each native discovery surface independently, including Codex's
-        # long description; a correct hook elsewhere cannot hide this omission.
-        for relative, keys in verify.MANIFEST_DESCRIPTIONS:
+        # The 500-character descriptions summarize the families: a type missing
+        # there is fine. Codex's longDescription keeps every hook, and
+        # Architecture alone must not satisfy Architecture delta there.
+        codex = root / ".codex-plugin/plugin.json"
+        pristine = codex.read_text(encoding="utf-8")
+        long_text = json.loads(pristine)["interface"]["longDescription"]
+        if "Wardley map" not in short:
+            raise AssertionError("plugin description fixture lacks Wardley map")
+        for relative, _ in verify.MANIFEST_DESCRIPTIONS:
             path = root / relative
             original = path.read_text(encoding="utf-8")
-            for key in keys:
-                document = json.loads(original)
-                container = (
-                    document["interface"] if key == "longDescription"
-                    else document["metadata"] if "metadata" in document
-                    else document
-                )
-                before = container[key]
-                container[key] = re.sub(
-                    r"\barchitecture delta\b,?\s*",
-                    "Architecture, ",
-                    before,
-                    count=1,
-                    flags=re.IGNORECASE,
-                )
-                if container[key] == before:
-                    raise AssertionError(f"{relative} {key} lacks Architecture delta")
-                path.write_text(json.dumps(document), encoding="utf-8")
-                errors = []
-                verify.check_manifest_descriptions(errors, root)
-                if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
-                    raise AssertionError(f"missing delta hook was not rejected: {errors}")
+            document = json.loads(original)
+            container = document["metadata"] if "metadata" in document else document
+            container["description"] = short.replace("Wardley map", "map")
+            path.write_text(json.dumps(document), encoding="utf-8")
+            errors = []
+            verify.check_manifest_descriptions(errors, root)
+            if errors:
+                raise AssertionError(f"{relative} summary description must not need every type: {errors}")
             path.write_text(original, encoding="utf-8")
 
-        codex = root / ".codex-plugin/plugin.json"
-        document = json.loads(codex.read_text(encoding="utf-8"))
-        document["interface"]["longDescription"] = short + " More detail." * 50
+        document = json.loads(pristine)
+        if "architecture delta, " not in long_text:
+            raise AssertionError("Codex longDescription lacks Architecture delta")
+        document["interface"]["longDescription"] = long_text.replace("architecture delta, ", "")
+        codex.write_text(json.dumps(document), encoding="utf-8")
+        errors = []
+        verify.check_manifest_descriptions(errors, root)
+        if len(errors) != 1 or "type 'Architecture delta'" not in errors[0]:
+            raise AssertionError(f"missing delta hook was not rejected: {errors}")
+
+        document["interface"]["longDescription"] = long_text + " More detail." * 50
         codex.write_text(json.dumps(document), encoding="utf-8")
         errors = []
         verify.check_manifest_descriptions(errors, root)
         if errors:
             raise AssertionError(f"longDescription incorrectly limited: {errors}")
 
-        document["description"] = short.replace("Wardley map", "map")
+        document["interface"]["longDescription"] = long_text.replace("Wardley map", "map")
         codex.write_text(json.dumps(document), encoding="utf-8")
         errors = []
         verify.check_manifest_descriptions(errors, root)
         if len(errors) != 1 or "lost the lexical hook" not in errors[0]:
             raise AssertionError(f"missing routing hook was not rejected: {errors}")
+        codex.write_text(pristine, encoding="utf-8")
 
-        document = json.loads(codex.read_text(encoding="utf-8"))
-        document["description"] = short.replace("lifecycle phase", "subject progress")
-        document["interface"]["longDescription"] = document["interface"]["longDescription"].replace(
-            "lifecycle phase", "subject progress"
-        )
-        codex.write_text(json.dumps(document), encoding="utf-8")
-        errors = []
-        verify.check_manifest_descriptions(errors, root)
-        lifecycle_errors = [error for error in errors if "discovery hook 'lifecycle phase'" in error]
-        if len(lifecycle_errors) != 2:
-            raise AssertionError(f"missing lifecycle discovery hooks were not rejected: {errors}")
+        for relative, keys in verify.MANIFEST_DESCRIPTIONS:
+            path = root / relative
+            original = path.read_text(encoding="utf-8")
+            document = json.loads(original)
+            container = document["metadata"] if "metadata" in document else document
+            container["description"] = short.replace("lifecycle phase", "subject progress")
+            if "longDescription" in keys:
+                document["interface"]["longDescription"] = long_text.replace(
+                    "lifecycle phase", "subject progress"
+                )
+            path.write_text(json.dumps(document), encoding="utf-8")
+            errors = []
+            verify.check_manifest_descriptions(errors, root)
+            lifecycle_errors = [error for error in errors if "discovery hook 'lifecycle phase'" in error]
+            if len(lifecycle_errors) != len(keys):
+                raise AssertionError(f"{relative} missing lifecycle hook was not rejected: {errors}")
+            path.write_text(original, encoding="utf-8")
 
     for length in (1024, 1025):
         errors: list[str] = []
@@ -1525,15 +1622,20 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         excalidraw_reference = (
             root / "skills/diagram-design/references/import-excalidraw.md"
         )
+        plantuml_reference = (
+            root / "skills/diagram-design/references/import-plantuml.md"
+        )
         export_command = root / "commands/export-diagram.md"
         drawio_command = root / "commands/import-drawio.md"
         mermaid_command = root / "commands/import-mermaid.md"
         excalidraw_command = root / "commands/import-excalidraw.md"
+        plantuml_command = root / "commands/import-plantuml.md"
         profile_command = root / "commands/profile.md"
         doctor_command = root / "commands/doctor.md"
         export_prompt = root / "prompts/export-diagram.md"
         mermaid_prompt = root / "prompts/import-mermaid.md"
         excalidraw_prompt = root / "prompts/import-excalidraw.md"
+        plantuml_prompt = root / "prompts/import-plantuml.md"
         profile_prompt = root / "prompts/profile.md"
         doctor_prompt = root / "prompts/doctor.md"
         for path in (
@@ -1543,15 +1645,18 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
             drawio_reference,
             mermaid_reference,
             excalidraw_reference,
+            plantuml_reference,
             export_command,
             drawio_command,
             mermaid_command,
             excalidraw_command,
+            plantuml_command,
             profile_command,
             doctor_command,
             export_prompt,
             mermaid_prompt,
             excalidraw_prompt,
+            plantuml_prompt,
             profile_prompt,
             doctor_prompt,
         ):
@@ -1562,11 +1667,15 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         drawio_reference.write_text("# Draw.io\n", encoding="utf-8")
         mermaid_reference.write_text("# Mermaid\n", encoding="utf-8")
         excalidraw_reference.write_text("# Excalidraw\n", encoding="utf-8")
+        plantuml_reference.write_text("# PlantUML\n", encoding="utf-8")
         export_command.write_text("Follow references/export.md.\n", encoding="utf-8")
         drawio_command.write_text("Follow references/import-drawio.md.\n", encoding="utf-8")
         mermaid_command.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
         excalidraw_command.write_text(
             "Follow references/import-excalidraw.md.\n", encoding="utf-8"
+        )
+        plantuml_command.write_text(
+            "Follow references/import-plantuml.md.\n", encoding="utf-8"
         )
         profile_command.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_command.write_text("Follow references/doctor.md.\n", encoding="utf-8")
@@ -1574,6 +1683,9 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         mermaid_prompt.write_text("Follow references/import-mermaid.md.\n", encoding="utf-8")
         excalidraw_prompt.write_text(
             "Follow references/import-excalidraw.md.\n", encoding="utf-8"
+        )
+        plantuml_prompt.write_text(
+            "Follow references/import-plantuml.md.\n", encoding="utf-8"
         )
         profile_prompt.write_text("Follow references/profiles.md.\n", encoding="utf-8")
         doctor_prompt.write_text("Follow references/doctor.md.\n", encoding="utf-8")
@@ -1697,8 +1809,9 @@ diagram-design/
         drawio = counted / "import-drawio.md"
         mermaid = counted / "import-mermaid.md"
         excalidraw = counted / "import-excalidraw.md"
+        plantuml = counted / "import-plantuml.md"
         routed = "`--type` forces one of the visual types in SKILL.md \u00a73.\n"
-        for path in (drawio, mermaid, excalidraw):
+        for path in (drawio, mermaid, excalidraw, plantuml):
             path.write_text(routed, encoding="utf-8")
 
         errors = []
@@ -2177,6 +2290,7 @@ diagram-design/
     check_heading_syntax(verify)
     check_size_preset_surfaces(verify)
     check_split_type_ramp(verify)
+    check_mutate_line_endings()
     check_split_routes(verify)
     check_export_surface_parity(verify)
 
@@ -2185,7 +2299,8 @@ diagram-design/
         "strict-bundler packaging, "
         "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
-        "split routing, and gallery guards (parent/variant model, contiguous ordinals, variant letters, type parity)"
+        "split routing, the CRLF fixture fallback in the fixture helper, and gallery guards "
+        "(parent/variant model, contiguous ordinals, variant letters, type parity)"
     )
     return 0
 

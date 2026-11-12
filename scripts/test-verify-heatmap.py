@@ -107,7 +107,7 @@ def case(
     expect_pass: bool,
     describe: str,
 ) -> None:
-    if source == original and not expect_pass:
+    if source == original:
         failures.append(
             f"could not build the {name!r} fixture (anchor not found in source)"
         )
@@ -159,6 +159,27 @@ def main() -> int:
         )
         case(failures, d, "P-mixed-single-quotes.html", mixed_single, single_quoted, True,
              "double-quoted text inside metadata does not override a single-quoted fill")
+        quoted_gt = original.replace(
+            "<rect " + FIRST_NONFOCAL,
+            '<rect data-note="p95>budget" ' + FIRST_NONFOCAL,
+            1,
+        )
+        case(failures, d, "P-quoted-greater-than.html", quoted_gt, original, True,
+             "a greater-than inside a double-quoted attribute does not drop the cell")
+        single_gt = original.replace(
+            "<rect " + FIRST_NONFOCAL,
+            "<rect data-note='p95>budget' " + FIRST_NONFOCAL,
+            1,
+        )
+        case(failures, d, "P-single-quoted-greater-than.html", single_gt, original, True,
+             "a greater-than inside a single-quoted attribute does not drop the cell")
+        label_gt = original.replace(
+            '<text data-row-label="auth"',
+            '<text data-note="a>b" data-row-label="auth"',
+            1,
+        )
+        case(failures, d, "P-quoted-greater-than-axis.html", label_gt, original, True,
+             "a greater-than inside axis metadata does not drop the row label")
 
         commented_transform = original.replace('</style>', '/* archived experiment\n transform: translateX(12px);\n */\n</style>', 1)
         case(failures, d, "P-commented-transform.html", commented_transform, original, True,

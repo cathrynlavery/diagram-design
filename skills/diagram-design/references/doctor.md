@@ -52,6 +52,7 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
   - `scripts/verify-drawio-import.py`
   - `scripts/verify-mermaid-import.py`
   - `scripts/verify-excalidraw-import.py`
+  - `scripts/verify-plantuml-import.py`
   - `scripts/verify-motion.py`
   - `scripts/lint-skin.py`
   - `scripts/verify-docs-sync.py`
@@ -65,12 +66,14 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
   - `commands/import-drawio.md` -> `references/import-drawio.md`
   - `commands/import-mermaid.md` -> `references/import-mermaid.md`
   - `commands/import-excalidraw.md` -> `references/import-excalidraw.md`
+  - `commands/import-plantuml.md` -> `references/import-plantuml.md`
   - `commands/profile.md` -> `references/profiles.md`
   - `commands/doctor.md` -> `references/doctor.md`
 - Verify Pi prompt files exist and point to their references:
   - `prompts/export-diagram.md` -> `references/export.md`
   - `prompts/import-mermaid.md` -> `references/import-mermaid.md`
   - `prompts/import-excalidraw.md` -> `references/import-excalidraw.md`
+  - `prompts/import-plantuml.md` -> `references/import-plantuml.md`
   - `prompts/profile.md` -> `references/profiles.md`
   - `prompts/doctor.md` -> `references/doctor.md`
 - Missing files are `fail`.

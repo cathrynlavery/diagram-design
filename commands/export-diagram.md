@@ -15,7 +15,7 @@ Full argument string: `$ARGUMENTS`
 
 ## Defaults
 
-- **With no format flags, or with `--svg-only`/`--png-only`/`--scale`/`--output` but no `--registry`:** produce **both** `.svg` and `.png` next to the source (e.g. `diagram.html` → `diagram.svg` + `diagram.png`).
+- **With no format flag (nothing, or only `--scale`/`--output`) and no `--registry`:** produce **both** `.svg` and `.png` next to the source (e.g. `diagram.html` → `diagram.svg` + `diagram.png`). `--svg-only` or `--png-only` restricts the image output to that one format.
 - PNG renders at `device_scale_factor=2`.
 - **`--registry` given by itself, with neither `--svg-only` nor `--png-only` also present, produces *only* the registry JSON.** The SVG/PNG defaults above do not also apply, and Playwright is never required for a registry-only call. To get an image alongside the registry, add `--svg-only` or `--png-only` explicitly.
 

@@ -7,7 +7,7 @@
   </picture>
 </h1>
 
-**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>46 diagram types. No shadows. No Mermaid slop.**
+**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>47 diagram types. No shadows. No Mermaid slop.**
 
 [![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
 [![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
@@ -19,7 +19,7 @@
 
 **[Website](https://diagramdesign.dev) · [Gallery](https://cathrynlavery.github.io/diagram-design/) · [Changelog](CHANGELOG.md)**
 
-[Install](#install) · [What it makes](#what-it-makes) · [Quickstart](#quickstart) · [Match your brand](#onboarding-make-it-look-like-your-brand) · [Import](#import-from-drawio-mermaid-or-excalidraw) · [Export](#export-to-png--svg) · [Contributing](#contributing)
+[Install](#install) · [What it makes](#what-it-makes) · [Quickstart](#quickstart) · [Match your brand](#onboarding-make-it-look-like-your-brand) · [Import](#import-from-drawio-mermaid-excalidraw-or-plantuml) · [Export](#export-to-png--svg) · [Contributing](#contributing)
 
 <code>npx skills add cathrynlavery/diagram-design</code>
 
@@ -81,7 +81,7 @@ npx skills add cathrynlavery/diagram-design
 
 When the selected roots resolve to more than one skills directory, the CLI asks for an installation method and recommends **Symlink**: one canonical copy, linked into each root, so a later update reaches all of them at once. Pass `--copy` for independent copies per host instead. A selection that resolves to a single directory is copied, because the distinction is immaterial there. Where symlinks are unavailable (Windows without Developer Mode) the CLI falls back to copies and reports which roots it copied.
 
-This is a standalone install, separate from the marketplaces below: it does not follow marketplace updates automatically. Pull merged updates with `npx skills update diagram-design`. It also installs the Agent Skill only, so the `/export-diagram`, `/import-mermaid`, `/profile`, and `/doctor` command surfaces stay with the native packages. On a host that has one of the marketplaces below, prefer the marketplace.
+This is a standalone install, separate from the marketplaces below: it does not follow marketplace updates automatically. Pull merged updates with `npx skills update diagram-design`. It also installs the Agent Skill only, so the `/export-diagram`, `/import-mermaid`, `/import-plantuml`, `/profile`, and `/doctor` command surfaces stay with the native packages. On a host that has one of the marketplaces below, prefer the marketplace.
 
 > **One-time migration:** an existing standalone `npx skills add` copy will not start following the Codex marketplace automatically. Remove that standalone copy, then use the Codex marketplace commands. Likewise, uninstall a personal Cowork copy and reinstall Diagram Design from your organization's marketplace. Future marketplace version bumps then flow through each client's native update path.
 
@@ -164,7 +164,7 @@ Organization GitHub marketplaces currently require a private or internal reposit
 pi install https://github.com/cathrynlavery/diagram-design
 ```
 
-Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/import-excalidraw`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
+Run `/reload` in an open Pi session. Pi makes the skill available for matching diagram requests; use `/skill:diagram-design` to invoke it explicitly. Pi also loads the `/export-diagram`, `/import-mermaid`, `/import-excalidraw`, `/import-plantuml`, `/profile`, and `/doctor` prompt templates. The unpinned Git install is intentional: Pi has no automatic package refresh, so run `pi update --extensions` to pull merged updates.
 
 </details>
 
@@ -227,7 +227,7 @@ The shared skill lives at `skills/diagram-design/`. Pi discovers it through the 
 | Look | The renderer's theme | Whatever you draw | One opinionated editorial style, matched to your brand |
 | Output | Text that renders on GitHub | An editable `.drawio` or `.excalidraw` file | One HTML file with inline SVG, exportable to SVG or PNG |
 | Change it later | Edit the text | Edit the canvas | Ask the agent again, or edit the SVG |
-| Existing diagrams | | | Redraws Mermaid, draw.io and Excalidraw files |
+| Existing diagrams | | | Redraws Mermaid, draw.io, Excalidraw and PlantUML files |
 
 The downsides are real. Output quality depends on the model you run it with, and the same prompt can lay out differently twice. The result is not an editable source format: there is no text to diff in a pull request and no canvas to drag a box on. For docs that live in Git and change every sprint, Mermaid is still the better fit. Diagram Design is for the diagram you are going to publish.
 
@@ -245,7 +245,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-46 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+47 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -324,11 +324,13 @@ The model already understood the content. What it was missing was taste, so I wr
   <td align="center" width="33%"><a href="docs/screenshots/service-blueprint.png"><img src="docs/screenshots/thumbs/service-blueprint.webp" alt="Service blueprint"></a><br><b>Service blueprint</b><br><sub>Frontstage and backstage on a shared stage grid</sub></td>
 </tr>
 <tr>
+  <td align="center" width="33%"><a href="docs/screenshots/sbgn.png"><img src="docs/screenshots/thumbs/sbgn.webp" alt="SBGN"></a><br><b>SBGN</b><br><sub>Species, processes + compartments</sub></td>
   <td align="center" width="33%"><a href="docs/screenshots/steps.png"><img src="docs/screenshots/thumbs/steps.webp" alt="Steps"></a><br><b>Steps</b><br><sub>Numbered stages on one ordered rail</sub></td>
+  <td align="center" width="33%"></td>
 </tr>
 </table>
 
-Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble and beeswarm; Treemap covers marimekko.
+Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko; Dependency covers arc diagram.
 
 Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagram-design/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagram-design/references/type-architecture.md).
 
@@ -338,7 +340,9 @@ Exploded axonometric draws one object in 2:1 dimetric projection with its parts 
 
 Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagram-design/assets/example-axonometric-plan.html), the [campus](skills/diagram-design/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagram-design/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagram-design/assets/example-axonometric-plan-warehouse.html), the [phased campus animation](skills/diagram-design/assets/example-axonometric-plan-campus-animated.html), and the [reference](skills/diagram-design/references/type-axonometric-plan.md).
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 46; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagram-design/assets/example-sbgn.html) and its [reference](skills/diagram-design/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
+
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 47; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
 ---
 
@@ -438,9 +442,9 @@ Motion is optional and does not create another visual type. [`animation.md`](ski
 
 ---
 
-## Import from draw.io, Mermaid, or Excalidraw
+## Import from draw.io, Mermaid, Excalidraw, or PlantUML
 
-Already have diagrams in draw.io / diagrams.net, Mermaid, or Excalidraw? Point the skill at the source and it **redraws** them: same content, this design system, at whatever size the destination needs.
+Already have diagrams in draw.io / diagrams.net, Mermaid, Excalidraw, or PlantUML? Point the skill at the source and it **redraws** them: same content, this design system, at whatever size the destination needs.
 
 [![Redrawn from a .drawio file](docs/screenshots/thumbs/import-drawio.webp)](docs/screenshots/import-drawio.png)
 
@@ -453,13 +457,15 @@ Already have diagrams in draw.io / diagrams.net, Mermaid, or Excalidraw? Point t
 /diagram-design:import-mermaid README.md --diagram=all
 /diagram-design:import-mermaid architecture.mmd --size=slide-16x9 --detail=simplified
 /diagram-design:import-excalidraw whiteboard.excalidraw --size=slide-16x9 --detail=simplified
+/diagram-design:import-plantuml sequence.puml
+/diagram-design:import-plantuml classes.puml --size=slide-16x9 --detail=simplified
 ```
 
-Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, *"make this whiteboard sketch presentable"*, or *"この Mermaid をスライド用にきれいにして"*.
+Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, *"make this whiteboard sketch presentable"*, *"redraw this PlantUML sequence"*, or *"この Mermaid をスライド用にきれいにして"*.
 
 Reads the common containers draw.io writes (`.drawio`, `.drawio.xml`, `.drawio.png` with an embedded diagram, and `.drawio.svg`), including compressed payloads that look like base64 garbage in an editor.
 For Mermaid, it accepts `.mmd`, `.mermaid`, and one or more fenced `mermaid` blocks in Markdown. UTF-8 files may include a byte-order mark.
-For Excalidraw, it accepts `.excalidraw` and `.excalidraw.json` scene files (not `.excalidraw.png`/`.excalidraw.svg` exports). It parses text only: no rendering, JavaScript, browser, network, or followed click targets.
+For Excalidraw, it accepts `.excalidraw` and `.excalidraw.json` scene files (not `.excalidraw.png`/`.excalidraw.svg` exports). For PlantUML, it accepts `.puml`, `.plantuml`, `.pu`, and fenced `plantuml` / `puml` blocks in Markdown, for sequence and class diagrams only. It parses text only: no rendering, JavaScript, browser, network, PlantUML runtime, or followed click targets.
 
 ### The four dials
 
@@ -481,13 +487,13 @@ Dropped:   1 sticky note ("legacy path, to be retired"), unconnected in source
 Kept in full: the request path (Web/Mobile → Gateway → Orders → Postgres)
 ```
 
-What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, or Excalidraw's hand-drawn geometry. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagram-design/references/import-excalidraw.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
+What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, Excalidraw's hand-drawn geometry, or PlantUML skinparams. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagram-design/references/import-excalidraw.md), [`references/import-plantuml.md`](skills/diagram-design/references/import-plantuml.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
 
 ---
 
 ## Export to PNG / SVG
 
-Diagrams ship as self-contained HTML, but you can export the diagram itself for Figma, slides, or social cards. SVG export also carries CDATA-wrapped diagram CSS, including selectors bound to the original SVG root, and preserves quoted selector values containing comment delimiters. Use the slash command for your agent:
+Diagrams ship as self-contained HTML, but you can export the diagram itself for Figma, slides, or social cards. SVG export also carries CDATA-wrapped diagram CSS, including selectors bound to the original SVG root, and preserves quoted selector values containing comment delimiters. Numeric character references in SVG text and attributes retain their HTML meaning (for example, `&#128;` stays `€`). Use the slash command for your agent:
 
 **Pi:**
 
@@ -541,12 +547,14 @@ diagram-design/
 │   ├── import-drawio.md              # plugin draw.io import command
 │   ├── import-mermaid.md             # plugin Mermaid import command
 │   ├── import-excalidraw.md          # plugin Excalidraw import command
+│   ├── import-plantuml.md            # plugin PlantUML import command
 │   ├── profile.md                    # plugin client-profile command
 │   └── doctor.md                     # plugin environment diagnostics command
 ├── prompts/
 │   ├── export-diagram.md             # Pi `/export-diagram` prompt template
 │   ├── import-mermaid.md             # Pi Mermaid import prompt template
 │   ├── import-excalidraw.md          # Pi Excalidraw import prompt template
+│   ├── import-plantuml.md            # Pi PlantUML import prompt template
 │   ├── profile.md                    # Pi `/profile` prompt template
 │   └── doctor.md                     # Pi `/doctor` diagnostics prompt template
 ├── skills/
@@ -562,6 +570,7 @@ diagram-design/
 │       │   ├── import-drawio.md      # draw.io redraw procedure
 │       │   ├── import-mermaid.md     # Mermaid redraw procedure
 │       │   ├── import-excalidraw.md  # Excalidraw redraw procedure
+│       │   ├── import-plantuml.md    # PlantUML redraw procedure
 │       │   ├── output-spec.md        # format × size × detail level
 │       │   ├── export.md             # SVG / PNG export + sizing
 │       │   ├── export-registry.md    # block-metadata JSON sidecar export
@@ -603,6 +612,7 @@ diagram-design/
 │       │   ├── type-quadrant.md
 │       │   ├── type-radar.md
 │       │   ├── type-sankey.md
+│       │   ├── type-sbgn.md
 │       │   ├── type-scatter.md
 │       │   ├── type-sequence.md
 │       │   ├── type-service-blueprint.md
@@ -621,9 +631,11 @@ diagram-design/
 │       │   ├── drawio_extract.py     # draw.io → structured IR
 │       │   ├── mermaid_extract.py    # Mermaid → structured IR
 │       │   ├── excalidraw_extract.py  # Excalidraw → structured IR
+│       │   ├── plantuml_extract.py   # PlantUML → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
 │       │   ├── export_png.py         # Playwright PNG renderer
-│       │   └── self_check.py         # packaged output self-check (runs installed)
+│       │   ├── self_check.py         # packaged output self-check (runs installed)
+│       │   └── verify_geometry.py    # label, connector and port geometry (runs installed)
 │       └── assets/
 │           ├── index.html            # live gallery, tabbed
 │           ├── icons.html            # icon library browser
@@ -634,16 +646,18 @@ diagram-design/
 │           ├── example-import-drawio.html
 │           ├── example-import-mermaid.html
 │           ├── example-import-excalidraw.html
+│           ├── example-import-plantuml.html
 │           ├── example-policy-trace-animated.html
 │           └── example-sequence-oauth*.html
 ├── scripts/                          # CI gates and build helpers (see CONTRIBUTING.md)
 │   ├── lint-skin.py                  # palette, fonts, a11y, single-file safety
 │   ├── lint-render.py                # Chromium rendered-layout checker
 │   ├── verify-docs-sync.py           # routing, gallery, README and count sync
-│   ├── verify-geometry.py            # label, connector and port geometry
+│   ├── verify-geometry.py            # repo entry point for the packaged geometry check
 │   ├── render-canonical-screenshots.py  # deterministic per-type PNG catalog renderer
 │   ├── build-readme-thumbs.py        # regenerates docs/screenshots/thumbs/
-│   └── fixtures/                     # draw.io, Mermaid and Excalidraw test inputs
+│   ├── verify-sbgn.py                # SBGN bipartite process + compartment gate
+│   └── fixtures/                     # draw.io, Mermaid, Excalidraw and PlantUML test inputs
 ├── docs/cookbook.md                  # operator recipes for editable installs and common tasks
 ├── docs/adr/                         # short records of settled design decisions
 ├── docs/superpowers/                 # design specs and implementation plans (plans/, specs/)
@@ -668,6 +682,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Show what was added, removed, changed, moved, or rewired in this migration" | `SKILL.md` + `references/type-architecture-delta.md` |
 | "Show what's inside this device, exploded" | `SKILL.md` + `references/type-exploded.md` |
 | "Draw our office floor plan" | `SKILL.md` + `references/type-axonometric-plan.md` |
+| "Show how beta-carotene is cleaved in cytosol" | `SKILL.md` + `references/type-sbgn.md` |
 | "Compare why these two policy requests differ" | `SKILL.md` + `references/semantic-patterns.md` + `references/type-flowchart.md` |
 | "Animate that policy trace" | Prior selection + `references/animation.md` |
 | "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |
@@ -678,6 +693,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Redraw this .drawio file for my deck" | `SKILL.md` + `references/import-drawio.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Mermaid block for my deck" | `SKILL.md` + `references/import-mermaid.md` + `references/output-spec.md` + the chosen type's reference |
 | "Redraw this Excalidraw sketch for my deck" | `SKILL.md` + `references/import-excalidraw.md` + `references/output-spec.md` + the chosen type's reference |
+| "Redraw this PlantUML sequence for my deck" | `SKILL.md` + `references/import-plantuml.md` + `references/output-spec.md` + the chosen type's reference |
 | Routine static diagram-making (any visual type) | `SKILL.md` + that one type's reference, plus `references/primitives-core.md` or `references/layout-budget.md` only when it needs exact markup or a per-type budget row |
 
 No matter how many types exist, the agent only reads the one you need. Add a new type tomorrow and nothing else changes.
