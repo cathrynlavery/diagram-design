@@ -196,6 +196,9 @@ MARK_TAGS = ("path", "line")                  # outlines and their baseline rule
 # that never closes on its line is kept as well - a line feed, carriage return or form
 # feed ends it - so the checker still fails closed on it. Every other character of a string becomes a space and its newlines
 # stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept as written, because the selectors a checker reads must not lose it.
 # CSS the browser may read differently comes back unblanked: a character reference
 # (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
 # left outside a string (`u\72 l(` is `url(`).
@@ -207,11 +210,18 @@ CSS_STRING_RE = re.compile(
 
 
 def blank_css_strings(css: str) -> str:
-    """CSS with the contents of every quoted string blanked, same length and lines."""
-    blanked = CSS_STRING_RE.sub(
-        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group("string") else found.group(),
-        css,
-    )
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if not found.group("string") or (after and after.group() == "{") \
+                or masked[start:found.start()].lstrip().startswith("@"):
+            return found.group()
+        return re.sub(r"[^\n]", " ", found.group())
+
+    blanked = CSS_STRING_RE.sub(blank, css)
     return css if "\\" in blanked or html.unescape(css) != css else blanked
 
 

@@ -108,6 +108,33 @@ def place(source: str, kind: str, where: str, css: str) -> str:
     return source[:at] + f' style="{css}"' + source[at:]
 
 
+# A quoted attribute selector selects what the bare one does, so it must be read the same:
+# a checker that gates a size declaration on its selector cannot lose the selector to string
+# blanking. `{a}` is the mark attribute; each rule is held to the result of the bare form.
+SELECTOR_RULES = (
+    ("a double-quoted attribute selector", '[{a}="v"] {{ width: 1px; height: 1px }}'),
+    ("a single-quoted attribute selector", "[{a}='v'] {{ width: 1px; height: 1px }}"),
+    ("a quoted attribute selector in @media", '@media screen {{ [{a}="v"] {{ width: 1px; height: 1px }} }}'),
+    ("a quoted selector after quoted data", 'body {{ --n: "x" }} [{a}="v"] {{ width: 1px; height: 1px }}'),
+)
+BARE_RULE = "[{a}] {{ width: 1px; height: 1px }}"
+
+# Marimekko gates width and height on whether the selector can reach a segment rect.
+MARIMEKKO_SELECTOR_CASES = tuple(
+    (f"[data-segment={quote}Linux{quote}] {{ {declaration} }}")
+    for quote in "\"'"
+    for declaration in ("width: 1px", "height: 1px", "x: 1px", "y: 1px", "transform: translate(1px)")
+)
+
+
+def passes_check(kind: str, page: Path) -> bool:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / f"scripts/verify-{kind}.py"), str(page)],
+        capture_output=True, text=True, check=False,
+    )
+    return result.returncode == 0
+
+
 def main() -> int:
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as scratch:
@@ -121,17 +148,30 @@ def main() -> int:
                 passes = passes and not (kind == "unit-grid" and where == "inline")
                 page = Path(scratch) / f"{kind}-{number}.html"
                 page.write_text(place(source, kind, where, css), encoding="utf-8")
-                result = subprocess.run(
-                    [sys.executable, str(ROOT / f"scripts/verify-{kind}.py"), str(page)],
-                    capture_output=True, text=True, check=False,
-                )
-                if (result.returncode == 0) != passes:
+                if passes_check(kind, page) != passes:
                     failures.append(f"{kind}: {label} should {'pass' if passes else 'fail'}")
+            attribute = MARKS[kind][1]
+            page = Path(scratch) / f"{kind}-bare.html"
+            page.write_text(place(source, kind, "head", BARE_RULE.format(a=attribute)), encoding="utf-8")
+            bare = passes_check(kind, page)
+            for number, (label, rule) in enumerate(SELECTOR_RULES):
+                page = Path(scratch) / f"{kind}-selector-{number}.html"
+                page.write_text(place(source, kind, "head", rule.format(a=attribute)), encoding="utf-8")
+                if passes_check(kind, page) != bare:
+                    failures.append(f"{kind}: {label} should {'pass' if bare else 'fail'} like [{attribute}]")
+        source = sorted(ASSET_DIR.glob("example-marimekko*.html"))[0].read_text(encoding="utf-8")
+        for number, rule in enumerate(MARIMEKKO_SELECTOR_CASES):
+            page = Path(scratch) / f"marimekko-segment-{number}.html"
+            page.write_text(place(source, "marimekko", "head", rule), encoding="utf-8")
+            if passes_check("marimekko", page):
+                failures.append(f"marimekko: {rule} should fail")
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:
         return 1
-    print(f"OK CSS string scan: {len(TYPES)} verifier(s), {len(CASES)} case(s) each, both polarities")
+    print(f"OK CSS string scan: {len(TYPES)} verifier(s), {len(CASES)} case(s) and "
+          f"{len(SELECTOR_RULES)} quoted-selector rule(s) each, {len(MARIMEKKO_SELECTOR_CASES)} "
+          "marimekko segment selector(s), both polarities")
     return 0
 
 
