@@ -143,6 +143,10 @@ def main() -> None:
             # Browsers stop at the invalid number, so only "M 224 302" draws.
             ("Arabic-Indic digits before a valid number", source.replace(shaft, 'd="M 224 302 V \u0663\u0666\u0663 363"', 1)),
             ("shaft crosses a third cell", swapped),
+            ("reversed head", source.replace(head, 'd="M 219 366 L 224 358 L 229 366"', 1)),
+            ("straight-line head", source.replace(head, 'd="M 224 356 L 224 368"', 1)),
+            ("collinear head", source.replace(head, 'd="M 218 366 L 224 366 L 230 366"', 1)),
+            ("head wings on one side", source.replace(head, 'd="M 218 360 L 224 368 L 222 360"', 1)),
         )
         for name, mutated in geometry_cases:
             assert mutated != source, name
@@ -150,6 +154,49 @@ def main() -> None:
             errors = module.check(candidate)
             if not any(error.startswith("STAGE-01: emits arrow must run from") for error in errors):
                 failures.append((name, "STAGE-01: emits arrow must run from", errors))
+
+        def stage_span(text: str, stage_id: str) -> tuple[int, int]:
+            start = text.index(f'<g data-event-stage="{stage_id}"')
+            following = text.find("<g data-event-stage=", start + 1)
+            return start, following if following != -1 else text.index('<line x1="64" y1="666"')
+
+        def shift_x(text: str, stage_id: str, offset: int) -> str:
+            start, end = stage_span(text, stage_id)
+
+            def path(match: re.Match[str]) -> str:
+                tokens, command, position = [], "", 0
+                for token in match[1].split():
+                    if token.isalpha():
+                        command, position = token, 0
+                    else:
+                        if command == "H" or (command in "ML" and position % 2 == 0):
+                            token = str(int(token) + offset)
+                        position += 1
+                    tokens.append(token)
+                return f' d="{" ".join(tokens)}"'
+
+            body = re.sub(r' (x|x1|x2)="(\d+)"', lambda m: f' {m[1]}="{int(m[2]) + offset}"', text[start:end])
+            return text[:start] + re.sub(r' d="(M [^"]*)"', path, body) + text[end:]
+
+        columns_swapped = shift_x(shift_x(source, "STAGE-01", 364), "STAGE-02", -364)
+        rows_swapped = shift_cell(shift_cell(source, "CMD-01", 162), "EVT-01", -162)
+        for old, new in (
+            (shaft, 'd="M 224 374 V 313"'), (head, 'd="M 218 316 L 224 308 L 230 316"'),
+            ('d="M 224 464 V 525"', 'd="M 405 257 H 411 V 581 H 405"'),
+            ('d="M 218 522 L 224 530 L 230 522"', 'd="M 409 575 L 403 581 L 409 587"'),
+        ):
+            assert old in rows_swapped
+            rows_swapped = rows_swapped.replace(old, new, 1)
+        for name, mutated, expected in (
+            ("stage columns swapped", columns_swapped, "stage columns must run left to right"),
+            ("command and event rows swapped", rows_swapped, "lanes must run command, event, read model"),
+            ("command and event rows swapped", rows_swapped, "command cells must share one lane"),
+        ):
+            assert mutated != source, name
+            candidate.write_text(mutated, encoding="utf-8")
+            errors = module.check(candidate)
+            if not any(expected in error for error in errors):
+                failures.append((name, expected, errors))
         assert not failures, failures
 
         # A comment and an escaped bracket in a class name are not attribute selectors.

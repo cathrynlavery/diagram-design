@@ -113,12 +113,29 @@ def crosses(first: tuple[float, float], second: tuple[float, float], box: tuple[
     return True
 
 
+def open_head(shaft: list[tuple[float, float]], head: list[tuple[float, float]]) -> bool:
+    """An open V whose middle point is the tip, ahead of the shaft end, with one wing on each side."""
+    (px, py), (qx, qy) = shaft[-2], shaft[-1]
+    run = math.dist(shaft[-2], shaft[-1])
+    if run == 0:
+        return False
+    ux, uy = (qx - px) / run, (qy - py) / run
+    first, (tx, ty), last = head
+    sides = [ux * (wy - qy) - uy * (wx - qx) for wx, wy in (first, last)]
+    return (
+        (tx - qx) * ux + (ty - qy) * uy >= 0
+        and all((wx - tx) * ux + (wy - ty) * uy < 0 for wx, wy in (first, last))
+        and sides[0] * sides[1] < 0
+    )
+
+
 def arrow_follows(
     link: ET.Element, source: ET.Element, target: ET.Element,
     cells: list[tuple[float, float, float, float]],
 ) -> bool:
     """A shaft from the source cell to the target cell, missing every other cell, with one head at the target end."""
-    paths = [path_points(child.get("d", "")) for child in link if local(child.tag) == "path"]
+    drawn = [child.get("d", "") for child in link if local(child.tag) == "path"]
+    paths = [path_points(data) for data in drawn]
     source_rect, target_rect = cell_rect(source), cell_rect(target)
     if len(paths) != 2 or not all(paths) or source_rect is None or target_rect is None:
         return False
@@ -132,6 +149,8 @@ def arrow_follows(
         and all(inside(point, hull) for points in paths for point in points)
         and not any(crosses(first, second, cell) for first, second in zip(shaft, shaft[1:]) for cell in others)
         and all(math.dist(point, shaft[-1]) <= ARROW_TOLERANCE for point in head)
+        and [token for token in PATH_TOKEN.findall(drawn[1]) if token.isalpha()] == ["M", "L", "L"]
+        and open_head(shaft, head)
     )
 
 
@@ -156,6 +175,7 @@ def check(path: Path) -> list[str]:
     global_ids: set[str] = set()
     cells = [box for element in svg.iter() if "data-event-kind" in element.attrib
              for box in [cell_rect(element)] if box is not None]
+    layout: list[dict[str, tuple[float, float, float, float]]] = []
     for index, stage in enumerate(stages, 1):
         stage_id = stage.attrib["data-event-stage"]
         if not stage_id or stage_id in stage_ids:
@@ -191,6 +211,9 @@ def check(path: Path) -> list[str]:
         for kind in KINDS:
             if len(elements[kind]) != 1:
                 errors.append(f"{stage_id}: expected one {kind}")
+        boxes = {kind: cell_rect(found[0]) for kind, found in elements.items() if len(found) == 1}
+        if all(boxes.get(kind) is not None for kind in KINDS):
+            layout.append(boxes)
         for rel, (from_kind, to_kind) in LINKS.items():
             found = links[rel]
             if len(found) != 1:
@@ -206,6 +229,16 @@ def check(path: Path) -> list[str]:
                 errors.append(f"{stage_id}: {rel} endpoints do not match the stage")
             elif not arrow_follows(found[0], elements[from_kind][0], elements[to_kind][0], cells):
                 errors.append(f"{stage_id}: {rel} arrow must run from {from_id} to {to_id}")
+    if len(layout) == len(stages):
+        spans = [(min(box[0] for box in boxes.values()), max(box[2] for box in boxes.values())) for boxes in layout]
+        if any(current[0] <= previous[1] for previous, current in zip(spans, spans[1:])):
+            errors.append("stage columns must run left to right in stage order")
+        for kind in KINDS:
+            if len({(boxes[kind][1], boxes[kind][3]) for boxes in layout}) != 1:
+                errors.append(f"{kind} cells must share one lane")
+        rows = list(KINDS)
+        if any(boxes[lower][1] < boxes[upper][3] for boxes in layout for upper, lower in zip(rows, rows[1:])):
+            errors.append("lanes must run command, event, read model from top to bottom")
     headings = visible(svg, parents).casefold()
     for heading in ("command", "event", "read model", "time moves left to right"):
         if heading not in headings:
