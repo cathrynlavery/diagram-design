@@ -47,9 +47,16 @@ def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
     return " ".join(" ".join(chunks).split())
 
 
+# ASCII-only SVG path tokens; float() alone would accept 2_24 and non-ASCII digits that browsers reject.
+PATH_TOKEN = re.compile(r"[MLHV]|[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?")
+PATH_SEPARATORS = re.compile(r"[ \t\n\r\f,]*")
+
+
 def path_points(source: str) -> list[tuple[float, float]]:
     """Points of an absolute M/L/H/V path; empty for anything else."""
-    fields = source.replace(",", " ").split()
+    if not PATH_SEPARATORS.fullmatch(PATH_TOKEN.sub(" ", source)):
+        return []
+    fields = PATH_TOKEN.findall(source)
     if len(fields) < 3 or fields[0] != "M":
         return []
     x, y = number(fields[1]), number(fields[2])
@@ -68,34 +75,63 @@ def path_points(source: str) -> list[tuple[float, float]]:
             index += 2
         else:
             return []
+        if any(not math.isfinite(value) for value in (x, y)):
+            return []
         points.append((x, y))
     return points
 
 
-def cell_box(element: ET.Element) -> tuple[float, float, float, float] | None:
+def cell_rect(element: ET.Element) -> tuple[float, float, float, float] | None:
     rect = next((child for child in element if local(child.tag) == "rect"), None)
-    if rect is None:
-        return None
-    left, top, right, bottom = rectangle(rect)
-    return (left - ARROW_TOLERANCE, top - ARROW_TOLERANCE, right + ARROW_TOLERANCE, bottom + ARROW_TOLERANCE)
+    return None if rect is None else rectangle(rect)
+
+
+def widen(box: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    return (box[0] - ARROW_TOLERANCE, box[1] - ARROW_TOLERANCE, box[2] + ARROW_TOLERANCE, box[3] + ARROW_TOLERANCE)
 
 
 def inside(point: tuple[float, float], box: tuple[float, float, float, float]) -> bool:
     return box[0] <= point[0] <= box[2] and box[1] <= point[1] <= box[3]
 
 
-def arrow_follows(link: ET.Element, source: ET.Element, target: ET.Element) -> bool:
-    """The first path runs from the source cell to the target cell; every path stays between them."""
+def crosses(first: tuple[float, float], second: tuple[float, float], box: tuple[float, float, float, float]) -> bool:
+    """Whether a segment enters the interior of a box (Liang-Barsky clip)."""
+    low, high = 0.0, 1.0
+    dx, dy = second[0] - first[0], second[1] - first[1]
+    for delta, offset in ((-dx, first[0] - box[0]), (dx, box[2] - first[0]), (-dy, first[1] - box[1]), (dy, box[3] - first[1])):
+        if delta == 0:
+            if offset <= 0:
+                return False
+            continue
+        ratio = offset / delta
+        if delta < 0:
+            low = max(low, ratio)
+        else:
+            high = min(high, ratio)
+        if low >= high:
+            return False
+    return True
+
+
+def arrow_follows(
+    link: ET.Element, source: ET.Element, target: ET.Element,
+    cells: list[tuple[float, float, float, float]],
+) -> bool:
+    """A shaft from the source cell to the target cell, missing every other cell, with one head at the target end."""
     paths = [path_points(child.get("d", "")) for child in link if local(child.tag) == "path"]
-    start, end = cell_box(source), cell_box(target)
-    if not paths or not all(paths) or start is None or end is None:
+    source_rect, target_rect = cell_rect(source), cell_rect(target)
+    if len(paths) != 2 or not all(paths) or source_rect is None or target_rect is None:
         return False
+    start, end = widen(source_rect), widen(target_rect)
     hull = (min(start[0], end[0]), min(start[1], end[1]), max(start[2], end[2]), max(start[3], end[3]))
-    shaft = paths[0]
+    shaft, head = paths
     length = sum(math.dist(first, second) for first, second in zip(shaft, shaft[1:]))
+    others = [cell for cell in cells if cell not in (source_rect, target_rect)]
     return (
         inside(shaft[0], start) and inside(shaft[-1], end) and length >= MIN_ARROW_LENGTH
         and all(inside(point, hull) for points in paths for point in points)
+        and not any(crosses(first, second, cell) for first, second in zip(shaft, shaft[1:]) for cell in others)
+        and all(math.dist(point, shaft[-1]) <= ARROW_TOLERANCE for point in head)
     )
 
 
@@ -118,6 +154,8 @@ def check(path: Path) -> list[str]:
         errors.append("expected 1 to 6 ordered stages")
     stage_ids: set[str] = set()
     global_ids: set[str] = set()
+    cells = [box for element in svg.iter() if "data-event-kind" in element.attrib
+             for box in [cell_rect(element)] if box is not None]
     for index, stage in enumerate(stages, 1):
         stage_id = stage.attrib["data-event-stage"]
         if not stage_id or stage_id in stage_ids:
@@ -166,7 +204,7 @@ def check(path: Path) -> list[str]:
             to_id = elements[to_kind][0].attrib.get("data-event-id", "")
             if found[0].attrib.get("data-from") != from_id or found[0].attrib.get("data-to") != to_id:
                 errors.append(f"{stage_id}: {rel} endpoints do not match the stage")
-            elif not arrow_follows(found[0], elements[from_kind][0], elements[to_kind][0]):
+            elif not arrow_follows(found[0], elements[from_kind][0], elements[to_kind][0], cells):
                 errors.append(f"{stage_id}: {rel} arrow must run from {from_id} to {to_id}")
     headings = visible(svg, parents).casefold()
     for heading in ("command", "event", "read model", "time moves left to right"):

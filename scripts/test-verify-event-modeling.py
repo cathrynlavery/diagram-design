@@ -121,12 +121,35 @@ def main() -> None:
             ("shaft from the wrong row", source.replace('d="M 224 302 V 363"', 'd="M 224 464 V 525"', 1)),
             ("shaft stops short", source.replace('d="M 224 302 V 363"', 'd="M 224 302 V 320"', 1)),
         )
+        shaft, head = 'd="M 224 302 V 363"', 'd="M 218 360 L 224 368 L 230 360"'
+        head_path = '<path d="M 218 360 L 224 368 L 230 360" fill="none" stroke="#4f5d75" stroke-width="2"/>'
+        source_head = '<path d="M 218 307 L 224 299 L 230 307" fill="none" stroke="#4f5d75" stroke-width="2"/>'
+        assert head_path in source
+
+        def shift_cell(text: str, cell_id: str, offset: int) -> str:
+            start = text.index(f'data-event-id="{cell_id}"')
+            end = text.index("</g>", start)
+            body = re.sub(r' y="(\d+)"', lambda m: f' y="{int(m[1]) + offset}"', text[start:end])
+            return text[:start] + body + text[end:]
+
+        swapped = shift_cell(shift_cell(source, "EVT-01", 162), "VIEW-01", -162)
+        swapped = swapped.replace(shaft, 'd="M 224 302 V 525"', 1).replace(head, 'd="M 218 522 L 224 530 L 230 522"', 1)
+        geometry_cases += (
+            ("head at the source end", source.replace(head, 'd="M 218 307 L 224 299 L 230 307"', 1)),
+            ("heads at both ends", source.replace(head_path, head_path + source_head, 1)),
+            ("no head", source.replace(head_path, "", 1)),
+            ("underscore digits", source.replace(shaft, 'd="M 2_24 302 V 363"', 1)),
+            ("Arabic-Indic digits", source.replace(shaft, 'd="M \u0662\u0662\u0664 302 V 363"', 1)),
+            # Browsers stop at the invalid number, so only "M 224 302" draws.
+            ("Arabic-Indic digits before a valid number", source.replace(shaft, 'd="M 224 302 V \u0663\u0666\u0663 363"', 1)),
+            ("shaft crosses a third cell", swapped),
+        )
         for name, mutated in geometry_cases:
             assert mutated != source, name
             candidate.write_text(mutated, encoding="utf-8")
             errors = module.check(candidate)
-            if not any("arrow must run from" in error for error in errors):
-                failures.append((name, "arrow must run from", errors))
+            if not any(error.startswith("STAGE-01: emits arrow must run from") for error in errors):
+                failures.append((name, "STAGE-01: emits arrow must run from", errors))
         assert not failures, failures
 
         # A comment and an escaped bracket in a class name are not attribute selectors.
