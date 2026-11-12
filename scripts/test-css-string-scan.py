@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Quoted CSS data is not a geometry declaration, in every verifier that scans for one.
 
-Twelve verifiers refuse a CSS declaration that can move a verified mark. Each read
+Fifteen verifiers refuse a CSS declaration that can move a verified mark. Each read
 `body { --notes: "literal;transform:translate(999px)" }` as a `transform`
 declaration, although the browser reads a quoted string that moves nothing (#431).
 
@@ -24,11 +24,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-TYPES = ("architecture-delta", "beeswarm", "box-plot", "bump", "bubble", "marimekko", "ridgeline",
-         "service-blueprint", "polar", "streamgraph", "slopegraph", "waterfall")
+TYPES = ("arc-diagram", "architecture-delta", "beeswarm", "box-plot", "bump", "bubble", "marimekko", "ridgeline",
+         "service-blueprint", "polar", "steps", "streamgraph", "slopegraph", "unit-grid", "waterfall")
 
 # The first element of each example that its verifier checks as a mark: (tag, attribute).
 MARKS = {
+    "arc-diagram": ("circle", "data-name"),
     "architecture-delta": ("rect", "width"),
     "beeswarm": ("circle", "data-value"),
     "box-plot": ("rect", "data-role"),
@@ -38,8 +39,10 @@ MARKS = {
     "ridgeline": ("path", "data-ridge"),
     "service-blueprint": ("rect", "data-stage"),
     "polar": ("circle", "data-polar-ring"),
+    "steps": ("rect", "data-role"),
     "streamgraph": ("path", "data-layer"),
     "slopegraph": ("line", "data-series"),
+    "unit-grid": ("rect", "data-unit-cell"),
     "waterfall": ("rect", "data-role"),
 }
 
@@ -110,8 +113,10 @@ def main() -> int:
             example = sorted(ASSET_DIR.glob(f"example-{kind}*.html"))[0]
             source = example.read_text(encoding="utf-8")
             for number, (label, passes, where, css) in enumerate(CASES):
-                # Polar refuses any inline style or <svg> stylesheet in its chart.
-                passes = passes and not (kind == "polar" and where != "head")
+                # Polar and steps refuse any inline style or <svg> stylesheet in the chart,
+                # and unit grid any inline style on a cell.
+                passes = passes and not (kind in ("polar", "steps") and where != "head")
+                passes = passes and not (kind == "unit-grid" and where == "inline")
                 page = Path(scratch) / f"{kind}-{number}.html"
                 page.write_text(place(source, kind, where, css), encoding="utf-8")
                 result = subprocess.run(
