@@ -59,6 +59,56 @@ def main() -> int:
     static = STATIC_EXAMPLE.read_text(encoding="utf-8")
     animated = EXAMPLE.read_text(encoding="utf-8")
 
+    # Document completeness: truncation, mojibake and unbalanced markup must all fail.
+    # The negative controls below are valid HTML that the balance count must not flag.
+    def check_mutation_fail(
+        label: str, find: str, replace: str, needle: str, limit: int = 1
+    ) -> None:
+        if find not in static:
+            failures.append(f"{label}: fixture has no {find!r} to mutate")
+            return
+        check_fail(label, static.replace(find, replace, limit), needle)
+
+    def check_mutation_pass(label: str, find: str, replace: str, limit: int = 1) -> None:
+        if find not in static:
+            failures.append(f"{label}: fixture has no {find!r} to mutate")
+            return
+        check_source_pass(label, static.replace(find, replace, limit))
+
+    check_fail("truncated document", static[: len(static) // 2], "does not end with </html>")
+    check_fail("mojibake", "\ufffd" + static, "U+FFFD")
+    check_mutation_fail("dropped closing tag", "</text>", "", "<text> opens")
+    check_mutation_fail("swapped closing tag", "</div>", "</span>", "<div> opens")
+    check_mutation_fail("stray closing tag", "</body>", "</body></span>", "<span> opens")
+    check_mutation_fail("unclosed span", "<body>", "<body><span>tip", "<span> opens")
+    check_mutation_fail("incomplete shell", "</html>", "", "does not end with </html>")
+    # Titles and text areas are RCDATA: tag names in them are text, not elements.
+    check_mutation_pass("tag names in a page title", "<title>", "<title>Using <span> and <div> labels in ")
+    check_mutation_pass("tag names in a textarea", "<body>", "<body><textarea>Using <span> labels</textarea>")
+    check_mutation_pass("trailing comment after the html end tag", "</html>", "</html>\n<!-- generated -->")
+    check_mutation_pass("space before the html end tag's >", "</html>", "</html >")
+    check_mutation_pass("newline inside the html end tag", "</html>", "</html\n>")
+    check_mutation_fail("unclosed textarea", "<body>", "<body><textarea>x", "is never closed")
+    check_mutation_pass("optional end tag", "</p>", "")
+    check_mutation_pass("optional head end tag", "</head>", "")
+    check_mutation_pass("optional body end tag", "</body>", "")
+    check_mutation_pass("void element", "<body>", "<body><br>")
+    check_mutation_pass(
+        "opening tag text in an attribute",
+        "<body>",
+        '<body><span title="<div>">tip</span>',
+    )
+    check_mutation_pass(
+        "closing tag text in an attribute",
+        "<body>",
+        '<body><span title="</div>">tip</span>',
+    )
+    check_mutation_pass(
+        "markup and an unclosed CSS comment in a stylesheet",
+        "</style>",
+        "/* <!-- */ .probe { fill: red }</style>",
+    )
+
     for location, markup in (
         ("heading before SVG", '<h2 id="architecture-title">Monthly traffic summary</h2>'),
         ("description duplicate", '<p id="architecture-desc">Unrelated description</p>'),
@@ -321,6 +371,85 @@ def main() -> int:
         failures.append(f"shipped assets reported outside their viewBox: {outside_assets}")
     else:
         print("OK: every shipped asset stays inside its viewBox")
+
+    # Text fit: a label budgeted wider than the visible box it sits in (0.60em sans,
+    # 0.62em mono per character, style-guide.md) overflows its border.
+    check_mutation_fail("sans node name overflows its box", ">Astro Origin</text>",
+                        ">Astro Origin Server Cluster</text>", "overflows its 160px box")
+    check_mutation_fail("mono sublabel overflows its box", ">src/content/*.mdx</text>",
+                        ">src/content/blog/posts/*.mdx</text>", "overflows its 144px box")
+    check_mutation_fail("end-anchored ghost number flipped to start",
+                        'text-anchor="end">01</text>', 'text-anchor="start">01</text>',
+                        "overflows its 144px box")
+    check_mutation_pass("longer name that still fits", ">Astro Origin</text>",
+                        ">Astro Origin SSR</text>")
+    check_mutation_pass("connector label past its paper mask", ">HTTPS</text>",
+                        ">HTTPS · TLS 1.3 · H2</text>")
+    check_mutation_pass("free caption with no box",
+                        "</svg>", '<text x="20" y="470" font-size="12">'
+                        + "A caption with no box behind it runs as long as it likes</text></svg>")
+    check_source_pass("stylesheet font size leaves the estimate to the browser",
+                      styled("text.wide { font-size: 4px; }", "").replace(
+                          '>Astro Origin</text>', ' class="wide">Astro Origin Server Cluster</text>', 1))
+    def fit_svg(body: str, root: str = "") -> str:
+        return re.sub(r"(<svg viewBox=\"0 0 1000 480\"[^>]*)>", r"\1" + root + ">", static, count=1).replace(
+            "</svg>", body + "</svg>", 1)
+
+    box = '<rect x="0" y="12" width="100" height="40" fill="#ececec" stroke="#2d3142"/>'
+    check_source_pass("root svg text-anchor centers the label",
+                      fit_svg(box + '<text x="50" y="32" font-size="10">ABCDEFGHIJ</text>',
+                              ' text-anchor="middle"'))
+    check_fail("root svg font-size is inherited",
+               fit_svg(box + '<text x="4" y="32">ABCDEFGHIJKLMNOPQRST</text>', ' font-size="10"'),
+               "overflows its 100px box")
+    check_fail("box painted through inline style",
+               fit_svg('<rect x="0" y="12" width="100" height="40" style="fill:#ececec;stroke:#2d3142"/>'
+                       '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'),
+               "overflows its 100px box")
+    check_fail("box painted by its group",
+               fit_svg('<g fill="#ececec" stroke="#2d3142"><rect x="0" y="12" width="100" height="40"/></g>'
+                       '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'),
+               "overflows its 100px box")
+    check_source_pass("box painted by a stylesheet rule is left alone",
+                      styled(".box { fill: #f5f5f5; }",
+                             '<rect class="box" x="0" y="12" width="100" height="40"/>'
+                             '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'))
+    for attribute in ('dx="-40"', 'dy="2"', 'rotate="0"', 'textLength="90"'):
+        check_source_pass(f"text with {attribute} is not measured",
+                          fit_svg(box + f'<text x="60" y="32" {attribute} font-size="10">ABCDEFGHIJ</text>'))
+    long_label = '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'
+    for hidden in ('opacity="0"', 'fill-opacity="0"', 'fill="rgba(0,0,0,0)"', 'fill="#0000"',
+                   'fill="#ececec00"', 'fill="hsl(0 0% 50% / 0%)"'):
+        check_source_pass(f"label over a box that draws nothing ({hidden})",
+                          fit_svg(f'<rect x="0" y="12" width="100" height="40" {hidden}/>' + long_label))
+    check_source_pass("label over a box inside a transparent group",
+                      fit_svg('<g opacity="0"><rect x="0" y="12" width="100" height="40" fill="#ececec"'
+                              ' stroke="#2d3142"/></g>' + long_label))
+    check_fail("stroke still draws when only the fill is transparent",
+               fit_svg('<rect x="0" y="12" width="100" height="40" fill-opacity="0" stroke="#2d3142"/>'
+                       + long_label), "overflows its 100px box")
+    check_fail("box still draws when a child resets opacity",
+               fit_svg('<g opacity="0.5"><rect x="0" y="12" width="100" height="40" fill="#ececec"/></g>'
+                       + long_label), "overflows its 100px box")
+    for layout in ('direction="rtl"', 'unicode-bidi="bidi-override"', 'writing-mode="tb"',
+                   'xml:space="preserve"', 'style="white-space:pre"', 'style="direction:rtl"'):
+        check_source_pass(f"text with {layout} is not measured",
+                          fit_svg(box + f'<text x="96" y="32" {layout} font-size="10">ABCDEFGHIJ</text>'))
+    check_source_pass("root svg direction is inherited",
+                      fit_svg(box + '<text x="96" y="32" font-size="10">ABCDEFGHIJ</text>', ' direction="rtl"'))
+    check_source_pass("stylesheet direction leaves the text alone",
+                      styled("text.r { direction: rtl; }", box + '<text class="r" x="96" y="32" '
+                             'font-size="10">ABCDEFGHIJ</text>'))
+    overflowing_assets = []
+    for asset in sorted(ASSET_DIR.glob("*.html")):
+        fit_errors: list[str] = []
+        module.check_text_fit(asset.read_text(encoding="utf-8"), fit_errors)
+        if fit_errors:
+            overflowing_assets.append(f"{asset.name}: {fit_errors}")
+    if overflowing_assets:
+        failures.append(f"shipped assets reported text overflowing its box: {overflowing_assets}")
+    else:
+        print("OK: every shipped asset's boxed text fits the width budget")
 
     # --offline: system-font output must make no network request, so the one
     # remote stylesheet the default contract allows becomes a failure.

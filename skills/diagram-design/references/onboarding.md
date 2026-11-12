@@ -6,9 +6,9 @@ Takes about 60 seconds.
 
 Three source methods are supported. Jump to the relevant section:
 
-- [§ URL](#url) — fetch a live website
-- [§ Skill](#skill) — read an installed Agent Skill that carries design tokens
-- [§ Folder](#folder) — read a local design-system directory (CSS, JSON, Markdown)
+- [§ URL](#-url) — fetch a live website
+- [§ Skill](#-skill) — read an installed Agent Skill that carries design tokens
+- [§ Folder](#-folder) — read a local design-system directory (CSS, JSON, Markdown)
 
 ---
 
@@ -175,7 +175,7 @@ Write the new tokens to `style-guide.md`. Suggest running the `/regenerate-examp
 
 After onboarding, the user should:
 
-1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 46 visual types.
+1. Open `assets/index.html` (gallery) and confirm the new palette feels coherent across all 47 visual types.
 2. If any type looks off, they usually need to tune `muted` (often too dark or too light against the new `paper`).
 
 ---

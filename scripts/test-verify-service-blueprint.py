@@ -300,6 +300,130 @@ def main() -> int:
             else:
                 print("OK: overlapping columns fail by name")
 
+        # Japanese labels omit spaces: two <text> lines for one data-name must
+        # pass (issue #438). Scope the no-whitespace join to one cell only.
+        welcome_rect = (
+            '<rect x="96" y="80" width="208" height="48" rx="4" fill="#ffffff" '
+            'stroke="#2d3142" stroke-width="1" data-stage="sign-up" '
+            'data-name="Welcome email"/>'
+        )
+        welcome_text = (
+            '<text x="200" y="108" fill="#2d3142" font-size="12" '
+            'font-family="\'Geist\', sans-serif" text-anchor="middle">Welcome email</text>'
+        )
+        if welcome_rect not in source or welcome_text not in source:
+            failures.append("could not build Japanese two-line printed fixtures (anchor missing)")
+        else:
+            ja_rect = welcome_rect.replace('data-name="Welcome email"', 'data-name="歓迎メール"')
+            ja_two_text = (
+                '<text x="200" y="100" fill="#2d3142" font-size="12" '
+                'font-family="\'Geist\', sans-serif" text-anchor="middle">歓迎</text>\n'
+                '        <text x="200" y="116" fill="#2d3142" font-size="12" '
+                'font-family="\'Geist\', sans-serif" text-anchor="middle">メール</text>'
+            )
+            ja_src = source.replace(welcome_rect, ja_rect, 1).replace(welcome_text, ja_two_text, 1)
+            code, output = run(str(write(directory, "japanese-two-text-lines.html", ja_src)))
+            if code != 0:
+                failures.append(f"Japanese two <text> lines should pass:\n{output}")
+            else:
+                print("OK: Japanese two <text> lines pass")
+
+            ja_tspan = (
+                '<text x="200" y="100" fill="#2d3142" font-size="12" '
+                'font-family="\'Geist\', sans-serif" text-anchor="middle">\n'
+                '          <tspan x="200" dy="0">歓迎</tspan>\n'
+                '          <tspan x="200" dy="16">メール</tspan>\n'
+                '        </text>'
+            )
+            ja_tspan_src = source.replace(welcome_rect, ja_rect, 1).replace(
+                welcome_text, ja_tspan, 1
+            )
+            code, output = run(str(write(directory, "japanese-two-tspan.html", ja_tspan_src)))
+            if code != 0:
+                failures.append(f"Japanese two <tspan> lines should pass:\n{output}")
+            else:
+                print("OK: Japanese two <tspan> lines pass")
+
+            en_two = (
+                '<text x="200" y="100" fill="#2d3142" font-size="12" '
+                'font-family="\'Geist\', sans-serif" text-anchor="middle">Welcome</text>\n'
+                '        <text x="200" y="116" fill="#2d3142" font-size="12" '
+                'font-family="\'Geist\', sans-serif" text-anchor="middle">email</text>'
+            )
+            en_src = source.replace(welcome_text, en_two, 1)
+            code, output = run(str(write(directory, "english-two-text-lines.html", en_src)))
+            if code != 0:
+                failures.append(f"English two <text> lines should still pass:\n{output}")
+            else:
+                print("OK: English two <text> lines still pass")
+
+            # Neighbouring cell text must not satisfy another cell's data-name
+            # if we only strip whitespace globally across the plot.
+            neighbor_fail = source.replace(
+                welcome_rect,
+                welcome_rect.replace('data-name="Welcome email"', 'data-name="歓迎メール"'),
+                1,
+            ).replace(welcome_text, welcome_text.replace("Welcome email", "歓迎"), 1)
+            # Leave the rest of the diagram intact; compact join is cell-scoped,
+            # so "歓迎" alone must not match "歓迎メール".
+            code, output = run(str(write(directory, "japanese-partial-label.html", neighbor_fail)))
+            if code == 0 or "printed: cell '歓迎メール'" not in output:
+                failures.append(
+                    f"partial Japanese label should fail printed check, got:\n{output}"
+                )
+            else:
+                print("OK: partial Japanese label fails printed check")
+
+            # Greptile gap: the split must NOT stitch across cells. The target
+            # cell (Welcome email, x=96) prints only 歓迎, and the next cell
+            # (Product UI, x=320) prints メール. The cell-scoped join collects
+            # each cell's text by its own x/y, so メール in the Product UI cell
+            # never reaches the Welcome email cell — the printed check must
+            # still report 歓迎メール as missing. Pin this so a regression to a
+            # global whitespace strip is caught.
+            product_ui_text = (
+                '<text x="424" y="108" fill="#2d3142" font-size="12" '
+                'font-family="\'Geist\', sans-serif" text-anchor="middle">Product UI</text>'
+            )
+            if product_ui_text not in source:
+                failures.append(
+                    "could not build the cross-cell split fixture (Product UI anchor missing)"
+                )
+            else:
+                cross_cell = (
+                    source.replace(
+                        welcome_rect,
+                        welcome_rect.replace(
+                            'data-name="Welcome email"', 'data-name="歓迎メール"'
+                        ),
+                        1,
+                    )
+                    .replace(welcome_text, welcome_text.replace("Welcome email", "歓迎"), 1)
+                    .replace(product_ui_text, product_ui_text.replace("Product UI", "メール"), 1)
+                )
+                code, output = run(
+                    str(write(directory, "japanese-cross-cell-split.html", cross_cell))
+                )
+                if code == 0 or "printed: cell '歓迎メール'" not in output:
+                    failures.append(
+                        f"cross-cell split should fail printed check (cell-scoped join must "
+                        f"not stitch 歓迎 + メール across cells), got:\n{output}"
+                    )
+                else:
+                    print("OK: cross-cell split fails printed check (cell-scoped join holds)")
+
+        # Fixture under scripts/fixtures covers the same Japanese / tspan cases
+        # on a minimal blueprint (see #438).
+        fixture = ROOT / "scripts/fixtures/service-blueprint-japanese-two-line.html"
+        if not fixture.is_file():
+            failures.append(f"missing fixture {fixture}")
+        else:
+            code, output = run(str(fixture))
+            if code != 0:
+                failures.append(f"japanese two-line fixture should pass:\n{output}")
+            else:
+                print("OK: scripts/fixtures/service-blueprint-japanese-two-line.html passes")
+
         # Single-quoted attributes are valid SVG; a cell written that way
         # must still be checked. Evidence cells are not in the census, so a
         # skipped one could sit below the line without any finding.

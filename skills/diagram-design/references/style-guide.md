@@ -12,7 +12,7 @@ To generate your own from a website URL, see [`onboarding.md`](onboarding.md).
 
 ### Semantic roles
 
-Every token is referred to by **semantic role**, not by its hex value. Type references (`type-*.md`) and SKILL.md say `accent`, not `#f7591f`.
+Every token is referred to by **semantic role**, not by its hex value. Type references (`type-*.md`) and SKILL.md say `accent`, not `#bf4520`.
 
 | Role | Purpose | Default (light) | Default (dark) |
 |---|---|---|---|
@@ -29,8 +29,6 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 | `link` | HTTP/API calls, external arrows | `#2e5aa8` | `#739fdf` |
 
 > **Brand palette source:** this skin maps to a five-color brand palette: `jet-black #2d3142`, `silver #bfc0c0`, `white-smoke #f5f5f5`, `atomic-tangerine`, `blue-slate #4f5d75`. The light `accent` is not the raw brand tangerine. Raw atomic-tangerine reads 2.86:1 on `paper`, too faint for an arrow or a label, so the skin uses `#bf4520`, the same hue darkened until it clears 4.5:1 as text. The `soft`, `rule`, and `link` tokens are derived (a darker slate, ink at opacity, and a saturated variant in the blue-slate hue family) to cover roles the brand palette doesn't name directly. Every derived value is held to the contrast contract below.
-
-> **Note:** The pre-baked example HTML files in `assets/` were built under an earlier skin. Regenerating them against the current `style-guide.md` is a v5.1 task. New diagrams the skill produces will use the tokens above.
 
 ### Contrast contract
 
@@ -50,7 +48,7 @@ Every token must clear the threshold for each role it plays, against the backgro
 
 ### Inversion rule (light → dark)
 
-Any `rgba(28,25,23, X)` in light becomes `rgba(250,247,242, X)` in dark. Same opacities, RGB flipped. The accent gets a slight hue-shift brighter to read on dark paper.
+Any `rgba(45,49,66, X)` in light becomes `rgba(245,245,245, X)` in dark. Same opacities, RGB flipped. The accent gets a slight hue-shift brighter to read on dark paper.
 
 ### Series palette (multi-series chart types only)
 
@@ -134,7 +132,7 @@ Geist and Instrument Serif carry no Hangul. A Korean `<text>` element extends it
 
 Both Noto faces ship in the font link above, so the web font resolves before any locally installed one and the same file renders identically on macOS, Windows, and a reviewer's browser. The local families follow it for offline viewing. Page titles need the serif equivalent — `'Instrument Serif', 'Noto Serif KR', serif` — or a mixed Latin/Korean title resolves Hangul through the platform's generic serif and the two halves disagree. Google's `css2` endpoint slices Korean by unicode-range, so a diagram with a handful of Korean labels downloads only the slices it touches. The four templates carry both faces because a new diagram may contain Hangul; the shipped Latin-only examples keep the shorter link, since a file with no Hangul has nothing to resolve.
 
-**Width budget.** Measure per character, not per script: **every Unicode wide or full-width character costs 1em, every other character costs its face's Latin advance** (0.60em sans, 0.62em mono), and nonspacing/enclosing marks cost nothing. Sum over the string and multiply by the font size for the text width, then add padding and round the box up to the next multiple of 4. `verify-treemap.py` enforces exactly this text width for treemap cell labels; the padding and rounding are authoring convention, and no other type carries an automatic check, so on those the budget is yours to hold.
+**Width budget.** Measure per character, not per script: **every Unicode wide or full-width character costs 1em, every other character costs its face's Latin advance** (0.60em sans, 0.62em mono), and nonspacing/enclosing marks cost nothing. Sum over the string and multiply by the font size for the text width, then add padding and round the box up to the next multiple of 4. `verify-treemap.py` enforces exactly this text width for treemap cell labels. The skill's `scripts/self_check.py` applies the same width, plus any letter-spacing, to text inside a visible box of any type, and fails a label that runs more than 0.3em past the box edge. Padding, rounding, and labels on paper-coloured arrow-label masks are not checked, so those stay yours to hold.
 
 Counting by script is the trap. `주문 v2.1` is two full-width syllables and five narrow characters; a formula that tallies Hangul, Latin letters, and spaces silently drops `2`, `.`, and `1` and sizes the box for four of its seven characters. Every rendered character costs something — measure per character, never per script.
 

@@ -891,7 +891,12 @@ def check_printed(source: str, cells: list[Cell], errors: list[str]) -> None:
             and cell.y - 1 <= y <= cell.bottom + 6
         ]
         haystack = " ".join(collected)
-        if cell.name not in haystack:
+        # Japanese (and similar) labels omit spaces between words. Two <text>
+        # lines or whitespace-split <tspan>s inside one cell must still match
+        # data-name when that cell's own collected parts are concatenated with
+        # whitespace removed. Do not strip whitespace across neighbouring cells.
+        compact = "".join(re.sub(r"\s+", "", part) for part in collected)
+        if cell.name not in haystack and cell.name not in compact:
             errors.append(
                 f"printed: cell {cell.name!r} has no visible text containing its "
                 "data-name"

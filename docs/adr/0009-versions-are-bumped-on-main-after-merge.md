@@ -15,3 +15,7 @@ Rapid consecutive merges may coalesce into a single bump: a queued workflow run 
 ## Consequences
 
 Open PRs no longer conflict with each other through the manifests; they conflict only when they genuinely touch the same content. Contributors never run the bump helper, and a PR that edits a manifest version fails CI with instructions to drop the change. Release numbering moves from one-version-per-PR to one-version-per-bump-commit, and a version may cover more than one merged PR. The workflow pushes past branch protection's required status checks, so its final push needs a token from an actor the protection exempts. Newly merged repository code runs in an unprivileged job that never receives that token; the publisher introduces it only for the final `git push`, after independently constraining the patch to the synchronized version fields and SKILL.md metadata. All third-party actions are pinned to immutable commits. The bump commit is also validated by CI's current-tree check on push.
+
+## Amendment — 2026-10-17: Qoder version synchronization
+
+Qoder did not exist in this repository during the pull-request bump history described above. Its native manifest now joins the synchronized release set, so the no-bump pull-request gate and the post-merge auto-bump workflow apply to Claude, Codex, Factory, and Qoder together. The historical context remains unchanged because it records the three manifests that existed when this ADR was accepted.

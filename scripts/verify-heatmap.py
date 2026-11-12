@@ -58,8 +58,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>", re.IGNORECASE)
+# A ">" inside a quoted attribute is text, not the end of the tag. Ending the
+# scan there drops the cell or axis label that follows it.
+_ATTRS = r"""(?:"[^"]*"|'[^']*'|[^"'<>])*"""
+RECT_RE = re.compile(rf"<rect\b(?P<attrs>{_ATTRS})/?>", re.IGNORECASE)
+TEXT_RE = re.compile(rf"<text\b(?P<attrs>{_ATTRS})>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
 COMMENT_OR_STYLE_RE = re.compile(

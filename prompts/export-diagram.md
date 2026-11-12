@@ -9,9 +9,9 @@ Full argument string: `$ARGUMENTS`
 
 ## Defaults
 
-- With no format flags, or with `--svg-only`/`--png-only`/`--scale`/`--output` but no `--registry`: produce both `.svg` and `.png` next to source (for example, `diagram.html` → `diagram.svg` + `diagram.png`).
+- With no format flag (nothing, or only `--scale`/`--output`) and no `--registry`: produce both `.svg` and `.png` next to source (for example, `diagram.html` → `diagram.svg` + `diagram.png`). `--svg-only` or `--png-only` restricts image output to that one format.
 - Render PNG at `device_scale_factor=2`.
-- `--registry` given alone, with neither `--svg-only` nor `--png-only` also present, produces only the registry JSON — the SVG/PNG defaults above do not apply, and Playwright is never required. Add `--svg-only` and/or `--png-only` explicitly to also get an image.
+- `--registry` given alone, with neither `--svg-only` nor `--png-only` also present, produces only the registry JSON — the SVG/PNG defaults above do not apply, and Playwright is never required. Add `--svg-only` or `--png-only` explicitly to also get an image.
 
 ## Flags
 
@@ -19,7 +19,7 @@ Full argument string: `$ARGUMENTS`
 - `--png-only` — emit PNG only.
 - `--scale=N` — override PNG device scale factor with a finite number from `1` to `4`, including fractional values such as `1.25`. Default `2`.
 - `--output=<path>` — override output base path; append format extension.
-- `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Never needs Playwright. Used alone (see Defaults) it is the only output; combine with `--svg-only` and/or `--png-only` to also produce an image.
+- `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Never needs Playwright. Used alone (see Defaults) it is the only output; combine with `--svg-only` or `--png-only` to also produce an image.
 
 ## Required behavior
 
