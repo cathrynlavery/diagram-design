@@ -41,6 +41,16 @@ CSS_PAINTS_MARK_RE = re.compile(
     r"|display(?=\s*:\s*none\b))\s*:",
     re.IGNORECASE,
 )
+# Geometry a stylesheet can override on a cell. Rules whose subject is the svg or an HTML
+# element cannot reach a cell; class-only rules cannot either, because cells may not carry class.
+CSS_GEOMETRY = ("width", "height", "rx", "ry", "r", "cx", "cy")
+CSS_RULE_RE = re.compile(r"([^{}]*)\{([^{}]*)\}")
+SAFE_SUBJECT_RE = re.compile(
+    r"(?:(?:svg|html|body|main|div|section|article|header|footer|figure|figcaption|nav|aside|p|h[1-6]"
+    r"|ul|ol|li|span|table|thead|tbody|tr|td|th|button|label|img)|\.[\w-]+)"
+    r"(?:[.:][\w-]+(?:\([^)]*\))?)*",
+    re.IGNORECASE,
+)
 CSS_ESCAPE_RE = re.compile(r"\\(?:([0-9a-fA-F]{1,6})[ \t\n\r\f]?|(.))", re.DOTALL)
 FONTS_HREF = "https://fonts.googleapis.com/"
 # A cell may sit only inside the chart root and plain groups or links.
@@ -139,7 +149,10 @@ def points_box(points: list[tuple[float, float]]) -> tuple[float, float, float, 
 
 
 def path_box(d: str) -> tuple[float, float, float, float] | None:
-    """Bounds of every end and control point (a Bezier stays inside its control hull); arcs are unbounded."""
+    """Bounds of every end and control point (a Bezier stays inside its control hull).
+
+    Arcs and smooth S/T segments, whose reflected control points are not tracked, are unbounded.
+    """
     if PATH_TOKEN_RE.sub("", d).strip(" \t\n\r,"):
         return None
     tokens = PATH_TOKEN_RE.findall(d)
@@ -151,7 +164,7 @@ def path_box(d: str) -> tuple[float, float, float, float] | None:
         token = tokens[index]
         if token.isalpha():
             command, index = token, index + 1
-            if command in "Aa":
+            if command in "AaSsTt":
                 return None
             if command in "Zz":
                 x, y = start_x, start_y
@@ -257,8 +270,11 @@ class Presentation(HTMLParser):
         self.paints: list[tuple[str | None, str | None, str, list[str]]] = []
         self.later: list[dict[str, object]] = []
         self.active_texts: list[dict[str, object]] = []
+        self.label_marks: list[tuple[str, str | None, dict[str, str]]] = []
 
     def handle_starttag(self, tag: str, attributes: list[tuple[str, str | None]]) -> None:
+        for _, label, _ in self.active_labels:
+            self.errors.append(f"the {label} label contains <{tag}>; print the value as plain text")
         names = [name for name, _ in attributes]
         for name in dict.fromkeys(name for name in names if names.count(name) > 1):
             self.errors.append(f"<{tag}> repeats attribute {name}; browsers keep only the first")
@@ -294,7 +310,30 @@ class Presentation(HTMLParser):
             self.errors.append(f"unit cell {tag_attrs.get('data-unit-index')} sits outside the data-unit-grid svg")
         for name in self.labels:
             if name in tag_attrs:
+                self.label(name, tag, tag_attrs)
                 self.active_labels.append((tag, name, []))
+
+    def label(self, name: str, tag: str, attributes: dict[str, str]) -> None:
+        """A printed value counts only as visible text inside the chart, held to the cells' rules."""
+        if tag != "text" or not self.open or self.open[-1][1] is not attributes:
+            self.errors.append(f"the {name} label must be a <text> inside the data-unit-grid svg")
+            return
+        fill = None
+        inherited: dict[str, str] = {}
+        for depth, (element_tag, element) in enumerate(reversed(self.open)):
+            problems = hidden_by(element, declarations(element.get("style")))
+            problems += [attr for attr in ("style", "transform", *CONDITIONAL) if attr in element]
+            if 0 < depth < len(self.open) - 1 and element_tag not in CELL_ANCESTORS:
+                problems.append(f"<{element_tag}> ancestor")
+            for problem in dict.fromkeys(problems):
+                self.errors.append(f"the {name} label is hidden or moved by {problem}")
+            fill = fill if fill is not None else element.get("fill")
+            for attr in TEXT_INHERITED:
+                if attr in element:
+                    inherited.setdefault(attr, element[attr])
+        inherited.update({attr: value for attr, value in attributes.items()
+                          if attr in {"x", "y", "dx", "dy", "rotate", "textlength", "writing-mode", "direction"}})
+        self.label_marks.append((name, fill, inherited))
 
     def cell(self, attributes: dict[str, str], style: dict[str, str]) -> None:
         index = attributes.get("data-unit-index")
@@ -331,6 +370,8 @@ class Presentation(HTMLParser):
             radius = number(attributes.get(name), 0.0)
             if radius is None or radius > size / 4:
                 self.errors.append(f"unit cell {index} {name} {attributes.get(name)} rounds away its area; keep corner radii at or under a quarter of the cell")
+        if "class" in attributes:
+            self.errors.append(f"unit cell {index} class can attach stylesheet rules; use presentation attributes")
         self.cells.append(attributes)
         # SVG paints an element with no fill anywhere in its ancestry black.
         self.paints.append((index, attributes.get("data-unit-cell"), fill or "#000000", hides))
@@ -386,6 +427,13 @@ class Presentation(HTMLParser):
             paint = CSS_PAINTS_MARK_RE.search(css)
             if paint:
                 self.errors.append(f"CSS {paint['prop']} can repaint or hide verified unit cells")
+            for selector, body in CSS_RULE_RE.findall(css):
+                subjects = [re.split(r"[\s>+~]+", part.strip())[-1] for part in selector.split(",")]
+                if all(SAFE_SUBJECT_RE.fullmatch(subject) for subject in subjects):
+                    continue
+                for prop in CSS_GEOMETRY:
+                    if prop in declarations(body):
+                        self.errors.append(f"CSS {prop} can resize verified unit cells; set geometry on the <rect>")
             if re.search(r"@import\b", css, re.IGNORECASE):
                 self.errors.append("CSS @import can load rules that repaint cells")
         self.check_paint()
@@ -425,6 +473,19 @@ class Presentation(HTMLParser):
                 problems.setdefault(f"declared {state} but painted {fill}", []).append(str(index))
         for problem, indices in problems.items():
             self.errors.append(f"unit cell(s) {', '.join(indices)} {problem}")
+        allowed = {ink} | ({tokens["--muted"]} if tokens.get("--muted") else set())
+        view = [number(value) for value in (self.root or {}).get("viewbox", "").replace(",", " ").split()]
+        for name, fill, attributes in self.label_marks:
+            size = number(attributes.get("font-size"), 16.0)
+            text = (self.labels[name] or [""])[0]
+            box = text_box(attributes, text)
+            if color(fill or "#000000") not in allowed:
+                self.errors.append(f"the {name} label is painted {fill}; use the --ink or --muted colour")
+            if size is None or size < 8:
+                self.errors.append(f"the {name} label font-size must be a number of at least 8")
+            if len(view) != 4 or None in view or box is None or not (
+                    view[0] <= box[0] and view[1] <= box[1] and box[2] <= view[0] + view[2] and box[3] <= view[1] + view[3]):
+                self.errors.append(f"the {name} label must sit inside the chart viewBox")
         if accents > 1:
             self.errors.append(f"{accents} completed cells use --accent; at most one completed cell may use --accent")
         if len(remaining) > 1:

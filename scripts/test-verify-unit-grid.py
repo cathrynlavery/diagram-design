@@ -28,9 +28,9 @@ CELL_RE = re.compile(r'<rect data-unit-cell="[a-z]+" data-unit-index="(\d+)"')
 def chart(cells: str, filled: int = 2) -> str:
     return (
         TOKENS + '<svg data-unit-grid="true" data-unit-total="100" data-unit-filled="' + str(filled)
-        + '" data-unit-rows="10" data-unit-columns="10">'
-        + f'<text data-unit-percent="true">{filled}%</text>'
-        + f'<text data-unit-count="true">{filled} complete · {100 - filled} remaining</text>'
+        + '" data-unit-rows="10" data-unit-columns="10" viewBox="0 0 480 300">'
+        + f'<text data-unit-percent="true" x="250" y="40" fill="{INK}" font-size="12">{filled}%</text>'
+        + f'<text data-unit-count="true" x="250" y="60" fill="{INK}" font-size="12">{filled} complete · {100 - filled} remaining</text>'
         + cells + '</svg>'
     )
 
@@ -144,6 +144,29 @@ def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str |
         ("note with inherited end anchor on grid", after_cells(source, '<g text-anchor="end"><text x="700" y="200" font-size="11">Source note here</text></g>'), "later <text> covers"),
         ("note with positioned tspan", after_cells(source, '<text x="660" y="230" font-size="11">Focal <tspan x="400">check</tspan></text>'), "later <text> cannot be bounded"),
         ("path outside grid", after_cells(source, f'<path d="M40 340 h200 c10 0 10 10 0 10 z" fill="{ink}"/>'), None),
+        # 7. CSS geometry: a stylesheet rule that can reach a cell may not resize it
+        *[(f"CSS {prop} on a cell", css(f'rect[data-unit-index="0"]{{{prop}:40px}}'), f"CSS {prop}")
+          for prop in ("width", "height", "rx", "ry", "r", "cx", "cy")],
+        ("CSS width on every element", css("*{width:40px}"), "CSS width"),
+        ("CSS width by id", source.replace(tag0, tag0.replace("<rect ", '<rect id="c0" ', 1), 1).replace("</style>", "#c0{width:40px}</style>", 1), "CSS width"),
+        ("CSS width by class", source.replace(tag0, tag0.replace("<rect ", '<rect class="c" ', 1), 1).replace("</style>", ".c{width:40px}</style>", 1), "class"),
+        ("inline width on a cell", source.replace(tag0, tag0.replace("<rect ", '<rect style="width:40px" ', 1), 1), "style attribute"),
+        ("CSS width on page elements allowed", css(".note{width:10px}div.chart p{height:2px}"), None),
+        # 8. the printed labels must be visible ink text inside the chart
+        ("both labels display none", source.replace("data-unit-percent=\"true\"", 'data-unit-percent="true" display="none"', 1).replace("data-unit-count=\"true\"", 'data-unit-count="true" display="none"', 1), "the data-unit-percent label"),
+        ("count label visibility hidden", source.replace("data-unit-count=\"true\"", 'data-unit-count="true" visibility="hidden"', 1), "the data-unit-count label"),
+        ("percent label opacity zero", source.replace("data-unit-percent=\"true\"", 'data-unit-percent="true" opacity="0"', 1), "the data-unit-percent label"),
+        ("percent label style", source.replace("data-unit-percent=\"true\"", 'data-unit-percent="true" style="font-size:1px"', 1), "the data-unit-percent label"),
+        ("percent label in hidden group", source.replace("<text data-unit-percent", '<g display="none"><text data-unit-percent', 1).replace(">64%</text>", ">64%</text></g>", 1), "the data-unit-percent label"),
+        ("percent label in defs", source.replace("<text data-unit-percent", "<defs><text data-unit-percent", 1).replace(">64%</text>", ">64%</text></defs>", 1), "the data-unit-percent label"),
+        ("percent label painted empty", source.replace("data-unit-percent=\"true\"", "data-unit-percent=\"true\"", 1).replace(re.search(r'<text data-unit-percent[^>]*>', source).group(0), re.sub(r'fill="[^"]*"', f'fill="{empty}"', re.search(r'<text data-unit-percent[^>]*>', source).group(0), count=1), 1), "the data-unit-percent label"),
+        ("percent label tiny", source.replace(re.search(r'<text data-unit-percent[^>]*>', source).group(0), re.sub(r'font-size="[^"]*"', 'font-size="4"', re.search(r'<text data-unit-percent[^>]*>', source).group(0), count=1), 1), "the data-unit-percent label"),
+        ("percent label off canvas", source.replace(re.search(r'<text data-unit-percent[^>]*>', source).group(0), re.sub(r' x="[^"]*"', ' x="5000"', re.search(r'<text data-unit-percent[^>]*>', source).group(0), count=1), 1), "the data-unit-percent label"),
+        ("percent label hides a tspan", source.replace(">64%</text>", '><tspan display="none">64%</tspan></text>', 1).replace(">64%</text>", ">64%</text>"), "the data-unit-percent label"),
+        ("count label outside the svg", source.replace("<text data-unit-count=\"true\"", "<text data-x=\"true\"", 1).replace("</svg>", "</svg><p data-unit-count=\"true\">64 complete · 36 remaining</p>", 1), "the data-unit-count label"),
+        # 9. smooth curves reflect control points the path box does not track
+        ("overlay smooth quadratic", after_cells(source, f'<path d="M650 100 Q800 200 650 200 T650 300" fill="{ink}"/>'), "later <path> cannot be bounded"),
+        ("overlay smooth cubic", after_cells(source, f'<path d="M650 100 C700 100 700 150 650 150 S700 300 650 300" fill="{ink}"/>'), "later <path> cannot be bounded"),
         # 6. a second :root rule must not break token parsing
         ("second :root rule", re.sub(r"(:root\{[^}]*?)(--accent:[^;}]*);([^}]*)\}", r"\1\3;\2}", source, count=1).replace("</style>", ":root{--grid-gap:4px}</style>", 1), None),
         ("later :root moves --ink", source.replace("</style>", f":root{{--ink:{empty}}}</style>", 1), "painted"),
