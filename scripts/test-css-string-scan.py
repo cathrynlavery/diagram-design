@@ -80,6 +80,25 @@ CASES = (
     ("a quote after @url(", False, "head", 'rect { --a: @url(a"b); --x: "); transform: translate(9px); --z: "c" }'),
     # The browser reads a NUL as U+FFFD, a name character, so `\x00url(` is an ordinary function too.
     ("a quote after NUL url(", False, "head", 'rect { --a: \x00url(a"b); --x: "); transform: translate(9px); --z: "c" }'),
+    # `/*` and `*/` inside a string or a url() open and close no comment, so a comment
+    # remover must not join them across the live transform between.
+    ("comment delimiters in selector strings", False, "head",
+     ':not([data-x="/*"]) { transform: translate(9px) } [data-x="*/"] { --x: 1 }'),
+    ("comment delimiters in single-quoted selector strings", False, "head",
+     ":not([data-x='/*']) { transform: translate(9px) } [data-x='*/'] { --x: 1 }"),
+    ("a comment opener in a selector, a closer in a declaration", False, "head",
+     ':not([data-x="/*"]) { transform: translate(9px) } body { --x: "*/" }'),
+    ("a comment opener in a declaration, a closer in a selector", False, "head",
+     'rect { --x: "/*"; transform: translate(9px) } [data-x="*/"] { --y: 1 }'),
+    ("comment delimiters in url()", False, "head",
+     'rect { --a: url(/*); transform: translate(9px); --b: url(*/) }'),
+    ("comment delimiters in selector strings beside an escape", False, "head",
+     ':not([data-x="/*"]) { transform: translate(9px) } [data-x="*/"] { --x: 1 } .a\\62 { --y: 1 }'),
+    ("comment delimiters in selector strings beside a character reference", False, "head",
+     '/* &amp; */ :not([data-x="/*"]) { transform: translate(9px) } [data-x="*/"] { --x: 1 }'),
+    # A string that never closes ends at its line, and a `/*` in it opens no comment.
+    ("a comment opener in an unterminated string", False, "head",
+     'rect { --a: "/*\n; transform: translate(9px) } /* c */'),
     # A form feed ends a string just as a line feed does.
     ("a form feed inside a string", False, "head", 'rect { --a: "\f;transform:translate(9px);--b:" }'),
     # A string ends at its line: the next rule is live.
@@ -127,6 +146,21 @@ MARIMEKKO_SELECTOR_CASES = tuple(
 )
 
 
+# Rules each checker refuses outside its geometry scan: a hidden, repainted or resized mark,
+# a loaded stylesheet. Wrapped in strings holding `/*` and `*/` - in selectors or in
+# declarations - each must fail as it does bare, so no comment remover joins the two.
+GUARDED_RULES = {
+    "arc-diagram": ("circle { display: none }", "circle { fill: red }"),
+    "architecture-delta": ("rect { display: none }", "rect { width: 1px; height: 1px }"),
+    "box-plot": ("rect { display: none }",),
+    "polar": ("body { display: none }", "body { background: url(x.png) }"),
+    "service-blueprint": ("rect { width: 1px; height: 1px }",),
+}
+WRAPPERS = (
+    ("selector strings", 'body[data-q="/*"] {{ --z: 1 }} {rule} html[data-q="*/"] {{ --z: 1 }}'),
+    ("declaration strings", 'body {{ --q: "/*" }} {rule} html {{ --q: "*/" }}'),
+)
+
 def passes_check(kind: str, page: Path) -> bool:
     result = subprocess.run(
         [sys.executable, str(ROOT / f"scripts/verify-{kind}.py"), str(page)],
@@ -159,6 +193,14 @@ def main() -> int:
                 page.write_text(place(source, kind, "head", rule.format(a=attribute)), encoding="utf-8")
                 if passes_check(kind, page) != bare:
                     failures.append(f"{kind}: {label} should {'pass' if bare else 'fail'} like [{attribute}]")
+        for kind, rules in GUARDED_RULES.items():
+            source = sorted(ASSET_DIR.glob(f"example-{kind}*.html"))[0].read_text(encoding="utf-8")
+            for number, rule in enumerate(rules):
+                for label, wrapper in (("bare", "{rule}"), *WRAPPERS):
+                    page = Path(scratch) / f"{kind}-guarded-{number}.html"
+                    page.write_text(place(source, kind, "head", wrapper.format(rule=rule)), encoding="utf-8")
+                    if passes_check(kind, page):
+                        failures.append(f"{kind}: {rule} between {label} should fail")
         source = sorted(ASSET_DIR.glob("example-marimekko*.html"))[0].read_text(encoding="utf-8")
         for number, rule in enumerate(MARIMEKKO_SELECTOR_CASES):
             page = Path(scratch) / f"marimekko-segment-{number}.html"
@@ -171,7 +213,8 @@ def main() -> int:
         return 1
     print(f"OK CSS string scan: {len(TYPES)} verifier(s), {len(CASES)} case(s) and "
           f"{len(SELECTOR_RULES)} quoted-selector rule(s) each, {len(MARIMEKKO_SELECTOR_CASES)} "
-          "marimekko segment selector(s), both polarities")
+          f"marimekko segment selector(s), {sum(map(len, GUARDED_RULES.values()))} guarded rule(s) "
+          "behind comment delimiters, both polarities")
     return 0
 
 

@@ -189,17 +189,22 @@ BODY_TAGS = ("text", "title", "desc", "style")  # elements whose character data 
 # after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
 # `@url(`) and an escaped character are consumed first and kept as written. A string
 # that never closes on its line is kept as well - a line feed, carriage return or form
-# feed ends it - so the checker still fails closed on it. Every other character of a string becomes a space and its newlines
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
 # stay, so each offset and line number still points into the CSS as written.
 # Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
 # sits in a selector or an at-rule prelude, as does one in a statement that starts with
-# `@`; it is kept as written, because the selectors a checker reads must not lose it.
+# `@`; it keeps its quotes and name characters, because the selectors a checker reads
+# must not lose it. Its other characters, and those inside a url(), become `_`, so no
+# `/*`, `*/`, brace or `;` in them can steer a comment remover or a rule parser.
 # CSS the browser may read differently comes back unblanked: a character reference
 # (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
-# left outside a string (`u\72 l(` is `url(`).
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
 CSS_STRING_RE = re.compile(
     r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
-    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')""",
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
     re.DOTALL | re.IGNORECASE,
 )
 
@@ -209,15 +214,23 @@ def blank_css_strings(css: str) -> str:
     masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
 
     def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
         after = re.compile(r"[{;}]").search(masked, found.end())
         start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
-        if not found.group("string") or (after and after.group() == "{") \
-                or masked[start:found.start()].lstrip().startswith("@"):
-            return found.group()
-        return re.sub(r"[^\n]", " ", found.group())
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text[0] + re.sub(r"[^\w\n-]", "_", text[1:-1]) + text[-1]
+        return re.sub(r"[^\n]", " ", text)
 
     blanked = CSS_STRING_RE.sub(blank, css)
-    return css if "\\" in blanked or html.unescape(css) != css else blanked
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
 
 
 class Element:
