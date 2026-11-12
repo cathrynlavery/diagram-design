@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 VERIFIER = ROOT / "scripts/verify-requirement-traceability.py"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-requirement-traceability.html"
+DARK = ROOT / "skills/diagram-design/assets/example-requirement-traceability-dark.html"
 
 
 def load_verifier():
@@ -106,6 +107,31 @@ def main() -> None:
         # Faint ink: 10% opacity is about 1.2:1 against the paper.
         (first_group, first_group.replace("<g ", '<g opacity="0.1" '), "too faint"),
         (label_tag, label_tag.replace("<text ", '<text fill-opacity="0.1" '), "too faint"),
+        # Page CSS that moves the canvas, and style blocks the browser applies.
+        *(("</style>", rule + "</style>", "unsupported page rule") for rule in (
+            "h1{margin:-5000px 0 12px}", ".eyebrow{margin:0 0 -5000px}", ".subtitle{position:relative;top:-5000px}",
+            ".cards p{font-size:1200px;line-height:1;margin:-1100px 0 0}", "h1{transform:translateY(-5000px)}",
+        )),
+        ("line-height:1.1;margin:0 0 12px}", "line-height:1.1;margin:-5000px 0 12px}", "unsupported page rule"),
+        ('<title>Illustrative requirement traceability · Diagram Design</title>',
+         '<title>x <!--</title><style>svg{visibility:hidden}</style>', "unsupported page rule"),
+        ("</body>", "<style>svg{visibility:hidden}</style></body>", "<style> must sit in <head>"),
+        ("</style>", "</style><style>svg{visibility:hidden}</style>", "exactly one <style>"),
+        ('<meta charset="UTF-8">', '<meta charset="UTF-8"><meta name="description" content="<!--">', "HTML"),
+        ("css2?family=", "css2?family=Flow+Block&family=", "HTML"),
+        *(("</svg></div>", "</svg></div>" + extra, "template order")
+          for extra in ("<h1>x</h1>", '<div class="cards"><section><p>x</p></section></div>')),
+        # Strokes that paint the paper over labels.
+        (label_tag, label_tag.replace("<text ", '<text stroke="#f5f5f5" stroke-width="4" '), "may not set stroke"),
+        (first_group, first_group.replace("<g ", '<g stroke="#f5f5f5" stroke-width="4" '), "may not set stroke"),
+        ('>REQ-01</text>', '><tspan stroke="#f5f5f5">REQ-01</tspan></text>', "may not set stroke"),
+        # Oversized, unshipped or re-anchored labels, and headings drawn inside cells.
+        (label_tag, label_tag.replace('font-size="16"', 'font-size="3000"'), "font size must be at most"),
+        (label_tag, label_tag.replace('font-family="Geist, sans-serif"', 'font-family="Flow Block"'), "font family"),
+        (label_tag, label_tag.replace("<text ", '<text text-anchor="end" '), "text-anchor"),
+        ('<text x="864" y="64"', '<text x="900" y="200"', "inside a cell"),
+        # A taller viewBox needs a matching backdrop.
+        (root, root.replace('viewBox="0 0 1200 720"', 'viewBox="0 0 1200 896"'), "backdrop"),
     )
     with tempfile.TemporaryDirectory() as directory:
         candidate = Path(directory) / "candidate.html"
@@ -136,6 +162,25 @@ def main() -> None:
         errors = verifier.check(candidate)
         if not any("overlaps another cell" in error for error in errors):
             failures.append(("cross-cell cover", "overlaps another cell", errors))
+        # Four rows at the shipped 176px pitch in a 0 0 1200 896 canvas.
+        start, end = source.index(first_group), source.index(second_group)
+        fourth = re.sub(r'\by="(\d+)"', lambda m: f'y="{int(m[1]) + 528}"', source[start:end].replace("-01", "-04"))
+        footer = source.index('<line x1="64" y1="668"')
+        tall = source[:footer] + fourth + source[footer:].replace('y1="668" x2="1136" y2="668"', 'y1="844" x2="1136" y2="844"').replace('y="700"', 'y="876"', 1)
+        tall = tall.replace('viewBox="0 0 1200 720"', 'viewBox="0 0 1200 896"').replace('<rect width="1200" height="720"', '<rect width="1200" height="896"')
+        candidate.write_text(tall, encoding="utf-8")
+        if verifier.check(candidate):
+            failures.append(("four rows at 896", "no errors", verifier.check(candidate)))
+        # Title text is raw text in the browser, so markup inside it is not an element.
+        candidate.write_text(source.replace("<title>Illustrative", "<title><b>Illustrative", 1), encoding="utf-8")
+        if verifier.check(candidate):
+            failures.append(("markup inside <title>", "no errors", verifier.check(candidate)))
+        # The dark rule colour written with spaces is the same colour.
+        dark = DARK.read_text(encoding="utf-8")
+        assert "rgba(245,245,245,0.12)" in dark
+        candidate.write_text(dark.replace("rgba(245,245,245,0.12)", "rgba(245, 245, 245, 0.12)"), encoding="utf-8")
+        if verifier.check(candidate):
+            failures.append(("spaced rgba rule colour", "no errors", verifier.check(candidate)))
         for new, expected, errors in failures:
             print(f"BYPASS expected {expected!r}: {new[:90]!r} -> {errors[:2]}")
         assert not failures, f"{len(failures)} adversarial cases passed"

@@ -18,9 +18,19 @@ INK = {
     "#2d3142": {"#f5f5f5", "#bfc0c0", "#739fdf", "#f08a59"},
 }
 RULE_INK = {"#f5f5f5": "#bfc0c0", "#2d3142": "rgba(245,245,245,0.12)"}
-VIEW_BOX = "0 0 1200 720"
+PAGE_COLOURS = {*INK, *INK["#f5f5f5"], *INK["#2d3142"], *RULE_INK.values()}
+VIEW_WIDTH = "1200"
+# One to six trace rows at the shipped 176px row pitch.
+VIEW_HEIGHTS = (368, 1248)
 ROOT_ATTRIBUTES = {"viewBox", "role", "aria-labelledby", "data-diagram-type"}
-FONTS_HREF = "https://fonts.googleapis.com/css2?"
+# Twice the largest shipped label.
+MAX_FONT_SIZE = 32
+FONT_FAMILIES = {"geist,sans-serif"}
+FONTS_HREF = (
+    "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600"
+    "&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600"
+    "&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap"
+)
 # The page skeleton every example shares; anything else around the SVG can hide it.
 PAGE_TAGS = {
     "html": {"lang"}, "head": set(), "meta": {"charset", "name", "content"}, "title": set(),
@@ -28,35 +38,33 @@ PAGE_TAGS = {
     "h1": set(), "section": set(), "h2": set(),
 }
 PAGE_CLASSES = {"div": {"frame", "canvas", "cards"}, "p": {"eyebrow", "subtitle"}}
+HEAD = [("html", None), ("head", None)]
 SVG_PARENTS = [("html", None), ("body", None), ("div", "frame"), ("div", "canvas")]
-STYLE_RE = re.compile(
-    r"<!--.*?(?:-->|$)|<style\b[^>]*>(?P<body>.*?)</style\s*>", re.I | re.S
-)
+# Body elements as (depth, tag, class): the minimal page, then optional summary cards.
+BODY = [(2, "div", "frame"), (3, "p", "eyebrow"), (3, "h1", None), (3, "p", "subtitle"), (3, "div", "canvas")]
+CARDS = [(3, "div", "cards")]
+CARD = [(4, "section", None), (5, "h2", None), (5, "p", None)]
+# The shared page stylesheet; colours may be any house colour.
+TEMPLATE_CSS = """
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#f5f5f5;color:#2d3142;font-family:Geist,system-ui,sans-serif;padding:48px 32px}
+.frame{max-width:1200px;margin:0 auto}
+.eyebrow{color:#bf4520;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}
+h1{font-family:Instrument Serif,system-ui,sans-serif;font-size:40px;line-height:1.1;margin:0 0 12px}
+.subtitle{font-size:20px;line-height:1.4;color:#4f5d75;margin:0 0 28px}
+.canvas{overflow-x:auto}
+svg{display:block;width:100%;min-width:960px}
+.cards{display:grid;grid-template-columns:1.1fr 1fr .9fr;gap:20px;margin-top:28px}
+.cards section{border-top:2px solid #bfc0c0;padding-top:16px}
+.cards h2{font-family:Instrument Serif,system-ui,sans-serif;font-size:20px;margin:0 0 8px}
+.cards p{font-size:16px;line-height:1.5;color:#4f5d75;margin:0}
+@media(max-width:720px){.cards{grid-template-columns:1fr}}
+"""
+COLOUR_RE = re.compile(r"#[0-9a-f]{3,8}\b|rgba?\([^)]*\)")
 CSS_COMMENT_RE = re.compile(r"/\*.*?(?:\*/|$)", re.S)
 CSS_ESCAPE_RE = re.compile(r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])")
 CLASS_SELECTOR_RE = re.compile(rf"\.(?:[\w-]|{CSS_ESCAPE_RE.pattern})+")
 CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}")
-# The shipped breakpoint only changes the HTML summary cards.
-CARDS_MEDIA_RE = re.compile(r"@media\s*\(\s*max-width:\s*720px\s*\)\s*\{\s*(\.cards\s*\{[^{}]*\})\s*\}", re.I)
-PAGE_PROPERTIES = {
-    "body": {"margin", "background", "color", "font-family", "padding"},
-    ".frame": {"max-width", "margin"},
-    ".eyebrow": {"color", "font-size", "font-weight", "letter-spacing", "text-transform", "margin"},
-    "h1": {"font-family", "font-size", "line-height", "margin"},
-    ".subtitle": {"font-size", "line-height", "color", "margin"},
-    ".canvas": {"overflow-x"},
-    ".cards": {"display", "grid-template-columns", "gap", "margin-top"},
-    ".cards section": {"border-top", "padding-top"},
-    ".cards h2": {"font-family", "font-size", "margin"},
-    ".cards p": {"font-size", "line-height", "color", "margin"},
-}
-# Page values that size or place the canvas.
-PAGE_VALUES = {
-    "body": {"margin": "0", "padding": "48px 32px"},
-    ".frame": {"max-width": "1200px", "margin": "0 auto"},
-    ".canvas": {"overflow-x": "auto"},
-    ".cards": {"margin-top": "28px"},
-}
 SVG_PROPERTIES = {
     "display", "visibility", "opacity", "fill", "fill-opacity", "font-size",
     "stroke", "stroke-width", "stroke-opacity",
@@ -68,7 +76,6 @@ SVG_ATTRIBUTES = SVG_PROPERTIES | {
 }
 SVG_TAGS = {"svg", "g", "defs", "title", "desc", "rect", "line", "path", "text", "tspan"}
 STATIC_ONLY = {"transform", "translate", "scale", "rotate", "filter", "clip-path", "mask"}
-SVG_LAYOUT = {"display": "block", "width": "100%", "min-width": "960px"}
 
 
 def local(tag: str) -> str:
@@ -77,6 +84,7 @@ def local(tag: str) -> str:
 
 def normalize(value: str) -> str:
     value = CSS_ESCAPE_RE.sub(decode_css_escape, value).casefold()
+    value = re.sub(r"\s*([(),])\s*", r"\1", value)
     return re.sub(r"\s*!\s*important\s*$", "", value).strip()
 
 
@@ -99,48 +107,26 @@ def declarations(source: str) -> list[tuple[str, str]]:
     ]
 
 
-class DocumentClasses(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.names: set[str] = set()
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        for key, value in attrs:
-            if key == "class" and value:
-                self.names.update(value.split())
+def canonical(css: str) -> str:
+    css = re.sub(r"\s+", " ", CSS_COMMENT_RE.sub(" ", css).casefold())
+    css = re.sub(r" ?([{}:;,()]) ?", r"\1", css).replace(";}", "}").strip()
+    return COLOUR_RE.sub(lambda match: "\0" if match[0] in PAGE_COLOURS else match[0], css)
 
 
-def styles(source: str, svg: ET.Element) -> Iterable[str]:
-    document_classes = DocumentClasses()
-    document_classes.feed(source)
-    svg_classes = {name for node in svg.iter() for name in node.get("class", "").split()}
-    for style in STYLE_RE.finditer(source):
-        body = style.group("body")
-        if body is None:
-            continue
-        css = CARDS_MEDIA_RE.sub(r"\1", CSS_COMMENT_RE.sub(" ", body))
-        if CSS_RULE_RE.sub("", css).strip():
-            yield "unsupported stylesheet structure"
-        for selector, body in CSS_RULE_RE.findall(css):
-            selector = re.sub(r"\s+", " ", selector.strip())
-            rules = declarations(body)
-            values = dict(rules)
-            if selector.replace(" ", "") == "*,*::before,*::after" and rules == [("box-sizing", "border-box")]:
-                continue
-            if selector == "svg" and len(rules) == len(SVG_LAYOUT) and values == SVG_LAYOUT:
-                continue
-            if selector in PAGE_PROPERTIES and not (set(re.findall(r"\.([\w-]+)", selector)) & svg_classes):
-                pinned = PAGE_VALUES.get(selector, {})
-                if (
-                    set(values) <= PAGE_PROPERTIES[selector] and values.get("display", "grid") == "grid"
-                    and all(values.get(key, value) == value for key, value in pinned.items())
-                ):
-                    continue
-            if CLASS_SELECTOR_RE.fullmatch(selector):
-                name = CSS_ESCAPE_RE.sub(decode_css_escape, selector[1:])
-                if name not in document_classes.names:
-                    continue
-            yield f"stylesheet must not select SVG or use an unsupported page rule: {selector!r}"
+TEMPLATE = canonical(TEMPLATE_CSS)
+TEMPLATE_CLASSES = set().union(*PAGE_CLASSES.values())
+
+
+def styles(bodies: list[str], classes: set[str]) -> Iterable[str]:
+    for body in bodies:
+        # A rule for a class that is neither in the template nor on any element cannot apply.
+        css = CSS_RULE_RE.sub(
+            lambda rule: "" if CLASS_SELECTOR_RE.fullmatch(rule[1].strip())
+            and CSS_ESCAPE_RE.sub(decode_css_escape, rule[1].strip()[1:]) not in classes | TEMPLATE_CLASSES else rule[0],
+            CSS_COMMENT_RE.sub(" ", body),
+        )
+        if canonical(css) != TEMPLATE:
+            yield "stylesheet must not select SVG or use an unsupported page rule: page CSS differs from the template"
 
 
 class PageSkeleton(HTMLParser):
@@ -149,11 +135,18 @@ class PageSkeleton(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.stack: list[tuple[str, str | None]] = []
+        self.body: list[tuple[int, str, str | None]] = []
+        self.styles: list[str] = []
+        self.classes: set[str] = set()
         self.depth = 0
         self.svgs = 0
         self.errors: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]], closed: bool = False) -> None:
+        names = dict(attrs)
+        self.classes.update((names.get("class") or "").split())
+        if tag == "style" and (self.depth or self.stack != HEAD):
+            self.errors.append("HTML <style> must sit in <head>")
         if self.depth:
             self.depth += not closed
             return
@@ -163,18 +156,27 @@ class PageSkeleton(HTMLParser):
                 self.errors.append("HTML must place the SVG directly in body > div.frame > div.canvas")
             self.depth = int(not closed)
             return
-        names = dict(attrs)
         if (
             tag not in PAGE_TAGS or not set(names) <= PAGE_TAGS[tag]
             or "class" in names and names["class"] not in PAGE_CLASSES.get(tag, set())
-            or tag == "link" and not (names.get("rel") == "stylesheet" and (names.get("href") or "").startswith(FONTS_HREF))
+            or tag == "link" and not (names.get("rel") == "stylesheet" and names.get("href") == FONTS_HREF)
         ):
             self.errors.append(f"unsupported HTML around the SVG: <{tag} {' '.join(names)}>".replace(" >", ">"))
+        if self.stack[:2] == SVG_PARENTS[:2]:
+            self.body.append((len(self.stack), tag, names.get("class")))
+        if tag == "style":
+            self.styles.append("")
+        if tag == "title":
+            self.set_cdata_mode(tag)  # raw text, as in the browser
         if tag not in {"meta", "link"}:
             self.stack.append((tag, names.get("class")))
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs, closed=True)
+
+    def handle_data(self, data: str) -> None:
+        if not self.depth and self.stack and self.stack[-1][0] == "style":
+            self.styles[-1] += data
 
     def handle_endtag(self, tag: str) -> None:
         if self.depth:
@@ -190,10 +192,21 @@ def page(source: str) -> list[str]:
     skeleton.feed(source)
     skeleton.close()
     errors = skeleton.errors
+    # Parsers disagree on where comments and declarations end; the template has none.
+    if re.sub(r"^\s*<!doctype html>", "", source, flags=re.I).count("<!") or "<?" in source:
+        errors.append("HTML comments and declarations are not allowed around the SVG")
     if skeleton.svgs != 1 or len(re.findall(r"<svg\b", source, re.I)) != 1:
         errors.append("HTML must contain exactly one rendered SVG")
     if skeleton.stack or skeleton.depth:
         errors.append("unclosed HTML around the SVG")
+    if len(skeleton.styles) != 1:
+        errors.append("HTML allows exactly one <style>")
+    cards = skeleton.body[len(BODY) + len(CARDS):]
+    if skeleton.body != BODY and not (
+        skeleton.body[:len(BODY) + len(CARDS)] == BODY + CARDS and cards and cards == CARD * (len(cards) // len(CARD))
+    ):
+        errors.append("HTML page elements must follow the template order")
+    errors.extend(styles(skeleton.styles, skeleton.classes))
     return errors
 
 
@@ -296,10 +309,18 @@ def check_static_svg(
     group_attr: str, cell_attr: str, *, link_attr: str | None = None,
     gap_attr: str | None = None,
 ) -> list[str]:
-    errors = [*styles(source, svg), *page(source)]
-    if svg.get("viewBox") != VIEW_BOX or not set(svg.attrib) <= ROOT_ATTRIBUTES:
-        errors.append(f"SVG root must keep viewBox={VIEW_BOX!r} and no size, style or visibility attributes")
-    paper = next((normalize(child.get("fill", "")) for child in svg if local(child.tag) == "rect"), "")
+    errors = page(source)
+    fields = svg.get("viewBox", "").split()
+    height = number(fields[3]) if len(fields) == 4 else math.nan
+    if fields[:3] != ["0", "0", VIEW_WIDTH] or not VIEW_HEIGHTS[0] <= height <= VIEW_HEIGHTS[1] or not set(svg.attrib) <= ROOT_ATTRIBUTES:
+        errors.append(
+            f"SVG root must keep viewBox='0 0 {VIEW_WIDTH} H' (H {VIEW_HEIGHTS[0]} to {VIEW_HEIGHTS[1]})"
+            " and no size, style or visibility attributes"
+        )
+    backdrop = next((child for child in svg if local(child.tag) == "rect"), None)
+    if backdrop is None or rectangle(backdrop) != (0, 0, number(VIEW_WIDTH), height):
+        errors.append("SVG backdrop must fill the viewBox")
+    paper = normalize(backdrop.get("fill", "")) if backdrop is not None else ""
     inks = INK.get(paper, set())
     rules = inks | {RULE_INK.get(paper, "")}
     if not inks:
@@ -313,6 +334,7 @@ def check_static_svg(
         errors.append("SVG must declare a positive finite viewBox")
     boxes: list[tuple[float, ...]] = []
     lines: list[tuple[float, ...]] = []
+    headings: list[tuple[float, float]] = []
     for node in svg.iter():
         tag = local(node.tag)
         keys = set(node.attrib) | {name for name, _ in declarations(node.get("style", ""))}
@@ -329,6 +351,12 @@ def check_static_svg(
             continue
         if hidden(node):
             errors.append(f"SVG {tag} is hidden or too faint")
+        if tag not in {"rect", "line", "path"} and keys & {"stroke", "stroke-width", "stroke-opacity"}:
+            errors.append(f"SVG {tag} may not set stroke; only rect, line and path draw one")
+        if any(family not in FONT_FAMILIES for family in properties(node, "font-family")):
+            errors.append("SVG font family must be one the page loads")
+        if any(anchor != "start" for anchor in properties(node, "text-anchor")):
+            errors.append("SVG text-anchor must be start so labels stay in their cell")
         if tag in {"text", "tspan"}:
             fills = list(properties(node, "fill"))
             sizes = list(properties(node, "font-size"))
@@ -336,6 +364,8 @@ def check_static_svg(
                 errors.append("SVG labels must use a house ink colour")
             if (tag == "text" and not sizes) or any(not number(size.removesuffix("px")) >= MIN_FONT_SIZE for size in sizes):
                 errors.append(f"SVG label font size must be at least {MIN_FONT_SIZE}")
+            if any(number(size.removesuffix("px")) > MAX_FONT_SIZE for size in sizes):
+                errors.append(f"SVG label font size must be at most {MAX_FONT_SIZE}")
             if not paint_visible(chain, "fill"):
                 errors.append("SVG label is hidden or too faint")
             point = {key: number(node.get(key, "0")) for key in ("x", "y") if tag == "text" or key in node.attrib}
@@ -346,6 +376,8 @@ def check_static_svg(
                     bounds[index] <= point[key] <= bounds[index + 2] for index, key in enumerate(("x", "y")) if key in point
                 ):
                     errors.append(f"SVG label is outside {where}")
+            if cell is None and tag == "text":
+                headings.append((point["x"], point["y"]))
         widths = [number(value) for value in properties(node, "stroke-width")]
         if any(not 0 <= width <= MAX_STROKE_WIDTH for width in widths):
             errors.append(f"SVG {tag} stroke can cover nearby content")
@@ -400,4 +432,6 @@ def check_static_svg(
             errors.append(f"{group_attr} must mark a static SVG group")
     if any(overlaps(line, box) for line in lines for box in boxes):
         errors.append("SVG line crosses a cell and can cover its content")
+    if any(box[0] < x < box[2] and box[1] < y < box[3] for x, y in headings for box in boxes):
+        errors.append("SVG label outside a cell is drawn inside a cell")
     return errors
