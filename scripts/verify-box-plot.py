@@ -112,21 +112,33 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>",
+# One unit of a tag's inside, read as the HTML tokenizer does: a separator
+# (ASCII whitespace or `/`), or one attribute. A name runs to whitespace, `/`,
+# `>` or `=`; a quoted value opens only right after `name=`, so a `>` in it
+# does not end the tag; an unquoted value runs to whitespace or `>`, quotes
+# and all. The lookaheads keep every name and value whole, so each input has
+# one parse and a tag with no end fails in linear time.
+TAG_BODY = (
+    r"""(?:[\t\n\f\r /]|[^\t\n\f\r />][^\t\n\f\r />=]*(?![^\t\n\f\r />=])"""
+    r"""(?:[\t\n\f\r ]*=[\t\n\f\r ]*(?:"[^"]*"|'[^']*'"""
+    r"""|[^\t\n\f\r >"'][^\t\n\f\r >]*(?![^\t\n\f\r >])|(?=>))"""
+    r"""|(?![\t\n\f\r ]*=)))"""
+)
+CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+RECT_RE = re.compile(r"<rect\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+LINE_RE = re.compile(r"<line\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+TEXT_RE = re.compile(r"<text\b(?P<attrs>" + TAG_BODY + r"*)>(?P<body>.*?)</text>",
                      re.IGNORECASE | re.DOTALL)
-G_OPEN_RE = re.compile(r"<g\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+G_OPEN_RE = re.compile(r"<g\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 G_CLOSE_RE = re.compile(r"</g\s*>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
+NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b" + TAG_BODY + r"*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>",
+GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>",
                            re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>",
+STYLE_RE = re.compile(r"<style\b" + TAG_BODY + r"*>(?P<body>.*?)</style>",
                       re.IGNORECASE | re.DOTALL)
 CSS_MOVES_MARK_RE = re.compile(
     r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
@@ -149,10 +161,10 @@ FORBIDDEN_RE = re.compile(
     r"<(?P<tag>use|set|animate[\w-]*|foreignobject)\b",
     re.IGNORECASE,
 )
-LINK_RE = re.compile(r"<link\b(?P<attrs>[^>]*)>", re.IGNORECASE)
-TSPAN_RE = re.compile(r"<tspan\b(?P<attrs>[^>]*)>", re.IGNORECASE)
+LINK_RE = re.compile(r"<link\b(?P<attrs>" + TAG_BODY + r"*)>", re.IGNORECASE)
+TSPAN_RE = re.compile(r"<tspan\b(?P<attrs>" + TAG_BODY + r"*)>", re.IGNORECASE)
 NONRENDER_OPEN_RE = re.compile(
-    r"<(?P<tag>defs|symbol|clipPath|mask|pattern|marker)\b[^>]*?(?P<selfclose>/?)>",
+    r"<(?P<tag>defs|symbol|clipPath|mask|pattern|marker)\b" + TAG_BODY + r"*?(?P<selfclose>/?)>",
     re.IGNORECASE,
 )
 NONRENDER_CLOSE_RE = re.compile(
@@ -169,15 +181,22 @@ HIDE_DECL_RE = re.compile(
     r"\s*:\s*([^;}{]+)",
     re.IGNORECASE,
 )
-TAG_RE = re.compile(r"<[^>]+>")
-OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>[^>]*)>")
+TAG_RE = re.compile(r"<" + TAG_BODY + r"+>")
+OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>" + TAG_BODY + r"*)>")
 NON_MARK_TAGS = {"text", "tspan", "title", "desc"}
 NUMBER_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?"
 )
 DIGIT_RE = re.compile(r"\d")
+# An attribute as the HTML tokenizer reads it: a quoted value, an unquoted
+# value (`display=none`), or no value at all (`<div hidden>`), which a
+# browser treats as present with an empty value. An unquoted value ends only
+# at whitespace or `>`, and a name at whitespace, `/`, `=` or `>` (a quote is
+# part of it), as in TAG_BODY. Whitespace is ASCII only, as in HTML: a
+# no-break space is a value character.
 ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+    r"""(?P<name>[^\t\n\f\r />][^\t\n\f\r />=]*)(?:[\t\n\f\r ]*=[\t\n\f\r ]*"""
+    r"""(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)|(?P<bare>[^\t\n\f\r >]*)))?""",
     re.DOTALL,
 )
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
@@ -326,7 +345,8 @@ def attrs_of(raw: str) -> dict:
     for match in ATTR_RE.finditer(raw):
         name = match.group("name").lower()
         if name not in found:
-            found[name] = html.unescape(match.group("value"))
+            value = match.group("value") if match.group("quote") else match.group("bare")
+            found[name] = html.unescape(value or "")
     return found
 
 
@@ -893,7 +913,7 @@ def declares_hidden(css: str, opacities) -> bool:
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
              "meta", "source", "track", "wbr"}
 ANY_TAG_RE = re.compile(
-    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>")
+    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>")
 
 
 def svg_ancestors(source: str) -> list:
@@ -968,7 +988,7 @@ def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
     return False
 
 
-TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 
 
 def tspan_chains(body: str, chain: list) -> list:
