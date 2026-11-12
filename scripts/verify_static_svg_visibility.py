@@ -53,7 +53,7 @@ body{margin:0;background:#f5f5f5;color:#2d3142;font-family:Geist,system-ui,sans-
 h1{font-family:Instrument Serif,system-ui,sans-serif;font-size:40px;line-height:1.1;margin:0 0 12px}
 .subtitle{font-size:20px;line-height:1.4;color:#4f5d75;margin:0 0 28px}
 .canvas{overflow-x:auto}
-svg{display:block;width:100%;min-width:960px}
+svg{display:block;width:100%;min-width:1200px}
 .cards{display:grid;grid-template-columns:1.1fr 1fr .9fr;gap:20px;margin-top:28px}
 .cards section{border-top:2px solid #bfc0c0;padding-top:16px}
 .cards h2{font-family:Instrument Serif,system-ui,sans-serif;font-size:20px;margin:0 0 8px}

@@ -4,18 +4,20 @@
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from verify_static_svg_visibility import check_static_svg, hidden, local
+from verify_static_svg_visibility import check_static_svg, hidden, local, number, rectangle
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
 KINDS = {"source": "SRC-", "requirement": "REQ-", "design": "DES-", "test": "TST-"}
 RELATIONS = {"derives": "source", "satisfies": "design", "verifies": "test"}
+COLUMNS = {"source": "source", "requirement": "requirement", "design": "satisfied by", "test": "verified by"}
 
 
 def visible(element: ET.Element, parents: dict[ET.Element, ET.Element]) -> str:
@@ -62,6 +64,11 @@ def check(path: Path) -> list[str]:
         errors.append("expected 1 to 6 requirement rows")
     ids: set[str] = set()
     row_ids: set[str] = set()
+    column_x = {
+        label: number(element.get("x", ""))
+        for element in svg if local(element.tag) == "text"
+        for label in (visible(element, parents).casefold(),) if label in COLUMNS.values()
+    }
     for row in rows:
         requirement_id = row.attrib["data-trace-row"].strip()
         if not requirement_id or requirement_id in row_ids:
@@ -121,6 +128,22 @@ def check(path: Path) -> list[str]:
                     errors.append(f"{requirement_id}: missing {rel} relationship needs a visible gap label")
             elif not endpoint or link.attrib.get("data-trace-from") != endpoint:
                 errors.append(f"{requirement_id}: {rel} source does not resolve to a {kind} cell")
+
+        # A cell shows its link only beside its own requirement and under its own heading.
+        bands = set()
+        for cell in row.iter():
+            kind = cell.attrib.get("data-trace-kind")
+            if kind is None and cell.attrib.get("data-trace-missing") == "true":
+                kind = RELATIONS.get(cell.attrib.get("data-trace-rel", ""))
+            rect = next((child for child in cell if local(child.tag) == "rect"), None)
+            if kind not in COLUMNS or rect is None:
+                continue
+            left, top, right, bottom = rectangle(rect)
+            bands.add((top, bottom))
+            if not left <= column_x.get(COLUMNS[kind], math.nan) <= right:
+                errors.append(f"{requirement_id}: {kind} cell is not under its column heading")
+        if len(bands) > 1:
+            errors.append(f"{requirement_id}: cells must share one row band; a cell sits outside its row")
 
         for kind, rel_word in (("design", "satisfies"), ("test", "verifies")):
             if by_kind[kind] and rel_word not in visible(by_kind[kind][0], parents).casefold():

@@ -163,6 +163,26 @@ def main() -> None:
         errors = verifier.check(candidate)
         if not any("overlaps another cell" in error for error in errors):
             failures.append(("cross-cell cover", "overlaps another cell", errors))
+        # Cells moved, labels and rects together, beside the wrong requirement or under the wrong heading.
+        def cell(cell_id: str) -> str:
+            return re.search(rf'<g [^>]*data-trace-id="{cell_id}".*?</g>', source, re.S)[0]
+
+        def moved(block: str, dx: int, dy: int) -> str:
+            block = re.sub(r'\bx="(\d+)"', lambda m: f'x="{int(m[1]) + dx}"', block)
+            return re.sub(r'\by="(\d+)"', lambda m: f'y="{int(m[1]) + dy}"', block)
+
+        for swap, expected in (
+            ((("TST-01", 0, 176), ("TST-02", 0, -176)), "outside its row"),
+            ((("DES-01", 296, 0), ("TST-01", -296, 0)), "not under its column heading"),
+        ):
+            page = source
+            for cell_id, dx, dy in swap:
+                page = page.replace(cell(cell_id), moved(cell(cell_id), dx, dy), 1)
+            assert page != source
+            candidate.write_text(page, encoding="utf-8")
+            errors = verifier.check(candidate)
+            if not any(expected in error for error in errors):
+                failures.append((f"swapped {swap}", expected, errors))
         # Four rows at the shipped 176px pitch in a 0 0 1200 896 canvas.
         start, end = source.index(first_group), source.index(second_group)
         fourth = re.sub(r'\by="(\d+)"', lambda m: f'y="{int(m[1]) + 528}"', source[start:end].replace("-01", "-04"))

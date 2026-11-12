@@ -297,11 +297,11 @@
     {
       "thumb": "requirement-traceability.webp",
       "source": "docs/screenshots/requirement-traceability.png",
-      "source_sha256": "df49e9186ca28f136b7867033f724383a63d47c475feeb17b68d405019c3e6fe",
+      "source_sha256": "7e9c46dabe5ac42138fd55ed632736ba6d418b84ea09da13379dc9138da921f4",
       "width": 600,
       "height": 360,
       "quality": 82,
-      "thumb_sha256": "77e6eb71181c6dc9a8de0f4eaec86a2150df9613f309274265e23998f52aa9da"
+      "thumb_sha256": "8ccfcc33dfb8007f54dd2e68f9a18830c1d6ea12719a01fbb52e7e674859bd37"
     },
     {
       "thumb": "sankey.webp",
