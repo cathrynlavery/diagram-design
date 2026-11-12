@@ -51,16 +51,27 @@ from __future__ import annotations
 import argparse
 import math
 import re
+import html
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>", re.IGNORECASE)
+# A ">" inside a quoted attribute is text, not the end of the tag. Ending the
+# scan there drops the cell or axis label that follows it.
+_ATTRS = r"""(?:"[^"]*"|'[^']*'|[^"'<>])*"""
+RECT_RE = re.compile(rf"<rect\b(?P<attrs>{_ATTRS})/?>", re.IGNORECASE)
+TEXT_RE = re.compile(rf"<text\b(?P<attrs>{_ATTRS})>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
+COMMENT_OR_STYLE_RE = re.compile(
+    r"<!--.*?(?:-->|$)|" + STYLE_RE.pattern, re.IGNORECASE | re.DOTALL
+)
+CSS_NONCODE_RE = re.compile(
+    r'''"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|\\[\s\S]|/\*.*?(?:\*/|$)''',
+    re.DOTALL,
+)
 RGBA_RE = re.compile(r"rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)")
 HEX_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
@@ -105,8 +116,14 @@ def _length_px(raw: str | None, field: str, errors: list[str] | None) -> float |
 
 
 def _attr(attrs_str: str, name: str) -> str | None:
-    m = re.search(r"\b" + re.escape(name) + r'\s*=\s*"([^"]*)"', attrs_str)
-    return m.group(1) if m else None
+    for match in re.finditer(
+        r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+        attrs_str,
+        re.DOTALL,
+    ):
+        if match.group("name") == name:
+            return html.unescape(match.group("value"))
+    return None
 
 
 def _is_accent(r: int, g: int, b: int) -> bool:
@@ -329,9 +346,18 @@ def check_file(path: Path) -> list[str]:
     except OSError as exc:
         return [f"{path.name}: cannot read: {exc}"]
 
+    # Consume archived HTML comments before styles, while keeping HTML legacy
+    # comment markers inside a live style's raw text available to the CSS guard.
+    styles = [match.group("body") for match in COMMENT_OR_STYLE_RE.finditer(source)
+              if match.group("body") is not None]
+    source = COMMENT_RE.sub("", source)
+
     # CSS-moves-geometry check.
-    for style_body in STYLE_RE.findall(source):
-        m = CSS_MOVES_MARK_RE.search(style_body)
+    for style_body in styles:
+        # Strings/escapes are indivisible: a quoted /* cannot begin a comment
+        # that swallows the following active geometry declaration.
+        live_css = CSS_NONCODE_RE.sub(" ", style_body)
+        m = CSS_MOVES_MARK_RE.search(live_css)
         if m:
             errors.append(
                 f"{path.name}: CSS property '{m.group('prop')}' can move verified "

@@ -71,6 +71,21 @@ def test_all_zero_is_finite():
        "all-zero data puts every dot on the floor, which is the truth")
 
 
+def test_finite_extremes_scale_without_overflow():
+    for values in ([5e-324], [1.7e308], [-1.7e308, 1.7e308]):
+        floor, ceiling = resolve_domain(values)
+        ok(math.isfinite(floor) and math.isfinite(ceiling),
+           "finite extreme values resolve finite axis bounds")
+        coordinates = [scale(value, floor, ceiling) for value in values]
+        ok(all(math.isfinite(value) for value in coordinates),
+           "finite extreme values scale without overflow")
+        ok(all(verify_dumbbell.PLOT_X0 <= value <= verify_dumbbell.PLOT_X0 + verify_dumbbell.PLOT_WIDTH
+               for value in coordinates), "extreme values remain inside the plot")
+        if len(values) == 2:
+            ok(coordinates == [verify_dumbbell.PLOT_X0, verify_dumbbell.PLOT_X0 + verify_dumbbell.PLOT_WIDTH],
+               "opposite extreme endpoints retain the whole plot width")
+
+
 def test_zero_touching_domains():
     floor, ceiling = resolve_domain([0, 5, 12])
     ok((floor, ceiling) == (0.0, 20.0),
@@ -199,6 +214,7 @@ def main() -> int:
     import tempfile
 
     test_all_zero_is_finite()
+    test_finite_extremes_scale_without_overflow()
     test_zero_touching_domains()
     test_sign_cases_resolve()
     test_identical_and_tiny_values()

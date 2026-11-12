@@ -2,6 +2,9 @@
 
 **Best for:** showing where a *quantity* goes as it splits and merges across a small number of stages — CI compute budgets, funnel-adjacent volume flows, cost or headcount allocation. This is the one type where band **thickness carries data**; if the reader doesn't need to compare magnitudes, use process or pyramid instead.
 
+Printed node quantities preserve their complete numeric token, including finite decimal or scientific notation before the unit suffix. A quantity must be positive for a visible node bar; signs and exponents must not be discarded while checking its scale.
+The resulting pixels-per-unit scale and relative comparisons must also be finite; a quantity outside that arithmetic range is rejected rather than certified.
+
 ## Layout conventions
 
 - **Exactly 3 stage columns**, left → right. No more, no less — above 3 stages, split into two linked diagrams.

@@ -7,8 +7,10 @@ import contextlib
 import importlib.util
 import io
 import os
+import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,6 +69,57 @@ def expect_status(check, status: str, needle: str) -> None:
         raise AssertionError(
             f"expected ({status}, contains {needle!r}); got ({check.status}, {check.message!r})"
         )
+
+
+def ready_timeout_probe(module, command: list[str], child_marker: Path):
+    """Separate fixture startup from the unchanged short cleanup wait."""
+    real_popen = module.subprocess.Popen
+    ready_at, child_pid, setup_error = None, None, None
+
+    def fixture_popen(probe_command, **kwargs):
+        setup_deadline = time.monotonic() + 5
+        process = real_popen(probe_command, **kwargs)
+        if probe_command != command:
+            return process  # e.g. Windows taskkill during owned-tree cleanup
+        real_wait = process.wait
+        setup_checked = False
+
+        def wait_after_ready(timeout=None):
+            nonlocal setup_checked, ready_at, child_pid, setup_error
+            if setup_checked:
+                return real_wait(timeout=timeout)
+            setup_checked = True
+            while time.monotonic() < setup_deadline:
+                try:
+                    pid = int(child_marker.read_text())
+                except (OSError, ValueError):
+                    pid = 0  # the file may not exist yet or still be written
+                if pid > 0:
+                    child_pid, ready_at = pid, time.monotonic()
+                    return real_wait(timeout=timeout)
+                if process.poll() is not None:
+                    setup_error = f"parent exited {process.returncode} before writing a child PID"
+                    break
+                time.sleep(0.01)
+            if setup_error is None:
+                setup_error = "child PID was not ready within the separate 5-second startup budget"
+            # Enter the real verifier's owned-tree cleanup even when setup
+            # failed; never raise out of it with a freshly spawned tree alive.
+            raise subprocess.TimeoutExpired(command, timeout)
+
+        process.wait = wait_after_ready
+        return process
+
+    module.subprocess.Popen = fixture_popen
+    try:
+        result = module.run_command(command, timeout=0.5)
+    finally:
+        module.subprocess.Popen = real_popen
+    if setup_error is not None:
+        raise AssertionError(f"Cleanup fixture setup failed: {setup_error}; {result.stderr}")
+    if ready_at is None or child_pid is None:
+        raise AssertionError("Cleanup fixture did not reach the readiness handshake")
+    return result, child_pid, time.monotonic() - ready_at
 
 
 def main() -> int:
@@ -206,32 +259,119 @@ def main() -> int:
         # import contract: the package need not expose a __version__ attribute.
         fake_package = root / "import-probe" / "playwright"
         touch(fake_package / "__init__.py", "# No __version__ attribute.\n")
-        browser_path = root / "import-probe" / "chromium"
-        touch(browser_path)
-        touch(fake_package / "sync_api.py", (
+        # A supported headless-only installation has no full Chromium path.
+        # Model the public launch/close contract in a real probe subprocess.
+        browser_path = root / "import-probe" / "missing-full-chromium"
+        closed_path = root / "import-probe" / "browser-closed"
+        api_source = (
+            "from pathlib import Path\n"
             "from types import SimpleNamespace\n"
+            "class Browser:\n"
+            "    version = 'test-chromium'\n"
+            f"    def close(self): Path({str(closed_path)!r}).write_text('closed')\n"
+            "class Chromium:\n"
+            f"    executable_path = {str(browser_path)!r}\n"
+            "    def launch(self, *, timeout):\n"
+            "        assert timeout == 5000, timeout\n"
+            "        return Browser()\n"
             "class sync_playwright:\n"
-            "    def __enter__(self):\n"
-            f"        return SimpleNamespace(chromium=SimpleNamespace(executable_path={str(browser_path)!r}))\n"
+            "    def __enter__(self): return SimpleNamespace(chromium=Chromium())\n"
             "    def __exit__(self, *args): pass\n"
-        ))
+        )
+        touch(fake_package / "sync_api.py", api_source)
         original_pythonpath = os.environ.get("PYTHONPATH")
         os.environ["PYTHONPATH"] = str(fake_package.parent)
+        real_run = verify.run_command
+        calls = []
+
+        def record_probe(command, **kwargs):
+            calls.append((command, kwargs))
+            return real_run(command, **kwargs)
+
+        verify.run_command = record_probe
         try:
             expect_status(verify.check_playwright(sys.executable), verify.PASS,
-                          "Playwright is installed and Chromium is present")
-            browser_path.unlink()
+                          "Chromium test-chromium launches for PNG export")
+            if browser_path.exists() or closed_path.read_text() != "closed":
+                raise AssertionError("headless-only readiness did not launch and close the browser")
+            if calls[-1][1] != {"timeout": 10}:
+                raise AssertionError(f"browser subprocess probe must be bounded: {calls[-1]}")
+            print("OK: working default headless browser passes without a full executable path")
+
+            closed_path.unlink()
+            touch(fake_package / "sync_api.py", api_source.replace(
+                "        return Browser()\n",
+                "        raise RuntimeError('Chromium browser unavailable')\n",
+            ))
             expect_status(verify.check_playwright(sys.executable), verify.WARN,
-                          "Chromium is not ready")
+                          "Chromium browser unavailable")
+            if closed_path.exists():
+                raise AssertionError("failed launch must not pretend a browser was created")
+            print("OK: unlaunchable Chromium stays WARN with its actual failure")
+
+            touch(fake_package / "sync_api.py", api_source.replace(
+                "    version = 'test-chromium'\n",
+                "    @property\n"
+                "    def version(self): raise RuntimeError('version query failed')\n",
+            ))
+            expect_status(verify.check_playwright(sys.executable), verify.WARN,
+                          "version query failed")
+            if closed_path.read_text() != "closed":
+                raise AssertionError("readiness probe must close a browser even if inspection fails")
+            print("OK: browser is closed when its version inspection fails")
+
             touch(fake_package / "__init__.py", "raise ModuleNotFoundError('playwright unavailable')\n")
             expect_status(verify.check_playwright(sys.executable), verify.WARN,
                           "Playwright package is not available")
         finally:
+            verify.run_command = real_run
             if original_pythonpath is None:
                 os.environ.pop("PYTHONPATH", None)
             else:
                 os.environ["PYTHONPATH"] = original_pythonpath
         print("OK: real import probe does not require Playwright version metadata")
+
+        timeout_probe = verify.run_command(
+            [sys.executable, "-c", "import time; time.sleep(10)"], timeout=0.1,
+        )
+        if timeout_probe.returncode == 0 or "timed out" not in timeout_probe.stderr:
+            raise AssertionError(f"stalled probe was not reported as a bounded failure: {timeout_probe}")
+        print("OK: a stalled subprocess probe becomes a diagnostic failure")
+
+        # The child inherits the probe's output handles and outlives its parent
+        # unless timeout cleanup owns the entire freshly launched process tree.
+        child_marker = root / "timeout-child.pid"
+        child_code = "import time; time.sleep(10)"
+        parent_code = (
+            "import subprocess, sys, time; from pathlib import Path; "
+            f"child = subprocess.Popen([sys.executable, '-c', {child_code!r}]); "
+            f"Path({str(child_marker)!r}).write_text(str(child.pid)); time.sleep(10)"
+        )
+        descendant_probe, child_pid, elapsed = ready_timeout_probe(
+            verify, [sys.executable, "-c", parent_code], child_marker,
+        )
+        if descendant_probe.returncode == 0 or "timed out" not in descendant_probe.stderr:
+            raise AssertionError(f"descendant probe did not time out: {descendant_probe}")
+        if elapsed > 5:
+            raise AssertionError(f"inherited output handles stalled cleanup: {elapsed:.2f}s")
+        if os.name == "posix":
+            state = subprocess.run(
+                ["ps", "-p", str(child_pid), "-o", "stat="],
+                capture_output=True, text=True, check=False,
+            ).stdout.strip()
+            # A reparented zombie has exited; it cannot be waited on here.
+            if state and not state.startswith("Z"):
+                raise AssertionError(f"timed probe left a running child: {child_pid} {state}")
+        else:
+            if "cleanup failed" in descendant_probe.stderr:
+                raise AssertionError(descendant_probe.stderr)
+            state = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {child_pid}", "/FO", "CSV", "/NH"],
+                capture_output=True, text=True, check=False, timeout=2,
+            ).stdout
+            if f'"{child_pid}"' in state:
+                raise AssertionError(f"timed probe left a running child: {state}")
+        print("OK: inherited output handles cannot stall timeout tree cleanup")
 
         summary_checks = [
             verify.CheckResult("a", verify.PASS, "ok"),

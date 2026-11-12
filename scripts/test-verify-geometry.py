@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Adversarial tests for the label geometry verifier (verify-geometry.py)."""
+"""Adversarial tests for the label geometry verifier (verify_geometry.py)."""
 
 from __future__ import annotations
 
 import importlib.util
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-VERIFIER = ROOT / "scripts/verify-geometry.py"
+VERIFIER = ROOT / "skills/diagram-design/scripts/verify_geometry.py"
+REPO_ENTRY = ROOT / "scripts/verify-geometry.py"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 ARCHITECTURE = ASSET_DIR / "example-architecture.html"
 SWIMLANE = ASSET_DIR / "example-swimlane.html"
@@ -87,6 +90,18 @@ def main() -> int:
         document('<rect x="240" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>' + node),
         1,
     )
+    check(
+        "single-quoted mask clipped by a single-quoted node",
+        document("<rect x='240' y='80' width='48' height='12' fill='#f5f5f5'/>"
+                 "<rect x='100' y='60' width='160' height='64' fill='#eee'/>"),
+        1,
+    )
+    check(
+        "attribute-like text inside a value does not replace real coordinates",
+        document("<rect data-note=\"x='10' y='10'\" x='240' y='80' width='48' height='12' fill='#fff'/>"
+                 + node),
+        1,
+    )
     # Same geometry, but the node is painted first, so the label stays on top.
     check(
         "mask over an earlier node is legal",
@@ -123,6 +138,8 @@ def main() -> int:
     translated_mask = '<rect x="350" y="80" width="80" height="12" fill="#fff"/>'
     check("translated mask is clipped in canvas space", document(
         '<g transform="translate(-200 0)">' + translated_mask + '</g>' + panel_node), 1)
+    check("single-quoted group translation is applied", document(
+        "<g transform='translate(-200 0)'>" + translated_mask + '</g>' + panel_node), 1)
     check("nested translations accumulate", document(
         '<g transform="translate(-100 0)"><g transform="translate(-100 0)">'
         + translated_mask + '</g></g>' + panel_node), 1)
@@ -134,6 +151,43 @@ def main() -> int:
         panel_node + '<g transform="translate(-200 0)">' + translated_mask + '</g>'), 0)
     check("translated contained badge remains legal", document(
         '<g transform="translate(300 0)">' + badge + node + '</g>'), 0)
+
+    # Definitions are reusable geometry, not paint at their local coordinates.
+    mask = '<rect x="50" y="80" width="80" height="12" fill="#fff"/>'
+    prototype = '<rect x="100" y="70" width="100" height="60" fill="#eee" stroke="#000"/>'
+    check("unpainted reusable node cannot clip a mask", document(mask
+        + '<defs><g id="prototype">' + prototype + '</g></defs>'
+        + '<use href="#prototype" x="300"/>'), 0)
+    for container in ("symbol", "marker", "pattern", "clipPath", "mask"):
+        check(f"{container} definition is not a painted node", document(mask
+            + f'<{container} id="definition">' + prototype + f'</{container}>'), 0)
+    check("painted rectangle after definitions is still checked", document(mask
+        + '<defs><g id="prototype">' + prototype + '</g></defs>' + prototype), 1)
+    check("commented definition opening cannot hide painted nodes", document(mask
+        + '<!-- Reusable shapes can be placed under <defs>. -->' + prototype), 1)
+    check("commented definition close cannot expose prototypes", document(mask
+        + '<defs><!-- Close this section with </defs>. -->' + prototype + '</defs>'), 0)
+    check("commented definition wrapper cannot alter paint custody", document(mask
+        + '<!-- <defs><g>prototype</g></defs> -->' + prototype), 1)
+    check("ordinary painted group is still checked", document(mask + '<g>' + prototype + '</g>'), 1)
+    check("self-closing definitions do not hide following paint", document(mask + '<defs/>' + prototype), 1)
+    for quote in ('"', "'"):
+        for container in ("defs", "symbol", "marker", "pattern", "clipPath", "mask"):
+            quoted = f"<{container} data-note={quote}a > b{quote}/>"
+            check(f"quoted {container} self-close cannot hide following node ({quote})",
+                document(mask + quoted + prototype), 1)
+        check(f"quoted definition attribute keeps prototypes unpainted ({quote})",
+            document(mask + f"<defs data-note={quote}a > b{quote}>" + prototype + '</defs>'), 0)
+        check(f"quoted painted group preserves following connector ({quote})", document(
+            f"<g data-note={quote}a > b{quote}/>"
+            + '<path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/>'), 1)
+    check("nested definition containers keep prototypes unpainted", document(mask
+        + '<defs><symbol id="prototype">' + prototype + '</symbol></defs>'), 0)
+    check("painted group after nested definitions is still checked", document(mask
+        + '<defs><symbol id="prototype">' + prototype + '</symbol></defs><g>'
+        + prototype + '</g>'), 1)
+    check("connector prototypes are not painted arrows", document(
+        '<defs><path d="M 10 10 L 60 40" stroke="#000" marker-end="url(#arrow)"/></defs>'), 0)
 
     # A long mono plate (128px, as shipped in example-sequence-oauth.html) or a
     # wide CJK label plate must be recognized as a mask and checked like any other.
@@ -174,6 +228,33 @@ def main() -> int:
     check(
         "diagonal connector",
         document(f'<line x1="10" y1="10" x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "single-quoted diagonal connector",
+        document("<line x1='10' y1='10' x2='60' y2='40' "
+                 "stroke='#4f5d75' marker-end='url(#arrow)'/>"),
+        1,
+    )
+    check(
+        "diagonal connector with adjacent attributes",
+        document(f'<line x1="10" y1="10"x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "diagonal connector with slash between attributes",
+        document(f'<line x1="10" y1="10"/x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "attribute-like coordinates inside an unusual name are ignored",
+        document(f'<line @click=" x1=\'10\' y1=\'10\' x2=\'60\' y2=\'10\'" '
+                 f'x1="10" y1="10" x2="60" y2="40" {arrow}/>'),
+        1,
+    )
+    check(
+        "single-quoted arrowed path",
+        document("<path d='M 10 10 L 60 40' stroke='#4f5d75' marker-end='url(#arrow)'/>"),
         1,
     )
     check(
@@ -309,6 +390,42 @@ def main() -> int:
     check_file("shipped db-schema example", DB_SCHEMA, 0)
     check_file("shipped zoned example", ZONED, 0)
     check_file("shipped sequence-oauth example", SEQUENCE_OAUTH, 0)
+
+    def run(script: Path, *args: str, cwd: Path = ROOT) -> tuple[int, str]:
+        result = subprocess.run(
+            [sys.executable, str(script), *args],
+            cwd=cwd, capture_output=True, text=True, check=False,
+        )
+        return result.returncode, result.stdout + result.stderr
+
+    clipped = document('<rect x="240" y="80" width="48" height="12" fill="#fff"/>' + node)
+    with tempfile.TemporaryDirectory() as scratch:
+        candidate = Path(scratch) / "candidate.html"
+        candidate.write_text(clipped, encoding="utf-8")
+        for args in (("--all",), (str(candidate),)):
+            repo, packaged = run(REPO_ENTRY, *args), run(VERIFIER, *args)
+            if repo != packaged:
+                failures.append(f"repo entry point drifts from packaged checker on {args}: "
+                                f"{repo} != {packaged}")
+            else:
+                print(f"OK: repo entry point matches packaged checker ({args[0]})")
+        code, output = run(REPO_ENTRY, str(candidate))
+        if code != 1 or "is clipped by node" not in output:
+            failures.append(f"repo entry point did not report the clipped mask: {code} {output}")
+        else:
+            print("OK: repo entry point reports findings and exits 1")
+
+        # An installed skill has only its own directory; --all must read its assets.
+        skill = Path(scratch) / "skill"
+        (skill / "scripts").mkdir(parents=True)
+        (skill / "assets").mkdir()
+        shutil.copy(VERIFIER, skill / "scripts/verify_geometry.py")
+        (skill / "assets/example-bad.html").write_text(clipped, encoding="utf-8")
+        code, output = run(Path("scripts/verify_geometry.py"), "--all", cwd=skill)
+        if code != 1 or "1 file(s) checked, 1 finding(s)" not in output:
+            failures.append(f"installed copy did not check its own assets: {code} {output}")
+        else:
+            print("OK: installed copy checks its own assets")
 
     if failures:
         print("\nFAILURES:")

@@ -68,13 +68,15 @@ def run_extract(args: list[str]) -> str:
     return proc.stdout
 
 
-def expect_extract_error(args: list[str], message: str) -> None:
+def expect_extract_error(args: list[str], message: str, *, quiet_stdout: bool = False) -> None:
     proc = invoke(args)
     if proc.returncode != 2 or message not in proc.stderr:
         fail(
             f"expected exit 2 containing {message!r} for {args}; got "
             f"{proc.returncode}: {proc.stderr.strip()!r}"
         )
+    if quiet_stdout and proc.stdout:
+        fail(f"expected no stdout for failed write {args}; got {proc.stdout.strip()!r}")
 
 
 def check_legacy_stdout_encoding(tmp: Path) -> None:
@@ -82,7 +84,7 @@ def check_legacy_stdout_encoding(tmp: Path) -> None:
     source.write_text(
         """<mxfile><diagram name="日本語">
 <mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
-<mxCell id="2" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
+<mxCell id="2" style="html=1;" value="登录&lt;br&gt;続行 ⇒ résumé" vertex="1" parent="1">
 <mxGeometry x="0" y="0" width="120" height="60" as="geometry"/>
 </mxCell></root></mxGraphModel></diagram></mxfile>""",
         encoding="utf-8",
@@ -166,6 +168,31 @@ def png_chunk(ctype: bytes, data: bytes) -> bytes:
         + data
         + struct.pack(">I", zlib.crc32(ctype + data) & 0xFFFFFFFF)
     )
+
+
+def check_out_write_errors(tmp: Path) -> None:
+    # A missing parent directory is the common caller mistake; an existing
+    # directory or a regular file in the parent slot are the hostile cases.
+    missing_dir = tmp / "missing-output-directory"
+    expect_extract_error(
+        [str(FIXTURE), "--out", str(missing_dir / "digest.md")],
+        f"cannot write {missing_dir / 'digest.md'}",
+        quiet_stdout=True,
+    )
+    expect_extract_error(
+        [str(FIXTURE), "--json", "--out", str(missing_dir / "digest.json")],
+        f"cannot write {missing_dir / 'digest.json'}",
+        quiet_stdout=True,
+    )
+    expect_extract_error(
+        [str(FIXTURE), "--out", str(tmp)], "cannot write", quiet_stdout=True
+    )
+    parent_file = tmp / "regular-file.md"
+    parent_file.write_text("not a directory", encoding="utf-8")
+    expect_extract_error(
+        [str(FIXTURE), "--out", str(parent_file / "digest.md")], "cannot write", quiet_stdout=True
+    )
+    ok("draw.io --out write failures report a clear diagnostic and exit 2")
 
 
 def check_files() -> None:
@@ -342,6 +369,50 @@ def check_nested_relative_geometry(tmp: Path) -> None:
     ok("nested relative groups, offsets, depth and bounds match all six cell orders")
 
 
+def check_table_rows(tmp: Path) -> None:
+    # draw.io's Table / Entity Relation shapes: a shape=table container whose
+    # rows are shape=tableRow cells holding shape=partialRectangle cells.
+    row_style = (
+        "shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;"
+        "fillColor=none;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];"
+        "portConstraint=eastwest;top=0;left=0;right=0;bottom=1;"
+    )
+    cell_style = (
+        "shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;"
+        "bottom=0;right=0;overflow=hidden;whiteSpace=wrap;html=1;"
+    )
+    cells = [
+        '<mxCell id="users" value="users" style="shape=table;startSize=30;container=1;'
+        'collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;'
+        'align=center;resizeLast=1;html=1;" vertex="1" parent="1">'
+        '<mxGeometry x="40" y="40" width="180" height="90" as="geometry"/></mxCell>'
+    ]
+    for row, (key, column) in enumerate((("PK", "id"), ("", "email")), 1):
+        y = 30 * row
+        cells.append(
+            f'<mxCell id="r{row}" value="" style="{row_style}" vertex="1" parent="users">'
+            f'<mxGeometry y="{y}" width="180" height="30" as="geometry"/></mxCell>'
+            f'<mxCell id="r{row}k" value="{key}" style="{cell_style}" vertex="1" parent="r{row}">'
+            '<mxGeometry width="30" height="30" as="geometry"/></mxCell>'
+            f'<mxCell id="r{row}v" value="{column}" style="{cell_style}" vertex="1" parent="r{row}">'
+            '<mxGeometry x="30" width="150" height="30" as="geometry"/></mxCell>'
+        )
+    source = tmp / "er-table.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        + "".join(cells) + "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    shapes = {node["id"]: node["shape"] for node in page["nodes"]}
+    if shapes["users"] != "table" or {shapes["r1"], shapes["r2"]} != {"table-row"}:
+        fail(f"draw.io table rows must not be classified as tables: {shapes}")
+    counts = page["analysis"]["shapes"]
+    if counts.get("table") != 1 or counts.get("table-row") != 6:
+        fail(f"one draw.io table must count as one table: {counts}")
+    ok("draw.io tableRow cells are rows, so one table counts once")
+
+
 def check_bom_prefixed(tmp: Path) -> None:
     model = re.search(
         r"<mxGraphModel.*?</mxGraphModel>", FIXTURE.read_text(encoding="utf-8"), re.S
@@ -371,6 +442,100 @@ def check_bom_prefixed(tmp: Path) -> None:
         if actual != expected:
             fail(f"UTF-8 BOM-prefixed {label} extracts differently from the same input without a BOM")
     ok("UTF-8 BOM-prefixed raw XML and bare compressed payload parse like their unprefixed input")
+
+
+def check_plain_angle_brackets(tmp: Path) -> None:
+    # XML decoding turns &lt; into a real "<" before label cleanup. A plain
+    # label such as List<String> or "a < b > c" is text, not a tag; HTML
+    # wrappers and comments still have to flatten.
+    source = tmp / "angle-brackets.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="generic" value="List&lt;String&gt;" vertex="1" parent="1">'
+        '<mxGeometry width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="compare" value="a &lt; b &gt; c" vertex="1" parent="1">'
+        '<mxGeometry x="100" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="html" style="html=1;" value="&lt;div&gt;&lt;b&gt;List&amp;lt;String&amp;gt;&lt;/b&gt;&lt;br&gt;kept&lt;/div&gt;" vertex="1" parent="1">'
+        '<mxGeometry x="200" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="comment" style="html=1;" value="&lt;!-- secret --&gt;visible" vertex="1" parent="1">'
+        '<mxGeometry x="300" width="80" height="40" as="geometry"/></mxCell>'
+        '<mxCell id="u" value="List&lt;U&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="cpp" value="std::vector&lt;std::string&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="url" value="see &lt;https://x.io&gt; now" vertex="1" parent="1"/>'
+        '<mxCell id="plainhtml" style="html=0;" value="&lt;b&gt;literal&lt;/b&gt;" vertex="1" parent="1"/>'
+        '<mxCell id="e" edge="1" value="List&lt;U&gt;" parent="1" source="generic" target="compare"/>'
+        '<mxCell id="el" vertex="1" parent="e" value="std::vector&lt;std::string&gt;"/>'
+        "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    payload = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    for node_id, expected in {"u": "List<U>", "cpp": "std::vector<std::string>",
+                              "url": "see <https://x.io> now", "plainhtml": "<b>literal</b>"}.items():
+        actual = next(node["label"] for node in payload["nodes"] if node["id"] == node_id)
+        if actual != expected:
+            fail(f"plain label {node_id} changed: {actual!r} != {expected!r}")
+    if payload["edges"][0]["label"] != "List<U> / std::vector<std::string>":
+        fail(f"plain edge or edge-child label changed: {payload['edges']!r}")
+    nodes = {
+        node["id"]: node["label"]
+        for node in json.loads(run_extract([str(source), "--json"]))["pages"][0]["nodes"]
+    }
+    if nodes.get("generic") != "List<String>":
+        fail(f"plain generic label was stripped: {nodes.get('generic')!r}")
+    if nodes.get("compare") != "a < b > c":
+        fail(f"plain comparison label was stripped: {nodes.get('compare')!r}")
+    if nodes.get("html") != "List<String>\nkept":
+        fail(f"HTML label was not flattened: {nodes.get('html')!r}")
+    if nodes.get("comment") != "visible":
+        fail(f"HTML comment leaked into the label: {nodes.get('comment')!r}")
+    ok("plain angle brackets stay in labels and HTML tags still flatten")
+
+
+def check_hidden_cells(tmp: Path) -> None:
+    # visible="0" on a cell, a group, or a layer hides it in draw.io; the import must not resurrect it.
+    def vertex(cid: str, parent: str, x: int, extra: str = "") -> str:
+        return (f'<mxCell id="{cid}" value="{cid.upper()}" vertex="1" parent="{parent}"{extra}>'
+                f'<mxGeometry x="{x}" width="60" height="40" as="geometry"/></mxCell>')
+
+    def edge(cid: str, parent: str, extra: str = "") -> str:
+        return (f'<mxCell id="{cid}" value="{cid}" edge="1" parent="{parent}" source="a" target="b"{extra}>'
+                '<mxGeometry relative="1" as="geometry"/></mxCell>')
+
+    source = tmp / "hidden-cells.drawio"
+    source.write_text(
+        '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+        '<mxCell id="layer2" value="Draft" parent="0" visible="0"/>'
+        + vertex("a", "1", 0) + vertex("b", "1", 100)
+        + vertex("hidden", "1", 200, ' visible="0"')
+        + vertex("draft", "layer2", 300)
+        + vertex("grp", "1", 400, ' visible="0"') + vertex("inside", "grp", 5)
+        + edge("shown", "1") + edge("hiddenedge", "1", ' visible="0"') + edge("draftedge", "layer2")
+        + "</root></mxGraphModel>",
+        encoding="utf-8",
+    )
+    page = json.loads(run_extract([str(source), "--json"]))["pages"][0]
+    nodes, edges = sorted(n["id"] for n in page["nodes"]), sorted(e["id"] for e in page["edges"])
+    if (nodes, edges) != (["a", "b"], ["shown"]):
+        fail(f"hidden cells, groups or layers leaked into the IR: nodes={nodes} edges={edges}")
+    # Put the deepest descendant first: memoization cannot shorten the first
+    # ancestor walk, and input order must not resurrect a hidden descendant.
+    deep = tmp / "hidden-child-first.drawio"
+    count = 8000
+    deep.write_text(
+        '<mxGraphModel><root>'
+        + ''.join(
+            f'<mxCell id="n{i}" parent="n{i + 1}" vertex="1"'
+            + (' visible="0"' if i == count - 1 else '')
+            + '><mxGeometry x="0" y="0" width="40" height="40" as="geometry"/></mxCell>'
+            for i in range(count)
+        )
+        + '</root></mxGraphModel>',
+        encoding="utf-8",
+    )
+    deep_page = json.loads(run_extract([str(deep), "--json"]))["pages"][0]
+    if deep_page["nodes"] or deep_page["edges"]:
+        fail("Child-first deep descendants escaped their hidden ancestor")
+    ok("cells hidden directly, through a group, or through a layer are dropped from the IR")
 
 
 def check_containers(tmp: Path) -> None:
@@ -795,18 +960,33 @@ def check_docs() -> None:
     ok("references, SKILL.md wiring, and slash command are consistent")
 
 
+def check_unicode_page_names() -> None:
+    extractor = load_extractor_module()
+    page = extractor.Page(id="page", name="²", index=0)
+    if extractor.select_pages([page], "²") != [page]:
+        fail("non-decimal numeric characters must remain valid page names")
+    if extractor.select_pages([page], "٠") != [page]:
+        fail("decimal Unicode selectors must remain supported")
+    ok("page selection distinguishes decimal indexes from Unicode names")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="diagram-design-drawio-") as tmp_dir:
         tmp = Path(tmp_dir)
         check_files()
+        check_unicode_page_names()
         check_parse_raw()
         check_arrow_directions(tmp)
         check_relative_geometry(tmp)
         check_nested_geometry(tmp)
         check_nested_relative_geometry(tmp)
+        check_table_rows(tmp)
         check_bom_prefixed(tmp)
+        check_plain_angle_brackets(tmp)
+        check_hidden_cells(tmp)
         check_containers(tmp)
         check_legacy_stdout_encoding(tmp)
+        check_out_write_errors(tmp)
         check_digest_escaping(tmp)
         check_security_and_limits(tmp)
         check_docs()

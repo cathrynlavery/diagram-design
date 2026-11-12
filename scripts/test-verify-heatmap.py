@@ -107,7 +107,7 @@ def case(
     expect_pass: bool,
     describe: str,
 ) -> None:
-    if source == original and not expect_pass:
+    if source == original:
         failures.append(
             f"could not build the {name!r} fixture (anchor not found in source)"
         )
@@ -138,6 +138,67 @@ def main() -> int:
             code, output = run(path)
             if code != 0:
                 failures.append(f"{label}: shipped example failed:\n  {output.strip()}")
+
+        single_quoted = re.sub(
+            r'="([^"<>]*)"',
+            lambda match: "='" + match.group(1).replace("'", "&#39;") + "'",
+            original,
+        )
+        case(failures, d, "P-single-quotes.html", single_quoted, original, True,
+             "single-quoted attributes retain the same heatmap semantics")
+        mixed_quotes = original.replace(
+            FIRST_NONFOCAL,
+            FIRST_NONFOCAL.replace('fill="', 'data-note="fill=\'red\'" fill="', 1),
+        )
+        case(failures, d, "P-mixed-quotes.html", mixed_quotes, original, True,
+             "attribute-like metadata does not override the real fill")
+        mixed_single = single_quoted.replace(
+            "fill='rgba(45,49,66,0.29)'",
+            "data-note='fill=\"red\"' fill='rgba(45,49,66,0.29)'",
+            1,
+        )
+        case(failures, d, "P-mixed-single-quotes.html", mixed_single, single_quoted, True,
+             "double-quoted text inside metadata does not override a single-quoted fill")
+        quoted_gt = original.replace(
+            "<rect " + FIRST_NONFOCAL,
+            '<rect data-note="p95>budget" ' + FIRST_NONFOCAL,
+            1,
+        )
+        case(failures, d, "P-quoted-greater-than.html", quoted_gt, original, True,
+             "a greater-than inside a double-quoted attribute does not drop the cell")
+        single_gt = original.replace(
+            "<rect " + FIRST_NONFOCAL,
+            "<rect data-note='p95>budget' " + FIRST_NONFOCAL,
+            1,
+        )
+        case(failures, d, "P-single-quoted-greater-than.html", single_gt, original, True,
+             "a greater-than inside a single-quoted attribute does not drop the cell")
+        label_gt = original.replace(
+            '<text data-row-label="auth"',
+            '<text data-note="a>b" data-row-label="auth"',
+            1,
+        )
+        case(failures, d, "P-quoted-greater-than-axis.html", label_gt, original, True,
+             "a greater-than inside axis metadata does not drop the row label")
+
+        commented_transform = original.replace('</style>', '/* archived experiment\n transform: translateX(12px);\n */\n</style>', 1)
+        case(failures, d, "P-commented-transform.html", commented_transform, original, True,
+             "a CSS comment cannot move verified geometry")
+
+        archived_style = original.replace('</style>', '</style><!-- <style>rect { transform: translateX(12px); }</style> -->', 1)
+        case(failures, d, "P-archived-style.html", archived_style, original, True,
+             "an HTML comment cannot activate archived CSS")
+        live_transform = original.replace('</style>', 'rect {/**/transform: translateX(12px); }\n</style>', 1)
+        case(failures, d, "N-comment-prefixed-transform.html", live_transform, original, False,
+             "a CSS comment before a property cannot hide an active transform")
+        for name, css in (
+            ("legacy-html-markers", "<!-- rect { transform: translateX(12px); } -->"),
+            ("quoted-comment-opener", 'rect { --note: "/*"; transform: translateX(12px); /* note */ }'),
+            ("escaped-quote-comment-opener", r'rect { --note: "\"/*"; transform: translateX(12px); /* note */ }'),
+        ):
+            live_css = original.replace('</style>', css + '\n</style>', 1)
+            case(failures, d, f"N-{name}.html", live_css, original, False,
+                 "quoted comment markers and HTML legacy markers cannot hide active CSS")
 
         # ── Negative: mutations that must be rejected ─────────────────────────
 
@@ -399,6 +460,14 @@ def main() -> int:
                 if (code == 0) != expected_pass or (not expected_pass and "below WCAG AA" not in output):
                     failures.append(f"alpha foreground {theme}/{alpha} unexpected result: {output.strip()}")
         print("OK: translucent AA foregrounds pass; weak-alpha text still fails in both themes")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        encoded = re.sub(r'(\b(?:x|y|width|height|data-value|data-share)="[^"<>]*)[0-9]',
+                         lambda match: match.group(0)[:-1] + f"&#{ord(match.group(0)[-1])};",
+                         GOOD.read_text(encoding="utf-8"))
+        code, output = run(write(Path(tmp), "encoded-attributes.html", encoded))
+        if code != 0:
+            failures.append(f"XML-encoded numeric attributes rejected: {output.strip()}")
 
     if failures:
         for f in failures:

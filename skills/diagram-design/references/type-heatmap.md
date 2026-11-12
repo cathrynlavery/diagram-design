@@ -2,6 +2,8 @@
 
 **Best for:** cross-tabulated data where *which row × column combination stands out* is the story. Use when the reader needs to scan a full matrix at once — not compare individual bars or trace a trend line — and one cell (or a cluster of cells) is editorially distinct from the field. Common uses: CI failure rate by service and sprint, support ticket volume by team and week, confusion matrix for a classifier, correlation coefficients across many variables.
 
+The CSS geometry guard ignores comments; active transform declarations still fail.
+
 ## Layout conventions
 
 - **Plot area:** left 160px (row labels), top 64px (column labels), right 40px, bottom 120px (legend area); inside `0 0 1000 500` viewBox.
@@ -57,6 +59,8 @@ Every cell is two overlapping `<rect>` elements: a paper-fill underlay (no data 
 **The focal cell is excluded from the ramp's scale.** Its value (often an outlier) would collapse every other cell into near-identical opacity if included. The footnote must state the focal cell's value explicitly. `scripts/verify-heatmap.py` checks that the focal cell carries `data-focal="true"` and that no non-focal cell uses accent fill.
 
 ## Declaring the values
+
+The verifier accepts either matching quote delimiter for SVG attributes.
 
 **Every drawn cell is bound to its row, column, and value.** Declared data values are finite and nonnegative; unsigned counts may exceed one billion. NaN, infinity, and negative values are rejected rather than weakening grid completeness. The paper underlay carries nothing. The data rect carries all three.
 

@@ -109,6 +109,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import math
 import re
 import sys
 from pathlib import Path
@@ -266,7 +267,10 @@ TAG_RE = re.compile(r"<[^>]+>")
 # leading number ONLY - requiring a unit word right after it silently stops
 # matching the moment the format changes to something like "9,400 - 78%", and a
 # value check that attaches to nothing passes everything.
-VALUE_RE = re.compile(r"^(?P<num>\d[\d,]*(?:\.\d+)?)(?![\d,.])")
+VALUE_RE = re.compile(
+    r"^(?P<num>[-+\u2212]?(?:\d[\d,]*(?:\.\d*)?|\.\d+)"
+    r"(?:[eE][-+]?\d+)?)(?![\d,.eE])"
+)
 
 # A node bar is a thin vertical rect inside the plot band. The legend keys are
 # 16x8 and the two background rects are the full viewBox, so both fall out on
@@ -707,7 +711,14 @@ def attach_values(source: str, bars: list[Bar], findings: list[str], name: str) 
         # the first and moving on lets a second, contradictory number sit in the
         # same block: the checker validates the one it read, and the reader is
         # shown the one it ignored.
-        host.values.append((float(hit.group("num").replace(",", "")), body))
+        value = float(hit.group("num").replace(",", "").replace("\u2212", "-"))
+        if not math.isfinite(value) or value <= 0:
+            findings.append(
+                f"{name}:{line_of(source, m.start())}: the node quantity {body!r} "
+                "must be finite and positive for its drawn height"
+            )
+            continue
+        host.values.append((value, body))
         if host.value is None:
             host.value = host.values[0][0]
             host.label = body
@@ -1178,11 +1189,31 @@ def check(path: Path) -> list[str]:
                 f"height is then compared against nothing, and the fidelity check "
                 f"below silently shrinks to the bars that do parse"
             )
-    scaled = [(bar, bar.h / bar.value) for bar in bars if bar.value]
+    scaled = []
+    for bar in bars:
+        if not bar.value:
+            continue
+        scale = bar.h / bar.value
+        if not math.isfinite(scale) or scale <= 0:
+            findings.append(
+                f"{name}:{line_of(source, bar.offset)}: node {bar.label!r} draws "
+                f"{bar.h:.2f}px for {bar.value:g}, which produces a non-finite "
+                f"or non-positive scale — the quantity scale must be finite and "
+                f"positive before value fidelity can be checked"
+            )
+            continue
+        scaled.append((bar, scale))
     if len(scaled) >= 3:
         reference = sorted(s for _, s in scaled)[len(scaled) // 2]   # median
         for bar, scale in scaled:
             relative = (scale - reference) / reference * 100
+            if not math.isfinite(relative):
+                findings.append(
+                    f"{name}:{line_of(source, bar.offset)}: node {bar.label!r} "
+                    f"produces a non-finite relative scale — the quantity range "
+                    f"cannot be compared on the figure's shared scale"
+                )
+                continue
             if abs(relative) > SCALE_TOL:
                 findings.append(
                     f"{name}:{line_of(source, bar.offset)}: node {bar.label!r} draws "

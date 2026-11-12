@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-waterfall.py"
 GOOD = ROOT / "skills/diagram-design/assets/example-waterfall.html"
 SHIPPED = sorted(GOOD.parent.glob("example-waterfall*.html"))
+PLAUSIBLE_WRONG = ROOT / "scripts/fixtures/waterfall-plausible-wrong.html"
 
 
 def run(*args: str, timeout: float | None = None) -> tuple[int, str]:
@@ -79,6 +80,14 @@ def main() -> int:
         failures.append(f"--all failed on the shipped set\n{output}")
     else:
         print("OK: --all passes on the shipped set")
+
+    # A complete, renderable chart with plausible labels still has to reconcile.
+    # Here the printed savings are -36, so the walk reaches 238, not the shown 236.
+    code, output = run(str(PLAUSIBLE_WRONG))
+    if code != 1 or "declares 236 but the walk arrives at 238" not in output:
+        failures.append(f"plausible wrong chart did not name the arithmetic lie:\n{output}")
+    else:
+        print("OK: plausible wrong chart fails on its 238-versus-236 total")
 
     # Negative polarity: each mutation must fail with a finding that names the lie.
     # Every case below is (name, old, new, expected fragment of the finding).

@@ -15,3 +15,7 @@ The three native plugin manifests carry identical shared identity, description, 
 ## Consequences
 
 Each native host has an explicit install path while diagram behavior remains single-sourced. Adding another host requires native metadata, package-gate coverage, documentation, and a synchronized version bump; it never justifies copying the skill or command surface. Git-based Factory installs are updated by marketplace commit, while the synchronized manifest version remains release metadata and a review gate.
+
+## Amendment — 2026-10-17: Qoder joins the native manifest set
+
+Qoder receives a fourth native manifest at `.qoder-plugin/plugin.json`. It points to the same canonical `skills/` and `commands/` trees as the established hosts and carries the same synchronized metadata and version. Historical references above to three native manifests describe the accepted decision at v2.5.14; from this amendment forward, package and release gates cover all four manifests.
