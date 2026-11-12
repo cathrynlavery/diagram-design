@@ -150,6 +150,7 @@ def main() -> int:
             ("stylesheet resizes rail", *sheet("rect{width:10px}"), "style:"),
             ("stylesheet rotates svg", *sheet("svg{rotate:20deg}"), "transform:"),
             ("stylesheet scales rail", *sheet("rect{scale:1 0.5}"), "transform:"),
+            ("malformed alpha", 'fill="rgba(191,69,32,0.08)" data-role="rail"', 'fill="rgba(191,69,32,0..08)" data-role="rail"', "paint: rail fill"),
             ("repeated attribute", group, '<g aria-hidden="true" aria-hidden="true">', "attributes:"),
             ("medallion stroke too wide", 'stroke="#2d3142" data-role="medallion" data-step="frame"', 'stroke="#2d3142" stroke-width="5" data-role="medallion" data-step="frame"', "stroke-width"),
             ("number font-size under 8", 'fill="#4f5d75" data-role="number" data-step="frame"', 'fill="#4f5d75" font-size="7" data-role="number" data-step="frame"', "font-size"),
@@ -170,6 +171,14 @@ def main() -> int:
                 failures.append(f"{name}: expected rejection containing {expected!r}\n{output}")
             else:
                 print(f"OK: {name} rejected")
+        # A malformed value is a finding; the files after it are still checked.
+        bad_alpha = directory / "bad-alpha.html"
+        bad_alpha.write_text(source.replace("rgba(191,69,32,0.08)", "rgba(191,69,32,0..08)", 1), encoding="utf-8")
+        result = subprocess.run([sys.executable, str(CHECKER), str(bad_alpha), str(GOOD)], capture_output=True, text=True)
+        if result.returncode != 1 or "Traceback" in result.stderr or f"OK {GOOD}" not in result.stdout:
+            failures.append(f"malformed alpha stopped the run\n{result.stdout}{result.stderr}")
+        else:
+            print("OK: malformed alpha is a finding and later files are still checked")
         # Each mutation below was rendered in Chromium and visibly hides, moves or
         # misstates a stage while the attribute geometry stays legal.
         n1 = '<text x="192" y="164" fill="#4f5d75" data-role="number" data-step="frame">01</text>'

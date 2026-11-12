@@ -157,7 +157,7 @@ def color(value: str) -> tuple[str, float] | None:
     value = value.strip().lower()
     if re.fullmatch(r"#[0-9a-f]{6}", value):
         return value, 1.0
-    match = re.fullmatch(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)", value)
+    match = re.fullmatch(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*(\d+(?:\.\d+)?|\.\d+)\s*)?\)", value)
     if not match or any(int(part) > 255 for part in match.groups()[:3]):
         return None
     alpha = float(match.group(4)) if match.group(4) else 1.0
