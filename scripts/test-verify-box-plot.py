@@ -1137,6 +1137,13 @@ def run_cases(h: Harness) -> int:
          [(AUTH_G, '<g data-pinned data-name="Auth"')]),
         ("one valueless attribute whose name holds a dot",
          [(AUTH_G, '<g data-note.hidden data-name="Auth"')]),
+        # A quoted `>` does not end the tag.
+        ("a quoted > inside the series group's aria-label",
+         [(AUTH_G, '<g aria-label="not hidden > threshold" data-name="Auth"')]),
+        # HTML splits attributes only at ASCII whitespace, so NBSP is a value
+        # character.
+        ("an unquoted value holding a no-break space",
+         [(AUTH_G, '<g data-note=foo hidden data-name="Auth"')]),
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
     # A bound mark may state paint that draws nothing. Its coordinates still
