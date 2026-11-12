@@ -236,6 +236,46 @@ def check_flowchart_header_statements(tmp: Path) -> None:
     ok("flowchart statements after the header semicolon are retained")
 
 
+def check_flowchart_apostrophes(tmp: Path) -> None:
+    # Mermaid flowchart strings open only at a double quote, so an apostrophe
+    # is ordinary label text. One apostrophe must not leave the statement
+    # unterminated, and two must not pair up and swallow the edge between them.
+    source = tmp / "flowchart-apostrophes.mmd"
+    source.write_text(
+        "flowchart LR\n"
+        "  accDescr: Bob's flow\n"
+        "  A[Bob's box] -->|it's| B{Don't panic?}\n"
+        "  B -- it's fine --> C(User's cart)\n"
+        "  D[O'Brien] --> E[it's]\n"
+        "  F@{ shape: rect, label: 'a, b' } --> A\n"
+        "  G@{ shape: rect, label: '[' } --> H@{ label: '(' }\n",
+        encoding="utf-8",
+    )
+    diagram = json.loads(run_extract([str(source), "--json"]))["diagrams"][0]
+    labels = {node["id"]: node["label"] for node in diagram["nodes"]}
+    edges = [(e["source"], e["target"], e["label"]) for e in diagram["edges"]]
+    if labels != {
+        "A": "Bob's box",
+        "B": "Don't panic?",
+        "C": "User's cart",
+        "D": "O'Brien",
+        "E": "it's",
+        "F": "a, b",
+        "G": "[",
+        "H": "(",
+    }:
+        fail(f"apostrophes in flowchart labels changed node labels: {labels}")
+    if edges != [
+        ("A", "B", "it's"),
+        ("B", "C", "it's fine"),
+        ("D", "E", ""),
+        ("F", "A", ""),
+        ("G", "H", ""),
+    ]:
+        fail(f"apostrophes in flowchart labels dropped or changed edges: {edges}")
+    ok("flowchart apostrophes stay label text; @{ } attributes keep YAML quotes")
+
+
 def check_entity_label_codes(tmp: Path) -> None:
     source = tmp / "entity-labels.mmd"
     source.write_text(
@@ -1264,6 +1304,17 @@ def check_errors_and_limits(tmp: Path) -> None:
             "a minified line followed by a multiline label must parse every statement: "
             f"{len(minified_multiline['edges'])} edges"
         )
+    # Deep bracket nesting wrapped across lines is rescanned on every line, so
+    # the scanners must not pay for the nesting depth on each character.
+    deep_brackets = tmp / "statement-deep-brackets.mmd"
+    deep_lines: list[str] = []
+    for index in range(10):
+        statement = f"N{index}" + "[" * 2000 + "]" * 2000
+        deep_lines += [statement[start : start + 100] for start in range(0, len(statement), 100)]
+    deep_brackets.write_text("flowchart TD\n" + "\n".join(deep_lines) + "\n", encoding="utf-8")
+    deep_nodes = json.loads(run_extract([str(deep_brackets), "--json"]))["diagrams"][0]["nodes"]
+    if len(deep_nodes) != 10:
+        fail(f"deeply nested wrapped statements must each parse: {len(deep_nodes)} nodes")
     unterminated_one_line = tmp / "statement-unterminated-one-line.mmd"
     unterminated_one_line.write_text(
         'flowchart TD\nA["' + "x" * (statement_cap + 10) + "\n",
@@ -1465,6 +1516,62 @@ def check_edge_ids(tmp: Path) -> None:
     if result["nodes"][0]["label"] != "Retry retry@-1":
         fail("edge ID parsing changed an unquoted subgraph title")
     ok("edge IDs cover circle/cross operators without changing literal labels or titles")
+
+
+def check_hyphenated_node_ids(tmp: Path) -> None:
+    # Mermaid keeps a single `-` inside a node id; only `--`, `==` and the
+    # dotted `-.` forms open a link, so a hyphenated id is never an edge.
+    flow = tmp / "hyphenated-ids.mmd"
+    for declaration, node_id, label in (
+        ("user-profile", "user-profile", "user-profile"),
+        ("api-proxy", "api-proxy", "api-proxy"),
+        ("user-profile[User profile]", "user-profile", "User profile"),
+        ("user-onboarding", "user-onboarding", "user-onboarding"),
+        ("node-x", "node-x", "node-x"),
+        ("x-o", "x-o", "x-o"),
+        ("info-only", "info-only", "info-only"),
+        ("flag>flag =o]", "flag", "flag =o"),
+    ):
+        flow.write_text(f"flowchart LR\n  {declaration}\n  A --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        nodes = {node["id"]: node["label"] for node in diagram["nodes"]}
+        edges = [(edge["source"], edge["target"]) for edge in diagram["edges"]]
+        if nodes != {node_id: label, "A": "A", "B": "B"} or edges != [("A", "B")]:
+            fail(f"standalone {declaration!r} must stay one unconnected node: {nodes!r} {edges!r}")
+
+    for source in ("user-option", "api-xray", "my-object", "box-office"):
+        flow.write_text(f"flowchart LR\n{source} --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+        edges = [(edge["source"], edge["target"], edge["arrowhead"]) for edge in diagram["edges"]]
+        if sorted(node["id"] for node in diagram["nodes"]) != sorted([source, "B"]) or edges != [
+            (source, "B", "arrow")
+        ]:
+            fail(f"{source!r} was split into an edge instead of staying one node: {edges!r}")
+
+    flow.write_text(
+        "flowchart LR\nuser-option --o api-xray\nnode-x x--x box-office\n", encoding="utf-8"
+    )
+    diagram = json.loads(run_extract([str(flow), "--json"]))["diagrams"][0]
+    edges = [
+        (edge["source"], edge["target"], edge["arrowhead"], edge["bidirectional"])
+        for edge in diagram["edges"]
+    ]
+    if edges != [
+        ("user-option", "api-xray", "circle", False),
+        ("node-x", "box-office", "cross", True),
+    ]:
+        fail(f"real circle/cross links between hyphenated ids changed: {edges!r}")
+
+    # Mermaid rejects a spaced single-dash or single-equals x/o operator.
+    for broken in ("A -->", "A --x", "A--foo", "A--bar", "A-.x", "user-profile -->", "A -x B", "A -o B", "A =o B", "A -x"):
+        flow.write_text(f"flowchart LR\n{broken}\n", encoding="utf-8")
+        expect_error([str(flow)], "malformed edge at line 2")
+    # A broken link that is not a node either must fail, not vanish.
+    for broken in ("A- >B", "A - > B", "A -xB", "A -oB", "A -x|yes| B", "A[x] -x B[y]", "A[x] -o B[y]", "A[x] -- B[y]",
+                   "A --> B[x] -x C[y]", "A --> B--foo"):
+        flow.write_text(f"flowchart LR\nC --> D\n{broken}\n", encoding="utf-8")
+        expect_error([str(flow)], "malformed edge at line 3")
+    ok("hyphenated flowchart node ids stay whole; only real link operators split them")
 
 
 def check_unicode_state_regression(tmp: Path) -> None:
@@ -1714,7 +1821,9 @@ def main() -> int:
         check_node_shape_updates(tmp)
         check_invisible_links(tmp)
         check_spaced_pipe_labels(tmp)
+        check_hyphenated_node_ids(tmp)
         check_flowchart_header_statements(tmp)
+        check_flowchart_apostrophes(tmp)
         check_edge_ids(tmp)
         check_entity_label_codes(tmp)
         check_shape_and_edge_vocabulary(tmp)
