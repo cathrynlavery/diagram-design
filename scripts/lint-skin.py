@@ -64,6 +64,7 @@ ALLOWED_FONTS = {
     "apple sd gothic neo",
     "noto sans kr",
     "noto serif kr",
+    "noto serif sc",
     "malgun gothic",
     "noto sans mono cjk kr",
     "pingfang sc",
