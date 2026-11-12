@@ -30,6 +30,7 @@ def main() -> None:
     label_tag = re.search(r'<text\b[^>]*>(?=REQ-01</text>)', source)
     assert label_tag is not None
     label_tag = label_tag[0]
+    root = re.search(r"<svg\b[^>]*>", source)[0]
     cases = (
         *((first_group, first_group.replace("<g ", f"<g {attributes} "), "hidden or too faint")
           for attributes in (
@@ -80,6 +81,31 @@ def main() -> None:
         ('data-diagram-role="coverage-gap"', 'display="none" data-diagram-role="coverage-gap"', "needs a visible gap label"),
         ('data-source-ref="Review brief §1"', 'data-source-ref="Review brief §9"', "source reference does not match"),
         ('>Review brief §1</text>', '>Uncited</text>', "source citation is not printed"),
+        # Root, page and wrapper changes that hide or clip the whole SVG.
+        *((root, root.replace("<svg ", f"<svg {attributes} "), "SVG root")
+          for attributes in ('height="0"', 'width="1" height="1"', 'style="opacity:.1"')),
+        *((root, root.replace('viewBox="0 0 1200 720"', f'viewBox="{box}"'), "SVG root")
+          for box in ("5000 0 1200 720", "0 0 1200000 720000")),
+        *(('<div class="canvas">', f'<div class="canvas" {attributes}>', "HTML")
+          for attributes in ("hidden", 'style="display:none"', 'style="width:0;overflow:hidden"')),
+        *(('<div class="canvas">', f'<div class="canvas"><{tag}>', "HTML") for tag in ("details", "template", "noscript")),
+        ("</body>", "<script>document.querySelector('svg').remove()</script></body>", "HTML"),
+        ("</head>", '<link rel="stylesheet" href="hide.css"></head>', "HTML"),
+        ('<div class="canvas">', "<!--" + root + "</svg>-->" + '<div class="canvas">', "HTML"),
+        *(("</style>", rule + "</style>", "unsupported page rule")
+          for rule in (".frame{max-width:0}", ".canvas{overflow-x:hidden}", "body{padding:48px 3000px}")),
+        # Labels and cells moved off the canvas or out of their cell.
+        (label_tag, label_tag.replace('x="272"', 'x="5272"'), "label is outside the viewBox"),
+        (label_tag, label_tag.replace('x="272"', 'x="1000"'), "outside its cell"),
+        (label_tag, label_tag.replace('y="154"', 'y="-5000"'), "label is outside the viewBox"),
+        ('>REQ-01</text>', '><tspan x="5000">REQ-01</tspan></text>', "label is outside the viewBox"),
+        ('<rect x="64" y="124"', '<rect x="5064" y="124"', "rectangle is outside the viewBox"),
+        # Paper-coloured rules and rules drawn across cells.
+        ("</svg>", '<line x1="0" x2="1200" y1="150" y2="150" stroke="#f5f5f5" stroke-width="4"/></svg>', "rule colour"),
+        ("</svg>", '<line x1="0" x2="1200" y1="150" y2="150" stroke="#bfc0c0" stroke-width="4"/></svg>', "crosses a cell"),
+        # Faint ink: 10% opacity is about 1.2:1 against the paper.
+        (first_group, first_group.replace("<g ", '<g opacity="0.1" '), "too faint"),
+        (label_tag, label_tag.replace("<text ", '<text fill-opacity="0.1" '), "too faint"),
     )
     with tempfile.TemporaryDirectory() as directory:
         candidate = Path(directory) / "candidate.html"
@@ -110,7 +136,9 @@ def main() -> None:
         errors = verifier.check(candidate)
         if not any("overlaps another cell" in error for error in errors):
             failures.append(("cross-cell cover", "overlaps another cell", errors))
-        assert not failures, failures
+        for new, expected, errors in failures:
+            print(f"BYPASS expected {expected!r}: {new[:90]!r} -> {errors[:2]}")
+        assert not failures, f"{len(failures)} adversarial cases passed"
 
         # A comment and an escaped bracket in a class name are not attribute selectors.
         inert_css = r"/* g[data-trace-row]{display:none} */ .literal\[data-trace-row\]{display:none}"

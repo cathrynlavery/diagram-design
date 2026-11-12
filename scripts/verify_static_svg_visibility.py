@@ -9,13 +9,26 @@ import xml.etree.ElementTree as ET
 from collections.abc import Iterable
 
 
-MIN_OPACITY = 0.1
+# At 10% a house ink is about 1.2:1 against the paper; at 40% it stays near 2:1.
+MIN_OPACITY = 0.4
 MIN_FONT_SIZE = 8
 MAX_STROKE_WIDTH = 4
 INK = {
     "#f5f5f5": {"#2d3142", "#4f5d75", "#2e5aa8", "#bf4520"},
     "#2d3142": {"#f5f5f5", "#bfc0c0", "#739fdf", "#f08a59"},
 }
+RULE_INK = {"#f5f5f5": "#bfc0c0", "#2d3142": "rgba(245,245,245,0.12)"}
+VIEW_BOX = "0 0 1200 720"
+ROOT_ATTRIBUTES = {"viewBox", "role", "aria-labelledby", "data-diagram-type"}
+FONTS_HREF = "https://fonts.googleapis.com/css2?"
+# The page skeleton every example shares; anything else around the SVG can hide it.
+PAGE_TAGS = {
+    "html": {"lang"}, "head": set(), "meta": {"charset", "name", "content"}, "title": set(),
+    "link": {"href", "rel"}, "style": set(), "body": set(), "div": {"class"}, "p": {"class"},
+    "h1": set(), "section": set(), "h2": set(),
+}
+PAGE_CLASSES = {"div": {"frame", "canvas", "cards"}, "p": {"eyebrow", "subtitle"}}
+SVG_PARENTS = [("html", None), ("body", None), ("div", "frame"), ("div", "canvas")]
 STYLE_RE = re.compile(
     r"<!--.*?(?:-->|$)|<style\b[^>]*>(?P<body>.*?)</style\s*>", re.I | re.S
 )
@@ -36,6 +49,13 @@ PAGE_PROPERTIES = {
     ".cards section": {"border-top", "padding-top"},
     ".cards h2": {"font-family", "font-size", "margin"},
     ".cards p": {"font-size", "line-height", "color", "margin"},
+}
+# Page values that size or place the canvas.
+PAGE_VALUES = {
+    "body": {"margin": "0", "padding": "48px 32px"},
+    ".frame": {"max-width": "1200px", "margin": "0 auto"},
+    ".canvas": {"overflow-x": "auto"},
+    ".cards": {"margin-top": "28px"},
 }
 SVG_PROPERTIES = {
     "display", "visibility", "opacity", "fill", "fill-opacity", "font-size",
@@ -110,13 +130,71 @@ def styles(source: str, svg: ET.Element) -> Iterable[str]:
             if selector == "svg" and len(rules) == len(SVG_LAYOUT) and values == SVG_LAYOUT:
                 continue
             if selector in PAGE_PROPERTIES and not (set(re.findall(r"\.([\w-]+)", selector)) & svg_classes):
-                if set(values) <= PAGE_PROPERTIES[selector] and values.get("display", "grid") == "grid":
+                pinned = PAGE_VALUES.get(selector, {})
+                if (
+                    set(values) <= PAGE_PROPERTIES[selector] and values.get("display", "grid") == "grid"
+                    and all(values.get(key, value) == value for key, value in pinned.items())
+                ):
                     continue
             if CLASS_SELECTOR_RE.fullmatch(selector):
                 name = CSS_ESCAPE_RE.sub(decode_css_escape, selector[1:])
                 if name not in document_classes.names:
                     continue
             yield f"stylesheet must not select SVG or use an unsupported page rule: {selector!r}"
+
+
+class PageSkeleton(HTMLParser):
+    """Check the HTML around the SVG against the shared page skeleton."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.stack: list[tuple[str, str | None]] = []
+        self.depth = 0
+        self.svgs = 0
+        self.errors: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]], closed: bool = False) -> None:
+        if self.depth:
+            self.depth += not closed
+            return
+        if tag == "svg":
+            self.svgs += 1
+            if self.stack != SVG_PARENTS:
+                self.errors.append("HTML must place the SVG directly in body > div.frame > div.canvas")
+            self.depth = int(not closed)
+            return
+        names = dict(attrs)
+        if (
+            tag not in PAGE_TAGS or not set(names) <= PAGE_TAGS[tag]
+            or "class" in names and names["class"] not in PAGE_CLASSES.get(tag, set())
+            or tag == "link" and not (names.get("rel") == "stylesheet" and (names.get("href") or "").startswith(FONTS_HREF))
+        ):
+            self.errors.append(f"unsupported HTML around the SVG: <{tag} {' '.join(names)}>".replace(" >", ">"))
+        if tag not in {"meta", "link"}:
+            self.stack.append((tag, names.get("class")))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs, closed=True)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self.depth:
+            self.depth -= 1
+        elif self.stack and self.stack[-1][0] == tag:
+            self.stack.pop()
+        else:
+            self.errors.append(f"unbalanced HTML around the SVG: </{tag}>")
+
+
+def page(source: str) -> list[str]:
+    skeleton = PageSkeleton()
+    skeleton.feed(source)
+    skeleton.close()
+    errors = skeleton.errors
+    if skeleton.svgs != 1 or len(re.findall(r"<svg\b", source, re.I)) != 1:
+        errors.append("HTML must contain exactly one rendered SVG")
+    if skeleton.stack or skeleton.depth:
+        errors.append("unclosed HTML around the SVG")
+    return errors
 
 
 def number(value: str) -> float:
@@ -218,9 +296,12 @@ def check_static_svg(
     group_attr: str, cell_attr: str, *, link_attr: str | None = None,
     gap_attr: str | None = None,
 ) -> list[str]:
-    errors = list(styles(source, svg))
+    errors = [*styles(source, svg), *page(source)]
+    if svg.get("viewBox") != VIEW_BOX or not set(svg.attrib) <= ROOT_ATTRIBUTES:
+        errors.append(f"SVG root must keep viewBox={VIEW_BOX!r} and no size, style or visibility attributes")
     paper = next((normalize(child.get("fill", "")) for child in svg if local(child.tag) == "rect"), "")
     inks = INK.get(paper, set())
+    rules = inks | {RULE_INK.get(paper, "")}
     if not inks:
         errors.append("SVG background must declare a house paper colour")
     view_box = [number(value) for value in svg.get("viewBox", "").replace(",", " ").split()]
@@ -231,6 +312,7 @@ def check_static_svg(
     else:
         errors.append("SVG must declare a positive finite viewBox")
     boxes: list[tuple[float, ...]] = []
+    lines: list[tuple[float, ...]] = []
     for node in svg.iter():
         tag = local(node.tag)
         keys = set(node.attrib) | {name for name, _ in declarations(node.get("style", ""))}
@@ -256,9 +338,23 @@ def check_static_svg(
                 errors.append(f"SVG label font size must be at least {MIN_FONT_SIZE}")
             if not paint_visible(chain, "fill"):
                 errors.append("SVG label is hidden or too faint")
+            point = {key: number(node.get(key, "0")) for key in ("x", "y") if tag == "text" or key in node.attrib}
+            cell = next((parent for parent in chain[1:] if cell_attr in parent.attrib or gap_attr in parent.attrib), None)
+            cell_rect = next((child for child in cell if local(child.tag) == "rect"), None) if cell is not None else None
+            for bounds, where in ((viewport, "the viewBox"), (cell_rect is not None and rectangle(cell_rect), "its cell")):
+                if bounds and not all(
+                    bounds[index] <= point[key] <= bounds[index + 2] for index, key in enumerate(("x", "y")) if key in point
+                ):
+                    errors.append(f"SVG label is outside {where}")
         widths = [number(value) for value in properties(node, "stroke-width")]
         if any(not 0 <= width <= MAX_STROKE_WIDTH for width in widths):
             errors.append(f"SVG {tag} stroke can cover nearby content")
+        if tag == "line":
+            if not set(properties(node, "stroke")) or not set(properties(node, "stroke")) <= rules:
+                errors.append("SVG line must use a house ink or rule colour")
+            x1, y1, x2, y2 = (number(node.get(key, "0")) for key in ("x1", "y1", "x2", "y2"))
+            outset = max(widths, default=1) / 2
+            lines.append((min(x1, x2) - outset, min(y1, y2) - outset, max(x1, x2) + outset, max(y1, y2) + outset))
         if tag == "rect":
             parent = parents.get(node)
             if parent is None:
@@ -274,6 +370,8 @@ def check_static_svg(
             left, top, right, bottom = rectangle(node)
             if not left < right or not top < bottom:
                 errors.append("SVG rectangle must have positive finite dimensions")
+            elif viewport and not (viewport[0] <= left and viewport[1] <= top and right <= viewport[2] and bottom <= viewport[3]):
+                errors.append("SVG rectangle is outside the viewBox")
             elif not is_backdrop:
                 outset = max(widths, default=0) / 2
                 box = (left - outset, top - outset, right + outset, bottom + outset)
@@ -300,4 +398,6 @@ def check_static_svg(
                 errors.append(f"{node.attrib[link_attr]} must contain a visible arrow")
         if group_attr in node.attrib and tag != "g":
             errors.append(f"{group_attr} must mark a static SVG group")
+    if any(overlaps(line, box) for line in lines for box in boxes):
+        errors.append("SVG line crosses a cell and can cover its content")
     return errors
