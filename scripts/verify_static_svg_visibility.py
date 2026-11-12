@@ -25,7 +25,7 @@ VIEW_HEIGHTS = (368, 1248)
 ROOT_ATTRIBUTES = {"viewBox", "role", "aria-labelledby", "data-diagram-type"}
 # Twice the largest shipped label.
 MAX_FONT_SIZE = 32
-FONT_FAMILIES = {"geist,sans-serif"}
+FONT_FAMILIES = {"geist,sans-serif", "geist mono,monospace"}
 FONTS_HREF = (
     "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600"
     "&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600"
@@ -161,7 +161,8 @@ class PageSkeleton(HTMLParser):
             or "class" in names and names["class"] not in PAGE_CLASSES.get(tag, set())
             or tag == "link" and not (names.get("rel") == "stylesheet" and names.get("href") == FONTS_HREF)
         ):
-            self.errors.append(f"unsupported HTML around the SVG: <{tag} {' '.join(names)}>".replace(" >", ">"))
+            detail = "; the stylesheet href must match the template's Google Fonts URL" if tag == "link" else ""
+            self.errors.append(f"unsupported HTML around the SVG: <{tag} {' '.join(names)}>".replace(" >", ">") + detail)
         if self.stack[:2] == SVG_PARENTS[:2]:
             self.body.append((len(self.stack), tag, names.get("class")))
         if tag == "style":
@@ -353,10 +354,10 @@ def check_static_svg(
             errors.append(f"SVG {tag} is hidden or too faint")
         if tag not in {"rect", "line", "path"} and keys & {"stroke", "stroke-width", "stroke-opacity"}:
             errors.append(f"SVG {tag} may not set stroke; only rect, line and path draw one")
-        if any(family not in FONT_FAMILIES for family in properties(node, "font-family")):
+        if any(re.sub(r"[\"']", "", family) not in FONT_FAMILIES for family in properties(node, "font-family")):
             errors.append("SVG font family must be one the page loads")
-        if any(anchor != "start" for anchor in properties(node, "text-anchor")):
-            errors.append("SVG text-anchor must be start so labels stay in their cell")
+        if any(anchor not in {"start", "middle", "end"} for anchor in properties(node, "text-anchor")):
+            errors.append("SVG text-anchor must be start, middle or end")
         if tag in {"text", "tspan"}:
             fills = list(properties(node, "fill"))
             sizes = list(properties(node, "font-size"))
@@ -378,6 +379,9 @@ def check_static_svg(
                     errors.append(f"SVG label is outside {where}")
             if cell is None and tag == "text":
                 headings.append((point["x"], point["y"]))
+            # Without a measured width, only start-anchored text provably stays in its cell.
+            if cell is not None and any(anchor != "start" for parent in chain for anchor in properties(parent, "text-anchor")):
+                errors.append("SVG text-anchor must be start so labels stay in their cell")
         widths = [number(value) for value in properties(node, "stroke-width")]
         if any(not 0 <= width <= MAX_STROKE_WIDTH for width in widths):
             errors.append(f"SVG {tag} stroke can cover nearby content")

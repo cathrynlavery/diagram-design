@@ -129,6 +129,7 @@ def main() -> None:
         (label_tag, label_tag.replace('font-size="16"', 'font-size="3000"'), "font size must be at most"),
         (label_tag, label_tag.replace('font-family="Geist, sans-serif"', 'font-family="Flow Block"'), "font family"),
         (label_tag, label_tag.replace("<text ", '<text text-anchor="end" '), "text-anchor"),
+        (first_group, first_group.replace("<g ", '<g text-anchor="middle" '), "text-anchor"),
         ('<text x="864" y="64"', '<text x="900" y="200"', "inside a cell"),
         # A taller viewBox needs a matching backdrop.
         (root, root.replace('viewBox="0 0 1200 720"', 'viewBox="0 0 1200 896"'), "backdrop"),
@@ -171,6 +172,18 @@ def main() -> None:
         candidate.write_text(tall, encoding="utf-8")
         if verifier.check(candidate):
             failures.append(("four rows at 896", "no errors", verifier.check(candidate)))
+        # House font spellings and a centred footer outside every cell.
+        passing = {
+            "quoted Geist": source.replace('font-family="Geist, sans-serif"', "font-family=\"'Geist', sans-serif\""),
+            "Geist Mono ID": source.replace(
+                'font-weight="700" font-family="Geist, sans-serif">SRC-01', "font-weight=\"700\" font-family=\"'Geist Mono', monospace\">SRC-01"),
+            "centred footer": source.replace('<text x="64" y="700"', '<text x="600" y="700" text-anchor="middle"'),
+        }
+        for name, page in passing.items():
+            assert page != source, name
+            candidate.write_text(page, encoding="utf-8")
+            if verifier.check(candidate):
+                failures.append((name, "no errors", verifier.check(candidate)))
         # Title text is raw text in the browser, so markup inside it is not an element.
         candidate.write_text(source.replace("<title>Illustrative", "<title><b>Illustrative", 1), encoding="utf-8")
         if verifier.check(candidate):
