@@ -33,6 +33,10 @@ def stage_fixture(count: int, stage_width: int | None = None) -> str:
     return "".join(parts)
 
 
+def sheet(css: str) -> tuple[str, str]:
+    return "</head>", f"<style>{css}</style></head>"
+
+
 def run(path: Path) -> tuple[int, str]:
     result = subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True)
     return result.returncode, result.stdout + result.stderr
@@ -116,6 +120,56 @@ def main() -> int:
                 failures.append(f"{name}: expected transform rejection\n{output}")
             else:
                 print(f"OK: {name} rejected")
+        # A hidden, scaled, rotated or resized mark passes every attribute check
+        # while the reader sees something else.
+        rail = 'data-role="rail" data-step="frame"'
+        group = '<g aria-hidden="true">'
+        hidden_cases = (
+            ("rail inline scale", rail, f'style="scale:1 0.5" {rail}', "style:"),
+            ("rail inline rotate", rail, f'style="rotate:20deg" {rail}', "style:"),
+            ("rail inline display", rail, f'style="display:none" {rail}', "style:"),
+            ("rail inline visibility", rail, f'style="visibility:hidden" {rail}', "style:"),
+            ("rail inline opacity", rail, f'style="opacity:0" {rail}', "style:"),
+            ("rail inline width", rail, f'style="width:10px" {rail}', "style:"),
+            ("rail ancestor inline style", group, '<g aria-hidden="true" style="opacity:0">', "style:"),
+            ("medallion inline display", 'data-role="medallion" data-step="frame"', 'style="display:none" data-role="medallion" data-step="frame"', "style:"),
+            ("number inline visibility", 'data-role="number" data-step="frame"', 'style="visibility:hidden" data-role="number" data-step="frame"', "style:"),
+            ("rail class a stylesheet can reach", rail, f'class="r" {rail}', "style:"),
+            ("rail display attribute", rail, f'display="none" {rail}', "hidden:"),
+            ("rail visibility attribute", rail, f'visibility="hidden" {rail}', "hidden:"),
+            ("rail ancestor opacity attribute", group, '<g aria-hidden="true" opacity="0.1">', "hidden:"),
+            ("rail clip-path attribute", rail, f'clip-path="inset(0 100% 0 0)" {rail}', "hidden:"),
+            ("container inline display", '<div class="diagram-container">', '<div class="diagram-container" style="display:none">', "hidden:"),
+            ("stylesheet hides rail", *sheet('rect[data-role="rail"]{display:none}'), "hidden:"),
+            ("stylesheet fades svg", *sheet("svg{opacity:0.2}"), "hidden:"),
+            ("stylesheet repaints rail", *sheet('[data-role="rail"]{fill:none}'), "style:"),
+            ("stylesheet resizes rail", *sheet("rect{width:10px}"), "style:"),
+            ("stylesheet rotates svg", *sheet("svg{rotate:20deg}"), "transform:"),
+            ("stylesheet scales rail", *sheet("rect{scale:1 0.5}"), "transform:"),
+        )
+        for index, (name, old, new, expected) in enumerate(hidden_cases, 100):
+            if source.count(old) < 1:
+                failures.append(f"fixture {name!r} anchor is missing")
+                continue
+            path = directory / f"bad-{index}.html"
+            path.write_text(source.replace(old, new, 1), encoding="utf-8")
+            code, output = run(path)
+            if code == 0 or expected not in output:
+                failures.append(f"{name}: expected rejection containing {expected!r}\n{output}")
+            else:
+                print(f"OK: {name} rejected")
+        allowed_cases = (
+            ("quoted custom property", *sheet(':root{--n:"transform:translate(9px)"}')),
+            ("page-only class rule", *sheet(".note{width:10px;display:grid}")),
+        )
+        for index, (name, old, new) in enumerate(allowed_cases, 200):
+            path = directory / f"good-{index}.html"
+            path.write_text(source.replace(old, new, 1), encoding="utf-8")
+            code, output = run(path)
+            if code:
+                failures.append(f"{name}: expected pass\n{output}")
+            else:
+                print(f"OK: {name} passes")
     if failures:
         print("FAIL steps verifier tests")
         for failure in failures:

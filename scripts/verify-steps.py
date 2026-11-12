@@ -5,6 +5,12 @@ Steps encodes order with one contiguous equal-width rail. Machine-readable
 attributes bind every rail segment, printed number, and icon medallion to the
 same stage so geometry cannot silently disagree with its labels.
 
+Checked marks (rail, medallion, number) and their SVG groups are styled with
+presentation attributes only: an inline style, class or id on them is a
+finding, as is any ancestor that moves or hides them. A <style> rule that can
+reach SVG content may set only box-sizing, margin, padding and custom
+properties, and no rule may hide content or move it.
+
 Usage:
     python3 scripts/verify-steps.py --all
     python3 scripts/verify-steps.py skills/diagram-design/assets/example-steps.html
@@ -27,9 +33,70 @@ TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.I | re.
 ATTR_RE = re.compile(r'''(?P<name>[\w:-]+)\s*=\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)')''')
 TAG_STRIP_RE = re.compile(r"<[^>]+>")
 VIEWBOX_RE = re.compile(r"<svg\b[^>]*\bviewBox\s*=\s*['\"]([^'\"]+)['\"]", re.I)
-CSS_MOVEMENT_RE = re.compile(r"(?:^|[;{])\s*(?:transform|translate|x|y)\s*:", re.I)
+CSS_MOVEMENT_RE = re.compile(r"(?:^|[;{])\s*(?:transform|translate|rotate|scale|offset(?:-[\w-]+)?|x|y)\s*:", re.I)
+CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
+CSS_RULE_RE = re.compile(r"([^{}]*)\{([^{}]*)\}")
 TOLERANCE = 0.01
 CHECKED_ROLES = {"rail", "medallion", "number"}
+HIDING_PROPS = ("display", "visibility", "content-visibility", "opacity", "clip-path", "mask", "filter")
+MIN_OPACITY = 0.4
+# What a rule that can match SVG content may set; everything else paints or sizes marks.
+REACHING_ALLOWED = {"box-sizing", "margin", "padding"}
+# Rightmost selector types that cannot match a mark inside the diagram SVG.
+PAGE_TAGS = {
+    "html", "body", "main", "header", "footer", "section", "article", "aside", "nav", "div", "p", "span",
+    "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "figure", "figcaption", "small", "strong", "em",
+    "code", "pre", "table", "thead", "tbody", "tr", "td", "th", "svg",
+}
+
+
+def hides(name: str, value: str) -> bool:
+    value = value.replace("!important", "").strip().lower()
+    if name == "display":
+        return value == "none"
+    if name in {"visibility", "content-visibility"}:
+        return value in {"hidden", "collapse"}
+    if name == "opacity":
+        try:
+            amount = float(value[:-1]) / 100 if value.endswith("%") else float(value)
+        except ValueError:
+            return True  # var(), calc() and the like cannot be read here
+        return amount < MIN_OPACITY
+    return name in {"clip-path", "mask", "filter"} and value != "none"
+
+
+def declarations(block: str) -> list[tuple[str, str]]:
+    found = []
+    for part in CSS_COMMENT_RE.sub("", block).split(";"):
+        name, colon, value = part.partition(":")
+        if colon:
+            found.append((name.strip().lower(), value.strip()))
+    return found
+
+
+def hiding_declarations(block: str) -> list[str]:
+    # An escaped property name could spell any hiding property.
+    return [f"{name}: {value}" for name, value in declarations(block)
+            if "\\" in name or (name in HIDING_PROPS and hides(name, value))]
+
+
+def hidden_by(attrs: dict[str, str]) -> list[str]:
+    found = [f'{name}="{attrs[name]}"' for name in HIDING_PROPS if name in attrs and hides(name, attrs[name])]
+    return found + hiding_declarations(attrs.get("style", ""))
+
+
+def reaches_marks(selector: str) -> bool:
+    """Whether a selector could match a mark inside the SVG; unclear selectors count."""
+    selector = selector.strip()
+    if not selector or selector.startswith("@"):
+        return False
+    if re.search(r"[\[(\\\"']", selector):
+        return True
+    last = re.split(r"[\s>+~]+", selector)[-1]
+    if last.startswith((".", "#", ":root")):
+        return False  # checked marks and their groups carry no class or id
+    tag = re.match(r"[a-z][\w-]*", last, re.I)
+    return not (tag and tag.group(0).lower() in PAGE_TAGS)
 
 
 def moving_style(attrs: dict[str, str]) -> bool:
@@ -46,15 +113,28 @@ class CheckedTransformScanner(HTMLParser):
 
     def handle_starttag(self, tag: str, pairs: list[tuple[str, str | None]]) -> None:
         attrs = {name.lower(): value or "" for name, value in pairs}
-        if attrs.get("data-role") in CHECKED_ROLES:
+        role = attrs.get("data-role")
+        if role in CHECKED_ROLES:
             if moving_style(attrs):
-                self.findings.append(f"transform: checked {attrs['data-role']} mark carries movement")
+                self.findings.append(f"transform: checked {role} mark carries movement")
+            if "style" in attrs:
+                self.findings.append(f"style: checked {role} mark carries an inline style; use presentation attributes")
+            if "class" in attrs or "id" in attrs:
+                self.findings.append(f"style: checked {role} mark carries a class or id a stylesheet can reach")
+            if hidden_by(attrs):
+                self.findings.append(f"hidden: checked {role} mark is hidden ({', '.join(hidden_by(attrs))})")
             for ancestor_tag, ancestor_attrs in self.stack:
-                if ancestor_tag in {"g", "svg"} and moving_style(ancestor_attrs):
+                if moving_style(ancestor_attrs):
+                    self.findings.append(f"transform: checked {role} mark has a transformed {ancestor_tag} ancestor")
+                if ancestor_tag in {"g", "svg"} and "style" in ancestor_attrs:
+                    self.findings.append(f"style: checked {role} mark has a {ancestor_tag} ancestor with an inline style")
+                if ancestor_tag == "g" and ("class" in ancestor_attrs or "id" in ancestor_attrs):
+                    self.findings.append(f"style: checked {role} mark has a g ancestor with a class or id")
+                if hidden_by(ancestor_attrs):
                     self.findings.append(
-                        f"transform: checked {attrs['data-role']} mark has a transformed {ancestor_tag} ancestor"
+                        f"hidden: checked {role} mark has a hidden {ancestor_tag} ancestor "
+                        f"({', '.join(hidden_by(ancestor_attrs))})"
                     )
-                    break
         self.stack.append((tag.lower(), attrs))
 
     def handle_startendtag(self, tag: str, pairs: list[tuple[str, str | None]]) -> None:
@@ -106,10 +186,24 @@ def verify(path: Path) -> list[str]:
     scanner = CheckedTransformScanner()
     scanner.feed(source)
     errors.extend(dict.fromkeys(scanner.findings))
+    moved = False
     for style in re.findall(r"<style\b[^>]*>(.*?)</style>", source, flags=re.I | re.S):
-        if CSS_MOVEMENT_RE.search(style):
+        if not moved and CSS_MOVEMENT_RE.search(style):
             errors.append("transform: stylesheet movement is unsupported for checked geometry")
-            break
+            moved = True
+        for selectors, block in CSS_RULE_RE.findall(CSS_COMMENT_RE.sub("", style)):
+            selectors = " ".join(selectors.split())
+            hiding = hiding_declarations(block)
+            if hiding:
+                errors.append(f"hidden: stylesheet rule {selectors!r} hides content ({', '.join(hiding)})")
+            if any(reaches_marks(selector) for selector in selectors.split(",")):
+                painted = [name for name, _ in declarations(block)
+                           if name not in REACHING_ALLOWED and not name.startswith("--")]
+                if painted:
+                    errors.append(
+                        f"style: stylesheet rule {selectors!r} can reach diagram marks and sets "
+                        f"{', '.join(painted)}; style marks with presentation attributes"
+                    )
 
     viewbox_match = VIEWBOX_RE.search(source)
     viewbox: tuple[float, float, float, float] | None = None
