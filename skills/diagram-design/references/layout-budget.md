@@ -50,6 +50,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max cells (treemap) | 8 |
 | Max series (line chart) | 5 |
 | Max tasks (Gantt) | 12 |
+| Max stages (steps) | 7, exactly 1 focal stage |
 | Max points (scatter plot) | 30 |
 | Max series / outliers (box plot) | 8 / 8, 1 focal series |
 | Max stages / nodes / flows (sankey) | 3 / 8 / 12 |

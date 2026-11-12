@@ -416,6 +416,16 @@ jobs:
         id: event_modeling_tests
         run: python scripts/test-verify-event-modeling.py
 
+      - name: Verify Steps ordered rail
+        if: always()
+        id: steps
+        run: python scripts/verify-steps.py --all
+
+      - name: Verify Steps checker
+        if: always()
+        id: steps_tests
+        run: python scripts/test-verify-steps.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline
@@ -643,6 +653,8 @@ jobs:
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Block Registry | ${{ steps.block_registry.outcome == 'success' && '✅ Passed' || (steps.block_registry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Block Registry Checker | ${{ steps.block_registry_tests.outcome == 'success' && '✅ Passed' || (steps.block_registry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Steps Rail Geometry | ${{ steps.steps.outcome == 'success' && '✅ Passed' || (steps.steps.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Steps Checker | ${{ steps.steps_tests.outcome == 'success' && '✅ Passed' || (steps.steps_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Marimekko Width, Height & Area | ${{ steps.marimekko.outcome == 'success' && '✅ Passed' || (steps.marimekko.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"

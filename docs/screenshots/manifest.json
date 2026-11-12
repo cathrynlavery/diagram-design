@@ -75,6 +75,15 @@
       "height": 1154
     },
     {
+      "slug": "steps",
+      "source": "skills/diagram-design/assets/example-steps.html",
+      "screenshot": "docs/screenshots/steps.png",
+      "source_sha256": "86c1a6acba504c9d04237c5a66d94dce01ef64ec4f89edca16a5fa8a74f6f14d",
+      "screenshot_sha256": "e111727d6461fe95c56a5e0535b7179d94886ef2eb41fb0aac10c7765611902d",
+      "width": 2560,
+      "height": 1442
+    },
+    {
       "slug": "timeline",
       "source": "skills/diagram-design/assets/example-timeline.html",
       "screenshot": "docs/screenshots/timeline.png",
