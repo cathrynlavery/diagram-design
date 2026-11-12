@@ -47,10 +47,100 @@ def edit_cell(source: str, index: int, attrs: str = "", fill: str | None = None)
     """Add attributes to, or repaint, the unit cell with this index."""
     match = next(m for m in CELL_RE.finditer(source) if int(m.group(1)) == index)
     end = source.index(">", match.end())
+    end -= source[end - 1] == "/"  # keep the element self-closing
     tag = source[match.start():end]
     if fill is not None:
         tag = re.sub(r'fill="[^"]*"', f'fill="{fill}"', tag, count=1)
     return source[:match.start()] + tag + " " + attrs + source[end:]
+
+
+def cell_tag(source: str, index: int) -> str:
+    match = next(m for m in CELL_RE.finditer(source) if int(m.group(1)) == index)
+    return source[match.start():source.index(">", match.end()) + 1]
+
+
+def wrap(source: str, first: int, last: int, opening: str, closing: str) -> str:
+    """Wrap cells first..last (inclusive) in an element."""
+    start = source.index(cell_tag(source, first))
+    end = source.index(cell_tag(source, last)) + len(cell_tag(source, last))
+    return source[:start] + opening + source[start:end] + closing + source[end:]
+
+
+def after_cells(source: str, snippet: str) -> str:
+    end = source.index(cell_tag(source, 99)) + len(cell_tag(source, 99))
+    return source[:end] + snippet + source[end:]
+
+
+def adversarial(source: str, ink: str, empty: str) -> list[tuple[str, str, str | None]]:
+    """Edits that change what a browser draws while the declared state stays the same."""
+    def css(rule: str) -> str:
+        return source.replace("</style>", rule + "</style>", 1)
+    tag0, tag99 = cell_tag(source, 0), cell_tag(source, 99)
+    return [
+        # 1. cells are found by the HTML parser, so text that only looks like cells does not count
+        ("cells in HTML comment", wrap(source, 53, 62, "<!--", "-->"), "has 90 data-unit-cell"),
+        ("cells in text/plain script", wrap(source, 53, 62, '<script type="text/plain">', "</script>"), "has 90 data-unit-cell"),
+        ("duplicate fill attribute", source.replace(tag99, tag99.replace(f'fill="{empty}"', f'fill="{ink}" fill="{empty}"', 1), 1), "repeats attribute fill"),
+        ("duplicate x attribute", source.replace(tag0, tag0.replace(" x=", ' x="5000" x=', 1), 1), "repeats attribute x"),
+        ("fake root in comment", '<!-- <svg data-unit-grid="true" data-unit-filled="1"> -->' + source, None),
+        # 2. unrendered, conditional or moving ancestors
+        *[(f"cells in <{tag}>", wrap(source, 53, 62, f"<{tag}>", f"</{tag}>"), f"<{tag.lower()}> ancestor")
+          for tag in ("desc", "text", "foreignObject", "switch", "metadata", "svg", "symbol", "clipPath")],
+        ("cells in title", wrap(source, 53, 62, "<title>", "</title>"), "has 90 data-unit-cell"),
+        *[(f"group {attr}", wrap(source, 53, 62, f'<g {attr}="zz">', "</g>"), attr.lower())
+          for attr in ("systemLanguage", "requiredExtensions", "requiredFeatures")],
+        ("anchor transform", wrap(source, 53, 62, '<a href="#" transform="translate(5000 0)">', "</a>"), "transform"),
+        ("anchor style transform", wrap(source, 53, 62, '<a href="#" style="transform:translate(5000px,0)">', "</a>"), "style attribute"),
+        ("group style", wrap(source, 53, 62, '<g style="color:red">', "</g>"), "style attribute"),
+        ("anchor allowed", wrap(source, 53, 62, '<a href="#">', "</a>"), None),
+        # 3. cell paint beyond fill
+        ("wide stroke on empty", source.replace(tag99, tag99.replace('stroke-width="0.8"', 'stroke-width="20"'), 1), "stroke-width"),
+        ("wide stroke from group", wrap(source, 53, 53, '<g stroke-width="20">', "</g>").replace(cell_tag(source, 53), cell_tag(source, 53).replace(' stroke-width="0.8"', ""), 1), "stroke-width"),
+        ("paint-order", source.replace(tag0, tag0.replace("<rect ", '<rect paint-order="stroke" ', 1), 1), "paint-order"),
+        ("mix-blend-mode", source.replace(tag0, tag0.replace("<rect ", '<rect mix-blend-mode="lighten" ', 1), 1), "mix-blend-mode"),
+        ("empty fill near ink", source.replace(f'fill="{empty}"', f'fill="#{(int(ink[1:], 16) ^ 1):06x}"'), "too close"),
+        ("huge corner radius", source.replace(tag0, tag0.replace('rx="2"', 'rx="100"'), 1), "rx"),
+        # 4. stylesheet tricks
+        ("CSS hex escape", css("rect{f\\69ll:#000}"), "CSS fill"),
+        ("CSS six-digit escape", css("rect{f\\000069 ll:#000}"), "CSS fill"),
+        ("CSS char reference", source.replace("</svg>", "<style>rect{&#102;ill:#000}</style></svg>", 1), "CSS fill"),
+        ("CSS @import", source.replace("<style>", "<style>@import url('x.css');", 1), "@import"),
+        ("extra stylesheet link", source.replace("</head>", '<link rel="stylesheet" href="x.css"></head>', 1), "stylesheet"),
+        ("CSS stroke", css("rect{stroke:#000;stroke-width:20px}"), "CSS stroke"),
+        ("CSS stroke-width", css("rect{stroke-width:20px}"), "CSS stroke-width"),
+        ("CSS all", css("rect{all:unset}"), "CSS all"),
+        ("CSS mix-blend-mode", css("rect{mix-blend-mode:lighten}"), "CSS mix-blend-mode"),
+        ("CSS paint-order", css("rect{paint-order:stroke}"), "CSS paint-order"),
+        # 5. anything drawn after the first cell must be bounded outside the grid
+        *[(f"overlay {name}", after_cells(source, snippet), "later <")
+          for name, snippet in (
+              ("path", f'<path d="M382 206h236v134h-236z" fill="{empty}"/>'),
+              ("relative path", f'<path d="m300 200 l100 0 l0 50 z" fill="{empty}"/>'),
+              ("arc path", f'<path d="M0 0 A500 500 0 0 1 900 0" fill="{empty}"/>'),
+              ("circle", f'<circle cx="500" cy="300" r="60" fill="{ink}"/>'),
+              ("ellipse", f'<ellipse cx="500" cy="300" rx="60" ry="10" fill="{ink}"/>'),
+              ("polygon", f'<polygon points="382,230 618,230 618,330 382,330" fill="{ink}"/>'),
+              ("polyline", f'<polyline points="382,230 618,330" stroke="{ink}" stroke-width="80"/>'),
+              ("line", f'<line x1="382" y1="285" x2="618" y2="285" stroke="{ink}" stroke-width="120"/>'),
+              ("thick line beside grid", f'<line x1="300" y1="90" x2="300" y2="300" stroke="{ink}" stroke-width="200"/>'),
+              ("text", f'<text x="370" y="340" font-size="140" fill="{ink}">&#9608;&#9608;</text>'),
+              ("text with tspan", '<text x="40" y="380" font-size="9"><tspan x="400" y="200">X</tspan></text>'),
+              ("image", '<image x="382" y="230" width="236" height="110" href="#"/>'),
+              ("use", '<use href="#c0" x="100" y="100"/>'),
+              ("foreignObject", '<foreignObject x="382" y="230" width="236" height="110"></foreignObject>'),
+              ("stroked empty rect", f'<rect x="440" y="250" width="120" height="40" fill="none" stroke="{ink}" stroke-width="130"/>'),
+              ("rect px units", f'<rect x="382px" y="230px" width="236" height="110" fill="{ink}"/>'),
+              ("rect percent", f'<rect x="38.2%" y="58.97%" width="236" height="110" fill="{ink}"/>'),
+              ("rect CSS position", f'<rect style="x:382px;y:230px" width="236" height="110" fill="{ink}"/>'),
+              ("rect transform", f'<rect transform="translate(382 230)" width="236" height="110" fill="{ink}"/>'),
+              ("rect in moved group", f'<g transform="translate(382 230)"><rect width="1" height="1" fill="{ink}"/></g>'),
+          )],
+        ("label outside grid", after_cells(source, '<text x="40" y="380" font-size="9">Note</text>'), None),
+        ("path outside grid", after_cells(source, f'<path d="M40 340 h200 c10 0 10 10 0 10 z" fill="{ink}"/>'), None),
+        # 6. a second :root rule must not break token parsing
+        ("second :root rule", re.sub(r"(:root\{[^}]*?)(--accent:[^;}]*);([^}]*)\}", r"\1\3;\2}", source, count=1).replace("</style>", ":root{--grid-gap:4px}</style>", 1), None),
+        ("later :root moves --ink", source.replace("</style>", f":root{{--ink:{empty}}}</style>", 1), "painted"),
+    ]
 
 
 def cell_fill(source: str, index: int) -> str:
@@ -112,8 +202,8 @@ def main() -> int:
         ("default black fill", valid.replace(f'width="20" height="20" fill="{INK}"/>', 'width="20" height="20"/>', 1), "painted"),
         ("group opacity", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<g opacity="0"><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</g><rect data-unit-cell="filled" data-unit-index="1"'), "hidden by opacity"),
         ("root inline opacity", valid.replace('<svg ', '<svg style="opacity:0" ', 1), "hidden by opacity"),
-        ("cell in defs", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<defs><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</defs><rect data-unit-cell="filled" data-unit-index="1"'), "hidden by defs"),
-        ("cell in mask", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<mask id="m"><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</mask><rect data-unit-cell="filled" data-unit-index="1"'), "hidden by mask"),
+        ("cell in defs", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<defs><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</defs><rect data-unit-cell="filled" data-unit-index="1"'), "<defs> ancestor"),
+        ("cell in mask", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<mask id="m"><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</mask><rect data-unit-cell="filled" data-unit-index="1"'), "<mask> ancestor"),
         ("missing tokens", valid.replace(TOKENS, ""), "--ink"),
         ("second accent", edit_cell(edit_cell(valid, 0, fill=ACCENT), 1, fill=ACCENT), "--accent"),
         ("one accent allowed", edit_cell(valid, 1, fill=ACCENT), None),
@@ -143,8 +233,9 @@ def main() -> int:
             (f"{path.name} CSS opacity", source.replace("</style>", "rect{opacity:0}</style>", 1), "CSS opacity"),
             (f"{path.name} CSS display none", source.replace("</style>", "rect{display:none}</style>", 1), "CSS display"),
             (f"{path.name} SMIL set", source.replace("</svg>", f'<set href="#c0" attributeName="fill" to="{empty}"/></svg>', 1), "can repaint or move"),
-            (f"{path.name} overlay rect", source.replace("</svg>", f'<rect x="0" y="0" width="1000" height="390" fill="{empty}"/></svg>', 1), "covers unit cell"),
+            (f"{path.name} overlay rect", source.replace("</svg>", f'<rect x="0" y="0" width="1000" height="390" fill="{empty}"/></svg>', 1), "later <rect>"),
         ])
+        cases.extend((f"{path.name} {name}", mutated, expected) for name, mutated, expected in adversarial(source, ink, empty))
         cases.append((f"{path.name} moved cell", source.replace('<rect data-unit-cell=', '<rect transform="translate(300 0)" data-unit-cell=', 1), "transform"))
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as directory:
