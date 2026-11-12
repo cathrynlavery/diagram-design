@@ -1115,6 +1115,13 @@ def run_cases(h: Harness) -> int:
         ("display=none unquoted on the bound label",
          [(AUTH_LABEL, AUTH_LABEL.replace('<text ', "<text display=none ", 1))],
          1, "hides its bound label"),
+        # An unquoted value runs to whitespace or `>`, so a quote, `=` or `<`
+        # inside it does not end it before the hide token.
+        ("display:none after a quote in an unquoted style",
+         [(AUTH_G, "<g style=font-family:'Geist';display:none data-name=\"Auth\"")],
+         1, "never drawn"),
+        ("display:none after = in an unquoted style",
+         [(AUTH_G, '<g style=a=b;display:none data-name="Auth"')], 1, "never drawn"),
     ):
         h.expect_findings(
             "%s is %d finding(s)" % (title, count),
@@ -1128,6 +1135,8 @@ def run_cases(h: Harness) -> int:
          [(AUTH_G, '<g aria-label="display=none" data-name="Auth"')]),
         ("a boolean data attribute on the series group",
          [(AUTH_G, '<g data-pinned data-name="Auth"')]),
+        ("one valueless attribute whose name holds a dot",
+         [(AUTH_G, '<g data-note.hidden data-name="Auth"')]),
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
     # A bound mark may state paint that draws nothing. Its coordinates still

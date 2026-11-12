@@ -178,10 +178,11 @@ NUMBER_RE = re.compile(
 DIGIT_RE = re.compile(r"\d")
 # An attribute as the HTML tokenizer reads it: a quoted value, an unquoted
 # value (`display=none`), or no value at all (`<div hidden>`), which a
-# browser treats as present with an empty value.
+# browser treats as present with an empty value. An unquoted value ends only
+# at whitespace or `>`, and a name at whitespace, quote, `/`, `=`, `<` or `>`.
 ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)(?:\s*=\s*(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)"""
-    r"""|(?P<bare>[^\s"'=<>`]+)))?""",
+    r"""(?P<name>[^\s"'<>/=]+)(?:\s*=\s*(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)"""
+    r"""|(?P<bare>[^\s>]+)))?""",
     re.DOTALL,
 )
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
