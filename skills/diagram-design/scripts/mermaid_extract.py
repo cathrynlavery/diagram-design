@@ -793,12 +793,13 @@ def _edge_operators(text: str) -> list[_Operator]:
     # rejects `A--x(a)-->B` outright. A spaced label (`A-- x marks -->B`)
     # is unaffected. The dotted form's closing operator always opens with a
     # literal `.`, so its compact label may contain internal whitespace and
-    # start with `x` or `o` (as in `A-.x y.->B`).
+    # start with `x` or `o` (as in `A-.x y.->B`). An opening never starts
+    # inside a longer operator, so `A --- B-->C` stays two links.
     text_edge = re.compile(
         r"(?P<opening>"
         r"<(?:--|==)"
         r"|(?<![\w.:-])[xo](?:--|==)"
-        r"|(?:--|==)"
+        r"|(?<![-=])(?:--|==)"
         r")"
         r"(?![-=.>xo])"
         r"(?:\s(?P<spaced>.+?)\s|(?P<compact>[^|<>]+?))"

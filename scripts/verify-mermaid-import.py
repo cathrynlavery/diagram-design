@@ -666,6 +666,29 @@ Sa-- x marks -->Sb
         rejected = tmp / f"compact-xo-bracket-{index}.mmd"
         rejected.write_text(f"flowchart LR\n{line}\n", encoding="utf-8")
         expect_error([str(rejected)], "malformed edge")
+    # A label opener inside an unlabeled `---`/`===` is not a label: these
+    # are two links, A to B open and B to C arrow, as Mermaid reads them.
+    for index, (line, style) in enumerate(
+        (
+            ("A --- B-->C", "solid"),
+            ("A === B==>C", "thick"),
+            ("A --- B --> C", "solid"),
+            ("A === B ==> C", "thick"),
+        )
+    ):
+        chain_file = tmp / f"open-then-arrow-chain-{index}.mmd"
+        chain_file.write_text(f"flowchart LR\n{line}\n", encoding="utf-8")
+        chain = json.loads(run_extract([str(chain_file), "--json"]))["diagrams"][0]
+        chain_ids = sorted(node["id"] for node in chain["nodes"])
+        chain_edges = [
+            (edge["source"], edge["target"], edge["label"], edge["style"], edge["undirected"])
+            for edge in chain["edges"]
+        ]
+        if chain_ids != ["A", "B", "C"] or chain_edges != [
+            ("A", "B", "", style, True),
+            ("B", "C", "", style, False),
+        ]:
+            fail(f"{line!r} did not import as two links: {chain_ids} {chain_edges}")
 
     modern_file = tmp / "modern-flowchart.mmd"
     modern_file.write_text(
