@@ -114,6 +114,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Box-plot checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-box-plot.py` |
 | Arc-diagram spans sit on one shared pitch, each a rising semicircle whose height is the seat count | `python3 scripts/verify-arc-diagram.py --all` |
 | Arc-diagram checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-arc-diagram.py` |
+| Quoted CSS data is not read as a geometry declaration by any verifier (pass + adversarial cases) | `python3 scripts/test-css-string-scan.py` |
 | Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
@@ -232,6 +233,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-box-plot.py \
   && python3 scripts/verify-arc-diagram.py --all \
   && python3 scripts/test-verify-arc-diagram.py \
+  && python3 scripts/test-css-string-scan.py \
   && python3 scripts/verify-skin-polarity.py --all \
   && python3 scripts/test-verify-skin-polarity.py \
   && python3 scripts/test-export-wait.py

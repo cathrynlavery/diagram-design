@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from math import cos, hypot, isfinite, pi, radians, sin
 from pathlib import Path
+import html
 import re
 import sys
 from typing import Sequence
@@ -42,6 +43,68 @@ SAFE_HTML_STYLE_TARGETS = frozenset({
 })
 CSS_RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
 CSS_COMBINATOR = re.compile(r"\s+|[>+~]")
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 @dataclass
@@ -105,12 +168,13 @@ def _geometry_tolerance(radius: float | None) -> float:
 
 
 def _contains_geometry_css(css: str) -> bool:
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    return "\\" in without_comments or CSS_GEOMETRY_PROPERTY.search(without_comments) is not None
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
+    without_strings = blank_comments_outside_strings(blank_css_strings(css))
+    return "\\" in without_comments or CSS_GEOMETRY_PROPERTY.search(without_strings) is not None
 
 
 def _contains_stylesheet_loading(css: str) -> bool:
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
     return CSS_STYLESHEET_LOADING.search(without_comments) is not None
 
 
@@ -143,7 +207,7 @@ def _selector_can_target_chart(selector: str) -> bool:
 
 
 def _stylesheet_can_target_chart(css: str) -> bool:
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
     if "\\" in without_comments:
         return True
     for prelude, declarations in CSS_RULE.findall(without_comments):
@@ -412,7 +476,7 @@ def _stylesheet_can_hide_ancestors(css: str) -> bool:
     # Without a CSS cascade engine, a hiding rule on an allowed HTML selector
     # cannot prove readable labels. Reject the rule rather than guessing which
     # ancestor or competing declaration wins; ordinary layout remains allowed.
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
     for _, declarations in CSS_RULE.findall(without_comments):
         for declaration in declarations.split(";"):
             suppressed, visibility = _visibility_state({"style": declaration}, (False, "visible"))

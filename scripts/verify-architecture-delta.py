@@ -15,6 +15,7 @@ Exit: 0 clean, 1 contract findings, 2 unreadable input/usage.
 from __future__ import annotations
 
 import argparse
+import html
 import math
 import re
 import sys
@@ -41,6 +42,68 @@ EPS = 1e-6
 ENDPOINT_TOLERANCE = 2.0
 MAX_COORDINATE = 1e7
 NONRENDERING = {"defs", "symbol", "clippath", "mask", "pattern", "marker", "template", "script", "style", "title", "desc", "metadata"}
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 @dataclass(eq=False)
@@ -145,7 +208,7 @@ def within(node: Node, ancestor: Node) -> bool:
 
 
 def clean_css(raw: str) -> str:
-    return re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+    return blank_comments_outside_strings(blank_css_strings(raw))
 
 
 def hiding_values(values: dict[str, str]) -> bool:
@@ -321,7 +384,7 @@ def check_source(path: Path, source: str) -> list[str]:
         if "transform" in node.attrs and node not in snapshots:
             fail(node, "only snapshot translations may transform verified geometry")
         inline = clean_css(node.attrs.get("style", ""))
-        if "\\" in inline or CSS_MOVES.search(inline):
+        if "\\" in inline or CSS_MOVES.search(clean_css(blank_css_strings(node.attrs.get("style", "")))):
             fail(node, "CSS geometry overrides or escaped inline CSS are unsupported")
         if node.tag in {"animate", "animatemotion", "animatetransform", "set", "use", "foreignobject"}:
             fail(node, f"{node.tag} is unsupported in a static architecture delta")
@@ -341,7 +404,7 @@ def check_source(path: Path, source: str) -> list[str]:
     for style in [node for node in scanner.nodes if node.tag == "style"]:
         css = clean_css(style.text())
         # CSS escapes could disguise transform or geometry property names.
-        if "\\" in css or CSS_MOVES.search(css):
+        if "\\" in css or CSS_MOVES.search(clean_css(blank_css_strings(style.text()))):
             fail(style, "CSS geometry overrides or escaped CSS are unsupported")
         for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
             if css_hides(declarations) and any(
