@@ -433,6 +433,15 @@
       "screenshot_sha256": "7e9c46dabe5ac42138fd55ed632736ba6d418b84ea09da13379dc9138da921f4",
       "width": 2400,
       "height": 1440
+    },
+    {
+      "slug": "event-modeling",
+      "source": "skills/diagram-design/assets/example-event-modeling.html",
+      "screenshot": "docs/screenshots/event-modeling.png",
+      "source_sha256": "142b4e758159448e05d31a3b3c55e0da12662920bd22bc9bd21c01cd85abeb74",
+      "screenshot_sha256": "9b16f4b4e6683ecb553312b9935cad1fd70de0711165a231bab4e2002f7ed8dc",
+      "width": 2400,
+      "height": 1440
     }
   ]
 }

@@ -7,7 +7,7 @@
   </picture>
 </h1>
 
-**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>47 diagram types. No shadows. No Mermaid slop.**
+**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>48 diagram types. No shadows. No Mermaid slop.**
 
 [![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
 [![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
@@ -245,7 +245,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-47 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+48 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -326,7 +326,7 @@ The model already understood the content. What it was missing was taste, so I wr
 <tr>
   <td align="center" width="33%"><a href="docs/screenshots/sbgn.png"><img src="docs/screenshots/thumbs/sbgn.webp" alt="SBGN"></a><br><b>SBGN</b><br><sub>Species, processes + compartments</sub></td>
   <td align="center" width="33%"><a href="docs/screenshots/requirement-traceability.png"><img src="docs/screenshots/thumbs/requirement-traceability.webp" alt="Requirement traceability"></a><br><b>Requirement traceability</b><br><sub>Requirements → design → verification</sub></td>
-  <td align="center" width="33%"></td>
+  <td align="center" width="33%"><a href="docs/screenshots/event-modeling.png"><img src="docs/screenshots/thumbs/event-modeling.webp" alt="Event modeling"></a><br><b>Event modeling</b><br><sub>Commands → events → read models</sub></td>
 </tr>
 </table>
 
@@ -342,7 +342,7 @@ Axonometric plan uses the same projection for one floor or one site: walls cut a
 
 SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagram-design/assets/example-sbgn.html) and its [reference](skills/diagram-design/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 47; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 48; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
 ---
 
@@ -591,6 +591,7 @@ diagram-design/
 │       │   ├── type-dp-integration.md
 │       │   ├── type-dp-security-matrix.md
 │       │   ├── type-er.md
+│       │   ├── type-event-modeling.md
 │       │   ├── type-exploded.md
 │       │   ├── type-fishbone.md
 │       │   ├── type-flowchart.md
