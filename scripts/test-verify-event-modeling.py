@@ -111,6 +111,22 @@ def main() -> None:
         errors = module.check(candidate)
         if not any("overlaps another cell" in error for error in errors):
             failures.append(("cross-cell cover", "overlaps another cell", errors))
+        # Arrow geometry must run from the declared command or event cell to its target cell.
+        speck = 'd="M 0 0 H 1"'
+        geometry_cases = (
+            ("every arrow a speck", re.sub(r' d="M [^"]*"', " " + speck, source)),
+            ("one shaft a speck", source.replace('d="M 224 302 V 363"', speck, 1)),
+            ("one arrowhead a speck", source.replace('d="M 218 360 L 224 368 L 230 360"', speck, 1)),
+            ("shaft shifted to the next stage", source.replace('d="M 224 302 V 363"', 'd="M 588 302 V 363"', 1)),
+            ("shaft from the wrong row", source.replace('d="M 224 302 V 363"', 'd="M 224 464 V 525"', 1)),
+            ("shaft stops short", source.replace('d="M 224 302 V 363"', 'd="M 224 302 V 320"', 1)),
+        )
+        for name, mutated in geometry_cases:
+            assert mutated != source, name
+            candidate.write_text(mutated, encoding="utf-8")
+            errors = module.check(candidate)
+            if not any("arrow must run from" in error for error in errors):
+                failures.append((name, "arrow must run from", errors))
         assert not failures, failures
 
         # A comment and an escaped bracket in a class name are not attribute selectors.
