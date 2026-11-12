@@ -23,7 +23,7 @@ def stage_fixture(count: int, stage_width: int | None = None) -> str:
         x = start + (index - 1) * width
         focal = ' data-focal="true"' if index == 3 else ""
         parts.append(f'<rect x="{x:g}" y="240" width="{width:g}" height="48" fill="rgba(45,49,66,0.05)" data-role="rail" data-step="s{index}" data-index="{index}"{focal}/>')
-    parts.append('</g><g font-size="8">')
+    parts.append('</g><g font-size="8" font-family="\'Geist Mono\', monospace" text-anchor="middle">')
     for index in range(1, count + 1):
         cx = start + (index - 0.5) * width
         focal = ' data-focal="true"' if index == 3 else ""
@@ -151,6 +151,12 @@ def main() -> int:
             ("stylesheet rotates svg", *sheet("svg{rotate:20deg}"), "transform:"),
             ("stylesheet scales rail", *sheet("rect{scale:1 0.5}"), "transform:"),
             ("repeated attribute", group, '<g aria-hidden="true" aria-hidden="true">', "attributes:"),
+            ("medallion stroke too wide", 'stroke="#2d3142" data-role="medallion" data-step="frame"', 'stroke="#2d3142" stroke-width="5" data-role="medallion" data-step="frame"', "stroke-width"),
+            ("number font-size under 8", 'fill="#4f5d75" data-role="number" data-step="frame"', 'fill="#4f5d75" font-size="7" data-role="number" data-step="frame"', "font-size"),
+            ("number off-house font", 'fill="#4f5d75" data-role="number" data-step="frame"', 'fill="#4f5d75" font-family="Comic Sans MS" data-role="number" data-step="frame"', "font-family"),
+            ("number anchored at its end", 'fill="#4f5d75" data-role="number" data-step="frame"', 'fill="#4f5d75" text-anchor="end" data-role="number" data-step="frame"', "text-anchor"),
+            ("narrow rem frame", *sheet(".frame{max-width:50rem}"), "max-width"),
+            ("svg inside a list item", '<div class="diagram-container">', '<ul><li class="diagram-container">', "block containers"),
             ("number with a child", 'data-step="frame">01</text>', 'data-step="frame">01<tspan> </tspan></text>', "no child elements"),
         )
         for index, (name, old, new, expected) in enumerate(hidden_cases, 100):
@@ -237,7 +243,30 @@ def main() -> int:
             ("@font-face", *sheet("@font-face{font-family:X;src:url(x.woff2)}")),
             ("responsive svg", *sheet("svg{max-width:100%;height:auto}")),
             ("reduced motion", *sheet("@media (prefers-reduced-motion:reduce){*{animation:none}}")),
+            ("medallion 1px outline", 'stroke="#2d3142" data-role="medallion" data-step="frame"', 'stroke="#2d3142" stroke-width="1" data-role="medallion" data-step="frame"'),
+            ("rail ink with fill-opacity", 'fill="rgba(191,69,32,0.08)" data-role="rail"', 'fill="#bf4520" fill-opacity="0.08" data-role="rail"'),
+            ("number typography on the text", n1, n1.replace("<text ", '<text font-size="8" font-weight="600" text-anchor="middle" font-family="\'Geist Mono\', monospace" ')),
+            ("frame max-width in rem", ".frame { max-width:1280px;", ".frame { max-width:80rem;"),
         )
+        full = (GOOD.parent / "example-steps-full.html").read_text(encoding="utf-8")
+        card_text = "<p>One title and two lines per stage keep all five stages readable at a glance.</p>"
+        full_cases = (
+            ("full page with a list", [(card_text, "<ul><li>One title</li><li><strong>Two</strong> lines</li></ul>")]),
+            ("full page in main", [('<div class="container">', '<main class="container">'), ("</footer>\n  </div>", "</footer>\n  </main>")]),
+        )
+        for index, (name, edits) in enumerate(full_cases, 250):
+            mutated = full
+            for old, new in edits:
+                if mutated.count(old) != 1:
+                    failures.append(f"fixture {name!r} anchor occurs {mutated.count(old)} times")
+                mutated = mutated.replace(old, new, 1)
+            path = directory / f"good-{index}.html"
+            path.write_text(mutated, encoding="utf-8")
+            code, output = run(path)
+            if code:
+                failures.append(f"{name}: expected pass\n{output}")
+            else:
+                print(f"OK: {name} passes")
         for index, (name, old, new) in enumerate(allowed_cases, 200):
             path = directory / f"good-{index}.html"
             path.write_text(source.replace(old, new, 1), encoding="utf-8")

@@ -41,9 +41,11 @@ ASSET_DIR = ROOT / "skills/diagram-design/assets"
 TOLERANCE = 0.01
 CHECKED_ROLES = {"rail": "rect", "medallion": "circle", "number": "text"}
 MARK_ATTRS = {
-    "rail": {"x", "y", "width", "height", "fill", "data-role", "data-step", "data-index", "data-focal"},
-    "medallion": {"cx", "cy", "r", "fill", "stroke", "data-role", "data-step", "data-focal"},
-    "number": {"x", "y", "fill", "data-role", "data-step"},
+    "rail": {"x", "y", "width", "height", "fill", "fill-opacity", "data-role", "data-step", "data-index", "data-focal"},
+    "medallion": {"cx", "cy", "r", "fill", "stroke", "stroke-width", "data-role", "data-step", "data-focal"},
+    "number": {
+        "x", "y", "fill", "font-size", "font-weight", "font-family", "text-anchor", "data-role", "data-step",
+    },
 }
 GROUP_ATTRS = {
     "aria-hidden", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
@@ -59,14 +61,19 @@ INK = {
 }
 MIN_OPACITY = 0.4
 MIN_FONT_SIZE = 8
+HOUSE_FONTS = {"geist", "geist mono", "instrument serif"}
 MAX_STROKE_WIDTH = 4
 FONTS_HREF = "https://fonts.googleapis.com/css2?"
 PAGE_TAGS = {
     "html": {"lang"}, "head": set(), "meta": {"charset", "name", "content"}, "title": set(),
     "link": {"href", "rel"}, "style": set(), "body": set(), "div": {"class"}, "p": {"class"},
     "h1": set(), "h2": set(), "h3": set(), "header": {"class"}, "footer": {"class"},
-    "section": {"class"}, "article": {"class"}, "span": {"class"},
+    "section": {"class"}, "article": {"class"}, "span": {"class"}, "main": {"class"}, "ul": {"class"},
+    "ol": {"class"}, "li": {"class"}, "code": {"class"}, "em": {"class"}, "strong": {"class"},
+    "small": {"class"}, "br": set(),
 }
+# Only block containers may hold the diagram SVG.
+SVG_CONTAINERS = {"#document", "html", "body", "div", "main", "section", "article"}
 VOID = {"meta", "link", "br", "img", "input", "hr", "source", "wbr"}
 CSS_COMMENT_RE = re.compile(r"/\*.*?(?:\*/|$)", re.S)
 MOVEMENT = {
@@ -243,8 +250,9 @@ def rule_errors(selectors: str, body: str, ancestor_tags: set[str], ancestor_cla
             elif kind == "ancestor":
                 allowed = name in ANCESTOR_ALLOWED or name.startswith(ANCESTOR_PREFIXES)
                 if name == "max-width":
-                    width = re.fullmatch(r"(\d+(?:\.\d+)?)px", value)
-                    allowed = value in {"none", "100%"} or bool(width and float(width.group(1)) >= 960)
+                    width = re.fullmatch(r"(\d+(?:\.\d+)?)(px|r?em)", value)
+                    floor = 960 if width and width.group(2) == "px" else 60
+                    allowed = value in {"none", "100%"} or bool(width and float(width.group(1)) >= floor)
                 elif name in ANCESTOR_VALUES:
                     allowed = value in ANCESTOR_VALUES[name]
                 if not allowed:
@@ -293,6 +301,8 @@ def page_errors(tree: Tree) -> tuple[list[str], Node | None]:
             errors.append(f"page: unsupported <{node.tag}> {' '.join(extra)}".rstrip() + " around the diagram")
         if node.tag == "link" and not (node.attrs.get("rel") == "stylesheet" and node.attrs.get("href", "").startswith(FONTS_HREF)):
             errors.append("page: only the Google Fonts stylesheet link is allowed")
+    if svg is not None and any(node.tag not in SVG_CONTAINERS for node in svg.ancestors()):
+        errors.append("page: the diagram SVG must sit in block containers (html, body, div, main, section, article)")
     if svg is not None and not set(svg.attrs) <= ROOT_ATTRS:
         errors.append(f"style: the diagram SVG carries {sorted(set(svg.attrs) - ROOT_ATTRS)}")
     return errors, svg
@@ -321,8 +331,10 @@ def mark_errors(node: Node, role: str, svg: Node, paper: str) -> list[str]:
     if stroke_width is None or not 0 < stroke_width <= MAX_STROKE_WIDTH:
         errors.append(f"paint: checked {role} mark stroke-width must be within 0..{MAX_STROKE_WIDTH}")
     fill = color(inherited(node, "fill", svg) or "")
-    if role == "rail" and not (fill and fill[0] in inks and fill[1] > 0):
-        errors.append(f"paint: rail fill {node.attrs.get('fill')!r} must be a visible non-paper house ink")
+    if role == "rail":
+        fill_opacity = number({"o": node.attrs.get("fill-opacity", "1")}, "o")
+        if not (fill and fill[0] in inks and fill[1] > 0 and fill_opacity is not None and 0 < fill_opacity <= 1):
+            errors.append(f"paint: rail fill {node.attrs.get('fill')!r} must be a visible non-paper house ink")
     if role == "medallion" and not (stroke_ink and stroke_ink[0] in inks and stroke_ink[1] >= MIN_OPACITY):
         errors.append(f"paint: medallion stroke {stroke!r} must be a visible non-paper house ink")
     if role == "number":
@@ -333,6 +345,12 @@ def mark_errors(node: Node, role: str, svg: Node, paper: str) -> list[str]:
             errors.append(f"number: font-size must be at least {MIN_FONT_SIZE}")
         if node.children:
             errors.append("number: a printed number has no child elements")
+        family = (inherited(node, "font-family", svg) or "").split(",")[0].strip(" '\"").lower()
+        if family not in HOUSE_FONTS:
+            errors.append(f"number: font-family must start with a house font ({', '.join(sorted(HOUSE_FONTS))})")
+        # The centering check reads x as the number's middle.
+        if (inherited(node, "text-anchor", svg) or "").strip() != "middle":
+            errors.append("number: text-anchor must be middle")
     return errors
 
 
