@@ -458,10 +458,22 @@ def _kind_and_direction(
     _fail("not a Mermaid file")
 
 
-def _top_level_mask(text: str) -> str:
+# Mermaid's flowchart lexer opens a string only at a double quote (a Markdown
+# string is "`...`"), so an apostrophe is label text: `A[Bob's box]`,
+# `A -->|it's| B`. Expanded `@{ ... }` attributes are YAML, where single
+# quotes do delimit values (`label: '['`), so the scanners switch to the
+# attribute quote set inside one. They count open `@{` entries alongside the
+# bracket stack, so that test stays constant-time at any nesting depth.
+FLOWCHART_QUOTES = "\"`"
+ATTRIBUTE_QUOTES = "\"'`"
+ATTRIBUTE_OPEN = "@{"
+
+
+def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
     """Keep top-level syntax positions and blank quoted/bracketed content."""
     output = list(text)
     stack: list[str] = []
+    attributes = 0
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
@@ -475,17 +487,22 @@ def _top_level_mask(text: str) -> str:
             elif character == quote:
                 quote = None
             continue
-        if character in "\"'`":
+        if character in (ATTRIBUTE_QUOTES if attributes else quotes):
             quote = character
             output[index] = " "
             continue
         if character in "[({":
-            stack.append(character)
+            if character == "{" and text[index - 1 : index] == "@":
+                stack.append(ATTRIBUTE_OPEN)
+                attributes += 1
+            else:
+                stack.append(character)
             output[index] = " "
             continue
         if character in "])}":
-            if stack and stack[-1] == pairs[character]:
-                stack.pop()
+            if stack and stack[-1][-1] == pairs[character]:
+                if stack.pop() == ATTRIBUTE_OPEN:
+                    attributes -= 1
             output[index] = " "
             continue
         if stack:
@@ -493,8 +510,10 @@ def _top_level_mask(text: str) -> str:
     return "".join(output)
 
 
-def _split_top_level(text: str, delimiter: str) -> list[str]:
-    mask = _top_level_mask(text)
+def _split_top_level(
+    text: str, delimiter: str, quotes: str = FLOWCHART_QUOTES
+) -> list[str]:
+    mask = _top_level_mask(text, quotes)
     parts: list[str] = []
     start = 0
     for index, character in enumerate(mask):
@@ -508,10 +527,11 @@ def _split_top_level(text: str, delimiter: str) -> list[str]:
 def _statement_complete(text: str) -> bool:
     """Return whether quotes and node delimiters close within a statement."""
     stack: list[str] = []
+    attributes = 0
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
-    for character in text:
+    for index, character in enumerate(text):
         if quote is not None:
             if escaped:
                 escaped = False
@@ -520,13 +540,18 @@ def _statement_complete(text: str) -> bool:
             elif character == quote:
                 quote = None
             continue
-        if character in "\"'`":
+        if character in (ATTRIBUTE_QUOTES if attributes else FLOWCHART_QUOTES):
             quote = character
         elif character in "[({":
-            stack.append(character)
+            if character == "{" and text[index - 1 : index] == "@":
+                stack.append(ATTRIBUTE_OPEN)
+                attributes += 1
+            else:
+                stack.append(character)
         elif character in "])}":
-            if stack and stack[-1] == pairs[character]:
-                stack.pop()
+            if stack and stack[-1][-1] == pairs[character]:
+                if stack.pop() == ATTRIBUTE_OPEN:
+                    attributes -= 1
     return quote is None and not stack
 
 
@@ -673,7 +698,7 @@ def _parse_expanded_attributes(text: str) -> tuple[str, str] | None:
     if not text.startswith("@{") or not text.endswith("}"):
         return None
     values: dict[str, str] = {}
-    for raw_attribute in _split_top_level(text[2:-1], ","):
+    for raw_attribute in _split_top_level(text[2:-1], ",", ATTRIBUTE_QUOTES):
         key, separator, raw_value = raw_attribute.partition(":")
         if not separator:
             continue
@@ -818,8 +843,9 @@ def _edge_operators(text: str) -> list[_Operator]:
             occupied.append((operator_start, match.end()))
 
     # A dotted link grows by dots: `-.->`, `-..->`, `-...->` and `-.-`, `-..-`.
+    # A single dash before x/o belongs to a node id such as `node-x`.
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.+-+>|=+>|-+(?:>|x|o)|-+\.+-+|={3,}|-{3,}|~{3,}"
+        r"[xo][-=.]{2,}[xo]|<[-=.]+>|-+\.+-+>|=+>|-+>|-{2,}[xo]|-+\.+-+|={3,}|-{3,}|~{3,}"
     )
     for match in pattern.finditer(mask):
         if any(start <= match.start() < end for start, end in occupied):
@@ -856,6 +882,9 @@ def _endpoint_group(
         if parsed is None:
             return None
         node_id, label, shape = parsed
+        # A link token outside any shape means a link that did not parse.
+        if shape != "asymmetric" and re.search(r"--|==|-\.|\s[-=][xo]", _top_level_mask(raw)):
+            return None
         diagram.add_node(node_id, label, shape, parent)
         identifiers.append(node_id)
     return identifiers or None
@@ -972,12 +1001,29 @@ def _parse_flowchart(
                             operator.undirected,
                         )
             continue
-        if re.search(r"(?:--|==|-.).*?(?:>|x|o|-)", _top_level_mask(text)):
-            _fail(f"malformed edge at line {line_number}")
         parsed = _parse_node_expression(text)
-        if parsed is not None:
+        # The mask blanks shaped labels, so a link token left in it sits
+        # outside any shape. The asymmetric `>` opener is not masked.
+        masked = _top_level_mask(text)
+        malformed_link = re.search(
+            r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo]",
+            masked,
+        )
+        bare_link_start = re.search(r"--|==|-\.", masked)
+        if parsed is not None and not (
+            parsed[2] != "asymmetric" and (malformed_link or bare_link_start)
+        ):
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
+            continue
+        if (
+            malformed_link
+            or bare_link_start
+            # Not a node but link-like (`A- >B`): fail instead of dropping it.
+            # The dot matches any character on purpose.
+            or (parsed is None and re.search(r"(?:==|-.).*?(?:>|x|o|-)", masked))
+        ):
+            _fail(f"malformed edge at line {line_number}")
     if invisible_links:
         diagram.notes.append(f"{invisible_links} invisible layout links ignored")
 
