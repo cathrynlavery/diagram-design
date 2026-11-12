@@ -1,4 +1,4 @@
-# ADR 0016: Steps is an ordered-stage rail grammar
+# ADR 0018: Steps is an ordered-stage rail grammar
 
 **Status:** Proposed  
 **Date:** 2026-10-18
@@ -11,7 +11,7 @@ Forcing that content into Timeline invents elapsed-time semantics. Process and S
 
 ## Decision
 
-Add **Steps** as visual type #46.
+Add **Steps** as visual type #47.
 
 Its load-bearing primitive is one contiguous equal-width rail with numbered icon medallions. Equal spacing encodes order only. Exactly one stage is focal; all others stay neutral. The grammar allows 3–7 stages, no branches, no actor lanes, and no time scale.
 
