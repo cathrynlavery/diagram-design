@@ -108,11 +108,11 @@
     {
       "thumb": "event-modeling.webp",
       "source": "docs/screenshots/event-modeling.png",
-      "source_sha256": "1b0accc6b8631d7cba03ffc37429b04cf415e6d34a35128237554fa23c9098a3",
+      "source_sha256": "9b16f4b4e6683ecb553312b9935cad1fd70de0711165a231bab4e2002f7ed8dc",
       "width": 600,
       "height": 360,
       "quality": 82,
-      "thumb_sha256": "4881454db4219d70bf103359c25f9623cf9b917aafdae557b0671e8a12c222c4"
+      "thumb_sha256": "215789b710c689d8884c0dff110a78a7c39bb805487d25bbc11e4f5937339ae0"
     },
     {
       "thumb": "exploded.webp",
