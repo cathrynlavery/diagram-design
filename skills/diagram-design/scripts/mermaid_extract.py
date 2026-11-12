@@ -843,8 +843,9 @@ def _edge_operators(text: str) -> list[_Operator]:
             occupied.append((operator_start, match.end()))
 
     # A dotted link grows by dots: `-.->`, `-..->`, `-...->` and `-.-`, `-..-`.
+    # A single dash before x/o belongs to a node id such as `node-x`.
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.+-+>|=+>|-+(?:>|x|o)|-+\.+-+|={3,}|-{3,}|~{3,}"
+        r"[xo][-=.]{2,}[xo]|<[-=.]+>|-+\.+-+>|=+>|-+>|-{2,}[xo]|-+\.+-+|={3,}|-{3,}|~{3,}"
     )
     for match in pattern.finditer(mask):
         if any(start <= match.start() < end for start, end in occupied):
@@ -881,6 +882,9 @@ def _endpoint_group(
         if parsed is None:
             return None
         node_id, label, shape = parsed
+        # A link token outside any shape means a link that did not parse.
+        if shape != "asymmetric" and re.search(r"--|==|-\.|\s[-=][xo]", _top_level_mask(raw)):
+            return None
         diagram.add_node(node_id, label, shape, parent)
         identifiers.append(node_id)
     return identifiers or None
@@ -997,12 +1001,29 @@ def _parse_flowchart(
                             operator.undirected,
                         )
             continue
-        if re.search(r"(?:--|==|-.).*?(?:>|x|o|-)", _top_level_mask(text)):
-            _fail(f"malformed edge at line {line_number}")
         parsed = _parse_node_expression(text)
-        if parsed is not None:
+        # The mask blanks shaped labels, so a link token left in it sits
+        # outside any shape. The asymmetric `>` opener is not masked.
+        masked = _top_level_mask(text)
+        malformed_link = re.search(
+            r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo]",
+            masked,
+        )
+        bare_link_start = re.search(r"--|==|-\.", masked)
+        if parsed is not None and not (
+            parsed[2] != "asymmetric" and (malformed_link or bare_link_start)
+        ):
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
+            continue
+        if (
+            malformed_link
+            or bare_link_start
+            # Not a node but link-like (`A- >B`): fail instead of dropping it.
+            # The dot matches any character on purpose.
+            or (parsed is None and re.search(r"(?:==|-.).*?(?:>|x|o|-)", masked))
+        ):
+            _fail(f"malformed edge at line {line_number}")
     if invisible_links:
         diagram.notes.append(f"{invisible_links} invisible layout links ignored")
 
