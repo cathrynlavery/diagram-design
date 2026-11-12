@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Bash
   - Glob
+  - Agent
 ---
 
 Redraw the Excalidraw scene at `$1` in this skill's design system, following [`skills/diagram-design/references/import-excalidraw.md`](../skills/diagram-design/references/import-excalidraw.md) and [`skills/diagram-design/references/output-spec.md`](../skills/diagram-design/references/output-spec.md). Treat those references as the source of truth — don't reimplement the logic here.
@@ -39,6 +40,7 @@ Accepts `.excalidraw` and `.excalidraw.json` scenes. PNG/SVG exports are rejecte
 
 1. **No file provided** → ask which `.excalidraw` file. Don't guess.
 2. **Locate the installed skill and run `<skill-dir>/scripts/excalidraw_extract.py` first.** Never assume the skill is under the current working directory, and never read a `.excalidraw` file directly — a scene is mostly geometry and version counters, not signal.
+   - In Claude Code, use this plugin's `import-renderer` agent when available; follow the handoff in `SKILL.md` §11.
 3. **Extractor exits non-zero** → report its message verbatim and stop. A rejected `.excalidraw.png`/`.excalidraw.svg` export means asking for the saved scene, not scraping pixels.
 4. **Labels are empty across the board** → the sketch carries meaning in position only. Ask the user what the boxes are; don't invent names.
 5. **Requested detail is impossible at the requested size** → say so before drawing and propose overview + per-frame detail outputs.
