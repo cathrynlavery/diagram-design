@@ -78,6 +78,8 @@ CASES = (
     # quote in it opens a string, as it does after a longer name.
     ("a quote after #url(", False, "head", 'rect { --a: #url(a"b); --x: "); transform: translate(9px); --z: "c" }'),
     ("a quote after @url(", False, "head", 'rect { --a: @url(a"b); --x: "); transform: translate(9px); --z: "c" }'),
+    # The browser reads a NUL as U+FFFD, a name character, so `\x00url(` is an ordinary function too.
+    ("a quote after NUL url(", False, "head", 'rect { --a: \x00url(a"b); --x: "); transform: translate(9px); --z: "c" }'),
     # A form feed ends a string just as a line feed does.
     ("a form feed inside a string", False, "head", 'rect { --a: "\f;transform:translate(9px);--b:" }'),
     # A string ends at its line: the next rule is live.

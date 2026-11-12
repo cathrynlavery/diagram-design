@@ -91,16 +91,16 @@ SIGN_CHARS = {"+": 1, "-": -1, "\u2212": -1}
 # Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
 # A quote opens a string only where the browser tokenizes one, so a comment, an
 # unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
-# after a name character, `#` or `@`, as in `myurl(`, `#url(` or `@url(`) and an escaped
-# character are consumed first and kept as written. A string that never closes on
-# its line is kept as well - a line feed, carriage return or form feed ends it - so
-# the checker still fails closed on it. Every other character of a string becomes a space and its newlines
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it. Every other character of a string becomes a space and its newlines
 # stay, so each offset and line number still points into the CSS as written.
 # CSS the browser may read differently comes back unblanked: a character reference
 # (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
 # left outside a string (`u\72 l(` is `url(`).
 CSS_STRING_RE = re.compile(
-    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
     r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')""",
     re.DOTALL | re.IGNORECASE,
 )
