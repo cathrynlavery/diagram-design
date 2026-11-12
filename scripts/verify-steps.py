@@ -5,11 +5,22 @@ Steps encodes order with one contiguous equal-width rail. Machine-readable
 attributes bind every rail segment, printed number, and icon medallion to the
 same stage so geometry cannot silently disagree with its labels.
 
-Checked marks (rail, medallion, number) and their SVG groups are styled with
-presentation attributes only: an inline style, class or id on them is a
-finding, as is any ancestor that moves or hides them. A <style> rule that can
-reach SVG content may set only box-sizing, margin, padding and custom
-properties, and no rule may hide content or move it.
+What is measured must be what the browser draws, so the contract is an
+allow-list rather than a list of known tricks:
+
+- The page is parsed as HTML (comments are not marks). No element repeats an
+  attribute; the page around the one SVG uses only the shipped page tags and
+  attributes, and only the Google Fonts stylesheet link.
+- A checked mark (rail rect, medallion circle, number text) carries only its
+  own geometry, paint and data attributes, sits under nothing but plain <g>
+  groups of the root SVG, and stays inside the viewBox. A number has no child
+  elements. Rails fill and medallions stroke with a non-paper house ink;
+  numbers are a solid house ink at font-size 8 or more.
+- A <style> rule may not use escapes, @import or at-rules other than @media
+  and @font-face; may not move anything; and may set only box-sizing, margin,
+  padding and custom properties on selectors that can reach SVG content, only
+  layout-neutral page properties on the SVG's HTML ancestors, and anything
+  but movement on page elements outside the SVG.
 
 Usage:
     python3 scripts/verify-steps.py --all
@@ -27,153 +38,302 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*)/?>", re.I)
-CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*)/?>", re.I)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.I | re.S)
-ATTR_RE = re.compile(r'''(?P<name>[\w:-]+)\s*=\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)')''')
-TAG_STRIP_RE = re.compile(r"<[^>]+>")
-VIEWBOX_RE = re.compile(r"<svg\b[^>]*\bviewBox\s*=\s*['\"]([^'\"]+)['\"]", re.I)
-CSS_MOVEMENT_RE = re.compile(r"(?:^|[;{])\s*(?:transform|translate|rotate|scale|offset(?:-[\w-]+)?|x|y)\s*:", re.I)
-CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
-CSS_RULE_RE = re.compile(r"([^{}]*)\{([^{}]*)\}")
 TOLERANCE = 0.01
-CHECKED_ROLES = {"rail", "medallion", "number"}
-HIDING_PROPS = ("display", "visibility", "content-visibility", "opacity", "clip-path", "mask", "filter")
-MIN_OPACITY = 0.4
-# What a rule that can match SVG content may set; everything else paints or sizes marks.
-REACHING_ALLOWED = {"box-sizing", "margin", "padding"}
-# Rightmost selector types that cannot match a mark inside the diagram SVG.
-PAGE_TAGS = {
-    "html", "body", "main", "header", "footer", "section", "article", "aside", "nav", "div", "p", "span",
-    "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "figure", "figcaption", "small", "strong", "em",
-    "code", "pre", "table", "thead", "tbody", "tr", "td", "th", "svg",
+CHECKED_ROLES = {"rail": "rect", "medallion": "circle", "number": "text"}
+MARK_ATTRS = {
+    "rail": {"x", "y", "width", "height", "fill", "data-role", "data-step", "data-index", "data-focal"},
+    "medallion": {"cx", "cy", "r", "fill", "stroke", "data-role", "data-step", "data-focal"},
+    "number": {"x", "y", "fill", "data-role", "data-step"},
 }
+GROUP_ATTRS = {
+    "aria-hidden", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
+    "font-family", "font-size", "font-weight", "letter-spacing", "text-anchor",
+}
+ROOT_ATTRS = {"viewbox", "xmlns", "role", "aria-labelledby"}
+SVG_TAGS = {"svg", "title", "desc", "defs", "pattern", "g", "rect", "circle", "line", "path", "text", "tspan"}
+HIDING_PROPS = {"display", "visibility", "opacity", "fill-opacity", "stroke-opacity", "clip-path", "mask", "filter"}
+# House inks per paper (style-guide.md); a mark painted in the paper colour vanishes.
+INK = {
+    "#f5f5f5": {"#2d3142", "#4f5d75", "#2e5aa8", "#bf4520"},
+    "#2d3142": {"#f5f5f5", "#bfc0c0", "#739fdf", "#f08a59"},
+}
+MIN_OPACITY = 0.4
+MIN_FONT_SIZE = 8
+MAX_STROKE_WIDTH = 4
+FONTS_HREF = "https://fonts.googleapis.com/css2?"
+PAGE_TAGS = {
+    "html": {"lang"}, "head": set(), "meta": {"charset", "name", "content"}, "title": set(),
+    "link": {"href", "rel"}, "style": set(), "body": set(), "div": {"class"}, "p": {"class"},
+    "h1": set(), "h2": set(), "h3": set(), "header": {"class"}, "footer": {"class"},
+    "section": {"class"}, "article": {"class"}, "span": {"class"},
+}
+VOID = {"meta", "link", "br", "img", "input", "hr", "source", "wbr"}
+CSS_COMMENT_RE = re.compile(r"/\*.*?(?:\*/|$)", re.S)
+MOVEMENT = {
+    "transform", "translate", "rotate", "scale", "perspective", "zoom", "position", "top", "right",
+    "bottom", "left", "z-index", "float", "x", "y", "cx", "cy", "r", "rx", "ry", "d",
+}
+CSS_HIDING = HIDING_PROPS | {"content-visibility", "clip", "backdrop-filter", "mix-blend-mode"}
+# Anything a rule that can match SVG content may set; the rest paints or sizes marks.
+SVG_RULE_ALLOWED = {"box-sizing", "margin", "padding"}
+# The root svg box may only fill its container.
+SVG_BOX = {"width": {"100%"}, "max-width": {"100%", "none"}, "height": {"auto"}, "display": {"block"}}
+# HTML ancestors of the SVG may lay the page out but not paint, size or reflow text inside it.
+ANCESTOR_ALLOWED = {
+    "box-sizing", "color", "font-family", "min-height", "align-items", "justify-content", "gap",
+    "border-radius", "overflow-x", "width", "max-width", "display",
+}
+ANCESTOR_PREFIXES = ("margin", "padding", "border", "background")
+ANCESTOR_VALUES = {"overflow-x": {"auto", "visible"}, "width": {"100%", "auto"}, "display": {"block", "flex", "grid"}}
 
 
-def hides(name: str, value: str) -> bool:
-    value = value.replace("!important", "").strip().lower()
-    if name == "display":
-        return value == "none"
-    if name in {"visibility", "content-visibility"}:
-        return value in {"hidden", "collapse"}
-    if name == "opacity":
-        try:
-            amount = float(value[:-1]) / 100 if value.endswith("%") else float(value)
-        except ValueError:
-            return True  # var(), calc() and the like cannot be read here
-        return amount < MIN_OPACITY
-    return name in {"clip-path", "mask", "filter"} and value != "none"
+class Node:
+    def __init__(self, tag: str, attrs: dict[str, str], parent: Node | None) -> None:
+        self.tag, self.attrs, self.parent = tag, attrs, parent
+        self.children: list[Node] = []
+        self.text = ""
+
+    def ancestors(self) -> list[Node]:
+        found, node = [], self.parent
+        while node is not None:
+            found.append(node)
+            node = node.parent
+        return found
 
 
-def declarations(block: str) -> list[tuple[str, str]]:
-    found = []
-    for part in CSS_COMMENT_RE.sub("", block).split(";"):
-        name, colon, value = part.partition(":")
-        if colon:
-            found.append((name.strip().lower(), value.strip()))
-    return found
-
-
-def hiding_declarations(block: str) -> list[str]:
-    # An escaped property name could spell any hiding property.
-    return [f"{name}: {value}" for name, value in declarations(block)
-            if "\\" in name or (name in HIDING_PROPS and hides(name, value))]
-
-
-def hidden_by(attrs: dict[str, str]) -> list[str]:
-    found = [f'{name}="{attrs[name]}"' for name in HIDING_PROPS if name in attrs and hides(name, attrs[name])]
-    return found + hiding_declarations(attrs.get("style", ""))
-
-
-def reaches_marks(selector: str) -> bool:
-    """Whether a selector could match a mark inside the SVG; unclear selectors count."""
-    selector = selector.strip()
-    if not selector or selector.startswith("@"):
-        return False
-    if re.search(r"[\[(\\\"']", selector):
-        return True
-    last = re.split(r"[\s>+~]+", selector)[-1]
-    if last.startswith((".", "#", ":root")):
-        return False  # checked marks and their groups carry no class or id
-    tag = re.match(r"[a-z][\w-]*", last, re.I)
-    return not (tag and tag.group(0).lower() in PAGE_TAGS)
-
-
-def moving_style(attrs: dict[str, str]) -> bool:
-    return "transform" in attrs or bool(CSS_MOVEMENT_RE.search("{" + attrs.get("style", "")))
-
-
-class CheckedTransformScanner(HTMLParser):
-    """Find unsupported movement on checked marks or their SVG ancestors."""
+class Tree(HTMLParser):
+    """Build the element tree the browser sees: comments dropped, first duplicate attribute wins."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.stack: list[tuple[str, dict[str, str]]] = []
-        self.findings: list[str] = []
+        self.root = Node("#document", {}, None)
+        self.open = [self.root]
+        self.nodes: list[Node] = []
+        self.errors: list[str] = []
 
-    def handle_starttag(self, tag: str, pairs: list[tuple[str, str | None]]) -> None:
-        attrs = {name.lower(): value or "" for name, value in pairs}
-        role = attrs.get("data-role")
-        if role in CHECKED_ROLES:
-            if moving_style(attrs):
-                self.findings.append(f"transform: checked {role} mark carries movement")
-            if "style" in attrs:
-                self.findings.append(f"style: checked {role} mark carries an inline style; use presentation attributes")
-            if "class" in attrs or "id" in attrs:
-                self.findings.append(f"style: checked {role} mark carries a class or id a stylesheet can reach")
-            if hidden_by(attrs):
-                self.findings.append(f"hidden: checked {role} mark is hidden ({', '.join(hidden_by(attrs))})")
-            for ancestor_tag, ancestor_attrs in self.stack:
-                if moving_style(ancestor_attrs):
-                    self.findings.append(f"transform: checked {role} mark has a transformed {ancestor_tag} ancestor")
-                if ancestor_tag in {"g", "svg"} and "style" in ancestor_attrs:
-                    self.findings.append(f"style: checked {role} mark has a {ancestor_tag} ancestor with an inline style")
-                if ancestor_tag == "g" and ("class" in ancestor_attrs or "id" in ancestor_attrs):
-                    self.findings.append(f"style: checked {role} mark has a g ancestor with a class or id")
-                if hidden_by(ancestor_attrs):
-                    self.findings.append(
-                        f"hidden: checked {role} mark has a hidden {ancestor_tag} ancestor "
-                        f"({', '.join(hidden_by(ancestor_attrs))})"
-                    )
-        self.stack.append((tag.lower(), attrs))
+    def handle_starttag(self, tag: str, pairs: list[tuple[str, str | None]], closed: bool = False) -> None:
+        names = [name for name, _ in pairs]
+        if len(names) != len(set(names)):
+            self.errors.append(f"attributes: <{tag}> repeats an attribute; the browser keeps only the first")
+        attrs: dict[str, str] = {}
+        for name, value in pairs:
+            attrs.setdefault(name, value or "")
+        node = Node(tag, attrs, self.open[-1])
+        self.open[-1].children.append(node)
+        self.nodes.append(node)
+        if not closed and tag not in VOID:
+            self.open.append(node)
 
     def handle_startendtag(self, tag: str, pairs: list[tuple[str, str | None]]) -> None:
-        self.handle_starttag(tag, pairs)
-        self.stack.pop()
+        self.handle_starttag(tag, pairs, closed=True)
 
     def handle_endtag(self, tag: str) -> None:
-        tag = tag.lower()
-        for index in range(len(self.stack) - 1, -1, -1):
-            if self.stack[index][0] == tag:
-                del self.stack[index:]
+        for index in range(len(self.open) - 1, 0, -1):
+            if self.open[index].tag == tag:
+                del self.open[index:]
                 break
 
-
-def attrs_of(raw: str) -> dict[str, str]:
-    return {
-        match.group("name").lower(): match.group("dq") if match.group("dq") is not None else match.group("sq")
-        for match in ATTR_RE.finditer(raw)
-    }
+    def handle_data(self, data: str) -> None:
+        self.open[-1].text += data
 
 
 def number(attrs: dict[str, str], key: str) -> float | None:
     try:
-        value = float(attrs[key])
+        value = float(attrs[key].strip().removesuffix("px"))
     except (KeyError, TypeError, ValueError):
         return None
     return value if math.isfinite(value) else None
 
 
-def marks(source: str, role: str) -> list[tuple[str, dict[str, str], str]]:
-    found: list[tuple[str, dict[str, str], str]] = []
-    for tag, pattern in (("rect", RECT_RE), ("circle", CIRCLE_RE), ("text", TEXT_RE)):
-        for match in pattern.finditer(source):
-            attrs = attrs_of(match.group("attrs"))
-            if attrs.get("data-role") != role:
-                continue
-            body = TAG_STRIP_RE.sub("", match.groupdict().get("body") or "").strip()
-            found.append((tag, attrs, body))
+def color(value: str) -> tuple[str, float] | None:
+    """A house colour as (#rrggbb, alpha); None for anything else (none, url(), currentColor)."""
+    value = value.strip().lower()
+    if re.fullmatch(r"#[0-9a-f]{6}", value):
+        return value, 1.0
+    match = re.fullmatch(r"rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)", value)
+    if not match or any(int(part) > 255 for part in match.groups()[:3]):
+        return None
+    alpha = float(match.group(4)) if match.group(4) else 1.0
+    return "#" + "".join(f"{int(part):02x}" for part in match.groups()[:3]), alpha
+
+
+def inherited(node: Node, name: str, svg: Node) -> str | None:
+    for item in [node, *node.ancestors()]:
+        if name in item.attrs:
+            return item.attrs[name]
+        if item is svg:
+            break
+    return None
+
+
+def attr_category(name: str) -> str:
+    if name == "transform":
+        return "transform"
+    return "hidden" if name in HIDING_PROPS or name == "hidden" else "style"
+
+
+def declarations(block: str) -> list[tuple[str, str]]:
+    found = []
+    for part in block.split(";"):
+        name, colon, value = part.partition(":")
+        if colon and name.strip():
+            name = re.sub(r"^-(?:webkit|moz|ms|o)-", "", name.strip())
+            found.append((name, value.replace("!important", "").strip()))
     return found
+
+
+def css_blocks(css: str) -> list[tuple[str, str]] | None:
+    """Top-level (prelude, body) pairs; None when text sits outside a block or braces do not balance."""
+    blocks, depth, start, body_start = [], 0, 0, 0
+    for index, char in enumerate(css):
+        if char == "{":
+            if depth == 0:
+                body_start = index + 1
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth < 0:
+                return None
+            if depth == 0:
+                blocks.append((css[start:body_start - 1].strip(), css[body_start:index]))
+                start = index + 1
+    return blocks if depth == 0 and not css[start:].strip() else None
+
+
+def selector_kind(selector: str, ancestor_tags: set[str], ancestor_classes: set[str]) -> str:
+    """'svg' when it can match SVG content, 'ancestor' for the SVG's HTML ancestors, else 'page'."""
+    flat = selector
+    while re.search(r"\([^()]*\)|\[[^\[\]]*\]", flat):
+        flat = re.sub(r"\([^()]*\)|\[[^\[\]]*\]", "", flat)
+    compound = re.split(r"\s*[>+~]\s*|\s+", flat.strip())[-1]
+    compound = re.sub(r"::?(?:before|after|marker|placeholder|selection)\b", "", compound)
+    tag_match = re.match(r"[a-z][\w-]*|\*", compound)
+    tag = tag_match.group(0) if tag_match else ""
+    classes = set(re.findall(r"\.([\w-]+)", compound))
+    if tag in SVG_TAGS:
+        return "svg"
+    if ":root" in compound or tag in ancestor_tags or classes & ancestor_classes:
+        return "ancestor"
+    # SVG content and the SVG's ancestors carry no other class, and no SVG element has an HTML tag.
+    if (tag and tag != "*") or classes or "#" in compound:
+        return "page"
+    return "svg"
+
+
+def rule_errors(selectors: str, body: str, ancestor_tags: set[str], ancestor_classes: set[str]) -> list[str]:
+    errors = []
+    decls = declarations(body)
+    for selector in (part.strip() for part in selectors.split(",")):
+        kind = selector_kind(selector, ancestor_tags, ancestor_classes)
+        for name, value in decls:
+            if name.startswith("--"):
+                continue
+            where = f"stylesheet rule {selector!r} sets {name}: {value}"
+            if name in MOVEMENT or name.startswith(("offset", "inset")):
+                errors.append(f"transform: {where}; nothing on the page may move")
+            elif kind == "page":
+                continue
+            elif name in CSS_HIDING and not (name == "display" and value in ANCESTOR_VALUES["display"]):
+                errors.append(f"hidden: {where} on content that holds the diagram")
+            elif kind == "svg" and not (
+                name in SVG_RULE_ALLOWED or (name in {"animation", "transition"} and value == "none")
+                or (selector == "svg" and (name == "min-width" or value in SVG_BOX.get(name, ())))
+            ):
+                errors.append(f"style: {where} on SVG content; style marks with presentation attributes")
+            elif kind == "ancestor":
+                allowed = name in ANCESTOR_ALLOWED or name.startswith(ANCESTOR_PREFIXES)
+                if name == "max-width":
+                    width = re.fullmatch(r"(\d+(?:\.\d+)?)px", value)
+                    allowed = value in {"none", "100%"} or bool(width and float(width.group(1)) >= 960)
+                elif name in ANCESTOR_VALUES:
+                    allowed = value in ANCESTOR_VALUES[name]
+                if not allowed:
+                    errors.append(f"style: {where} on an HTML ancestor of the diagram")
+    return errors
+
+
+def stylesheet_errors(css: str, ancestor_tags: set[str], ancestor_classes: set[str]) -> list[str]:
+    if "\\" in css:
+        return ["style: CSS escapes are unsupported in a <style>"]
+    css = CSS_COMMENT_RE.sub(" ", css).lower()
+    errors = ["style: @import is unsupported"] if "@import" in css else []
+    blocks = css_blocks(css)
+    if blocks is None:
+        return [*errors, "style: unsupported stylesheet structure"]
+    for prelude, body in blocks:
+        if prelude.startswith("@media"):
+            errors.extend(stylesheet_errors(body, ancestor_tags, ancestor_classes))
+        elif prelude == "@font-face":
+            continue
+        elif prelude.startswith("@"):
+            errors.append(f"style: at-rule {prelude.split()[0]!r} is unsupported")
+        else:
+            errors.extend(rule_errors(prelude, body, ancestor_tags, ancestor_classes))
+    return errors
+
+
+def page_errors(tree: Tree) -> tuple[list[str], Node | None]:
+    """The page skeleton around the one root SVG, and every element inside it."""
+    errors: list[str] = []
+    roots = [node for node in tree.nodes if node.tag == "svg" and not any(a.tag == "svg" for a in node.ancestors())]
+    if len(roots) != 1:
+        errors.append(f"page: expected exactly one diagram SVG, found {len(roots)}")
+    svg = roots[0] if roots else None
+    for node in tree.nodes:
+        in_svg = svg is not None and (node is svg or svg in node.ancestors())
+        if in_svg:
+            if node.tag not in SVG_TAGS or (node.tag == "svg" and node is not svg):
+                errors.append(f"hidden: <{node.tag}> is unsupported inside the diagram SVG")
+            for name in {"style", "class"} & set(node.attrs):
+                errors.append(f"style: <{node.tag}> in the diagram carries {name}; use presentation attributes")
+            continue
+        allowed = PAGE_TAGS.get(node.tag)
+        extra = sorted(set(node.attrs) - (allowed or set()))
+        if allowed is None or extra:
+            errors.append(f"page: unsupported <{node.tag}> {' '.join(extra)}".rstrip() + " around the diagram")
+        if node.tag == "link" and not (node.attrs.get("rel") == "stylesheet" and node.attrs.get("href", "").startswith(FONTS_HREF)):
+            errors.append("page: only the Google Fonts stylesheet link is allowed")
+    if svg is not None and not set(svg.attrs) <= ROOT_ATTRS:
+        errors.append(f"style: the diagram SVG carries {sorted(set(svg.attrs) - ROOT_ATTRS)}")
+    return errors, svg
+
+
+def mark_errors(node: Node, role: str, svg: Node, paper: str) -> list[str]:
+    errors = []
+    for name in sorted(set(node.attrs) - MARK_ATTRS[role]):
+        errors.append(f"{attr_category(name)}: checked {role} mark carries unsupported {name}")
+    if node.tag != CHECKED_ROLES[role]:
+        errors.append(f"{role}: data-role='{role}' must be on a <{CHECKED_ROLES[role]}>")
+    for ancestor in node.ancestors():
+        if ancestor is svg:
+            break
+        if ancestor.tag != "g":
+            errors.append(f"hidden: checked {role} mark sits inside <{ancestor.tag}>")
+            continue
+        for name in sorted(set(ancestor.attrs) - GROUP_ATTRS):
+            errors.append(f"{attr_category(name)}: checked {role} mark has a g ancestor with {name}")
+    inks = INK.get(paper, set())
+    stroke = inherited(node, "stroke", svg)
+    stroke_width = number({"w": inherited(node, "stroke-width", svg) or "1"}, "w")
+    stroke_ink = color(stroke) if stroke else None
+    if stroke not in (None, "none") and (not stroke_ink or stroke_ink[0] not in inks):
+        errors.append(f"paint: checked {role} mark stroke {stroke!r} is not a house ink on this paper")
+    if stroke_width is None or not 0 < stroke_width <= MAX_STROKE_WIDTH:
+        errors.append(f"paint: checked {role} mark stroke-width must be within 0..{MAX_STROKE_WIDTH}")
+    fill = color(inherited(node, "fill", svg) or "")
+    if role == "rail" and not (fill and fill[0] in inks and fill[1] > 0):
+        errors.append(f"paint: rail fill {node.attrs.get('fill')!r} must be a visible non-paper house ink")
+    if role == "medallion" and not (stroke_ink and stroke_ink[0] in inks and stroke_ink[1] >= MIN_OPACITY):
+        errors.append(f"paint: medallion stroke {stroke!r} must be a visible non-paper house ink")
+    if role == "number":
+        if not (fill and fill[0] in inks and fill[1] >= MIN_OPACITY):
+            errors.append(f"paint: number fill {node.attrs.get('fill')!r} must be a visible non-paper house ink")
+        size = number({"s": inherited(node, "font-size", svg) or ""}, "s")
+        if size is None or size < MIN_FONT_SIZE:
+            errors.append(f"number: font-size must be at least {MIN_FONT_SIZE}")
+        if node.children:
+            errors.append("number: a printed number has no child elements")
+    return errors
 
 
 def close(first: float | None, second: float | None) -> bool:
@@ -181,45 +341,49 @@ def close(first: float | None, second: float | None) -> bool:
 
 
 def verify(path: Path) -> list[str]:
-    source = path.read_text(encoding="utf-8")
-    errors: list[str] = []
-    scanner = CheckedTransformScanner()
-    scanner.feed(source)
-    errors.extend(dict.fromkeys(scanner.findings))
-    moved = False
-    for style in re.findall(r"<style\b[^>]*>(.*?)</style>", source, flags=re.I | re.S):
-        if not moved and CSS_MOVEMENT_RE.search(style):
-            errors.append("transform: stylesheet movement is unsupported for checked geometry")
-            moved = True
-        for selectors, block in CSS_RULE_RE.findall(CSS_COMMENT_RE.sub("", style)):
-            selectors = " ".join(selectors.split())
-            hiding = hiding_declarations(block)
-            if hiding:
-                errors.append(f"hidden: stylesheet rule {selectors!r} hides content ({', '.join(hiding)})")
-            if any(reaches_marks(selector) for selector in selectors.split(",")):
-                painted = [name for name, _ in declarations(block)
-                           if name not in REACHING_ALLOWED and not name.startswith("--")]
-                if painted:
-                    errors.append(
-                        f"style: stylesheet rule {selectors!r} can reach diagram marks and sets "
-                        f"{', '.join(painted)}; style marks with presentation attributes"
-                    )
+    tree = Tree()
+    tree.feed(path.read_text(encoding="utf-8"))
+    tree.close()
+    errors: list[str] = list(dict.fromkeys(tree.errors))
+    found, svg = page_errors(tree)
+    errors.extend(found)
+    if svg is None:
+        return errors
+    ancestors = svg.ancestors()
+    ancestor_tags = {node.tag for node in ancestors}
+    ancestor_classes = {name for node in ancestors for name in node.attrs.get("class", "").split()}
+    for node in tree.nodes:
+        if node.tag == "style":
+            errors.extend(stylesheet_errors(node.text, ancestor_tags, ancestor_classes))
 
-    viewbox_match = VIEWBOX_RE.search(source)
     viewbox: tuple[float, float, float, float] | None = None
-    if viewbox_match:
-        try:
-            values = tuple(float(value) for value in re.split(r"[\s,]+", viewbox_match.group(1).strip()))
-            if len(values) == 4 and all(math.isfinite(value) for value in values):
-                viewbox = values
-        except ValueError:
-            pass
+    try:
+        values = tuple(float(value) for value in re.split(r"[\s,]+", svg.attrs.get("viewbox", "").strip()))
+        if len(values) == 4 and all(math.isfinite(value) for value in values) and min(values[2:]) > 0:
+            viewbox = values
+    except ValueError:
+        pass
     if viewbox is None:
         errors.append("canvas: missing or invalid SVG viewBox")
+    paper_rect = next((child for child in svg.children if child.tag == "rect"), None)
+    paper = (paper_rect.attrs.get("fill", "") if paper_rect else "").strip().lower()
+    if paper not in INK:
+        errors.append(f"paint: the SVG's first rect must be a house paper, found {paper!r}")
 
-    rails = marks(source, "rail")
-    medallions = marks(source, "medallion")
-    numbers = marks(source, "number")
+    found_marks: dict[str, list[tuple[str, dict[str, str], str]]] = {role: [] for role in CHECKED_ROLES}
+    for node in tree.nodes:
+        role = node.attrs.get("data-role")
+        if role not in CHECKED_ROLES:
+            continue
+        errors.extend(error for error in mark_errors(node, role, svg, paper) if role != "rail" or "must be on a" not in error)
+        found_marks[role].append((node.tag, node.attrs, node.text.strip()))
+        if role == "number" and viewbox is not None:
+            x, y = number(node.attrs, "x"), number(node.attrs, "y")
+            vx, vy, vw, vh = viewbox
+            if x is None or y is None or not (vx <= x <= vx + vw and vy <= y <= vy + vh):
+                errors.append(f"canvas: number step {node.attrs.get('data-step', '')!r} falls outside the viewBox")
+    errors = list(dict.fromkeys(errors))
+    rails, medallions, numbers = found_marks["rail"], found_marks["medallion"], found_marks["number"]
 
     if not 3 <= len(rails) <= 7:
         errors.append(f"budget: expected 3..7 rail segments, found {len(rails)}")
