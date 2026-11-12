@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -19,9 +20,14 @@ def load_verifier():
     return module
 
 
+TOKENS = "<style>:root{--ink:#2d3142;--accent:#bf4520}</style>"
+INK, ACCENT, EMPTY = "#2d3142", "#bf4520", "#ececec"
+CELL_RE = re.compile(r'<rect data-unit-cell="[a-z]+" data-unit-index="(\d+)"')
+
+
 def chart(cells: str, filled: int = 2) -> str:
     return (
-        '<svg data-unit-grid="true" data-unit-total="100" data-unit-filled="' + str(filled)
+        TOKENS + '<svg data-unit-grid="true" data-unit-total="100" data-unit-filled="' + str(filled)
         + '" data-unit-rows="10" data-unit-columns="10">'
         + f'<text data-unit-percent="true">{filled}%</text>'
         + f'<text data-unit-count="true">{filled} complete · {100 - filled} remaining</text>'
@@ -32,8 +38,24 @@ def chart(cells: str, filled: int = 2) -> str:
 def cell(index: int, state: str = "empty", width: int = 20) -> str:
     return (
         f'<rect data-unit-cell="{state}" data-unit-index="{index}" '
-        f'x="{index % 10 * 24}" y="{index // 10 * 24}" width="{width}" height="20"/>'
+        f'x="{index % 10 * 24}" y="{index // 10 * 24}" width="{width}" height="20" '
+        f'fill="{INK if state == "filled" else EMPTY}"/>'
     )
+
+
+def edit_cell(source: str, index: int, attrs: str = "", fill: str | None = None) -> str:
+    """Add attributes to, or repaint, the unit cell with this index."""
+    match = next(m for m in CELL_RE.finditer(source) if int(m.group(1)) == index)
+    end = source.index(">", match.end())
+    tag = source[match.start():end]
+    if fill is not None:
+        tag = re.sub(r'fill="[^"]*"', f'fill="{fill}"', tag, count=1)
+    return source[:match.start()] + tag + " " + attrs + source[end:]
+
+
+def cell_fill(source: str, index: int) -> str:
+    match = next(m for m in CELL_RE.finditer(source) if int(m.group(1)) == index)
+    return re.search(r'fill="([^"]*)"', source[match.start():source.index(">", match.end())]).group(1)
 
 
 def main() -> int:
@@ -85,6 +107,18 @@ def main() -> int:
         ("CSS text transform allowed", '<style>text { text-transform:uppercase; }</style>' + valid, None),
         ("single quoted transform", valid.replace('<rect ', "<rect transform='translate(300 0)' ", 1), "transform"),
     ])
+    cases.extend([
+        ("group fill inherited", valid.replace(f'data-unit-index="1" x="24" y="0" width="20" height="20" fill="{INK}"', 'data-unit-index="1" x="24" y="0" width="20" height="20"').replace('<rect data-unit-cell="filled" data-unit-index="1"', f'<g fill="{EMPTY}"><rect data-unit-cell="filled" data-unit-index="1"').replace('<rect data-unit-cell="empty" data-unit-index="2"', '</g><rect data-unit-cell="empty" data-unit-index="2"'), "painted"),
+        ("default black fill", valid.replace(f'width="20" height="20" fill="{INK}"/>', 'width="20" height="20"/>', 1), "painted"),
+        ("group opacity", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<g opacity="0"><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</g><rect data-unit-cell="filled" data-unit-index="1"'), "hidden by opacity"),
+        ("root inline opacity", valid.replace('<svg ', '<svg style="opacity:0" ', 1), "hidden by opacity"),
+        ("cell in defs", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<defs><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</defs><rect data-unit-cell="filled" data-unit-index="1"'), "hidden by defs"),
+        ("cell in mask", valid.replace('<rect data-unit-cell="filled" data-unit-index="0"', '<mask id="m"><rect data-unit-cell="filled" data-unit-index="0"').replace('<rect data-unit-cell="filled" data-unit-index="1"', '</mask><rect data-unit-cell="filled" data-unit-index="1"'), "hidden by mask"),
+        ("missing tokens", valid.replace(TOKENS, ""), "--ink"),
+        ("second accent", edit_cell(edit_cell(valid, 0, fill=ACCENT), 1, fill=ACCENT), "--accent"),
+        ("one accent allowed", edit_cell(valid, 1, fill=ACCENT), None),
+        ("opacity one allowed", edit_cell(valid, 0, 'opacity="1"'), None),
+    ])
     for filled in (0, 100):
         marks = "".join(cell(index, "filled" if index < filled else "empty") for index in range(100))
         cases.append((f"{filled} filled cells", chart(marks, filled), None))
@@ -92,6 +126,25 @@ def main() -> int:
         source = path.read_text(encoding="utf-8")
         cases.append((f"{path.name} valid", source, None))
         cases.append((f"{path.name} wrong headline", source.replace('>64%</text>', '>74%</text>'), "printed percentage"))
+        ink, empty = cell_fill(source, 0), cell_fill(source, 99)
+        cases.extend([
+            (f"{path.name} filled cell painted empty", edit_cell(source, 0, fill=empty), "painted"),
+            (f"{path.name} empty cell painted filled", edit_cell(source, 99, fill=ink), "painted"),
+            (f"{path.name} filled cell fill none", edit_cell(source, 0, fill="none"), "painted"),
+            (f"{path.name} filled cell inline fill", edit_cell(source, 0, f'style="fill:{empty}"'), "painted"),
+            (f"{path.name} filled cell translucent fill", edit_cell(source, 0, fill="rgba(45,49,66,0)"), "painted"),
+            (f"{path.name} opacity zero", edit_cell(source, 0, 'opacity="0"'), "hidden by opacity"),
+            (f"{path.name} fill-opacity zero", edit_cell(source, 0, 'fill-opacity="0"'), "hidden by fill-opacity"),
+            (f"{path.name} inline opacity", edit_cell(source, 0, 'style="opacity:.0"'), "hidden by opacity"),
+            (f"{path.name} visibility hidden", edit_cell(source, 0, 'visibility="hidden"'), "hidden by visibility"),
+            (f"{path.name} display none", edit_cell(source, 0, 'display="none"'), "hidden by display"),
+            (f"{path.name} mask", edit_cell(source, 0, 'mask="url(#m)"'), "hidden by mask"),
+            (f"{path.name} CSS fill", source.replace("</style>", f'rect[data-unit-index="0"]{{fill:{empty}}}</style>', 1), "CSS fill"),
+            (f"{path.name} CSS opacity", source.replace("</style>", "rect{opacity:0}</style>", 1), "CSS opacity"),
+            (f"{path.name} CSS display none", source.replace("</style>", "rect{display:none}</style>", 1), "CSS display"),
+            (f"{path.name} SMIL set", source.replace("</svg>", f'<set href="#c0" attributeName="fill" to="{empty}"/></svg>', 1), "can repaint or move"),
+            (f"{path.name} overlay rect", source.replace("</svg>", f'<rect x="0" y="0" width="1000" height="390" fill="{empty}"/></svg>', 1), "covers unit cell"),
+        ])
         cases.append((f"{path.name} moved cell", source.replace('<rect data-unit-cell=', '<rect transform="translate(300 0)" data-unit-cell=', 1), "transform"))
     failures: list[str] = []
     with tempfile.TemporaryDirectory() as directory:
