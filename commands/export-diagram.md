@@ -1,6 +1,6 @@
 ---
 description: Export a diagram-design HTML file to .svg and .png next to the source
-argument-hint: <html-file> [--svg-only|--png-only] [--scale=N] [--output=<path>] [--registry]
+argument-hint: <html-file> [--svg-only|--png-only] [--scale=N] [--output=<path>] [--registry] [--simplediagrams]
 allowed-tools:
   - Read
   - Write
@@ -15,9 +15,10 @@ Full argument string: `$ARGUMENTS`
 
 ## Defaults
 
-- **With no format flag (nothing, or only `--scale`/`--output`) and no `--registry`:** produce **both** `.svg` and `.png` next to the source (e.g. `diagram.html` → `diagram.svg` + `diagram.png`). `--svg-only` or `--png-only` restricts the image output to that one format.
+- **With no format flag (nothing, or only `--scale`/`--output`), no `--registry` and no `--simplediagrams`:** produce **both** `.svg` and `.png` next to the source (e.g. `diagram.html` → `diagram.svg` + `diagram.png`). `--svg-only` or `--png-only` restricts the image output to that one format.
 - PNG renders at `device_scale_factor=2`.
 - **`--registry` given by itself, with neither `--svg-only` nor `--png-only` also present, produces *only* the registry JSON.** The SVG/PNG defaults above do not also apply, and Playwright is never required for a registry-only call. To get an image alongside the registry, add `--svg-only` or `--png-only` explicitly.
+- **`--simplediagrams` without `--svg-only` or `--png-only` produces no images:** only the `.simplediagram` document, with the registry JSON too when `--registry` is given. Playwright is never required.
 
 ## Flags
 
@@ -26,6 +27,7 @@ Full argument string: `$ARGUMENTS`
 - `--scale=N` — override the PNG device scale factor with a finite number from `1` to `4`, including fractional values such as `1.25`. Default `2`.
 - `--output=<path>` — override the output base path; the format extension is appended. Applies to both formats when both are produced.
 - `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Follows [`skills/diagram-design/references/export-registry.md`](../skills/diagram-design/references/export-registry.md), a procedure independent of the SVG/PNG rasterization above — it never needs Playwright. Used alone (see Defaults), it is the *only* output produced. Combine with `--svg-only` or `--png-only` to also produce an image in the same call.
+- `--simplediagrams` — write an editable `<basename>.simplediagram` document for the SimpleDiagrams macOS editor. Follows [`skills/diagram-design/references/export-simplediagrams.md`](../skills/diagram-design/references/export-simplediagrams.md). Without `--svg-only` or `--png-only` it produces no images and never needs Playwright.
 
 ## Required behaviour
 
