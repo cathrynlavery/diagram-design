@@ -460,6 +460,15 @@
       "screenshot_sha256": "0aa355eabdc6ccc6d33becb8b287a3c2245fc094353d6ae247e0d654398990fb",
       "width": 2076,
       "height": 810
+    },
+    {
+      "slug": "packet-structure",
+      "source": "skills/diagram-design/assets/example-packet-structure.html",
+      "screenshot": "docs/screenshots/packet-structure.png",
+      "source_sha256": "117deee77abecd1e2790874bca514bde01a6ebbf0f3130390573f9c6972b9715",
+      "screenshot_sha256": "efc1002e4e9a2811212333ab476ce46426846d6ae9240582058f3778380e685e",
+      "width": 2400,
+      "height": 1200
     }
   ]
 }
