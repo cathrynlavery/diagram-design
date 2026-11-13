@@ -8,6 +8,7 @@
 
 - Place one horizontal bit-boundary ruler above aligned rows of equal width. Label its first boundary `0` and its last boundary with the row width. The last boundary is exclusive: a 32-bit row contains bits 0–31, not 0–32.
 - Use 8, 16, 32 or 64 bits per row. The same horizontal scale applies to every row. Print each row's absolute starting bit offset to its left.
+- Label only enough ruler boundaries to keep at least 8px of clear space between neighboring numbers. Thin the labels on a dense ruler; never change the bit scale to make them fit.
 - Draw each field as a rectangle. For row offset `r`, field offset `o`, field width `n`, left edge `x0` and pixels per bit `s`, use `x=x0+(o-r)*s` and `width=n*s`. Adjacent field rectangles share an edge; do not add a visual gutter that changes their encoded widths.
 - Print a short field name and its absolute inclusive range and width, for example `8–23 / 16b`. A 16-bit field must draw four times as wide as a 4-bit field.
 - Cover each row completely in source order, with no overlap or unexplained gaps. Give reserved space an explicit field name and width. This bounded overview refuses fields crossing row boundaries: split a long field into explicitly named parts or use a detail view, rather than silently wrapping it.

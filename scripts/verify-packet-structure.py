@@ -207,6 +207,9 @@ def inspect(source: str) -> tuple[list[str], tuple]:
             and text(label) == str(boundary)
         ):
             errors.append("bit tick geometry or printed value disagrees with the ruler")
+    ruler_labels = [text_box(tick[1]) for tick in ticks if len(tick) == 2 and tick[1].tag == "text"]
+    if any(first[2] + 8 > second[0] for first, second in zip(ruler_labels, ruler_labels[1:])):
+        errors.append("ruler labels need at least 8px horizontal clearance; label fewer boundaries")
     field_ids: set[str] = set()
     model = []
     previous_bottom = baseline + 24

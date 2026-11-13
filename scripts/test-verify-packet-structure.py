@@ -60,6 +60,19 @@ def specimen() -> str:
     )
 
 
+def specimen64() -> str:
+    source = specimen().replace('data-packet-axis="32"', 'data-packet-axis="64"')
+    source = re.sub(r'(data-bit-(?:offset|width|boundary)|data-packet-row)="([0-9]+)"',
+                    lambda m: f'{m[1]}="{int(m[2]) * 2}"', source)
+    for old, new in (('0–3 / 4b', '0–7 / 8b'), ('4–7 / 4b', '8–15 / 8b'),
+                     ('8–23 / 16b', '16–47 / 32b'), ('24–31 / 8b', '48–63 / 16b'),
+                     ('32–63 / 32b', '64–127 / 64b')):
+        source = source.replace(old, new)
+    source = re.sub(r'>(8|16|24|32)</text>', lambda m: f'>{int(m[1]) * 2}</text>', source)
+    source = source.replace('· 64 bits', '· 128 bits')
+    return source
+
+
 class PacketChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -84,16 +97,21 @@ class PacketChecks(unittest.TestCase):
         self.assertEqual(self.check(shifted), [])
 
     def test_a_different_bit_scale_uses_the_same_geometry(self):
-        source = specimen().replace('data-packet-axis="32"', 'data-packet-axis="64"')
-        source = re.sub(r'(data-bit-(?:offset|width|boundary)|data-packet-row)="([0-9]+)"',
-                        lambda m: f'{m[1]}="{int(m[2]) * 2}"', source)
-        for old, new in (('0–3 / 4b', '0–7 / 8b'), ('4–7 / 4b', '8–15 / 8b'),
-                         ('8–23 / 16b', '16–47 / 32b'), ('24–31 / 8b', '48–63 / 16b'),
-                         ('32–63 / 32b', '64–127 / 64b')):
-            source = source.replace(old, new)
-        source = re.sub(r'>(8|16|24|32)</text>', lambda m: f'>{int(m[1]) * 2}</text>', source)
-        source = source.replace('· 64 bits', '· 128 bits')
-        self.assertEqual(self.check(source), [])
+        self.assertEqual(self.check(specimen64()), [])
+
+    def test_neighboring_ruler_labels_cannot_overlap(self):
+        source = specimen64()
+        marks = []
+        for bit, x in ((10, 288), (11, 304)):
+            marks.append(
+                f'<g data-bit-boundary="{bit}"><line x1="{x}" x2="{x}" y1="104" y2="120" stroke="#4f5d75" stroke-width="2"/>'
+                f'<text x="{x}" y="88" fill="#4f5d75" font-size="16" font-family="Geist Mono, monospace" text-anchor="middle">{bit}</text></g>'
+            )
+        anchor = '<g data-bit-boundary="16">'
+        self.assertIn(anchor, source)
+        self.assertEqual(self.check(source.replace(anchor, marks[0] + anchor, 1)), [])
+        errors = self.check(source.replace(anchor, ''.join(marks) + anchor, 1))
+        self.assertTrue(any('ruler labels' in error for error in errors), errors)
 
     def test_geometry_lies_fail_without_metadata_changes(self):
         source = specimen()
