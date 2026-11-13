@@ -30,6 +30,7 @@ MANIFEST_PATHS = {
     "Codex": Path(".codex-plugin/plugin.json"),
     "Factory": Path(".factory-plugin/plugin.json"),
     "Qoder": Path(".qoder-plugin/plugin.json"),
+    "Muse": Path(".muse-plugin/plugin.json"),
 }
 CLAUDE_MARKETPLACE = Path(".claude-plugin/marketplace.json")
 CODEX_MARKETPLACE = Path(".agents/plugins/marketplace.json")
@@ -44,6 +45,9 @@ SHARED_MANIFEST_FIELDS = (
     "license",
     "keywords",
 )
+# Muse's native schema carries only name/description/version; author etc. have
+# no Muse field. Identity for Muse is limited to the fields its schema defines.
+MUSE_MANIFEST_FIELDS = ("name", "description", "version")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
@@ -225,7 +229,8 @@ def verify_manifest_identity(manifests: dict[str, dict[str, Any]], errors: list[
     for label, payload in manifests.items():
         if label == reference_label:
             continue
-        for field in SHARED_MANIFEST_FIELDS:
+        fields = MUSE_MANIFEST_FIELDS if label == "Muse" else SHARED_MANIFEST_FIELDS
+        for field in fields:
             if payload.get(field) != reference.get(field):
                 errors.append(
                     f"{label} manifest {field!r} must match {reference_label}; "
@@ -332,6 +337,38 @@ def verify_qoder_commands(
         errors.append("Qoder manifest commands must resolve to commands/")
     if not any(commands_root.glob("*.md")):
         errors.append("Qoder commands path contains no command definitions")
+
+
+def verify_muse_capabilities(
+    root: Path, muse_manifest: dict[str, Any], errors: list[str]
+) -> None:
+    capabilities = muse_manifest.get("capabilities")
+    if not isinstance(capabilities, dict):
+        errors.append("Muse manifest capabilities must be an object")
+        return
+    skills = capabilities.get("skills")
+    if not isinstance(skills, list) or len(skills) != 1:
+        errors.append("Muse manifest capabilities.skills must list exactly one skill")
+        return
+    skill_entry = skills[0]
+    if not isinstance(skill_entry, dict) or skill_entry.get("id") != PLUGIN_NAME:
+        errors.append(f"Muse manifest skill id must remain {PLUGIN_NAME!r}")
+        return
+    skill_path = root / skill_entry.get("path", "")
+    if not skill_path.is_file() or skill_path.name != "SKILL.md":
+        errors.append("Muse manifest skill path does not resolve to skills/diagram-design/SKILL.md")
+        return
+    commands = capabilities.get("commands")
+    if not isinstance(commands, list) or not commands:
+        errors.append("Muse manifest capabilities.commands must list command definitions")
+        return
+    for entry in commands:
+        if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
+            errors.append("Muse manifest command entries must carry object paths")
+            continue
+        command_path = root / entry["path"]
+        if not command_path.is_file():
+            errors.append(f"Muse manifest command is missing: {command_path.relative_to(root)}")
 
 
 def valid_double_quoted_yaml_scalar(value: str) -> bool:
@@ -503,6 +540,7 @@ def verify_package(root: Path, base_ref: str | None, mode: str = "increase") -> 
             root, "Qoder", manifests["Qoder"], errors, Path("skills")
         )
         verify_qoder_commands(root, manifests["Qoder"], errors)
+        verify_muse_capabilities(root, manifests["Muse"], errors)
     verify_marketplaces(root, errors)
     return errors
 
@@ -552,7 +590,7 @@ def main() -> int:
         "current-only": "current tree",
     }[mode]
     print(
-        f"OK plugin package ({detail}): Claude, Codex, Factory, and Qoder {versions}, "
+        f"OK plugin package ({detail}): Claude, Codex, Factory, Qoder, and Muse {versions}, "
         f"marketplace paths, and packaged skill"
     )
     return 0

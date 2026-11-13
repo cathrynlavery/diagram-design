@@ -151,6 +151,18 @@ Droid tracks Git plugins by commit rather than the manifest's display version. T
 </details>
 
 <details>
+<summary><b>Muse</b></summary>
+
+```bash
+muse plugins install . --scope user
+muse plugins list
+```
+
+Muse loads the canonical `skills/diagram-design/` tree and the shared `commands/` directly from `.muse-plugin/plugin.json`. Start a new session after installing to load the skill and commands.
+
+</details>
+
+<details>
 <summary><b>Claude Cowork</b> (organization marketplace)</summary>
 
 Organization GitHub marketplaces currently require a private or internal repository, so first mirror this public repository into one owned by your organization. In **Organization settings → Plugins**, choose **Add plugin → GitHub**, connect that mirror, and enable **Sync automatically** from the marketplace menu. Automatic sync runs when a pull request containing a plugin version bump is merged to the mirror's default branch; direct pushes do not trigger the webhook. Install Diagram Design from the resulting organization marketplace.
@@ -547,6 +559,7 @@ diagram-design/
 ├── .codex-plugin/                    # Codex plugin manifest
 ├── .factory-plugin/                  # Factory Droid marketplace + plugin manifest
 ├── .qoder-plugin/                    # Qoder native plugin manifest
+├── .muse-plugin/                     # Muse native plugin manifest
 ├── commands/
 │   ├── export-diagram.md             # plugin export command
 │   ├── import-drawio.md              # plugin draw.io import command
