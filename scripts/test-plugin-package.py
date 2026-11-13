@@ -57,6 +57,28 @@ def manifest(version: str, native_skills: bool = False) -> dict:
     return payload
 
 
+def muse_manifest(version: str) -> dict:
+    return {
+        "schemaVersion": 1,
+        "name": PLUGIN_NAME,
+        "displayName": "Diagram Design",
+        "description": "Create editorial diagrams.",
+        "version": version,
+        "compat": {"source": "native", "manifestDir": ".muse-plugin"},
+        "capabilities": {
+            "skills": [
+                {"id": PLUGIN_NAME, "path": f"skills/{PLUGIN_NAME}/SKILL.md"}
+            ],
+            "commands": [
+                {"id": "export-diagram", "path": "commands/export-diagram.md"}
+            ],
+            "hooks": [],
+            "mcpServers": [],
+            "reminders": [],
+        },
+    }
+
+
 def seed_factory(root: Path, version: str) -> None:
     write_json(root / ".factory-plugin/plugin.json", manifest(version))
     write_json(
@@ -79,6 +101,7 @@ def seed_package(
     qoder = manifest(version, native_skills=True)
     qoder["commands"] = "./commands/"
     write_json(root / ".qoder-plugin/plugin.json", qoder)
+    write_json(root / ".muse-plugin/plugin.json", muse_manifest(version))
     if include_factory:
         seed_factory(root, version)
     write_json(
@@ -150,16 +173,20 @@ def set_versions(
     codex: str,
     factory: Optional[str] = None,
     qoder: Optional[str] = None,
+    muse: Optional[str] = None,
 ) -> None:
     if factory is None:
         factory = codex
     if qoder is None:
         qoder = codex
+    if muse is None:
+        muse = codex
     for relative, version in (
         (Path(".claude-plugin/plugin.json"), claude),
         (Path(".codex-plugin/plugin.json"), codex),
         (Path(".factory-plugin/plugin.json"), factory),
         (Path(".qoder-plugin/plugin.json"), qoder),
+        (Path(".muse-plugin/plugin.json"), muse),
     ):
         payload = json.loads((root / relative).read_text(encoding="utf-8"))
         payload["version"] = version
@@ -270,6 +297,14 @@ def test_verifier() -> None:
         )
 
     with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4", muse="1.2.5")
+        expect_failure(
+            "Muse version drift",
+            VERIFY.verify_package(root, "HEAD"),
+            "versions must match",
+        )
+
+    with package_repo() as root:
         set_versions(root, "1.2", "1.2")
         expect_failure(
             "malformed versions",
@@ -358,6 +393,54 @@ def test_verifier() -> None:
             "Qoder manifest deletion",
             VERIFY.verify_package(root, "HEAD"),
             "could not read",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        (root / ".muse-plugin/plugin.json").unlink()
+        expect_failure(
+            "Muse manifest deletion",
+            VERIFY.verify_package(root, "HEAD"),
+            "could not read",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        muse_path = root / ".muse-plugin/plugin.json"
+        muse_payload = json.loads(muse_path.read_text(encoding="utf-8"))
+        muse_payload["capabilities"]["commands"] = [
+            {"id": "missing", "path": "commands/missing.md"}
+        ]
+        write_json(muse_path, muse_payload)
+        expect_failure(
+            "missing Muse command surface",
+            VERIFY.verify_package(root, "HEAD"),
+            "Muse manifest command is missing",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        muse_path = root / ".muse-plugin/plugin.json"
+        muse_payload = json.loads(muse_path.read_text(encoding="utf-8"))
+        muse_payload["capabilities"]["skills"][0]["path"] = (
+            "skills/other-plugin/SKILL.md"
+        )
+        write_json(muse_path, muse_payload)
+        expect_failure(
+            "alternate Muse skill path",
+            VERIFY.verify_package(root, "HEAD"),
+            "does not resolve to skills/diagram-design/SKILL.md",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        (root / "commands" / "doctor.md").write_text(
+            "Diagnose the environment.\n", encoding="utf-8"
+        )
+        expect_failure(
+            "omitted Muse command entry",
+            VERIFY.verify_package(root, "HEAD"),
+            "must match commands/*.md exactly",
         )
 
     with package_repo() as root:
@@ -925,6 +1008,56 @@ def test_version_history() -> None:
         else:
             raise AssertionError("an established Qoder manifest deletion was ignored")
         print("OK: only pre-introduction Qoder absence is accepted")
+
+    with tempfile.TemporaryDirectory() as scratch:
+        root = Path(scratch)
+        seed_package(root)
+        muse_path = root / ".muse-plugin/plugin.json"
+        muse_payload = json.loads(muse_path.read_text(encoding="utf-8"))
+        muse_path.unlink()
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.name", "Package Test"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "package-test@example.invalid"],
+            cwd=root,
+            check=True,
+        )
+        pre_muse = commit_all(root, "package before Muse support")
+        main_branch = git(root, "symbolic-ref", "--short", "HEAD")
+        write_json(muse_path, muse_payload)
+        introduction = commit_all(root, "add Muse manifest")
+
+        if VERSION_HISTORY.versions_changed(root, pre_muse, introduction):
+            raise AssertionError("adding a synchronized Muse manifest looked like a release")
+
+        git(root, "checkout", "-q", "-b", "pre-muse-drift", pre_muse)
+        codex_path = root / ".codex-plugin/plugin.json"
+        codex_payload = json.loads(codex_path.read_text(encoding="utf-8"))
+        codex_payload["version"] = "1.2.4"
+        write_json(codex_path, codex_payload)
+        drifted = commit_all(root, "desynchronize Codex before Muse support")
+        try:
+            VERSION_HISTORY.versions_at(root, drifted)
+        except VERSION_HISTORY.VersionHistoryError as exc:
+            message = str(exc)
+            expected = ".codex-plugin/plugin.json=1.2.4"
+            if expected not in message:
+                raise AssertionError(f"drift error lost its path/version pairing: {message}") from exc
+        else:
+            raise AssertionError("pre-Muse manifest drift was accepted")
+
+        git(root, "checkout", "-q", main_branch)
+
+        muse_path.unlink()
+        deleted = commit_all(root, "delete the established Muse manifest")
+        try:
+            VERSION_HISTORY.versions_changed(root, introduction, deleted)
+        except VERSION_HISTORY.VersionHistoryError as exc:
+            if ".muse-plugin/plugin.json is missing" not in str(exc):
+                raise AssertionError(f"wrong Muse deletion error: {exc}") from exc
+        else:
+            raise AssertionError("an established Muse manifest deletion was ignored")
+        print("OK: only pre-introduction Muse absence is accepted")
 
 
 def main() -> int:

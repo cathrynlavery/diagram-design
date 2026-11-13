@@ -17,8 +17,10 @@ MANIFEST_PATHS = (
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
     Path(".qoder-plugin/plugin.json"),
+    Path(".muse-plugin/plugin.json"),
 )
 QODER_MANIFEST_PATH = Path(".qoder-plugin/plugin.json")
+MUSE_MANIFEST_PATH = Path(".muse-plugin/plugin.json")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
@@ -40,8 +42,8 @@ def git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def qoder_predates_manifest(root: Path, ref: str) -> bool:
-    """Return whether ref is from before Qoder's manifest entered its history."""
+def _predates_manifest(root: Path, ref: str, manifest_path: Path, label: str) -> bool:
+    """Return whether ref is from before a native manifest entered its history."""
     additions = git(
         root,
         "log",
@@ -49,7 +51,7 @@ def qoder_predates_manifest(root: Path, ref: str) -> bool:
         "--diff-filter=A",
         "--format=%H",
         "--",
-        QODER_MANIFEST_PATH.as_posix(),
+        manifest_path.as_posix(),
     ).splitlines()
     if not additions:
         return False
@@ -67,8 +69,18 @@ def qoder_predates_manifest(root: Path, ref: str) -> bool:
         return True
     detail = result.stderr.strip()
     raise VersionHistoryError(
-        f"could not compare Qoder manifest introduction with {ref}: {detail}"
+        f"could not compare {label} manifest introduction with {ref}: {detail}"
     )
+
+
+def qoder_predates_manifest(root: Path, ref: str) -> bool:
+    """Return whether ref is from before Qoder's manifest entered its history."""
+    return _predates_manifest(root, ref, QODER_MANIFEST_PATH, "Qoder")
+
+
+def muse_predates_manifest(root: Path, ref: str) -> bool:
+    """Return whether ref is from before Muse's manifest entered its history."""
+    return _predates_manifest(root, ref, MUSE_MANIFEST_PATH, "Muse")
 
 
 def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
@@ -82,6 +94,8 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
         )
         if exists.returncode != 0:
             if relative == QODER_MANIFEST_PATH and qoder_predates_manifest(root, ref):
+                continue
+            if relative == MUSE_MANIFEST_PATH and muse_predates_manifest(root, ref):
                 continue
             raise VersionHistoryError(f"{relative} is missing at {ref}")
         raw = git(root, "show", f"{ref}:{relative.as_posix()}")
