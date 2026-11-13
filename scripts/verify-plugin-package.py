@@ -354,21 +354,31 @@ def verify_muse_capabilities(
     if not isinstance(skill_entry, dict) or skill_entry.get("id") != PLUGIN_NAME:
         errors.append(f"Muse manifest skill id must remain {PLUGIN_NAME!r}")
         return
-    skill_path = root / skill_entry.get("path", "")
-    if not skill_path.is_file() or skill_path.name != "SKILL.md":
+    skill_path = (root / skill_entry.get("path", "")).resolve()
+    expected_skill = (root / "skills" / PLUGIN_NAME / "SKILL.md").resolve()
+    if skill_path != expected_skill:
         errors.append("Muse manifest skill path does not resolve to skills/diagram-design/SKILL.md")
         return
     commands = capabilities.get("commands")
     if not isinstance(commands, list) or not commands:
         errors.append("Muse manifest capabilities.commands must list command definitions")
         return
+    listed: set[Path] = set()
     for entry in commands:
         if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
             errors.append("Muse manifest command entries must carry object paths")
             continue
-        command_path = root / entry["path"]
+        command_path = (root / entry["path"]).resolve()
         if not command_path.is_file():
             errors.append(f"Muse manifest command is missing: {command_path.relative_to(root)}")
+        listed.add(command_path)
+    shipped = {path.resolve() for path in (root / "commands").glob("*.md")}
+    if listed != shipped:
+        missing = sorted(shipped - listed)
+        extra = sorted(listed - shipped)
+        errors.append(
+            f"Muse manifest command paths must match commands/*.md exactly (missing: {[p.name for p in missing]}, extra: {[p.name for p in extra]})"
+        )
 
 
 def valid_double_quoted_yaml_scalar(value: str) -> bool:

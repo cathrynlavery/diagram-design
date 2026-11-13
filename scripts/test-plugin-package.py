@@ -420,6 +420,31 @@ def test_verifier() -> None:
 
     with package_repo() as root:
         set_versions(root, "1.2.4", "1.2.4")
+        muse_path = root / ".muse-plugin/plugin.json"
+        muse_payload = json.loads(muse_path.read_text(encoding="utf-8"))
+        muse_payload["capabilities"]["skills"][0]["path"] = (
+            "skills/other-plugin/SKILL.md"
+        )
+        write_json(muse_path, muse_payload)
+        expect_failure(
+            "alternate Muse skill path",
+            VERIFY.verify_package(root, "HEAD"),
+            "does not resolve to skills/diagram-design/SKILL.md",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
+        (root / "commands" / "doctor.md").write_text(
+            "Diagnose the environment.\n", encoding="utf-8"
+        )
+        expect_failure(
+            "omitted Muse command entry",
+            VERIFY.verify_package(root, "HEAD"),
+            "must match commands/*.md exactly",
+        )
+
+    with package_repo() as root:
+        set_versions(root, "1.2.4", "1.2.4")
         qoder_path = root / ".qoder-plugin/plugin.json"
         qoder = json.loads(qoder_path.read_text(encoding="utf-8"))
         qoder["commands"] = "./missing-commands/"
