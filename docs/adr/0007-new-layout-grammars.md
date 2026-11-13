@@ -66,3 +66,7 @@ Kept out on purpose, so the next audit does not relitigate them.
 ## Amendment — canonical screenshots shipped
 
 The ten types now have canonical PNGs, image-grid entries in README, and source/screenshot digests in `docs/screenshots/manifest.json`. Polar was admitted separately afterward and moved the repository-wide count from 38 to 39; this ADR still records the ten-type 28 → 38 decision.
+
+## Amendment — packet structure revisited on demand
+
+On 2026-11-13 the contributor requested Packet structure specifically, satisfying the revisit-on-demand boundary above (issue #519). Its narrow reader question is where fields sit within fixed-width bit rows. The shared ruler, proportional field widths and absolute row offsets are distinct from Layers, Unit Grid and Database schema. The illustrative example claims no real-protocol conformance. This amendment revisits Packet structure only; the earlier Git graph deferral is unchanged. The full shipping set and geometry-aware checker accompany the new type.
