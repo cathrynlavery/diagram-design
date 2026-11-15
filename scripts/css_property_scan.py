@@ -214,6 +214,10 @@ class _Styles(HTMLParser):
             self.style.append(data[6:])
 
     def finish(self) -> None:
+        # Python 3.9 leaves an unterminated raw-text element buffered at EOF.
+        # Supply only its end tag so its existing CSS text is delivered first.
+        if self.style is not None:
+            self.feed("</style>")
         self.close()
         if self.style is not None:
             self.handle_endtag("style")
