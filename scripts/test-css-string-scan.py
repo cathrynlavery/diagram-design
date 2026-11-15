@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Quoted CSS data is not a geometry declaration, in every verifier that scans for one.
 
-Fifteen verifiers refuse a CSS declaration that can move a verified mark. Each read
+Sixteen verifiers refuse a CSS declaration that can move a verified mark. Each read
 `body { --notes: "literal;transform:translate(999px)" }` as a `transform`
 declaration, although the browser reads a quoted string that moves nothing (#431).
 
@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-TYPES = ("arc-diagram", "architecture-delta", "beeswarm", "box-plot", "bump", "bubble", "marimekko", "ridgeline",
+TYPES = ("arc-diagram", "architecture-delta", "beeswarm", "box-plot", "bump", "bubble", "git-graph", "marimekko", "ridgeline",
          "service-blueprint", "polar", "steps", "streamgraph", "slopegraph", "unit-grid", "waterfall")
 
 # The first element of each example that its verifier checks as a mark: (tag, attribute).
@@ -35,6 +35,7 @@ MARKS = {
     "box-plot": ("rect", "data-role"),
     "bump": ("path", "data-series"),
     "bubble": ("circle", "data-name"),
+    "git-graph": ("circle", "data-commit"),
     "marimekko": ("rect", "data-segment"),
     "ridgeline": ("path", "data-ridge"),
     "service-blueprint": ("rect", "data-stage"),

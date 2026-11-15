@@ -49,4 +49,6 @@ Behavior is a separate axis. The semantic patterns in `references/semantic-patte
 
 **2026-11-12 · the count is 50.** Unit Grid was admitted under the same escape clause: a bounded whole represented by equal discrete cells in reading order is a layout grammar no existing type provides (treemap uses unequal areas, heatmap encodes values across categorical axes, bar uses length). It ships the full §10 set and moves the canonical counters 49 → 50 together.
 
+**2026-11-15 · the count is 51.** Git graph was admitted under the same escape clause: lanes × a shared time-grid with two-parent merge commits is a layout grammar Timeline and Swimlane cannot express (timeline has no branch topology; swimlane is ownership and handoffs). It ships the full §10 set and moves the canonical counters 50 → 51 together.
+
 The decision itself is unchanged — semantic patterns still never add a type, and the count still moves only for a new *layout* grammar. What this amendment records is the procedure: the two counters are this ADR's enforcement, so a PR that edits them without amending this file has quietly made itself the authority. Amend here in the same PR, or the number in the test is just whatever the last contributor typed.

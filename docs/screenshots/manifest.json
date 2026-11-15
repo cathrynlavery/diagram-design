@@ -93,6 +93,15 @@
       "height": 1010
     },
     {
+      "slug": "git-graph",
+      "source": "skills/diagram-design/assets/example-git-graph.html",
+      "screenshot": "docs/screenshots/git-graph.png",
+      "source_sha256": "ea63cd687bd0cf1789e187469778f85ef06dbbb2daaa4c8f46849148933d8813",
+      "screenshot_sha256": "91a9d1a622c236e0940b572688db773d0eb0ee740740d533c4994346a0b6f157",
+      "width": 2560,
+      "height": 1442
+    },
+    {
       "slug": "swimlane",
       "source": "skills/diagram-design/assets/example-swimlane.html",
       "screenshot": "docs/screenshots/swimlane.png",
