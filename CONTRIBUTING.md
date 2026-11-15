@@ -142,6 +142,8 @@ The Codex `interface` block doubles as the OpenAI plugin directory listing, so
 enforces those limits. The maintainer publishes the directory listing; please
 don't submit this plugin to OpenAI or any other plugin directory yourself.
 
+Static geometry verifiers using `scripts/css_property_scan.py` refuse escaped CSS declaration names, including escaped custom-property names ([#518](https://github.com/cathrynlavery/diagram-design/issues/518)). Spell declaration names literally. Escapes in values, quoted data, comments and selector preludes retain each verifier's existing restrictions; `scripts/test-css-string-scan.py` covers both accepted data and rejected declarations.
+
 Run them all at once before pushing:
 
 ```bash

@@ -21,6 +21,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from css_property_scan import escaped_property_findings
+
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
@@ -163,17 +165,147 @@ WRAPPERS = (
     ("between declaration strings", 'body {{ --q: "/*" }} {rule} html {{ --q: "*/" }}'),
 )
 
-def passes_check(kind: str, page: Path) -> bool:
-    result = subprocess.run(
+def run_check(kind: str, page: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         [sys.executable, str(ROOT / f"scripts/verify-{kind}.py"), str(page)],
         capture_output=True, text=True, check=False,
     )
-    return result.returncode == 0
+
+
+def passes_check(kind: str, page: Path) -> bool:
+    return run_check(kind, page).returncode == 0
+
+
+# Issue #518 item 2: these verifiers used to accept a browser-active escaped
+# property. Escape spelling is unsupported, independently of the decoded name.
+ESCAPED_PROPERTY_TYPES = tuple(kind for kind in TYPES
+                               if kind not in ("architecture-delta", "polar", "steps", "unit-grid"))
+ESCAPED_DECLARATIONS = (
+    ("hex escape", False, r"tr\61nsform: translate(9px)"),
+    ("leading escape", False, r"\74ransform: translate(9px)"),
+    ("six-digit escape", False, r"tr\000061nsform: translate(9px)"),
+    ("space-terminated escape", False, r"tr\61 nsform: translate(9px)"),
+    ("tab-terminated escape", False, "tr\\61\tnsform: translate(9px)"),
+    ("CRLF-terminated escape", False, "tr\\61\r\nnsform: translate(9px)"),
+    ("simple escape", False, r"t\ransform: translate(9px)"),
+    ("multiple escapes", False, r"\74 r\61 nsform: translate(9px)"),
+    ("mixed-case escape", False, r"TR\41 NSFORM: translate(9px)"),
+    ("prefixed property", False, r"-webkit-tr\61nsform: translate(9px)"),
+    ("comment before colon", False, r"tr\61nsform/**/: translate(9px)"),
+    ("comments around declaration", False, r"/*before*/ tr\61nsform: translate(9px) /*after*/"),
+    ("escaped hiding property", False, r"displ\61y: none"),
+    ("escaped size property", False, r"\77 idth: 1px"),
+    ("ordinary escaped property is unsupported", False, r"c\6flor: red"),
+    ("escaped custom property is unsupported", False, r"--n\6fte: 1"),
+    ("escaped custom prefix with block data", False, r"\2d -notes: { data: 1; }"),
+    ("quoted escape data", True, r"--notes: 'tr\61nsform: translate(9px)'"),
+    ("unquoted escape data", True, r"--notes: tr\61nsform"),
+    ("escape in a comment", True, r"/* tr\61nsform: translate(9px) */ --notes: 1"),
+    ("escape in a URL", True, r"--notes: url(tr\61nsform:9px)"),
+    ("escape in an escaped URL function", True, r"--notes: u\72 l(tr\61nsform:9px)"),
+    ("escaped punctuation in data", True, r"--notes: \;tr\61nsform\:9px"),
+    ("escaped declaration in custom block data", True, r"--notes: { tr\61nsform: 9px; }"),
+)
+
+
+
+def check_property_contexts() -> list[str]:
+    # Browser text parsing differs between HTML raw-text styles and SVG foreign
+    # content, including SVG's HTML integration points. CDATA is SVG-only.
+    cases = (
+        ("HTML self-closing style flag is ignored", True,
+         r"<style/>* { tr\61nsform: translate(9px) }</style>"),
+        ("HTML raw-text entities stay literal", False,
+         r"<style>* { tr&#92;61nsform: translate(9px) }</style>"),
+        ("SVG style entities decode once", True,
+         r"<svg><style>* { tr&#92;61nsform: translate(9px) }</style></svg>"),
+        ("SVG CDATA entities stay literal", False,
+         r"<svg><style><![CDATA[* { tr&#92;61nsform: translate(9px) }]]></style></svg>"),
+        ("SVG CDATA declarations are live", True,
+         r"<svg><style><![CDATA[* { tr\61nsform: translate(9px) }]]></style></svg>"),
+        ("SVG markup comments do not start CSS comments", True,
+         r"<svg><style><!-- /* -->* { tr\61nsform: translate(9px) }<!-- */ --></style></svg>"),
+        ("HTML integration point entities stay literal", False,
+         r"<svg><foreignObject><style>* { tr&#92;61nsform: translate(9px) }</style></foreignObject></svg>"),
+        ("HTML integration point quote references are raw", True,
+         r"<svg><foreignObject><style>* { --a: &#39; tr\61nsform:translate(9px); --x:&#39; }</style></foreignObject></svg>"),
+        ("HTML integration point quoted data stays quoted", False,
+         r'<svg><foreignObject><style>* { --notes: "&quot;;tr\61nsform:9px"; }</style></foreignObject></svg>'),
+        ("SVG desc is an HTML integration point", False,
+         r"<svg><desc><style>* { tr&#92;61nsform: translate(9px) }</style></desc></svg>"),
+        ("SVG title is an HTML integration point", False,
+         r"<svg><title><style>* { tr&#92;61nsform: translate(9px) }</style></title></svg>"),
+        ("a nested SVG re-enters foreign content", True,
+         r"<svg><foreignObject><svg><style>* { tr&#92;61nsform: translate(9px) }</style></svg></foreignObject></svg>"),
+        ("inline references decode once", False,
+         r'<svg><circle style="tr&amp;#92;61nsform:translate(9px)"/></svg>'),
+        ("the first duplicate style attribute wins", False,
+         r'<svg><circle style="--notes:1" style="tr\61nsform:translate(9px)"/></svg>'),
+        ("HTML breakout changes style text parsing", True,
+         r"<svg><p><style>* { --a: &#39; tr\61nsform:translate(9px); --x:&#39; }</style></p></svg>"),
+        ("a foreign p end tag also breaks out", True,
+         r"<svg></p><style>* { --a: &#39; tr\61nsform:translate(9px); --x:&#39; }</style></svg>"),
+        ("a font with presentation attributes breaks out", True,
+         r"<svg><font color='red'><style>* { --a: &#39; tr\61nsform:translate(9px); --x:&#39; }</style></font></svg>"),
+        ("an unterminated style still applies", True,
+         r"<style>* { tr\61nsform: translate(9px) }"),
+    )
+    return [f"CSS property context: {label}"
+            for label, expected, source in cases
+            if bool(escaped_property_findings(source)) != expected]
+
+def check_escaped_properties(scratch: str) -> list[str]:
+    failures = []
+    for kind in ESCAPED_PROPERTY_TYPES:
+        example = sorted(ASSET_DIR.glob(f"example-{kind}*.html"))[0]
+        source = example.read_text(encoding="utf-8")
+        page = Path(scratch) / f"{kind}-escaped.html"
+        for label, passes, declaration in ESCAPED_DECLARATIONS:
+            for where in ("head", "svg", "inline"):
+                css = declaration if where == "inline" else "* { " + declaration + " }"
+                page.write_text(place(source, kind, where, css), encoding="utf-8")
+                # Box plot already refuses unquoted inline escapes, independently
+                # of property position. Preserve that stronger existing contract.
+                expected = passes and not (kind == "box-plot" and where == "inline"
+                    and label in ("unquoted escape data", "escape in a comment",
+                                  "escape in an escaped URL function", "escaped punctuation in data",
+                                  "escaped declaration in custom block data"))
+                result = run_check(kind, page)
+                if (result.returncode == 0) != expected:
+                    failures.append(f"{kind}: {label} ({where}) should {'pass' if expected else 'fail'}")
+                elif not passes and "escaped CSS property names are unsupported" not in result.stdout:
+                    failures.append(f"{kind}: {label} ({where}) missed the escaped-property diagnostic")
+        for label, passes, where, css in (
+            ("nested escaped property", False, "head", r"@media screen { * { tr\61nsform: translate(9px) } }"),
+            ("escaped property in a nested rule", False, "head", r"* { &:hover { tr\61nsform: translate(9px) } }"),
+            ("escaped property after an unquoted URL", False, "head", r"* { --a: url(a'b); tr\61nsform: translate(9px); --b: 'x' }"),
+            ("escaped property in SVG CDATA", False, "svg", r"<![CDATA[* { tr\61nsform: translate(9px) }]]>"),
+            ("SVG markup comments around CSS comments", False, "svg", r"<!-- /* -->* { tr\61nsform: translate(9px) }<!-- */ -->"),
+            ("SVG CDATA references stay literal", True, "svg", r"<![CDATA[* { tr&#92;61nsform: translate(9px) }]]>"),
+            ("a quoted escaped property in SVG CDATA", True, "svg", r"<![CDATA[* { --notes: 'tr\61nsform:9px' }]]>"),
+            ("escaped selector", True, "head", r".esc\61ped { --notes: 1 }"),
+            ("escaped pseudo-class selector", True, "head", r"\62 ody:hover { --notes: 1 }"),
+            ("escaped string in selector", True, "head", r"body[data-note='tr\61nsform:9px'] { --notes: 1 }"),
+            ("raw character reference in head", True, "head", r"* { tr&#92;61nsform: translate(9px) }"),
+            ("decoded escape in SVG", False, "svg", r"* { tr&#92;61nsform: translate(9px) }"),
+            ("decoded escape inline", False, "inline", r"tr&#92;61nsform: translate(9px)"),
+        ):
+            page.write_text(place(source, kind, where, css), encoding="utf-8")
+            # Box plot already rejects any escaped selector.
+            expected = passes and not (kind == "box-plot" and label in
+                ("escaped selector", "escaped pseudo-class selector", "escaped string in selector"))
+            result = run_check(kind, page)
+            if (result.returncode == 0) != expected:
+                failures.append(f"{kind}: {label} should {'pass' if expected else 'fail'}")
+            elif not passes and "escaped CSS property names are unsupported" not in result.stdout:
+                failures.append(f"{kind}: {label} missed the escaped-property diagnostic")
+    return failures
 
 
 def main() -> int:
-    failures: list[str] = []
+    failures: list[str] = check_property_contexts()
     with tempfile.TemporaryDirectory() as scratch:
+        failures.extend(check_escaped_properties(scratch))
         for kind in TYPES:
             example = sorted(ASSET_DIR.glob(f"example-{kind}*.html"))[0]
             source = example.read_text(encoding="utf-8")
@@ -216,7 +348,7 @@ def main() -> int:
     print(f"OK CSS string scan: {len(TYPES)} verifier(s), {len(CASES)} case(s) and "
           f"{len(SELECTOR_RULES)} quoted-selector rule(s) each, {len(MARIMEKKO_SELECTOR_CASES)} "
           f"marimekko segment selector(s), {sum(map(len, GUARDED_RULES.values()))} guarded rule(s) "
-          "behind comment delimiters, both polarities")
+          f"behind comment delimiters, escaped property checks across {len(ESCAPED_PROPERTY_TYPES)} verifiers, both polarities")
     return 0
 
 

@@ -101,6 +101,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import colorsys
 import html
@@ -1809,6 +1811,9 @@ def check_structure(source: str, items: list, findings: list, name: str) -> None
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     source = blank_comments(raw)
     findings: list = []
     name = path.name
