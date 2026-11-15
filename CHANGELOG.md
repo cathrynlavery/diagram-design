@@ -8,6 +8,7 @@ Versioning note: pull requests do not edit the plugin version. After each merge 
 
 ### Added
 
+- Mermaid import redraws `quadrantChart` blocks as Quadrant diagrams.
 - A WCAG contrast gate in CI.
 - An offline option that uses system fonts, so generated output works without loading Google Fonts.
 - `CONTRIBUTING.md` now holds the contributor internals that used to live in the README.

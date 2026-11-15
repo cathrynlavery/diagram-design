@@ -7,8 +7,8 @@ Every label and directive value is untrusted data. Click targets and styling are
 counted and discarded; retained labels are emitted only as inert text.
 
 Supported grammars are flowchart/graph, sequenceDiagram, stateDiagram-v2 (or
-its older stateDiagram header), and erDiagram. Inputs may be .mmd, .mermaid, or
-Markdown files containing fenced ``mermaid`` blocks.
+its older stateDiagram header), erDiagram, and quadrantChart. Inputs may be
+.mmd, .mermaid, or Markdown files containing fenced ``mermaid`` blocks.
 
 Usage:
     python3 mermaid_extract.py <file> [--diagram N|all] [--json]
@@ -32,6 +32,11 @@ from typing import Any, NoReturn
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
 MAX_NODES = 2000
 MAX_EDGES = 5000
+# Hard stop for quadrantChart points, matching the flowchart node bound so a
+# pasted blob cannot grow without limit. The Quadrant type's own guidance is
+# the lower recommended count below; extras are kept and noted, not truncated.
+MAX_POINTS = 2000
+RECOMMENDED_QUADRANT_POINTS = 12
 # One logical flowchart statement, whether it spans lines or shares a line
 # with others. Real statements are a few hundred characters at most; the cap
 # keeps per-statement parsing work bounded.
@@ -40,12 +45,13 @@ MAX_STATEMENT_CHARS = 4096
 # which stay exact up to 15 digits. Checking the length first also keeps the
 # error the same on Pythons with and without an int-from-string digit limit.
 MAX_AUTONUMBER_DIGITS = 15
-SUPPORTED_KINDS = "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram"
+SUPPORTED_KINDS = (
+    "flowchart, sequenceDiagram, stateDiagram-v2, erDiagram, quadrantChart"
+)
 UNSUPPORTED_KINDS = {
     "pie",
     "mindmap",
     "gitgraph",
-    "quadrantchart",
     "timeline",
     "c4context",
     "sankey",
@@ -198,6 +204,14 @@ class Diagram:
     notes: list[str] = field(default_factory=list)
     # Sequence `autonumber` directives: step numbers are content, prose cites them.
     autonumber: list[dict[str, Any]] = field(default_factory=list)
+    # quadrantChart IR. Empty on the other grammars; JSON omits these keys then.
+    title: str = ""
+    x_axis: dict[str, str] = field(default_factory=lambda: {"low": "", "high": ""})
+    y_axis: dict[str, str] = field(default_factory=lambda: {"low": "", "high": ""})
+    quadrants: dict[str, str] = field(
+        default_factory=lambda: {"1": "", "2": "", "3": "", "4": ""}
+    )
+    points: list[dict[str, Any]] = field(default_factory=list)
     discarded: dict[str, int] = field(
         default_factory=lambda: {"style_directives": 0, "click_handlers": 0, "config_directives": 0}
     )
@@ -292,19 +306,8 @@ class SourceBlock:
     source_line: int
 
 
-def clean_label(value: str) -> str:
-    """Flatten Mermaid label markup without interpreting it."""
-    text = value.strip()
-    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'`":
-        text = text[1:-1]
-    if text.startswith("`") and text.endswith("`"):
-        text = text[1:-1]
-    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
-    text = re.sub(r"<[^>]+>", "", text)
-    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
-    text = re.sub(r"__(.*?)__", r"\1", text)
-    text = re.sub(r"(?<!\w)[*_](.*?)[*_](?!\w)", r"\1", text)
-    text = text.replace("\\\"", '"').replace("\\'", "'")
+def _mermaid_entity_references(text: str) -> str:
+    """Rewrite Mermaid ``#nnn;`` and ``#name;`` codes as HTML character references."""
 
     def entity_reference(match: re.Match[str]) -> str:
         entity = match.group(1)
@@ -320,7 +323,23 @@ def clean_label(value: str) -> str:
             return f"&{entity};"
         return match.group(0)
 
-    text = re.sub(r"(?<!&)#([0-9]+|[A-Za-z][A-Za-z0-9]*);", entity_reference, text)
+    return re.sub(r"(?<!&)#([0-9]+|[A-Za-z][A-Za-z0-9]*);", entity_reference, text)
+
+
+def clean_label(value: str) -> str:
+    """Flatten Mermaid label markup without interpreting it."""
+    text = value.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'`":
+        text = text[1:-1]
+    if text.startswith("`") and text.endswith("`"):
+        text = text[1:-1]
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"__(.*?)__", r"\1", text)
+    text = re.sub(r"(?<!\w)[*_](.*?)[*_](?!\w)", r"\1", text)
+    text = text.replace("\\\"", '"').replace("\\'", "'")
+    text = _mermaid_entity_references(text)
     text = html.unescape(text)
     return "\n".join(part.strip() for part in text.splitlines()).strip()
 
@@ -449,6 +468,8 @@ def _kind_and_direction(
             return "stateDiagram-v2", "TD", position
         if re.match(r"^erDiagram\b", text, re.I):
             return "erDiagram", "TD", position
+        if re.match(r"^quadrantChart\b", text, re.I):
+            return "quadrant", "TD", position
         token = text.split(maxsplit=1)[0]
         if token.casefold() in UNSUPPORTED_KINDS:
             _fail(
@@ -1397,6 +1418,161 @@ def _er_table(
     return diagram.add_node(name, label, "table")
 
 
+def _quadrant_label(value: str) -> str:
+    """Keep quadrant text as inert data: quotes off, entities decoded, tags intact."""
+    text = value.strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'`":
+        text = text[1:-1]
+    text = _mermaid_entity_references(text)
+    text = html.unescape(text)
+    return " ".join(text.split())
+
+
+def _unit_coordinate(raw: str, line_number: int) -> float:
+    text = raw.strip()
+    try:
+        value = float(text)
+    except ValueError:
+        _fail(f"non-numeric point coordinate at line {line_number}")
+    if value != value or value < 0.0 or value > 1.0:
+        _fail(f"point coordinate outside [0, 1] at line {line_number}")
+    return value
+
+
+_QUADRANT_ACC = re.compile(r"^(?:accTitle|accDescr)\b", re.I)
+_QUADRANT_ACC_BLOCK = re.compile(r"^accDescr\b\s*\{[^}]*$", re.I)
+_QUADRANT_POINT_SEPARATOR = re.compile(r":\s*\[")
+_QUADRANT_CLASS_SUFFIX = re.compile(r":::[^\s:]+$")
+
+
+def _mask_double_quotes(text: str) -> str:
+    """Blank double-quoted spans so a name can contain ``: [`` as text."""
+    output = list(text)
+    quoted = False
+    escaped = False
+    for index, character in enumerate(text):
+        if not quoted:
+            if character == '"':
+                quoted = True
+                output[index] = " "
+            continue
+        output[index] = " "
+        if escaped:
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        elif character == '"':
+            quoted = False
+    return "".join(output)
+
+
+def _quadrant_point(text: str) -> tuple[str, str, str, str] | None:
+    """Split ``label:::class: [x, y] style`` on the coordinate colon outside quotes.
+
+    Returns ``(label, class_suffix, body, style)``. The coordinate marker is the
+    first ``:`` followed by optional whitespace and ``[`` outside double quotes,
+    so a quoted name such as ``"Phase: [beta]"`` stays intact. Returns None when
+    the statement is not a point.
+    """
+    separator = _QUADRANT_POINT_SEPARATOR.search(_mask_double_quotes(text))
+    if separator is None:
+        return None
+    head = text[: separator.start()].rstrip()
+    class_suffix = _QUADRANT_CLASS_SUFFIX.search(_mask_double_quotes(head))
+    if class_suffix:
+        label = head[: class_suffix.start()]
+        suffix = head[class_suffix.start() : class_suffix.end()]
+    else:
+        label = head
+        suffix = ""
+    after = text[separator.end() :]
+    close = after.rfind("]")
+    if close == -1:
+        return label, suffix, after, ""
+    return label, suffix, after[:close], after[close + 1 :]
+
+
+def _parse_quadrant_statement(
+    diagram: Diagram, line_number: int, raw: str
+) -> None:
+    text = raw.strip()
+    if not text:
+        return
+    if len(text) > MAX_STATEMENT_CHARS:
+        _statement_too_long(line_number)
+    # Point names may themselves be style or click keywords (`Class A: [0.2, 0.3]`,
+    # `click here: [0.1, 0.2]`). Keywords and points are recognized first; a
+    # discard applies only to a statement that is not a point.
+    if _QUADRANT_ACC.match(text):
+        return
+    title = re.match(r"^title(?:\s+(.*))?$", text, re.I)
+    if title:
+        diagram.title = _quadrant_label(title.group(1) or "")
+        return
+    axis = re.match(r"^(x-axis|y-axis)\b\s*(.*)$", text, re.I)
+    if axis:
+        target = diagram.x_axis if axis.group(1).casefold() == "x-axis" else diagram.y_axis
+        parts = re.split(r"\s*--+\>\s*", axis.group(2), maxsplit=1)
+        target["low"] = _quadrant_label(parts[0]) if parts[0].strip() else ""
+        target["high"] = _quadrant_label(parts[1]) if len(parts) == 2 else ""
+        return
+    quadrant = re.match(r"^quadrant-([1-4])\b\s*(.*)$", text, re.I)
+    if quadrant:
+        diagram.quadrants[quadrant.group(1)] = _quadrant_label(quadrant.group(2))
+        return
+    parsed = _quadrant_point(text)
+    if parsed is not None:
+        label_text, suffix, body, style = parsed
+        coords = [part.strip() for part in body.split(",")]
+        if len(coords) != 2:
+            _fail(f"non-numeric point coordinate at line {line_number}")
+        x_value = _unit_coordinate(coords[0], line_number)
+        y_value = _unit_coordinate(coords[1], line_number)
+        label = _quadrant_label(label_text)
+        if not label:
+            _fail(f"non-numeric point coordinate at line {line_number}")
+        if any(point["label"] == label for point in diagram.points):
+            _fail(f"duplicate point label at line {line_number}")
+        if suffix or style.strip():
+            diagram.discarded["style_directives"] += 1
+        if len(diagram.points) >= MAX_POINTS:
+            _fail(f"point limit exceeded (max {MAX_POINTS})")
+        diagram.points.append({"label": label, "x": x_value, "y": y_value})
+        return
+    if _discard_nonsemantic(diagram, text):
+        return
+    _fail(f"malformed quadrant statement at line {line_number}")
+
+
+def _parse_quadrant(
+    diagram: Diagram, lines: list[tuple[int, str]], header_position: int
+) -> None:
+    # `accDescr {` ... `}` may span lines. Body lines are prose; the first `}`
+    # closes the block and any text after it is a normal statement.
+    in_acc_descr = False
+    for line_number, raw in lines[header_position + 1 :]:
+        if in_acc_descr:
+            if "}" not in raw:
+                continue
+            in_acc_descr = False
+            raw = raw[raw.find("}") + 1 :]
+        if _QUADRANT_ACC_BLOCK.match(raw.strip()):
+            in_acc_descr = True
+            continue
+        for statement in _split_top_level(raw, ";", quotes='"'):
+            _parse_quadrant_statement(diagram, line_number, statement)
+    if not diagram.points:
+        _fail("no points in quadrant chart")
+    count = len(diagram.points)
+    if count > RECOMMENDED_QUADRANT_POINTS:
+        diagram.notes.append(
+            f"{count} points; the Quadrant type recommends <= 12, consider splitting"
+        )
+    styling = diagram.discarded["style_directives"]
+    if styling:
+        diagram.notes.append(f"{styling} discarded styling")
+
+
 def parse_block(block: SourceBlock) -> Diagram:
     lines, config_directives = _prepared_lines(block)
     kind, direction, header_position = _kind_and_direction(lines)
@@ -1409,6 +1585,15 @@ def parse_block(block: SourceBlock) -> Diagram:
         if tail.startswith(";"):
             lines[header_position] = (line_number, header[: rest.end()])
             lines.insert(header_position + 1, (line_number, tail[1:]))
+    if kind == "quadrant":
+        line_number, header = lines[header_position]
+        rest = re.match(r"^\s*quadrantChart\b", header, re.I)
+        tail = header[rest.end() :].lstrip() if rest else ""
+        if tail.startswith(";"):
+            tail = tail[1:]
+        if tail:
+            lines[header_position] = (line_number, header[: rest.end()] if rest else header)
+            lines.insert(header_position + 1, (line_number, tail))
     diagram = Diagram(block.index, kind, block.source_line, direction=direction)
     diagram.discarded["config_directives"] = config_directives
     if kind == "flowchart":
@@ -1417,6 +1602,8 @@ def parse_block(block: SourceBlock) -> Diagram:
         _parse_sequence(diagram, lines, header_position)
     elif kind == "stateDiagram-v2":
         _parse_state(diagram, lines, header_position)
+    elif kind == "quadrant":
+        _parse_quadrant(diagram, lines, header_position)
     else:
         _parse_er(diagram, lines, header_position)
     _finalize_degrees(diagram)
@@ -1472,6 +1659,28 @@ def shape_family(shape: str) -> str:
 
 
 def analyze(diagram: Diagram) -> dict[str, Any]:
+    if diagram.kind == "quadrant":
+        count = len(diagram.points)
+        return {
+            "nodes_total": count,
+            "nodes_drawable": count,
+            "containers": 0,
+            "leaves": count,
+            "edges_total": 0,
+            "edges_labeled": 0,
+            "edges_dangling": 0,
+            "max_depth": 0,
+            "shapes": {"point": count} if count else {},
+            "has_cycle": False,
+            "hubs": [],
+            "entry_points": [],
+            "terminals": [],
+            "orphans": [],
+            "type_candidates": ["quadrant"],
+            "collapsible_groups": [],
+            "over_node_budget": count > RECOMMENDED_QUADRANT_POINTS,
+            "over_edge_budget": False,
+        }
     containers = [node for node in diagram.nodes if node.container or node.children]
     leaves = [node for node in diagram.nodes if not (node.container or node.children)]
     shapes: dict[str, int] = {}
@@ -1557,6 +1766,8 @@ def _block_summary(block: SourceBlock, selected: list[Diagram]) -> str:
             diagram = parse_block(block)
         except ExtractError as error:
             return f"[{block.index}] unparsed: {_escape_markdown(str(error))}"
+    if diagram.kind == "quadrant":
+        return f"[{diagram.index}] {diagram.kind} ({len(diagram.points)}p)"
     return f"[{diagram.index}] {diagram.kind} ({len(diagram.nodes)}n/{len(diagram.edges)}e)"
 
 
@@ -1568,6 +1779,30 @@ def _fragment_digest(item: dict[str, Any]) -> str:
     keyword = REGION_KEYWORDS.get(item["kind"], "else")
     parts = [item["label"] or "unlabeled"] + [f"{keyword}: {region or 'unlabeled'}" for region in item["regions"]]
     return " | ".join(_escape_table(part) for part in parts)
+
+
+def _axis_digest(axis: dict[str, str]) -> str:
+    low = _escape_markdown(axis.get("low") or "") or "—"
+    high = _escape_markdown(axis.get("high") or "") or "—"
+    return f"{low} → {high}"
+
+
+def _quadrant_digest_header(diagram: Diagram, info: dict[str, Any]) -> list[str]:
+    cells = "; ".join(
+        f"{index}={_escape_markdown(diagram.quadrants.get(index) or '') or '—'}"
+        for index in ("1", "2", "3", "4")
+    )
+    return [
+        "- source layout: none (Mermaid is layout-free); kind: quadrantChart",
+        f"- title: {_escape_markdown(diagram.title) or '—'}",
+        f"- x-axis: {_axis_digest(diagram.x_axis)}",
+        f"- y-axis: {_axis_digest(diagram.y_axis)}",
+        f"- quadrants: {cells}",
+        f"- points: {len(diagram.points)}",
+        f"- type candidates: {', '.join(info['type_candidates'])}",
+        f"- budget: points {'OVER' if info['over_node_budget'] else 'ok'} "
+        f"(recommended max {RECOMMENDED_QUADRANT_POINTS})",
+    ]
 
 
 def digest(
@@ -1583,22 +1818,23 @@ def digest(
     )
     for diagram in selected:
         info = analyze(diagram)
-        output.extend(
-            [
-                "",
-                f"## Diagram {diagram.index} — {diagram.kind}",
-                "",
-                f"- source layout: none (Mermaid is layout-free); direction: {diagram.direction}",
-                f"- nodes: {info['nodes_total']} total / {info['nodes_drawable']} drawable / "
-                f"{info['containers']} containers, depth {info['max_depth']}",
-                f"- edges: {info['edges_total']} ({info['edges_labeled']} labeled, "
-                f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}",
-                f"- shapes: {info['shapes']}",
-                f"- type candidates: {', '.join(info['type_candidates'])}",
-                f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
-                f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
-            ]
-        )
+        output.extend(["", f"## Diagram {diagram.index} — {diagram.kind}", ""])
+        if diagram.kind == "quadrant":
+            output.extend(_quadrant_digest_header(diagram, info))
+        else:
+            output.extend(
+                [
+                    f"- source layout: none (Mermaid is layout-free); direction: {diagram.direction}",
+                    f"- nodes: {info['nodes_total']} total / {info['nodes_drawable']} drawable / "
+                    f"{info['containers']} containers, depth {info['max_depth']}",
+                    f"- edges: {info['edges_total']} ({info['edges_labeled']} labeled, "
+                    f"{info['edges_dangling']} dangling), cycle: {info['has_cycle']}",
+                    f"- shapes: {info['shapes']}",
+                    f"- type candidates: {', '.join(info['type_candidates'])}",
+                    f"- budget: nodes {'OVER' if info['over_node_budget'] else 'ok'} (max 9), "
+                    f"edges {'OVER' if info['over_edge_budget'] else 'ok'} (max 12)",
+                ]
+            )
         if any(diagram.discarded.values()):
             output.append(
                 f"- discarded: {diagram.discarded['style_directives']} style directives, "
@@ -1647,6 +1883,26 @@ def digest(
                     f"  - {_escape_markdown(group['label'])} — {group['children']} children: "
                     + ", ".join(_escape_markdown(label) for label in group["child_labels"])
                 )
+
+        if diagram.kind == "quadrant":
+            output.extend(
+                [
+                    "",
+                    "### Points",
+                    "",
+                    "| label | x | y |",
+                    "|---|---|---|",
+                ]
+            )
+            for point in diagram.points[:max_rows]:
+                output.append(
+                    f"| {_escape_table(point['label'])} | {point['x']} | {point['y']} |"
+                )
+            if len(diagram.points) > max_rows:
+                output.append(
+                    f"| … | +{len(diagram.points) - max_rows} more (use --json) | |"
+                )
+            continue
 
         output.extend(
             [
@@ -1697,27 +1953,35 @@ def digest(
     return "\n".join(output)
 
 
+def _diagram_json(diagram: Diagram) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "index": diagram.index,
+        "kind": diagram.kind,
+        "source_line": diagram.source_line,
+        "direction": diagram.direction,
+        "analysis": analyze(diagram),
+        "discarded": diagram.discarded,
+        "fragments": diagram.fragments,
+        "notes": diagram.notes,
+        "autonumber": diagram.autonumber,
+        "nodes": [asdict(node) for node in diagram.nodes],
+        "edges": [asdict(edge) for edge in diagram.edges],
+    }
+    if diagram.kind == "quadrant":
+        payload["title"] = diagram.title
+        payload["x_axis"] = dict(diagram.x_axis)
+        payload["y_axis"] = dict(diagram.y_axis)
+        payload["quadrants"] = dict(diagram.quadrants)
+        payload["points"] = [dict(point) for point in diagram.points]
+    return payload
+
+
 def to_json(path: Path, blocks: list[SourceBlock], selected: list[Diagram]) -> str:
     return json.dumps(
         {
             "source": str(path),
             "diagrams_total": len(blocks),
-            "diagrams": [
-                {
-                    "index": diagram.index,
-                    "kind": diagram.kind,
-                    "source_line": diagram.source_line,
-                    "direction": diagram.direction,
-                    "analysis": analyze(diagram),
-                    "discarded": diagram.discarded,
-                    "fragments": diagram.fragments,
-                    "notes": diagram.notes,
-                    "autonumber": diagram.autonumber,
-                    "nodes": [asdict(node) for node in diagram.nodes],
-                    "edges": [asdict(edge) for edge in diagram.edges],
-                }
-                for diagram in selected
-            ],
+            "diagrams": [_diagram_json(diagram) for diagram in selected],
         },
         indent=2,
         ensure_ascii=False,
