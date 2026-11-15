@@ -15,7 +15,7 @@ import re
 ESCAPE = r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])"
 ESCAPE_RE = re.compile(ESCAPE)
 NAME_RE = re.compile(rf"(?:[-_a-zA-Z\x80-\U0010ffff]|{ESCAPE})(?:[-\w\x80-\U0010ffff]|{ESCAPE})*")
-STRING_RE = re.compile(r'''"(?:\\(?:\r\n|[\s\S])|[^"\\\n\r\f])*(?:"|(?=[\n\r\f])|$)|'(?:\\(?:\r\n|[\s\S])|[^'\\\n\r\f])*(?:'|(?=[\n\r\f])|$)''')
+STRING_RE = re.compile(r'''"(?:\\(?:\r\n|[\s\S])|[^"\\\n\r\f])*(?:"|\\\Z|(?=[\n\r\f])|\Z)|'(?:\\(?:\r\n|[\s\S])|[^'\\\n\r\f])*(?:'|\\\Z|(?=[\n\r\f])|\Z)''')
 WHITESPACE = " \t\n\r\f"
 # HTML's foreign-content recovery reparents these starts outside the SVG.
 HTML_BREAKOUT = {

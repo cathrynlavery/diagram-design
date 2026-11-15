@@ -247,6 +247,10 @@ def check_property_contexts() -> list[str]:
          r"<svg></p><style>* { --a: &#39; tr\61nsform:translate(9px); --x:&#39; }</style></svg>"),
         ("a font with presentation attributes breaks out", True,
          r"<svg><font color='red'><style>* { --a: &#39; tr\61nsform:translate(9px); --x:&#39; }</style></font></svg>"),
+        ("EOF backslash in double-quoted data stays in the string", False,
+         '<style>* { --notes: "ignored;tr\\61nsform:translate(9px)' + chr(92) + '</style>'),
+        ("EOF backslash in single-quoted data stays in the string", False,
+         "<style>* { --notes: 'ignored;tr\\61nsform:translate(9px)" + chr(92) + '</style>'),
         ("an unterminated style still applies", True,
          r"<style>* { tr\61nsform: translate(9px) }"),
     )
