@@ -34,6 +34,8 @@ Invariants:
 9. UNPOSITIONED GEOMETRY - raw attributes only; a transform, a moving CSS
    rule, or a hidden bound mark is a finding. A <style> rule that hides a
    bound mark or its parent still counts as hiding it.
+   A connector whose resolved stroke is none or transparent, or whose
+   stroke-width is zero (inline style, attribute or ancestor), is hidden.
 10. FAIL CLOSED - a file that presents as a git graph but yields fewer than
    four commits, two lanes, or one merge is a finding.
 
@@ -104,8 +106,10 @@ HEX_RE = re.compile(r"#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})", re.IGNORECASE)
 RGB_RE = re.compile(r"rgba?\(\s*([\d.]+)\s*[,\s]\s*([\d.]+)\s*[,\s]\s*([\d.]+)", re.IGNORECASE)
 DEFAULT_ACCENTS = {(191, 69, 32), (240, 138, 89)}
 COLOR_ACCENT_RE = re.compile(r"--color-accent\s*:\s*(?P<value>[^;}]+)", re.IGNORECASE)
-FILL_DECL_RE = re.compile(
-    r"(?:^|[{;}\n])\s*fill\s*:\s*(?P<value>[^;}]+)", re.IGNORECASE
+RGBA_ZERO_RE = re.compile(
+    r"^(?:rgb|hsl)a?\(\s*[^,/\s()]+(?:\s*,\s*|\s+)[^,/\s()]+(?:\s*,\s*|\s+)"
+    r"[^,/\s()]+\s*[,/]\s*(?:0*\.?0+%?)\s*\)$|^#(?:[0-9a-f]{3}0|[0-9a-f]{6}00)$",
+    re.IGNORECASE,
 )
 CSS_PAINT_RE = re.compile(r"(?:^|[{};\s])(?P<prop>stroke|fill)\s*:", re.IGNORECASE)
 CSS_ALL_RE = re.compile(r"(?:^|[{};\s])all\s*:", re.IGNORECASE)
@@ -343,22 +347,30 @@ def is_bound(match) -> bool:
     return "data-lane" in attrs or "data-tag" in attrs or "data-commit" in attrs
 
 
-def declared_fill(attrs: dict):
-    """Fill the element states itself: inline style outranks the fill attribute."""
+def declared_paint(attrs: dict, prop: str):
+    """Value the element states itself: inline style outranks the presentation attribute."""
     style = attrs.get("style")
     if style is not None:
         found = None
-        for match in FILL_DECL_RE.finditer(blank_css_strings(style)):
+        pattern = re.compile(
+            r"(?:^|[{;}\n])\s*%s\s*:\s*(?P<value>[^;}]+)" % re.escape(prop),
+            re.IGNORECASE,
+        )
+        for match in pattern.finditer(blank_css_strings(style)):
             found = match.group("value").split("!")[0].strip()
         if found is not None:
             return found
-    if "fill" in attrs:
-        return attrs["fill"]
+    if prop in attrs:
+        return attrs[prop]
     return None
 
 
-def fill_spans(source: str) -> list:
-    """(start, end, fill) for each container that a descendant would inherit."""
+def declared_fill(attrs: dict):
+    return declared_paint(attrs, "fill")
+
+
+def paint_spans(source: str, prop: str) -> list:
+    """(start, end, value) for each container that a descendant would inherit prop from."""
     events = []
     for match in GROUP_OPEN_RE.finditer(source):
         if match.group("selfclose"):
@@ -370,25 +382,33 @@ def fill_spans(source: str) -> list:
     stack, spans = [], []
     for position, kind, attrs in events:
         if kind == 0:
-            current = declared_fill(attrs)
+            current = declared_paint(attrs, prop)
             if current is None:
                 current = stack[-1][1] if stack else None
             stack.append((position, current))
         elif stack:
-            start, fill = stack.pop()
-            if fill is not None:
-                spans.append((start, position, fill))
-    for start, fill in stack:
-        if fill is not None:
-            spans.append((start, len(source), fill))
+            start, value = stack.pop()
+            if value is not None:
+                spans.append((start, position, value))
+    for start, value in stack:
+        if value is not None:
+            spans.append((start, len(source), value))
     return spans
 
 
-def inherited_fill(spans: list, offset: int):
-    for start, end, fill in reversed(spans):
+def fill_spans(source: str) -> list:
+    return paint_spans(source, "fill")
+
+
+def inherited_paint(spans: list, offset: int):
+    for start, end, value in reversed(spans):
         if start < offset < end:
-            return fill
+            return value
     return None
+
+
+def inherited_fill(spans: list, offset: int):
+    return inherited_paint(spans, offset)
 
 
 def tokens_of(attrs: dict) -> set:
@@ -563,6 +583,7 @@ def transformed_spans(source: str) -> list:
 
 def check_transforms(source: str, findings: list, name: str) -> None:
     check_style_rules(source, findings, name)
+    check_connector_ink(source, findings, name)
     for match in STYLE_RE.finditer(source):
         if CSS_MOVES_MARK_RE.search(blank_css_strings(match.group("body"))):
             findings.append(
@@ -613,6 +634,44 @@ def check_transforms(source: str, findings: list, name: str) -> None:
                     % (name, line_of(source, match.start()), ancestor)
                 )
                 break
+
+
+def invisible_stroke(value) -> bool:
+    text = str(value).strip().lower()
+    return text in ("none", "transparent") or RGBA_ZERO_RE.match(text) is not None
+
+
+def check_connector_ink(source: str, findings: list, name: str) -> None:
+    """A connector is a parent only if readers can see it: resolve its stroke and stroke-width."""
+    strokes = paint_spans(source, "stroke")
+    widths = paint_spans(source, "stroke-width")
+    for match in PATH_RE.finditer(source):
+        raw = match.group("attrs")
+        if not DECLARES_CONNECTOR_RE.search(raw):
+            continue
+        attrs = attrs_of(raw)
+        stroke = declared_paint(attrs, "stroke")
+        if stroke is None:
+            stroke = inherited_paint(strokes, match.start())
+        width = declared_paint(attrs, "stroke-width")
+        if width is None:
+            width = inherited_paint(widths, match.start())
+        label = "%s→%s" % (attrs.get("data-from", "?"), attrs.get("data-to", "?"))
+        where = "%s:%d" % (name, line_of(source, match.start()))
+        if stroke is None or invisible_stroke(stroke):
+            findings.append(
+                "%s: connector %s has no visible stroke (%s) — a connector "
+                "readers cannot see still counts as a parent. Give it a "
+                "stroke color" % (where, label,
+                                  "stroke=%r" % stroke if stroke is not None
+                                  else "no stroke set, SVG default is none")
+            )
+        elif width is not None and invisible_amount(re.sub(r"px\s*$", "", str(width).strip(), flags=re.IGNORECASE)):
+            findings.append(
+                "%s: connector %s has stroke-width=%r — a connector readers "
+                "cannot see still counts as a parent. Give it a positive "
+                "stroke-width" % (where, label, width)
+            )
 
 
 def path_points(d: str):

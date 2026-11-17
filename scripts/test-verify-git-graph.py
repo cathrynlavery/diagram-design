@@ -442,6 +442,54 @@ def run_cases(h: Harness) -> int:
             "hides a bound mark",
         )
 
+    c2_m1 = connector("c2", "m1", "M %g,%g H %g V %g"
+                      % (col(2), FEAT_Y, col(3), MAIN_Y))
+    for hide in ('stroke="none"', 'stroke="transparent"',
+                 'stroke="rgba(0,0,0,0)"', 'style="stroke:none"'):
+        h.expect_named(
+            "a connector with %s is a finding" % hide,
+            honest().replace(
+                c2_m1, c2_m1.replace('stroke="#4f5d75"', hide), 1
+            ),
+            "no visible stroke",
+        )
+    for hide in ('stroke-width="0"', 'style="stroke-width:0px"'):
+        h.expect_named(
+            "a connector with %s is a finding" % hide,
+            honest().replace(c2_m1, c2_m1.replace("/>", " %s/>" % hide), 1),
+            "stroke-width",
+        )
+    h.expect_named(
+        "a connector with no stroke anywhere is a finding",
+        honest().replace(
+            c2_m1, c2_m1.replace(' stroke="#4f5d75"', ""), 1
+        ),
+        "no visible stroke",
+    )
+    h.expect_named(
+        "a connector inheriting stroke-width 0 from its group is a finding",
+        honest().replace(
+            c2_m1,
+            '  <g stroke-width="0">\n' + c2_m1 + "  </g>\n", 1
+        ),
+        "stroke-width",
+    )
+    h.expect_clean(
+        "a connector inheriting its stroke from a group passes",
+        honest().replace(
+            c2_m1,
+            '  <g stroke="#4f5d75" stroke-width="1.5">\n'
+            + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n", 1
+        ),
+    )
+    h.expect_named(
+        "an inline stroke:none outranks a visible stroke attribute",
+        honest().replace(
+            c2_m1, c2_m1.replace("/>", ' style="stroke: none"/>'), 1
+        ),
+        "no visible stroke",
+    )
+
     h.expect_named(
         "a <style> rule that hides a bound commit is a finding",
         styled('[data-commit="c2"] { display: none; }'),
