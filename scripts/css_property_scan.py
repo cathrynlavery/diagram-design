@@ -17,6 +17,7 @@ ESCAPE_RE = re.compile(ESCAPE)
 NAME_RE = re.compile(rf"(?:[-_a-zA-Z\x80-\U0010ffff]|{ESCAPE})(?:[-\w\x80-\U0010ffff]|{ESCAPE})*")
 STRING_RE = re.compile(r'''"(?:\\(?:\r\n|[\s\S])|[^"\\\n\r\f])*(?:"|\\\Z|(?=[\n\r\f])|\Z)|'(?:\\(?:\r\n|[\s\S])|[^'\\\n\r\f])*(?:'|\\\Z|(?=[\n\r\f])|\Z)''')
 WHITESPACE = " \t\n\r\f"
+HTML_END_TAG_RE = re.compile(r"</([a-zA-Z][^ \t\n\r\f/>]*)")
 # HTML's foreign-content recovery reparents these starts outside the SVG.
 HTML_BREAKOUT = {
     "b", "big", "blockquote", "body", "br", "center", "code", "dd", "div", "dl", "dt",
@@ -166,6 +167,63 @@ class _Styles(HTMLParser):
         if namespace == "html":
             # Python 3.14 added an escapable keyword to this parser hook.
             super().set_cdata_mode(elem, *args, **kwargs)
+            # Old HTMLParser only recognises bare </tag>. Browsers also end
+            # text-only content at attributed/slashed appropriate end tags.
+            self.interesting = re.compile(r"</" + re.escape(elem) + r"(?=[ \t\n\r\f/>])", re.I | re.ASCII)
+
+    def parse_endtag(self, i: int) -> int:
+        elem = self.cdata_elem
+        if elem is None:
+            name = HTML_END_TAG_RE.match(self.rawdata, i)
+            if name is None:
+                # Whitespace after </ does not open an end tag in HTML. Old
+                # HTMLParser accepts it and could incorrectly leave SVG/MathML.
+                return self.parse_bogus_comment(i)
+            elem = name[1].lower()
+            attributes = name.end()
+        else:
+            if not self.interesting.match(self.rawdata, i):
+                return super().parse_endtag(i)
+            attributes = i + 2 + len(elem)
+        # Attributes on an end tag are ignored, but quoted > characters do not
+        # finish it. Quotes in an unquoted value/name do not open a string.
+        state = "before"
+        for position in range(attributes, len(self.rawdata)):
+            char = self.rawdata[position]
+            if state in ("'", '"'):
+                if char == state:
+                    state = "after_value"
+                continue
+            if char == ">":
+                self.handle_endtag(elem)
+                self.clear_cdata_mode()
+                return position + 1
+            if state == "before":
+                if char not in WHITESPACE and char != "/":
+                    state = "name"
+            elif state == "name":
+                if char in WHITESPACE:
+                    state = "after_name"
+                elif char == "=":
+                    state = "before_value"
+                elif char == "/":
+                    state = "before"
+            elif state == "after_name":
+                if char == "=":
+                    state = "before_value"
+                elif char == "/":
+                    state = "before"
+                elif char not in WHITESPACE:
+                    state = "name"
+            elif state == "before_value":
+                if char not in WHITESPACE:
+                    state = char if char in ("'", '"') else "unquoted"
+            elif state == "unquoted":
+                if char in WHITESPACE:
+                    state = "before"
+            elif state == "after_value":
+                state = "before" if char in WHITESPACE or char == "/" else "name"
+        return -1
 
     def leave_foreign_content(self) -> None:
         while self.elements:

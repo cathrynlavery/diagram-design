@@ -281,6 +281,29 @@ def check_review_regressions() -> list[str]:
         failures.append("a text-only element's own style attribute is live")
     if not escaped_property_findings(r'<svg><textarea><style>* { c\6flor:red }</style></textarea></svg>'):
         failures.append("an SVG textarea is not an HTML text-only element")
+    for tag in ("textarea", "title", "xmp", "iframe", "noembed", "noframes", "script", "style"):
+        for suffix in (' x', '/', ' /x', ' data-x=">"', ' x=a"b'):
+            source = f'<{tag}>text</{tag}{suffix}>' + r'<style>*{tr\61nsform:translate(9px)}</style>'
+            if not escaped_property_findings(source):
+                failures.append(f"attributed/slashed {tag} end must not hide later CSS: {suffix}")
+    for source in (
+        r'<textarea>text</textarea data-x="><style>*{c\6flor:red}</style>">',
+        r'<textarea>text</textarea!><style>*{c\6flor:red}</style></textarea>',
+        r'<textarea>text</ textarea><style>*{c\6flor:red}</style></textarea>',
+        r'<textarea>text</textarea x="><style>*{c\6flor:red}</style>',
+    ):
+        if escaped_property_findings(source):
+            failures.append(f"text or closing-tag attribute data must remain inert: {source}")
+    for source, rejects in (
+        (r'<div></div data-x="><textarea>"><style>*{tr\61nsform:translate(9px)}</style>', True),
+        (r'<div></div data-x="><style>*{c\6flor:red}</style>">', False),
+    ):
+        if bool(escaped_property_findings(source)) != rejects:
+            failures.append(f"ordinary end-tag attribute data must not create markup: {source}")
+    for ending in ('</ svg>', '</\tsvg>', '</1>', '</>'):
+        source = r'<svg><g>' + ending + r'<textarea><style>*{tr\61nsform:translate(9px)}</style></textarea></g></svg>'
+        if not escaped_property_findings(source):
+            failures.append(f"invalid end-tag opener must not leave SVG namespace: {ending}")
     for tag in ("iframe", "textarea", "title", "plaintext"):
         source = rf'<math><{tag}><mtext><svg><style>* {{ tr\61nsform:translate(9px) }}</style></svg></mtext></{tag}></math>'
         if not escaped_property_findings(source):
