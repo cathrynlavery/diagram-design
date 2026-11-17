@@ -951,6 +951,7 @@ def check_geometry(commits: list, connectors: list, lanes: dict,
                              end[0], end[1], dst.name, dst.cx, dst.cy)
             )
         check_connector_turn(connector, src, dst, lanes, findings, where)
+        check_connector_crossing(connector, commits, findings, where)
         incoming[dst.name].append(connector)
     check_connector_overlap(connectors, findings, source, name)
 
@@ -984,6 +985,42 @@ def check_geometry(commits: list, connectors: list, lanes: dict,
                 "data-kind=merge — two parents make a merge commit"
                 % (name, item.name, len(parents))
             )
+
+
+def segment_distance(point, start, end) -> float:
+    """Distance from point to the straight segment start-end."""
+    px, py = point
+    sx, sy = start
+    ex, ey = end
+    dx, dy = ex - sx, ey - sy
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return math.hypot(px - sx, py - sy)
+    t = max(0.0, min(1.0, ((px - sx) * dx + (py - sy) * dy) / length_sq))
+    return math.hypot(px - (sx + t * dx), py - (sy + t * dy))
+
+
+def check_connector_crossing(connector, commits: list, findings: list,
+                             where: str) -> None:
+    """A connector touches only the two commits it names.
+
+    Ink through a third dot reads as a connection its bindings do not
+    declare, so any segment that reaches another commit's dot is a finding.
+    """
+    for item in commits:
+        if item.name in (connector.frm, connector.to):
+            continue
+        reach = item.r + COORD_TOLERANCE
+        for i in range(len(connector.points) - 1):
+            if segment_distance((item.cx, item.cy), connector.points[i],
+                                connector.points[i + 1]) < reach:
+                findings.append(
+                    "%s: connector %s→%s passes through commit %r — a "
+                    "connector touches only the commits it names; move the "
+                    "commit or the merge to another column"
+                    % (where, connector.frm, connector.to, item.name)
+                )
+                break
 
 
 def elbow_corners(points: list) -> list:

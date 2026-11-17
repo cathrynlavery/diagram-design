@@ -275,6 +275,12 @@ def run_cases(h: Harness) -> int:
         "exactly two incoming connectors",
     )
 
+    h.expect_named(
+        "a merge elbow that passes through an unrelated commit is a finding",
+        honest(commit("c3", "feat", 3, FEAT_Y)),
+        "passes through commit 'c3'",
+    )
+
     backwards = honest().replace(
         connector("c1", "c2", "M %g,%g H %g" % (col(1), FEAT_Y, col(2))),
         connector("c2", "c1", "M %g,%g H %g" % (col(2), FEAT_Y, col(1))),
