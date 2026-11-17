@@ -25,6 +25,15 @@ HTML_BREAKOUT = {
     "strong", "strike", "sub", "sup", "table", "tt", "u", "ul", "var",
 }
 HTML_INTEGRATION = {"foreignobject", "desc", "title"}
+MATH_TEXT_INTEGRATION = {"mi", "mo", "mn", "ms", "mtext"}
+HTML_TEXT_ONLY = {"textarea", "title", "xmp", "iframe", "noembed", "noframes", "script"}
+# These at-rules contain descriptors rather than a nested rule list. Grouping
+# rules inherit their surrounding context; keyframes contain qualified rules.
+DESCRIPTOR_RULES = {
+    "font-face", "font-feature-values", "font-palette-values", "property", "counter-style",
+    "page", "color-profile", "position-try", "view-transition", "function",
+}
+KEYFRAME_RULES = {"keyframes", "-webkit-keyframes", "-moz-keyframes"}
 
 
 def _decode(match: re.Match[str]) -> str:
@@ -79,7 +88,7 @@ def _tokens(css: str) -> list[tuple[str, bool]]:
     return tokens
 
 
-def has_escaped_property(css: str) -> bool:
+def has_escaped_property(css: str, *, inline: bool = False) -> bool:
     """Recognise declaration starts, including nested rule blocks and inline CSS.
 
     A colon in a selector prelude is followed by a rule block, not a declaration
@@ -88,30 +97,33 @@ def has_escaped_property(css: str) -> bool:
     tokens = _tokens(css)
     count = len(tokens)
 
+    # Pair component boundaries once. Looking up each child's end avoids a
+    # fresh walk through all descendants at every ancestor in deeply nested CSS.
+    closing = {"(": ")", "[": "]", "{": "}"}
+    ends = {}
+    stack = []
+    for offset, (value, _) in enumerate(tokens):
+        if value in closing:
+            stack.append((value, offset))
+        elif stack and value == closing[stack[-1][0]]:
+            _, opening = stack.pop()
+            ends[opening] = offset + 1
+
     def skip_block(i: int) -> int:
-        stack = [{"(": ")", "[": "]", "{": "}"}[tokens[i][0]]]
-        i += 1
-        while i < count and stack:
-            value = tokens[i][0]
-            if value in ("(", "[", "{"):
-                stack.append({"(": ")", "[": "]", "{": "}"}[value])
-            elif value == stack[-1]:
-                stack.pop()
-            i += 1
-        return i
+        return ends.get(i, count)
 
     # Scan every rule block, but never function/bracket contents or a custom
     # property's component values. Use a worklist instead of recursion so a
     # deeply nested untrusted stylesheet cannot exhaust Python's call stack.
-    blocks = [(0, count)]
+    blocks = [(0, count, inline)]
     while blocks:
-        i, limit = blocks.pop()
+        i, limit, declarations = blocks.pop()
         while i < limit:
             if tokens[i][0] in (";", "}"):
                 i += 1
                 continue
             name, identifier = tokens[i]
-            declaration = identifier and i + 1 < limit and tokens[i + 1][0] == ":"
+            declaration = declarations and identifier and i + 1 < limit and tokens[i + 1][0] == ":"
             custom = declaration and ESCAPE_RE.sub(_decode, name).startswith("--")
             j = i + 2 if declaration else i
             while j < limit:
@@ -127,7 +139,12 @@ def has_escaped_property(css: str) -> bool:
                     return True
             if j < limit and tokens[j][0] == "{":
                 end = skip_block(j)
-                blocks.append((j + 1, end - 1 if end <= count and tokens[end - 1][0] == "}" else end))
+                child_declarations = True  # an ordinary qualified rule's body
+                if name == "@" and i + 1 < j and tokens[i + 1][1]:
+                    at_rule = ESCAPE_RE.sub(_decode, tokens[i + 1][0]).lower()
+                    child_declarations = (at_rule in DESCRIPTOR_RULES or
+                                          (declarations and at_rule not in KEYFRAME_RULES))
+                blocks.append((j + 1, end - 1 if j in ends else end, child_declarations))
                 i = end
             else:
                 i = j + 1
@@ -137,48 +154,72 @@ def has_escaped_property(css: str) -> bool:
 class _Styles(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=False)
-        self.elements: list[tuple[str, str]] = []
-        self.style_foreign = False
+        self.elements: list[tuple[str, str, bool]] = []
         self.style: list[str] | None = None
         self.escaped = False
+        self.plaintext = False
 
     def set_cdata_mode(self, elem: str, *args, **kwargs) -> None:
-        # HTMLParser otherwise treats SVG <style> as HTML raw text. In foreign
-        # content, entities, markup comments and CDATA sections are parsed.
-        if elem != "style" or not self.style_foreign:
+        # HTML text-only modes do not apply to same-named SVG elements. Foreign
+        # content still parses entities, markup comments and CDATA sections.
+        namespace = self.elements[-1][1] if self.elements else "html"
+        if namespace == "html":
             # Python 3.14 added an escapable keyword to this parser hook.
             super().set_cdata_mode(elem, *args, **kwargs)
 
     def leave_foreign_content(self) -> None:
-        while self.elements and self.elements[-1][1] == "svg" and self.elements[-1][0] not in HTML_INTEGRATION:
+        while self.elements:
+            tag, namespace, html_point = self.elements[-1]
+            if namespace == "html" or html_point or (namespace == "math" and tag in MATH_TEXT_INTEGRATION):
+                break
             self.elements.pop()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        parent, namespace = self.elements[-1] if self.elements else ("", "html")
+        if self.plaintext:
+            return
+        parent, namespace, html_point = self.elements[-1] if self.elements else ("", "html", False)
+        text_point = namespace == "math" and parent in MATH_TEXT_INTEGRATION
         breakout = tag in HTML_BREAKOUT or (tag == "font" and any(
             key in ("color", "face", "size") for key, _ in attrs))
-        if namespace == "svg" and parent not in HTML_INTEGRATION and breakout:
+        if namespace != "html" and not html_point and not text_point and breakout:
             self.leave_foreign_content()
-            parent, namespace = self.elements[-1] if self.elements else ("", "html")
-        if namespace == "svg" and parent in HTML_INTEGRATION:
-            namespace = "html"  # HTML integration points in foreign content
-        if tag == "svg":
-            namespace = "svg"
+            parent, namespace, html_point = self.elements[-1] if self.elements else ("", "html", False)
+            text_point = namespace == "math" and parent in MATH_TEXT_INTEGRATION
+        if html_point or (text_point and tag not in ("mglyph", "malignmark")):
+            namespace = "html"
+        if namespace == "html":
+            if tag == "svg":
+                namespace = "svg"
+            elif tag == "math":
+                namespace = "math"
+        elif namespace == "math" and parent == "annotation-xml" and tag == "svg":
+            namespace = "svg"  # this start tag is special even without an encoding
+        encoding = next((value or "" for key, value in attrs if key == "encoding"), "")
+        html_point = ((namespace == "svg" and tag in HTML_INTEGRATION) or
+                      (namespace == "math" and tag == "annotation-xml" and
+                       encoding.lower() in ("text/html", "application/xhtml+xml")))
         if namespace != "html" or tag not in {
             "area", "base", "br", "col", "embed", "hr", "img", "input",
             "link", "meta", "param", "source", "track", "wbr",
         }:
-            self.elements.append((tag, namespace))
+            self.elements.append((tag, namespace, html_point))
         # HTMLParser decodes attribute references even with convert_charrefs=False.
         for key, value in attrs:
             if key == "style":
-                self.escaped |= has_escaped_property(value or "")
+                self.escaped |= has_escaped_property(value or "", inline=True)
                 break  # browsers use the first duplicate attribute
-        if tag == "style":
+        if tag == "style" and namespace in ("html", "svg"):
             self.style = []
-            self.style_foreign = namespace == "svg"
+        elif namespace == "html" and tag in HTML_TEXT_ONLY:
+            # Older HTMLParser releases only know script/style raw text. Other
+            # text-only elements also contain no tags or style attributes.
+            self.set_cdata_mode(tag)
+        elif namespace == "html" and tag == "plaintext":
+            self.plaintext = True  # even an apparent </plaintext> is just text
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if self.plaintext:
+            return
         self.handle_starttag(tag, attrs)
         # HTML ignores the self-closing flag on a raw-text <style/>.
         namespace = self.elements[-1][1] if self.elements else "html"
@@ -188,6 +229,8 @@ class _Styles(HTMLParser):
             self.set_cdata_mode(tag)
 
     def handle_endtag(self, tag: str) -> None:
+        if self.plaintext:
+            return
         if tag in ("br", "p"):
             self.leave_foreign_content()
         if tag == "style" and self.style is not None:

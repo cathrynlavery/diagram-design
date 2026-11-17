@@ -19,6 +19,9 @@ import re
 import subprocess
 import sys
 import tempfile
+from unittest.mock import patch
+
+import css_property_scan as property_scan
 from pathlib import Path
 
 from css_property_scan import escaped_property_findings
@@ -263,6 +266,80 @@ def check_property_contexts() -> list[str]:
             for label, expected, source in cases
             if bool(escaped_property_findings(source)) != expected]
 
+def check_review_regressions() -> list[str]:
+    failures = []
+    literal = r'<style>* { c\6flor: red }</style><p style="c\6flor: red">literal</p>'
+    for tag in ("textarea", "title", "xmp", "iframe", "noembed", "noframes", "script", "plaintext"):
+        source = f"<{tag}>" + literal + f"</{tag}>"
+        if escaped_property_findings(source):
+            failures.append(f"literal HTML inside {tag} must not be scanned as live CSS")
+        if tag != "plaintext" and not escaped_property_findings(source + r'<style>* { c\6flor:red }</style>'):
+            failures.append(f"live CSS after {tag} must still be checked")
+    if escaped_property_findings('<plaintext>text</plaintext>' + literal):
+        failures.append("plaintext remains literal through EOF, including its apparent end tag")
+    if not escaped_property_findings(r'<textarea style="c\6flor:red">literal</textarea>'):
+        failures.append("a text-only element's own style attribute is live")
+    if not escaped_property_findings(r'<svg><textarea><style>* { c\6flor:red }</style></textarea></svg>'):
+        failures.append("an SVG textarea is not an HTML text-only element")
+    for tag in ("iframe", "textarea", "title", "plaintext"):
+        source = rf'<math><{tag}><mtext><svg><style>* {{ tr\61nsform:translate(9px) }}</style></svg></mtext></{tag}></math>'
+        if not escaped_property_findings(source):
+            failures.append(f"MathML {tag} is not an HTML text-only element")
+    for source, rejects in (
+        (r'<math><mtext><textarea><style>*{c\6flor:red}</style></textarea></mtext></math>', False),
+        (r'<math><annotation-xml encoding="text/html"><textarea><style>*{c\6flor:red}</style></textarea></annotation-xml></math>', False),
+        (r'<math><annotation-xml><svg><style>*{tr\61nsform:translate(9px)}</style></svg></annotation-xml></math>', True),
+        (r'<math><style>*{c\6flor:red}</style></math>', False),
+    ):
+        if bool(escaped_property_findings(source)) != rejects:
+            failures.append(f"MathML integration context: {source}")
+    for css in (
+        r'--f\6fo:hover { color: red }',
+        r'@media screen { --f\6fo:hover { color: red } }',
+        r'@supports (display: block) { --f\6fo:hover { color: red } }',
+        r'@layer a { --f\6fo:hover { color: red } }',
+    ):
+        if escaped_property_findings('<style>' + css + '</style>'):
+            failures.append(f"escaped rule prelude must pass: {css}")
+    for source in (
+        r'<div style="--f\6fo: { a: 1; }"></div>',
+        r'<style>body { --f\6fo: { a: 1; } }</style>',
+        r'<style>@media screen { body { c\6flor:red } }</style>',
+        r'<style>body { @media screen { --f\6fo: { a: 1; } } }</style>',
+        r'<style>@font-face { font-f\61mily: x }</style>',
+        r'<style>@position-try --fallback { t\6fp:10px }</style>',
+        r'<style>@view-transition { n\61vigation:auto }</style>',
+        r'<style>@font-feature-values Test { @styleset { f\6fo:1 } }</style>',
+        r'<style>@function --f() { res\75lt:1px }</style>',
+
+    ):
+        if not escaped_property_findings(source):
+            failures.append(f"escaped declaration must fail: {source}")
+
+    # Count real token visits rather than wall time, which varies across CI.
+    # Rewalking each nested block exceeds a linear allowance at these depths.
+    class CountedTokens(list):
+        def __init__(self, tokens):
+            super().__init__(tokens)
+            self.reads = 0
+
+        def __getitem__(self, key):
+            self.reads += 1
+            return super().__getitem__(key)
+
+    for depth in (256, 512):
+        for declaration, expected in (("color:red", False), (r"c\6flor:red", True)):
+            css = "a{" * depth + declaration + "}" * depth
+            tokens = CountedTokens(property_scan._tokens(css))
+            with patch.object(property_scan, "_tokens", return_value=tokens):
+                actual = property_scan.has_escaped_property(css)
+            if actual != expected:
+                failures.append(f"nested CSS at depth {depth} has wrong declaration result")
+            if tokens.reads > 40 * len(tokens):
+                failures.append(f"nested CSS at depth {depth} revisits {tokens.reads} tokens for {len(tokens)} input tokens")
+    return failures
+
+
 def check_fixture_bytes(scratch: str) -> list[str]:
     # The CSS hex escape consumes one CRLF. Windows text-mode output must not
     # expand that existing CRLF into CRCRLF before a verifier reads the fixture.
@@ -329,9 +406,32 @@ def check_escaped_properties(scratch: str) -> list[str]:
     return failures
 
 
+def check_review_cli(scratch: str) -> list[str]:
+    source = (ASSET_DIR / "example-bump.html").read_text(encoding="utf-8")
+    cases = (
+        ("textarea text is not CSS", True, r'<textarea><style>* { c\6flor:red }</style></textarea>'),
+        ("escaped rule prelude is not a declaration", True, r'<style>--f\6fo:hover { color:red }</style>'),
+        ("escaped prelude in a rule-list group", True,
+         r'<style>@media screen { --f\6fo:hover { color:red } }</style>'),
+        ("live CSS after text-only data", False,
+         r'<textarea><style>* { c\6flor:red }</style></textarea><style>* { tr\61nsform:translate(9px) }</style>'),
+    )
+    failures = []
+    for label, passes, fragment in cases:
+        page = Path(scratch) / "bump-review-regression.html"
+        write_fixture(page, source.replace('</body>', fragment + '</body>', 1))
+        result = run_check("bump", page)
+        if (result.returncode == 0) != passes:
+            failures.append(f"bump CLI: {label} should {'pass' if passes else 'fail'}")
+        elif not passes and "escaped CSS property names are unsupported" not in result.stdout:
+            failures.append(f"bump CLI: {label} missed the escaped-property diagnostic")
+    return failures
+
+
 def main() -> int:
-    failures: list[str] = check_property_contexts()
+    failures: list[str] = check_property_contexts() + check_review_regressions()
     with tempfile.TemporaryDirectory() as scratch:
+        failures.extend(check_review_cli(scratch))
         failures.extend(check_fixture_bytes(scratch))
         failures.extend(check_escaped_properties(scratch))
         for kind in TYPES:
