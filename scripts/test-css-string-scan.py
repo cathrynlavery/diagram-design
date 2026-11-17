@@ -165,6 +165,11 @@ WRAPPERS = (
     ("between declaration strings", 'body {{ --q: "/*" }} {rule} html {{ --q: "*/" }}'),
 )
 
+def write_fixture(page: Path, source: str) -> None:
+    # Binary output preserves intentional CRLF escapes on every host, including Python 3.9.
+    page.write_bytes(source.encode("utf-8"))
+
+
 def run_check(kind: str, page: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(ROOT / f"scripts/verify-{kind}.py"), str(page)],
@@ -258,6 +263,24 @@ def check_property_contexts() -> list[str]:
             for label, expected, source in cases
             if bool(escaped_property_findings(source)) != expected]
 
+def check_fixture_bytes(scratch: str) -> list[str]:
+    # The CSS hex escape consumes one CRLF. Windows text-mode output must not
+    # expand that existing CRLF into CRCRLF before a verifier reads the fixture.
+    source = (ASSET_DIR / "example-waterfall.html").read_text(encoding="utf-8")
+    declaration = next(css for label, _, css in ESCAPED_DECLARATIONS
+                       if label == "CRLF-terminated escape")
+    failures = []
+    for where in ("head", "svg", "inline"):
+        css = declaration if where == "inline" else "* { " + declaration + " }"
+        expected = place(source, "waterfall", where, css)
+        page = Path(scratch) / f"waterfall-crlf-bytes-{where}.html"
+        write_fixture(page, expected)
+        actual = page.read_bytes()
+        if actual != expected.encode("utf-8") or declaration.encode("utf-8") not in actual:
+            failures.append(f"fixture bytes: CRLF-terminated escape ({where}) changed during writing")
+    return failures
+
+
 def check_escaped_properties(scratch: str) -> list[str]:
     failures = []
     for kind in ESCAPED_PROPERTY_TYPES:
@@ -267,7 +290,7 @@ def check_escaped_properties(scratch: str) -> list[str]:
         for label, passes, declaration in ESCAPED_DECLARATIONS:
             for where in ("head", "svg", "inline"):
                 css = declaration if where == "inline" else "* { " + declaration + " }"
-                page.write_text(place(source, kind, where, css), encoding="utf-8")
+                write_fixture(page, place(source, kind, where, css))
                 # Box plot already refuses unquoted inline escapes, independently
                 # of property position. Preserve that stronger existing contract.
                 expected = passes and not (kind == "box-plot" and where == "inline"
@@ -294,7 +317,7 @@ def check_escaped_properties(scratch: str) -> list[str]:
             ("decoded escape in SVG", False, "svg", r"* { tr&#92;61nsform: translate(9px) }"),
             ("decoded escape inline", False, "inline", r"tr&#92;61nsform: translate(9px)"),
         ):
-            page.write_text(place(source, kind, where, css), encoding="utf-8")
+            write_fixture(page, place(source, kind, where, css))
             # Box plot already rejects any escaped selector.
             expected = passes and not (kind == "box-plot" and label in
                 ("escaped selector", "escaped pseudo-class selector", "escaped string in selector"))
@@ -309,6 +332,7 @@ def check_escaped_properties(scratch: str) -> list[str]:
 def main() -> int:
     failures: list[str] = check_property_contexts()
     with tempfile.TemporaryDirectory() as scratch:
+        failures.extend(check_fixture_bytes(scratch))
         failures.extend(check_escaped_properties(scratch))
         for kind in TYPES:
             example = sorted(ASSET_DIR.glob(f"example-{kind}*.html"))[0]
@@ -319,16 +343,16 @@ def main() -> int:
                 passes = passes and not (kind in ("polar", "steps") and where != "head")
                 passes = passes and not (kind == "unit-grid" and where == "inline")
                 page = Path(scratch) / f"{kind}-{number}.html"
-                page.write_text(place(source, kind, where, css), encoding="utf-8")
+                write_fixture(page, place(source, kind, where, css))
                 if passes_check(kind, page) != passes:
                     failures.append(f"{kind}: {label} should {'pass' if passes else 'fail'}")
             attribute = MARKS[kind][1]
             page = Path(scratch) / f"{kind}-bare.html"
-            page.write_text(place(source, kind, "head", BARE_RULE.format(a=attribute)), encoding="utf-8")
+            write_fixture(page, place(source, kind, "head", BARE_RULE.format(a=attribute)))
             bare = passes_check(kind, page)
             for number, (label, rule) in enumerate(SELECTOR_RULES):
                 page = Path(scratch) / f"{kind}-selector-{number}.html"
-                page.write_text(place(source, kind, "head", rule.format(a=attribute)), encoding="utf-8")
+                write_fixture(page, place(source, kind, "head", rule.format(a=attribute)))
                 if passes_check(kind, page) != bare:
                     failures.append(f"{kind}: {label} should {'pass' if bare else 'fail'} like [{attribute}]")
         for kind, rules in GUARDED_RULES.items():
@@ -336,13 +360,13 @@ def main() -> int:
             for number, rule in enumerate(rules):
                 for label, wrapper in (("bare", "{rule}"), *WRAPPERS):
                     page = Path(scratch) / f"{kind}-guarded-{number}.html"
-                    page.write_text(place(source, kind, "head", wrapper.format(rule=rule)), encoding="utf-8")
+                    write_fixture(page, place(source, kind, "head", wrapper.format(rule=rule)))
                     if passes_check(kind, page):
                         failures.append(f"{kind}: {rule} ({label}) should fail")
         source = sorted(ASSET_DIR.glob("example-marimekko*.html"))[0].read_text(encoding="utf-8")
         for number, rule in enumerate(MARIMEKKO_SELECTOR_CASES):
             page = Path(scratch) / f"marimekko-segment-{number}.html"
-            page.write_text(place(source, "marimekko", "head", rule), encoding="utf-8")
+            write_fixture(page, place(source, "marimekko", "head", rule))
             if passes_check("marimekko", page):
                 failures.append(f"marimekko: {rule} should fail")
     for failure in failures:
