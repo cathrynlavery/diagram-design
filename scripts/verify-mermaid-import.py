@@ -1637,6 +1637,20 @@ def check_quadrant_chart(tmp: Path) -> None:
     if quoted["discarded"]["style_directives"] < 1:
         fail(":::class and radius on a quoted point were not counted as styling")
 
+    quoted_axes = tmp / "quadrant-quoted-axes.mmd"
+    quoted_axes.write_text(
+        "quadrantChart\n"
+        'x-axis "Draft --> Ready" --> Done\n'
+        'y-axis "Low --> Mid" --> "High --> Max"\n'
+        "A: [0.2, 0.3]\n",
+        encoding="utf-8",
+    )
+    axes_diagram = json.loads(run_extract([str(quoted_axes), "--json"]))["diagrams"][0]
+    if axes_diagram["x_axis"] != {"low": "Draft --> Ready", "high": "Done"}:
+        fail(f"quoted x-axis label split at an inner arrow: {axes_diagram['x_axis']!r}")
+    if axes_diagram["y_axis"] != {"low": "Low --> Mid", "high": "High --> Max"}:
+        fail(f"quoted y-axis labels split at an inner arrow: {axes_diagram['y_axis']!r}")
+
     entities = tmp / "quadrant-entities.mmd"
     entities.write_text(
         "quadrantChart\n"

@@ -1443,6 +1443,7 @@ _QUADRANT_ACC = re.compile(r"^(?:accTitle|accDescr)\b", re.I)
 _QUADRANT_ACC_BLOCK = re.compile(r"^accDescr\b\s*\{[^}]*$", re.I)
 _QUADRANT_POINT_SEPARATOR = re.compile(r":\s*\[")
 _QUADRANT_CLASS_SUFFIX = re.compile(r":::[^\s:]+$")
+_QUADRANT_AXIS_ARROW = re.compile(r"--+>")
 
 
 def _mask_double_quotes(text: str) -> str:
@@ -1512,7 +1513,11 @@ def _parse_quadrant_statement(
     axis = re.match(r"^(x-axis|y-axis)\b\s*(.*)$", text, re.I)
     if axis:
         target = diagram.x_axis if axis.group(1).casefold() == "x-axis" else diagram.y_axis
-        parts = re.split(r"\s*--+\>\s*", axis.group(2), maxsplit=1)
+        # Split at the first arrow outside double quotes, as points do, so a
+        # quoted label such as "Draft --> Ready" stays whole.
+        body = axis.group(2)
+        arrow = _QUADRANT_AXIS_ARROW.search(_mask_double_quotes(body))
+        parts = [body[: arrow.start()], body[arrow.end() :]] if arrow else [body]
         target["low"] = _quadrant_label(parts[0]) if parts[0].strip() else ""
         target["high"] = _quadrant_label(parts[1]) if len(parts) == 2 else ""
         return
