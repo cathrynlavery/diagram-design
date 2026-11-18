@@ -2,6 +2,8 @@
 
 **Best for:** project plans and roadmaps — tasks with explicit start and end dates, grouped into phases. Use when the reader needs to see temporal overlap, parallel tracks, and milestone sequencing at a glance.
 
+For task durations, critical paths and total float, use [Schedule network](type-schedule-network.md). Its fixed ES/EF/LS/LF grid and acyclic finish-to-start contract are separate from this view.
+
 ## Layout conventions
 
 - **Left label column:** x=20–200 (180px). Task names in the `node-name` role at 11px 600. Phase labels as `eyebrow` 7px above each group.
