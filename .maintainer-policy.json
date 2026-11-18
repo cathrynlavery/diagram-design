@@ -77,6 +77,8 @@
       "python3 scripts/test-verify-requirement-traceability.py",
       "python3 scripts/verify-event-modeling.py --all",
       "python3 scripts/test-verify-event-modeling.py",
+      "python3 scripts/verify-packet-structure.py --all",
+      "python3 scripts/test-verify-packet-structure.py",
       "python3 scripts/verify-docs-sync.py",
       "python3 scripts/test-verify-docs-sync.py",
       "python3 scripts/verify-screenshot-freshness.py",

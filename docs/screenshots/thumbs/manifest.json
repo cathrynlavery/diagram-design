@@ -259,6 +259,15 @@
       "thumb_sha256": "3e0d11e398a0b7b796cc16bc521161f49f191f4dcc625ac9c998186ddb52122a"
     },
     {
+      "thumb": "packet-structure.webp",
+      "source": "docs/screenshots/packet-structure.png",
+      "source_sha256": "efc1002e4e9a2811212333ab476ce46426846d6ae9240582058f3778380e685e",
+      "width": 600,
+      "height": 300,
+      "quality": 82,
+      "thumb_sha256": "ccceb906dccb7d5bc676171489ed95f204f228b591d790362a33bad3ebb8c714"
+    },
+    {
       "thumb": "polar.webp",
       "source": "docs/screenshots/polar.png",
       "source_sha256": "12c6b4d8797707f944a3891f7dbddec50bc9abc062ca5b559dffd9912ae9c59c",
