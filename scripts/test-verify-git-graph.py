@@ -482,6 +482,31 @@ def run_cases(h: Harness) -> int:
             + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n", 1
         ),
     )
+    h.expect_clean(
+        "a connector in a visible-stroke group nested in a stroke:none group passes",
+        honest().replace(
+            c2_m1,
+            '  <g stroke="none">\n  <g stroke="#4f5d75">\n'
+            + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n  </g>\n", 1
+        ),
+    )
+    h.expect_clean(
+        "a connector in a positive stroke-width group nested in a zero-width group passes",
+        honest().replace(
+            c2_m1,
+            '  <g stroke-width="0">\n  <g stroke-width="1.5">\n'
+            + c2_m1 + "  </g>\n  </g>\n", 1
+        ),
+    )
+    h.expect_named(
+        "a connector in a stroke:none group nested in a visible-stroke group is a finding",
+        honest().replace(
+            c2_m1,
+            '  <g stroke="#4f5d75">\n  <g stroke="none">\n'
+            + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n  </g>\n", 1
+        ),
+        "no visible stroke",
+    )
     h.expect_named(
         "an inline stroke:none outranks a visible stroke attribute",
         honest().replace(

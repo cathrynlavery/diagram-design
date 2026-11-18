@@ -401,10 +401,12 @@ def fill_spans(source: str) -> list:
 
 
 def inherited_paint(spans: list, offset: int):
-    for start, end, value in reversed(spans):
-        if start < offset < end:
-            return value
-    return None
+    """Value from the nearest enclosing container: the one that opens last before offset."""
+    nearest = None
+    for start, end, value in spans:
+        if start < offset < end and (nearest is None or start > nearest[0]):
+            nearest = (start, value)
+    return nearest[1] if nearest else None
 
 
 def inherited_fill(spans: list, offset: int):
