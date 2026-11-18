@@ -162,6 +162,7 @@ A_LABEL = '<text data-name="A" x="148" y="84" text-anchor="end">A</text>'
 A_BOX = 'data-role="box" x="200"'
 
 AUTH_G = '<g data-name="Auth"'
+SVG_OPEN = '<svg viewBox="0 0 1000 500"'
 AUTH_BOX = ('<rect data-role="box" x="196" y="64.0" width="20" height="32" rx="2" '
             'fill="rgba(45,49,66,0.15)" stroke="#4f5d75" stroke-width="1"/>')
 AUTH_LABEL = ('<text data-name="Auth" x="148" y="84" fill="#2d3142" font-size="11" '
@@ -1096,6 +1097,69 @@ def run_cases(h: Harness) -> int:
             "a series hidden by %s is one finding" % title,
             shipped_with(*swaps), 1, "never drawn",
         )
+    # The HTML parser also reads an unquoted value (`display=none`) and an
+    # attribute with no value at all (`<div hidden>`), so the checker must
+    # read them too (#487 item 4). Quoted text that only spells an attribute
+    # is not one.
+    for title, swaps, count, needle in (
+        ("display=none unquoted on the series group",
+         [(AUTH_G, '<g display=none data-name="Auth"')], 1, "never drawn"),
+        ("visibility=hidden unquoted on the series group",
+         [(AUTH_G, '<g visibility=hidden data-name="Auth"')], 1, "never drawn"),
+        ("opacity=0 unquoted on the box",
+         [(AUTH_BOX, AUTH_BOX.replace("/>", " opacity=0 />"))], 1, "never drawn"),
+        ("a boolean hidden on the page element around the svg",
+         [('<div class="frame">', '<div class="frame" hidden>')], 5, "never drawn"),
+        ("stroke=none unquoted on the median",
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#2d3142"', "stroke=none"))],
+         1, "paints nothing"),
+        ("display=none unquoted on the bound label",
+         [(AUTH_LABEL, AUTH_LABEL.replace('<text ', "<text display=none ", 1))],
+         1, "hides its bound label"),
+        # An unquoted value runs to whitespace or `>`, so a quote, `=` or `<`
+        # inside it does not end it before the hide token.
+        ("display:none after a quote in an unquoted style",
+         [(AUTH_G, "<g style=font-family:'Geist';display:none data-name=\"Auth\"")],
+         1, "never drawn"),
+        ("display:none after = in an unquoted style",
+         [(AUTH_G, '<g style=a=b;display:none data-name="Auth"')], 1, "never drawn"),
+        ("display=none after a stray quote in an unquoted value",
+         [(AUTH_G, '<g title=x"y display=none data-name="Auth"')], 1, "never drawn"),
+        # A quote inside an unquoted value does not open a quoted one, so the
+        # wrapper's tag still ends at its `>`, before the <svg>, and hides it.
+        ("an unquoted style holding =\" on a wrapper around the svg",
+         [(SVG_OPEN, '<span style=display:none;x="y>' + SVG_OPEN)],
+         5, "never drawn"),
+        ("an unquoted style holding =' on a wrapper around the svg",
+         [(SVG_OPEN, "<span style=display:none;x='y>" + SVG_OPEN)],
+         5, "never drawn"),
+    ):
+        h.expect_findings(
+            "%s is %d finding(s)" % (title, count),
+            shipped_with(*swaps), count, needle,
+        )
+    for title, swaps in (
+        ("unquoted rx and stroke-width on the box",
+         [(AUTH_BOX, AUTH_BOX.replace('rx="2"', "rx=2").replace(
+             'stroke-width="1"', "stroke-width=1"))]),
+        ("a quoted value that spells display=none",
+         [(AUTH_G, '<g aria-label="display=none" data-name="Auth"')]),
+        ("a boolean data attribute on the series group",
+         [(AUTH_G, '<g data-pinned data-name="Auth"')]),
+        ("one valueless attribute whose name holds a dot",
+         [(AUTH_G, '<g data-note.hidden data-name="Auth"')]),
+        # A quoted `>` does not end the tag.
+        ("a quoted > inside the series group's aria-label",
+         [(AUTH_G, '<g aria-label="not hidden > threshold" data-name="Auth"')]),
+        # HTML splits attributes only at ASCII whitespace, so NBSP is a value
+        # character.
+        ("an unquoted value holding a no-break space",
+         [(AUTH_G, '<g data-note=foo\u00a0hidden data-name="Auth"')]),
+        # A quote inside a name belongs to the name: this is `x"display`.
+        ("a valueful attribute whose name holds a quote",
+         [(AUTH_G, '<g x"display=none data-name="Auth"')]),
+    ):
+        h.expect_clean("%s passes" % title, shipped_with(*swaps))
     # A bound mark may state paint that draws nothing. Its coordinates still
     # land on the scale, so the checker used to read a summary no reader sees.
     # Only the mark's own attribute and inline style count: a channel it does

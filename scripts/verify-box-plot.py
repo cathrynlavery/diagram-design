@@ -112,21 +112,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>",
+# One unit of a tag's inside, read as the HTML tokenizer does: a separator
+# (ASCII whitespace or `/`), or one attribute. A name runs to whitespace, `/`,
+# `>` or `=`; a quoted value opens only right after `name=`, so a `>` in it
+# does not end the tag; an unquoted value runs to whitespace or `>`, quotes
+# and all. The lookaheads keep every name and value whole, so each input has
+# one parse and a tag with no end fails in linear time.
+TAG_BODY = (
+    r"""(?:[\t\n\f\r /]|[^\t\n\f\r />][^\t\n\f\r />=]*(?![^\t\n\f\r />=])"""
+    r"""(?:[\t\n\f\r ]*=[\t\n\f\r ]*(?:"[^"]*"|'[^']*'"""
+    r"""|[^\t\n\f\r >"'][^\t\n\f\r >]*(?![^\t\n\f\r >])|(?=>))"""
+    r"""|(?![\t\n\f\r ]*=)))"""
+)
+CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+RECT_RE = re.compile(r"<rect\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+LINE_RE = re.compile(r"<line\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+TEXT_RE = re.compile(r"<text\b(?P<attrs>" + TAG_BODY + r"*)>(?P<body>.*?)</text>",
                      re.IGNORECASE | re.DOTALL)
-G_OPEN_RE = re.compile(r"<g\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+G_OPEN_RE = re.compile(r"<g\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 G_CLOSE_RE = re.compile(r"</g\s*>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
+NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b" + TAG_BODY + r"*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>",
+GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>",
                            re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>",
+STYLE_RE = re.compile(r"<style\b" + TAG_BODY + r"*>(?P<body>.*?)</style>",
                       re.IGNORECASE | re.DOTALL)
 CSS_MOVES_MARK_RE = re.compile(
     r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
@@ -149,10 +160,10 @@ FORBIDDEN_RE = re.compile(
     r"<(?P<tag>use|set|animate[\w-]*|foreignobject)\b",
     re.IGNORECASE,
 )
-LINK_RE = re.compile(r"<link\b(?P<attrs>[^>]*)>", re.IGNORECASE)
-TSPAN_RE = re.compile(r"<tspan\b(?P<attrs>[^>]*)>", re.IGNORECASE)
+LINK_RE = re.compile(r"<link\b(?P<attrs>" + TAG_BODY + r"*)>", re.IGNORECASE)
+TSPAN_RE = re.compile(r"<tspan\b(?P<attrs>" + TAG_BODY + r"*)>", re.IGNORECASE)
 NONRENDER_OPEN_RE = re.compile(
-    r"<(?P<tag>defs|symbol|clipPath|mask|pattern|marker)\b[^>]*?(?P<selfclose>/?)>",
+    r"<(?P<tag>defs|symbol|clipPath|mask|pattern|marker)\b" + TAG_BODY + r"*?(?P<selfclose>/?)>",
     re.IGNORECASE,
 )
 NONRENDER_CLOSE_RE = re.compile(
@@ -169,15 +180,22 @@ HIDE_DECL_RE = re.compile(
     r"\s*:\s*([^;}{]+)",
     re.IGNORECASE,
 )
-TAG_RE = re.compile(r"<[^>]+>")
-OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>[^>]*)>")
+TAG_RE = re.compile(r"<" + TAG_BODY + r"+>")
+OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>" + TAG_BODY + r"*)>")
 NON_MARK_TAGS = {"text", "tspan", "title", "desc"}
 NUMBER_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?"
 )
 DIGIT_RE = re.compile(r"\d")
+# An attribute as the HTML tokenizer reads it: a quoted value, an unquoted
+# value (`display=none`), or no value at all (`<div hidden>`), which a
+# browser treats as present with an empty value. An unquoted value ends only
+# at whitespace or `>`, and a name at whitespace, `/`, `=` or `>` (a quote is
+# part of it), as in TAG_BODY. Whitespace is ASCII only, as in HTML: a
+# no-break space is a value character.
 ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+    r"""(?P<name>[^\t\n\f\r />][^\t\n\f\r />=]*)(?:[\t\n\f\r ]*=[\t\n\f\r ]*"""
+    r"""(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)|(?P<bare>[^\t\n\f\r >]*)))?""",
     re.DOTALL,
 )
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
@@ -286,12 +304,73 @@ def blank_comments(source: str) -> str:
 
 
 def blank_css_comments(css: str) -> str:
-    """CSS with every `/* ... */` replaced by whitespace a browser would see.
+    """CSS with quoted data blanked and every comment replaced by whitespace a browser would see.
 
     Newlines inside the comment are kept so a match still counts lines.
     """
-    return CSS_COMMENT_RE.sub(
-        lambda found: " " + "\n" * found.group().count("\n"), css)
+    return blank_comments_outside_strings(blank_css_strings(css))
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 def attrs_of(raw: str) -> dict:
@@ -299,7 +378,8 @@ def attrs_of(raw: str) -> dict:
     for match in ATTR_RE.finditer(raw):
         name = match.group("name").lower()
         if name not in found:
-            found[name] = html.unescape(match.group("value"))
+            value = match.group("value") if match.group("quote") else match.group("bare")
+            found[name] = html.unescape(value or "")
     return found
 
 
@@ -378,7 +458,7 @@ def transform_carrier(attrs: dict, sizes: bool = False):
     style = attrs.get("style")
     if style is None:
         return None
-    plain_style = blank_css_comments(style)
+    plain_style = blank_css_comments(blank_css_strings(style))
     if "\\" in plain_style:
         return "style=%r (a backslash escape)" % style
     for found in CSS_MOVES_MARK_RE.finditer(plain_style):
@@ -480,7 +560,7 @@ def check_transforms(source: str, findings: list, name: str) -> None:
                 "an escaped selector can rename the element a size rule reaches"
                 % where
             )
-        elif css_moves_mark(css, boxes) is not None:
+        elif css_moves_mark(blank_css_strings(match.group("body")), boxes) is not None:
             findings.append(
                 "%s: a <style> rule positions a mark with CSS "
                 "(transform/translate/rotate/scale, a geometry or box-size "
@@ -866,7 +946,7 @@ def declares_hidden(css: str, opacities) -> bool:
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
              "meta", "source", "track", "wbr"}
 ANY_TAG_RE = re.compile(
-    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>")
+    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>")
 
 
 def svg_ancestors(source: str) -> list:
@@ -941,7 +1021,7 @@ def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
     return False
 
 
-TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 
 
 def tspan_chains(body: str, chain: list) -> list:

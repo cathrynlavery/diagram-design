@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
 
@@ -88,7 +88,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python 3.9
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.9"
 
@@ -121,13 +121,13 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Set up uv
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: latest-known
           enable-cache: false
@@ -197,6 +197,14 @@ jobs:
         run: |
           python scripts/test-verify-polar.py
           python scripts/verify-polar.py
+
+      - name: Verify Unit Grid count and geometry
+        if: always()
+        id: unit_grid
+        shell: bash
+        run: |
+          python scripts/test-verify-unit-grid.py
+          python scripts/verify-unit-grid.py --all
 
       - name: Verify heatmap monotone ramp and grid
         if: always()
@@ -400,6 +408,36 @@ jobs:
         id: service_blueprint_tests
         run: python scripts/test-verify-service-blueprint.py
 
+      - name: Verify requirement traceability IDs, links, and gaps
+        if: always()
+        id: requirement_traceability
+        run: python scripts/verify-requirement-traceability.py --all
+
+      - name: Verify requirement traceability checker
+        if: always()
+        id: requirement_traceability_tests
+        run: python scripts/test-verify-requirement-traceability.py
+
+      - name: Verify event modeling stage order, roles, and links
+        if: always()
+        id: event_modeling
+        run: python scripts/verify-event-modeling.py --all
+
+      - name: Verify event modeling checker
+        if: always()
+        id: event_modeling_tests
+        run: python scripts/test-verify-event-modeling.py
+
+      - name: Verify Steps ordered rail
+        if: always()
+        id: steps
+        run: python scripts/verify-steps.py --all
+
+      - name: Verify Steps checker
+        if: always()
+        id: steps_tests
+        run: python scripts/test-verify-steps.py
+
       - name: Verify ridgeline shared amplitude
         if: always()
         id: ridgeline
@@ -460,6 +498,11 @@ jobs:
         id: arc_diagram_tests
         run: python scripts/test-verify-arc-diagram.py
 
+      - name: Verify quoted CSS data is not read as geometry
+        if: always()
+        id: css_string_scan
+        run: python scripts/test-css-string-scan.py
+
       - name: Verify architecture delta snapshots and ledger
         if: always()
         id: architecture_delta
@@ -509,6 +552,16 @@ jobs:
         if: always()
         id: axo_plan_tests
         run: python scripts/test-verify-axonometric-plan.py
+
+      - name: Verify SBGN bipartite process maps
+        if: always()
+        id: sbgn
+        run: python scripts/verify-sbgn.py --all
+
+      - name: Verify SBGN checker
+        if: always()
+        id: sbgn_tests
+        run: python scripts/test-verify-sbgn.py
 
       - name: Verify tone claims against the ramps they describe
         if: always()
@@ -595,6 +648,7 @@ jobs:
           echo "| Color Palette & Skin Linter | ${{ steps.skin.outcome == 'success' && '✅ Passed' || (steps.skin.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Skin Token Contrast | ${{ steps.contrast.outcome == 'success' && '✅ Passed' || (steps.contrast.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Quantitative Polar Chart | ${{ steps.polar.outcome == 'success' && '✅ Passed' || (steps.polar.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Unit Grid Count & Geometry | ${{ steps.unit_grid.outcome == 'success' && '✅ Passed' || (steps.unit_grid.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Heatmap Monotone Ramp & Grid | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Heatmap Checker | ${{ steps.heatmap.outcome == 'success' && '✅ Passed' || (steps.heatmap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Sequence Diagram Grammar | ${{ steps.oauth.outcome == 'success' && '✅ Passed' || (steps.oauth.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -617,6 +671,8 @@ jobs:
           echo "| Label Geometry Checker | ${{ steps.geometry_tests.outcome == 'success' && '✅ Passed' || (steps.geometry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Block Registry | ${{ steps.block_registry.outcome == 'success' && '✅ Passed' || (steps.block_registry.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Block Registry Checker | ${{ steps.block_registry_tests.outcome == 'success' && '✅ Passed' || (steps.block_registry_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Steps Rail Geometry | ${{ steps.steps.outcome == 'success' && '✅ Passed' || (steps.steps.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Steps Checker | ${{ steps.steps_tests.outcome == 'success' && '✅ Passed' || (steps.steps_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Treemap Area & Label Fit | ${{ steps.treemap.outcome == 'success' && '✅ Passed' || (steps.treemap.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Treemap Checker | ${{ steps.treemap_tests.outcome == 'success' && '✅ Passed' || (steps.treemap_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Marimekko Width, Height & Area | ${{ steps.marimekko.outcome == 'success' && '✅ Passed' || (steps.marimekko.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -633,6 +689,10 @@ jobs:
           echo "| Waterfall Checker | ${{ steps.waterfall_tests.outcome == 'success' && '✅ Passed' || (steps.waterfall_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Service Blueprint Visibility Line & Grid | ${{ steps.service_blueprint.outcome == 'success' && '✅ Passed' || (steps.service_blueprint.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Service Blueprint Checker | ${{ steps.service_blueprint_tests.outcome == 'success' && '✅ Passed' || (steps.service_blueprint_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Requirement Traceability | ${{ steps.requirement_traceability.outcome == 'success' && '✅ Passed' || (steps.requirement_traceability.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Requirement Traceability Checker | ${{ steps.requirement_traceability_tests.outcome == 'success' && '✅ Passed' || (steps.requirement_traceability_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Event Modeling | ${{ steps.event_modeling.outcome == 'success' && '✅ Passed' || (steps.event_modeling.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Event Modeling Checker | ${{ steps.event_modeling_tests.outcome == 'success' && '✅ Passed' || (steps.event_modeling_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Shared Amplitude | ${{ steps.ridgeline.outcome == 'success' && '✅ Passed' || (steps.ridgeline.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -645,6 +705,7 @@ jobs:
           echo "| Box-Plot Checker | ${{ steps.box_plot_tests.outcome == 'success' && '✅ Passed' || (steps.box_plot_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Arc-Diagram Span Geometry | ${{ steps.arc_diagram.outcome == 'success' && '✅ Passed' || (steps.arc_diagram.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Arc-Diagram Checker | ${{ steps.arc_diagram_tests.outcome == 'success' && '✅ Passed' || (steps.arc_diagram_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Quoted CSS Data Scan | ${{ steps.css_string_scan.outcome == 'success' && '✅ Passed' || (steps.css_string_scan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Checker | ${{ steps.architecture_delta_tests.outcome == 'success' && '✅ Passed' || (steps.architecture_delta_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Containment Scopes | ${{ steps.architecture_containment.outcome == 'success' && '✅ Passed' || (steps.architecture_containment.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -655,6 +716,8 @@ jobs:
           echo "| Axonometric Plan Examples Match Builder | ${{ steps.axo_plan_build.outcome == 'success' && '✅ Passed' || (steps.axo_plan_build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Axonometric Plan Geometry & Tags | ${{ steps.axo_plan.outcome == 'success' && '✅ Passed' || (steps.axo_plan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Axonometric Plan Checker | ${{ steps.axo_plan_tests.outcome == 'success' && '✅ Passed' || (steps.axo_plan_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SBGN Bipartite Process Maps | ${{ steps.sbgn.outcome == 'success' && '✅ Passed' || (steps.sbgn.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SBGN Checker | ${{ steps.sbgn_tests.outcome == 'success' && '✅ Passed' || (steps.sbgn_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Tone Claim vs Ramp Polarity | ${{ steps.skin_polarity.outcome == 'success' && '✅ Passed' || (steps.skin_polarity.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Skin Polarity Checker | ${{ steps.skin_polarity_tests.outcome == 'success' && '✅ Passed' || (steps.skin_polarity_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Primitive Icons & Documentation | ${{ steps.icons.outcome == 'success' && '✅ Passed' || (steps.icons.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"

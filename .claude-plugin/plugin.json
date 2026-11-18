@@ -1,7 +1,7 @@
 {
   "name": "diagram-design",
   "description": "Editorial diagrams in your brand, as self-contained HTML and SVG. Architecture, flowcharts, sequence, state machines, ER and database schemas, timelines, swimlanes, org charts, Gantt, Wardley maps, user journeys, service blueprints, UML class, lifecycle phase maps, and charts from bar, line and scatter to Sankey, treemap and heatmap, plus many more. Redraws draw.io, Mermaid, Excalidraw and PlantUML files. Exports SVG and PNG.",
-  "version": "2.6.153",
+  "version": "2.6.164",
   "author": {
     "name": "Cathryn Lavery",
     "url": "https://github.com/cathrynlavery"

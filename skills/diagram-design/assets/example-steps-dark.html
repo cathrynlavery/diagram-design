@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From question to shipped decision · Steps</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root { --color-paper:#2d3142; --color-ink:#f5f5f5; --color-muted:#bfc0c0; --color-accent:#f08a59; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    .diagram-container { width:100%; overflow-x:auto; }
+    svg { width:100%; min-width:1280px; display:block; }
+    @media print { .diagram-container { overflow-x:visible; } svg { min-width:0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Steps · Diagram Design</p>
+    <h1>From question to shipped decision</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="steps-dark-title steps-dark-desc">
+        <title id="steps-dark-title">From question to shipped decision</title>
+        <desc id="steps-dark-desc">Five equal stages move from framing and research through a focal synthesis step, then decision and release.</desc>
+        <defs><pattern id="dots-dark" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/></pattern></defs>
+        <rect width="100%" height="100%" fill="#2d3142"/><rect width="100%" height="100%" fill="url(#dots-dark)" opacity="0.55"/>
+        <g aria-hidden="true">
+          <rect x="80" y="240" width="224" height="48" fill="rgba(245,245,245,0.05)" data-role="rail" data-step="frame" data-index="1"/><rect x="304" y="240" width="224" height="48" fill="rgba(245,245,245,0.09)" data-role="rail" data-step="research" data-index="2"/>
+          <rect x="528" y="240" width="224" height="48" fill="rgba(240,138,89,0.10)" data-role="rail" data-step="synthesize" data-index="3" data-focal="true"/><line x1="528" y1="240" x2="752" y2="240" stroke="#f08a59"/><line x1="528" y1="288" x2="752" y2="288" stroke="#f08a59"/>
+          <rect x="752" y="240" width="224" height="48" fill="rgba(245,245,245,0.09)" data-role="rail" data-step="decide" data-index="4"/><rect x="976" y="240" width="224" height="48" fill="rgba(245,245,245,0.05)" data-role="rail" data-step="ship" data-index="5"/>
+        </g>
+        <g font-family="'Geist Mono', monospace" font-size="8" font-weight="600" letter-spacing="0.14em" text-anchor="middle">
+          <text x="192" y="164" fill="#bfc0c0" data-role="number" data-step="frame">01</text><line x1="192" y1="184" x2="192" y2="220" stroke="rgba(191,192,192,0.25)"/>
+          <text x="416" y="164" fill="#bfc0c0" data-role="number" data-step="research">02</text><line x1="416" y1="184" x2="416" y2="220" stroke="rgba(191,192,192,0.25)"/>
+          <text x="640" y="164" fill="#f08a59" data-role="number" data-step="synthesize">03</text><line x1="640" y1="184" x2="640" y2="220" stroke="#f08a59"/>
+          <text x="864" y="164" fill="#bfc0c0" data-role="number" data-step="decide">04</text><line x1="864" y1="184" x2="864" y2="220" stroke="rgba(191,192,192,0.25)"/>
+          <text x="1088" y="164" fill="#bfc0c0" data-role="number" data-step="ship">05</text><line x1="1088" y1="184" x2="1088" y2="220" stroke="rgba(191,192,192,0.25)"/>
+        </g>
+        <g aria-hidden="true" fill="#2d3142" stroke-width="1">
+          <circle cx="192" cy="264" r="36" stroke="#f5f5f5" data-role="medallion" data-step="frame"/><circle cx="416" cy="264" r="36" stroke="#f5f5f5" data-role="medallion" data-step="research"/><circle cx="640" cy="264" r="36" fill="#2d3142" stroke="none"/><circle cx="640" cy="264" r="36" fill="rgba(240,138,89,0.10)" stroke="#f08a59" data-role="medallion" data-step="synthesize" data-focal="true"/><circle cx="864" cy="264" r="36" stroke="#f5f5f5" data-role="medallion" data-step="decide"/><circle cx="1088" cy="264" r="36" stroke="#f5f5f5" data-role="medallion" data-step="ship"/>
+        </g>
+        <g aria-hidden="true" fill="none" stroke="#f5f5f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <g transform="translate(180 252)"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/></g>
+          <g transform="translate(404 252)"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></g>
+          <g transform="translate(628 252)" stroke="#f08a59"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></g>
+          <g transform="translate(852 252)"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/></g>
+          <g transform="translate(1076 252)"><path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5"/><path d="M12 12l8 -4.5M12 12l0 9M12 12l-8 -4.5M16 5.25l-8 4.5"/></g>
+        </g>
+        <g font-family="'Geist', sans-serif" text-anchor="middle">
+          <text x="192" y="360" fill="#f5f5f5" font-size="12" font-weight="600">Frame</text><text x="192" y="388" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Define the decision</text><text x="192" y="408" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">and its success signal</text>
+          <text x="416" y="360" fill="#f5f5f5" font-size="12" font-weight="600">Research</text><text x="416" y="388" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Gather evidence from</text><text x="416" y="408" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">customers and operators</text>
+          <text x="640" y="360" fill="#f08a59" font-size="12" font-weight="600">Synthesize</text><text x="640" y="388" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Turn observations into</text><text x="640" y="408" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">one testable direction</text>
+          <text x="864" y="360" fill="#f5f5f5" font-size="12" font-weight="600">Decide</text><text x="864" y="388" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Commit the scope and</text><text x="864" y="408" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">name the trade-offs</text>
+          <text x="1088" y="360" fill="#f5f5f5" font-size="12" font-weight="600">Ship</text><text x="1088" y="388" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">Release, measure, and</text><text x="1088" y="408" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace">feed learning forward</text>
+        </g>
+        <line x1="40" y1="600" x2="1240" y2="600" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/><text x="40" y="620" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <circle cx="52" cy="640" r="8" fill="#2d3142" stroke="#f5f5f5"/><text x="68" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Stage</text>
+        <circle cx="148" cy="640" r="8" fill="rgba(240,138,89,0.10)" stroke="#f08a59"/><text x="164" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Focal stage</text>
+        <text x="284" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Equal spacing shows order, not elapsed time.</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

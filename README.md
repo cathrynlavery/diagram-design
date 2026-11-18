@@ -7,7 +7,7 @@
   </picture>
 </h1>
 
-**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>45 diagram types. No shadows. No Mermaid slop.**
+**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>50 diagram types. No shadows. No Mermaid slop.**
 
 [![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
 [![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
@@ -245,7 +245,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-45 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+50 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -323,6 +323,16 @@ The model already understood the content. What it was missing was taste, so I wr
   <td align="center" width="33%"><a href="docs/screenshots/heatmap.png"><img src="docs/screenshots/thumbs/heatmap.webp" alt="Heatmap"></a><br><b>Heatmap</b><br><sub>Value per row × column cell</sub></td>
   <td align="center" width="33%"><a href="docs/screenshots/service-blueprint.png"><img src="docs/screenshots/thumbs/service-blueprint.webp" alt="Service blueprint"></a><br><b>Service blueprint</b><br><sub>Frontstage and backstage on a shared stage grid</sub></td>
 </tr>
+<tr>
+  <td align="center" width="33%"><a href="docs/screenshots/sbgn.png"><img src="docs/screenshots/thumbs/sbgn.webp" alt="SBGN"></a><br><b>SBGN</b><br><sub>Species, processes + compartments</sub></td>
+  <td align="center" width="33%"><a href="docs/screenshots/requirement-traceability.png"><img src="docs/screenshots/thumbs/requirement-traceability.webp" alt="Requirement traceability"></a><br><b>Requirement traceability</b><br><sub>Requirements → design → verification</sub></td>
+  <td align="center" width="33%"><a href="docs/screenshots/event-modeling.png"><img src="docs/screenshots/thumbs/event-modeling.webp" alt="Event modeling"></a><br><b>Event modeling</b><br><sub>Commands → events → read models</sub></td>
+</tr>
+<tr>
+  <td align="center" width="33%"><a href="docs/screenshots/steps.png"><img src="docs/screenshots/thumbs/steps.webp" alt="Steps"></a><br><b>Steps</b><br><sub>Numbered stages on one ordered rail</sub></td>
+  <td align="center" width="33%"><a href="docs/screenshots/unit-grid.png"><img src="docs/screenshots/thumbs/unit-grid.webp" alt="Unit Grid"></a><br><b>Unit Grid</b><br><sub>Equal discrete units</sub></td>
+  <td align="center" width="33%"></td>
+</tr>
 </table>
 
 Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko; Dependency covers arc diagram.
@@ -335,7 +345,9 @@ Exploded axonometric draws one object in 2:1 dimetric projection with its parts 
 
 Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagram-design/assets/example-axonometric-plan.html), the [campus](skills/diagram-design/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagram-design/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagram-design/assets/example-axonometric-plan-warehouse.html), the [phased campus animation](skills/diagram-design/assets/example-axonometric-plan-campus-animated.html), and the [reference](skills/diagram-design/references/type-axonometric-plan.md).
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 45; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagram-design/assets/example-sbgn.html) and its [reference](skills/diagram-design/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
+
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 50; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
 ---
 
@@ -584,6 +596,7 @@ diagram-design/
 │       │   ├── type-dp-integration.md
 │       │   ├── type-dp-security-matrix.md
 │       │   ├── type-er.md
+│       │   ├── type-event-modeling.md
 │       │   ├── type-exploded.md
 │       │   ├── type-fishbone.md
 │       │   ├── type-flowchart.md
@@ -604,17 +617,21 @@ diagram-design/
 │       │   ├── type-pyramid.md
 │       │   ├── type-quadrant.md
 │       │   ├── type-radar.md
+│       │   ├── type-requirement-traceability.md
 │       │   ├── type-sankey.md
+│       │   ├── type-sbgn.md
 │       │   ├── type-scatter.md
 │       │   ├── type-sequence.md
 │       │   ├── type-service-blueprint.md
 │       │   ├── type-state.md
+│       │   ├── type-steps.md
 │       │   ├── type-story-map.md
 │       │   ├── type-swimlane.md
 │       │   ├── type-timeline.md
 │       │   ├── type-tree.md
 │       │   ├── type-treemap.md
 │       │   ├── type-uml-class.md
+│       │   ├── type-unit-grid.md
 │       │   ├── type-venn.md
 │       │   ├── type-wardley.md
 │       │   └── type-waterfall.md
@@ -647,6 +664,7 @@ diagram-design/
 │   ├── verify-geometry.py            # repo entry point for the packaged geometry check
 │   ├── render-canonical-screenshots.py  # deterministic per-type PNG catalog renderer
 │   ├── build-readme-thumbs.py        # regenerates docs/screenshots/thumbs/
+│   ├── verify-sbgn.py                # SBGN bipartite process + compartment gate
 │   └── fixtures/                     # draw.io, Mermaid, Excalidraw and PlantUML test inputs
 ├── docs/cookbook.md                  # operator recipes for editable installs and common tasks
 ├── docs/adr/                         # short records of settled design decisions
@@ -672,6 +690,7 @@ At startup, the agent sees only the skill name and description. When a request m
 | "Show what was added, removed, changed, moved, or rewired in this migration" | `SKILL.md` + `references/type-architecture-delta.md` |
 | "Show what's inside this device, exploded" | `SKILL.md` + `references/type-exploded.md` |
 | "Draw our office floor plan" | `SKILL.md` + `references/type-axonometric-plan.md` |
+| "Show how beta-carotene is cleaved in cytosol" | `SKILL.md` + `references/type-sbgn.md` |
 | "Compare why these two policy requests differ" | `SKILL.md` + `references/semantic-patterns.md` + `references/type-flowchart.md` |
 | "Animate that policy trace" | Prior selection + `references/animation.md` |
 | "Onboard this skill to my site" | `SKILL.md` + `references/onboarding.md` + `references/style-guide.md` |

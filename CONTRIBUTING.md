@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 45 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 50 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -44,8 +44,11 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
 | Skin token contrast: every text token clears 4.5:1 and every essential mark 3:1 on paper, light and dark, with translucent tokens composited first | `python3 scripts/test-verify-contrast.py && python3 scripts/verify-contrast.py` |
 | Rendered-layout checker and shipped examples/templates | `python3 scripts/lint-render.py --self-test && python3 scripts/lint-render.py --all` |
+| Unit Grid equal cells, reading order, printed values, and movement | `python3 scripts/test-verify-unit-grid.py && python3 scripts/verify-unit-grid.py --all` |
 | Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
 | Heatmap monotone opacity ramp, complete N×M grid, ≤1 focal cell | `python3 scripts/test-verify-heatmap.py && python3 scripts/verify-heatmap.py --all` |
+| Requirement traceability IDs, typed links, and explicit gaps | `python3 scripts/verify-requirement-traceability.py --all && python3 scripts/test-verify-requirement-traceability.py` |
+| Event modeling stage order, role IDs, and typed link endpoints | `python3 scripts/verify-event-modeling.py --all && python3 scripts/test-verify-event-modeling.py` |
 | A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
 | Sequence-doc consistency, visible ALT guards, ordinary OAuth returns, and headline activation | `python3 scripts/verify-sequence-oauth.py` |
 | Semantic-motion verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-semantic-motion.py` |
@@ -77,6 +80,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Axonometric plan examples are what the builder produces | `python3 scripts/build-axonometric-plan-examples.py --check` |
 | Axonometric plan boxes match their declared footprints, paint back to front, never overlap, and carry one clear tag each | `python3 scripts/verify-axonometric-plan.py --all` |
 | Axonometric plan checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-axonometric-plan.py` |
+| SBGN maps are bipartite, compartment-contained, and under the Bruno ceiling | `python3 scripts/verify-sbgn.py --all` |
+| SBGN checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-sbgn.py` |
 | Traceable block decomposition registries have unique IDs, resolving parents, names, and no cycles | `python3 scripts/verify-block-registry.py --all` |
 | Block registry checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-block-registry.py` |
 | Treemap cells match the values they are labelled with, and labels fit | `python3 scripts/verify-treemap.py --all` |
@@ -97,6 +102,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Waterfall checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-waterfall.py` |
 | Service-blueprint visibility line, stage grid, and census | `python3 scripts/verify-service-blueprint.py --all` |
 | Service-blueprint checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-service-blueprint.py` |
+| Steps equal-width contiguous rail, numbering, medallions, and focal stage | `python3 scripts/verify-steps.py --all` |
+| Steps checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-steps.py` |
 | Bubble positions sit on shared axis scales and area encodes every declared size | `python3 scripts/verify-bubble.py --all` |
 | Bubble checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-bubble.py` |
 | Bump vertices sit exactly on one rank grid and every endpoint label is placed on both axes | `python3 scripts/verify-bump.py --all` |
@@ -107,6 +114,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Box-plot checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-box-plot.py` |
 | Arc-diagram spans sit on one shared pitch, each a rising semicircle whose height is the seat count | `python3 scripts/verify-arc-diagram.py --all` |
 | Arc-diagram checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-arc-diagram.py` |
+| Quoted CSS data is not read as a geometry declaration by any verifier (pass + adversarial cases) | `python3 scripts/test-css-string-scan.py` |
 | Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
@@ -150,6 +158,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/lint-skin.py --all --baseline \
   && python3 scripts/lint-render.py --self-test \
   && python3 scripts/lint-render.py --all \
+  && python3 scripts/test-verify-unit-grid.py \
+  && python3 scripts/verify-unit-grid.py --all \
   && python3 scripts/test-verify-polar.py \
   && python3 scripts/verify-polar.py \
   && python3 scripts/test-verify-heatmap.py \
@@ -189,6 +199,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/build-axonometric-plan-examples.py --check \
   && python3 scripts/verify-axonometric-plan.py --all \
   && python3 scripts/test-verify-axonometric-plan.py \
+  && python3 scripts/verify-sbgn.py --all \
+  && python3 scripts/test-verify-sbgn.py \
   && python3 scripts/verify-block-registry.py --all \
   && python3 scripts/test-verify-block-registry.py \
   && python3 scripts/verify-treemap.py --all \
@@ -209,6 +221,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-waterfall.py \
   && python3 scripts/verify-service-blueprint.py --all \
   && python3 scripts/test-verify-service-blueprint.py \
+  && python3 scripts/verify-steps.py --all \
+  && python3 scripts/test-verify-steps.py \
   && python3 scripts/verify-bubble.py --all \
   && python3 scripts/test-verify-bubble.py \
   && python3 scripts/verify-bump.py --all \
@@ -219,6 +233,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-box-plot.py \
   && python3 scripts/verify-arc-diagram.py --all \
   && python3 scripts/test-verify-arc-diagram.py \
+  && python3 scripts/test-css-string-scan.py \
   && python3 scripts/verify-skin-polarity.py --all \
   && python3 scripts/test-verify-skin-polarity.py \
   && python3 scripts/test-export-wait.py
@@ -229,7 +244,7 @@ python3 scripts/test-plugin-package.py \
 - **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
 - **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
-- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 45 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`. The gate hashes example sources in their canonical LF form, so a checkout that converts LF to CRLF still passes; `scripts/test-verify-screenshot-freshness.py` covers that case, real source drift, and raw PNG digests.
+- **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 50 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`. The gate hashes example sources in their canonical LF form, so a checkout that converts LF to CRLF still passes; `scripts/test-verify-screenshot-freshness.py` covers that case, real source drift, and raw PNG digests.
 - **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
 - **`verify-marimekko.py`:** a column is drawn off its category's share of the width, a segment off its series' share of the column, the columns do not share one plot height or one gutter, segments leave a gap or overlap, a series changes order between columns, a second segment wears the accent, anything positions a segment or a bound label from a `transform` attribute, an inline `style`, or a `<style>` rule, or a label, caption or key disagrees with the rect it binds. Fix the geometry or the declaration so they state one thing — never widen a column or pad a segment to fit a label, and never drop a category or a series to tidy the grid.
 - **`verify-slopegraph.py`:** the two axes disagree about scale or origin, or an endpoint is drawn somewhere other than where its own declared value belongs. Fix the coordinate, never the label — and never move a point to stop two endpoint labels colliding, because crowded labels mean the values really are close.
@@ -246,6 +261,8 @@ python3 scripts/test-plugin-package.py \
 - **`verify-architecture-containment.py`:** a nested Architecture figure with `data-grammar="architecture-containment"` has a duplicate ID, an unresolved or cyclic parent, a child drawn outside its declared parent, an admin band that is not a dashed rx=4 rectangle, a traffic box that is not a solid rx=8 rectangle, a managed PaaS box sitting inside a traffic scope, an endpoint that is not inside one, a peering that does not join two traffic scopes, mixed sibling axes, or off-grid bounds. Follow `type-architecture.md` Containment: keep administrative and traffic shapes distinct, put managed services in the admin band that owns them, and put only the private endpoint in the subnet.
 - **`verify-exploded.py`:** a part's silhouette is off the projection of the box it declares, a level sits at two heights, the gaps differ or fall under max(0.5 x top-face height, 3 x part thickness), a leader bends, starts off its part, or crosses another part, labels crowd or leave the column, or an animated lift disagrees with the geometry. Change the model in `scripts/build-exploded-examples.py` and rebuild; never nudge a drawn coordinate, and never shrink a gap to fit the canvas.
 - **`verify-axonometric-plan.py`:** a box's silhouette is off the projection of its declared footprint, a box stands outside the plate, floats above it, or shares floor with another, a box is painted after one in front of it, or a tag is off its plan point, stands on a room or roof it does not name, overlaps another tag, runs past two words, or is missing or doubled for a room or building. Change the plan in `scripts/build-axonometric-plan-examples.py` and rebuild; move a tag to open floor rather than shrinking it.
+- **`verify-sbgn.py`:** a species-to-species or process-to-process arc, an arc with a missing or unknown `data-kind`, a drawn connector with no arc declaration outside the `data-role="legend"` group, two arcs that cross without a hop, overlap, or meet mid-stroke, a glyph moved by a `transform` attribute, positional inline style, or a stylesheet rule that can reach it, a missing compartment, an unresolved endpoint, a glyph off the 4px grid, or a map over the Bruno ceiling (7 macromolecules, 6 processes, 1 compartment, 2 source/sink, 16 arcs). Follow `type-sbgn.md`: keep the bipartite species/process grammar, draw the compartment as a glyph, and split a larger map. Fix the diagram and metadata together; never drop a process node to hide a species–species shortcut.
+- **`verify-steps.py`:** a rail segment breaks the equal-width contiguous rail, a stage index, number, medallion or focal flag disagrees with its rail segment, or what the browser draws can differ from what is measured. Any repeated attribute fails; a checked mark (rail, medallion, number) may carry only its own geometry, paint and data attributes, sit only under plain `<g>` groups of the one root SVG, stay inside the viewBox, and paint in a visible non-paper house ink (numbers at font-size 8 or more in a house font, anchored at their middle, with no child elements). The page around the SVG uses only the shipped tags and attributes and the Google Fonts link. A `<style>` may not use escapes, `@import` or at-rules other than `@media` and `@font-face`, and may not move anything; rules that can reach SVG content may set only `box-sizing`, `margin`, `padding` and custom properties, and rules on the SVG's HTML ancestors only layout-neutral page properties. Style marks with presentation attributes, and fix the geometry, never the binding.
 - **`verify-block-registry.py`:** a Traceable block decomposition diagram (`semantic-patterns.md` § 8) has a duplicate `data-block-id`, a `data-block-parent` that doesn't resolve to another block's id in the same file, a blank `data-block-id`, a missing or blank `data-block-name`, or a cycle in the parent chain. Fix the diagram's attributes — the checker mirrors the source rather than validating semantics, so a passing file is only as correct as the IDs and parents actually authored on it.
 - **Icon assets:** you changed `scripts/vendor/icons/` or `scripts/build-icons.py` and the generated files went stale. Rerun `python3 scripts/build-icons.py` and commit the regenerated files.
 
