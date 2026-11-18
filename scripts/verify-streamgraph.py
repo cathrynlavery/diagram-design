@@ -94,6 +94,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -1014,6 +1016,9 @@ def check_captions(layers: list, doc: _Scanner, findings: list, name: str) -> No
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     """Findings for one already-read document."""
     findings: list = []
     doc = parse_document(raw)

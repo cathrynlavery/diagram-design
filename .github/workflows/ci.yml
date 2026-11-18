@@ -78,7 +78,8 @@ jobs:
 
   python39-compat:
     name: Python 3.9 Compatibility
-    runs-on: ubuntu-latest
+    # setup-python publishes 3.9 builds for 24.04, but not the newer latest runner.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
@@ -99,6 +100,9 @@ jobs:
 
       - name: Verify Mermaid import
         run: python scripts/verify-mermaid-import.py
+
+      - name: Verify CSS scanner compatibility
+        run: python scripts/test-css-string-scan.py
 
   validate:
     name: Lint & Verify (${{ matrix.os }}, Python ${{ matrix.python-version }})

@@ -98,6 +98,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import re
@@ -1130,6 +1132,9 @@ def check_labels(ridges: list, doc: _Scanner, findings: list, name: str, scale) 
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     findings: list = []
     doc = parse_document(raw)
     if doc.error is not None:
