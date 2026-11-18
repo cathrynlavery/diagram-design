@@ -48,7 +48,11 @@ An explicit `--host` value always wins over detection.
 
 ## Install channel resolution
 
-Classify how the resolved installation arrived, and report the evidence:
+Classify how the resolved installation arrived, and report the evidence. A
+path under a host plugin directory (`.claude/plugins`, `.codex/plugins`,
+`.cursor/plugins`, or a `plugin-cache` segment) is `marketplace` before any
+other rule: the marketplace packages the repository root, so those installs
+carry every maintainer marker and can carry `.git` metadata.
 
 - `maintainer-checkout` — all maintainer markers above are present.
 - `git` — `.git` metadata exists at the installation root (editable installs,
@@ -145,10 +149,14 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
 6. Marketplace plugin version alignment (installed-skill mode included)
 - Only applicable when the install channel is `marketplace`; otherwise report
   `pass` with a not-applicable message.
-- Read `metadata.version` from the resolved `SKILL.md` and advise confirming
-  the active plugin version the host reports (for example `/plugin` in Claude
-  Code) matches it before debugging stale-behavior reports — marketplace
-  auto-update can lag until the session reloads.
+- Read the full version from the installed `.claude-plugin/plugin.json` and
+  advise confirming the active plugin version the host reports (for example
+  `/plugin` in Claude Code) equals it before debugging stale-behavior
+  reports — marketplace auto-update can lag until the session reloads.
+- `SKILL.md` `metadata.version` declares only MAJOR.MINOR (for example `2.6`
+  against a `2.6.136` package), so compare it to the manifest at MAJOR.MINOR
+  only; `warn` with the reinstall recipe when those differ. Without a readable
+  manifest, report `metadata.version` and advise a MAJOR.MINOR comparison.
 - `warn` when `metadata.version` cannot be read, with the reinstall recipe as
   the fix.
 
@@ -219,7 +227,7 @@ Doctor summary: WARN (8 pass, 1 warn, 0 fail)
 [PASS] Python 3.11.9 found at /usr/bin/python3
 [WARN] Playwright package not found in active interpreter
 [PASS] Host profile: claude-code (environment variable CLAUDECODE is set). Install channel: marketplace (...)
-[PASS] Installed SKILL.md metadata.version is 2.6. Confirm the active plugin version your host reports ...
+[PASS] Installed plugin manifest version is 2.6.165 (SKILL.md metadata.version 2.6 matches at MAJOR.MINOR). Confirm the active plugin version your host reports ...
 ...
 
 Next actions

@@ -61,6 +61,13 @@ MARKETPLACE_PATH_SEGMENTS = frozenset(
     {"plugins", "plugin-cache", "marketplace", "marketplaces"}
 )
 
+# Host configuration directories whose `plugins` subtree is a host-managed
+# marketplace install. The marketplace packages the repository root, so these
+# installs carry every maintainer marker and may carry .git metadata.
+HOST_PLUGIN_HOMES = frozenset({".claude", ".codex", ".cursor"})
+
+PLUGIN_MANIFEST_RELATIVE = Path(".claude-plugin/plugin.json")
+
 SKILL_VERSION_PATTERN = re.compile(
     r'^\s*version:\s*"?([0-9][0-9A-Za-z.\-]*)"?\s*$', re.MULTILINE
 )
@@ -398,8 +405,27 @@ def detect_host(root: Path, environ: dict[str, str] | None = None) -> tuple[str 
     return None, "no host markers detected; pass --host to select a profile"
 
 
+def host_plugin_cache_path(root: Path) -> str | None:
+    """Return the host plugin path (for example `.claude/plugins`) holding root, if any."""
+    parts = [part.lower() for part in root.resolve().parts]
+    for index, part in enumerate(parts[:-1]):
+        if part in HOST_PLUGIN_HOMES and parts[index + 1] == "plugins":
+            return f"{part}/plugins"
+    if "plugin-cache" in parts:
+        return "plugin-cache"
+    return None
+
+
 def detect_install_channel(root: Path, host: str | None = None) -> tuple[str, str]:
     """Classify how this installation arrived: maintainer checkout, git, marketplace, or copy."""
+    # Marketplace packages ship the repository root, maintainer markers included,
+    # so a host plugin path wins over the maintainer and git branches.
+    host_plugin_path = host_plugin_cache_path(root)
+    if host_plugin_path is not None:
+        return (
+            CHANNEL_MARKETPLACE,
+            f"installation path is under the host plugin directory {host_plugin_path!r}",
+        )
     # Pi Git packages contain the full repository, including maintainer markers.
     # A checkout under a .pi path is that managed install. PI_SESSION_ID, PI_HOME,
     # and --host select only the host profile, so a marker-complete checkout
@@ -524,7 +550,33 @@ def check_marketplace_version(
             status=WARN,
             message=(
                 "Could not read metadata.version from the installed SKILL.md, so the "
-                "active plugin version cannot be compared."
+                "installed plugin version cannot be checked."
+            ),
+            fix=update_recipe(host, channel),
+        )
+
+    plugin_version = read_plugin_manifest_version(root)
+    if plugin_version is None:
+        return CheckResult(
+            name=name,
+            status=PASS,
+            message=(
+                f"Installed SKILL.md metadata.version is {version} (MAJOR.MINOR only). "
+                "No readable .claude-plugin/plugin.json version under the installation "
+                "root, so compare the active plugin version your host reports (for "
+                "example /plugin in Claude Code) by MAJOR.MINOR only; marketplace "
+                "auto-update can lag until the session reloads."
+            ),
+        )
+
+    if major_minor(plugin_version) != major_minor(version):
+        return CheckResult(
+            name=name,
+            status=WARN,
+            message=(
+                f"Installed plugin manifest version {plugin_version} does not match "
+                f"SKILL.md metadata.version {version} at MAJOR.MINOR, so this install "
+                "is incomplete or mixed across releases."
             ),
             fix=update_recipe(host, channel),
         )
@@ -533,12 +585,33 @@ def check_marketplace_version(
         name=name,
         status=PASS,
         message=(
-            f"Installed SKILL.md metadata.version is {version}. Confirm the active "
+            f"Installed plugin manifest version is {plugin_version} (SKILL.md "
+            f"metadata.version {version} matches at MAJOR.MINOR). Confirm the active "
             "plugin version your host reports (for example /plugin in Claude Code) "
-            "matches before debugging stale-behavior reports; marketplace "
-            "auto-update can lag until the session reloads."
+            f"is {plugin_version} before debugging stale-behavior reports; "
+            "marketplace auto-update can lag until the session reloads."
         ),
     )
+
+
+def read_plugin_manifest_version(root: Path) -> str | None:
+    """Return the full version from the installed .claude-plugin/plugin.json, if readable."""
+    manifest = root / PLUGIN_MANIFEST_RELATIVE
+    if not manifest.is_file():
+        return None
+    source = read_text_or_none(manifest)
+    if source is None:
+        return None
+    try:
+        payload = json.loads(source)
+    except json.JSONDecodeError:
+        return None
+    version = payload.get("version") if isinstance(payload, dict) else None
+    return version if isinstance(version, str) and version.strip() else None
+
+
+def major_minor(version: str) -> str:
+    return ".".join(version.strip().split(".")[:2])
 
 
 def read_text_or_none(path: Path) -> str | None:

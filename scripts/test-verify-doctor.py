@@ -367,7 +367,20 @@ def main() -> int:
         channel, _ = verify.detect_install_channel(installed_root)
         if channel != verify.CHANNEL_COPIED:
             raise AssertionError(f"plain copy should classify as copied; got {channel}")
-        print("OK: install channel detection covers maintainer/git/marketplace/copied")
+        # The marketplace packages the repository root, so a cached package
+        # carries every maintainer marker (and, for marketplace clones, .git).
+        for cached in (
+            root / ".claude" / "plugins" / "cache" / "diagram-design" / "diagram-design" / "2.6.165",
+            root / ".claude" / "plugins" / "marketplaces" / "diagram-design",
+        ):
+            seed_repo(verify, cached)
+            (cached / ".git").mkdir(parents=True, exist_ok=True)
+            channel, evidence = verify.detect_install_channel(cached)
+            if channel != verify.CHANNEL_MARKETPLACE or ".claude/plugins" not in evidence:
+                raise AssertionError(
+                    f"marker-complete package under .claude/plugins should be marketplace; got {channel} ({evidence})"
+                )
+        print("OK: install channel detection covers maintainer/git/marketplace/copied, marker-complete marketplace packages included")
         check_full_git_installs(verify, root)
 
         for host_name, channel_name, needle in (
@@ -398,7 +411,14 @@ def main() -> int:
         print("OK: playwright fix keeps the provisioning wording and gains host-specific one-shot hints")
 
         check = verify.check_marketplace_version(marketplace_root, "claude-code", verify.CHANNEL_MARKETPLACE)
-        expect_status(check, verify.PASS, "metadata.version is 2.6")
+        expect_status(check, verify.PASS, "MAJOR.MINOR only")
+        touch(marketplace_root / ".claude-plugin" / "plugin.json", '{"version": "2.6.136"}\n')
+        check = verify.check_marketplace_version(marketplace_root, "claude-code", verify.CHANNEL_MARKETPLACE)
+        expect_status(check, verify.PASS, "is 2.6.136 before debugging")
+        touch(marketplace_root / ".claude-plugin" / "plugin.json", '{"version": "2.5.9"}\n')
+        check = verify.check_marketplace_version(marketplace_root, "claude-code", verify.CHANNEL_MARKETPLACE)
+        expect_status(check, verify.WARN, "does not match")
+        touch(marketplace_root / ".claude-plugin" / "plugin.json", '{"version": "2.6.136"}\n')
         versionless_root = root / "plugins" / "versionless"
         touch(versionless_root / "SKILL.md", "# Skill without metadata\n")
         check = verify.check_marketplace_version(
@@ -414,7 +434,7 @@ def main() -> int:
         expect_status(check, verify.WARN, "metadata.version")
         check = verify.check_marketplace_version(root, None, verify.CHANNEL_MAINTAINER)
         expect_status(check, verify.PASS, "not applicable")
-        print("OK: marketplace version alignment advises, warns on missing or undecodable metadata, and skips non-marketplace")
+        print("OK: marketplace version alignment uses the full manifest version, compares SKILL.md at MAJOR.MINOR, warns on missing or undecodable metadata, and skips non-marketplace")
 
         touch(git_root / ".git" / "HEAD", "ref: refs/heads/main\n")
         check = verify.check_pi_install_pinning(git_root, "pi", verify.CHANNEL_GIT)
