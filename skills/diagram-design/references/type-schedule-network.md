@@ -122,6 +122,7 @@ cannot be used to paint over a summary or task.
 
 The bounded static subset refuses duplicate attributes, SVG CSS/class/inline-style
 overrides, transforms, hidden/faint content, clips, masks, animation, nested SVGs
+and namespace-prefixed tags
 and unsupported scheduling metadata. Use the existing example page shell; this
 is intentionally not a general browser CSS evaluator. Rounded shafts are checked
 independently, then their orthogonal control hulls are used by the unchanged

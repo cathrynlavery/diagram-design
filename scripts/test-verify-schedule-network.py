@@ -277,6 +277,15 @@ class ScheduleTests(unittest.TestCase):
             with self.subTest(opacity=opacity):
                 self.assertEqual(self.check_source(changed), [])
 
+    def test_namespace_prefixed_text_cannot_replace_visible_labels(self):
+        # XML resolves this alias to SVG text, but HTML renders x:text as an
+        # unknown zero-width element. Check the actual authored tag too.
+        source = fixture().replace(
+            "<svg ", '<svg xmlns:x="http://www.w3.org/2000/svg" '
+        )
+        source = source.replace("<text ", "<x:text ").replace("</text>", "</x:text>")
+        self.assertTrue(self.check_source(source))
+
     def test_extra_lines_cannot_cover_summary(self):
         source = fixture()
         lines = "".join(

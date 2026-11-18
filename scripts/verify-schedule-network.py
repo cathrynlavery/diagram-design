@@ -138,6 +138,8 @@ class Attributes(HTMLParser):
         self.errors = []
 
     def handle_starttag(self, tag, attrs):
+        if ":" in tag:
+            self.errors.append("prefixed SVG/HTML tags can render as unknown elements")
         names = [a for a, _ in attrs]
         if len(names) != len(set(names)):
             self.errors.append(f"duplicate attribute on {tag}")
