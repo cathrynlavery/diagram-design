@@ -1,0 +1,52 @@
+# Threat Model
+
+Diagram Design is a skill for coding agents. The agent reads its instructions
+alongside the user's request and relevant project, diagram, or website content,
+then chooses which local files and tools to use. Those tools parse imports,
+write diagrams and profiles, and may fetch a user-selected website or run a
+browser for PNG export.
+
+Filesystem, process, and network restrictions depend on the agentic harness.
+Diagram Design does not provide a sandbox, cannot protect an already-compromised
+harness, and cannot narrow permissions that the operator intentionally grants.
+Keep these limitations in mind when working with untrusted data that may contain
+prompt-injection vectors.
+
+The current working directory is assumed to be trusted when diagram generation 
+begins.
+
+## Security expectations
+
+### Import and output pipeline
+
+- The agent may convert untrusted Markdown, JSON, or extracted diagram content
+  into HTML, which may later be exported to SVG. The outputs must remain
+  harmless and must not contain active JavaScript or other input-controlled
+  executable browser behavior.
+- Deterministic tools treat fields as data: they do not execute, render, or
+  fetch embedded content, and they resist injection and unintended file access.
+- Input, decompression, features, and output limits bound resource use.
+- A failure of these limits that causes only denial of service or resource
+  exhaustion is an ordinary reliability defect, not a security issue. Submit
+  availability-only fixes directly through the pull request process.
+- Untrusted source content handled by an `/import-*` command cannot introduce
+  active content into its output.
+- For untrusted standalone SVG input, the `--sanitize` path in
+  `scripts/export_svg.py` is the browser-content security boundary. An
+  export-stage XSS report must show that attacker-controlled active content
+  survives that sanitizer.
+- Generated files are static by default. Validation rejects JavaScript URLs,
+  event handlers, unsafe CSS, and unapproved external resources. Animated
+  diagrams may include only the repository's canonical motion script;
+  validation rejects modified, additional, or remote scripts.
+
+### Skill distribution, CI, and integrations
+
+- Packaging stops instead of publishing when a manifest, package path,
+  symlink, or required file is invalid to prevent malformed metadata from
+  silently changing which files reach users.
+- GitHub Actions workflows and their dependencies pass the zizmor security
+  audit enforced in CI.
+- Only maintainer-reviewed changes from `main` reach plugin users or the
+  gallery. Merging, disclosure, and release-sensitive changes remain human
+  decisions.
