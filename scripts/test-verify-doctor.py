@@ -405,9 +405,16 @@ def main() -> int:
             versionless_root, "claude-code", verify.CHANNEL_MARKETPLACE
         )
         expect_status(check, verify.WARN, "metadata.version")
+        undecodable_root = root / "plugins" / "undecodable"
+        undecodable_root.mkdir(parents=True)
+        (undecodable_root / "SKILL.md").write_bytes(b"metadata:\n  version: \xff\xfe\n")
+        check = verify.check_marketplace_version(
+            undecodable_root, "claude-code", verify.CHANNEL_MARKETPLACE
+        )
+        expect_status(check, verify.WARN, "metadata.version")
         check = verify.check_marketplace_version(root, None, verify.CHANNEL_MAINTAINER)
         expect_status(check, verify.PASS, "not applicable")
-        print("OK: marketplace version alignment advises, warns on unreadable metadata, and skips non-marketplace")
+        print("OK: marketplace version alignment advises, warns on missing or undecodable metadata, and skips non-marketplace")
 
         touch(git_root / ".git" / "HEAD", "ref: refs/heads/main\n")
         check = verify.check_pi_install_pinning(git_root, "pi", verify.CHANNEL_GIT)
@@ -415,11 +422,15 @@ def main() -> int:
         touch(git_root / ".git" / "HEAD", "0123456789abcdef0123456789abcdef01234567\n")
         check = verify.check_pi_install_pinning(git_root, "pi", verify.CHANNEL_GIT)
         expect_status(check, verify.PASS, "pinned")
+        (git_root / ".git" / "HEAD").write_bytes(b"ref: refs/heads/\xff\n")
+        check = verify.check_pi_install_pinning(git_root, "pi", verify.CHANNEL_GIT)
+        expect_status(check, verify.WARN, "Could not read .git/HEAD")
+        touch(git_root / ".git" / "HEAD", "0123456789abcdef0123456789abcdef01234567\n")
         check = verify.check_pi_install_pinning(git_root, "claude-code", verify.CHANNEL_GIT)
         expect_status(check, verify.PASS, "not pi")
         check = verify.check_pi_install_pinning(marketplace_root, "pi", verify.CHANNEL_MARKETPLACE)
         expect_status(check, verify.PASS, "not applicable")
-        print("OK: Pi pinning warns on branch refs and passes on pinned or non-git installs")
+        print("OK: Pi pinning warns on branch refs or an unreadable HEAD and passes on pinned or non-git installs")
 
         missing_skill_root = root / "cowork-broken"
         missing_skill_root.mkdir()
@@ -431,11 +442,16 @@ def main() -> int:
         )
         check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
         expect_status(check, verify.WARN, "public repository")
+        config_text = (git_root / ".git" / "config").read_text(encoding="utf-8")
+        (git_root / ".git" / "config").write_bytes(b"[remote \"origin\"]\n\turl = \xff\n")
+        check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
+        expect_status(check, verify.WARN, "Could not read .git/config")
+        touch(git_root / ".git" / "config", config_text)
         check = verify.check_cowork_mirror(marketplace_root, "cowork", verify.CHANNEL_MARKETPLACE)
         expect_status(check, verify.PASS, "resolves under Cowork")
         check = verify.check_cowork_mirror(missing_skill_root, None, verify.CHANNEL_COPIED)
         expect_status(check, verify.PASS, "not cowork")
-        print("OK: Cowork mirror check fails without skill resolution and warns on public-repo remotes")
+        print("OK: Cowork mirror check fails without skill resolution and warns on public-repo or unreadable remotes")
 
         check = verify.check_common_path_mistakes(
             missing_skill_root, unrelated_project, "claude-code", verify.CHANNEL_MARKETPLACE

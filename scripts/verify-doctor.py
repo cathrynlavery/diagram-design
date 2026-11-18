@@ -489,7 +489,10 @@ def read_skill_metadata_version(root: Path) -> str | None:
     skill = resolve_skill_file(root)
     if skill is None:
         return None
-    match = SKILL_VERSION_PATTERN.search(skill.read_text(encoding="utf-8"))
+    source = read_text_or_none(skill)
+    if source is None:
+        return None
+    match = SKILL_VERSION_PATTERN.search(source)
     if match is None:
         return None
     return match.group(1)
@@ -535,18 +538,33 @@ def check_marketplace_version(
     )
 
 
-def git_remote_urls(root: Path) -> list[str]:
+def read_text_or_none(path: Path) -> str | None:
+    """Read a UTF-8 file, returning None when it is unreadable or not valid UTF-8."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def git_remote_urls(root: Path) -> list[str] | None:
+    """Return remote URLs from .git/config, [] when absent, None when unreadable."""
     config = root / ".git" / "config"
     if not config.is_file():
         return []
-    return re.findall(r"url\s*=\s*(\S+)", config.read_text(encoding="utf-8"))
+    source = read_text_or_none(config)
+    if source is None:
+        return None
+    return re.findall(r"url\s*=\s*(\S+)", source)
 
 
 def git_head_ref(root: Path) -> str | None:
     head = root / ".git" / "HEAD"
     if not head.is_file():
         return None
-    return head.read_text(encoding="utf-8").strip()
+    source = read_text_or_none(head)
+    if source is None:
+        return None
+    return source.strip()
 
 
 def check_pi_install_pinning(root: Path, host: str | None, channel: str) -> CheckResult:
@@ -638,7 +656,18 @@ def check_cowork_mirror(root: Path, host: str | None, channel: str) -> CheckResu
             fix=mirror_fix,
         )
 
-    public_remotes = [url for url in git_remote_urls(root) if PUBLIC_REPO_SLUG in url]
+    remotes = git_remote_urls(root)
+    if remotes is None:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            message=(
+                "Could not read .git/config to determine whether this Cowork install "
+                "points directly at the public repository."
+            ),
+            fix=mirror_fix,
+        )
+    public_remotes = [url for url in remotes if PUBLIC_REPO_SLUG in url]
     if public_remotes:
         return CheckResult(
             name=name,
