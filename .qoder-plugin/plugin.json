@@ -21,7 +21,8 @@
     "plantuml",
     "import",
     "animation",
-    "semantic-patterns"
+    "semantic-patterns",
+    "schedule-network"
   ],
   "commands": "./commands/",
   "skills": "./skills/"
