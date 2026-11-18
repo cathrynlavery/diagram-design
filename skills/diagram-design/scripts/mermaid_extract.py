@@ -458,10 +458,22 @@ def _kind_and_direction(
     _fail("not a Mermaid file")
 
 
-def _top_level_mask(text: str) -> str:
+# Mermaid's flowchart lexer opens a string only at a double quote (a Markdown
+# string is "`...`"), so an apostrophe is label text: `A[Bob's box]`,
+# `A -->|it's| B`. Expanded `@{ ... }` attributes are YAML, where single
+# quotes do delimit values (`label: '['`), so the scanners switch to the
+# attribute quote set inside one. They count open `@{` entries alongside the
+# bracket stack, so that test stays constant-time at any nesting depth.
+FLOWCHART_QUOTES = "\"`"
+ATTRIBUTE_QUOTES = "\"'`"
+ATTRIBUTE_OPEN = "@{"
+
+
+def _top_level_mask(text: str, quotes: str = FLOWCHART_QUOTES) -> str:
     """Keep top-level syntax positions and blank quoted/bracketed content."""
     output = list(text)
     stack: list[str] = []
+    attributes = 0
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
@@ -475,17 +487,22 @@ def _top_level_mask(text: str) -> str:
             elif character == quote:
                 quote = None
             continue
-        if character in "\"'`":
+        if character in (ATTRIBUTE_QUOTES if attributes else quotes):
             quote = character
             output[index] = " "
             continue
         if character in "[({":
-            stack.append(character)
+            if character == "{" and text[index - 1 : index] == "@":
+                stack.append(ATTRIBUTE_OPEN)
+                attributes += 1
+            else:
+                stack.append(character)
             output[index] = " "
             continue
         if character in "])}":
-            if stack and stack[-1] == pairs[character]:
-                stack.pop()
+            if stack and stack[-1][-1] == pairs[character]:
+                if stack.pop() == ATTRIBUTE_OPEN:
+                    attributes -= 1
             output[index] = " "
             continue
         if stack:
@@ -493,8 +510,10 @@ def _top_level_mask(text: str) -> str:
     return "".join(output)
 
 
-def _split_top_level(text: str, delimiter: str) -> list[str]:
-    mask = _top_level_mask(text)
+def _split_top_level(
+    text: str, delimiter: str, quotes: str = FLOWCHART_QUOTES
+) -> list[str]:
+    mask = _top_level_mask(text, quotes)
     parts: list[str] = []
     start = 0
     for index, character in enumerate(mask):
@@ -508,10 +527,11 @@ def _split_top_level(text: str, delimiter: str) -> list[str]:
 def _statement_complete(text: str) -> bool:
     """Return whether quotes and node delimiters close within a statement."""
     stack: list[str] = []
+    attributes = 0
     quote: str | None = None
     escaped = False
     pairs = {"]": "[", ")": "(", "}": "{"}
-    for character in text:
+    for index, character in enumerate(text):
         if quote is not None:
             if escaped:
                 escaped = False
@@ -520,13 +540,18 @@ def _statement_complete(text: str) -> bool:
             elif character == quote:
                 quote = None
             continue
-        if character in "\"'`":
+        if character in (ATTRIBUTE_QUOTES if attributes else FLOWCHART_QUOTES):
             quote = character
         elif character in "[({":
-            stack.append(character)
+            if character == "{" and text[index - 1 : index] == "@":
+                stack.append(ATTRIBUTE_OPEN)
+                attributes += 1
+            else:
+                stack.append(character)
         elif character in "])}":
-            if stack and stack[-1] == pairs[character]:
-                stack.pop()
+            if stack and stack[-1][-1] == pairs[character]:
+                if stack.pop() == ATTRIBUTE_OPEN:
+                    attributes -= 1
     return quote is None and not stack
 
 
@@ -673,7 +698,7 @@ def _parse_expanded_attributes(text: str) -> tuple[str, str] | None:
     if not text.startswith("@{") or not text.endswith("}"):
         return None
     values: dict[str, str] = {}
-    for raw_attribute in _split_top_level(text[2:-1], ","):
+    for raw_attribute in _split_top_level(text[2:-1], ",", ATTRIBUTE_QUOTES):
         key, separator, raw_value = raw_attribute.partition(":")
         if not separator:
             continue
@@ -755,20 +780,29 @@ def _edge_operators(text: str) -> list[_Operator]:
     # `A<--yes-->B` or `A o--yes--o B`. The spaced form consumes exactly one
     # whitespace character next to each operator; any further padding falls
     # inside the label span, which `clean_label` strips, so the operator
-    # boundaries are never ambiguous. For the dash and equals forms, the
-    # compact label may not contain whitespace, and the operator characters
-    # themselves may not open one (keeping `A----->B` unlabeled and
-    # `A --o B --> C` two separate links). The dotted form's closing operator
-    # always opens with a literal `.`, which a dash/equals label can't
-    # produce, so its compact label may contain internal whitespace (as in
-    # `A-.next candidate.->B`) without that ambiguity.
+    # boundaries are never ambiguous.
+    #
+    # A compact dash or equals label may contain whitespace, including the
+    # blanks the mask writes over brackets, so `A==a b==>B` and `A--f(x)-->B`
+    # stay one labeled link. `-`, `=`, `.`, or `>` immediately after the
+    # opening still continues an unlabeled operator (`A----->B`). Mermaid's
+    # lexer always reads `x` or `o` immediately after `--` or `==` as that
+    # link's arrowhead, so a compact label cannot start with either letter:
+    # `A--x marks-->B`, `A--x marks -->B`, and `A--orders-->B` are two links
+    # through a `marks` or `rders` node, like `A --o B --> C`. Mermaid
+    # rejects `A--x(a)-->B` outright. A spaced label (`A-- x marks -->B`)
+    # is unaffected. The dotted form's closing operator always opens with a
+    # literal `.`, so its compact label may contain internal whitespace and
+    # start with `x` or `o` (as in `A-.x y.->B`). An opening never starts
+    # inside a longer operator, so `A --- B-->C` stays two links.
     text_edge = re.compile(
         r"(?P<opening>"
         r"<(?:--|==)"
         r"|(?<![\w.:-])[xo](?:--|==)"
-        r"|(?:--|==)"
+        r"|(?<![-=])(?:--|==)"
         r")"
-        r"(?:\s(?P<spaced>.+?)\s|(?![-=.\s])(?P<compact>[^\s|<>]+?))"
+        r"(?![-=.>xo])"
+        r"(?:\s(?P<spaced>.+?)\s|(?P<compact>[^|<>]+?))"
         r"(?P<closing>-{2,}>|--[xo]|=+>|={2,}|-{3,})"
     )
     dotted_edge = re.compile(
@@ -818,11 +852,17 @@ def _edge_operators(text: str) -> list[_Operator]:
             occupied.append((operator_start, match.end()))
 
     # A dotted link grows by dots: `-.->`, `-..->`, `-...->` and `-.-`, `-..-`.
+    # A single dash before x/o belongs to a node id such as `node-x`.
     pattern = re.compile(
-        r"[xo][-=.]+[xo]|<[-=.]+>|-+\.+-+>|=+>|-+(?:>|x|o)|-+\.+-+|={3,}|-{3,}|~{3,}"
+        r"[xo][-=.]{2,}[xo]|<[-=.]+>|-+\.+-+>|=+>|-+>|-{2,}[xo]|={2,}[xo]|-+\.+-+|={3,}|-{3,}|~{3,}"
     )
     for match in pattern.finditer(mask):
-        if any(start <= match.start() < end for start, end in occupied):
+        # Overlap, not just a contained start. An unlabeled token can begin
+        # before a labeled operator and end inside it — `Ao-.x y.->B` offers
+        # `o-.x` to `[xo][-=.]{2,}[xo]`, one character ahead of the `-.x y.->`
+        # span already claimed above. Keeping both cuts the line into
+        # segments that no longer reconstruct it.
+        if any(match.start() < end and start < match.end() for start, end in occupied):
             continue
         token = match.group()
         end = match.end()
@@ -856,6 +896,9 @@ def _endpoint_group(
         if parsed is None:
             return None
         node_id, label, shape = parsed
+        # A link token outside any shape means a link that did not parse.
+        if shape != "asymmetric" and re.search(r"--|==|-\.|\s[-=][xo]", _top_level_mask(raw)):
+            return None
         diagram.add_node(node_id, label, shape, parent)
         identifiers.append(node_id)
     return identifiers or None
@@ -972,12 +1015,29 @@ def _parse_flowchart(
                             operator.undirected,
                         )
             continue
-        if re.search(r"(?:--|==|-.).*?(?:>|x|o|-)", _top_level_mask(text)):
-            _fail(f"malformed edge at line {line_number}")
         parsed = _parse_node_expression(text)
-        if parsed is not None:
+        # The mask blanks shaped labels, so a link token left in it sits
+        # outside any shape. The asymmetric `>` opener is not masked.
+        masked = _top_level_mask(text)
+        malformed_link = re.search(
+            r"(?:--|==|-\.).*?(?:>|x|o|-)|\s[-=][xo]",
+            masked,
+        )
+        bare_link_start = re.search(r"--|==|-\.", masked)
+        if parsed is not None and not (
+            parsed[2] != "asymmetric" and (malformed_link or bare_link_start)
+        ):
             node_id, label, shape = parsed
             diagram.add_node(node_id, label, shape, parent)
+            continue
+        if (
+            malformed_link
+            or bare_link_start
+            # Not a node but link-like (`A- >B`): fail instead of dropping it.
+            # The dot matches any character on purpose.
+            or (parsed is None and re.search(r"(?:==|-.).*?(?:>|x|o|-)", masked))
+        ):
+            _fail(f"malformed edge at line {line_number}")
     if invisible_links:
         diagram.notes.append(f"{invisible_links} invisible layout links ignored")
 

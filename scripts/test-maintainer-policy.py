@@ -7,7 +7,9 @@ runs on a pull request head is the same suite CI enforces. Every
 ``verify-*.py`` script must also have a registered CI gate and an adversarial
 ``test-verify-*.py`` gate. The two older exceptions below have their own test
 arrangement. This prevents a new diagram contract from being implemented but
-omitted from continuous checking.
+omitted from continuous checking. In a job that writes the
+``$GITHUB_STEP_SUMMARY`` table, every step ``id`` must also have a row, so a
+failing gate is never missing from the table that explains the failure.
 
 The set of CI gates is derived from the workflow's ``run:`` steps with these
 rules:
@@ -73,6 +75,8 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-doctor.py",
     "python3 scripts/test-verify-polar.py",
     "python3 scripts/verify-polar.py",
+    "python3 scripts/test-verify-unit-grid.py",
+    "python3 scripts/verify-unit-grid.py --all",
     "python3 scripts/verify-sankey.py --all",
     "python3 scripts/test-verify-sankey.py",
     "python3 scripts/verify-streamgraph.py --all",
@@ -87,6 +91,7 @@ REQUIRED_COMMANDS = {
     "python3 scripts/test-verify-box-plot.py",
     "python3 scripts/verify-arc-diagram.py --all",
     "python3 scripts/test-verify-arc-diagram.py",
+    "python3 scripts/test-css-string-scan.py",
     "python3 scripts/verify-skin-polarity.py --all",
     "python3 scripts/test-verify-skin-polarity.py",
     "python3 scripts/verify-architecture-delta.py --all",
@@ -348,6 +353,62 @@ def verifier_coverage_failures(commands: set[str], scripts: set[str]) -> list[st
         ):
             failures.append(f"{test_filename} has no registered CI gate")
     return failures
+
+
+JOB_HEADER = re.compile(r"^  (?P<job>[A-Za-z0-9_-]+):\s*$")
+STEP_ID = re.compile(r"^\s+(?:-\s+)?id:\s*(?P<id>[A-Za-z_][\w-]*)\s*$")
+SUMMARY_OUTCOME = re.compile(r"steps\.(?P<id>[A-Za-z_][\w-]*)\.outcome")
+
+
+def summary_row_failures(workflow: str) -> list[str]:
+    """Every step id in a job that writes a summary table has a row, and back.
+
+    A gate without a row fails the job while the table leaves out why.
+    """
+    jobs: dict[str, list[str]] = {}
+    current: list[str] | None = None
+    in_jobs = False
+    for line in workflow.splitlines():
+        if not line.startswith(" ") and line.strip():
+            in_jobs = line.rstrip() == "jobs:"
+            current = None
+            continue
+        header = JOB_HEADER.match(line) if in_jobs else None
+        if header:
+            current = jobs.setdefault(header.group("job"), [])
+            continue
+        if current is not None:
+            current.append(line)
+    failures: list[str] = []
+    for job, lines in jobs.items():
+        body = "\n".join(lines)
+        if "GITHUB_STEP_SUMMARY" not in body:
+            continue
+        ids = [match.group("id") for match in map(STEP_ID.match, lines) if match]
+        rows = set(SUMMARY_OUTCOME.findall(body))
+        for step in ids:
+            if step not in rows:
+                failures.append(f"ci.yml job '{job}': step id '{step}' has no row in the summary table")
+        for step in sorted(rows - set(ids)):
+            failures.append(f"ci.yml job '{job}': summary row reads steps.{step} but no step has that id")
+    return failures
+
+
+SUMMARY_JOB = """\
+jobs:
+  validate:
+    steps:
+      - name: Verify one thing
+        if: always()
+        id: one
+        run: python scripts/verify-one.py
+
+      - name: Generate CI execution summary table
+        if: always()
+        run: |
+          echo "| Verification Gate | Outcome |" >> $GITHUB_STEP_SUMMARY
+          echo "| One | ${{ steps.one.outcome }} |" >> $GITHUB_STEP_SUMMARY
+"""
 
 
 SYNTHETIC_POLICY_COMMANDS = [
@@ -673,6 +734,22 @@ def self_test() -> list[str]:
         ("unregistered adversarial test", {"verify-waterfall.py", "test-verify-waterfall.py"},
          {"python3 scripts/verify-waterfall.py --all"}, "test-verify-waterfall.py has no registered CI gate"),
     )
+    row = '          echo "| One | ${{ steps.one.outcome }} |" >> $GITHUB_STEP_SUMMARY\n'
+    summary_cases = (
+        ("every step id has a summary row", SUMMARY_JOB, None),
+        ("step id without a summary row", SUMMARY_JOB.replace(row, ""),
+         "ci.yml job 'validate': step id 'one' has no row in the summary table"),
+        ("summary row for a missing step id", SUMMARY_JOB.replace("id: one", "id: two"),
+         "summary row reads steps.one but no step has that id"),
+        ("job without a summary table",
+         SUMMARY_JOB.replace(row, "").replace("$GITHUB_STEP_SUMMARY", "/dev/null"), None),
+    )
+    for name, workflow, expected in summary_cases:
+        failures = summary_row_failures(workflow)
+        if expected is None and failures:
+            problems.append(f"self-test '{name}': expected no failures, got {failures}")
+        elif expected is not None and not any(expected in failure for failure in failures):
+            problems.append(f"self-test '{name}': expected {expected!r}, got {failures}")
     for name, scripts, commands, expected in coverage_cases:
         failures = verifier_coverage_failures(commands, scripts)
         if expected is None and failures:
@@ -693,6 +770,7 @@ def main() -> int:
     policy = json.loads(POLICY.read_text(encoding="utf-8"))
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
     failures = policy_failures(policy, workflow)
+    failures.extend(summary_row_failures(workflow))
     failures.extend(verifier_coverage_failures(
         set(policy["gates"]["local_commands"]), {path.name for path in SCRIPTS.glob("*.py")}
     ))
