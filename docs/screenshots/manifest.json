@@ -469,6 +469,15 @@
       "screenshot_sha256": "0aa355eabdc6ccc6d33becb8b287a3c2245fc094353d6ae247e0d654398990fb",
       "width": 2076,
       "height": 810
+    },
+    {
+      "slug": "schedule-network",
+      "source": "skills/diagram-design/assets/example-schedule-network.html",
+      "screenshot": "docs/screenshots/schedule-network.png",
+      "source_sha256": "b5694bbc7a480455d4059c7e839127d2fc3f08d7dd0ffdee225c443b4d5fe7dd",
+      "screenshot_sha256": "3cd3fbc30a9f742ae63be793ca6f175b99438da7a762555b428a35e620d79abe",
+      "width": 2400,
+      "height": 1440
     }
   ]
 }
