@@ -253,6 +253,38 @@ class ScheduleTests(unittest.TestCase):
             with self.subTest(route=new):
                 self.assertTrue(self.check_source(source.replace(old, new)))
 
+    def test_invisible_task_borders_are_rejected(self):
+        source = fixture()
+        # Put the transparent stroke on the border, rather than hiding text.
+        for opacity in ("0", "0.01", "0%", "0.0"):
+            changed = re.sub(
+                r'(<rect x="[^>]+)(/>)',
+                rf'\g<1> stroke-opacity="{opacity}"\g<2>',
+                source,
+            )
+            with self.subTest(opacity=opacity):
+                self.assertNotEqual(changed, source)
+                self.assertTrue(self.check_source(changed))
+
+    def test_visible_border_opacity_remains_valid(self):
+        source = fixture()
+        for opacity in ("1", "100%"):
+            changed = re.sub(
+                r'(<rect x="[^>]+)(/>)',
+                rf'\g<1> stroke-opacity="{opacity}"\g<2>',
+                source,
+            )
+            with self.subTest(opacity=opacity):
+                self.assertEqual(self.check_source(changed), [])
+
+    def test_extra_lines_cannot_cover_summary(self):
+        source = fixture()
+        lines = "".join(
+            f'<line x1="48" x2="260" y1="{y}" y2="{y}" stroke="#2d3142" stroke-width="4"/>'
+            for y in range(32, 53, 4)
+        )
+        self.assertTrue(self.check_source(source.replace("</svg>", lines + "</svg>")))
+
     def test_missing_backdrop_reports_a_finding(self):
         source = fixture().replace(
             '<rect width="1200" height="720" fill="#f5f5f5"/>', ""

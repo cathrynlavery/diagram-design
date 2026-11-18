@@ -115,6 +115,11 @@ Run `python3 scripts/verify-schedule-network.py --all` and
 render and geometry gates still apply. The new checker only claims Schedule
 network files; sibling visual types retain their own checks.
 
+Task border strokes must remain visible, including their effective stroke
+opacity. The Schedule network subset has no standalone `<line>` marks; use
+only the two explicitly typed arrow paths per precedence link. Extra lines
+cannot be used to paint over a summary or task.
+
 The bounded static subset refuses duplicate attributes, SVG CSS/class/inline-style
 overrides, transforms, hidden/faint content, clips, masks, animation, nested SVGs
 and unsupported scheduling metadata. Use the existing example page shell; this

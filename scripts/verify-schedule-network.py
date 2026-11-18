@@ -17,7 +17,12 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
-from verify_static_svg_visibility import check_static_svg, local, rectangle
+from verify_static_svg_visibility import (
+    check_static_svg,
+    local,
+    paint_visible,
+    rectangle,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
@@ -274,6 +279,10 @@ def check_source(source: str) -> list[str]:
         raise ValueError("duration unit must be 1..8 lowercase letters")
     declared_finish = decimal(svg.get("data-project-duration", ""), aggregate=True)
     for node in svg.iter():
+        if local(node.tag) == "line":
+            raise ValueError(
+                "Schedule network permits only typed arrow paths, not unrelated lines"
+            )
         if any(k.startswith("data-") and k not in DATA for k in node.attrib):
             raise ValueError("unsupported scheduling data/constraint")
         if "style" in node.attrib or "class" in node.attrib:
@@ -373,6 +382,8 @@ def check_source(source: str) -> list[str]:
             "2" if critical else "1"
         ):
             errors.append(f"{id}: task border must encode critical status in ink")
+        if not paint_visible([rect, node, svg], "stroke"):
+            errors.append(f"{id}: task border stroke must be visible")
         fields = {}
         for child in node:
             if local(child.tag) == "rect":
