@@ -66,6 +66,7 @@ EXPECTED_MANIFESTS = {
     ".codex-plugin/plugin.json",
     ".factory-plugin/plugin.json",
     ".qoder-plugin/plugin.json",
+    ".muse-plugin/plugin.json",
 }
 
 REQUIRED_COMMANDS = {

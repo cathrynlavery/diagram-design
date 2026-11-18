@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "name": "diagram-design",
+  "displayName": "Diagram Design",
+  "version": "2.6.164",
+  "description": "Editorial diagrams in your brand, as self-contained HTML and SVG. Architecture, flowcharts, sequence, state machines, ER and database schemas, timelines, swimlanes, org charts, Gantt, Wardley maps, user journeys, service blueprints, UML class, lifecycle phase maps, and charts from bar, line and scatter to Sankey, treemap and heatmap, plus many more. Redraws draw.io, Mermaid, Excalidraw and PlantUML files. Exports SVG and PNG.",
+  "compat": {
+    "source": "native",
+    "manifestDir": ".muse-plugin"
+  },
+  "capabilities": {
+    "skills": [
+      {
+        "id": "diagram-design",
+        "path": "skills/diagram-design/SKILL.md",
+        "enabledDefault": true
+      }
+    ],
+    "commands": [
+      {
+        "id": "doctor",
+        "path": "commands/doctor.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "export-diagram",
+        "path": "commands/export-diagram.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "import-drawio",
+        "path": "commands/import-drawio.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "import-excalidraw",
+        "path": "commands/import-excalidraw.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "import-mermaid",
+        "path": "commands/import-mermaid.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "import-plantuml",
+        "path": "commands/import-plantuml.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "profile",
+        "path": "commands/profile.md",
+        "enabledDefault": true
+      }
+    ],
+    "hooks": [],
+    "mcpServers": [],
+    "reminders": []
+  }
+}
