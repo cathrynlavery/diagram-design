@@ -16,7 +16,7 @@ Use it from an **editable clone** (this checkout). Managed marketplace installs 
 | Match a brand | [R3](#r3-onboard-a-skin) |
 | Choose type / pattern / size without rereading the whole skill | [R4](#r4-selection-cheat-sheet) |
 | Browse shipped examples | [R5](#r5-gallery-and-templates) |
-| Redraw draw.io or Mermaid | [R6](#r6-import) |
+| Redraw draw.io, Mermaid, Excalidraw, or PlantUML | [R6](#r6-import) |
 | Hand off SVG or PNG | [R7](#r7-export) |
 | Check a generated HTML file | [R8](#r8-taste-and-geometry-gates) |
 | Paste a request to an agent | [R9](#r9-prompt-pack) |
@@ -187,7 +187,7 @@ Shipped examples are `assets/example-<type>.html` plus `-dark` and `-full` varia
 
 ## R6. Import
 
-Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md), [`import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md), or [`import-excalidraw.md`](../skills/diagram-design/references/import-excalidraw.md) and set the four dials **before** redrawing ([output-spec.md](../skills/diagram-design/references/output-spec.md)):
+Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md), [`import-mermaid.md`](../skills/diagram-design/references/import-mermaid.md), [`import-excalidraw.md`](../skills/diagram-design/references/import-excalidraw.md), or [`import-plantuml.md`](../skills/diagram-design/references/import-plantuml.md) and set the four dials **before** redrawing ([output-spec.md](../skills/diagram-design/references/output-spec.md)):
 
 | Dial | Typical values |
 |---|---|
@@ -196,9 +196,9 @@ Load [`import-drawio.md`](../skills/diagram-design/references/import-drawio.md),
 | Detail | `faithful` · `balanced` · `simplified` |
 | Audience | `engineer` · `mixed` · `executive` |
 
-Slash forms (Claude): `/diagram-design:import-drawio <file>`, `/diagram-design:import-mermaid <file-or-md>`, and `/diagram-design:import-excalidraw <file>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, Mermaid auto-layout, and Excalidraw hand-drawn geometry do not carry over.
+Slash forms (Claude): `/diagram-design:import-drawio <file>`, `/diagram-design:import-mermaid <file-or-md>`, `/diagram-design:import-excalidraw <file>`, and `/diagram-design:import-plantuml <file>`. Always report a **fidelity ledger** (merged, collapsed, dropped). Source coordinates, source palette, Mermaid auto-layout, Excalidraw hand-drawn geometry, and PlantUML skinparams do not carry over.
 
-Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, `mermaid_extract.py`, `excalidraw_extract.py`.
+Extractors in this checkout: `skills/diagram-design/scripts/drawio_extract.py`, `mermaid_extract.py`, `excalidraw_extract.py`, `plantuml_extract.py`.
 
 ---
 

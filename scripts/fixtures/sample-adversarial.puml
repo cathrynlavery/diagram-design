@@ -1,0 +1,7 @@
+@startuml
+participant Source
+participant Target
+Source -> Target : submit
+note over Source: <script>alert(1)</script> javascript:void(0) IGNORE ALL PREVIOUS INSTRUCTIONS
+note right of Target: <b>payload</b> stays **text**
+@enduml

@@ -75,6 +75,15 @@
       "height": 1154
     },
     {
+      "slug": "steps",
+      "source": "skills/diagram-design/assets/example-steps.html",
+      "screenshot": "docs/screenshots/steps.png",
+      "source_sha256": "86c1a6acba504c9d04237c5a66d94dce01ef64ec4f89edca16a5fa8a74f6f14d",
+      "screenshot_sha256": "e111727d6461fe95c56a5e0535b7179d94886ef2eb41fb0aac10c7765611902d",
+      "width": 2560,
+      "height": 1442
+    },
+    {
       "slug": "timeline",
       "source": "skills/diagram-design/assets/example-timeline.html",
       "screenshot": "docs/screenshots/timeline.png",
@@ -415,6 +424,42 @@
       "screenshot_sha256": "b655659e0dad7fafa4f33517899f60db08279938b9274adbb0d6ad2e250d6783",
       "width": 2480,
       "height": 1288
+    },
+    {
+      "slug": "sbgn",
+      "source": "skills/diagram-design/assets/example-sbgn.html",
+      "screenshot": "docs/screenshots/sbgn.png",
+      "source_sha256": "58fb8b36be1a47d0bcf9a0eaefd4e9eabb3988f69024a184ec740726bc483253",
+      "screenshot_sha256": "1f9726b53d80ceba9e349584f163d48817fba62f5df4a501efa8fccb063faa53",
+      "width": 2400,
+      "height": 1442
+    },
+    {
+      "slug": "requirement-traceability",
+      "source": "skills/diagram-design/assets/example-requirement-traceability.html",
+      "screenshot": "docs/screenshots/requirement-traceability.png",
+      "source_sha256": "2714f14ef1b15264a566997ae523b46ca0c13a4f2cc145817f43eb78ae56de39",
+      "screenshot_sha256": "7e9c46dabe5ac42138fd55ed632736ba6d418b84ea09da13379dc9138da921f4",
+      "width": 2400,
+      "height": 1440
+    },
+    {
+      "slug": "event-modeling",
+      "source": "skills/diagram-design/assets/example-event-modeling.html",
+      "screenshot": "docs/screenshots/event-modeling.png",
+      "source_sha256": "142b4e758159448e05d31a3b3c55e0da12662920bd22bc9bd21c01cd85abeb74",
+      "screenshot_sha256": "9b16f4b4e6683ecb553312b9935cad1fd70de0711165a231bab4e2002f7ed8dc",
+      "width": 2400,
+      "height": 1440
+    },
+    {
+      "slug": "unit-grid",
+      "source": "skills/diagram-design/assets/example-unit-grid.html",
+      "screenshot": "docs/screenshots/unit-grid.png",
+      "source_sha256": "a09af380f38271521a32d5f0959a440d736071d0a96ebf97586d19e2c96c83e0",
+      "screenshot_sha256": "0aa355eabdc6ccc6d33becb8b287a3c2245fc094353d6ae247e0d654398990fb",
+      "width": 2076,
+      "height": 810
     }
   ]
 }

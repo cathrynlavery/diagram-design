@@ -57,7 +57,11 @@ Ten invariants:
 8. BOUND LABELS - each series carries exactly one <text data-name> whose
    data-name and printed text both match the series, on the series' row
    and on the label rail left of the value axis. dx/dy, a positioned
-   <tspan>, and a hiding attribute are refused.
+   <tspan>, and a hidden label are refused: display, visibility, opacity
+   or fill-opacity from an attribute, inline style or <style> rule on the
+   label, its <tspan>, a group around it or the page. There is no cascade, so a
+   label that restores its own visibility under a hiding group is still
+   refused.
 
 9. UNPOSITIONED GEOMETRY - every coordinate read here is a raw attribute.
    A `transform` attribute, an inline `style`, or a rule in a <style> block
@@ -72,7 +76,11 @@ Ten invariants:
    display, visibility or opacity on itself, a group around it, the <svg>
    or a page element around that. An attribute, an inline style and a
    <style> rule all count; a rule's selector is held to the element it
-   names, and a type-only rule reaches every element of that type.
+   names, and a type-only rule reaches every element of that type. Nor is a
+   bound box, median, whisker or cap whose own stated paint draws it nothing:
+   a colour of `none`, or a stroke-width, stroke-opacity or fill-opacity of 0,
+   leaves coordinates for a mark no reader sees. A channel the mark does not
+   state may be inherited, so it counts as drawn.
 
 10. FAIL CLOSED - a file that presents as a box plot but yields fewer than
    three series on three distinct medians is a finding, never a pass. Three
@@ -93,6 +101,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import colorsys
 import html
@@ -104,21 +114,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
-CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-RECT_RE = re.compile(r"<rect\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
-TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>",
+# One unit of a tag's inside, read as the HTML tokenizer does: a separator
+# (ASCII whitespace or `/`), or one attribute. A name runs to whitespace, `/`,
+# `>` or `=`; a quoted value opens only right after `name=`, so a `>` in it
+# does not end the tag; an unquoted value runs to whitespace or `>`, quotes
+# and all. The lookaheads keep every name and value whole, so each input has
+# one parse and a tag with no end fails in linear time.
+TAG_BODY = (
+    r"""(?:[\t\n\f\r /]|[^\t\n\f\r />][^\t\n\f\r />=]*(?![^\t\n\f\r />=])"""
+    r"""(?:[\t\n\f\r ]*=[\t\n\f\r ]*(?:"[^"]*"|'[^']*'"""
+    r"""|[^\t\n\f\r >"'][^\t\n\f\r >]*(?![^\t\n\f\r >])|(?=>))"""
+    r"""|(?![\t\n\f\r ]*=)))"""
+)
+CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+RECT_RE = re.compile(r"<rect\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+LINE_RE = re.compile(r"<line\b(?P<attrs>" + TAG_BODY + r"*?)/?>", re.IGNORECASE)
+TEXT_RE = re.compile(r"<text\b(?P<attrs>" + TAG_BODY + r"*)>(?P<body>.*?)</text>",
                      re.IGNORECASE | re.DOTALL)
-G_OPEN_RE = re.compile(r"<g\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
+G_OPEN_RE = re.compile(r"<g\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 G_CLOSE_RE = re.compile(r"</g\s*>", re.IGNORECASE)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
-NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
+NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b" + TAG_BODY + r"*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
-GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>",
+GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>",
                            re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
-STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>",
+STYLE_RE = re.compile(r"<style\b" + TAG_BODY + r"*>(?P<body>.*?)</style>",
                       re.IGNORECASE | re.DOTALL)
 CSS_MOVES_MARK_RE = re.compile(
     r"(?:^|[{;}\n])\s*(?:-(?:webkit|moz|ms|o)-)?"
@@ -141,10 +162,10 @@ FORBIDDEN_RE = re.compile(
     r"<(?P<tag>use|set|animate[\w-]*|foreignobject)\b",
     re.IGNORECASE,
 )
-LINK_RE = re.compile(r"<link\b(?P<attrs>[^>]*)>", re.IGNORECASE)
-TSPAN_RE = re.compile(r"<tspan\b(?P<attrs>[^>]*)>", re.IGNORECASE)
+LINK_RE = re.compile(r"<link\b(?P<attrs>" + TAG_BODY + r"*)>", re.IGNORECASE)
+TSPAN_RE = re.compile(r"<tspan\b(?P<attrs>" + TAG_BODY + r"*)>", re.IGNORECASE)
 NONRENDER_OPEN_RE = re.compile(
-    r"<(?P<tag>defs|symbol|clipPath|mask|pattern|marker)\b[^>]*?(?P<selfclose>/?)>",
+    r"<(?P<tag>defs|symbol|clipPath|mask|pattern|marker)\b" + TAG_BODY + r"*?(?P<selfclose>/?)>",
     re.IGNORECASE,
 )
 NONRENDER_CLOSE_RE = re.compile(
@@ -161,15 +182,22 @@ HIDE_DECL_RE = re.compile(
     r"\s*:\s*([^;}{]+)",
     re.IGNORECASE,
 )
-TAG_RE = re.compile(r"<[^>]+>")
-OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>[^>]*)>")
+TAG_RE = re.compile(r"<" + TAG_BODY + r"+>")
+OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>" + TAG_BODY + r"*)>")
 NON_MARK_TAGS = {"text", "tspan", "title", "desc"}
 NUMBER_RE = re.compile(
     r"[-+]?(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?"
 )
 DIGIT_RE = re.compile(r"\d")
+# An attribute as the HTML tokenizer reads it: a quoted value, an unquoted
+# value (`display=none`), or no value at all (`<div hidden>`), which a
+# browser treats as present with an empty value. An unquoted value ends only
+# at whitespace or `>`, and a name at whitespace, `/`, `=` or `>` (a quote is
+# part of it), as in TAG_BODY. Whitespace is ASCII only, as in HTML: a
+# no-break space is a value character.
 ATTR_RE = re.compile(
-    r"""(?P<name>[\w:-]+)\s*=\s*(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+    r"""(?P<name>[^\t\n\f\r />][^\t\n\f\r />=]*)(?:[\t\n\f\r ]*=[\t\n\f\r ]*"""
+    r"""(?:(?P<quote>["'])(?P<value>.*?)(?P=quote)|(?P<bare>[^\t\n\f\r >]*)))?""",
     re.DOTALL,
 )
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
@@ -278,12 +306,73 @@ def blank_comments(source: str) -> str:
 
 
 def blank_css_comments(css: str) -> str:
-    """CSS with every `/* ... */` replaced by whitespace a browser would see.
+    """CSS with quoted data blanked and every comment replaced by whitespace a browser would see.
 
     Newlines inside the comment are kept so a match still counts lines.
     """
-    return CSS_COMMENT_RE.sub(
-        lambda found: " " + "\n" * found.group().count("\n"), css)
+    return blank_comments_outside_strings(blank_css_strings(css))
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 def attrs_of(raw: str) -> dict:
@@ -291,7 +380,8 @@ def attrs_of(raw: str) -> dict:
     for match in ATTR_RE.finditer(raw):
         name = match.group("name").lower()
         if name not in found:
-            found[name] = html.unescape(match.group("value"))
+            value = match.group("value") if match.group("quote") else match.group("bare")
+            found[name] = html.unescape(value or "")
     return found
 
 
@@ -370,7 +460,7 @@ def transform_carrier(attrs: dict, sizes: bool = False):
     style = attrs.get("style")
     if style is None:
         return None
-    plain_style = blank_css_comments(style)
+    plain_style = blank_css_comments(blank_css_strings(style))
     if "\\" in plain_style:
         return "style=%r (a backslash escape)" % style
     for found in CSS_MOVES_MARK_RE.finditer(plain_style):
@@ -472,7 +562,7 @@ def check_transforms(source: str, findings: list, name: str) -> None:
                 "an escaped selector can rename the element a size rule reaches"
                 % where
             )
-        elif css_moves_mark(css, boxes) is not None:
+        elif css_moves_mark(blank_css_strings(match.group("body")), boxes) is not None:
             findings.append(
                 "%s: a <style> rule positions a mark with CSS "
                 "(transform/translate/rotate/scale, a geometry or box-size "
@@ -522,6 +612,70 @@ def lines_with_role(body: str, role: str) -> list:
         if attrs.get("data-role") == role:
             found.append(attrs)
     return found
+
+
+# A bound mark is read from its coordinates, so a mark whose own paint draws
+# nothing is a summary a reader never sees. These helpers read only what the
+# element states for itself, from its attributes and inline style; a rule in a
+# <style> block, an inherited channel, and a colour hidden by its alpha rather
+# than spelled `none` are all held to paint.
+STROKED_MARKS = {"line", "path", "polygon", "polyline"}
+PAINTED_MARKS = STROKED_MARKS | {"rect"}
+NO_COLOUR = {"none", "transparent"}
+CHANNEL_PROPS = {
+    # Channel -> the colour that fills it, then the sizes that stop it at 0.
+    "fill": ("fill", ("fill-opacity",)),
+    "stroke": ("stroke", ("stroke-width", "stroke-opacity")),
+}
+
+
+def stated_value(attrs: dict, prop: str):
+    """The value this element states for one paint property, inline style last.
+
+    An inline style overrides the presentation attribute, so the style's last
+    declaration wins, unless an earlier declaration is `!important`: then only
+    a later `!important` can take the property from it. With no style
+    declaration the attribute stands.
+    """
+    value, important = attrs.get(prop), False
+    for match in re.finditer(r"(?:^|[{;])\s*%s\s*:\s*([^;{}]+)" % re.escape(prop),
+                             blank_css_comments(attrs.get("style", "")), re.IGNORECASE):
+        declared = match.group(1)
+        priority = re.search(r"!\s*important\s*$", declared, re.IGNORECASE)
+        if important and priority is None:
+            continue
+        value, important = declared.split("!")[0], priority is not None
+    return value.strip().lower() if value is not None else None
+
+
+def channel_paints(attrs: dict, channel: str) -> bool:
+    """Does this element state paint that draws one channel of itself?
+
+    A channel it does not state may be inherited, so it counts as drawing. A
+    colour of `none` or `transparent` paints nothing, a zero width or opacity
+    paints nothing, and a size this checker cannot read is held to paint.
+    """
+    colour, sizes = CHANNEL_PROPS[channel]
+    if stated_value(attrs, colour) in NO_COLOUR:
+        return False
+    for prop in sizes:
+        size = number((stated_value(attrs, prop) or "").rstrip("%"))
+        if size is not None and size <= 0:
+            return False
+    return True
+
+
+def bound_mark_draws(tag: str, attrs: dict) -> bool:
+    """Does a bound mark state paint that draws it?
+
+    A rect draws through either channel — a hollow box with no stroke is still
+    a box. A stroked shape draws only through its stroke.
+    """
+    if tag == "rect":
+        return channel_paints(attrs, "fill") or channel_paints(attrs, "stroke")
+    if tag in STROKED_MARKS:
+        return channel_paints(attrs, "stroke")
+    return True
 
 
 def declared_paints(style: str) -> list:
@@ -794,7 +948,7 @@ def declares_hidden(css: str, opacities) -> bool:
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
              "meta", "source", "track", "wbr"}
 ANY_TAG_RE = re.compile(
-    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>")
+    r"<(?P<close>/?)(?P<tag>[A-Za-z][\w:-]*)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>")
 
 
 def svg_ancestors(source: str) -> list:
@@ -869,6 +1023,24 @@ def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
     return False
 
 
+TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
+
+
+def tspan_chains(body: str, chain: list) -> list:
+    """(tokens, strict ancestors) for every <tspan> in a label, nested ones included."""
+    found, stack = [], []
+    for tag in TSPAN_TAG_RE.finditer(body):
+        if tag.group("close"):
+            if stack:
+                stack.pop()
+            continue
+        tokens = element_tokens(attrs_of(tag.group("attrs")))
+        found.append((tokens, chain + stack))
+        if not tag.group("selfclose"):
+            stack.append(("tspan", tokens))
+    return found
+
+
 def positioned_tspan(body: str) -> bool:
     for match in TSPAN_RE.finditer(body):
         attrs = attrs_of(match.group("attrs"))
@@ -934,6 +1106,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
     groups = groups_of(source)
     # fail closed: no cascade, so a later rule that restores visibility does not clear a hide
     hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)))
+    label_hide_rules = selector_rules(
+        source, lambda css: declares_hidden(css, ("opacity", "fill-opacity")))
     accent_rules = selector_rules(source, lambda css: any(
         is_accent(value, accent_vars) for value in declared_paints(css)))
     page = svg_ancestors(source)
@@ -964,6 +1138,17 @@ def parse_series(source: str, findings: list, name: str) -> list:
               if hides(attrs_of(group.group("attrs")), ("opacity",))
               or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
                              around[group.start()], hide_rules)]
+    # A label is drawn by its fill, so fill-opacity 0 on it or anything
+    # around it hides it too, though a box with fill-opacity 0 still draws.
+    text_opacities = ("opacity", "fill-opacity")
+    page_hides_labels = any(hides(attrs, text_opacities)
+                            or css_matches(tag, outer[index][1], outer[:index], label_hide_rules)
+                            for index, (tag, attrs) in enumerate(page))
+    label_hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
+                    for group in groups
+                    if hides(attrs_of(group.group("attrs")), text_opacities)
+                    or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
+                                   around[group.start()], label_hide_rules)]
     svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
@@ -1010,6 +1195,24 @@ def parse_series(source: str, findings: list, name: str) -> list:
                 % (where, attrs["data-name"])
             )
             continue
+        # A mark that paints nothing still passes the geometry below: it is a
+        # five-number summary no reader sees.
+        for mark in OPEN_TAG_RE.finditer(body):
+            mattrs = attrs_of(mark.group("attrs"))
+            role = mattrs.get("data-role", "").strip().lower()
+            tag = mark.group("tag").lower()
+            if role not in MARK_ROLES or tag not in PAINTED_MARKS:
+                continue
+            if bound_mark_draws(tag, mattrs):
+                continue
+            findings.append(
+                "%s:%d: series %r has a data-role=%s %s that paints nothing "
+                "— a colour of none, or a zero stroke-width, stroke-opacity "
+                "or fill-opacity, so the checker reads a summary in a mark "
+                "that is never drawn"
+                % (name, line_of(source, body_at + mark.start()),
+                   attrs["data-name"], role, tag)
+            )
         boxes = [m for m in RECT_RE.finditer(body)
                  if attrs_of(m.group("attrs")).get("data-role") == "box"]
         for role, count in (("box", len(boxes)),
@@ -1198,9 +1401,19 @@ def parse_series(source: str, findings: list, name: str) -> list:
                     "the visible name is not where x/y say it is"
                     % (where, attrs["data-name"])
                 )
+            at = body_at + text.start()
+            text_chain = chain_at(at) + [("text", element_tokens(tattrs))]
+            # A series already reported never drawn takes its label with it.
             if hides(tattrs) or any(
                     hides(attrs_of(tspan.group("attrs")))
-                    for tspan in TSPAN_RE.finditer(text.group("body"))):
+                    for tspan in TSPAN_RE.finditer(text.group("body"))) or (
+                    drawn and (
+                        page_hides_labels or inside_span(at, label_hiding)
+                        or css_matches("text", element_tokens(tattrs), chain_at(at),
+                                       label_hide_rules)
+                        or any(css_matches("tspan", tokens, ancestors, label_hide_rules)
+                               for tokens, ancestors in tspan_chains(text.group("body"),
+                                                                     text_chain)))):
                 findings.append(
                     "%s: series %r hides its bound label — the name the "
                     "checker reads is not the name a reader sees"
@@ -1598,6 +1811,9 @@ def check_structure(source: str, items: list, findings: list, name: str) -> None
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     source = blank_comments(raw)
     findings: list = []
     name = path.name

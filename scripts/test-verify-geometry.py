@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Adversarial tests for the label geometry verifier (verify-geometry.py)."""
+"""Adversarial tests for the label geometry verifier (verify_geometry.py)."""
 
 from __future__ import annotations
 
 import importlib.util
+import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-VERIFIER = ROOT / "scripts/verify-geometry.py"
+VERIFIER = ROOT / "skills/diagram-design/scripts/verify_geometry.py"
+REPO_ENTRY = ROOT / "scripts/verify-geometry.py"
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
 ARCHITECTURE = ASSET_DIR / "example-architecture.html"
 SWIMLANE = ASSET_DIR / "example-swimlane.html"
@@ -387,6 +390,42 @@ def main() -> int:
     check_file("shipped db-schema example", DB_SCHEMA, 0)
     check_file("shipped zoned example", ZONED, 0)
     check_file("shipped sequence-oauth example", SEQUENCE_OAUTH, 0)
+
+    def run(script: Path, *args: str, cwd: Path = ROOT) -> tuple[int, str]:
+        result = subprocess.run(
+            [sys.executable, str(script), *args],
+            cwd=cwd, capture_output=True, text=True, check=False,
+        )
+        return result.returncode, result.stdout + result.stderr
+
+    clipped = document('<rect x="240" y="80" width="48" height="12" fill="#fff"/>' + node)
+    with tempfile.TemporaryDirectory() as scratch:
+        candidate = Path(scratch) / "candidate.html"
+        candidate.write_text(clipped, encoding="utf-8")
+        for args in (("--all",), (str(candidate),)):
+            repo, packaged = run(REPO_ENTRY, *args), run(VERIFIER, *args)
+            if repo != packaged:
+                failures.append(f"repo entry point drifts from packaged checker on {args}: "
+                                f"{repo} != {packaged}")
+            else:
+                print(f"OK: repo entry point matches packaged checker ({args[0]})")
+        code, output = run(REPO_ENTRY, str(candidate))
+        if code != 1 or "is clipped by node" not in output:
+            failures.append(f"repo entry point did not report the clipped mask: {code} {output}")
+        else:
+            print("OK: repo entry point reports findings and exits 1")
+
+        # An installed skill has only its own directory; --all must read its assets.
+        skill = Path(scratch) / "skill"
+        (skill / "scripts").mkdir(parents=True)
+        (skill / "assets").mkdir()
+        shutil.copy(VERIFIER, skill / "scripts/verify_geometry.py")
+        (skill / "assets/example-bad.html").write_text(clipped, encoding="utf-8")
+        code, output = run(Path("scripts/verify_geometry.py"), "--all", cwd=skill)
+        if code != 1 or "1 file(s) checked, 1 finding(s)" not in output:
+            failures.append(f"installed copy did not check its own assets: {code} {output}")
+        else:
+            print("OK: installed copy checks its own assets")
 
     if failures:
         print("\nFAILURES:")

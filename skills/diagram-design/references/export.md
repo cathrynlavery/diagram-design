@@ -38,6 +38,8 @@ python3 scripts/export_svg.py <html-file> [<out.svg>] [--system-fonts]
 
 Source read and output write failures return exit 2 with an error diagnostic. The viewport must contain four finite SVG numbers with positive width and height; empty or disabled viewports are refused. The class-without-style gate inspects nonempty actual `class` attributes; comments, visible text, empty class values, and `data-class` metadata do not require a stylesheet. Export selects a live SVG and carries live style blocks; HTML comments and script literals do not contribute diagrams or CSS. The selected SVG ends at its own closing tag, so nested icon `<svg>` elements stay inside it. Comments inside the selected SVG remain intact, except that XML forbids `--` inside a comment and a comment ending in `-`: each `--` becomes `- -` and a trailing `-` gets a space. That script is the source of truth for the transform below (CSS carry-forward, defs ID namespacing, rgba normalization, and the class-without-style gate). Reimplement only when the helper is unavailable; keep the behaviour identical.
 
+Numeric character references in text and attributes follow HTML decoding, including decimal/hexadecimal forms without a semicolon and the `&#128;` → `€` mapping. Escaped references are decoded once; comments, CDATA and raw style/script bodies are not decoded by this normalization. Characters that XML cannot represent fail export rather than being silently removed.
+
 ### Manual algorithm (what the helper does)
 
 1. Read the source HTML file.
