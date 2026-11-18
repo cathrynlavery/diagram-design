@@ -21,6 +21,7 @@
     "plantuml",
     "import",
     "animation",
-    "semantic-patterns"
+    "semantic-patterns",
+    "schedule-network"
   ]
 }
