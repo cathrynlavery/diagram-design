@@ -40,6 +40,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -968,6 +970,7 @@ def check_printed(source: str, cells: list[Cell], errors: list[str]) -> None:
 def verify_file(path: Path) -> list[str]:
     errors: list[str] = []
     source = path.read_text(encoding="utf-8")
+    errors.extend(escaped_property_findings(source))
     check_transforms(source, errors)
     row_marks: list[RowMark] = []
     headers, cells, visibility = parse_marks(source, errors, row_marks)
