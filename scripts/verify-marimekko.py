@@ -466,6 +466,27 @@ def strip_html_comments(source: str) -> str:
     return HTML_COMMENT_RE.sub(" ", source)
 
 
+def mask_css_strings(css: str) -> str:
+    """CSS with the inside of every complete quoted string turned to `_`, same length and lines.
+
+    Rules and selectors are split on this copy, so a `{`, `}`, `,` or space inside a
+    quoted attribute value cannot move a rule or compound boundary. Nothing here reads
+    attribute values. Comments, escapes, unquoted url()s and unclosed strings are
+    tokenized as CSS_STRING_RE reads them and kept as written.
+
+    A raw quote is not always a quote to the browser (inside <svg> it decodes `&quot;`,
+    and markup such as `<!-- " -->` is not stylesheet text), so callers read the rules
+    of both this copy and the CSS as written, and report what either one finds.
+    """
+    def mask(found):
+        text = found.group()
+        if found.group("string") is None:
+            return text
+        return text[0] + re.sub(r"[^\n]", "_", text[1:-1]) + text[-1]
+
+    return CSS_STRING_RE.sub(mask, css)
+
+
 def selector_reaches_segment(selector: str, segments: list) -> bool:
     """Could this selector's subject be one of the segment rects? Coarse on purpose.
 
@@ -506,16 +527,17 @@ def css_geometry_declaration(css: str, segments: list):
     honest `svg { width: 100% }` and `.card-dot { width: 7px }`, and a gate
     that fires on every shipped page is switched off, not obeyed.
     """
-    for found in CSS_MOVES_MARK_RE.finditer(css):
-        if found.group("prop").lower() not in CSS_SIZE_PROPS:
-            return found
-        start = found.start("prop")
-        opened = css.rfind("{", 0, start)
-        if opened < 0:
-            continue  # a declaration outside any rule is not CSS a browser applies
-        previous = max(css.rfind("}", 0, opened), css.rfind("{", 0, opened))
-        if selector_reaches_segment(css[previous + 1:opened], segments):
-            return found
+    for split in (css, mask_css_strings(css)):
+        for found in CSS_MOVES_MARK_RE.finditer(css):
+            if found.group("prop").lower() not in CSS_SIZE_PROPS:
+                return found
+            start = found.start("prop")
+            opened = split.rfind("{", 0, start)
+            if opened < 0:
+                continue  # a declaration outside any rule is not CSS a browser applies
+            previous = max(split.rfind("}", 0, opened), split.rfind("{", 0, opened))
+            if selector_reaches_segment(split[previous + 1:opened], segments):
+                return found
     return None
 
 
