@@ -1040,8 +1040,9 @@ def run_cases(h: Harness) -> int:
     )
 
     # The accent and visibility as a browser resolves them, on the shipped
-    # example's muted Auth series: var(), hsl(), id and attribute selectors,
-    # and display/visibility/opacity on the series or a mark.
+    # example's muted Auth series: var(), hsl(), hwb()/lab()/oklch(),
+    # currentColor, id and attribute selectors, and display/visibility/opacity
+    # on the series or a mark.
     for title, swaps in (
         ("an inline var(--color-accent) fill",
          [(AUTH_BOX, AUTH_BOX.replace("/>", ' style="fill:var(--color-accent)"/>'))]),
@@ -1054,6 +1055,60 @@ def run_cases(h: Harness) -> int:
          [auth_fill('fill="hsla(13, 72%, 43%, 0.12)"')]),
         ("a space-separated hsl() with a turn hue",
          [auth_fill('fill="hsl(0.0388turn 71% 44% / 0.12)"')]),
+        # #487 item 5: the accent in CSS Color 4 notations the checker used
+        # to skip. Each spelling converts to #bf4520 within HSL_TOLERANCE.
+        ("an hwb() spelling of the accent",
+         [auth_fill('fill="hwb(13.96 12.55% 25.1%)"')]),
+        ("an hwb() with a deg hue and / alpha",
+         [auth_fill('fill="hwb(14deg 12.55% 25.1% / 0.12)"')]),
+        ("an hwb() with a turn hue",
+         [auth_fill('fill="hwb(0.0388turn 12.55% 25.1%)"')]),
+        ("a lab() spelling of the accent",
+         [auth_fill('fill="lab(46.9% 48.61 47.51)"')]),
+        ("a lab() with / none alpha",
+         [auth_fill('fill="lab(46.9% 48.61 47.51 / none)"')]),
+        ("an lch() spelling of the accent",
+         [auth_fill('fill="lch(46.9% 67.97 44.34)"')]),
+        ("an oklab() spelling of the accent",
+         [auth_fill('fill="oklab(0.5544 0.1317 0.09821)"')]),
+        ("an oklch() spelling of the accent",
+         [auth_fill('fill="oklch(0.5544 0.1643 36.71)"')]),
+        ("an oklch() with a percent L and deg hue",
+         [auth_fill('fill="oklch(55.44% 0.1643 36.71deg)"')]),
+        ("currentColor with an accent color attribute",
+         [auth_fill('fill="currentColor" color="#bf4520"')]),
+        ("currentColor with an accent color in the inline style",
+         [(AUTH_BOX, AUTH_BOX.replace("/>", ' style="color:#bf4520; fill:currentColor"/>'))]),
+        ("currentColor inherited from an accent color on the series group",
+         [(AUTH_G, '<g color="#bf4520" data-name="Auth"'),
+          auth_fill('fill="currentColor"')]),
+        ("a stylesheet currentColor with an accent color on the series",
+         [styled('[data-name="Auth"]{color:#bf4520} [data-name="Auth"] rect{fill:currentColor}')]),
+        ("currentColor whose color is an hwb() accent",
+         [auth_fill('fill="currentColor" color="hwb(13.96 12.55% 25.1%)"')]),
+        ("currentColor fill inherited from the series group, resolved against the box color",
+         [(AUTH_G, '<g fill="currentColor" color="#4f5d75" data-name="Auth"'),
+          (AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)" ', 'color="#bf4520" '))]),
+        ("currentColor fill inherited from the series group's inline style, resolved against the box color",
+         [(AUTH_G, '<g style="fill:currentColor; color:#4f5d75" data-name="Auth"'),
+          (AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)" ', 'color="#bf4520" '))]),
+        ("a stylesheet currentColor fill on the series, resolved against the box color",
+         [styled('[data-name="Auth"]{fill:currentColor; color:#4f5d75}'),
+          (AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)" ', 'color="#bf4520" '))]),
+        ("currentColor stroke inherited from the series group, resolved against the box color",
+         [(AUTH_G, '<g stroke="currentColor" color="#4f5d75" data-name="Auth"'),
+          (AUTH_BOX, AUTH_BOX.replace('stroke="#4f5d75"',
+                                      'stroke="inherit" color="#bf4520"'))]),
+        ("a var() that spells currentColor with an accent color",
+         [auth_fill('fill="var(--paint)" color="#bf4520"'),
+          ("--color-accent: #bf4520;",
+           "--color-accent: #bf4520;\n      --paint: currentColor;")]),
+        ("a var() chained to currentColor through another custom property",
+         [auth_fill('fill="var(--ink)" color="#bf4520"'),
+          ("--color-accent: #bf4520;",
+           "--color-accent: #bf4520;\n      --paint: currentColor;\n      --ink: var(--paint);")]),
+        ("a var() fallback that spells currentColor with an accent color",
+         [auth_fill('fill="var(--missing, currentColor)" color="#bf4520"')]),
         ("an attribute selector", [styled('[data-name="Auth"] rect{fill:#bf4520}')]),
         ("an id selector",
          [styled("#auth rect{fill:#bf4520}"), (AUTH_G, '<g id="auth" data-name="Auth"')]),
@@ -1074,6 +1129,22 @@ def run_cases(h: Harness) -> int:
             index=1),
         1, "at most one focal",
     )
+    for title, paint in (
+        ("hwb()", 'fill="hwb(19.47 34.9% 5.882%)"'),
+        ("lab()", 'fill="lab(68.18% 36.74 43.54)"'),
+        ("oklch()", 'fill="oklch(0.7336 0.14 45.51)"'),
+        ("currentColor",
+         'fill="currentColor" color="rgb(240,138,89)"'),
+    ):
+        h.expect_findings(
+            "a %s spelling of the dark accent on a muted series is one finding"
+            % title,
+            shipped_with(
+                ('x="196" y="64.0" width="20" height="32" rx="2" fill="rgba(245,245,245,0.14)"',
+                 'x="196" y="64.0" width="20" height="32" rx="2" %s' % paint),
+                index=1),
+            1, "at most one focal",
+        )
     h.expect_named(
         "a type selector painting the accent cannot be held to one series and "
         "is a finding",
@@ -1258,8 +1329,63 @@ def run_cases(h: Harness) -> int:
         ("a type selector painting a muted stroke", [styled("line{stroke:#4f5d75}")]),
         ("a series group that states visibility and a nonzero opacity",
          [(AUTH_G, '<g visibility="visible" opacity="0.9" data-name="Auth"')]),
+        # Near-but-outside HSL_TOLERANCE (max channel delta 5), and colours
+        # that a reader would not take for the accent. Named CSS colours
+        # never sit within 4.5 of either shipped accent, so they stay a no-op.
+        ("an hwb() 5/255 off the accent",
+         [auth_fill('fill="hwb(16 12.55% 25.1%)"')]),
+        ("a lab() grey", [auth_fill('fill="lab(50% 0 0)"')]),
+        # Finite but huge components overflow the conversion maths; the
+        # paint is unreadable, not a crash that stops the remaining files.
+        ("a lab() with a huge a axis", [auth_fill('fill="lab(50 1e200 0)"')]),
+        ("an oklab() with a huge a axis",
+         [auth_fill('fill="oklab(0.5 1e200 0)"')]),
+        ("an lch() with a huge hue",
+         [auth_fill('fill="lch(50 1e200 1e308turn)"')]),
+        ("an oklch() with a huge chroma",
+         [auth_fill('fill="oklch(0.5 1e300 30)"')]),
+        ("an oklch() whose hue misses the accent",
+         [auth_fill('fill="oklch(0.5544 0.1643 50)"')]),
+        # CSS clamps negative chroma to 0, so these are gray, not the
+        # accent that the same lightness with a positive chroma spells.
+        ("an lch() with negative chroma",
+         [auth_fill('fill="lch(46.9% -67.97 224.34)"')]),
+        ("an oklch() with negative chroma",
+         [auth_fill('fill="oklch(0.5544 -0.1643 216.71)"')]),
+        ("currentColor with a muted color",
+         [auth_fill('fill="currentColor" color="#4f5d75"')]),
+        ("currentColor inherited from a muted color on the series group",
+         [(AUTH_G, '<g color="#4f5d75" data-name="Auth"'),
+          auth_fill('fill="currentColor"')]),
+        ("currentColor fill inherited from a muted group onto a box with no fill of its own",
+         [(AUTH_G, '<g fill="currentColor" color="#4f5d75" data-name="Auth"'),
+          (AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)" ', ""))]),
+        ("a box with its own muted fill under a currentColor group",
+         [(AUTH_G, '<g fill="currentColor" color="#4f5d75" data-name="Auth"'),
+          (AUTH_BOX, AUTH_BOX.replace("/>", ' color="#bf4520"/>'))]),
+        ("a stylesheet currentColor fill on the series does not paint a box that states its own fill",
+         [styled('[data-name="Auth"]{fill:currentColor; color:#4f5d75}'),
+          (AUTH_BOX, AUTH_BOX.replace("/>", ' color="#bf4520"/>'))]),
+        ("a box with its own muted stroke under a currentColor stroke group",
+         [(AUTH_G, '<g stroke="currentColor" color="#4f5d75" data-name="Auth"'),
+          (AUTH_BOX, AUTH_BOX.replace("/>", ' color="#bf4520"/>'))]),
+        ("a var() that spells currentColor with a muted color",
+         [auth_fill('fill="var(--paint)" color="#4f5d75"'),
+          ("--color-accent: #bf4520;",
+           "--color-accent: #bf4520;\n      --paint: currentColor;")]),
+        ("a var() muted fill with an accent color",
+         [auth_fill('fill="var(--color-muted)" color="#bf4520"')]),
+        ("a named colour tomato", [auth_fill('fill="tomato"')]),
+        ("a named colour chocolate", [auth_fill('fill="chocolate"')]),
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
+    h.expect_clean(
+        "a named colour coral on the dark example passes",
+        shipped_with(
+            ('x="196" y="64.0" width="20" height="32" rx="2" fill="rgba(245,245,245,0.14)"',
+             'x="196" y="64.0" width="20" height="32" rx="2" fill="coral"'),
+            index=1),
+    )
 
     # A <style> rule hides as surely as an attribute. Rules tied to one
     # series count against it; type-only rules count against every series
