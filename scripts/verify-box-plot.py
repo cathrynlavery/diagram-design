@@ -49,9 +49,12 @@ Ten invariants:
    since paint inherits. Hex may carry alpha; rgb() counts as rgba();
    hsl()/hsla() is converted and held to the accent within whole-number
    rounding; hwb(), lab(), lch(), oklab() and oklch() convert to sRGB
-   (CSS Color 4, D50/D65, clip and round) and use that same tolerance;
-   currentColor is the accent when the element's own or inherited color
-   is; var() resolves through every custom property the document
+   (CSS Color 4, D50/D65, chroma clamped to 0, clip and round) and use
+   that same tolerance; currentColor is the accent when the element's
+   used color is, whether fill/stroke states the keyword, inherits it
+   from an ancestor, or names a custom property that refers to it; a
+   channel the element states as a colour does not inherit the keyword.
+   var() resolves through every custom property the document
    declares, unscoped. No CSS named colour sits within that tolerance of
    either shipped accent. A rule counts on an element its selector matches:
    the subject by type, class, id and attribute, every other compound on
@@ -180,7 +183,9 @@ PAINT_DECL_RE = re.compile(
     r"(?:^|[{;])\s*(?:fill|stroke)\s*:\s*([^;}{]+)",
     re.IGNORECASE,
 )
+FILL_DECL_RE = re.compile(r"(?:^|[{;])\s*fill\s*:\s*([^;}{]+)", re.IGNORECASE)
 STROKE_DECL_RE = re.compile(r"(?:^|[{;])\s*stroke\s*:\s*([^;}{]+)", re.IGNORECASE)
+CHANNEL_DECL_RE = {"fill": FILL_DECL_RE, "stroke": STROKE_DECL_RE}
 HIDE_DECL_RE = re.compile(
     r"(?:^|[{;])\s*(opacity|fill-opacity|stroke-opacity|visibility|display)"
     r"\s*:\s*([^;}{]+)",
@@ -257,6 +262,8 @@ LMS_TO_XYZ = (
     (-0.0763729366746601, -0.4214933324022432, 1.5869240198367816),
 )
 INHERITED_COLOR = frozenset({"inherit", "unset", "currentcolor"})
+INHERITED_PAINT = frozenset({"inherit", "unset"})
+CURRENT_COLOR_RE = re.compile(r"(?<![\w-])currentcolor(?![\w-])", re.IGNORECASE)
 VAR_REF_RE = re.compile(r"var\(\s*(--[\w-]+)", re.IGNORECASE)
 CUSTOM_PROP_RE = re.compile(r"(?<![\w-])(--[\w-]+)\s*:\s*([^;{}<>\"']*)")
 COMPOUND_RE = re.compile(r"(?:\[[^\]]*\]|\([^)]*\)|[^\s>+~\[\]()])+")
@@ -877,7 +884,7 @@ def convert_function_rgb(fn: str, parts):
         hue = parse_hue_component(parts[2])
         if None in (lightness, chroma, hue):
             return None
-        return lch_to_srgb(lightness, chroma, hue)
+        return lch_to_srgb(lightness, max(chroma, 0.0), hue)
     if fn == "oklab":
         lightness = parse_color_component(parts[0], 1.0)
         a = parse_color_component(parts[1], 0.4)
@@ -890,7 +897,7 @@ def convert_function_rgb(fn: str, parts):
     hue = parse_hue_component(parts[2])
     if None in (lightness, chroma, hue):
         return None
-    return oklch_to_srgb(lightness, chroma, hue)
+    return oklch_to_srgb(lightness, max(chroma, 0.0), hue)
 
 
 def literal_accent(value: str) -> bool:
@@ -945,14 +952,43 @@ def is_accent(value: str, accent_vars: set) -> bool:
         name in accent_vars for name in VAR_REF_RE.findall(value))
 
 
-def is_current_color(value: str) -> bool:
-    return paint_token(value).casefold() == "currentcolor"
+def is_current_color(value: str, current_vars: set = frozenset()) -> bool:
+    token = paint_token(value)
+    return bool(CURRENT_COLOR_RE.search(token)) or any(
+        name in current_vars for name in VAR_REF_RE.findall(value))
+
+
+def current_color_properties(source: str) -> set:
+    """Custom properties whose value is, or refers on to, currentColor.
+
+    Same unscoped walk as accent_properties, including a var() fallback.
+    """
+    current, used_by = set(), {}
+    for found in CUSTOM_PROP_RE.finditer(source):
+        name, value = found.group(1), found.group(2)
+        if is_current_color(value):
+            current.add(name)
+        for used in VAR_REF_RE.findall(value):
+            used_by.setdefault(used, []).append(name)
+    queue = list(current)
+    while queue:
+        for name in used_by.get(queue.pop(), ()):
+            if name not in current:
+                current.add(name)
+                queue.append(name)
+    return current
 
 
 def resolved_color_token(value: str):
     """The colour this declaration names, or None if it still inherits."""
     token = paint_token(value)
     return None if token.casefold() in INHERITED_COLOR else token
+
+
+def resolved_paint_token(value: str):
+    """The fill/stroke this declaration names, or None if it still inherits."""
+    token = paint_token(value)
+    return None if token.casefold() in INHERITED_PAINT else token
 
 
 def declared_colors(style: str) -> list:
@@ -963,6 +999,14 @@ def declared_colors(style: str) -> list:
 def own_color_values(attrs: dict) -> list:
     values = [attrs["color"]] if "color" in attrs else []
     values.extend(declared_colors(attrs.get("style", "")))
+    return values
+
+
+def own_channel_values(attrs: dict, channel: str) -> list:
+    values = [attrs[channel]] if channel in attrs else []
+    values.extend(value.strip() for value in
+                  CHANNEL_DECL_RE[channel].findall(
+                      blank_css_comments(attrs.get("style", ""))))
     return values
 
 
@@ -1127,6 +1171,16 @@ def stroke_paints(attrs: dict, paints: dict) -> list:
     return values
 
 
+def ancestry(tag: str, attrs: dict, chain: list) -> list:
+    """(tag, tokens, attrs, chain) for this element then each ancestor, nearest first."""
+    elements = [(tag, element_tokens(attrs), attrs, chain)]
+    for index in range(len(chain) - 1, -1, -1):
+        ancestor = chain[index]
+        a_attrs = ancestor[2] if len(ancestor) > 2 else {}
+        elements.append((ancestor[0], ancestor[1], a_attrs, chain[:index]))
+    return elements
+
+
 def color_is_accent(tag: str, attrs: dict, chain: list, accent_vars: set,
                     color_accent_rules: list, color_stated_rules: list) -> bool:
     """Is the used `color` the accent, walking ancestors until a colour is stated?
@@ -1136,12 +1190,7 @@ def color_is_accent(tag: str, attrs: dict, chain: list, accent_vars: set,
     names a colour, stops inheritance. `inherit` / `unset` / `currentColor`
     keep walking.
     """
-    elements = [(tag, element_tokens(attrs), attrs, chain)]
-    for index in range(len(chain) - 1, -1, -1):
-        ancestor = chain[index]
-        a_attrs = ancestor[2] if len(ancestor) > 2 else {}
-        elements.append((ancestor[0], ancestor[1], a_attrs, chain[:index]))
-    for e_tag, e_tokens, e_attrs, e_chain in elements:
+    for e_tag, e_tokens, e_attrs, e_chain in ancestry(tag, attrs, chain):
         if css_matches(e_tag, e_tokens, e_chain, color_accent_rules):
             return True
         own = [value for value in own_color_values(e_attrs)
@@ -1152,18 +1201,46 @@ def color_is_accent(tag: str, attrs: dict, chain: list, accent_vars: set,
     return False
 
 
-def wears_accent(tag: str, attrs: dict, chain: list, accent_vars: set, rules: list,
+def channel_is_current(tag: str, attrs: dict, chain: list, channel: str,
+                       current_vars: set, current_rules: list,
+                       stated_rules: list) -> bool:
+    """Is the used fill or stroke currentColor, walking ancestors until stated?
+
+    A matching currentColor rule counts as currentColor (no cascade). A
+    matching paint rule, or an attribute / inline style that names a
+    colour, stops inheritance. `inherit` / `unset` keep walking, so a
+    child with no own fill still sees an ancestor's currentColor fill.
+    """
+    for e_tag, e_tokens, e_attrs, e_chain in ancestry(tag, attrs, chain):
+        if css_matches(e_tag, e_tokens, e_chain, current_rules):
+            return True
+        own = [value for value in own_channel_values(e_attrs, channel)
+               if resolved_paint_token(value) is not None]
+        if any(is_current_color(value, current_vars) for value in own):
+            return True
+        if own or css_matches(e_tag, e_tokens, e_chain, stated_rules):
+            return False
+    return False
+
+
+def wears_accent(tag: str, attrs: dict, chain: list, accent_vars: set,
+                 current_vars: set, rules: list,
                  color_accent_rules: list, color_stated_rules: list,
-                 current_color_rules: list) -> bool:
-    """Accent from the element's own attribute or inline style, or a <style> rule selecting it."""
+                 fill_current_rules: list, fill_stated_rules: list,
+                 stroke_current_rules: list, stroke_stated_rules: list) -> bool:
+    """Accent from the element's own paint, a matching <style> rule, or inherited currentColor."""
     paints = element_paints(attrs, {})
     tokens = element_tokens(attrs)
     if any(is_accent(value, accent_vars) for value in paints):
         return True
     if css_matches(tag, tokens, chain, rules):
         return True
-    uses_current = (any(is_current_color(value) for value in paints)
-                    or css_matches(tag, tokens, chain, current_color_rules))
+    uses_current = (
+        channel_is_current(tag, attrs, chain, "fill", current_vars,
+                           fill_current_rules, fill_stated_rules)
+        or channel_is_current(tag, attrs, chain, "stroke", current_vars,
+                              stroke_current_rules, stroke_stated_rules)
+    )
     return uses_current and color_is_accent(
         tag, attrs, chain, accent_vars, color_accent_rules, color_stated_rules)
 
@@ -1366,6 +1443,7 @@ def view_x_span(source: str) -> tuple:
 
 def parse_series(source: str, findings: list, name: str) -> list:
     accent_vars = accent_properties(source)
+    current_vars = current_color_properties(source)
     paints = class_paints(source, accent_vars)
     stroke_rules = class_stroke_rules(source)
     paper = figure_paper(source)
@@ -1385,15 +1463,27 @@ def parse_series(source: str, findings: list, name: str) -> list:
     color_stated_rules = selector_rules(source, lambda css: any(
         resolved_color_token(value) is not None
         for value in declared_colors(css)))
-    current_color_rules = selector_rules(source, lambda css: any(
-        is_current_color(value) for value in declared_paints(css)))
+    fill_current_rules = selector_rules(source, lambda css: any(
+        is_current_color(value, current_vars)
+        for value in FILL_DECL_RE.findall(css)))
+    stroke_current_rules = selector_rules(source, lambda css: any(
+        is_current_color(value, current_vars)
+        for value in STROKE_DECL_RE.findall(css)))
+    fill_stated_rules = selector_rules(source, lambda css: any(
+        resolved_paint_token(value) is not None
+        for value in FILL_DECL_RE.findall(css)))
+    stroke_stated_rules = selector_rules(source, lambda css: any(
+        resolved_paint_token(value) is not None
+        for value in STROKE_DECL_RE.findall(css)))
     page = svg_ancestors(source)
     outer = [(tag, element_tokens(attrs), attrs) for tag, attrs in page]
 
     def accent_on(tag, attrs, chain) -> bool:
         return wears_accent(
-            tag, attrs, chain, accent_vars, accent_rules,
-            color_accent_rules, color_stated_rules, current_color_rules)
+            tag, attrs, chain, accent_vars, current_vars, accent_rules,
+            color_accent_rules, color_stated_rules,
+            fill_current_rules, fill_stated_rules,
+            stroke_current_rules, stroke_stated_rules)
 
     # Hiding or painting the <svg> or a page element around it reaches every
     # series. Only whole-element opacity counts: a box with fill-opacity 0
