@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -198,6 +199,15 @@ def main() -> int:
                 "diagram-design/assets/example-flowchart.html" in names,
             )
             check("repo ZIP excludes the gallery index", "diagram-design/assets/index.html" not in names)
+            with zipfile.ZipFile(zip_a) as archive:
+                onboarding = archive.read("diagram-design/references/onboarding.md").decode("utf-8")
+            after = onboarding.split("After onboarding, the user should:", 1)[-1].split("\n---", 1)[0]
+            previews = re.findall(r"`(assets/example-[^`]+\.html)`", after)
+            check(
+                "repo ZIP onboarding preview step names a bundled example",
+                bool(previews) and all(f"diagram-design/{p}" in names for p in previews),
+                ", ".join(previews) or "no example named",
+            )
             dark = [n for n in names if n.endswith("-dark.html") and "/example-" in n]
             check("repo ZIP excludes dark example variants", not dark, ", ".join(dark[:5]))
             full = [n for n in names if n.endswith("-full.html") and "/example-" in n]
