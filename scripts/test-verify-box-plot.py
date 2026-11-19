@@ -1312,6 +1312,15 @@ def run_cases(h: Harness) -> int:
         ("an hwb() 5/255 off the accent",
          [auth_fill('fill="hwb(16 12.55% 25.1%)"')]),
         ("a lab() grey", [auth_fill('fill="lab(50% 0 0)"')]),
+        # Finite but huge components overflow the conversion maths; the
+        # paint is unreadable, not a crash that stops the remaining files.
+        ("a lab() with a huge a axis", [auth_fill('fill="lab(50 1e200 0)"')]),
+        ("an oklab() with a huge a axis",
+         [auth_fill('fill="oklab(0.5 1e200 0)"')]),
+        ("an lch() with a huge hue",
+         [auth_fill('fill="lch(50 1e200 1e308turn)"')]),
+        ("an oklch() with a huge chroma",
+         [auth_fill('fill="oklch(0.5 1e300 30)"')]),
         ("an oklch() whose hue misses the accent",
          [auth_fill('fill="oklch(0.5544 0.1643 50)"')]),
         ("currentColor with a muted color",

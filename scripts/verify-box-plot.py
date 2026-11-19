@@ -844,6 +844,19 @@ def split_color_fn_args(body: str):
 
 
 def function_rgb(fn: str, parts):
+    """sRGB for a colour function, or None when its components cannot convert.
+
+    A finite but huge component (lab(50 1e200 0)) overflows the cube in the
+    Lab and OKLab maths, and a huge hue leaves cos() out of its domain. Such
+    paint is unreadable, the same as a malformed one, rather than a crash.
+    """
+    try:
+        return convert_function_rgb(fn, parts)
+    except (OverflowError, ValueError, ZeroDivisionError):
+        return None
+
+
+def convert_function_rgb(fn: str, parts):
     if fn == "hwb":
         hue = parse_hue_component(parts[0])
         white = parse_color_component(parts[1], 1.0)
