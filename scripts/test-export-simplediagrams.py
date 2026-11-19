@@ -1276,6 +1276,12 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
         self.assertEqual(page["content"]["background"], {"kind": "solid", "color_hex": "#F5F5F5"})
         fills = [core(e)["style"]["fill_hex"] for e in page["elements"]]
         self.assertEqual(fills, ["#123456", "#FFFFFF80"])  # the cover stays above what it covers
+        for name in ("dots-dark", "lifecycle-dots", "dots-2"):  # the names the skins give the grid
+            with self.subTest(name=name):
+                document, skipped = self.export(f"""<svg viewBox="0 0 400 300">
+                  <defs><pattern id="{name}" width="9" height="9"><circle r="1"/></pattern></defs>
+                  <rect width="100%" height="100%" fill="url(#{name})" opacity="0.55"/></svg>""")
+                self.assertEqual((document["pages"][0]["elements"], skipped), ([], {}))
         for layers, background, shapes in (
             ('<rect width="100%" height="100%" fill="#000" fill-opacity="0.5"/>', {"kind": "none"},
              ["#00000080"]),  # a see-through page is drawn, not lost
@@ -1720,6 +1726,15 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             '<rect class="a" transform="translate(2 0)" width="5" height="5"/></svg>',
         )
         self.assertNotIn("transform", icon)  # a stylesheet reset wins over the attribute
+        for reset in ("none", "initial"):  # and wins on the placed symbol itself
+            with self.subTest(reset=reset):
+                icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" transform="translate(20 0)" '
+                                 f'style="transform: {reset}"><rect width="5" height="5"/></symbol></defs>'
+                                 '<use href="#i" width="20" height="20"/>')  # fmt: skip
+                self.assertNotIn("transform", icon)
+        icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" transform="translate(20 0)">'
+                         '<rect width="5" height="5"/></symbol></defs><use href="#i" width="20" height="20"/>')  # fmt: skip
+        self.assertIn('transform="translate(20 0)"', icon)  # with no reset, the attribute stays
         result = self.mod.export_document('<svg viewBox="0 0 400 10000"><defs><g id="c"><path d="M0 0 Q100 10000'
                                           ' 300 3000" fill="none" stroke="#000"/></g></defs><use href="#c"/></svg>',
                                           Path("case.html"))  # fmt: skip

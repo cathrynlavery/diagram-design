@@ -2690,7 +2690,7 @@ class Reader:
             return (
                 server is not None
                 and _local(server) == "pattern"
-                and re.fullmatch(r"(?:[\w-]+-)?dots(?:-\d+)?", match.group(1)) is not None
+                and re.fullmatch(r"(?:[\w-]+-)?dots(?:-[\w-]+)?", match.group(1)) is not None
                 and len(server) == 1
                 and _local(server[0]) == "circle"
             )  # other patterns and gradients go through the ordinary paint note
@@ -3177,7 +3177,9 @@ class Reader:
             for name in STROKE_LENGTHS:
                 if (raw := painted.get(name)) is not None and _font_lengths_in_pixels(raw, font_size) != raw:
                     painted[name] = context.get(name, INITIAL_VALUES[name])
-            if context.get("transform", "none").strip() != "none":  # set by a stylesheet too
+            # The computed transform replaces the attribute: a stylesheet may set or reset it.
+            painted.pop("transform", None)
+            if context.get("transform", "none").strip() != "none":
                 painted["transform"] = _attribute_transform(context["transform"])
             # Unsized, it takes the symbol's own size, or else the whole drawing's.
             width = element.get("width") or target.get("width") or "100%"
