@@ -180,9 +180,12 @@ Run all checks in this order and report each as `pass`, `warn`, or `fail`.
   repository into an organization-owned private/internal repository, add it via
   **Organization settings → Plugins → Add plugin → GitHub**, enable **Sync
   automatically**, and install from the resulting organization marketplace.
-- If `.git/config` shows a remote pointing directly at the public
-  `cathrynlavery/diagram-design` repository, mark `warn` with the same mirror
-  fix — updates will not sync through Cowork from the public remote.
+- If the remote the install updates from (the current branch's configured
+  remote in `.git/config`, or `origin` when HEAD is detached or the branch has
+  no upstream) points directly at the public `cathrynlavery/diagram-design`
+  repository, mark `warn` with the same mirror fix; updates will not sync
+  through Cowork from the public remote. Other remotes are ignored, so a
+  private mirror that keeps the public repository as `upstream` passes.
 
 9. Common path mistakes
 - Verify `SKILL.md` beneath the resolved installation root. Do not search for it

@@ -622,15 +622,57 @@ def read_text_or_none(path: Path) -> str | None:
         return None
 
 
-def git_remote_urls(root: Path) -> list[str] | None:
-    """Return remote URLs from .git/config, [] when absent, None when unreadable."""
+def parse_git_config(source: str) -> dict[tuple[str, str | None], dict[str, str]]:
+    """Parse .git/config into {(section, subsection): {key: value}}; last value wins."""
+    sections: dict[tuple[str, str | None], dict[str, str]] = {}
+    current: dict[str, str] | None = None
+    for raw in source.splitlines():
+        line = raw.strip()
+        if not line or line[0] in "#;":
+            continue
+        header = re.match(r'^\[\s*([A-Za-z0-9.-]+)(?:\s+"((?:[^"\\]|\\.)*)")?\s*\]', line)
+        if header:
+            section = header.group(1).lower()
+            subsection = header.group(2)
+            if subsection is None and "." in section:
+                section, _, subsection = section.partition(".")
+            current = sections.setdefault((section, subsection), {})
+            continue
+        if current is None:
+            continue
+        key, sep, value = line.partition("=")
+        current[key.strip().lower()] = value.strip() if sep else "true"
+    return sections
+
+
+def git_install_remote_url(root: Path) -> tuple[str, str | None] | None:
+    """Return (remote name, URL) for the remote the install updates from.
+
+    That is the current branch's configured remote (branch.<name>.remote),
+    falling back to origin for a detached HEAD or a branch with no upstream.
+    Other remotes, such as a public upstream kept beside a private mirror,
+    are ignored. URL is None when there is no .git/config or no such remote;
+    returns None when .git/config or .git/HEAD is unreadable.
+    """
     config = root / ".git" / "config"
     if not config.is_file():
-        return []
+        return ("origin", None)
     source = read_text_or_none(config)
     if source is None:
         return None
-    return re.findall(r"url\s*=\s*(\S+)", source)
+    sections = parse_git_config(source)
+    remote_name = "origin"
+    if (root / ".git" / "HEAD").is_file():
+        head = git_head_ref(root)
+        if head is None:
+            return None
+        if head.startswith("ref: refs/heads/"):
+            branch = head.removeprefix("ref: refs/heads/")
+            configured = sections.get(("branch", branch), {}).get("remote")
+            if configured and configured != ".":
+                remote_name = configured
+    url = sections.get(("remote", remote_name), {}).get("url")
+    return (remote_name, url)
 
 
 def redact_remote_url(url: str) -> str:
@@ -737,25 +779,26 @@ def check_cowork_mirror(root: Path, host: str | None, channel: str) -> CheckResu
             fix=mirror_fix,
         )
 
-    remotes = git_remote_urls(root)
-    if remotes is None:
+    install_remote = git_install_remote_url(root)
+    if install_remote is None:
         return CheckResult(
             name=name,
             status=WARN,
             message=(
-                "Could not read .git/config to determine whether this Cowork install "
-                "points directly at the public repository."
+                "Could not read .git/config or .git/HEAD to determine whether this "
+                "Cowork install points directly at the public repository."
             ),
             fix=mirror_fix,
         )
-    public_remotes = [url for url in remotes if PUBLIC_REPO_SLUG in url]
-    if public_remotes:
+    remote_name, remote_url = install_remote
+    if remote_url is not None and PUBLIC_REPO_SLUG in remote_url:
         return CheckResult(
             name=name,
             status=WARN,
             message=(
-                "This Cowork install points directly at the public repository "
-                f"({redact_remote_url(public_remotes[0])}). Organization marketplaces require a "
+                f"This Cowork install updates from its {remote_name!r} remote, which "
+                "points directly at the public repository "
+                f"({redact_remote_url(remote_url)}). Organization marketplaces require a "
                 "private or internal mirror, so updates will not sync through "
                 "Cowork from this remote."
             ),

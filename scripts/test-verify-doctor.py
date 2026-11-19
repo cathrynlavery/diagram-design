@@ -477,11 +477,30 @@ def main() -> int:
         check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
         expect_status(check, verify.WARN, "Could not read .git/config")
         touch(git_root / ".git" / "config", config_text)
+        mirror_config = (
+            "[remote \"origin\"]\n\turl = https://github.com/acme-internal/diagram-design.git\n"
+            "[remote \"upstream\"]\n\turl = https://github.com/cathrynlavery/diagram-design.git\n"
+            "[branch \"main\"]\n\tremote = origin\n\tmerge = refs/heads/main\n"
+        )
+        touch(git_root / ".git" / "config", mirror_config)
+        check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
+        expect_status(check, verify.PASS, "does not point directly")
+        touch(git_root / ".git" / "HEAD", "ref: refs/heads/main\n")
+        check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
+        expect_status(check, verify.PASS, "does not point directly")
+        touch(
+            git_root / ".git" / "config",
+            mirror_config.replace("\tremote = origin", "\tremote = upstream"),
+        )
+        check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
+        expect_status(check, verify.WARN, "'upstream' remote")
+        touch(git_root / ".git" / "HEAD", "0123456789abcdef0123456789abcdef01234567\n")
+        touch(git_root / ".git" / "config", config_text)
         check = verify.check_cowork_mirror(marketplace_root, "cowork", verify.CHANNEL_MARKETPLACE)
         expect_status(check, verify.PASS, "resolves under Cowork")
         check = verify.check_cowork_mirror(missing_skill_root, None, verify.CHANNEL_COPIED)
         expect_status(check, verify.PASS, "not cowork")
-        print("OK: Cowork mirror check fails without skill resolution, warns on public-repo or unreadable remotes, and redacts remote credentials")
+        print("OK: Cowork mirror check fails without skill resolution, warns when the install remote is public or unreadable, passes a private origin beside a public upstream, and redacts remote credentials")
 
         check = verify.check_common_path_mistakes(
             missing_skill_root, unrelated_project, "claude-code", verify.CHANNEL_MARKETPLACE
