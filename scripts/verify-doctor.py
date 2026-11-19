@@ -633,6 +633,11 @@ def git_remote_urls(root: Path) -> list[str] | None:
     return re.findall(r"url\s*=\s*(\S+)", source)
 
 
+def redact_remote_url(url: str) -> str:
+    """Drop userinfo (user:token@) from a URL remote so reports never carry credentials."""
+    return re.sub(r"^([A-Za-z][A-Za-z0-9+.-]*://)[^/]*@", r"\1", url)
+
+
 def git_head_ref(root: Path) -> str | None:
     head = root / ".git" / "HEAD"
     if not head.is_file():
@@ -750,7 +755,7 @@ def check_cowork_mirror(root: Path, host: str | None, channel: str) -> CheckResu
             status=WARN,
             message=(
                 "This Cowork install points directly at the public repository "
-                f"({public_remotes[0]}). Organization marketplaces require a "
+                f"({redact_remote_url(public_remotes[0])}). Organization marketplaces require a "
                 "private or internal mirror, so updates will not sync through "
                 "Cowork from this remote."
             ),

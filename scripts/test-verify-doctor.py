@@ -463,6 +463,16 @@ def main() -> int:
         check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
         expect_status(check, verify.WARN, "public repository")
         config_text = (git_root / ".git" / "config").read_text(encoding="utf-8")
+        touch(
+            git_root / ".git" / "config",
+            "[remote \"origin\"]\n\turl = https://x-access-token:ghp_secret123@github.com/cathrynlavery/diagram-design.git\n",
+        )
+        check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
+        expect_status(check, verify.WARN, "https://github.com/cathrynlavery/diagram-design.git")
+        if "ghp_secret123" in check.message or "x-access-token" in check.message:
+            raise AssertionError(f"Cowork mirror message leaked remote credentials: {check.message}")
+        if verify.redact_remote_url("git@github.com:cathrynlavery/diagram-design.git") != "git@github.com:cathrynlavery/diagram-design.git":
+            raise AssertionError("scp-style remote should pass through unchanged")
         (git_root / ".git" / "config").write_bytes(b"[remote \"origin\"]\n\turl = \xff\n")
         check = verify.check_cowork_mirror(git_root, "cowork", verify.CHANNEL_GIT)
         expect_status(check, verify.WARN, "Could not read .git/config")
@@ -471,7 +481,7 @@ def main() -> int:
         expect_status(check, verify.PASS, "resolves under Cowork")
         check = verify.check_cowork_mirror(missing_skill_root, None, verify.CHANNEL_COPIED)
         expect_status(check, verify.PASS, "not cowork")
-        print("OK: Cowork mirror check fails without skill resolution and warns on public-repo or unreadable remotes")
+        print("OK: Cowork mirror check fails without skill resolution, warns on public-repo or unreadable remotes, and redacts remote credentials")
 
         check = verify.check_common_path_mistakes(
             missing_skill_root, unrelated_project, "claude-code", verify.CHANNEL_MARKETPLACE
