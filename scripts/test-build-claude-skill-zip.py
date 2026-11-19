@@ -4,15 +4,16 @@
 The builder packages skills/diagram-design for Claude Desktop's custom-skill
 upload. These cases pin the include rule (SKILL.md, references, packaged
 scripts, templates, icons, and default-light examples), the files left out
-(gallery index, dark/full/animated variants), the host file-count limit, that
-a markdown link to an omitted file fails, and that two builds are
-byte-identical. Fixture repositories are throwaway git checkouts, so the
-cases do not depend on this repository's current assets.
+(gallery index, dark/full/animated variants), the host file-count and
+uncompressed-size limits, that a markdown link to an omitted file fails, and
+that two builds are byte-identical. Fixture repositories are throwaway git
+checkouts, so the cases do not depend on this repository's current assets.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import os
 import re
 import stat
@@ -25,6 +26,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BUILDER = ROOT / "scripts" / "build-claude-skill-zip.py"
 SKILL = "skills/diagram-design"
+
+_spec = importlib.util.spec_from_file_location("build_claude_skill_zip", BUILDER)
+_builder = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_builder)
+MAX_UNCOMPRESSED_BYTES = _builder.MAX_UNCOMPRESSED_BYTES
+include_skill_path = _builder.include_skill_path
 
 DEFAULT_SKILL_MD = """\
 ---
@@ -109,6 +116,43 @@ def fixture(
         subprocess.run(["git", "add", "-N", "--", relative], cwd=root, check=True)
     for relative, data in (edit_after_add or {}).items():
         (root / relative).write_bytes(data)
+    return root
+
+
+def write_sized_file(path: Path, size: int) -> None:
+    """Create a file of *size* bytes without filling the disk with data."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+    try:
+        os.ftruncate(fd, size)
+    finally:
+        os.close(fd)
+
+
+def included_payload_size(root: Path) -> int:
+    """Sum working-tree bytes the builder's include rule would pack."""
+    total = 0
+    for path in (root / SKILL).rglob("*"):
+        if not path.is_file() or path.is_symlink():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if include_skill_path(rel):
+            total += path.stat().st_size
+    return total
+
+
+def fixture_with_uncompressed_size(tmp: Path, name: str, total: int) -> Path:
+    """Default fixture plus one bundled pad file so the payload is *total* bytes."""
+    root = fixture(tmp, name)
+    pad = f"{SKILL}/scripts/pad.bin"
+    pad_size = total - included_payload_size(root)
+    if pad_size < 0:
+        raise AssertionError(
+            f"{name}: default fixture is {included_payload_size(root)} bytes, "
+            f"already over the requested {total}"
+        )
+    write_sized_file(root / pad, pad_size)
+    subprocess.run(["git", "add", "--", pad], cwd=root, check=True)
     return root
 
 
@@ -319,6 +363,25 @@ def main() -> int:
         check(
             "file count over the margin fails",
             result.returncode == 1 and "files" in output,
+            output,
+        )
+
+        at_size = fixture_with_uncompressed_size(tmp, "at-size-limit", MAX_UNCOMPRESSED_BYTES)
+        result = run("--root", str(at_size), "--check")
+        check(
+            "uncompressed size at the limit passes",
+            result.returncode == 0,
+            result.stdout + result.stderr,
+        )
+
+        over_size = fixture_with_uncompressed_size(
+            tmp, "over-size-limit", MAX_UNCOMPRESSED_BYTES + 1
+        )
+        result = run("--root", str(over_size), "--check")
+        output = result.stdout + result.stderr
+        check(
+            "uncompressed size one byte over the limit fails",
+            result.returncode == 1 and "uncompressed" in output,
             output,
         )
 
