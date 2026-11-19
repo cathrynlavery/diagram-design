@@ -140,6 +140,11 @@ SELECTOR_RULES = (
     ("a single-quoted attribute selector", "[{a}='v'] {{ width: 1px; height: 1px }}"),
     ("a quoted attribute selector in @media", '@media screen {{ [{a}="v"] {{ width: 1px; height: 1px }} }}'),
     ("a quoted selector after quoted data", 'body {{ --n: "x" }} [{a}="v"] {{ width: 1px; height: 1px }}'),
+    # Issue #518 item 1: a `}` or `{` inside a quoted value is selector text.
+    ("a `}` inside a quoted attribute value", '[{a}="v"],[data-q="}}"] {{ width: 1px; height: 1px }}'),
+    ("a `{` inside a quoted attribute value", '[data-q="{{"][{a}] {{ width: 1px; height: 1px }}'),
+    ("a `}` inside a quoted value beside a character reference",
+     '[{a}="v"],[data-q="}}"] {{ width: 1px; height: 1px }} /* &amp; */'),
 )
 BARE_RULE = "[{a}] {{ width: 1px; height: 1px }}"
 
