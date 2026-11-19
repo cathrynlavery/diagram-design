@@ -78,7 +78,8 @@ jobs:
 
   python39-compat:
     name: Python 3.9 Compatibility
-    runs-on: ubuntu-latest
+    # setup-python publishes 3.9 builds for 24.04, but not the newer latest runner.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
@@ -99,6 +100,9 @@ jobs:
 
       - name: Verify Mermaid import
         run: python scripts/verify-mermaid-import.py
+
+      - name: Verify CSS scanner compatibility
+        run: python scripts/test-css-string-scan.py
 
   validate:
     name: Lint & Verify (${{ matrix.os }}, Python ${{ matrix.python-version }})
@@ -428,6 +432,16 @@ jobs:
         id: event_modeling_tests
         run: python scripts/test-verify-event-modeling.py
 
+      - name: Verify Schedule network CPM and printed fields
+        if: always()
+        id: schedule_network
+        run: python scripts/verify-schedule-network.py --all
+
+      - name: Verify Schedule network checker
+        if: always()
+        id: schedule_network_tests
+        run: python scripts/test-verify-schedule-network.py
+
       - name: Verify Steps ordered rail
         if: always()
         id: steps
@@ -693,6 +707,8 @@ jobs:
           echo "| Requirement Traceability Checker | ${{ steps.requirement_traceability_tests.outcome == 'success' && '✅ Passed' || (steps.requirement_traceability_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Event Modeling | ${{ steps.event_modeling.outcome == 'success' && '✅ Passed' || (steps.event_modeling.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Event Modeling Checker | ${{ steps.event_modeling_tests.outcome == 'success' && '✅ Passed' || (steps.event_modeling_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Schedule Network CPM & Printed Fields | ${{ steps.schedule_network.outcome == 'success' && '✅ Passed' || (steps.schedule_network.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Schedule Network Checker | ${{ steps.schedule_network_tests.outcome == 'success' && '✅ Passed' || (steps.schedule_network_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Shared Amplitude | ${{ steps.ridgeline.outcome == 'success' && '✅ Passed' || (steps.ridgeline.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"

@@ -340,6 +340,15 @@
       "thumb_sha256": "34a4b52c7d20b747613a5e7cf0b2c5a2b2ade2a693321f511db00c3bff06e014"
     },
     {
+      "thumb": "schedule-network.webp",
+      "source": "docs/screenshots/schedule-network.png",
+      "source_sha256": "3cd3fbc30a9f742ae63be793ca6f175b99438da7a762555b428a35e620d79abe",
+      "width": 600,
+      "height": 360,
+      "quality": 82,
+      "thumb_sha256": "b5ee22cd3190c109293d487539f66385da83b95d5b4babb00833baa02195041c"
+    },
+    {
       "thumb": "sequence.webp",
       "source": "docs/screenshots/sequence.png",
       "source_sha256": "84abdd95b790fbef6139e9ccc4f75c954d7c83cb0881d14d9e2400ea2c1d14c9",
