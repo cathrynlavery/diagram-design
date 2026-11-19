@@ -21,6 +21,7 @@ Versioning note: pull requests do not edit the plugin version. After each merge 
 
 ### Fixed
 
+- The box-plot checker reads the accent as `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, and `currentColor` with an accent `color`, so a second series painted that way is a finding (#487).
 - The packaged self-check rejects a document that stopped early — a truncated file, a mojibake byte, or unbalanced container markup — instead of passing the part that survived.
 - Gallery numbering uses one number per diagram type, 44 in total.
 - Hermes Agent installs the skill again. One example's HTML comment matched its install scanner's `html_comment_injection` rule, which blocked every install; a CI gate now runs that rule over the whole skill (#482).
