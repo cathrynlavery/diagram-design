@@ -1,6 +1,6 @@
 ---
 description: Export a diagram-design HTML file to SVG and PNG
-argument-hint: "<html-file> [--svg-only|--png-only] [--scale=N] [--output=<path>] [--registry]"
+argument-hint: "<html-file> [--svg-only|--png-only] [--scale=N] [--output=<path>] [--registry] [--simplediagrams]"
 ---
 
 Export diagram HTML at `$1` to `.svg` or `.png`. Locate available `diagram-design` skill using its `SKILL.md` path advertised by Pi. Read that `SKILL.md`, then read `references/export.md` relative to its directory. Treat that reference as source of truth. Run `scripts/export_svg.py` and `scripts/export_png.py` relative to the skill directory for the requested formats. Do not assume the package lives under the current working directory. If `--registry` is present, also read `references/export-registry.md` relative to the same directory and follow it to emit the metadata sidecar — a separate procedure from the SVG/PNG rasterization above.
@@ -9,9 +9,10 @@ Full argument string: `$ARGUMENTS`
 
 ## Defaults
 
-- With no format flag (nothing, or only `--scale`/`--output`) and no `--registry`: produce both `.svg` and `.png` next to source (for example, `diagram.html` → `diagram.svg` + `diagram.png`). `--svg-only` or `--png-only` restricts image output to that one format.
+- With no format flag (nothing, or only `--scale`/`--output`), no `--registry` and no `--simplediagrams`: produce both `.svg` and `.png` next to source (for example, `diagram.html` → `diagram.svg` + `diagram.png`). `--svg-only` or `--png-only` restricts image output to that one format.
 - Render PNG at `device_scale_factor=2`.
 - `--registry` given alone, with neither `--svg-only` nor `--png-only` also present, produces only the registry JSON — the SVG/PNG defaults above do not apply, and Playwright is never required. Add `--svg-only` or `--png-only` explicitly to also get an image.
+- `--simplediagrams` without `--svg-only` or `--png-only` produces no images: only the `.simplediagram` document, with the registry JSON too when `--registry` is given. Playwright is never required.
 
 ## Flags
 
@@ -20,6 +21,7 @@ Full argument string: `$ARGUMENTS`
 - `--scale=N` — override PNG device scale factor with a finite number from `1` to `4`, including fractional values such as `1.25`. Default `2`.
 - `--output=<path>` — override output base path; append format extension.
 - `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Never needs Playwright. Used alone (see Defaults) it is the only output; combine with `--svg-only` or `--png-only` to also produce an image.
+- `--simplediagrams` — write an editable `<basename>.simplediagram` document for the SimpleDiagrams macOS editor. Read `references/export-simplediagrams.md` relative to the skill directory. Without `--svg-only` or `--png-only` it produces no images and never needs Playwright.
 
 ## Required behavior
 
