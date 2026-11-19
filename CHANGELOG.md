@@ -8,6 +8,7 @@ Versioning note: pull requests do not edit the plugin version. After each merge 
 
 ### Added
 
+- A builder that packages a Claude Desktop skill ZIP under the upload file limit (#525).
 - Mermaid import redraws `quadrantChart` blocks as Quadrant diagrams.
 - A WCAG contrast gate in CI.
 - An offline option that uses system fonts, so generated output works without loading Google Fonts.

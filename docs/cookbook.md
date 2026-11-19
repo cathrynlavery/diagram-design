@@ -34,6 +34,7 @@ This repository does not duplicate `SKILL.md` into host-specific loader stubs. F
 | Host | How it finds the skill | What you do |
 |---|---|---|
 | **Claude Code** | Marketplace plugin, `~/.claude/skills/`, or project `.claude/skills/` | Use `/plugin install` for managed updates or link the inner skill for editable work. |
+| **Claude Desktop** | **Customize → Skills → Upload a skill** | Build `dist/diagram-design-claude-skill.zip` with `python3 scripts/build-claude-skill-zip.py` and upload that ZIP. The full skill tree is over the upload file limit. |
 | **Codex** | Marketplace plugin or `~/.agents/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
 | **Cursor** | `~/.cursor/skills/`, `~/.agents/skills/`, project `.cursor/skills/`, or project `.agents/skills/` | Link the inner skill, then ask in Agent chat. |
 | **Cline CLI / VS Code** | `~/.cline/skills/`, `~/.agents/skills/`, workspace `.cline/skills/`, or workspace `.agents/skills/` | Link the inner skill and enable it from the Skills view when needed. |
