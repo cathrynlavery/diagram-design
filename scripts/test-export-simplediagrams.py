@@ -1711,30 +1711,53 @@ class ExportSimpleDiagramsTests(unittest.TestCase):
             ('viewBox="0 0 24 24"', "", {"x": 50, "y": 0, "width": 300, "height": 300}),
             ('viewBox="0 0 24 24" width="24" height="24"', 'x="10" y="10"',
              {"x": 10, "y": 10, "width": 24, "height": 24}),
+            # The symbol's own place and transform apply inside the placement's, as in a browser.
+            ('viewBox="0 0 24 24" x="20" y="30"', 'x="100" y="50" width="24" height="24"',
+             {"x": 120, "y": 80, "width": 24, "height": 24}),
+            ('viewBox="0 0 24 24" transform="translate(40 0)"', 'x="10" y="10" width="48" height="48"',
+             {"x": 50, "y": 10, "width": 48, "height": 48}),
+            ('viewBox="0 0 24 24" style="transform: translate(40px, 0)"', 'x="10" y="10" width="24" height="24"',
+             {"x": 50, "y": 10, "width": 24, "height": 24}),
+            ('viewBox="0 0 24 24" transform="scale(2)"', 'x="10" y="10" width="24" height="24"',
+             {"x": 10, "y": 10, "width": 48, "height": 48}),
+            ('viewBox="0 0 24 24" transform="translate(40 0)" style="transform: none"',
+             'x="10" y="10" width="24" height="24"', {"x": 10, "y": 10, "width": 24, "height": 24}),
+            ('viewBox="0 0 24 24" transform="translate(40 0)" style="transform: initial"',
+             'x="10" y="10" width="24" height="24"', {"x": 10, "y": 10, "width": 24, "height": 24}),
+            ('x="20" y="30" transform="translate(40 0)"', 'x="100" y="50"',  # no view box
+             {"x": 161.5, "y": 81.5, "width": 21, "height": 21}),
         ):  # fmt: skip
             with self.subTest(symbol=symbol, placed=placed):
-                document, _ = self.export(f"""<svg viewBox="0 0 400 300"><defs>
-                  <symbol id="s" {symbol}>{circle}</symbol></defs><use href="#s" {placed}/></svg>""")
-                [artwork] = document["pages"][0]["elements"]
+                result = self.mod.export_document(f"""<svg viewBox="0 0 400 300"><defs>
+                  <symbol id="s" {symbol}>{circle}</symbol></defs><use href="#s" {placed}/></svg>""",
+                  Path("case.html"))  # fmt: skip
+                [artwork] = result.document["pages"][0]["elements"]
                 self.assertEqual(core(artwork)["frame"], frame)
-        icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" style="transform: translate(2px, 0)">'
-                         '<rect width="5" height="5"/></symbol></defs><use href="#i" width="20" height="20"/>')  # fmt: skip
-        self.assertIn('transform="translate(2', icon)
+                # The move is the frame's, so the stored copy holds none to move it twice.
+                self.assertNotIn("transform", result.assets[0].data.decode())
+                self.assertEqual(result.skipped, {})
+        for own, placed, frame, notes in (
+            ('x="20" y="30"', "", {"x": 20, "y": 30, "width": 24, "height": 24}, {}),
+            ('x="20" y="30"', 'x="100" y="50" width="48" height="48"',
+             {"x": 120, "y": 80, "width": 48, "height": 48}, {}),
+            ('x="10%" y="10%"', "", {"x": 40, "y": 30, "width": 24, "height": 24}, {}),
+            ('transform="translate(40 0)"', 'x="10" y="10"', {"x": 50, "y": 10, "width": 24, "height": 24}, {}),
+            # A browser turns a referenced <svg> about its viewport's centre, which is not read.
+            ('transform="scale(2)"', "", {"x": 0, "y": 0, "width": 48, "height": 48},
+             {"CSS transform this export cannot read may misplace a shape": 1}),
+        ):  # fmt: skip
+            with self.subTest(own=own, placed=placed):
+                document, skipped = self.export(f"""<svg viewBox="0 0 400 300"><defs>
+                  <svg id="s" {own} width="24" height="24" viewBox="0 0 24 24">{circle}</svg></defs>
+                  <use href="#s" {placed}/></svg>""")
+                [artwork] = document["pages"][0]["elements"]
+                self.assertEqual((core(artwork)["frame"], skipped), (frame, notes))
         icon = self.icon(
             ".a { transform: initial }",
             '<svg x="10" y="10" width="20" height="20" viewBox="0 0 10 10">'
             '<rect class="a" transform="translate(2 0)" width="5" height="5"/></svg>',
         )
         self.assertNotIn("transform", icon)  # a stylesheet reset wins over the attribute
-        for reset in ("none", "initial"):  # and wins on the placed symbol itself
-            with self.subTest(reset=reset):
-                icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" transform="translate(20 0)" '
-                                 f'style="transform: {reset}"><rect width="5" height="5"/></symbol></defs>'
-                                 '<use href="#i" width="20" height="20"/>')  # fmt: skip
-                self.assertNotIn("transform", icon)
-        icon = self.icon("", '<defs><symbol id="i" viewBox="0 0 10 10" transform="translate(20 0)">'
-                         '<rect width="5" height="5"/></symbol></defs><use href="#i" width="20" height="20"/>')  # fmt: skip
-        self.assertIn('transform="translate(20 0)"', icon)  # with no reset, the attribute stays
         result = self.mod.export_document('<svg viewBox="0 0 400 10000"><defs><g id="c"><path d="M0 0 Q100 10000'
                                           ' 300 3000" fill="none" stroke="#000"/></g></defs><use href="#c"/></svg>',
                                           Path("case.html"))  # fmt: skip

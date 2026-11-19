@@ -3166,10 +3166,23 @@ class Reader:
             opacity *= max(0.0, min(1.0, length(context.get("opacity"), 1.0, percent_of=1.0)))
         paint = {"color": colour} | ({"opacity": f"{opacity:g}"} if opacity < 1 else {})
         x, y = self._place(element, props)
+        if framed or _local(target) == "symbol":
+            # The placement moves the target; the target's own transform, then its own x and
+            # y, apply inside that, as they do where a browser clones it.
+            turn = parse_transform(context.get("transform"))
+            if not _readable_transform(context) or (
+                _local(target) == "svg" and turn[:4] != IDENTITY[:4]
+            ):  # a referenced <svg> turns about its viewport's centre, which is not read here
+                self._skip(Note.CSS_TRANSFORM)
+            matrix = multiply(multiply(matrix, (1, 0, 0, 1, x, y)), turn)
+            if _collapses(matrix):
+                return
+            x, y = self._place(target, context)
         if framed:
             # A symbol or an svg draws its view box into the placement's width and height.
-            # Its own paint, but not its effects (noted) nor its opacity (already in ``paint``).
-            symbol_paint = PRESENTATION - UNDRAWN_NOTES.keys() - {"opacity"}
+            # Its own paint, but not its effects (noted), its opacity (already in ``paint``)
+            # nor its transform (already in ``matrix``).
+            symbol_paint = PRESENTATION - UNDRAWN_NOTES.keys() - {"opacity", "transform"}
             painted = {k: v for k, v in target.attrib.items() if k in symbol_paint}
             if (size := painted.get("font-size")) is not None and not ABSOLUTE_SIZE.fullmatch(size):
                 painted["font-size"] = context.get("font-size", INITIAL_VALUES["font-size"])
@@ -3177,10 +3190,6 @@ class Reader:
             for name in STROKE_LENGTHS:
                 if (raw := painted.get(name)) is not None and _font_lengths_in_pixels(raw, font_size) != raw:
                     painted[name] = context.get(name, INITIAL_VALUES[name])
-            # The computed transform replaces the attribute: a stylesheet may set or reset it.
-            painted.pop("transform", None)
-            if context.get("transform", "none").strip() != "none":
-                painted["transform"] = _attribute_transform(context["transform"])
             # Unsized, it takes the symbol's own size, or else the whole drawing's.
             width = element.get("width") or target.get("width") or "100%"
             height = element.get("height") or target.get("height") or "100%"
