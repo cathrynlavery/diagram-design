@@ -1380,7 +1380,8 @@ def run_cases(h: Harness) -> int:
     )
 
     for sibling in ("verify-slopegraph.py", "verify-bump.py",
-                    "verify-bubble.py", "verify-beeswarm.py"):
+                    "verify-bubble.py", "verify-beeswarm.py",
+                    "verify-git-graph.py"):
         script = ROOT / "scripts" / sibling
         if not script.is_file():
             print("skip  %s not on this branch; treaty case not applicable"

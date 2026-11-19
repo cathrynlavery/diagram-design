@@ -28,6 +28,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max `alt` regions (sequence) | 2 |
 | Max fragment nesting (sequence) | 1 |
 | Max lanes (swimlane) | 5 |
+| Max lanes / commits / coral (git graph) | 5 / 16 / 2 |
 | Max items (quadrant) | 12 |
 | Max entities (ER) | 8 |
 | Max nesting levels (nested) | 6 |
