@@ -30,7 +30,8 @@ Invariants:
 7. AT MOST TWO CORAL COMMITS - fill is a literal accent on ≤2 dots, read
    from the fill attribute, an inline style, or the nearest ancestor.
 8. LANES DO NOT OVERLAP - consecutive lane y values clear two radii plus a
-   gap. Two commits must not share a lane and a column.
+   gap. Two commits must not share a lane and a column. Every lane rail
+   sits inside the root viewBox height with room for a commit radius.
 9. UNPOSITIONED GEOMETRY - raw attributes only; a transform, a moving CSS
    rule, or a hidden bound mark is a finding. A <style> rule that hides a
    bound mark or its parent still counts as hiding it.
@@ -1328,6 +1329,46 @@ def check_lane_overlap(lanes: dict, commits: list, findings: list, name: str) ->
             )
 
 
+SVG_OPEN_RE = re.compile(r"<svg\b[^>]*>", re.IGNORECASE)
+
+
+def root_viewbox(source: str):
+    """(min_y, height) of the first <svg> viewBox, or None when absent or unreadable."""
+    match = SVG_OPEN_RE.search(source)
+    if not match:
+        return None
+    for attr in ATTR_RE.finditer(match.group(0)):
+        if attr.group("name").lower() != "viewbox":
+            continue
+        parts = re.split(r"[\s,]+", attr.group("value").strip())
+        if len(parts) != 4:
+            return None
+        try:
+            min_y, height = float(parts[1]), float(parts[3])
+        except ValueError:
+            return None
+        if not (math.isfinite(min_y) and math.isfinite(height)) or height <= 0:
+            return None
+        return min_y, height
+    return None
+
+
+def check_lane_canvas(source: str, lanes: dict, commits: list, findings: list, name: str) -> None:
+    box = root_viewbox(source)
+    if box is None:
+        return
+    top, height = box
+    bottom = top + height
+    radius = max((item.r for item in commits), default=8)
+    for lane in sorted(lanes.values(), key=lambda item: item.y):
+        if lane.y - radius < top or lane.y + radius > bottom:
+            findings.append(
+                "%s: lane %r sits at y=%g, outside the %g-high viewBox — "
+                "use the 96px pitch from y=216 for four or five lanes"
+                % (name, lane.name, lane.y, height)
+            )
+
+
 def check_source(path: Path, raw: str) -> list:
     escaped = escaped_property_findings(raw)
     if escaped:
@@ -1375,6 +1416,7 @@ def check_source(path: Path, raw: str) -> list:
         check_tags(source, commits, findings, name)
         check_focal(commits, findings, name)
         check_lane_overlap(lanes, commits, findings, name)
+        check_lane_canvas(source, lanes, commits, findings, name)
     elif commits or lanes:
         check_transforms(source, findings, name)
     return findings
@@ -1438,7 +1480,7 @@ def main() -> int:
           "grid, every merge with exactly two earlier parents on different "
           "lanes, connectors that turn at the parent or merge column, no "
           "right-to-left connectors, tags on existing commits, at most two "
-          "coral commits, and lanes that do not overlap%s"
+          "coral commits, and lanes that do not overlap and stay on the canvas%s"
           % (checked, tail))
     return 0
 

@@ -421,6 +421,18 @@ def run_cases(h: Harness) -> int:
     )
 
     h.expect_named(
+        "a fifth lane at the 140px pitch falls off the 720px canvas",
+        honest(lane("l2", 520, col(1), col(2)), lane("l3", 660, col(1), col(2)),
+               lane("l4", 800, col(1), col(2))),
+        "outside the 720-high viewBox",
+    )
+    h.expect_clean(
+        "five lanes at the 96px pitch stay on the 720px canvas",
+        honest(lane("l2", 476, col(1), col(2)), lane("l3", 572, col(1), col(2)),
+               lane("l4", 668, col(1), col(2))),
+    )
+
+    h.expect_named(
         "a transform on a commit is a finding",
         honest().replace(
             commit("c1", "feat", 1, FEAT_Y),

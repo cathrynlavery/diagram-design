@@ -66,7 +66,8 @@ The canonical `doc-wide` canvas is `1280×720`. All structural coordinates sit o
 ```text
 outer_x          = 80
 lane_label_x     = 88
-lane_ys          = 240, 380, 520, …     # one y per lane, ≥ 96px apart
+lane_ys (2–3)    = 240, 380, 520        # 140px pitch
+lane_ys (4–5)    = 216, 312, 408, 504, 600   # 96px pitch, the minimum
 col_origin       = 280
 col_pitch        = 120
 col_x(i)         = col_origin + i * col_pitch
@@ -75,6 +76,8 @@ merge_ring_r     = 12
 tag_h            = 22
 tag_gap          = 28                   # from commit centre up to tag baseline
 ```
+
+Pick the lane pitch by lane count so every rail stays on the 720px canvas. Extending the 140px pitch past three lanes puts the fifth rail at y=800, off the canvas. With four or five lanes, move the `time →` cue up to y=160 and the legend strip down so its rule sits at y≥648, below the last rail's annotations; drop the legend if it does not fit.
 
 Time reads left to right on the column grid. Every commit sits on its lane's `y` and on `col_x(column)`. Do not nudge a dot “to open space”; the grid is the claim.
 
@@ -131,7 +134,7 @@ If the title already names the tagged release and the coral dots are obvious, dr
 
 ## 5. Reproducibility checklist
 
-1. Lane count is 2–5, main on top, rails at least 96px apart.
+1. Lane count is 2–5, main on top, rails at least 96px apart, every rail inside the canvas (140px pitch for 2–3 lanes, 96px from y=216 for 4–5).
 2. Commit count is 4–16. Every dot sits on its lane `y` and on the shared column grid. Two commits do not share a lane and a column. Unused column indices keep the same pitch.
 3. Every merge commit has exactly two incoming connectors from earlier columns on different lanes.
 4. A branch is the whole parent-column-then-child-lane elbow. A merge is the whole source-lane-then-merge-column elbow. No second `M`, no later diagonal, no extra corners. No segment runs along a lane it is not drawing. Two connectors do not share a run. No connector runs right-to-left. Elbows are orthogonal, never a marked diagonal.
@@ -146,7 +149,7 @@ If the title already names the tagged release and the coral dots are obvious, dr
 The checker reads attributes, so every mark binds itself to a lane, a column, and (for connectors and tags) the commits it names.
 
 - **Bindings.** Each commit is a `<circle data-commit>` with `data-lane` and `data-column`. Merge commits also carry `data-kind="merge"`. Each connector is a `<path data-from data-to>` whose `d` is an absolute `M/H/V/L` elbow. Each tag is a `<text data-tag data-commit>`. Each lane has one `<line data-lane data-y>` rail and one `<text data-lane>` label.
-- **Geometry.** Every commit `cy` matches its lane `data-y`; every commit `cx` matches its column on one shared pitch (`col_origin + i × pitch`, so unused column indices do not stretch the gap). Two commits must not share a lane and a column. Merge commits have exactly two incoming connectors; those sources are earlier columns on different lanes. Connector endpoints land on the named commits; no `x` in the path decreases. Each connector is one continuous orthogonal `M/H/V/L` elbow — a second moveto or an unsupported command is not a connection. A branch connector's whole route is vertical at the parent column then horizontal on the child lane; a merge connector's whole route is horizontal on the source lane then vertical at the merge column. A horizontal segment may sit on the lane it is drawing, not on another rail. Two connectors may meet at a commit, not share a segment. A connector touches no commit dot other than the two it names. Tags sit above the commit they name. Lanes do not overlap. At most two commit fills are the accent, read from the `fill` attribute, an inline `style`, or the nearest ancestor.
+- **Geometry.** Every commit `cy` matches its lane `data-y`; every commit `cx` matches its column on one shared pitch (`col_origin + i × pitch`, so unused column indices do not stretch the gap). Two commits must not share a lane and a column. Merge commits have exactly two incoming connectors; those sources are earlier columns on different lanes. Connector endpoints land on the named commits; no `x` in the path decreases. Each connector is one continuous orthogonal `M/H/V/L` elbow — a second moveto or an unsupported command is not a connection. A branch connector's whole route is vertical at the parent column then horizontal on the child lane; a merge connector's whole route is horizontal on the source lane then vertical at the merge column. A horizontal segment may sit on the lane it is drawing, not on another rail. Two connectors may meet at a commit, not share a segment. A connector touches no commit dot other than the two it names. Tags sit above the commit they name. Lanes do not overlap, and every lane rail sits inside the root `viewBox` height with room for a commit radius. At most two commit fills are the accent, read from the `fill` attribute, an inline `style`, or the nearest ancestor.
 - **Unpositioned geometry.** Coordinates are raw attributes. A `transform`, an inline `style` that moves a mark, or a `<style>` rule with `transform` / geometry properties is a finding. Bound marks that are hidden (display, visibility, zero opacity) still count, so they fail rather than pass quietly — including a `<style>` rule that hides a bound mark or its parent. A connector with no visible stroke (`stroke="none"`, a transparent color, or `stroke-width="0"`, set inline or inherited) is hidden too and fails.
 - **Vocabulary treaty.** `data-commit` on a `<circle>` is this contract. `data-value` (beeswarm), `data-q1` (box plot), `data-span` (arc diagram), `data-size` (bubble), `data-series` (slopegraph), and `data-ranks` (bump) are never bound here.
 
