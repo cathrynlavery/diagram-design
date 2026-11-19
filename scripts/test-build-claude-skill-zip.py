@@ -348,6 +348,83 @@ def main() -> int:
         result = run("--root", str(xml_desc), "--check")
         check("description with XML tags fails", result.returncode == 1, result.stdout + result.stderr)
 
+        folded_words = " ".join(["word"] * 120)
+        folded_long = fixture(
+            tmp,
+            "folded-long-desc",
+            skill_md=(
+                "---\nname: diagram-design\ndescription: >\n"
+                + "".join(f"  {folded_words}\n" for _ in range(3))
+                + "license: MIT\n---\n\nDemo.\n"
+            ),
+        )
+        result = run("--root", str(folded_long), "--check")
+        check(
+            "folded > description over 1024 characters fails",
+            result.returncode == 1 and "description is" in (result.stdout + result.stderr),
+            result.stdout + result.stderr,
+        )
+
+        literal_xml = fixture(
+            tmp,
+            "literal-xml-desc",
+            skill_md=(
+                "---\nname: diagram-design\ndescription: |-\n"
+                "  Demo skill for ZIP tests.\n  Runs <script>nope</script> inline.\n---\n\nDemo.\n"
+            ),
+        )
+        result = run("--root", str(literal_xml), "--check")
+        check(
+            "literal | description with XML tags fails",
+            result.returncode == 1 and "XML" in (result.stdout + result.stderr),
+            result.stdout + result.stderr,
+        )
+
+        plain_long = fixture(
+            tmp,
+            "plain-continued-long-desc",
+            skill_md=(
+                "---\nname: diagram-design\ndescription: start\n"
+                + "".join(f"  {folded_words}\n" for _ in range(3))
+                + "---\n\nDemo.\n"
+            ),
+        )
+        result = run("--root", str(plain_long), "--check")
+        check(
+            "plain description continued over 1024 characters fails",
+            result.returncode == 1 and "description is" in (result.stdout + result.stderr),
+            result.stdout + result.stderr,
+        )
+
+        unreadable = fixture(
+            tmp,
+            "unreadable-desc",
+            skill_md="---\nname: diagram-design\ndescription: [a, b]\n---\n\nDemo.\n",
+        )
+        result = run("--root", str(unreadable), "--check")
+        check(
+            "description in an unsupported YAML form fails",
+            result.returncode == 1 and "cannot read" in (result.stdout + result.stderr),
+            result.stdout + result.stderr,
+        )
+
+        for label, indicator in (("folded", ">"), ("literal", "|")):
+            short_block = fixture(
+                tmp,
+                f"short-{label}-desc",
+                skill_md=(
+                    f"---\nname: diagram-design\ndescription: {indicator}\n"
+                    "  Create branded architecture\n  and flowchart diagrams as HTML.\n"
+                    "license: MIT\nmetadata:\n  version: \"2.6\"\n---\n\nDemo.\n"
+                ),
+            )
+            result = run("--root", str(short_block), "--check")
+            check(
+                f"short {label} {indicator} description passes",
+                result.returncode == 0,
+                result.stdout + result.stderr,
+            )
+
         staged = DEFAULT_SKILL_MD.encode("utf-8")
         dirty = fixture(
             tmp,

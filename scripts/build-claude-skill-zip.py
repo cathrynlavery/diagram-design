@@ -77,7 +77,9 @@ DIR_ATTRS = (stat.S_IFDIR | 0o755) << 16 | 0x10  # 0x10 is the MS-DOS directory 
 
 MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n|\Z)", re.DOTALL)
-FRONTMATTER_FIELD = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$", re.MULTILINE)
+FRONTMATTER_FIELD = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$")
+BLOCK_SCALAR = re.compile(r"^([|>])(?:([+-])([1-9])?|([1-9])?([+-])?)?\s*(?:#.*)?$")
+UNPARSED = "\0unparsed"
 
 
 def git(root: Path, *args: str, data: bytes | None = None) -> bytes:
@@ -213,23 +215,97 @@ def referenced_skill_paths(texts: dict[str, str]) -> dict[str, str]:
     return found
 
 
+def fold_block(lines: list[str]) -> str:
+    """Fold block-scalar lines: line breaks become spaces, blank lines become newlines."""
+    out = ""
+    pending_breaks = 0
+    for line in lines:
+        if not line:
+            pending_breaks += 1
+            continue
+        if out:
+            out += "\n" * pending_breaks if pending_breaks else " "
+        out += line
+        pending_breaks = 0
+    return out
+
+
 def parse_frontmatter(text: str) -> dict[str, str]:
+    """Read top-level scalar fields from YAML frontmatter without a YAML library.
+
+    Handles plain and quoted single-line values, plain values continued on
+    indented lines, and folded (``>``) and literal (``|``) block scalars with
+    optional chomping and indentation indicators. A value this reader cannot
+    take apart reliably maps to ``UNPARSED`` so the check reports it instead
+    of validating the wrong text.
+    """
     match = FRONTMATTER.search(text)
     if not match:
         return {}
+    lines = match.group(1).splitlines()
     fields: dict[str, str] = {}
-    for field in FRONTMATTER_FIELD.finditer(match.group(1)):
-        value = field.group(2).strip()
+    i = 0
+    while i < len(lines):
+        field = FRONTMATTER_FIELD.match(lines[i])
+        i += 1
+        if not field:
+            continue
+        key, value = field.group(1), field.group(2).strip()
+        body: list[str] = []
+        while i < len(lines) and (not lines[i].strip() or lines[i][:1] in " \t"):
+            body.append(lines[i])
+            i += 1
+        while body and not body[-1].strip():
+            body.pop()
+        block = BLOCK_SCALAR.match(value)
+        if block:
+            style = block.group(1)
+            chomp = block.group(2) or block.group(5)
+            explicit = block.group(3) or block.group(4)
+            content = [line for line in body if line.strip()]
+            if not content:
+                fields[key] = ""
+                continue
+            indent = min(len(line) - len(line.lstrip(" ")) for line in content)
+            if explicit:
+                indent = int(explicit)
+            if indent == 0 or any(
+                line.strip() and len(line) - len(line.lstrip(" ")) < indent for line in body
+            ):
+                fields[key] = UNPARSED
+                continue
+            stripped = [line[indent:] for line in body]
+            if style == "|":
+                value = "\n".join(stripped)
+            else:
+                value = fold_block(stripped)
+            if chomp != "-":
+                value += "\n"
+            fields[key] = value
+            continue
+        if value[:1] in "|>&*!{[" or (value[:1] in "\"'" and body):
+            fields[key] = UNPARSED
+            continue
+        if body:
+            value = fold_block([value] + [line.strip() for line in body])
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
-        fields[field.group(1)] = value
+        fields[key] = value
     return fields
 
 
 def check_frontmatter(fields: dict[str, str], errors: list[str]) -> str | None:
     name = fields.get("name")
     description = fields.get("description")
-    if not isinstance(name, str) or not name.strip():
+    for key, value in (("name", name), ("description", description)):
+        if value == UNPARSED:
+            errors.append(
+                f"SKILL.md frontmatter {key} uses a YAML form this check cannot read; "
+                "write it as a plain, quoted, or > / | block scalar"
+            )
+    if name == UNPARSED:
+        name = None
+    elif not isinstance(name, str) or not name.strip():
         errors.append("SKILL.md frontmatter name is required")
         name = None
     else:
@@ -243,7 +319,9 @@ def check_frontmatter(fields: dict[str, str], errors: list[str]) -> str | None:
                 f"SKILL.md frontmatter name {name!r} must be lowercase letters, "
                 "numbers, and hyphens, and must not be a reserved word"
             )
-    if not isinstance(description, str) or not description.strip():
+    if description == UNPARSED:
+        pass
+    elif not isinstance(description, str) or not description.strip():
         errors.append("SKILL.md frontmatter description is required")
     else:
         if len(description) > DESCRIPTION_MAX:
