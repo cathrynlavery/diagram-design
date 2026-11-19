@@ -55,7 +55,7 @@ Kept out on purpose, so the next audit does not relitigate them.
 
 ## Amendment — git graph admitted on demand (2026-11-15)
 
-Demand for a branching-model grammar is now present. Git graph ships as type 51 under ADR 0002's escape clause: lanes × a shared time-grid with two-parent merge commits. Packet / bit-field stays deferred.
+Demand for a branching-model grammar is now present. Git graph ships as type 52 under ADR 0002's escape clause: lanes × a shared time-grid with two-parent merge commits. Packet / bit-field stays deferred.
 - **Treemap** — originally rejected here, then overtaken by the implementation admitted in #87 under ADR 0002's escape clause. The 28 → 38 count includes it.
 
 ## Consequences
