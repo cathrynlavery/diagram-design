@@ -279,7 +279,27 @@ def main() -> int:
 def run_cases(h: Harness) -> int:
     for path in SHIPPED:
         h.check("shipped %s exists" % path.name, path.is_file())
-        findings = verify.check(path)
+        parsed_document = verify.SelectorDocument(verify.blank_comments(path.read_text(encoding="utf-8")))
+        positions = []
+        original_matches = verify.css_matches
+
+        def recording_matches(tag, tokens, chain, rules, at=None):
+            positions.append((tag, at))
+            return original_matches(tag, tokens, chain, rules, at)
+
+        verify.css_matches = recording_matches
+        try:
+            findings = verify.check(path)
+        finally:
+            verify.css_matches = original_matches
+        h.check(
+            "every selector offset in shipped %s aligns with its parsed element" % path.name,
+            bool(positions) and all(at in parsed_document.nodes and parsed_document.nodes[at][0] == tag
+                                    for tag, at in positions),
+            "unmapped positions=%s" % [(tag, at) for tag, at in positions
+                                       if at not in parsed_document.nodes
+                                       or parsed_document.nodes[at][0] != tag],
+        )
         h.check(
             "shipped %s is clean" % path.name,
             findings == [],
@@ -1331,6 +1351,162 @@ def run_cases(h: Harness) -> int:
         ("a type-only hiding rule no chart element can match", "p{opacity:0}"),
     ):
         h.expect_clean("%s passes" % title, shipped_with(styled(css)))
+
+    for title, opening, closing, selector in (
+        ("a paragraph implicitly closed by figure", '<p>intro<figure>', '</figure>',
+         'p + figure rect'),
+        ("a list item implicitly closed by another list item", '<ul><li>intro<li>', '</li></ul>',
+         'li + li rect'),
+        ("unreliable page-level child and descendant relationships",
+         '<p>intro<figure>', '</figure>', 'body > p + figure > svg rect'),
+    ):
+        h.expect_findings(
+            "%s cannot let hidden series pass" % title,
+            shipped_with((SVG_OPEN, opening + SVG_OPEN), ('</svg>', '</svg>' + closing),
+                         styled(selector + '{display:none}')),
+            5, "never drawn",
+        )
+
+    h.expect_findings(
+        "an HTML void name in SVG still contains its child before Auth",
+        shipped_with((AUTH_G, '<source class="x"><g></g></source>' + AUTH_G),
+                     styled('.x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a self-closing SVG source does not leave an open container",
+        shipped_with((AUTH_G, '<source class="x"/>' + AUTH_G),
+                     styled('.x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a browser-created body does not discard the sibling rule",
+        shipped_with(('<body>', ''), ('</body>', ''),
+                     (AUTH_G, '<g class="x"></g>' + AUTH_G),
+                     styled('body .x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a browser-created subject can hide its descendants",
+        shipped_with(('<body>', ''), ('</body>', ''),
+                     styled('head + body{display:none}')),
+        5, "never drawn",
+    )
+    h.expect_findings(
+        "an SVG namesake does not rule out a browser-created tbody ancestor",
+        shipped_with((SVG_OPEN, '<table><tr><td>' + SVG_OPEN),
+                     ('</svg>', '</svg></td></tr></table>'),
+                     (AUTH_G, '<tbody></tbody><g class="x"></g>' + AUTH_G),
+                     styled('tbody .x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_named(
+        "an HTML breakout makes later sibling relationships conservative",
+        shipped_with((AUTH_G, '<span class="x"/>' + AUTH_G),
+                     (AUTH_BOX, '<a class="y"></a>' + AUTH_BOX),
+                     styled('.x [data-name="Auth"] .y + rect{display:none}')),
+        "series 'Auth' has a bound <rect> hidden",
+    )
+
+    before_auth = (AUTH_G, '<g class="x"></g><!-- sibling -->' + AUTH_G)
+    for selector in ('.x + [data-name="Auth"] rect',
+                     '.x ~ [data-name="Auth"] rect',
+                     'svg > .x + [data-name="Auth"] > rect',
+                     '.frame svg .x + [data-name="Auth"] rect',
+                     'svg|g.x + [data-name="Auth"] rect',
+                     ':is(.x, .unknown) + [data-name="Auth"] rect'):
+        findings = h.run(shipped_with(before_auth, styled(selector + '{display:none}')))
+        h.check("sibling rule %s hides only Auth" % selector,
+                len(findings) == 1 and "series 'Auth'" in findings[0]
+                and "never drawn" in findings[0], "findings=%s" % findings)
+
+    for selector in ('.missing + [data-name="Auth"] rect',
+                     '.missing ~ [data-name="Auth"] rect',
+                     '[data-name="Catalog"] + [data-name="Auth"] rect',
+                     '[data-name="Auth"] + [data-name="Checkout"] rect',
+                     '.x + [data-name="Auth"] > g rect',
+                     '.x + .missing:is(.anything) rect'):
+        h.expect_clean("impossible sibling rule %s passes" % selector,
+                       shipped_with(before_auth, styled(selector + '{display:none}')))
+
+    for selector, expected in (
+        ('[data-name="Auth"] + [data-name="Catalog"] rect', "Catalog"),
+        ('[data-name="Auth"] ~ [data-name="Checkout"] line', "Checkout"),
+        ('[data-role="whisker-lo"] + [data-role="whisker-hi"]', "Auth"),
+        ('.x + [data-name="Auth"]', "Auth"),
+    ):
+        if selector.startswith('[data-role'):
+            selector = '[data-name="Auth"] ' + selector
+        findings = h.run(shipped_with(before_auth, styled(selector + '{opacity:0}')))
+        h.check("real sibling rule %s still hides %s" % (selector, expected),
+                len(findings) == 1 and "series %r" % expected in findings[0]
+                and "never drawn" in findings[0], "findings=%s" % findings)
+
+    h.expect_findings(
+        "sibling accent rule still catches a second focal series",
+        shipped_with(before_auth, styled('.x + [data-name="Auth"] rect{fill:#bf4520}')),
+        1, "at most one focal",
+    )
+    h.expect_clean(
+        "impossible sibling accent rule does not add a focal series",
+        shipped_with(styled('.missing + [data-name="Auth"] rect{fill:#bf4520}')),
+    )
+    h.expect_findings(
+        "a sibling rule hides only Auth's label",
+        shipped_with(before_auth, styled('.x + [data-name="Auth"] text{fill-opacity:0}')),
+        1, "hides its bound label",
+    )
+    h.expect_findings(
+        "a sibling tspan rule hides a bound label",
+        shipped_with(styled('tspan + tspan{display:none}'),
+                     (AUTH_LABEL, AUTH_LABEL.replace(
+                         '>Auth</text>', '><tspan>A</tspan><tspan>uth</tspan></text>'))),
+        1, "hides its bound label",
+    )
+    for combinator, names in (("+", ()), ("~", ("Auth",))):
+        source = shipped_with(
+            (AUTH_G, '<g class="x"></g><g></g>' + AUTH_G),
+            styled('.x %s [data-name="Auth"] rect{display:none}' % combinator),
+        )
+        findings = h.run(source)
+        h.check("%s respects intervening element siblings" % combinator,
+                len(findings) == len(names)
+                and all("series %r" % name in findings[index]
+                        for index, name in enumerate(names)), "findings=%s" % findings)
+
+    h.expect_findings(
+        "a descendant sibling inside a nested group hides only Auth",
+        shipped_with((AUTH_BOX, '<g class="nested"><g class="x"></g>' + AUTH_BOX + '</g>'),
+                     styled('[data-name="Auth"] > .nested .x + rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a sibling rule on a page ancestor still hides every series",
+        shipped_with(('<div class="frame">', '<div class="x"></div><div class="frame">'),
+                     styled('.x + .frame{display:none}')),
+        5, "never drawn",
+    )
+    h.expect_findings(
+        "unknown pseudo-classes retain surrounding attribute constraints",
+        shipped_with(before_auth,
+                     (AUTH_G, '<g data-note="x:y" data-name="Auth"'),
+                     styled('.x + [data-note="x:y"]:is(.unknown) rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "duplicate sibling attributes use the browser's first attribute",
+        shipped_with((AUTH_G, '<g class="x" class="missing"></g>' + AUTH_G),
+                     styled('.x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    fallback_rules = verify.selector_rules(
+        '<style>.x + [data-name="Auth"] rect{display:none}</style>', lambda css: True)
+    h.check(
+        "an unknown element position fails closed only within the selector suffix",
+        verify.css_matches("rect", set(), [("g", {"[data-name=auth]"})], fallback_rules)
+        and not verify.css_matches("rect", set(), [("g", {"[data-name=catalog]"})], fallback_rules)
+        and not verify.css_matches("line", set(), [("g", {"[data-name=auth]"})], fallback_rules),
+    )
 
     # Every compound left of the subject must match a strict ancestor, in
     # order: never the element itself, a sibling or a descendant.
