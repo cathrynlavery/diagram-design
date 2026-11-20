@@ -1367,6 +1367,47 @@ def run_cases(h: Harness) -> int:
             5, "never drawn",
         )
 
+    h.expect_findings(
+        "an HTML void name in SVG still contains its child before Auth",
+        shipped_with((AUTH_G, '<source class="x"><g></g></source>' + AUTH_G),
+                     styled('.x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a self-closing SVG source does not leave an open container",
+        shipped_with((AUTH_G, '<source class="x"/>' + AUTH_G),
+                     styled('.x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a browser-created body does not discard the sibling rule",
+        shipped_with(('<body>', ''), ('</body>', ''),
+                     (AUTH_G, '<g class="x"></g>' + AUTH_G),
+                     styled('body .x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_findings(
+        "a browser-created subject can hide its descendants",
+        shipped_with(('<body>', ''), ('</body>', ''),
+                     styled('head + body{display:none}')),
+        5, "never drawn",
+    )
+    h.expect_findings(
+        "an SVG namesake does not rule out a browser-created tbody ancestor",
+        shipped_with((SVG_OPEN, '<table><tr><td>' + SVG_OPEN),
+                     ('</svg>', '</svg></td></tr></table>'),
+                     (AUTH_G, '<tbody></tbody><g class="x"></g>' + AUTH_G),
+                     styled('tbody .x + [data-name="Auth"] rect{display:none}')),
+        1, "series 'Auth'",
+    )
+    h.expect_named(
+        "an HTML breakout makes later sibling relationships conservative",
+        shipped_with((AUTH_G, '<span class="x"/>' + AUTH_G),
+                     (AUTH_BOX, '<a class="y"></a>' + AUTH_BOX),
+                     styled('.x [data-name="Auth"] .y + rect{display:none}')),
+        "series 'Auth' has a bound <rect> hidden",
+    )
+
     before_auth = (AUTH_G, '<g class="x"></g><!-- sibling -->' + AUTH_G)
     for selector in ('.x + [data-name="Auth"] rect',
                      '.x ~ [data-name="Auth"] rect',

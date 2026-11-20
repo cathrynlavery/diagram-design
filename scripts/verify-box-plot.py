@@ -978,6 +978,15 @@ def compound_kind(compound: str) -> tuple:
             compound_requirement(compound) or frozenset())
 
 
+SVG_BREAKOUT_TAGS = {
+    "b", "big", "blockquote", "body", "br", "center", "code", "dd", "div", "dl", "dt",
+    "em", "embed", "h1", "h2", "h3", "h4", "h5", "h6", "head", "hr", "i", "img", "li",
+    "listing", "menu", "meta", "nobr", "ol", "p", "pre", "ruby", "s", "small", "span",
+    "strong", "strike", "sub", "sup", "table", "tt", "u", "ul", "var",
+}
+IMPLIED_HTML_TAGS = {"html", "head", "body", "tbody", "colgroup", "tr", "p", "br"}
+
+
 class SelectorDocument(HTMLParser):
     """Element positions, parents and preceding element siblings for CSS matching."""
 
@@ -987,6 +996,7 @@ class SelectorDocument(HTMLParser):
         self.nodes = {}
         self.svg_scope = set()
         self.svg_elements = set()
+        self.unreliable_svg = False
         self.stack = []
         self.last_child = {}
         self.feed(source)
@@ -995,11 +1005,14 @@ class SelectorDocument(HTMLParser):
         line, column = self.getpos()
         at = self.lines[line - 1] + column
         parent = self.stack[-1] if self.stack else None
+        foreign_content = parent in self.svg_scope and self.nodes[parent][0] not in (
+            "foreignobject", "desc", "title")
+        if foreign_content and (tag in SVG_BREAKOUT_TAGS or (
+                tag == "font" and any(name in ("color", "face", "size") for name, _ in attrs))):
+            self.unreliable_svg = True
         if tag == "svg":
             self.svg_elements.add(at)
-            self.svg_scope.add(at)
-        elif parent in self.svg_scope and self.nodes[parent][0] not in (
-                "foreignobject", "desc", "title"):
+        if not self.unreliable_svg and (tag == "svg" or foreign_content):
             self.svg_scope.add(at)
         first_attrs = {}
         for name, value in attrs:
@@ -1007,15 +1020,18 @@ class SelectorDocument(HTMLParser):
         self.nodes[at] = (tag, element_tokens(first_attrs),
             parent, self.last_child.get(parent))
         self.last_child[parent] = at
-        if tag not in VOID_TAGS:
+        if tag not in VOID_TAGS or at in self.svg_scope:
             self.stack.append(at)
 
     def handle_startendtag(self, tag, attrs):
+        depth = len(self.stack)
         self.handle_starttag(tag, attrs)
-        if tag not in VOID_TAGS:
+        if len(self.stack) > depth:
             self.stack.pop()
 
     def handle_endtag(self, tag):
+        if tag in ("br", "p") and self.stack and self.stack[-1] in self.svg_scope:
+            self.unreliable_svg = True
         for index in range(len(self.stack) - 1, -1, -1):
             if self.nodes[self.stack[index]][0] == tag:
                 del self.stack[index:]
@@ -1117,11 +1133,13 @@ def sibling_kind(compound: str) -> tuple:
 def sibling_positions(compounds: list, relations: list, document) -> set:
     """Match reliable SVG edges; widen HTML edges that a browser may repair."""
     previous = set()
+    missing_element = False
+    recorded_kinds = {node[0] for node in document.nodes.values()}
     for index, compound in enumerate(compounds):
         kind, required = sibling_kind(compound)
         matched, reaches = set(), {}
         relation = relations[index - 1] if index else None
-        uncertain_previous = any(
+        uncertain_previous = missing_element or any(
             at not in document.svg_scope
             or (relation in ("+", "~") and at in document.svg_elements)
             for at in previous)
@@ -1137,7 +1155,9 @@ def sibling_positions(compounds: list, relations: list, document) -> set:
             if reachable and kind in (None, tag) and required <= tokens:
                 matched.add(at)
         previous = matched
-    return previous
+        missing_element = (kind is not None and not required
+                           and (kind not in recorded_kinds or kind in IMPLIED_HTML_TAGS))
+    return set(document.nodes) if missing_element else previous
 
 
 def selector_rules(source: str, wanted, document=None) -> list:
