@@ -279,7 +279,27 @@ def main() -> int:
 def run_cases(h: Harness) -> int:
     for path in SHIPPED:
         h.check("shipped %s exists" % path.name, path.is_file())
-        findings = verify.check(path)
+        parsed_document = verify.SelectorDocument(verify.blank_comments(path.read_text(encoding="utf-8")))
+        positions = []
+        original_matches = verify.css_matches
+
+        def recording_matches(tag, tokens, chain, rules, at=None):
+            positions.append((tag, at))
+            return original_matches(tag, tokens, chain, rules, at)
+
+        verify.css_matches = recording_matches
+        try:
+            findings = verify.check(path)
+        finally:
+            verify.css_matches = original_matches
+        h.check(
+            "every selector offset in shipped %s aligns with its parsed element" % path.name,
+            bool(positions) and all(at in parsed_document.nodes and parsed_document.nodes[at][0] == tag
+                                    for tag, at in positions),
+            "unmapped positions=%s" % [(tag, at) for tag, at in positions
+                                       if at not in parsed_document.nodes
+                                       or parsed_document.nodes[at][0] != tag],
+        )
         h.check(
             "shipped %s is clean" % path.name,
             findings == [],
@@ -1331,6 +1351,21 @@ def run_cases(h: Harness) -> int:
         ("a type-only hiding rule no chart element can match", "p{opacity:0}"),
     ):
         h.expect_clean("%s passes" % title, shipped_with(styled(css)))
+
+    for title, opening, closing, selector in (
+        ("a paragraph implicitly closed by figure", '<p>intro<figure>', '</figure>',
+         'p + figure rect'),
+        ("a list item implicitly closed by another list item", '<ul><li>intro<li>', '</li></ul>',
+         'li + li rect'),
+        ("unreliable page-level child and descendant relationships",
+         '<p>intro<figure>', '</figure>', 'body > p + figure > svg rect'),
+    ):
+        h.expect_findings(
+            "%s cannot let hidden series pass" % title,
+            shipped_with((SVG_OPEN, opening + SVG_OPEN), ('</svg>', '</svg>' + closing),
+                         styled(selector + '{display:none}')),
+            5, "never drawn",
+        )
 
     before_auth = (AUTH_G, '<g class="x"></g><!-- sibling -->' + AUTH_G)
     for selector in ('.x + [data-name="Auth"] rect',

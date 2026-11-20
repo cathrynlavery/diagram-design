@@ -985,6 +985,8 @@ class SelectorDocument(HTMLParser):
         super().__init__(convert_charrefs=False)
         self.lines = [0] + [match.end() for match in re.finditer("\n", source)]
         self.nodes = {}
+        self.svg_scope = set()
+        self.svg_elements = set()
         self.stack = []
         self.last_child = {}
         self.feed(source)
@@ -993,6 +995,12 @@ class SelectorDocument(HTMLParser):
         line, column = self.getpos()
         at = self.lines[line - 1] + column
         parent = self.stack[-1] if self.stack else None
+        if tag == "svg":
+            self.svg_elements.add(at)
+            self.svg_scope.add(at)
+        elif parent in self.svg_scope and self.nodes[parent][0] not in (
+                "foreignobject", "desc", "title"):
+            self.svg_scope.add(at)
         first_attrs = {}
         for name, value in attrs:
             first_attrs.setdefault(name, value or "")
@@ -1107,12 +1115,16 @@ def sibling_kind(compound: str) -> tuple:
 
 
 def sibling_positions(compounds: list, relations: list, document) -> set:
-    """Match left to right in O(elements * compounds), without backtracking."""
+    """Match reliable SVG edges; widen HTML edges that a browser may repair."""
     previous = set()
     for index, compound in enumerate(compounds):
         kind, required = sibling_kind(compound)
         matched, reaches = set(), {}
         relation = relations[index - 1] if index else None
+        uncertain_previous = any(
+            at not in document.svg_scope
+            or (relation in ("+", "~") and at in document.svg_elements)
+            for at in previous)
         for at, (tag, tokens, parent, sibling) in document.nodes.items():
             if relation == " ":
                 reaches[at] = parent in previous or reaches.get(parent, False)
@@ -1120,7 +1132,9 @@ def sibling_positions(compounds: list, relations: list, document) -> set:
                 reaches[at] = sibling in previous or reaches.get(sibling, False)
             else:
                 reaches[at] = not index or (parent if relation == ">" else sibling) in previous
-            if reaches[at] and kind in (None, tag) and required <= tokens:
+            reachable = (reaches[at] or uncertain_previous or at not in document.svg_scope
+                         or at in document.svg_elements)
+            if reachable and kind in (None, tag) and required <= tokens:
                 matched.add(at)
         previous = matched
     return previous
@@ -1133,7 +1147,8 @@ def selector_rules(source: str, wanted, document=None) -> list:
     names one. `ancestors` holds (type, tokens) for every other compound,
     outermost first, and they must match the element's strict ancestors in
     that order. Without siblings, `>` still reads as any ancestor. Sibling
-    selectors use actual element positions and preserve every combinator.
+    selectors preserve combinators within SVG, widening relationships in
+    HTML where implicit end tags can change the parsed structure.
     """
     rules = []
     for match in STYLE_RE.finditer(source):
