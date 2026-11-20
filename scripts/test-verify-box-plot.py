@@ -1130,6 +1130,71 @@ def run_cases(h: Harness) -> int:
         shipped_with(vanish, (AUTH_G, '<g style="animation: vanish 1s forwards" data-name="Auth"')),
         1, "never drawn",
     )
+    h.expect_findings(
+        "animation-direction longhand is read independently",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation-name:vanish;'
+            'animation-duration:1s;animation-direction:reverse;animation-fill-mode:forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "animation-iteration-count longhand is read independently",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation-name:vanish;'
+            'animation-duration:1s;animation-direction:alternate;'
+            'animation-iteration-count:2;animation-fill-mode:forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "a decimal animation duration is not an iteration count",
+        shipped_with(styled(
+            "@keyframes appear { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:appear 2.5s alternate forwards}'
+        )),
+    )
+    h.expect_findings(
+        "duplicate keyframe endpoints merge independent hidden properties",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1; visibility:visible } "
+            "to { opacity: 0 } to { visibility:visible } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "commas inside timing functions do not split animation lists",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s '
+            'cubic-bezier(0.42,0,1,1) forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "short animation longhand lists cycle across animation names",
+        shipped_with(styled(
+            "@keyframes pulse { from { opacity: 1 } to { opacity: 1 } } "
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:pulse 1s,vanish 1s '
+            'forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "a later explicit animation-fill-mode reset wins",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards;'
+            'animation-fill-mode:none}'
+        )),
+    )
+    h.expect_findings(
+        "nested conditional rules are traversed without assuming inactivity",
+        shipped_with(styled(
+            "@media all { @keyframes vanish { from { opacity: 1 } to { opacity: 0 } } } "
+            "@media all { [data-name=\"Auth\"] line[data-role=\"median\"]{"
+            "animation:vanish 1s forwards} }"
+        )), 1, "never drawn",
+    )
     h.expect_clean(
         "an inline animation without persistent fill stays drawn after finishing",
         shipped_with(vanish, (AUTH_MEDIAN, AUTH_MEDIAN.replace(

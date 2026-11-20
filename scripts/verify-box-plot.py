@@ -183,7 +183,7 @@ HIDE_DECL_RE = re.compile(
     re.IGNORECASE,
 )
 ANIMATION_DECL_RE = re.compile(
-    r"(?:^|[{;])\s*((?:-webkit-)?animation(?:-name|-fill-mode)?)\s*:\s*([^;}{]+)",
+    r"(?:^|[{;])\s*((?:-webkit-)?animation(?:-name|-fill-mode|-direction|-iteration-count|-duration)?)\s*:\s*([^;}{]+)",
     re.IGNORECASE,
 )
 TAG_RE = re.compile(r"<" + TAG_BODY + r"+>")
@@ -1004,8 +1004,8 @@ def mask_keyframes(css: str) -> str:
 
 
 def terminal_visibility(css: str):
-    """Return True only when the last relevant declaration definitely hides an element."""
-    state = None
+    """Return terminal visibility for each independently animated property."""
+    state = {}
     for declaration in css.split(";"):
         name, separator, value = declaration.partition(":")
         if not separator:
@@ -1013,23 +1013,56 @@ def terminal_visibility(css: str):
         name = name.strip().lower()
         value = value.split("!", 1)[0].strip().lower()
         if name == "display":
-            state = value == "none"
+            state["display"] = value == "none"
         elif name == "visibility":
-            state = value in {"hidden", "collapse"}
+            state["visibility"] = value in {"hidden", "collapse"}
         elif name == "opacity":
             try:
                 amount = number(value.rstrip("%"))
             except (TypeError, ValueError):
                 amount = None
-            state = amount is not None and amount <= 0
+            state["opacity"] = amount is not None and amount <= 0
     return state
+
+
+def nested_css_blocks(css: str):
+    """Yield each CSS block, including blocks nested in conditional rules."""
+    for prelude, body in css_blocks(css):
+        yield prelude, body
+        yield from nested_css_blocks(body)
+
+
+def split_css_list(value: str) -> list:
+    """Split a CSS comma list without splitting functions or quoted strings."""
+    parts, start, depth, quote = [], 0, 0, None
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if quote:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")" and depth:
+            depth -= 1
+        elif char == "," and depth == 0:
+            parts.append(value[start:index].strip())
+            start = index + 1
+        index += 1
+    parts.append(value[start:].strip())
+    return [part for part in parts if part]
 
 
 def keyframe_visibility(source: str) -> dict:
     """Return explicit 0% and 100% visibility states for CSS keyframes."""
     found = {}
     for style in STYLE_RE.finditer(source):
-        for prelude, body in css_blocks(style.group("body")):
+        for prelude, body in nested_css_blocks(style.group("body")):
             match = KEYFRAME_RE.match(prelude)
             if not match:
                 continue
@@ -1043,7 +1076,8 @@ def keyframe_visibility(source: str) -> dict:
                         position = 0 if label == "from" or label.startswith("0") else 1
                     except (TypeError, ValueError):
                         continue
-                    frames[position] = terminal_visibility(declarations)
+                    values = frames.setdefault(position, {})
+                    values.update(terminal_visibility(declarations))
             if frames:
                 found[match.group(1)] = frames
     return found
@@ -1072,46 +1106,51 @@ def animation_terminal_direction(direction: str, iterations: str):
 
 def declares_hidden_animation(css: str, keyframes: dict) -> bool:
     """Whether a rule retains a definitely hidden terminal keyframe value."""
-    properties = {}
-    for match in ANIMATION_DECL_RE.finditer(blank_css_comments(css)):
-        properties[match.group(1).lower().removeprefix("-webkit-")] = match.group(2).strip()
-    shorthand = properties.get("animation")
-    name_value = properties.get("animation-name", "").strip()
-    names = [part.strip() for part in name_value.split(",")] if name_value else []
-    if shorthand and not names:
-        specs = [part.strip() for part in shorthand.split(",")]
-        names = []
-        for spec in specs:
-            tokens = re.findall(r"[-\w]+", spec)
+    state = {"name": [], "fill-mode": [], "direction": [], "iteration-count": []}
+
+    def set_list(prop, value):
+        parts = split_css_list(value)
+        state[prop] = [part.strip() if prop == "name" else part.strip().lower()
+                       for part in parts]
+
+    def shorthand_parts(value):
+        names, fills, directions, counts = [], [], [], []
+        for spec in split_css_list(value):
+            token_spec = re.sub(r"[\w-]+\([^)]*\)", " ", spec)
+            tokens = re.findall(r"[-+]?(?:\d*\.\d+|\d+)(?:[a-zA-Z%]+)?|[-\w]+",
+                                token_spec)
+            lowered = [token.lower() for token in tokens]
             names.append(next((token for token in tokens if token in keyframes), ""))
+            fills.append(next((token for token in lowered
+                               if token in {"forwards", "backwards", "both", "none"}), "none"))
+            directions.append(next((token for token in lowered
+                                    if token in {"normal", "reverse", "alternate", "alternate-reverse"}), "normal"))
+            counts.append(next((token for token in lowered
+                                if token == "infinite" or re.fullmatch(r"\d+(?:\.\d+)?", token)), "1"))
+        state["name"], state["fill-mode"], state["direction"], state["iteration-count"] = (
+            names, fills, directions, counts)
+
+    for match in ANIMATION_DECL_RE.finditer(blank_css_comments(css)):
+        prop = match.group(1).lower().removeprefix("-webkit-")
+        value = match.group(2).strip()
+        if prop == "animation":
+            shorthand_parts(value)
+        else:
+            longhand = prop.removeprefix("animation-")
+            if longhand in state:
+                set_list(longhand, value)
+
+    names = state["name"]
     if not names:
         return False
-    fills = [part.strip().lower() for part in
-             properties.get("animation-fill-mode", "none").split(",")]
-    directions = [part.strip().lower() for part in
-                  properties.get("animation-direction", "normal").split(",")]
-    counts = [part.strip().lower() for part in
-              properties.get("animation-iteration-count", "1").split(",")]
-    if shorthand:
-        for index, spec in enumerate(shorthand.split(",")):
-            tokens = re.findall(r"[-\w]+", spec.lower())
-            if index < len(fills) and fills[index] == "none":
-                fills[index] = next((token for token in tokens
-                                     if token in {"forwards", "backwards", "both", "none"}), "none")
-            if index < len(directions) and directions[index] == "normal":
-                directions[index] = next((token for token in tokens
-                                          if token in {"normal", "reverse", "alternate", "alternate-reverse"}), "normal")
-            if index < len(counts) and counts[index] == "1":
-                counts[index] = next((token for token in tokens
-                                      if token == "infinite" or re.fullmatch(r"\d+(?:\.\d+)?", token)), "1")
     for index, name in enumerate(names):
-        if name not in keyframes or index >= len(fills) or fills[index] not in {"forwards", "both"}:
+        fill = state["fill-mode"][index % len(state["fill-mode"])] if state["fill-mode"] else "none"
+        if name not in keyframes or fill not in {"forwards", "both"}:
             continue
-        endpoint = animation_terminal_direction(
-            directions[min(index, len(directions) - 1)],
-            counts[min(index, len(counts) - 1)],
-        )
-        if endpoint is not None and keyframes[name].get(endpoint) is True:
+        direction = state["direction"][index % len(state["direction"])] if state["direction"] else "normal"
+        count = state["iteration-count"][index % len(state["iteration-count"])] if state["iteration-count"] else "1"
+        endpoint = animation_terminal_direction(direction, count)
+        if endpoint is not None and any(keyframes[name].get(endpoint, {}).values()):
             return True
     return False
 
@@ -1120,7 +1159,7 @@ def animation_selector_rules(source: str, keyframes: dict) -> list:
     """Parse only top-level animation rules, leaving selector_rules unchanged."""
     rules = []
     for match in STYLE_RE.finditer(source):
-        for prelude, body in css_blocks(match.group("body")):
+        for prelude, body in nested_css_blocks(match.group("body")):
             if prelude.lstrip().startswith("@") or not declares_hidden_animation(body, keyframes):
                 continue
             for alternative in prelude.split(","):
