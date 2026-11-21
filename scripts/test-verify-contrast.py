@@ -17,7 +17,13 @@ Cases:
 - a token used as text is held to 4.5:1 even when it would clear the 3:1
   non-text bar (red);
 - `ink-strong` is measured on the accent fill it sits on, not on paper (red);
-- an unknown role, a missing role, and an unparseable value fail closed (red).
+- an unknown role, a missing role, and an unparseable value fail closed (red);
+- every shipped preset parses with the same token roles as style-guide.md,
+  passes contrast, and has exactly one accent colour per skin (green);
+- a fixture whose light accent sits at 2.86:1 fails (red);
+- `--all-presets` against a temporary directory: one failing preset, a
+  missing required slug, and an invalid filename each make the batch fail
+  (red).
 
 Usage: python3 scripts/test-verify-contrast.py
 Exit: 0 all pass, 1 a case failed.
@@ -34,12 +40,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-contrast.py"
 STYLE_GUIDE = ROOT / "skills/diagram-design/references/style-guide.md"
+PRESETS_DIR = ROOT / "skills/diagram-design/references/presets"
+LOW_CONTRAST = ROOT / "scripts/fixtures/preset-low-contrast.md"
 
 NS = runpy.run_path(str(CHECKER), run_name="verify_contrast_test")
 CHECK = NS["check"]
 CONTRAST = NS["contrast"]
 COMPOSITE = NS["composite"]
 PARSE_COLOR = NS["parse_color"]
+PARSE_TOKENS = NS["parse_tokens"]
+HEX_RE = NS["HEX_RE"]
+RGBA_RE = NS["RGBA_RE"]
+SHIPPED_PRESET_PATHS = NS["shipped_preset_paths"]
+REQUIRED_PRESET_SLUGS = NS["REQUIRED_PRESET_SLUGS"]
+SKINS = NS["SKINS"]
+ROLE_USES = NS["ROLE_USES"]
 
 SHIPPED = STYLE_GUIDE.read_text(encoding="utf-8")
 
@@ -155,6 +170,152 @@ def run_cli(source: str) -> int:
         return result.returncode
 
 
+def run_cli_args(args: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(CHECKER), *args],
+        capture_output=True, text=True, check=False,
+    )
+
+
+def color_count(cell: str) -> int:
+    """How many hex or rgba() colours the contrast parser would see in *cell*."""
+    return len(HEX_RE.findall(cell)) + len(RGBA_RE.findall(cell))
+
+
+def test_shipped_presets() -> None:
+    default_tokens, default_findings = PARSE_TOKENS(SHIPPED)
+    ok(not default_findings, "the shipped style guide still parses")
+    default_roles = {skin: set(default_tokens[skin]) for skin in SKINS}
+    paths = SHIPPED_PRESET_PATHS()
+    found = {path.stem for path in paths}
+    ok(
+        found == set(REQUIRED_PRESET_SLUGS),
+        f"shipped presets are exactly {REQUIRED_PRESET_SLUGS} (found {sorted(found)})",
+    )
+    for path in paths:
+        source = path.read_text(encoding="utf-8")
+        tokens, parse_findings = PARSE_TOKENS(source)
+        ok(not parse_findings, f"{path.stem} parses with no table findings ({parse_findings})")
+        for skin in SKINS:
+            roles = set(tokens[skin])
+            ok(
+                roles == default_roles[skin],
+                f"{path.stem} {skin} token roles match style-guide.md "
+                f"(missing {sorted(default_roles[skin] - roles)}, "
+                f"extra {sorted(roles - default_roles[skin])})",
+            )
+            ok(
+                roles == set(ROLE_USES),
+                f"{path.stem} {skin} has every classified role",
+            )
+            accent = tokens[skin].get("accent", "")
+            ok(
+                color_count(accent) == 1,
+                f"{path.stem} {skin} accent has exactly one colour ({accent!r})",
+            )
+        rows, findings = CHECK(source)
+        ok(not findings, f"{path.stem} has no contrast findings ({findings})")
+        ok(
+            len(rows) == 20,
+            f"{path.stem} measures every text and non-text use in both skins ({len(rows)} rows)",
+        )
+        result = run_cli_args(["--style-guide", str(path), "--quiet"])
+        ok(result.returncode == 0, f"the CLI exits 0 on {path.stem}")
+
+
+def test_broken_preset_fixture_fails() -> None:
+    source = LOW_CONTRAST.read_text(encoding="utf-8")
+    findings = findings_for(source)
+    ok(mentions(findings, "light", "accent"), "low-contrast fixture reports light accent")
+    ok(
+        any("light: `accent` as non-text is 2.86:1" in f for f in findings),
+        "low-contrast fixture fails the 3:1 non-text bar at 2.86:1",
+    )
+    result = run_cli_args(["--style-guide", str(LOW_CONTRAST), "--quiet"])
+    ok(result.returncode == 1, "the CLI exits 1 on the low-contrast fixture")
+
+
+def write_preset_tree(directory: Path, files: dict[str, str]) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, source in files.items():
+        (directory / name).write_text(source, encoding="utf-8")
+
+
+def shipped_preset_sources() -> dict[str, str]:
+    return {
+        f"{slug}.md": (PRESETS_DIR / f"{slug}.md").read_text(encoding="utf-8")
+        for slug in REQUIRED_PRESET_SLUGS
+    }
+
+
+def run_all_presets_dir(directory: Path) -> subprocess.CompletedProcess:
+    return run_cli_args(
+        ["--all-presets", "--presets-dir", str(directory), "--quiet"]
+    )
+
+
+def test_all_presets_cli() -> None:
+    result = run_cli_args(["--all-presets", "--quiet"])
+    ok(result.returncode == 0, "the CLI exits 0 on --all-presets")
+    ok(
+        "OK verify-contrast --all-presets: 3 presets" in result.stdout,
+        f"--all-presets summarizes three presets ({result.stdout.strip()!r})",
+    )
+    combined = run_cli_args(["--all-presets", "--style-guide", str(STYLE_GUIDE)])
+    ok(combined.returncode == 1, "--all-presets refuses --style-guide")
+    explicit = run_cli_args(
+        ["--all-presets", "--presets-dir", str(PRESETS_DIR), "--quiet"]
+    )
+    ok(explicit.returncode == 0, "--all-presets --presets-dir on the shipped directory exits 0")
+    lonely = run_cli_args(["--presets-dir", str(PRESETS_DIR)])
+    ok(lonely.returncode == 1, "--presets-dir without --all-presets is refused")
+
+
+def test_all_presets_failing_preset() -> None:
+    files = shipped_preset_sources()
+    files["blueprint.md"] = LOW_CONTRAST.read_text(encoding="utf-8")
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "one failing preset makes --all-presets exit 1")
+    ok(
+        "blueprint: light: `accent` as non-text is 2.86:1" in result.stdout,
+        f"the failing preset is named in the batch ({result.stdout.strip()!r})",
+    )
+
+
+def test_all_presets_missing_required() -> None:
+    files = {
+        name: source
+        for name, source in shipped_preset_sources().items()
+        if name != "blueprint.md"
+    }
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "a missing required preset makes --all-presets exit 1")
+    ok(
+        "missing required shipped preset(s): blueprint" in result.stdout,
+        f"the missing required preset is named ({result.stdout.strip()!r})",
+    )
+
+
+def test_all_presets_invalid_filename() -> None:
+    files = shipped_preset_sources()
+    files["not_a_slug.md"] = files["graphite.md"]
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "an invalid preset filename makes --all-presets exit 1")
+    ok(
+        "not valid slugs: not_a_slug.md" in result.stdout,
+        f"the invalid preset filename is named ({result.stdout.strip()!r})",
+    )
+
+
 def main() -> int:
     test_shipped_palette_passes()
     test_retired_palette_fails_on_each_token()
@@ -163,6 +324,12 @@ def main() -> int:
     test_ink_strong_is_measured_on_accent_fill()
     test_fails_closed()
     ok(run_cli(SHIPPED) == 0, "the CLI exits 0 on the shipped style guide")
+    test_shipped_presets()
+    test_broken_preset_fixture_fails()
+    test_all_presets_cli()
+    test_all_presets_failing_preset()
+    test_all_presets_missing_required()
+    test_all_presets_invalid_filename()
 
     for failure in failures:
         print(f"FAIL: {failure}")
