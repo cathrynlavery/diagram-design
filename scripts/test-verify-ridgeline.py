@@ -84,7 +84,7 @@ def run(*paths):
 
 def write(directory, name, source):
     path = directory / name
-    path.write_text(source, encoding="utf-8", newline="\n")
+    path.write_bytes(source.encode("utf-8"))
     return path
 
 
