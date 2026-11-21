@@ -219,7 +219,7 @@ Four options:
 1. **Run onboarding** — see [`onboarding.md`](onboarding.md). Drop a URL; the skill extracts the palette + fonts and rewrites this file.
 2. **Edit by hand** — change the hex values in the tables above. Run the pre-output taste gate afterward to verify the accent still reads as "focal" against the new paper color.
 3. **Brand handoff** — paste your existing design-token JSON into a new section here and map its tokens to the semantic roles above.
-4. **Client profiles** — save and switch named skins, or bind one to a project, using [`profiles.md`](profiles.md).
+4. **Client profiles** — save and switch named skins, or bind one to a project, using [`profiles.md`](profiles.md). Shipped presets `blueprint`, `mono-print`, and `graphite` load the same way.
 
 ### Constraints (don't break these)
 

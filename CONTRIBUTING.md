@@ -42,7 +42,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Semantic-pattern routing | `python3 scripts/verify-semantic-motion.py --markdown-only` |
 | Animated-example structure and accessibility | `python3 scripts/verify-semantic-motion.py --example-only` |
 | Skin conformance of every example and template (colors, fonts, a11y, assets, scripts) | `python3 scripts/lint-skin.py --all --baseline` |
-| Skin token contrast: every text token clears 4.5:1 and every essential mark 3:1 on paper, light and dark, with translucent tokens composited first | `python3 scripts/test-verify-contrast.py && python3 scripts/verify-contrast.py` |
+| Skin token contrast: every text token clears 4.5:1 and every essential mark 3:1 on paper, light and dark, with translucent tokens composited first | `python3 scripts/test-verify-contrast.py && python3 scripts/verify-contrast.py && python3 scripts/verify-contrast.py --all-presets` |
 | Rendered-layout checker and shipped examples/templates | `python3 scripts/lint-render.py --self-test && python3 scripts/lint-render.py --all` |
 | Unit Grid equal cells, reading order, printed values, and movement | `python3 scripts/test-verify-unit-grid.py && python3 scripts/verify-unit-grid.py --all` |
 | Quantitative polar encoding and variant parity | `python3 scripts/test-verify-polar.py && python3 scripts/verify-polar.py` |
@@ -187,6 +187,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/build-readme-thumbs.py --check \
   && python3 scripts/test-verify-contrast.py \
   && python3 scripts/verify-contrast.py \
+  && python3 scripts/verify-contrast.py --all-presets \
   && python3 scripts/test-self-check.py \
   && python3 scripts/test-export-svg-standalone.py \
   && python3 scripts/verify-geometry.py --all \
