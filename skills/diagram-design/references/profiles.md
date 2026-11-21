@@ -72,7 +72,7 @@ The skill ships three complete profiles in `references/presets/` next to this fi
 | `mono-print` | Print off-white paper, black and grey ink, no tinted fills. The accent is a heavier ink weight (`#111111` light / `#f0f0f0` dark), not a second hue, so it survives grayscale. |
 | `graphite` | Bone paper in light, warm charcoal in dark, one copper accent. Slides and dark docs. |
 
-`load <slug>` / `switch <slug>` / `list` look in `~/.diagram-design/profiles/` first. If the slug is missing there and matches a shipped preset, copy the packaged file into the library (so `update` can edit the copy) and continue. Never write into the installed plugin to store that copy. A user library file of the same slug wins over the packaged file. The packaged files cannot be overwritten or deleted; `save` / `update` / `delete` of a preset slug operate on the library copy only, and `delete` of that copy leaves the shipped preset available for the next `load` / `list`. `default` is unchanged.
+`load <slug>` / `switch <slug>` look in `~/.diagram-design/profiles/` first. If the slug is missing there and matches a shipped preset, copy the packaged file into the library (so `update` can edit the copy) and continue. Never write into the installed plugin to store that copy. `list` is read-only: it inspects the library without creating it and shows shipped presets that are not yet there as shipped; it does not copy them. A user library file of the same slug wins over the packaged file. The packaged files cannot be overwritten or deleted; `save` / `update` / `delete` of a preset slug operate on the library copy only, and `delete` of that copy leaves the shipped preset available for the next `load` / `list`. `default` is unchanged.
 
 ### Make your own preset
 

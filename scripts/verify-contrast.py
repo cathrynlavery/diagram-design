@@ -25,6 +25,7 @@ Usage:
     python3 scripts/verify-contrast.py
     python3 scripts/verify-contrast.py --style-guide path/to/style-guide.md
     python3 scripts/verify-contrast.py --all-presets
+    python3 scripts/verify-contrast.py --all-presets --presets-dir path/to/presets
 
 Exit: 0 every token clears its bar, 1 a finding.
 """
@@ -217,12 +218,13 @@ def check(markdown: str) -> tuple[list[tuple], list[str]]:
     return rows, findings + measured
 
 
-def shipped_preset_paths() -> list[Path]:
+def shipped_preset_paths(presets_dir: Path | None = None) -> list[Path]:
     """Return `references/presets/<slug>.md` files whose stem is a valid slug."""
-    if not PRESETS_DIR.is_dir():
+    directory = PRESETS_DIR if presets_dir is None else presets_dir
+    if not directory.is_dir():
         return []
     return sorted(
-        path for path in PRESETS_DIR.glob("*.md") if SLUG_RE.fullmatch(path.stem)
+        path for path in directory.glob("*.md") if SLUG_RE.fullmatch(path.stem)
     )
 
 
@@ -256,15 +258,16 @@ def check_path(path: Path) -> tuple[list[tuple], list[str], str | None]:
     return rows, findings, None
 
 
-def check_all_presets(quiet: bool) -> int:
+def check_all_presets(quiet: bool, presets_dir: Path | None = None) -> int:
     """Measure every shipped preset. Fail closed if a required slug is missing."""
-    if not PRESETS_DIR.is_dir():
-        print(f"FAIL: shipped presets directory is missing: {PRESETS_DIR}")
+    directory = PRESETS_DIR if presets_dir is None else presets_dir
+    if not directory.is_dir():
+        print(f"FAIL: shipped presets directory is missing: {directory}")
         return 1
     extras = sorted(
-        path.name for path in PRESETS_DIR.glob("*.md") if not SLUG_RE.fullmatch(path.stem)
+        path.name for path in directory.glob("*.md") if not SLUG_RE.fullmatch(path.stem)
     )
-    paths = shipped_preset_paths()
+    paths = shipped_preset_paths(directory)
     found = {path.stem for path in paths}
     missing = [slug for slug in REQUIRED_PRESET_SLUGS if slug not in found]
     findings: list[str] = []
@@ -316,14 +319,23 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="check every shipped preset in references/presets/",
     )
+    parser.add_argument(
+        "--presets-dir",
+        type=Path,
+        default=None,
+        help="directory for --all-presets (default: references/presets/)",
+    )
     parser.add_argument("--quiet", action="store_true", help="print only findings and the summary")
     args = parser.parse_args(argv)
 
+    if args.presets_dir is not None and not args.all_presets:
+        print("FAIL: --presets-dir requires --all-presets")
+        return 1
     if args.all_presets:
         if args.style_guide is not None:
             print("FAIL: --all-presets and --style-guide cannot be combined")
             return 1
-        return check_all_presets(args.quiet)
+        return check_all_presets(args.quiet, args.presets_dir)
 
     style_guide = args.style_guide if args.style_guide is not None else STYLE_GUIDE
     rows, findings, error = check_path(style_guide)

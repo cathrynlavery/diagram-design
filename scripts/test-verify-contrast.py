@@ -20,7 +20,10 @@ Cases:
 - an unknown role, a missing role, and an unparseable value fail closed (red);
 - every shipped preset parses with the same token roles as style-guide.md,
   passes contrast, and has exactly one accent colour per skin (green);
-- a fixture whose light accent sits at 2.86:1 fails (red).
+- a fixture whose light accent sits at 2.86:1 fails (red);
+- `--all-presets` against a temporary directory: one failing preset, a
+  missing required slug, and an invalid filename each make the batch fail
+  (red).
 
 Usage: python3 scripts/test-verify-contrast.py
 Exit: 0 all pass, 1 a case failed.
@@ -232,6 +235,25 @@ def test_broken_preset_fixture_fails() -> None:
     ok(result.returncode == 1, "the CLI exits 1 on the low-contrast fixture")
 
 
+def write_preset_tree(directory: Path, files: dict[str, str]) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, source in files.items():
+        (directory / name).write_text(source, encoding="utf-8")
+
+
+def shipped_preset_sources() -> dict[str, str]:
+    return {
+        f"{slug}.md": (PRESETS_DIR / f"{slug}.md").read_text(encoding="utf-8")
+        for slug in REQUIRED_PRESET_SLUGS
+    }
+
+
+def run_all_presets_dir(directory: Path) -> subprocess.CompletedProcess:
+    return run_cli_args(
+        ["--all-presets", "--presets-dir", str(directory), "--quiet"]
+    )
+
+
 def test_all_presets_cli() -> None:
     result = run_cli_args(["--all-presets", "--quiet"])
     ok(result.returncode == 0, "the CLI exits 0 on --all-presets")
@@ -241,6 +263,57 @@ def test_all_presets_cli() -> None:
     )
     combined = run_cli_args(["--all-presets", "--style-guide", str(STYLE_GUIDE)])
     ok(combined.returncode == 1, "--all-presets refuses --style-guide")
+    explicit = run_cli_args(
+        ["--all-presets", "--presets-dir", str(PRESETS_DIR), "--quiet"]
+    )
+    ok(explicit.returncode == 0, "--all-presets --presets-dir on the shipped directory exits 0")
+    lonely = run_cli_args(["--presets-dir", str(PRESETS_DIR)])
+    ok(lonely.returncode == 1, "--presets-dir without --all-presets is refused")
+
+
+def test_all_presets_failing_preset() -> None:
+    files = shipped_preset_sources()
+    files["blueprint.md"] = LOW_CONTRAST.read_text(encoding="utf-8")
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "one failing preset makes --all-presets exit 1")
+    ok(
+        "blueprint: light: `accent` as non-text is 2.86:1" in result.stdout,
+        f"the failing preset is named in the batch ({result.stdout.strip()!r})",
+    )
+
+
+def test_all_presets_missing_required() -> None:
+    files = {
+        name: source
+        for name, source in shipped_preset_sources().items()
+        if name != "blueprint.md"
+    }
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "a missing required preset makes --all-presets exit 1")
+    ok(
+        "missing required shipped preset(s): blueprint" in result.stdout,
+        f"the missing required preset is named ({result.stdout.strip()!r})",
+    )
+
+
+def test_all_presets_invalid_filename() -> None:
+    files = shipped_preset_sources()
+    files["not_a_slug.md"] = files["graphite.md"]
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "an invalid preset filename makes --all-presets exit 1")
+    ok(
+        "not valid slugs: not_a_slug.md" in result.stdout,
+        f"the invalid preset filename is named ({result.stdout.strip()!r})",
+    )
 
 
 def main() -> int:
@@ -254,6 +327,9 @@ def main() -> int:
     test_shipped_presets()
     test_broken_preset_fixture_fails()
     test_all_presets_cli()
+    test_all_presets_failing_preset()
+    test_all_presets_missing_required()
+    test_all_presets_invalid_filename()
 
     for failure in failures:
         print(f"FAIL: {failure}")
