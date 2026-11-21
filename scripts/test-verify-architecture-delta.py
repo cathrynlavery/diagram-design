@@ -240,7 +240,8 @@ class ContractTests(unittest.TestCase):
                           'style="/**/display:none !important"', 'style="opacity:0%"', 'style="visibility:collapse"'):
             self.rejects(GOOD.replace('data-object-id="client"', f'{attribute} data-object-id="client"', 1), 'must not be hidden')
             self.rejects(GOOD.replace('data-change="ADDED"', f'{attribute} data-change="ADDED"', 1), 'must not be hidden')
-        for rule in ('g {display:none}', '[data-change] {visibility:hidden}', 'rect {opacity:0}'):
+        for rule in ('g {display:none}', '[data-change] {visibility:hidden}', 'rect {opacity:0}',
+                     ':not([data-x="{.missing"]) {display:none}'):
             self.rejects(GOOD.replace('</style>', rule + '</style>'), 'CSS must not hide')
         self.clean(GOOD.replace('</style>', '.scroll-hint {display:none}</style>'))
 

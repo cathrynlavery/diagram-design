@@ -95,6 +95,21 @@ def blank_css_strings(css: str) -> str:
     return blanked
 
 
+def mask_all_css_strings(css: str) -> str:
+    """Mask string contents so curly braces and delimiters inside strings do not break rule splitting."""
+    def mask_match(m):
+        if m.group("string"):
+            quote = m.group("string")[0]
+            inner = m.group("string")[1:-1]
+            return quote + ("_" * len(inner)) + quote
+        if m.group("bad"):
+            quote = m.group("bad")[0]
+            inner = m.group("bad")[1:]
+            return quote + ("_" * len(inner))
+        return m.group()
+    return CSS_STRING_RE.sub(mask_match, css)
+
+
 def blank_comments_outside_strings(css: str) -> str:
     """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
 
@@ -402,11 +417,13 @@ def check_source(path: Path, source: str) -> list[str]:
         if CSS_SIZE.search(clean_css(node.attrs.get("style", ""))):
             fail(node, "CSS geometry overrides are unsupported on bounds")
     for style in [node for node in scanner.nodes if node.tag == "style"]:
-        css = clean_css(style.text())
+        raw_text = style.text()
+        css = clean_css(raw_text)
         # CSS escapes could disguise transform or geometry property names.
-        if "\\" in css or CSS_MOVES.search(clean_css(blank_css_strings(style.text()))):
+        if "\\" in css or CSS_MOVES.search(clean_css(blank_css_strings(raw_text))):
             fail(style, "CSS geometry overrides or escaped CSS are unsupported")
-        for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        masked_css = clean_css(mask_all_css_strings(raw_text))
+        for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", masked_css):
             if css_hides(declarations) and any(
                 selector_may_match(selector, node)
                 for selector in selectors.split(",") for node in visible
