@@ -427,6 +427,12 @@ def run_cases(h: Harness) -> int:
     h.expect_finding("a `width` rule reaching rects through a `*` subject is refused",
                      honest("<style>svg > * { width: 600px; }</style>\n"),
                      r"CSS `width` declaration")
+    h.expect_finding("a `width` rule with `}` inside a quoted selector string is refused",
+                     honest('<style>[data-segment="Linux"],[t="}"] { width: 600px; }</style>\n'),
+                     r"CSS `width` declaration")
+    h.expect_finding("a `width` rule with a space inside a quoted selector string is refused",
+                     honest('<style>[data-segment="Linux and more"] { width: 600px; }</style>\n'),
+                     r"CSS `width` declaration")
     h.expect_clean("a `width`/`height` rule whose subject no segment rect can be "
                    "(the svg, a legend swatch class) is not a geometry move",
                    honest("<style>svg { width: 100%; } .card-dot { width: 7px; height: 7px; }"

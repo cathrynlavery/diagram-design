@@ -241,6 +241,21 @@ def blank_css_strings(css: str) -> str:
     return blanked
 
 
+def mask_all_css_strings(css: str) -> str:
+    """Mask string contents so curly braces and delimiters inside strings do not break rule splitting."""
+    def mask_match(m):
+        if m.group("string"):
+            quote = m.group("string")[0]
+            inner = m.group("string")[1:-1]
+            return quote + ("_" * len(inner)) + quote
+        if m.group("bad"):
+            quote = m.group("bad")[0]
+            inner = m.group("bad")[1:]
+            return quote + ("_" * len(inner))
+        return m.group()
+    return CSS_STRING_RE.sub(mask_match, css)
+
+
 def blank_comments_outside_strings(css: str) -> str:
     """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
 
@@ -506,15 +521,16 @@ def css_geometry_declaration(css: str, segments: list):
     honest `svg { width: 100% }` and `.card-dot { width: 7px }`, and a gate
     that fires on every shipped page is switched off, not obeyed.
     """
+    masked_css = mask_all_css_strings(css)
     for found in CSS_MOVES_MARK_RE.finditer(css):
         if found.group("prop").lower() not in CSS_SIZE_PROPS:
             return found
         start = found.start("prop")
-        opened = css.rfind("{", 0, start)
+        opened = masked_css.rfind("{", 0, start)
         if opened < 0:
             continue  # a declaration outside any rule is not CSS a browser applies
-        previous = max(css.rfind("}", 0, opened), css.rfind("{", 0, opened))
-        if selector_reaches_segment(css[previous + 1:opened], segments):
+        previous = max(masked_css.rfind("}", 0, opened), masked_css.rfind("{", 0, opened))
+        if selector_reaches_segment(masked_css[previous + 1:opened], segments):
             return found
     return None
 
