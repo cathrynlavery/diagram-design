@@ -68,7 +68,7 @@ dark: false
 - `components[i][k].id` — globally unique slug; referenced by `connectors[].from/to`.
 - `components[i][k].name` — `node-name` role (the human-readable label).
 - `components[i][k].sub` — `sublabel` role at 10px in muted (the technical sub-label; up to 2 lines via auto-wrap when component height grows to 72).
-- `components[i][k].icon` — any id from `references/primitive-icons.md`. If missing → no icon, the name shifts left. (Catalog has 41 icons; `mail` is currently missing — use `icon: file` as fallback for email hand-offs.)
+- `components[i][k].icon` — any id from `references/primitive-icons.md`. If missing → no icon, the name shifts left. (The catalog ships 87 icons; `mail` is currently missing — use `icon: file` as fallback for email hand-offs.)
 - `components[i][k].kind` — `standard | focal | external`. `focal` triggers the accent palette (§5); `external` switches to a 4-2 dashed stroke and muted ink to signal "this is outside our scope."
 - `components[i][k].color` — optional per-component color override (§4). Ignored on `kind: focal` (accent wins).
 - `connectors[k].from` / `connectors[k].to` — refer to a component `id`. Cross-zone, cross-row, same-zone vertical, and same-zone horizontal all legal; routing chosen by §3.

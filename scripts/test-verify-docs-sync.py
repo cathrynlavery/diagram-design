@@ -1993,6 +1993,95 @@ diagram-design/
         if errors != [expected]:
             raise AssertionError(f"a missing command surface was not reported: {errors}")
 
+        # The icon count is the same drift by a different producer: the catalog
+        # is generated from `ICONS` in scripts/build-icons.py, so a stated total
+        # goes stale whenever an icon is added. `type-it-state.md` said 41 while
+        # 87 shipped. The fixture ships three entries, so the stale number is the
+        # one the real file carried.
+        catalog = root / verify.ICON_CATALOG
+        catalog.parent.mkdir(parents=True, exist_ok=True)
+        catalog.write_text(
+            "# Icons (primitive)\n\n## Compute\n\n"
+            + "".join(f"### icon-{index}\nIcon {index}.\n\n" for index in range(3)),
+            encoding="utf-8",
+        )
+        if verify.shipped_icon_count(root) != 3:
+            raise AssertionError("the icon catalog fixture did not count three entries")
+        icon_reference = root / "skills/diagram-design/references/type-shipped-0.md"
+        icon_readme = root / "README.md"
+        icon_readme.write_text("# Diagram Design\n\nSee the shipped icons.\n", encoding="utf-8")
+
+        for index in range(3):
+            (references / f"type-shipped-{index}.md").write_text(
+                "Any id from primitive-icons.md.\n", encoding="utf-8"
+            )
+        errors = []
+        verify.check_icon_counts(errors, root)
+        if errors:
+            raise AssertionError(f"a count-free icon reference failed: {errors}")
+
+        # The stated total is allowed when it matches production, in the plain
+        # form and in the README's adjective-bearing one.
+        for exact in ("Catalog has 3 icons.\n", "3 monochrome IT/cloud icons here.\n"):
+            icon_readme.write_text("# Diagram Design\n\n" + exact, encoding="utf-8")
+            errors = []
+            verify.check_icon_counts(errors, root)
+            if errors:
+                raise AssertionError(f"the shipped icon count was rejected for {exact!r}: {errors}")
+
+        icon_readme.write_text("# Diagram Design\n\nCatalog has 4 icons.\n", encoding="utf-8")
+        errors = []
+        verify.check_icon_counts(errors, root)
+        if (
+            len(errors) != 1
+            or "README.md" not in errors[0]
+            or "states the icon count" not in errors[0]
+            or "but 3 icons ship" not in errors[0]
+        ):
+            raise AssertionError(f"a stale README icon count was not reported: {errors}")
+
+        # A reference is held to the same rule; this is the file that drifted.
+        icon_readme.write_text("# Diagram Design\n\nSee the shipped icons.\n", encoding="utf-8")
+        icon_reference.write_text("Catalog has 41 icons; `mail` is missing.\n", encoding="utf-8")
+        errors = []
+        verify.check_icon_counts(errors, root)
+        if (
+            len(errors) != 1
+            or "type-shipped-0.md" not in errors[0]
+            or "states the icon count" not in errors[0]
+        ):
+            raise AssertionError(f"a stale reference icon count was not reported: {errors}")
+
+        # Sizes, grid roles and cross-references all put a number next to the
+        # word `icon` without stating a total. The real references carry every
+        # one of these shapes, and this gate blocks a pull request, so rejecting
+        # them is worse than missing a stale count.
+        for benign in (
+            "A monochrome 24\u00d724 icon library.\n",
+            "Default size is 24px for every icon.\n",
+            "Rendered at 32 px icon size.\n",
+            "The badge sits 12 high. Icon top-right at 24\u00d724.\n",
+            "See \u00a75 icons and the gallery.\n",
+            "### 2. Icon set\n",
+        ):
+            icon_reference.write_text(benign, encoding="utf-8")
+            errors = []
+            verify.check_icon_counts(errors, root)
+            if errors:
+                raise AssertionError(
+                    f"a number unrelated to the icon total was rejected for {benign!r}: {errors}"
+                )
+
+        # A missing surface is named rather than skipped, and a missing catalog
+        # cannot silently pass every stated total.
+        icon_reference.write_text("See the shipped icons.\n", encoding="utf-8")
+        icon_readme.unlink()
+        errors = []
+        verify.check_icon_counts(errors, root)
+        if errors != ["icon-count surface is missing: README.md"]:
+            raise AssertionError(f"a missing README icon surface was not reported: {errors}")
+        icon_readme.write_text("# Diagram Design\n\nSee the shipped icons.\n", encoding="utf-8")
+
         errors = []
         verify.check_high_level_reference(errors, HIGH_LEVEL_REFERENCE)
         if errors:
@@ -2297,7 +2386,7 @@ diagram-design/
     print(
         "PASS: docs sync checks references, style-guide anchors, asset citations, "
         "strict-bundler packaging, "
-        "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, "
+        "routing surfaces, size-preset surfaces, Factory install contract, type-count routing, icon-count routing, High-Level invariants, "
         "font-link parity, the Cyrillic title fallback order, the type-ramp contract, "
         "split routing, the CRLF fixture fallback in the fixture helper, and gallery guards "
         "(parent/variant model, contiguous ordinals, variant letters, type parity)"
