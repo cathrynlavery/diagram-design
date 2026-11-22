@@ -503,7 +503,15 @@ def selector_reaches_box(selector: str, boxes: list) -> bool:
 
 
 def selector_has_escape(css: str) -> bool:
-    return any("\\" in chunk.group(1) for chunk in re.finditer(r"([^{}]+)\{", css))
+    escaped = False
+    for char in css:
+        if char == "{" and escaped:
+            return True
+        if char in "{}":
+            escaped = False
+        elif char == "\\":
+            escaped = True
+    return False
 
 
 def css_moves_mark(css: str, boxes: list):
