@@ -12,6 +12,9 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_pla
 NETWORK_IDLE_TIMEOUT_MS = 15_000
 FALLBACK_SETTLE_MS = 4_000
 
+# Margin on every side of a --page-size sheet.
+PAGE_MARGIN_MM = 10
+
 # Standard landscape sheet dimensions (width, height) in inches.
 PAGE_SIZES: dict[str, tuple[str, str]] = {
     "a4": ("11.69in", "8.27in"),
@@ -88,8 +91,9 @@ def export_pdf(
             if page_size is not None:
                 page.emulate_media(media="print")
                 if not full_page:
+                    sheet_w, sheet_h = PAGE_SIZES[page_size]
                     page.evaluate(
-                        """() => {
+                        """({sheetW, sheetH, marginMm}) => {
                             const svg = document.querySelector('svg');
                             if (!svg) return;
                             const bg = getComputedStyle(document.body).backgroundColor || '#ffffff';
@@ -102,13 +106,25 @@ def export_pdf(
                             document.body.style.alignItems = 'center';
                             document.body.style.justifyContent = 'center';
                             document.body.style.background = bg;
-                            svg.style.setProperty('width', '100%', 'important');
-                            svg.style.setProperty('height', 'auto', 'important');
+                            // Fit the viewBox inside the printable area on both axes, so a
+                            // diagram taller than the sheet's aspect is not cut off.
+                            const px = inches => parseFloat(inches) * 96;
+                            const margin = (marginMm / 25.4) * 96;
+                            const availW = px(sheetW) - 2 * margin;
+                            const availH = px(sheetH) - 2 * margin;
+                            const vb = svg.viewBox.baseVal;
+                            const scale = Math.min(availW / vb.width, availH / vb.height);
+                            const w = Math.floor(vb.width * scale);
+                            const h = Math.floor(vb.height * scale);
+                            document.body.style.height = `${Math.floor(availH)}px`;
+                            svg.style.setProperty('width', `${w}px`, 'important');
+                            svg.style.setProperty('height', `${h}px`, 'important');
                             svg.style.setProperty('min-width', '0', 'important');
-                            svg.style.setProperty('max-width', '100%', 'important');
+                            svg.style.setProperty('max-width', 'none', 'important');
                             svg.style.setProperty('display', 'block', 'important');
                             document.body.appendChild(svg);
-                        }"""
+                        }""",
+                        {"sheetW": sheet_w, "sheetH": sheet_h, "marginMm": PAGE_MARGIN_MM},
                     )
                 else:
                     page.evaluate(
@@ -123,7 +139,7 @@ def export_pdf(
                     width=width,
                     height=height,
                     print_background=True,
-                    margin={"top": "10mm", "right": "10mm", "bottom": "10mm", "left": "10mm"},
+                    margin={side: f"{PAGE_MARGIN_MM}mm" for side in ("top", "right", "bottom", "left")},
                 )
             elif full_page:
                 page.emulate_media(media="screen")

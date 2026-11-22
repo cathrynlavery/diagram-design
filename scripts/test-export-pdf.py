@@ -509,6 +509,18 @@ def require_diagram_exports(tmp: Path) -> None:
         raise AssertionError(f"unexpected A4 landscape MediaBox: {aw:.1f}x{ah:.1f}pt")
     print(f"OK: --page-size a4 landscape PDF verified ({aw:.0f}x{ah:.0f}pt)")
 
+    # A diagram taller than the sheet's aspect (960x720 viewBox on landscape A4)
+    # must scale to the printable height and stay on one page.
+    tall_src = ASSETS / "example-sequence-oauth.html"
+    tall_out = tmp / "sequence-a4.pdf"
+    r = run_cli("--page-size", "a4", str(tall_src), str(tall_out))
+    if r.returncode != 0:
+        raise AssertionError(f"tall A4 export failed ({r.returncode}): {r.stderr}")
+    tall_boxes = parse_pdf_mediaboxes(tall_out.read_bytes())
+    if len(tall_boxes) != 1:
+        raise AssertionError(f"tall diagram overflowed A4: expected 1 page, got {len(tall_boxes)}")
+    print("OK: --page-size a4 fits a 960x720 diagram on one page")
+
     # Full-page editorial wrapper mode
     full_src = ASSETS / "example-architecture-full.html"
     if full_src.is_file():
