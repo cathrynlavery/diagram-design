@@ -37,6 +37,8 @@ Invariants:
    bound mark or its parent still counts as hiding it.
    A connector whose resolved stroke is none or transparent, or whose
    stroke-width is zero (inline style, attribute or ancestor), is hidden.
+   A commit dot whose resolved fill is none or transparent with no visible
+   stroke (unset, none/transparent, or zero stroke-width) is hidden.
 10. FAIL CLOSED - a file that presents as a git graph but yields fewer than
    four commits, two lanes, or one merge is a finding.
 
@@ -331,7 +333,8 @@ def hidden_carrier(attrs: dict):
             return "%s=%r" % (key, attrs[key])
     style = attrs.get("style")
     if style is not None:
-        for found in CSS_HIDES_RE.finditer(style):
+        cleaned = blank_comments_outside_strings(blank_css_strings(style))
+        for found in CSS_HIDES_RE.finditer(cleaned):
             if found.group("opacity") and not invisible_amount(found.group("amount")):
                 continue
             prop = found.group("display") or found.group("visibility") \
@@ -354,13 +357,18 @@ def declared_paint(attrs: dict, prop: str):
     """Value the element states itself: inline style outranks the presentation attribute."""
     style = attrs.get("style")
     if style is not None:
-        found = None
+        found, important = None, False
         pattern = re.compile(
             r"(?:^|[{;}\n])\s*%s\s*:\s*(?P<value>[^;}]+)" % re.escape(prop),
             re.IGNORECASE,
         )
-        for match in pattern.finditer(blank_css_strings(style)):
-            found = match.group("value").split("!")[0].strip()
+        cleaned = blank_comments_outside_strings(blank_css_strings(style))
+        for match in pattern.finditer(cleaned):
+            raw_value = match.group("value")
+            is_important = re.search(r"!\s*important\s*$", raw_value, re.IGNORECASE) is not None
+            if important and not is_important:
+                continue
+            found, important = raw_value.split("!")[0].strip(), is_important
         if found is not None:
             return found
     if prop in attrs:
@@ -589,6 +597,7 @@ def transformed_spans(source: str) -> list:
 def check_transforms(source: str, findings: list, name: str) -> None:
     check_style_rules(source, findings, name)
     check_connector_ink(source, findings, name)
+    check_commit_ink(source, findings, name)
     for match in STYLE_RE.finditer(source):
         if CSS_MOVES_MARK_RE.search(blank_css_strings(match.group("body"))):
             findings.append(
@@ -646,6 +655,16 @@ def invisible_stroke(value) -> bool:
     return text in ("none", "transparent") or RGBA_ZERO_RE.match(text) is not None
 
 
+def zero_stroke_width(value) -> bool:
+    cleaned = re.sub(
+        r"(?:px|em|rem|pt|pc|cm|mm|in|ex|ch|vw|vh|vmin|vmax)\s*$",
+        "",
+        str(value).split("!")[0].strip(),
+        flags=re.IGNORECASE,
+    )
+    return invisible_amount(cleaned)
+
+
 def check_connector_ink(source: str, findings: list, name: str) -> None:
     """A connector is a parent only if readers can see it: resolve its stroke and stroke-width."""
     strokes = paint_spans(source, "stroke")
@@ -671,12 +690,50 @@ def check_connector_ink(source: str, findings: list, name: str) -> None:
                                   "stroke=%r" % stroke if stroke is not None
                                   else "no stroke set, SVG default is none")
             )
-        elif width is not None and invisible_amount(re.sub(r"px\s*$", "", str(width).strip(), flags=re.IGNORECASE)):
+        elif width is not None and zero_stroke_width(width):
             findings.append(
                 "%s: connector %s has stroke-width=%r — a connector readers "
                 "cannot see still counts as a parent. Give it a positive "
                 "stroke-width" % (where, label, width)
             )
+
+
+def check_commit_ink(source: str, findings: list, name: str) -> None:
+    """A commit dot is a parent only if readers can see it: resolve fill, stroke and stroke-width."""
+    fills = fill_spans(source)
+    strokes = paint_spans(source, "stroke")
+    widths = paint_spans(source, "stroke-width")
+    for match in CIRCLE_RE.finditer(source):
+        raw = match.group("attrs")
+        if not DECLARES_COMMIT_RE.search(raw):
+            continue
+        attrs = attrs_of(raw)
+        fill = declared_fill(attrs)
+        if fill is None:
+            fill = inherited_fill(fills, match.start())
+        if fill is None or not invisible_stroke(fill):
+            continue
+        stroke = declared_paint(attrs, "stroke")
+        if stroke is None:
+            stroke = inherited_paint(strokes, match.start())
+        width = declared_paint(attrs, "stroke-width")
+        if width is None:
+            width = inherited_paint(widths, match.start())
+        if stroke is None:
+            stroke_detail = "no stroke"
+        elif invisible_stroke(stroke):
+            stroke_detail = "stroke=%r" % stroke
+        elif width is not None and zero_stroke_width(width):
+            stroke_detail = "stroke-width=%r" % width
+        else:
+            continue
+        label = attrs.get("data-commit", "").strip() or "?"
+        where = "%s:%d" % (name, line_of(source, match.start()))
+        findings.append(
+            "%s: commit %s has no visible paint (fill=%r, %s) — a commit "
+            "readers cannot see still counts as a parent. Give it a fill or "
+            "stroke color" % (where, label, fill, stroke_detail)
+        )
 
 
 def path_points(d: str):

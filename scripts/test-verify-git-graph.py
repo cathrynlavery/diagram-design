@@ -527,6 +527,113 @@ def run_cases(h: Harness) -> int:
         "no visible stroke",
     )
 
+    shipped_light = SHIPPED[0].read_text(encoding="utf-8")
+    shipped_c2 = (
+        '<circle data-commit="c2" data-lane="feat/billing" data-column="2" '
+        'cx="520" cy="520" r="8" fill="#2d3142"/>'
+    )
+    h.check("shipped example contains expected c2 circle", shipped_c2 in shipped_light)
+    h.expect_named(
+        'shipped c2 circle changed to fill="none" is a finding',
+        shipped_light.replace(
+            shipped_c2, shipped_c2.replace('fill="#2d3142"', 'fill="none"'), 1
+        ),
+        "commit c2 has no visible paint",
+    )
+
+    c2_dot = commit("c2", "feat", 2, FEAT_Y)
+    for bad_fill in ("none", "transparent", "rgba(0,0,0,0)"):
+        h.expect_named(
+            "a commit with fill=%r and no stroke is a finding" % bad_fill,
+            honest().replace(
+                c2_dot, commit("c2", "feat", 2, FEAT_Y, fill=bad_fill), 1
+            ),
+            "commit c2 has no visible paint",
+        )
+    h.expect_named(
+        "an inline style fill:none outranks a visible fill attribute",
+        honest().replace(
+            c2_dot, commit("c2", "feat", 2, FEAT_Y, extra='style="fill: none"'), 1
+        ),
+        "commit c2 has no visible paint",
+    )
+    c2_unset = (
+        '  <circle data-commit="c2" data-lane="feat" data-column="2" '
+        'cx="%g" cy="%g" r="8"/>\n' % (col(2), FEAT_Y)
+    )
+    h.expect_named(
+        'a commit inheriting fill="none" from an enclosing <g fill="none"> is a finding',
+        honest().replace(
+            c2_dot, '  <g fill="none">\n' + c2_unset + "  </g>\n", 1
+        ),
+        "commit c2 has no visible paint",
+    )
+    h.expect_named(
+        'a commit in a fill="none" group nested in a visible-fill group is a finding',
+        honest().replace(
+            c2_dot,
+            '  <g fill="#2d3142">\n  <g fill="none">\n'
+            + c2_unset + "  </g>\n  </g>\n",
+            1,
+        ),
+        "commit c2 has no visible paint",
+    )
+    h.expect_clean(
+        'a commit in a visible-fill group nested in a fill="none" group passes',
+        honest().replace(
+            c2_dot,
+            '  <g fill="none">\n  <g fill="#2d3142">\n'
+            + c2_unset + "  </g>\n  </g>\n",
+            1,
+        ),
+    )
+    h.expect_clean(
+        "a commit with unset fill and no enclosing fill uses SVG default black and passes",
+        honest().replace(c2_dot, c2_unset, 1),
+    )
+    h.expect_clean(
+        'a commit with fill="none" and a visible stroke passes',
+        honest().replace(
+            c2_dot,
+            commit("c2", "feat", 2, FEAT_Y, fill="none",
+                   extra='stroke="#2d3142" stroke-width="1.5"'),
+            1,
+        ),
+    )
+    h.expect_clean(
+        'a commit with fill="none" inheriting a visible stroke from a group passes',
+        honest().replace(
+            c2_dot,
+            '  <g stroke="#2d3142" stroke-width="1.5">\n'
+            + commit("c2", "feat", 2, FEAT_Y, fill="none")
+            + "  </g>\n",
+            1,
+        ),
+    )
+    for bad_stroke in ('stroke="none"', 'stroke="transparent"',
+                       'stroke="#2d3142" stroke-width="0"',
+                       'stroke="#2d3142" style="stroke-width:0px"'):
+        h.expect_named(
+            'a commit with fill="none" and %s is a finding' % bad_stroke,
+            honest().replace(
+                c2_dot,
+                commit("c2", "feat", 2, FEAT_Y, fill="none", extra=bad_stroke),
+                1,
+            ),
+            "commit c2 has no visible paint",
+        )
+    h.expect_named(
+        'a commit with fill="none" and stroke inheriting stroke-width 0 is a finding',
+        honest().replace(
+            c2_dot,
+            '  <g stroke-width="0">\n'
+            + commit("c2", "feat", 2, FEAT_Y, fill="none", extra='stroke="#2d3142"')
+            + "  </g>\n",
+            1,
+        ),
+        "commit c2 has no visible paint",
+    )
+
     h.expect_named(
         "a <style> rule that hides a bound commit is a finding",
         styled('[data-commit="c2"] { display: none; }'),
