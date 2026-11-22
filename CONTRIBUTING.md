@@ -64,6 +64,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Docs/routing sync (description hooks, gallery, README tree, reference links and style-guide anchors, strict-bundler support paths, command/prompt surfaces, font-link parity, template title fallback order, SKILL.md split routing) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
 | Packaged PNG exporter's stalled-webfont fallback (window.stop on timeout, warning, normal load) | `python3 scripts/test-export-wait.py` (requires Playwright; skips without it) |
+| Packaged vector PDF exporter (exact viewBox bounds, sheet sizing, full-page, stalled-webfont fallback) | `python3 scripts/test-export-pdf.py` (requires Playwright; skips browser cases without it) |
 | Screenshot freshness checker behaves (CRLF checkout, real source drift, raw PNG digests) | `python3 scripts/test-verify-screenshot-freshness.py` |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases, including `--offline`) | `python3 scripts/test-self-check.py` |

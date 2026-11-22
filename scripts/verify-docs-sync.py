@@ -137,6 +137,7 @@ REQUIRED_PACKAGED_RUNTIME_FILES = frozenset(
         "scripts/plantuml_extract.py",
         "scripts/export_svg.py",
         "scripts/export_png.py",
+        "scripts/export_pdf.py",
         "assets/template.html",
         "assets/template-dark.html",
         "assets/template-full.html",
@@ -1772,7 +1773,7 @@ def export_defaults_error(name: str, text: str) -> str | None:
         match = PRODUCE_BOTH.search(bullet)
         if not match:
             continue
-        flags = [flag for flag in ("--svg-only", "--png-only") if flag in bullet[: match.start()]]
+        flags = [flag for flag in ("--svg-only", "--png-only", "--pdf-only") if flag in bullet[: match.start()]]
         if flags:
             return (
                 f"{name} Defaults lists {', '.join(flags)} among the cases that produce "
@@ -1785,7 +1786,7 @@ def export_defaults_error(name: str, text: str) -> str | None:
 def check_export_surface_parity(errors: list[str], root: Path) -> None:
     """commands/export-diagram.md and prompts/export-diagram.md must both carry the mutual-exclusion rule.
 
-    Neither may list `--svg-only` or `--png-only` among the cases its Defaults
+    Neither may list `--svg-only`, `--png-only`, or `--pdf-only` among the cases its Defaults
     says produce both formats, since each flag emits only its own format (#474).
     """
     command_path = root / "commands/export-diagram.md"
@@ -1798,14 +1799,14 @@ def check_export_surface_parity(errors: list[str], root: Path) -> None:
         return
     command_text = command_path.read_text(encoding="utf-8")
     prompt_text = prompt_path.read_text(encoding="utf-8")
-    rule_re = re.compile(r"--svg-only.*--png-only.*mutually exclusive", re.IGNORECASE)
+    rule_re = re.compile(r"--svg-only.*--png-only.*--pdf-only.*mutually exclusive", re.IGNORECASE)
     if not rule_re.search(command_text):
         errors.append(
-            "commands/export-diagram.md missing `--svg-only` and `--png-only` mutual-exclusion rule"
+            "commands/export-diagram.md missing `--svg-only`, `--png-only`, and `--pdf-only` mutual-exclusion rule"
         )
     if not rule_re.search(prompt_text):
         errors.append(
-            "prompts/export-diagram.md missing `--svg-only` and `--png-only` mutual-exclusion rule"
+            "prompts/export-diagram.md missing `--svg-only`, `--png-only`, and `--pdf-only` mutual-exclusion rule"
         )
     for name, text in (
         ("commands/export-diagram.md", command_text),
