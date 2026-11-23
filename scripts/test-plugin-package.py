@@ -771,8 +771,8 @@ def test_ci_version_gate_executes() -> None:
     # Run the workflow step itself, the way Actions does, against a merge
     # HEAD and a plain HEAD. CI runs this test on ubuntu, where bash exists.
     bash = shutil.which("bash")
-    if bash is None:
-        print("SKIP: bash not found; the CI version gate step was not executed")
+    if bash is None or sys.platform == "win32":
+        print("SKIP: bash not found or Windows; the CI version gate step was not executed")
         return
     with package_repo() as root:
         step = root / "version-gate-step.sh"
