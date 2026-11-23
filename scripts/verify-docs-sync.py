@@ -1515,6 +1515,7 @@ MANIFEST_DESCRIPTIONS = (
     (Path(".codex-plugin/plugin.json"), ("description", "longDescription")),
     (FACTORY_MANIFEST, ("description",)),
     (Path(".qoder-plugin/plugin.json"), ("description",)),
+    (Path(".muse-plugin/plugin.json"), ("description",)),
 )
 
 

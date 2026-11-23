@@ -19,3 +19,7 @@ Open PRs no longer conflict with each other through the manifests; they conflict
 ## Amendment — 2026-10-17: Qoder version synchronization
 
 Qoder did not exist in this repository during the pull-request bump history described above. Its native manifest now joins the synchronized release set, so the no-bump pull-request gate and the post-merge auto-bump workflow apply to Claude, Codex, Factory, and Qoder together. The historical context remains unchanged because it records the three manifests that existed when this ADR was accepted.
+
+## Amendment — 2026-11-13: Muse version synchronization
+
+Muse receives a fifth native manifest at `.muse-plugin/plugin.json` and joins the synchronized release set. The no-bump pull-request gate and the post-merge auto-bump workflow apply to Claude, Codex, Factory, Qoder, and Muse together from this amendment forward.

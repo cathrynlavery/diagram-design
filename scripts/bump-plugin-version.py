@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Increment synchronized Claude, Codex, Factory, and Qoder manifest versions."""
+"""Increment synchronized Claude, Codex, Factory, Qoder, and Muse manifest versions."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ MANIFEST_PATHS = (
     Path(".codex-plugin/plugin.json"),
     Path(".factory-plugin/plugin.json"),
     Path(".qoder-plugin/plugin.json"),
+    Path(".muse-plugin/plugin.json"),
 )
 SKILL_PATH = Path("skills/diagram-design/SKILL.md")
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
@@ -142,7 +143,7 @@ def main() -> int:
     except PackageVersionError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    print(f"Updated Claude, Codex, Factory, and Qoder plugin manifests to {version}")
+    print(f"Updated Claude, Codex, Factory, Qoder, and Muse plugin manifests to {version}")
     return 0
 
 

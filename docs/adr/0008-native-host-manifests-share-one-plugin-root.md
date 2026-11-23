@@ -19,3 +19,7 @@ Each native host has an explicit install path while diagram behavior remains sin
 ## Amendment — 2026-10-17: Qoder joins the native manifest set
 
 Qoder receives a fourth native manifest at `.qoder-plugin/plugin.json`. It points to the same canonical `skills/` and `commands/` trees as the established hosts and carries the same synchronized metadata and version. Historical references above to three native manifests describe the accepted decision at v2.5.14; from this amendment forward, package and release gates cover all four manifests.
+
+## Amendment — 2026-11-13: Muse joins the native manifest set
+
+Muse receives a fifth native manifest at `.muse-plugin/plugin.json`. It points to the same canonical `skills/diagram-design/SKILL.md` and `commands/` files and carries the same synchronized name, description, and version. Muse's native schema is narrower than the other hosts' (no `author`/`homepage`/`repository`/`license`/`keywords` fields), so identity for Muse is verified over `name`, `description`, and `version` only. Package and release gates cover all five manifests from this amendment forward.
