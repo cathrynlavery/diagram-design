@@ -151,6 +151,15 @@
       "thumb_sha256": "043988d1a26c19c2f78a07f91e60faeacc62daddbd34c0a78337005661444038"
     },
     {
+      "thumb": "git-graph.webp",
+      "source": "docs/screenshots/git-graph.png",
+      "source_sha256": "91a9d1a622c236e0940b572688db773d0eb0ee740740d533c4994346a0b6f157",
+      "width": 600,
+      "height": 338,
+      "quality": 82,
+      "thumb_sha256": "006560e3f0fbfb6cd3ffe7eeb4df082eb2b708ea7501916ede4aae0fd773d09e"
+    },
+    {
       "thumb": "heatmap.webp",
       "source": "docs/screenshots/heatmap.png",
       "source_sha256": "fcc5ac842da8d09b8b685aa52ba6d2032465a4029a73aa094554079e1ee6817e",

@@ -52,6 +52,10 @@ Kept out on purpose, so the next audit does not relitigate them.
 - **UML use case** — stick-figure actors and ovals inside a system boundary. A real grammar, but the ovals carry no structure and the figure rarely survives an editorial cut.
 - **Pie / donut** — the repository's own rule ("lists of anything → a table") already rejects it.
 - **Git graph and packet / bit-field** — real grammars, but narrow audiences and weak editorial fit. Revisit only on demand.
+
+## Amendment — git graph admitted on demand (2026-11-15)
+
+Demand for a branching-model grammar is now present. Git graph ships as type 52 under ADR 0002's escape clause: lanes × a shared time-grid with two-parent merge commits. Packet / bit-field stays deferred.
 - **Treemap** — originally rejected here, then overtaken by the implementation admitted in #87 under ADR 0002's escape clause. The 28 → 38 count includes it.
 
 ## Consequences
