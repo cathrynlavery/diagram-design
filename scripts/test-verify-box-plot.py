@@ -1074,6 +1074,39 @@ def run_cases(h: Harness) -> int:
         1, "paper mask",
     )
 
+    h.expect_clean(
+        "a leaf-shape class rule (rect.m) cannot paint a paper mask circle with class m",
+        papered.replace(
+            '<circle data-outlier="B"',
+            mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>rect.m{stroke:#4f5d75}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a leaf-shape class rule (line.m) cannot paint a paper mask circle with class m",
+        papered.replace(
+            '<circle data-outlier="B"',
+            mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>line.m{stroke:#4f5d75}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a type-only rule on a leaf shape (rect) cannot paint a paper mask circle",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>rect{stroke:#2d3142}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a type-only rule on a leaf shape (line) cannot paint a paper mask circle",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>line{stroke:#2d3142}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a leaf-shape accent rule on the focal series rect leaves a paper mask clean",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", '  <style>[data-name="Checkout"] rect{stroke:var(--color-accent)}</style>\n  <g ', 1),
+    )
+
     # The accent and visibility as a browser resolves them, on the shipped
     # example's muted Auth series: var(), hsl(), id and attribute selectors,
     # and display/visibility/opacity on the series or a mark.
