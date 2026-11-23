@@ -52,6 +52,12 @@ jobs:
       - name: Verify OpenAI plugin directory listing and upload ZIP
         run: python3 scripts/test-build-openai-plugin-zip.py
 
+      - name: Verify Claude Desktop skill ZIP
+        run: python3 scripts/test-build-claude-skill-zip.py
+
+      - name: Check Claude Desktop skill ZIP limits
+        run: python3 scripts/build-claude-skill-zip.py --check
+
       # Versions are bumped on main by the Auto Version Bump workflow after
       # each merge (ADR 0009); pull requests must leave them untouched.
       # A pull_request checkout is GitHub's merge of the PR into the current
