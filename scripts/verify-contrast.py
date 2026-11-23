@@ -21,6 +21,10 @@ Every row in the table must be classified below. A role this file does not
 know, a role it expects that is missing, or a value it cannot parse is a
 finding, so a new token cannot slip past the gate unmeasured.
 
+In `--all-presets` mode, each preset's optional `### Series palette` table
+(`series-N` rows) is also checked against that skin's `paper` at the 3:1
+non-text threshold for full-opacity strokes.
+
 Usage:
     python3 scripts/verify-contrast.py
     python3 scripts/verify-contrast.py --style-guide path/to/style-guide.md
@@ -79,6 +83,8 @@ RGBA_RE = re.compile(
     re.IGNORECASE,
 )
 ROW_RE = re.compile(r"^\|\s*`([a-z0-9-]+)`\s*\|")
+SERIES_HEADING_RE = re.compile(r"^### Series palette\b", re.MULTILINE)
+SERIES_ROW_RE = re.compile(r"^\|\s*`(series-\d+)`\s*\|")
 
 
 class ColorError(ValueError):
@@ -133,6 +139,46 @@ def parse_tokens(markdown: str) -> tuple[dict[str, dict[str, str]], list[str]]:
     return tokens, findings
 
 
+def parse_series_tokens(markdown: str) -> tuple[dict[str, dict[str, str]], list[str]]:
+    """Return ({skin: {series-N: raw cell}}, findings) from the Series palette table.
+
+    A preset without a `### Series palette` table is fine and returns empty maps.
+    """
+    findings: list[str] = []
+    tokens: dict[str, dict[str, str]] = {skin: {} for skin in SKINS}
+    heading = SERIES_HEADING_RE.search(markdown)
+    if not heading:
+        return tokens, findings
+
+    table_started = False
+    light_idx, dark_idx = 1, 2
+    for line in markdown[heading.start():].splitlines()[1:]:
+        if not line.startswith("|"):
+            if table_started or line.startswith("#"):
+                break
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if not table_started:
+            table_started = True
+            if not ROW_RE.match(line):
+                lower = [cell.lower() for cell in cells]
+                light_cols = [i for i, cell in enumerate(lower) if "light" in cell]
+                dark_cols = [i for i, cell in enumerate(lower) if "dark" in cell]
+                if light_cols and dark_cols:
+                    light_idx, dark_idx = light_cols[0], dark_cols[0]
+                continue
+        match = SERIES_ROW_RE.match(line)
+        if not match:
+            continue
+        token = match.group(1)
+        if len(cells) <= max(light_idx, dark_idx):
+            findings.append(f"row `{token}` does not have light and dark columns")
+            continue
+        tokens["light"][token] = cells[light_idx]
+        tokens["dark"][token] = cells[dark_idx]
+    return tokens, findings
+
+
 def _channel(value: float) -> float:
     fraction = value / 255
     if fraction <= 0.04045:
@@ -156,7 +202,10 @@ def composite(rgb, alpha: float, background) -> tuple[float, float, float]:
     return tuple(rgb[i] * alpha + background[i] * (1 - alpha) for i in range(3))
 
 
-def measure(tokens: dict[str, dict[str, str]]) -> tuple[list[tuple], list[str]]:
+def measure(
+    tokens: dict[str, dict[str, str]],
+    series: dict[str, dict[str, str]] | None = None,
+) -> tuple[list[tuple], list[str]]:
     """Return (rows, findings). Each row is (skin, role, use, ratio, threshold, ok)."""
     rows: list[tuple] = []
     findings: list[str] = []
@@ -209,12 +258,33 @@ def measure(tokens: dict[str, dict[str, str]]) -> tuple[list[tuple], list[str]]:
                     findings.append(
                         f"{skin}: `{role}` as {use} is {ratio:.2f}:1, below {threshold:g}:1"
                     )
+
+        if series:
+            threshold = THRESHOLDS["non-text"]
+            for token, cell in series.get(skin, {}).items():
+                try:
+                    rgb, alpha = parse_color(cell)
+                except ColorError as error:
+                    findings.append(f"{skin}: `{token}` {error}")
+                    continue
+                foreground = composite(rgb, alpha, paper_rgb)
+                ratio = contrast(foreground, paper_rgb)
+                passed = ratio >= threshold
+                rows.append((skin, token, "non-text", ratio, threshold, passed))
+                if not passed:
+                    findings.append(
+                        f"{skin}: `{token}` as non-text is {ratio:.2f}:1, below {threshold:g}:1"
+                    )
     return rows, findings
 
 
-def check(markdown: str) -> tuple[list[tuple], list[str]]:
+def check(markdown: str, *, include_series: bool = False) -> tuple[list[tuple], list[str]]:
     tokens, findings = parse_tokens(markdown)
-    rows, measured = measure(tokens)
+    series = None
+    if include_series:
+        series, series_findings = parse_series_tokens(markdown)
+        findings = findings + series_findings
+    rows, measured = measure(tokens, series)
     return rows, findings + measured
 
 
@@ -249,12 +319,14 @@ def report(rows: list[tuple], findings: list[str], quiet: bool, label: str | Non
     return 0
 
 
-def check_path(path: Path) -> tuple[list[tuple], list[str], str | None]:
+def check_path(
+    path: Path, *, include_series: bool = False
+) -> tuple[list[tuple], list[str], str | None]:
     try:
         markdown = path.read_text(encoding="utf-8")
     except OSError as error:
         return [], [], f"cannot read {path}: {error}"
-    rows, findings = check(markdown)
+    rows, findings = check(markdown, include_series=include_series)
     return rows, findings, None
 
 
@@ -291,7 +363,7 @@ def check_all_presets(quiet: bool, presets_dir: Path | None = None) -> int:
     failed = 0
     total_rows = 0
     for path in paths:
-        rows, measured, error = check_path(path)
+        rows, measured, error = check_path(path, include_series=True)
         if error:
             print(f"FAIL: {error}")
             failed += 1

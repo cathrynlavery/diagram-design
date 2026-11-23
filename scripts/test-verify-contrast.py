@@ -22,8 +22,9 @@ Cases:
   passes contrast, and has exactly one accent colour per skin (green);
 - a fixture whose light accent sits at 2.86:1 fails (red);
 - `--all-presets` against a temporary directory: one failing preset, a
-  missing required slug, and an invalid filename each make the batch fail
-  (red).
+  failing series-palette stroke, a missing required slug, and an invalid
+  filename each make the batch fail (red); a passing series palette is
+  measured and a preset without a series table passes (green).
 
 Usage: python3 scripts/test-verify-contrast.py
 Exit: 0 all pass, 1 a case failed.
@@ -213,11 +214,17 @@ def test_shipped_presets() -> None:
                 color_count(accent) == 1,
                 f"{path.stem} {skin} accent has exactly one colour ({accent!r})",
             )
-        rows, findings = CHECK(source)
+        rows, findings = CHECK(source, include_series=True)
         ok(not findings, f"{path.stem} has no contrast findings ({findings})")
         ok(
-            len(rows) == 20,
-            f"{path.stem} measures every text and non-text use in both skins ({len(rows)} rows)",
+            len(rows) == 30,
+            f"{path.stem} measures roles and series in both skins ({len(rows)} rows)",
+        )
+        series_measured = {(skin, role) for skin, role, *_ in rows if role.startswith("series-")}
+        expected_series = {(skin, f"series-{i}") for skin in SKINS for i in range(1, 6)}
+        ok(
+            series_measured == expected_series,
+            f"{path.stem} measures series-1..series-5 in both skins",
         )
         result = run_cli_args(["--style-guide", str(path), "--quiet"])
         ok(result.returncode == 0, f"the CLI exits 0 on {path.stem}")
@@ -255,11 +262,17 @@ def run_all_presets_dir(directory: Path) -> subprocess.CompletedProcess:
 
 
 def test_all_presets_cli() -> None:
-    result = run_cli_args(["--all-presets", "--quiet"])
+    result = run_cli_args(["--all-presets"])
     ok(result.returncode == 0, "the CLI exits 0 on --all-presets")
     ok(
-        "OK verify-contrast --all-presets: 3 presets" in result.stdout,
-        f"--all-presets summarizes three presets ({result.stdout.strip()!r})",
+        "OK verify-contrast --all-presets: 3 presets, 90 role checks" in result.stdout,
+        f"--all-presets summarizes three presets including series ({result.stdout.splitlines()[-1]!r})",
+    )
+    ok(
+        "blueprint: light series-5" in result.stdout
+        and "graphite: light series-5" in result.stdout
+        and "mono-print: dark  series-5" in result.stdout,
+        "--all-presets reports measured series rows for passing presets",
     )
     combined = run_cli_args(["--all-presets", "--style-guide", str(STYLE_GUIDE)])
     ok(combined.returncode == 1, "--all-presets refuses --style-guide")
@@ -269,6 +282,39 @@ def test_all_presets_cli() -> None:
     ok(explicit.returncode == 0, "--all-presets --presets-dir on the shipped directory exits 0")
     lonely = run_cli_args(["--presets-dir", str(PRESETS_DIR)])
     ok(lonely.returncode == 1, "--presets-dir without --all-presets is refused")
+
+
+def test_all_presets_series_palette() -> None:
+    files = shipped_preset_sources()
+    row = "| `series-5` | `#77849a` (mist) | `#a8b4c2` | Non-focal series |"
+    if files["blueprint.md"].count(row) != 1:
+        raise SystemExit("fixture drift: blueprint `series-5` row changed")
+    files["blueprint.md"] = files["blueprint.md"].replace(
+        row, "| `series-5` | `#8a97a8` (mist) | `#a8b4c2` | Non-focal series |"
+    )
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, files)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 1, "a preset series row below 3:1 makes --all-presets exit 1")
+    ok(
+        "blueprint: light: `series-5` as non-text is 2.76:1, below 3:1" in result.stdout,
+        f"the failing series token and skin are named ({result.stdout.strip()!r})",
+    )
+
+    no_series = shipped_preset_sources()
+    start = no_series["graphite.md"].index("### Series palette")
+    end = no_series["graphite.md"].index("### Terminal skin")
+    no_series["graphite.md"] = no_series["graphite.md"][:start] + no_series["graphite.md"][end:]
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        write_preset_tree(directory, no_series)
+        result = run_all_presets_dir(directory)
+    ok(result.returncode == 0, "a preset without a Series palette table passes --all-presets")
+    ok(
+        "3 presets, 80 role checks" in result.stdout,
+        f"presets with series are still measured when one preset omits the table ({result.stdout.strip()!r})",
+    )
 
 
 def test_all_presets_failing_preset() -> None:
@@ -327,6 +373,7 @@ def main() -> int:
     test_shipped_presets()
     test_broken_preset_fixture_fails()
     test_all_presets_cli()
+    test_all_presets_series_palette()
     test_all_presets_failing_preset()
     test_all_presets_missing_required()
     test_all_presets_invalid_filename()

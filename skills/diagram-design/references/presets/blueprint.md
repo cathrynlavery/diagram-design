@@ -40,7 +40,7 @@ Every token is referred to by **semantic role**, not by its hex value. Type refe
 
 ### Contrast contract
 
-Every token must clear the threshold for each role it plays, against the background it actually sits on, in both skins. `scripts/verify-contrast.py` computes the WCAG 2.x ratio for every row above against the `paper` of its skin (`ink-strong` against the 0.85 `accent` fill it labels) and fails CI when one falls short.
+Every token must clear the threshold for each role it plays, against the background it actually sits on, in both skins. `scripts/verify-contrast.py` computes the WCAG 2.x ratio for every row above against the `paper` of its skin (`ink-strong` against the 0.85 `accent` fill it labels), and `--all-presets` also checks each `### Series palette` stroke at 3:1 against `paper`, failing CI when one falls short.
 
 | Use | Minimum vs. its actual background |
 |---|---|
@@ -68,7 +68,7 @@ A small set of desaturated, editorial-tone colors for chart types that genuinely
 | `series-2` | `#5a7390` (slate-blue) | `#7e97b0` | Non-focal series |
 | `series-3` | `#7a8aa0` (blue-grey) | `#9aabc0` | Non-focal series |
 | `series-4` | `#4e6780` (ink-blue) | `#7290a8` | Non-focal series |
-| `series-5` | `#8a97a8` (mist) | `#a8b4c2` | Non-focal series |
+| `series-5` | `#77849a` (mist) | `#a8b4c2` | Non-focal series |
 
 Fills sit at `0.18` opacity light, `0.22` dark; strokes use the full color. **Don't backfill these tokens to non-chart types** — architecture, swimlane, etc. continue to use muted-ink variants. The series palette is opt-in for diagrams where overlapping shapes demand distinguishable color, not a license to add color elsewhere.
 
