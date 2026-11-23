@@ -507,7 +507,15 @@ def selector_reaches_box(selector: str, boxes: list) -> bool:
 
 
 def selector_has_escape(css: str) -> bool:
-    return any("\\" in chunk.group(1) for chunk in re.finditer(r"([^{}]+)\{", css))
+    escaped = False
+    for char in css:
+        if char == "{" and escaped:
+            return True
+        if char in "{}":
+            escaped = False
+        elif char == "\\":
+            escaped = True
+    return False
 
 
 def css_moves_mark(css: str, boxes: list):
@@ -779,6 +787,12 @@ def element_tokens(attrs: dict) -> set:
     return tokens
 
 
+# Shapes that never hold another element, so a rule painting one of them
+# can't reach a paper-mask circle or pass a stroke down to it.
+LEAF_TAGS = {"rect", "line", "path", "text", "tspan", "polygon", "polyline",
+             "ellipse", "image", "use"}
+
+
 def class_paints(source: str, accent_vars: set) -> dict:
     """Required tokens -> fill/stroke values from a rule that names them.
 
@@ -801,7 +815,8 @@ def class_paints(source: str, accent_vars: set) -> dict:
                     continue
                 subject = compounds[-1]
                 typed = re.match(r"([A-Za-z][\w-]*)", subject)
-                if typed and typed.group(1).lower() in NON_MARK_TAGS:
+                if typed and (typed.group(1).lower() in NON_MARK_TAGS
+                              or typed.group(1).lower() in LEAF_TAGS):
                     continue
                 # `.hot rect` paints the rects under whatever carries
                 # .hot, so an ancestor compound counts as well as the
@@ -821,12 +836,6 @@ def class_paints(source: str, accent_vars: set) -> dict:
                     found.setdefault(required, []).extend(fills)
                     found.setdefault(("stroke", required), []).extend(strokes)
     return found
-
-
-# Shapes that never hold another element, so a rule painting one of them
-# can't reach a paper-mask circle or pass a stroke down to it.
-LEAF_TAGS = {"rect", "line", "path", "text", "tspan", "polygon", "polyline",
-             "ellipse", "image", "use"}
 
 
 def class_stroke_rules(source: str) -> list:
