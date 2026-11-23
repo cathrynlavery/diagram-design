@@ -985,6 +985,7 @@ SVG_BREAKOUT_TAGS = {
     "strong", "strike", "sub", "sup", "table", "tt", "u", "ul", "var",
 }
 IMPLIED_HTML_TAGS = {"html", "head", "body", "tbody", "colgroup", "tr", "p", "br"}
+IMPLIED_HTML_ANCESTORS = {"html", "body", "tbody", "tr"}
 
 
 class SelectorDocument(HTMLParser):
@@ -1157,7 +1158,9 @@ def sibling_positions(compounds: list, relations: list, document) -> set:
         previous = matched
         missing_element = (kind is not None and not required
                            and (kind not in recorded_kinds or kind in IMPLIED_HTML_TAGS))
-    return set(document.nodes) if missing_element else previous
+    if missing_element and kind in IMPLIED_HTML_ANCESTORS:
+        return set(document.nodes)
+    return previous
 
 
 def selector_rules(source: str, wanted, document=None) -> list:

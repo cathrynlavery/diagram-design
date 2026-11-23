@@ -1386,9 +1386,20 @@ def run_cases(h: Harness) -> int:
                      styled('body .x + [data-name="Auth"] rect{display:none}')),
         1, "series 'Auth'",
     )
+    for subject in ("p", "br", "unrecorded-element"):
+        h.expect_clean(
+            "a non-ancestor subject %s does not hide the page" % subject,
+            shipped_with(styled('h1 + %s{display:none}' % subject)),
+        )
     h.expect_findings(
         "a browser-created subject can hide its descendants",
         shipped_with(('<body>', ''), ('</body>', ''),
+                     styled('head + body{display:none}')),
+        5, "never drawn",
+    )
+    h.expect_findings(
+        "browser-created head and body still hide every series",
+        shipped_with(('<head>', ''), ('</head>', ''), ('<body>', ''), ('</body>', ''),
                      styled('head + body{display:none}')),
         5, "never drawn",
     )
