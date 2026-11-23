@@ -83,20 +83,20 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
         if exists.returncode != 0:
             if relative == QODER_MANIFEST_PATH and qoder_predates_manifest(root, ref):
                 continue
-            raise VersionHistoryError(f"{relative} is missing at {ref}")
+            raise VersionHistoryError(f"{relative.as_posix()} is missing at {ref}")
         raw = git(root, "show", f"{ref}:{relative.as_posix()}")
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError as exc:
             raise VersionHistoryError(
-                f"{relative} at {ref} is not valid JSON: {exc}"
+                f"{relative.as_posix()} at {ref} is not valid JSON: {exc}"
             ) from exc
         if not isinstance(payload, dict):
-            raise VersionHistoryError(f"{relative} at {ref} must contain an object")
+            raise VersionHistoryError(f"{relative.as_posix()} at {ref} must contain an object")
         version = payload.get("version")
         if not isinstance(version, str) or SEMVER.fullmatch(version) is None:
             raise VersionHistoryError(
-                f"{relative} at {ref} has an invalid version: {version!r}"
+                f"{relative.as_posix()} at {ref} has an invalid version: {version!r}"
             )
         entries.append((relative, version))
     if not entries:
@@ -104,7 +104,7 @@ def versions_at(root: Path, ref: str) -> Tuple[str, ...]:
     versions = tuple(version for _, version in entries)
     if len(set(versions)) != 1:
         rendered = ", ".join(
-            f"{path}={version}" for path, version in entries
+            f"{path.as_posix()}={version}" for path, version in entries
         )
         raise VersionHistoryError(
             f"manifest versions at {ref} are not synchronized: {rendered}"
