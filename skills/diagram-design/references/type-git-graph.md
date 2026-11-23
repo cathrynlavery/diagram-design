@@ -69,7 +69,7 @@ lane_label_x     = 88
 lane_ys (2–3)    = 240, 380, 520        # 140px pitch
 lane_ys (4–5)    = 216, 312, 408, 504, 600   # 96px pitch, the minimum
 col_origin       = 280
-col_pitch        = 120
+col_pitch        = 120                  # maximum; shrink for wide graphs (below)
 col_x(i)         = col_origin + i * col_pitch
 commit_r         = 8
 merge_ring_r     = 12
@@ -78,6 +78,8 @@ tag_gap          = 28                   # from commit centre up to tag baseline
 ```
 
 Pick the lane pitch by lane count so every rail stays on the 720px canvas. Extending the 140px pitch past three lanes puts the fifth rail at y=800, off the canvas. With four or five lanes, move the `time →` cue up to y=160 and the legend strip down so its rule sits at y≥648, below the last rail's annotations; drop the legend if it does not fit.
+
+Pick the column pitch from the largest column index so the last commit stays on the canvas: `col_x(max_col)` must be at most 1240. Use `col_pitch = min(120, (1240 - col_origin) / max_col)`, rounded down to the 4px grid. Eight columns keep the 120px pitch; fifteen (the most sixteen commits can use) drop it to 64px. If tags or merge rings collide at that pitch, split the graph into an overview plus a zoom.
 
 Time reads left to right on the column grid. Every commit sits on its lane's `y` and on `col_x(column)`. Do not nudge a dot “to open space”; the grid is the claim.
 
