@@ -20,6 +20,7 @@ Exit: 0 all pass, 1 any failure.
 
 from __future__ import annotations
 
+import itertools
 import re
 import shutil
 import subprocess
@@ -277,6 +278,40 @@ def main() -> int:
 
 
 def run_cases(h: Harness) -> int:
+    for css, expected in (
+        ("", False),
+        (r".b\6fx { fill: red; }", True),
+        (r'.box { content: "\62"; }', False),
+        (r'.box { content: "\62"; } .b\6fx { fill: red; }', True),
+        ("\\", False),
+    ):
+        h.check("selector escape detection for %r" % css,
+                verify.selector_has_escape(css) == expected)
+
+    h.check(
+        "selector escape scan matches the original regex on short inputs",
+        all(verify.selector_has_escape(css)
+            == any("\\" in match.group(1)
+                   for match in re.finditer(r"([^{}]+)\{", css))
+            for length in range(7)
+            for chars in itertools.product("a\\{}", repeat=length)
+            for css in ("".join(chars),)),
+    )
+
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c",
+             "import sys; sys.path.insert(0, %r); "
+             "verify = __import__('verify-box-plot'); "
+             "assert not verify.selector_has_escape('.box {' + "
+             "'color: red;' * 20000 + '}')" % str(ROOT / "scripts")],
+            capture_output=True, text=True, timeout=10,
+        )
+        h.check("20,000 declarations scan within 10 seconds",
+                result.returncode == 0, result.stderr.strip())
+    except subprocess.TimeoutExpired:
+        h.check("20,000 declarations scan within 10 seconds", False,
+                "selector escape scan timed out")
     for path in SHIPPED:
         h.check("shipped %s exists" % path.name, path.is_file())
         findings = verify.check(path)
@@ -1039,6 +1074,39 @@ def run_cases(h: Harness) -> int:
         1, "paper mask",
     )
 
+    h.expect_clean(
+        "a leaf-shape class rule (rect.m) cannot paint a paper mask circle with class m",
+        papered.replace(
+            '<circle data-outlier="B"',
+            mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>rect.m{stroke:#4f5d75}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a leaf-shape class rule (line.m) cannot paint a paper mask circle with class m",
+        papered.replace(
+            '<circle data-outlier="B"',
+            mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>line.m{stroke:#4f5d75}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a type-only rule on a leaf shape (rect) cannot paint a paper mask circle",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>rect{stroke:#2d3142}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a type-only rule on a leaf shape (line) cannot paint a paper mask circle",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", "  <style>line{stroke:#2d3142}</style>\n  <g ", 1),
+    )
+    h.expect_clean(
+        "a leaf-shape accent rule on the focal series rect leaves a paper mask clean",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", '  <style>[data-name="Checkout"] rect{stroke:var(--color-accent)}</style>\n  <g ', 1),
+    )
+
     # The accent and visibility as a browser resolves them, on the shipped
     # example's muted Auth series: var(), hsl(), id and attribute selectors,
     # and display/visibility/opacity on the series or a mark.
@@ -1380,7 +1448,8 @@ def run_cases(h: Harness) -> int:
     )
 
     for sibling in ("verify-slopegraph.py", "verify-bump.py",
-                    "verify-bubble.py", "verify-beeswarm.py"):
+                    "verify-bubble.py", "verify-beeswarm.py",
+                    "verify-git-graph.py"):
         script = ROOT / "scripts" / sibling
         if not script.is_file():
             print("skip  %s not on this branch; treaty case not applicable"

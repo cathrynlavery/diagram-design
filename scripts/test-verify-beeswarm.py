@@ -662,7 +662,7 @@ def run_cases(h: Harness) -> int:
     # yet landed (in-flight variant PRs) are legitimately absent.
     for sibling in ("verify-slopegraph.py", "verify-bump.py",
                     "verify-bubble.py", "verify-box-plot.py",
-                    "verify-arc-diagram.py"):
+                    "verify-arc-diagram.py", "verify-git-graph.py"):
         script = ROOT / "scripts" / sibling
         if not script.is_file():
             print("skip  %s not on this branch; treaty case not applicable"
