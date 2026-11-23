@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1.2.0 release train · Git graph</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#2d3142; --color-ink:#f5f5f5; --color-muted:#bfc0c0; --color-accent:#f08a59; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    .diagram-container { width:100%; overflow-x:auto; }
+    svg { width:100%; min-width:1280px; display:block; }
+    @media print { .diagram-container { overflow-x:visible; } svg { min-width:0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Git graph · Diagram Design</p>
+    <h1>1.2.0 release train</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="git-graph-dark-title git-graph-dark-desc">
+        <title id="git-graph-dark-title">1.2.0 release train</title>
+        <desc id="git-graph-dark-desc">Main on top. A billing feature merges, main moves one column, release/1.2 is cut from that later commit, a timeout hotfix lands on that branch, v1.2.0 is tagged, and that commit is merged back to main.</desc>
+        <defs>
+          <pattern id="dots-dark" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="url(#dots-dark)" opacity="0.55"/>
+
+        <text x="280" y="176" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.12em" font-style="italic">time →</text>
+
+        <g aria-hidden="true" stroke="#bfc0c0" stroke-width="1.5" fill="none" stroke-linecap="round">
+          <line data-lane="main" data-y="240" x1="280" y1="240" x2="1240" y2="240"/>
+          <line data-lane="release/1.2" data-y="380" x1="880" y1="380" x2="1120" y2="380"/>
+          <line data-lane="feat/billing" data-y="520" x1="400" y1="520" x2="520" y2="520"/>
+        </g>
+
+        <g fill="none" stroke="#bfc0c0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path data-from="c0" data-to="m1" d="M 280,240 H 640"/>
+          <path data-from="m1" data-to="c3" d="M 640,240 H 760"/>
+          <path data-from="c3" data-to="m2" d="M 760,240 H 1240"/>
+          <path data-from="c1" data-to="c2" d="M 400,520 H 520"/>
+          <path data-from="r0" data-to="h1" d="M 880,380 H 1000"/>
+          <path data-from="h1" data-to="r1" d="M 1000,380 H 1120"/>
+          <path data-from="c0" data-to="c1" d="M 280,240 V 520 H 400"/>
+          <path data-from="c2" data-to="m1" d="M 520,520 H 640 V 240"/>
+          <path data-from="c3" data-to="r0" d="M 760,240 V 380 H 880"/>
+          <path data-from="r1" data-to="m2" d="M 1120,380 H 1240 V 240"/>
+        </g>
+
+        <g aria-hidden="true" fill="none" stroke="#f5f5f5" stroke-width="1.5">
+          <circle cx="640" cy="240" r="12"/>
+          <circle cx="1240" cy="240" r="12"/>
+        </g>
+        <g>
+          <circle data-commit="c0" data-lane="main" data-column="0" cx="280" cy="240" r="8" fill="#f5f5f5"/>
+          <circle data-commit="c1" data-lane="feat/billing" data-column="1" cx="400" cy="520" r="8" fill="#f5f5f5"/>
+          <circle data-commit="c2" data-lane="feat/billing" data-column="2" cx="520" cy="520" r="8" fill="#f5f5f5"/>
+          <circle data-commit="m1" data-lane="main" data-column="3" data-kind="merge" cx="640" cy="240" r="8" fill="#f5f5f5"/>
+          <circle data-commit="c3" data-lane="main" data-column="4" cx="760" cy="240" r="8" fill="#f5f5f5"/>
+          <circle data-commit="r0" data-lane="release/1.2" data-column="5" cx="880" cy="380" r="8" fill="#f5f5f5"/>
+          <circle data-commit="h1" data-lane="release/1.2" data-column="6" cx="1000" cy="380" r="8" fill="#f08a59"/>
+          <circle data-commit="r1" data-lane="release/1.2" data-column="7" cx="1120" cy="380" r="8" fill="#f08a59"/>
+          <circle data-commit="m2" data-lane="main" data-column="8" data-kind="merge" cx="1240" cy="240" r="8" fill="#f5f5f5"/>
+        </g>
+
+        <g font-family="'Geist Mono', monospace" font-size="11" font-weight="600" fill="#bfc0c0" text-anchor="end">
+          <text data-lane="main" x="88" y="244">main</text>
+          <text data-lane="release/1.2" x="88" y="384">release/1.2</text>
+          <text data-lane="feat/billing" x="88" y="524">feat/billing</text>
+        </g>
+
+        <g font-family="'Geist Mono', monospace" font-size="9" text-anchor="middle">
+          <text x="640" y="272" fill="#bfc0c0">merge</text>
+          <text x="880" y="412" fill="#bfc0c0">cut</text>
+          <text x="1000" y="412" fill="#f08a59">hotfix</text>
+        </g>
+
+        <g>
+          <rect x="1084" y="332" width="72" height="22" rx="3" fill="#2d3142" stroke="#f5f5f5" stroke-width="1"/>
+          <text data-tag="v1.2.0" data-commit="r1" x="1120" y="347" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace" font-weight="600" text-anchor="middle">v1.2.0</text>
+        </g>
+
+        <line x1="40" y1="600" x2="1240" y2="600" stroke="rgba(245,245,245,0.12)" stroke-width="0.8"/>
+        <text x="40" y="620" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <circle cx="52" cy="640" r="6" fill="#f5f5f5"/>
+        <text x="64" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Commit</text>
+        <circle cx="148" cy="640" r="6" fill="#f08a59"/>
+        <text x="160" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Hotfix / release</text>
+        <rect x="300" y="632" width="44" height="16" rx="2" fill="#2d3142" stroke="#f5f5f5"/>
+        <text x="352" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Tag</text>
+        <text x="420" y="644" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Columns are time; a merge is a dot with two parents.</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
