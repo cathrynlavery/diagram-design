@@ -138,7 +138,7 @@ CSS_MOVES_MARK_RE = re.compile(
 # is exactly what a broken quote defeats (see declares_series). Scoped to a
 # <line> start tag: `data-series` on a <path> is the bump chart's vocabulary.
 DECLARES_SERIES_RE = re.compile(r"<line\b[^>]*\bdata-series\s*=", re.IGNORECASE)
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 # The COMPLETE numeric token an author may print: sign, comma-grouped thousands,
 # decimals, leading-dot decimals, exponents. Matching only `-?\d+(\.\d+)?` read
 # "1e3" as 1 and "512,000" as 512, so a mangled label agreed with its metadata.

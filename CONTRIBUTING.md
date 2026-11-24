@@ -120,6 +120,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Git-graph commits sit on lanes and a shared time grid; every merge has two earlier parents | `python3 scripts/verify-git-graph.py --all` |
 | Git-graph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-git-graph.py` |
 | Quoted CSS data is not read as a geometry declaration by any verifier (pass + adversarial cases) | `python3 scripts/test-css-string-scan.py` |
+| Every verifier ends an HTML comment where the browser does (`<!-->`, `<!--->`, `--!>`) | `python3 scripts/test-html-comment-forms.py` |
 | Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
@@ -251,6 +252,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-git-graph.py --all \
   && python3 scripts/test-verify-git-graph.py \
   && python3 scripts/test-css-string-scan.py \
+  && python3 scripts/test-html-comment-forms.py \
   && python3 scripts/verify-skin-polarity.py --all \
   && python3 scripts/test-verify-skin-polarity.py \
   && python3 scripts/test-export-wait.py

@@ -155,7 +155,7 @@ DIGIT_RE = re.compile(r"\d")
 # held to the contract even when the parser cannot read the tag that binds it.
 # See declares_bubble.
 DECLARES_BUBBLE_RE = re.compile(r"\bdata-size\s*=", re.IGNORECASE)
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 
 # The accent stroke on either skin, hex or rgba. The focal count keys on the
 # STROKE because the fill is a translucent tint the paper shows through; the

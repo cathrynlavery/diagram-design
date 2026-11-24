@@ -63,10 +63,10 @@ ASSET_DIR = ROOT / "skills/diagram-design/assets"
 _ATTRS = r"""(?:"[^"]*"|'[^']*'|[^"'<>])*"""
 RECT_RE = re.compile(rf"<rect\b(?P<attrs>{_ATTRS})/?>", re.IGNORECASE)
 TEXT_RE = re.compile(rf"<text\b(?P<attrs>{_ATTRS})>", re.IGNORECASE)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
 COMMENT_OR_STYLE_RE = re.compile(
-    r"<!--.*?(?:-->|$)|" + STYLE_RE.pattern, re.IGNORECASE | re.DOTALL
+    r"<!--(?:-?>|.*?(?:--!?>|$))|" + STYLE_RE.pattern, re.IGNORECASE | re.DOTALL
 )
 CSS_NONCODE_RE = re.compile(
     r'''"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|\\[\s\S]|/\*.*?(?:\*/|$)''',

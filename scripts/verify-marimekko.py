@@ -139,7 +139,7 @@ CSS_SIZE_PROPS = ("width", "height")
 # An HTML comment. The parser already refuses to tokenize its contents; scope
 # detection reads raw text and must refuse the same way, or a commented-out
 # draft claims an unrelated file.
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 # The complete numeric token a label may print. Matching only the first
 # fragment is how "2,140" once agreed with metadata that said 2.
 NUMBER_RE = re.compile(

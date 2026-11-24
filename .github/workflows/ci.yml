@@ -110,6 +110,9 @@ jobs:
       - name: Verify CSS scanner compatibility
         run: python scripts/test-css-string-scan.py
 
+      - name: Verify HTML comment endings
+        run: python scripts/test-html-comment-forms.py
+
   validate:
     name: Lint & Verify (${{ matrix.os }}, Python ${{ matrix.python-version }})
     strategy:
@@ -529,6 +532,11 @@ jobs:
         id: css_string_scan
         run: python scripts/test-css-string-scan.py
 
+      - name: Verify HTML comments end where the browser ends them
+        if: always()
+        id: html_comment_forms
+        run: python scripts/test-html-comment-forms.py
+
       - name: Verify architecture delta snapshots and ledger
         if: always()
         id: architecture_delta
@@ -748,6 +756,7 @@ jobs:
           echo "| Git-Graph Lane & Merge Geometry | ${{ steps.git_graph.outcome == 'success' && '✅ Passed' || (steps.git_graph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Git-Graph Checker | ${{ steps.git_graph_tests.outcome == 'success' && '✅ Passed' || (steps.git_graph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Quoted CSS Data Scan | ${{ steps.css_string_scan.outcome == 'success' && '✅ Passed' || (steps.css_string_scan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| HTML Comment Endings | ${{ steps.html_comment_forms.outcome == 'success' && '✅ Passed' || (steps.html_comment_forms.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Checker | ${{ steps.architecture_delta_tests.outcome == 'success' && '✅ Passed' || (steps.architecture_delta_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Containment Scopes | ${{ steps.architecture_containment.outcome == 'success' && '✅ Passed' || (steps.architecture_containment.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"

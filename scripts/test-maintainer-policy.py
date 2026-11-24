@@ -94,6 +94,7 @@ REQUIRED_COMMANDS = {
     "python3 scripts/verify-git-graph.py --all",
     "python3 scripts/test-verify-git-graph.py",
     "python3 scripts/test-css-string-scan.py",
+    "python3 scripts/test-html-comment-forms.py",
     "python3 scripts/verify-skin-polarity.py --all",
     "python3 scripts/test-verify-skin-polarity.py",
     "python3 scripts/verify-architecture-delta.py --all",
