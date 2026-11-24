@@ -623,8 +623,8 @@ def check_export_surface_parity(verify) -> None:
             raise AssertionError(f"shipped export surfaces failed: {errors}")
 
         broken_cmd = fake_cmd.read_text(encoding="utf-8").replace(
-            "Both `--svg-only` and `--png-only` supplied",
-            "Both format flags supplied",
+            "More than one of `--svg-only`, `--png-only`, or `--pdf-only` supplied",
+            "More than one format flag supplied",
         )
         fake_cmd.write_text(broken_cmd, encoding="utf-8")
         errors = []
@@ -638,8 +638,8 @@ def check_export_surface_parity(verify) -> None:
             encoding="utf-8",
         )
         broken_prompt = fake_prompt.read_text(encoding="utf-8").replace(
-            "Both `--svg-only` and `--png-only` supplied",
-            "Both format flags supplied",
+            "More than one of `--svg-only`, `--png-only`, or `--pdf-only` supplied",
+            "More than one format flag supplied",
         )
         fake_prompt.write_text(broken_prompt, encoding="utf-8")
         errors = []

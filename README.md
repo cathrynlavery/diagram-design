@@ -662,6 +662,7 @@ diagram-design/
 │       │   ├── plantuml_extract.py   # PlantUML → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
 │       │   ├── export_png.py         # Playwright PNG renderer
+│       │   ├── export_pdf.py         # Playwright vector PDF exporter
 │       │   ├── self_check.py         # packaged output self-check (runs installed)
 │       │   └── verify_geometry.py    # label, connector and port geometry (runs installed)
 │       └── assets/

@@ -631,6 +631,18 @@ jobs:
           esac
           echo "$out" | grep -q "All export-wait cases passed"
 
+      - name: Verify packaged vector PDF exporter
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        id: export_pdf
+        shell: bash
+        run: |
+          out="$(uv run --locked --project .github/ci/python python scripts/test-export-pdf.py)"
+          echo "$out"
+          case "$out" in
+            SKIP:*) echo "::error::export-pdf tests skipped despite Playwright being installed" && exit 1 ;;
+          esac
+          echo "$out" | grep -q "ALL PDF EXPORT TESTS PASSED"
+
       # The checks before the sweep: a broken linter must not be able to report
       # a clean repository.
       - name: Verify render linter checks
@@ -754,3 +766,4 @@ jobs:
           echo "| Render Linter Self-Test | ${{ steps.render_selftest.outcome == 'success' && '✅ Passed' || (steps.render_selftest.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Rendered Layout (paint oracle) | ${{ steps.render.outcome == 'success' && '✅ Passed' || (steps.render.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Export Snippet Stalled-Load Fallback | ${{ steps.export_wait.outcome == 'success' && '✅ Passed' || (steps.export_wait.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Packaged Vector PDF Exporter | ${{ steps.export_pdf.outcome == 'success' && '✅ Passed' || (steps.export_pdf.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
