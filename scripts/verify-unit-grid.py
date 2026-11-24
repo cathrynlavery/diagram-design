@@ -21,6 +21,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -317,7 +318,7 @@ def drawn_box(tag: str, attributes: dict[str, str], text: str,
     return found[0] - pad, found[1] - pad, found[2] + pad, found[3] + pad
 
 
-class Presentation(HTMLParser):
+class Presentation(TokenizerComments, HTMLParser):
     """Find cells, labels, styles and later drawables the way a browser parses them."""
 
     def __init__(self) -> None:

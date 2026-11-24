@@ -5,9 +5,11 @@ The HTML tokenizer closes a comment at `<!-->`, `<!--->` and `--!>` as well as
 `-->`. A verifier that blanks `<!--.*?-->` instead hides real markup from its
 checks: `<!--><circle/><!-- -->` draws the circle, but the checker never sees it.
 
-Three checks: no verifier keeps the old lazy pattern, every compiled comment
-pattern stops at each tokenizer ending, and the box-plot checker flags a second
-accent circle that sits behind each ending.
+No verifier keeps the old lazy pattern, every compiled comment pattern stops at
+each tokenizer ending, and every HTMLParser a verifier uses ends comments the same
+way (Python before 3.13 runs `<!-->` on to the next `-->`). End to end, the
+box-plot checker (regex path) flags a second accent circle and the bubble checker
+(parser path) flags an off-scale bubble behind each ending.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -75,6 +78,81 @@ def check_patterns() -> int:
     return checked
 
 
+def check_parsers() -> int:
+    from html_comments import TokenizerComments
+
+    class Tags(TokenizerComments, HTMLParser):
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=True)
+            self.tags: list[str] = []
+            self.comments: list[str] = []
+
+        def handle_startendtag(self, tag, attrs) -> None:
+            self.tags.append(tag)
+
+        def handle_comment(self, data) -> None:
+            self.comments.append(data)
+
+    for source, comment in (
+        ("<!--><g/>", ""), ("<!---><g/>", ""), ("<!-- a --!><g/>", " a "),
+        ("<!-- a --><g/>", " a "), ("<!----><g/>", ""), ("<style><!--></style><g/>", None),
+    ):
+        parser = Tags()
+        parser.feed(source)
+        parser.close()
+        if parser.tags != ["g"] or parser.comments != ([] if comment is None else [comment]):
+            raise AssertionError(f"TokenizerComments read {source!r} as tags {parser.tags}, comments {parser.comments}")
+
+    unfixed = []
+    for path in VERIFIERS:
+        if "HTMLParser" not in path.read_text(encoding="utf-8"):
+            continue
+        for name, value in vars(load(path)).items():
+            if (isinstance(value, type) and issubclass(value, HTMLParser) and value is not HTMLParser
+                    and value.parse_comment is not TokenizerComments.parse_comment):
+                unfixed.append(f"{path.name} {name}")
+    if unfixed:
+        raise AssertionError("HTMLParser without TokenizerComments: " + ", ".join(unfixed))
+    return len(VERIFIERS)
+
+
+def run_cases(name: str, verifier: str, cases: dict, finding: str, ok: str) -> int:
+    with tempfile.TemporaryDirectory() as tmp:
+        for case, (source, flagged) in cases.items():
+            path = Path(tmp) / f"{case}.html"
+            path.write_text(source, encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / verifier), str(path)],
+                capture_output=True, text=True,
+            )
+            found = result.returncode == 1 and finding in result.stdout
+            passed = result.returncode == 0 and result.stdout.startswith(ok)
+            if not (found if flagged else passed) or "Traceback" in result.stderr:
+                want = repr(finding) if flagged else "a pass"
+                raise AssertionError(
+                    f"{name} {case}: expected {want}, got exit {result.returncode}: {result.stdout}{result.stderr}")
+    return len(cases)
+
+
+def check_bubble() -> int:
+    """HTMLParser path: a bubble off its scale, hidden from Python < 3.13 by `<!-->`."""
+    example = (ROOT / "skills/diagram-design/assets/example-bubble.html").read_text(encoding="utf-8")
+    anchor = '<circle data-name="Gateway"'
+    end = example.index("/>", example.index(anchor)) + 2
+    ghost = example[example.index(anchor):end].replace('"Gateway"', '"Ghost"').replace('cx="229.6"', 'cx="900"')
+    cases = {
+        name: (example[:end] + wrapped + example[end:], flagged)
+        for name, (wrapped, flagged) in {
+            "bare": (ghost, True),
+            "abrupt": ("<!-->" + ghost + "<!-- -->", True),
+            "abrupt-dash": ("<!--->" + ghost + "<!-- -->", True),
+            "bang": ("<!-- a --!>" + ghost + "<!-- -->", True),
+            "closed": ("<!-- " + ghost + " -->", False),
+        }.items()
+    }
+    return run_cases("bubble", "verify-bubble.py", cases, "bubble 'Ghost' declares x=85", "OK bubble")
+
+
 def check_box_plot() -> int:
     example = (ROOT / "skills/diagram-design/assets/example-box-plot.html").read_text(encoding="utf-8")
     start = example.index('<g data-name="Auth"')
@@ -87,25 +165,16 @@ def check_box_plot() -> int:
         "bang": ("<!-- a --!>" + circle + "<!-- -->", True),
         "closed": ("<!-- " + circle + " -->", False),
     }
-    with tempfile.TemporaryDirectory() as tmp:
-        for name, (inserted, flagged) in cases.items():
-            path = Path(tmp) / f"{name}.html"
-            path.write_text(example[:end] + inserted + example[end:], encoding="utf-8")
-            result = subprocess.run(
-                [sys.executable, str(ROOT / "scripts/verify-box-plot.py"), str(path)],
-                capture_output=True, text=True,
-            )
-            if (result.returncode != 0) != flagged:
-                want = "a finding" if flagged else "a pass"
-                raise AssertionError(f"box plot {name}: expected {want}, got exit {result.returncode}: {result.stdout}")
-    return len(cases)
+    cases = {name: (example[:end] + inserted + example[end:], flagged) for name, (inserted, flagged) in cases.items()}
+    return run_cases("box plot", "verify-box-plot.py", cases, "has an unbound circle", "OK box plot")
 
 
 def main() -> int:
     files = check_sources()
     patterns = check_patterns()
-    cases = check_box_plot()
-    print(f"OK HTML comment forms: {files} verifier(s), {patterns} pattern(s), {cases} box-plot case(s)")
+    check_parsers()
+    cases = check_box_plot() + check_bubble()
+    print(f"OK HTML comment forms: {files} verifier(s), {patterns} pattern(s), {cases} end-to-end case(s)")
     return 0
 
 

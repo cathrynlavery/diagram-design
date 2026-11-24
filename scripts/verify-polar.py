@@ -12,6 +12,7 @@ import re
 import sys
 from typing import Sequence
 from urllib.parse import urlsplit
+from html_comments import TokenizerComments
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -257,7 +258,7 @@ def _presentation_property(attrs: dict[str, str], property_name: str) -> str:
     return attrs.get(property_name, "").strip().casefold()
 
 
-class PolarParser(HTMLParser):
+class PolarParser(TokenizerComments, HTMLParser):
     """Capture charts and the geometry-bearing descendants of each category."""
 
     def __init__(self) -> None:

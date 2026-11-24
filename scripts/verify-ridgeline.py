@@ -106,6 +106,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -294,7 +295,7 @@ def first_wins(attrs) -> dict:
     return seen
 
 
-class _Scanner(HTMLParser):
+class _Scanner(TokenizerComments, HTMLParser):
     """Collect paths, lines, texts, title/desc and style elements with ancestry.
 
     HTMLParser already lowercases tag and attribute names, tolerates unquoted

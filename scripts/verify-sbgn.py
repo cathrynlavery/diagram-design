@@ -31,6 +31,7 @@ import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -86,7 +87,7 @@ class Node:
             current = current.parent
 
 
-class Scanner(HTMLParser):
+class Scanner(TokenizerComments, HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.root = Node("document", {}, 1)

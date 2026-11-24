@@ -28,6 +28,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
@@ -128,7 +129,7 @@ def first_attributes(attrs):
     return result
 
 
-class Tree(HTMLParser):
+class Tree(TokenizerComments, HTMLParser):
     VOID = {"path", "line", "circle", "rect", "polygon", "ellipse", "meta", "link", "br", "img", "input", "stop"}
 
     def __init__(self):

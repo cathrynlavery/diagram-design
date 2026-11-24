@@ -17,6 +17,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
+from html_comments import TokenizerComments
 from verify_static_svg_visibility import (
     check_static_svg,
     local,
@@ -130,7 +131,7 @@ def calculate(durations: dict[str, Decimal], edges: list[tuple[str, str]]) -> di
     }
 
 
-class Attributes(HTMLParser):
+class Attributes(TokenizerComments, HTMLParser):
     """Catch duplicate attributes before XML parsing or browser repair hides them."""
 
     def __init__(self):
