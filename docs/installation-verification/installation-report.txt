@@ -1,0 +1,183 @@
+DIAGRAM DESIGN - INSTALLATION AND VERIFICATION REPORT
+Date: 2026-11-24 UTC
+
+STATUS
+The skill is installed and its source-level checks largely pass.
+Browser rendering and PNG/PDF export are NOT fully verified: the required
+Chromium download failed. Do not interpret this report as a fully green suite.
+
+LOCATIONS
+Repository: C:\Users\PC PRO MAX\diagram-design
+Installed skill: C:\Users\PC PRO MAX\.agents\skills\diagram-design
+Isolated runtime: C:\Users\PC PRO MAX\.diagram-design-runtime
+Persistent test logs: C:\Users\PC PRO MAX\diagram-design-verification\logs
+Repository commit: 1acb8776bab34f5055399fbac96a693c8d5cf7b3
+
+INSTALLATION INTEGRITY
+All 326 installed payload files matched the repository byte for byte.
+The installed self_check.py passed on assets/example-architecture.html.
+The installed verify_geometry.py checked 245 files with zero findings.
+No tracked repository source changes were left behind.
+No global Python packages, persistent PATH changes, or source fixes were applied.
+
+ORIGINAL REPOSITORY SUITE
+Commands came from .maintainer-policy.json, gates.local_commands.
+The suite ran with Python 3.14.7; commands used the real interpreter rather
+than the Windows python3 alias. These are command totals, not test-case totals.
+
+After the CSS scanner retry:
+  101 PASS
+    3 FAIL
+    3 PARTIAL (some cases skipped)
+    1 SKIP
+  108 total commands
+
+The CSS scanner originally exceeded a 180-second runner limit, then passed
+unchanged in 237.8 seconds with an extended limit.
+See logs\results.json and the numbered logs for the original suite.
+JSON log paths refer to the original temporary directory; corresponding log
+files have also been copied into this report's persistent logs directory.
+
+ORIGINAL NON-PASS RESULTS
+- lint-render.py --self-test and --all: Playwright was not installed.
+- test-verify-doctor.py: its temporary directory inherits spaces from the
+  Windows user path. The checker correctly returns a path warning, but this
+  test asserts PASS instead of accepting that warning.
+- test-plugin-package.py: the Windows/Bash CI execution case was skipped.
+- test-export-wait.py: browser cases skipped without Playwright.
+- test-export-pdf.py: source anchors passed; browser cases skipped.
+- Pinned Node/Claude strict validation was initially skipped.
+
+FINAL SETUP AND FOLLOW-UP CHECKS
+Created a dedicated virtual environment with Python 3.14.7 and installed:
+  playwright==1.62.0
+  Pillow==12.1.1
+These match the project's pinned package versions.
+pip check: PASS (no broken requirements).
+CI specifies Python 3.12 and calibrates pixel-based gates on Linux; this
+Windows/Python 3.14 setup does not reproduce that exact environment.
+
+Installed repository-local Node dependencies using npm ci with its lockfile.
+Pinned @anthropic-ai/claude-code version: 2.1.229.
+Strict Claude marketplace/plugin validation: PASS.
+npm reported that the package postinstall was not approved; validation still
+ran successfully. No install-script approval was granted.
+
+Pinned-runtime checks:
+- test-build-readme-thumbs.py: PASS.
+- build-readme-thumbs.py --check: PASS (53 images).
+- verify-doctor.py --json: exit 0, WARN (3 pass, 2 warn, 0 fail).
+- test-verify-doctor.py: same path-with-spaces assertion failure.
+- lint-render.py --self-test and --all: failed to launch missing Chromium.
+- test-export-pdf.py: failed to launch missing Chromium.
+- test-export-wait.py: failed in the exporter subprocess; the top-level
+  traceback does not expose its captured child stderr. Browser verification
+  remains blocked and no successful export is claimed.
+See logs\final-setup-results.json and logs\final-01.log through final-08.log.
+The entire original suite was not rerun in the new virtual environment.
+
+REMAINING LIMITATIONS
+1. Chromium installation failed after repeated ECONNRESET and EACCES
+   network errors from cdn.playwright.dev. Playwright is installed but its
+   managed browser is not ready. No firewall or security settings were changed.
+2. The doctor probes python3 before python and selected the Windows alias
+   resolving to Python 3.15.2, not the isolated runtime. Its "Playwright not
+   available" warning refers to that selected interpreter. Use the explicit
+   runtime executable below for skill helpers.
+3. Windows paths contain spaces. Always quote file and script paths.
+4. The upstream doctor unit-test assertion remains unfixed.
+5. The Windows-only skipped Bash CI case was not executed.
+
+DOCTOR TEST: PATH WORKAROUND (INSTRUCTIONS ONLY, NOT YET RUN)
+The failing assertion concerns a fixture created by tempfile, not damaged
+installed files. Quoting paths makes helper commands safe but does not change
+the test's requirement that this fixture return PASS rather than WARN.
+Moving the repository alone will not change its temporary directory.
+
+Run the following in PowerShell to give only this test process and its
+children a writable temporary directory without spaces. It restores TMP,
+TEMP, and TMPDIR afterward; it does not rename your account, move the skill,
+change persistent environment settings, or edit the upstream test.
+
+$testTemp = Join-Path $env:PUBLIC ("diagram-design-tests-" + [guid]::NewGuid().ToString("N"))
+if ($testTemp.Contains(" ")) {
+    throw "Choose a writable temporary directory with no spaces."
+}
+New-Item -ItemType Directory -Path $testTemp -ErrorAction Stop | Out-Null
+$savedTemp = @{}
+foreach ($name in @("TMP", "TEMP", "TMPDIR")) {
+    $savedTemp[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+}
+try {
+    foreach ($name in @("TMP", "TEMP", "TMPDIR")) {
+        [Environment]::SetEnvironmentVariable($name, $testTemp, "Process")
+    }
+    & "$HOME\.diagram-design-runtime\Scripts\python.exe" "$HOME\diagram-design\scripts\test-verify-doctor.py"
+    $doctorTestExitCode = $LASTEXITCODE
+    if ($doctorTestExitCode -ne 0) {
+        throw "Doctor test still failed (exit $doctorTestExitCode); inspect its output."
+    }
+} finally {
+    foreach ($name in @("TMP", "TEMP", "TMPDIR")) {
+        [Environment]::SetEnvironmentVariable($name, $savedTemp[$name], "Process")
+    }
+}
+
+Success criterion: exit code 0 and "All doctor verifier tests passed".
+This workaround has not been executed; existing recorded failures and suite
+totals therefore remain unchanged. Additional failures may appear once the
+original assertion is passed. If creation under PUBLIC is denied, use another
+writable no-space location allowed by your machine policy; do not elevate or
+change permissions just for this test.
+
+The unique parent directory may remain after the run; it may be removed
+manually once confirmed empty. The test manages its own fixture subdirectory.
+Normal doctor diagnostics will still warn about the real installation path
+containing spaces. That warning does not prevent quoted helper commands.
+
+For a permanent upstream fix, report that the healthy-installed-skill test
+expects PASS even when its temporary root contains spaces on Windows.
+A proposed fix should accept the expected path warning in that scenario and
+retain separate tests that verify the warning itself. No upstream issue or
+source patch has been submitted as part of this installation.
+
+USAGE (POWERSHELL; NO ACTIVATION REQUIRED)
+Use this Python explicitly for helpers that need the installed dependencies:
+
+& "$HOME\.diagram-design-runtime\Scripts\python.exe" "$HOME\.agents\skills\diagram-design\scripts\self_check.py" "C:\path\to\diagram.html"
+& "$HOME\.diagram-design-runtime\Scripts\python.exe" "$HOME\.agents\skills\diagram-design\scripts\verify_geometry.py" "C:\path\to\diagram.html"
+
+Once network access to the official Playwright download service works, retry:
+
+& "$HOME\.diagram-design-runtime\Scripts\python.exe" -m playwright install chromium
+
+Then rerun browser checks from the repository:
+
+Push-Location "$HOME\diagram-design"
+try {
+    & "$HOME\.diagram-design-runtime\Scripts\python.exe" scripts/lint-render.py --self-test
+    & "$HOME\.diagram-design-runtime\Scripts\python.exe" scripts/lint-render.py --all
+    & "$HOME\.diagram-design-runtime\Scripts\python.exe" scripts/test-export-wait.py
+    & "$HOME\.diagram-design-runtime\Scripts\python.exe" scripts/test-export-pdf.py
+} finally {
+    Pop-Location
+}
+
+DOCUMENTATION FINALIZATION
+Installation integrity and completed setup are documented above, together
+with reproducible commands and persistent logs. Outstanding browser setup
+and the doctor-test workaround are explicitly unverified. A fully passing
+suite is not claimed. Update this report with actual output and exit codes
+after completing the remaining steps.
+
+Render lint thresholds are calibrated on Linux, so investigate Windows-only
+pixel differences rather than changing thresholds or declaring CI parity.
+
+To repeat strict plugin validation:
+
+Push-Location "$HOME\diagram-design"
+try {
+    & ".\.github\ci\node\node_modules\.bin\claude.cmd" plugin validate . --strict
+} finally {
+    Pop-Location
+}

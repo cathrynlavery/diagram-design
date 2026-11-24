@@ -1,0 +1,1 @@
+OK git graph: 3 file(s), every commit on its lane and column grid, every merge with exactly two earlier parents on different lanes, connectors that turn at the parent or merge column, no right-to-left connectors, tags on existing commits, at most two coral commits, and lanes that do not overlap and stay on the canvas (235 file(s) skipped as out of scope)

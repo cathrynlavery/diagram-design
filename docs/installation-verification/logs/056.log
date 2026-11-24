@@ -1,0 +1,49 @@
+test_added_removed_membership (__main__.ContractTests.test_added_removed_membership) ... ok
+test_all_shipped_variants (__main__.ContractTests.test_all_shipped_variants) ... ok
+test_alternate_panel_translation_is_not_a_move (__main__.ContractTests.test_alternate_panel_translation_is_not_a_move) ... ok
+test_animation_use_and_nested_svg (__main__.ContractTests.test_animation_use_and_nested_svg) ... ok
+test_bounds_are_finite_positive_in_grid (__main__.ContractTests.test_bounds_are_finite_positive_in_grid) ... ok
+test_bounds_declared_once_on_direct_rect (__main__.ContractTests.test_bounds_declared_once_on_direct_rect) ... ok
+test_changed_and_moved_together (__main__.ContractTests.test_changed_and_moved_together) ... ok
+test_changed_and_rewired_together (__main__.ContractTests.test_changed_and_rewired_together) ... ok
+test_changed_signatures_both_directions (__main__.ContractTests.test_changed_signatures_both_directions) ... ok
+test_cli_discovery_and_failures (__main__.ContractTests.test_cli_discovery_and_failures) ... ok
+test_comments_entities_and_tspans (__main__.ContractTests.test_comments_entities_and_tspans) ... ok
+test_component_budget (__main__.ContractTests.test_component_budget) ... ok
+test_css_geometry_overrides (__main__.ContractTests.test_css_geometry_overrides) ... ok
+test_curved_orthogonal_path (__main__.ContractTests.test_curved_orthogonal_path) ... ok
+test_drawn_endpoints_match_declared_nodes (__main__.ContractTests.test_drawn_endpoints_match_declared_nodes) ... ok
+test_duplicate_attribute (__main__.ContractTests.test_duplicate_attribute) ... ok
+test_duplicate_ledger (__main__.ContractTests.test_duplicate_ledger) ... ok
+test_duplicate_object_id (__main__.ContractTests.test_duplicate_object_id) ... ok
+test_empty_and_missing_declarations (__main__.ContractTests.test_empty_and_missing_declarations) ... ok
+test_hidden_metadata_carriers (__main__.ContractTests.test_hidden_metadata_carriers) ... ok
+test_ledger_budget (__main__.ContractTests.test_ledger_budget) ... ok
+test_ledger_cannot_claim_unchanged (__main__.ContractTests.test_ledger_cannot_claim_unchanged) ... ok
+test_ledger_coverage (__main__.ContractTests.test_ledger_coverage) ... ok
+test_ledger_text_and_membership (__main__.ContractTests.test_ledger_text_and_membership) ... ok
+test_malformed_markup (__main__.ContractTests.test_malformed_markup) ... ok
+test_matching_grids (__main__.ContractTests.test_matching_grids) ... ok
+test_missing_and_dangling_endpoints (__main__.ContractTests.test_missing_and_dangling_endpoints) ... ok
+test_missing_root_and_snapshots (__main__.ContractTests.test_missing_root_and_snapshots) ... ok
+test_missing_snapshot_membership (__main__.ContractTests.test_missing_snapshot_membership) ... ok
+test_move_both_directions (__main__.ContractTests.test_move_both_directions) ... ok
+test_nested_snapshot_and_object (__main__.ContractTests.test_nested_snapshot_and_object) ... ok
+test_nonrendering_metadata (__main__.ContractTests.test_nonrendering_metadata) ... ok
+test_panel_transform_and_order (__main__.ContractTests.test_panel_transform_and_order) ... ok
+test_path_grammar_fails_closed (__main__.ContractTests.test_path_grammar_fails_closed) ... ok
+test_path_metadata_cannot_disappear (__main__.ContractTests.test_path_metadata_cannot_disappear) ... ok
+test_relationship_budget (__main__.ContractTests.test_relationship_budget) ... ok
+test_relationship_cannot_be_moved (__main__.ContractTests.test_relationship_cannot_be_moved) ... ok
+test_retained_kind_mismatch (__main__.ContractTests.test_retained_kind_mismatch) ... ok
+test_rewire_both_directions (__main__.ContractTests.test_rewire_both_directions) ... ok
+test_size_cannot_change_silently (__main__.ContractTests.test_size_cannot_change_silently) ... ok
+test_synthetic_and_alternate_pitch (__main__.ContractTests.test_synthetic_and_alternate_pitch) ... ok
+test_unquoted_attributes_and_number_syntax (__main__.ContractTests.test_unquoted_attributes_and_number_syntax) ... ok
+test_whitespace_and_multiple_ids (__main__.ContractTests.test_whitespace_and_multiple_ids) ... ok
+test_wrong_or_duplicate_statuses (__main__.ContractTests.test_wrong_or_duplicate_statuses) ... ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 1.682s
+
+OK

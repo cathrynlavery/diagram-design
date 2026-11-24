@@ -1,0 +1,67 @@
+OK: Korean wide-glyph estimator contract is 15.4em
+OK: Japanese wide-glyph estimator contract is 14em
+OK: mixed-script estimate for '주문 v2.1' is 5em
+OK: mixed-script estimate for 'API 게이트웨이 v2' is 9.2em
+OK: mixed-script estimate for '주문（원본）' is 6em
+OK: mixed-script estimate for '한글é' is 2.6em
+OK: mixed-script estimate for '한글e⃝' is 2.6em
+OK: mixed-script estimate for '' is 0em
+OK: mono mixed-script estimate keeps the 0.62em narrow advance
+OK: all 3 shipped Latin treemaps pass
+OK: a cell drawn smaller than its label is rejected
+OK: a cell drawn larger than its label is rejected
+OK: a label wider than its cell is rejected
+OK: a Korean label in the old-estimator boundary gap is rejected
+OK: a Japanese full-width label is rejected when it overflows
+OK: a label overflowing the left edge is rejected
+OK: a label overflowing the top edge is rejected
+OK: an information mark overflowing its cell is rejected
+OK: single-quoted label overflow retains its finding
+OK: single-quoted marker overflow retains its finding
+OK: combining marks do not create phantom label overflow
+OK: an unlabelled sliver does not disable the area check
+OK: an unlabelled sliver drawn larger than it declares is rejected
+OK: an unlabelled sliver drawn smaller than it declares is rejected
+OK: a cell with no declared share fails closed
+OK: a label contradicting its cell's declared share is rejected
+OK: non-numeric data-share fails closed
+OK: zero data-share fails closed
+OK: negative data-share fails closed
+OK: non-finite-nan data-share fails closed
+OK: non-finite-infinity data-share fails closed
+OK: over-100 data-share fails closed
+OK: conflicting mask/body shares are rejected
+OK: extra duplicate cell rects are rejected
+OK: shares must total approximately 100%
+OK: too few parseable cells fails closed
+OK: metadata-bearing cells bypass the decorative-area threshold
+OK: data-share identifies a cell independently of decorative rx
+OK: every hosted percentage claim must agree
+OK: word-glued '-' percentage cannot hide a claim
+OK: word-glued '_' percentage cannot hide a claim
+OK: word-glued '.' percentage cannot hide a claim
+OK: comma-matching keeps complete percentage claims
+OK: comma-scientific-matching keeps complete percentage claims
+OK: comma-conflicting keeps complete percentage claims
+OK: comma-second-conflicting keeps complete percentage claims
+OK: comma-grouped-number keeps complete percentage claims
+OK: comma-negative-number keeps complete percentage claims
+OK: metadata-bearing above-max-width cells bypass decorative limits
+OK: metadata-bearing above-max-height cells bypass decorative limits
+OK: missing data-share geometry fails closed
+OK: nonnumeric data-share geometry fails closed
+OK: nan data-share geometry fails closed
+OK: infinity data-share geometry fails closed
+OK: zero data-share geometry fails closed
+OK: negative data-share geometry fails closed
+OK: XML-encoded cx/cy/r retain marker containment checks
+OK: negative percentage is read as one complete numeric claim
+OK: unicode-minus percentage is read as one complete numeric claim
+OK: scientific percentage is read as one complete numeric claim
+OK: positive-sign percentage is read as one complete numeric claim
+OK: leading-decimal percentage is read as one complete numeric claim
+OK: wrong-exponent percentage is read as one complete numeric claim
+OK: signed-conflict percentage is read as one complete numeric claim
+OK: non-finite-claim percentage is read as one complete numeric claim
+
+OK verify-treemap: both polarities behave

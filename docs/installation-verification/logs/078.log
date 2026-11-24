@@ -1,0 +1,96 @@
+ok    an honest streamgraph reports nothing
+ok    the shipped light example reports nothing
+ok    a period where every layer is zero pinches the whole stream and passes
+ok    an honest figure written with single-quoted attributes is parsed
+ok    the rotated value-axis caption's transform is not reported
+ok    a CSS text-transform declaration is not read as a transform
+ok    scenery paths without data-layer are skipped silently
+ok    a commented-out layer is ignored, not read as data
+ok    a data-layer that appears only inside an HTML comment does not claim the file
+ok    a broken-quoted data-layer that is the file's only signal fails closed, not skipped
+ok    renamed layer paths missing data-values fail closed, not skipped
+ok    data-layer on row groups alone does not claim the file
+ok    example-line.html is not detected as a streamgraph at all
+ok    example-slopegraph.html is not detected as a streamgraph at all
+ok    example-sankey.html is not detected as a streamgraph at all
+ok    example-treemap.html is not detected as a streamgraph at all
+ok    example-service-blueprint.html is not detected as a streamgraph at all
+ok    example-service-blueprint-dark.html is not detected as a streamgraph at all
+ok    example-service-blueprint-full.html is not detected as a streamgraph at all
+ok    a declared value the drawn thickness contradicts reports as one point
+ok    a zero-thickness pinch declared as a nonzero value is reported
+ok    a layer floated 6px off its neighbour reports as one seam, not a cascade
+ok    two layers exchanged at one period are reported as a broken seam
+ok    a bottom-pinned baseline reports as asymmetric and stops there
+ok    a control point pulled 8px off Catmull-Rom is reported as editorialising
+ok    a layer sampling its own period columns is reported
+ok    a transform on a layer path is reported
+ok    a transform on a bound label is reported
+ok    an ancestor <g> transform over the layers is reported
+ok    a CSS transform declaration is reported
+ok    a printed total that contradicts its binding is reported
+ok    a declared total that is not the sum of the values is reported
+ok    a layer with no legend entry is reported, not dropped from the reading
+ok    a legend entry for a layer no path declares is reported
+ok    a second legend entry for one layer is reported
+ok    a digit in a layer name makes its legend total ambiguous and is reported
+ok    a legend entry printing another layer's name is reported
+ok    a legend entry naming two layers at once is reported
+ok    a legend entry may annotate beyond its layer name and its total
+ok    a missing period caption is reported
+ok    two captions for one column are reported
+ok    a caption drawn off its column is reported
+ok    a caption whose text contradicts its binding is reported
+ok    a caption index that names no column is reported
+ok    a caption carrying only half its binding is reported
+ok    a file named example-streamgraph with no layers is reported, not passed
+ok    a file whose desc says streamgraph but declares no layers is reported
+ok    a streamgraph declared only in a desc past 4000 chars is still detected
+ok    a layer missing data-values is reported rather than dropped
+ok    a declared value that is not a finite number is reported
+ok    a NaN value is reported, not silently accepted
+ok    a negative value is reported
+ok    a value count that disagrees with the drawn periods is reported
+ok    a second path declaring the same layer is reported
+ok    a relative path command is refused rather than half-parsed
+ok    a shorthand or axis-aligned command is refused rather than half-parsed
+ok    a path with two subpaths is refused
+ok    an unquoted layer is read as the browser reads it, and its bad path is reported
+ok    a single-quoted layer with a contradicted value is still reported
+ok    a figure with a single verifiable layer fails closed
+ok    attrs_of keeps the first of a duplicated attribute
+ok    a duplicated d is read first-wins, so an invalid first d is reported
+ok    a duplicated data-values is read first-wins, so a dishonest first list is reported
+ok    a duplicated data-total is read first-wins, so a dishonest first total is reported
+ok    a duplicated attribute whose first value is honest still passes
+ok    an ancestor <g> hiding its transform behind a quoted > is still reported
+ok    an ancestor <g> hiding an inline style transform behind a quoted > is reported
+ok    an honest layer with a quoted > before its bindings is parsed and passes
+ok    a dishonest layer with a quoted > before its bindings is still reported
+ok    a legend entry with a quoted > before its bindings is still bound and checked
+ok    a caption hiding a transform behind a quoted > is reported
+ok    an inline style transform on a layer path is reported
+ok    an inline translate property on a bound label is reported
+ok    an inline CSS d property on a layer replaces the verified path and is reported
+ok    a vendor-prefixed transform on an ancestor group's inline style is reported
+ok    an inline text-transform on a bound label is not read as a transform
+ok    a CSS translate declaration in a style block is reported
+ok    a vendor-prefixed CSS transform declaration in a style block is reported
+ok    a CSS comment before an inline transform on a layer path is not a free pass
+ok    a CSS comment before an inline translate on a bound label is not a free pass
+ok    a CSS comment before an ancestor <g>'s inline transform is not a free pass
+ok    a CSS comment before a transform declaration in a style block is not a free pass
+ok    a transform inside a CSS comment is not read as a declaration
+ok    a duplicated style on an ancestor keeps the browser's first, honest value
+ok    a duplicated style on an ancestor keeps the browser's first, dishonest value
+ok    a self-closing <g/> with a transform encloses nothing and is not reported
+ok    a commented-out ancestor transform is not read as live markup
+ok    an end tag inside a quoted attribute does not end the legend entry's text
+ok    upper-case tag and attribute names are read case-insensitively, as the browser does
+ok    an entity in a layer name is unescaped consistently in path, legend and text
+ok    a broken attribute quote never crashes the checker and never passes
+ok    a pre-existing file sharing a fixture name is never touched
+ok    two harnesses use different directories, so parallel runs cannot collide
+ok    fixtures are written outside the repository
+
+OK streamgraph checker: 94 case(s), both polarities

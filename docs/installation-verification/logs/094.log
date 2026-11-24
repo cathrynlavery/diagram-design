@@ -1,0 +1,87 @@
+ok    a separated value axis remains measurable
+ok    distinct values cannot share a zero scale despite legal dodge
+ok    a finite nonzero inverted axis remains measurable
+ok    shipped example-beeswarm.html verifies clean
+ok    shipped example-beeswarm-dark.html verifies clean
+ok    shipped example-beeswarm-full.html verifies clean
+ok    an honest synthetic beeswarm passes
+ok    a swarm with no accent dot at all passes
+ok    one accent dot passes
+ok    single-quoted attributes are parsed, not dropped
+ok    a lying dot inside a comment is markup that never renders
+ok    dots sharing a value dodge perpendicular and pass
+ok    negative and zero values are legitimate on a linear value axis
+ok    exactly 20 dots meets the budget floor
+ok    exactly 300 dots meets the budget ceiling
+ok    one dot nudged 8px along the value axis is one finding, not a cascade
+ok    two dots declaring one value at two positions are reported
+ok    an axis where every dot declares the same value is unverifiable
+ok    two overprinted dots are reported — density must read as thickness
+ok    dots separated by exactly one pitch do not overlap
+ok    a bigger focal dot is reported — size is a bubble chart's encoding
+ok    a second non-focal fill is reported — tone would read as a value
+ok    a dot with no fill attribute is reported, not exempted
+ok    a second accent dot is reported — one focal claim per figure
+ok    the dark-skin accent counts toward the same limit
+ok    a small-caps label matches its mixed-case binding
+ok    a label naming an undeclared dot is reported
+ok    a label whose text disagrees with its binding is reported
+ok    two outlier labels exchanged rename both marks
+ok    a second label for one dot is reported
+ok    a named dot with no label is reported — a binding nothing cross-checks
+ok    seven named dots exceed the label budget
+ok    two dots sharing one data-name are reported, not collapsed into one
+ok    an empty data-name is reported — an identity nothing can be bound to
+ok    a whitespace-only data-name is empty once rendered, and reported
+ok    a tick printing a different number than it declares is reported
+ok    a tick drawn off the scale the dots set is reported
+ok    an axis with fewer than two bound ticks is reported
+ok    a tick with no data-value is reported as unbound
+ok    data-tick="y" is reported — the swarm axis has no scale to tick
+ok    a tick printing two numeric tokens is ambiguous, not first-token-parsed
+ok    a transform on a dot is rejected, not resolved
+ok    an ancestor <g> transform moves every mark inside it
+ok    an UNCLOSED transformed group covers everything after it
+ok    a transform on a bound label is rejected
+ok    a CSS transform declaration is rejected — no telling what it moves
+ok    text-transform in CSS is styling, not movement
+ok    an inline style transform on a dot is rejected
+ok    an inline style transform on a bound label is rejected
+ok    an inline style transform on an axis tick is rejected
+ok    an inline style transform on an ancestor <g> moves every mark inside it
+ok    text-transform in an inline style is styling, not movement
+ok    an inline translate on a dot is rejected
+ok    an inline offset shorthand on a dot is rejected
+ok    an inline rotate on a bound label is rejected
+ok    an inline scale on an axis tick is rejected
+ok    an inline translate on an ancestor <g> moves every mark inside it
+ok    a vendor-prefixed inline transform is not a free pass
+ok    a CSS cx declaration is rejected — it overrides the verified attribute
+ok    a CSS translate declaration is rejected
+ok    a CSS offset-path declaration is rejected
+ok    line-height and color in an inline style are not movement
+ok    a CSS transition naming transform is not a transform declaration
+ok    a data-value circle whose attributes cannot be parsed is reported
+ok    a dot missing cx is reported with the missing attribute named
+ok    a NaN coordinate is unreadable, not silently within every tolerance
+ok    a zero radius is reported — an invisible dot is an uncounted omission
+ok    19 dots fall below the documented floor
+ok    301 dots exceed the documented ceiling
+ok    three dots are too few for leave-one-out — refused, not passed
+ok    a file that claims the type by filename but parses nothing is a finding
+ok    a file that claims the type in its description is held to the contract
+ok    the parent scatter is out of scope — its points bind nothing
+ok    the shipped slopegraph is out of scope — data-series is not data-value
+ok    data-value on a <text> tick alone never claims a file — the bubble contract's ticks stay unclaimed
+ok    no shipped beeswarm file declares data-series, data-ranks or data-size, so no sibling verifier claims one
+ok    verify-slopegraph.py skips all three shipped beeswarm files
+ok    verify-bump.py skips all three shipped beeswarm files
+ok    verify-bubble.py skips all three shipped beeswarm files
+ok    verify-box-plot.py skips all three shipped beeswarm files
+ok    verify-arc-diagram.py skips all three shipped beeswarm files
+ok    verify-git-graph.py skips all three shipped beeswarm files
+ok    a pre-existing file sharing a fixture name is never touched
+ok    two harnesses use different directories, so parallel runs cannot collide
+ok    fixtures are written outside the repository
+
+OK beeswarm checker: 85 case(s), both polarities

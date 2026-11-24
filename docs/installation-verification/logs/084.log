@@ -1,0 +1,39 @@
+OK: shipped example-waterfall-dark.html passes
+OK: shipped example-waterfall-full.html passes
+OK: shipped example-waterfall.html passes
+OK: --all passes on the shipped set
+OK: plausible wrong chart fails on its 238-versus-236 total
+OK: fails on conservation break: a delta declares more than the walk absorbs
+OK: fails on geometry lie: the end total is drawn taller than its value
+OK: fails on bridge lie: a bridge is stretched past its two running levels
+OK: fails on bridge top lie: its bottom stays at the correct running level
+OK: fails on missing carry: a gap has no connector conserving the total
+OK: fails on misplaced carry: the connector reconnects the walk at the wrong level
+OK: fails on carry declaration lie: the connector declares a different total
+OK: fails on printed label mismatch: the text names a value no bar declares
+OK: fails on unsigned delta label: the printed bridge value drops its sign
+OK: fails on unsigned delta declaration: data-value drops the sign
+OK: fails on sign-treatment collapse: a decrease wears the increase fill
+OK: fails on non-finite carry: a connector declares an unverifiable total
+OK: fails on label stolen from elsewhere: the bar's own label is gone and a decoy on the far side of the chart carries its number
+OK: fails on polarity swap on a lone decrease: the only fall wears the rise tint
+OK: fails on element transform: a translated bar no longer occupies its declared coordinates
+OK: fails on ancestor transform: a group moves a bar away from its declared coordinates
+OK: fails on CSS transform: a matching rule can move verified bars after parsing
+OK: fails on second accent bar: the focal treatment repeats
+OK: fails on degenerate start: a zero start total has no scale to fit
+OK: fails on zero delta: invisible ink that still occupies a column
+OK: fails on missing contract: no bar declares its role and value
+OK: bridge findings do not stop subsequent file checks
+OK: usage error exits 2
+OK: decimal case large dollars and cents
+OK: decimal case small fractional units
+OK: decimal case equivalent exponent declaration
+OK: decimal case one-cent end mismatch
+OK: decimal case one-cent carry mismatch
+OK: decimal case one-cent printed mismatch
+OK: decimal case tiny real discrepancy
+OK: decimal case nonzero underflow
+OK: decimal case running overflow
+
+OK: verify-waterfall passes 3 shipped files and fails all 21 mutations; 9 decimal controls pass

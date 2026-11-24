@@ -1,0 +1,66 @@
+OK: missing-role rejected — diagram <svg> must carry role="img"
+OK: unresolved-labelled-by rejected — aria-labelledby references missing id(s): absent-title, absent-desc
+OK: labels-unrelated-elements rejected — aria-labelledby must name the <title> and <desc> IDs
+OK: late-title rejected — <title> must be the first child element of <svg>
+OK: empty-desc rejected — <desc> must not be empty
+OK: bare-ids rejected — bare id="title" and id="desc" are not allowed
+OK: wrong-file-slug rejected — accessible-name IDs must match file slug "wrong-file-slug": expected "wrong-file-slug-title" / "wrong-file-slug-desc"
+OK: placeholder-ids rejected — accessible-name IDs contain unresolved placeholder(s): [diagram-slug]-title, [diagram-slug]-desc
+OK: duplicate-naming-ids rejected — duplicate accessible-name id="fixture-desc" is not allowed
+OK: missing-viewbox rejected — diagram <svg> must have a viewBox attribute
+OK: invalid-viewbox rejected — viewBox "0 0 -10 100" is not valid (expected "min-x min-y width height" with positive size)
+OK: viewbox-zero-height rejected — viewBox "0 0 800 0" is not valid (expected "min-x min-y width height" with positive size)
+OK: viewbox-malformed-token rejected — viewBox "0 0 800px 600" is not valid (expected "min-x min-y width height" with positive size)
+OK: title-too-long rejected — <title> must be 60 characters or fewer (got 61)
+OK: viewbox-comma-separated accepted
+OK: viewbox-nonfinite-width rejected — viewBox "0 0 inf 600" is not valid (expected "min-x min-y width height" with positive size)
+OK: viewbox-nonfinite-height rejected — viewBox "0 0 800 inf" is not valid (expected "min-x min-y width height" with positive size)
+OK: viewbox-underscore-width rejected — viewBox "0 0 1_000 600" is not valid (expected "min-x min-y width height" with positive size)
+OK: decorative accepted
+OK: motion-controls accepted
+OK: duplicate-controller rejected — script: only one canonical motion controller is allowed
+OK: unscoped-script rejected — script: only the canonical data-diagram-controls attribute is allowed
+OK: network-controller rejected — script: motion controller must exactly match template-motion.html
+OK: dynamic-html-controller rejected — script: motion controller must exactly match template-motion.html
+OK: import-controller rejected — script: motion controller must exactly match template-motion.html
+OK: eval-controller rejected — script: motion controller must exactly match template-motion.html
+OK: navigation-controller rejected — script: motion controller must exactly match template-motion.html
+OK: modified-controller rejected — script: motion controller must exactly match template-motion.html
+OK: unclosed-motion-script rejected — script: motion controller must have a closing script tag
+OK: remote-script rejected — script: only the canonical data-diagram-controls attribute is allowed
+OK: script-type-override rejected — script: only the canonical data-diagram-controls attribute is allowed
+OK: inter-tight accepted
+OK: google-fonts-lookalike rejected — external-asset: external HTTP(S) <link> is not allowed
+OK: google-fonts-bad-path rejected — external-asset: external HTTP(S) <link> is not allowed
+OK: protocol-relative-font rejected — external-asset: external HTTP(S) <link> is not allowed
+OK: unquoted-remote-link rejected — external-asset: external resource in <link> href is not allowed
+OK: srcset-second-candidate rejected — external-asset: external resource in <img> srcset is not allowed
+OK: protocol-relative-css-url rejected — external-asset: non-fragment CSS url() is not allowed
+OK: event-handler rejected — script: executable attribute onclick on <div> is not allowed
+OK: javascript-url rejected — script: executable attribute src on <iframe> is not allowed
+OK: javascript-control-character rejected — script: executable attribute src on <iframe> is not allowed
+OK: base-href rejected — script: executable attribute href on <base> is not allowed
+OK: iframe-srcdoc rejected — script: executable attribute srcdoc on <iframe> is not allowed
+OK: css-escaped-scheme rejected — external-asset: non-fragment CSS url() is not allowed
+OK: arbitrary-font rejected — font-family: unsupported font family: Unapproved Sans
+OK: cjk-name-stack accepted
+OK: cjk-mono-stack accepted
+OK: cjk-css-stack accepted
+OK: yu-gothic-ui rejected — font-family: unsupported font family: Yu Gothic UI
+OK: kr-name-stack accepted
+OK: kr-mono-stack accepted
+OK: kr-css-stack accepted
+OK: zh-name-stack accepted
+OK: zh-mono-stack accepted
+OK: zh-css-stack accepted
+OK: zh-tc-stack accepted
+OK: malgun-gothic-semilight rejected — font-family: unsupported font family: Malgun Gothic Semilight
+OK: generated-tabler-icon accepted
+OK: generated-simple-icon accepted
+OK: generated-url-icon accepted
+OK: generated-devicon-icon accepted
+OK: generated-logz-icon accepted
+OK: exact customized style-guide typography family accepted
+OK: baseline file receives a11y checks but keeps visual exemptions
+OK: --all scans templates and permits canonical slug placeholders
+All accessible-SVG lint cases passed.

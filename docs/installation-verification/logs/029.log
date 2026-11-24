@@ -1,0 +1,22 @@
+OK: all import artifacts present
+OK: page selection distinguishes decimal indexes from Unicode names
+OK: raw XML fixture parses: geometry, labels, shapes, degrees, edges
+OK: arrowhead direction, degrees, entry/terminal analysis and bidirectional cycles agree
+OK: relative child positions resolve parent dimensions/offsets independent of cell order
+OK: nested geometry and bounds are independent of cell order
+OK: nested relative groups, offsets, depth and bounds match all six cell orders
+OK: draw.io tableRow cells are rows, so one table counts once
+OK: UTF-8 BOM-prefixed raw XML and bare compressed payload parse like their unprefixed input
+OK: plain angle brackets stay in labels and HTML tags still flatten
+OK: cells hidden directly, through a group, or through a layer are dropped from the IR
+OK: deflate+base64, PNG-embedded, and SVG-embedded containers all decode
+OK: page selection: default, --page all, --page by name
+OK: unsupported input exits 2 with a diagnostic
+OK: draw.io stdout stays lossless UTF-8 under a legacy Windows encoding
+OK: draw.io --out write failures report a clear diagnostic and exit 2
+OK: draw.io digest escapes untrusted page names and labels
+OK: resource limits, DTD rejection, PNG bounds, and CLI validation
+OK: worked example present, doc-inline sized, and skin-clean
+OK: references, SKILL.md wiring, and slash command are consistent
+
+All draw.io import gates passed.

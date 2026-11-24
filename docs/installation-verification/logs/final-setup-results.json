@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-11-24T21:19:14.554616+00:00",
+  "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
+  "playwright": "1.62.0",
+  "pillow": "12.1.1",
+  "results": [
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/lint-render.py",
+        "--self-test"
+      ],
+      "exit_code": 2,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-01.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/lint-render.py",
+        "--all"
+      ],
+      "exit_code": 2,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-02.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/test-export-wait.py"
+      ],
+      "exit_code": 1,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-03.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/test-export-pdf.py"
+      ],
+      "exit_code": 1,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-04.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/verify-doctor.py",
+        "--json"
+      ],
+      "exit_code": 0,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-05.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/test-verify-doctor.py"
+      ],
+      "exit_code": 1,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-06.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/test-build-readme-thumbs.py"
+      ],
+      "exit_code": 0,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-07.log"
+    },
+    {
+      "command": [
+        "C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe",
+        "scripts/build-readme-thumbs.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-design-tests-o8llzrdf\\final-08.log"
+    }
+  ]
+}

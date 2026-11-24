@@ -1,0 +1,87 @@
+OK: mask clipped by a later node
+OK: single-quoted mask clipped by a single-quoted node
+OK: attribute-like text inside a value does not replace real coordinates
+OK: mask over an earlier node is legal
+OK: badge chip inside a node
+OK: zone eyebrow on a zone container
+OK: mask clear of every node
+OK: mask abutting a node edge
+OK: translated panels keep clear masks separate
+OK: translated mask is clipped in canvas space
+OK: single-quoted group translation is applied
+OK: nested translations accumulate
+OK: element translation joins group translation
+OK: translated earlier node remains legal
+OK: translated contained badge remains legal
+OK: unpainted reusable node cannot clip a mask
+OK: symbol definition is not a painted node
+OK: marker definition is not a painted node
+OK: pattern definition is not a painted node
+OK: clipPath definition is not a painted node
+OK: mask definition is not a painted node
+OK: painted rectangle after definitions is still checked
+OK: commented definition opening cannot hide painted nodes
+OK: commented definition close cannot expose prototypes
+OK: commented definition wrapper cannot alter paint custody
+OK: ordinary painted group is still checked
+OK: self-closing definitions do not hide following paint
+OK: quoted defs self-close cannot hide following node (")
+OK: quoted symbol self-close cannot hide following node (")
+OK: quoted marker self-close cannot hide following node (")
+OK: quoted pattern self-close cannot hide following node (")
+OK: quoted clipPath self-close cannot hide following node (")
+OK: quoted mask self-close cannot hide following node (")
+OK: quoted definition attribute keeps prototypes unpainted (")
+OK: quoted painted group preserves following connector (")
+OK: quoted defs self-close cannot hide following node (')
+OK: quoted symbol self-close cannot hide following node (')
+OK: quoted marker self-close cannot hide following node (')
+OK: quoted pattern self-close cannot hide following node (')
+OK: quoted clipPath self-close cannot hide following node (')
+OK: quoted mask self-close cannot hide following node (')
+OK: quoted definition attribute keeps prototypes unpainted (')
+OK: quoted painted group preserves following connector (')
+OK: nested definition containers keep prototypes unpainted
+OK: painted group after nested definitions is still checked
+OK: connector prototypes are not painted arrows
+OK: wide mono mask clipped by a later node
+OK: wide mono mask over an earlier node is legal
+OK: container header bar is not a mask
+OK: connector riding a node's top border
+OK: connector leaving the side edge at its own port
+OK: diagonal connector
+OK: single-quoted diagonal connector
+OK: diagonal connector with adjacent attributes
+OK: diagonal connector with slash between attributes
+OK: attribute-like coordinates inside an unusual name are ignored
+OK: single-quoted arrowed path
+OK: diagonal line without a marker is not a connector
+OK: loop spoke is exempt from the diagonal rule
+OK: connector landing on a node corner
+OK: two connectors forking from one port
+OK: head-to-tail chain joint is legal
+OK: translated panels are compared in canvas space
+OK: unstroked fill rect is not a node
+OK: diagonal after a compact-flag arc is found
+OK: unparseable arrowed path fails closed
+OK: ports 10px apart on a 64px edge
+OK: ports 10px apart on a 40px edge
+OK: two connectors stacked on one trunk
+OK: two connectors sharing a curved run
+OK: perpendicular crossing is not a stacked run
+OK: two separate crossings are not a stacked run
+OK: short fork from a shared start with no node
+OK: connector under a non-translate transform is skipped
+OK: shipped architecture example
+OK: shipped swimlane example
+OK: shipped high-level example
+OK: shipped queue animation
+OK: shipped medallion chain joints
+OK: shipped db-schema example
+OK: shipped zoned example
+OK: shipped sequence-oauth example
+OK: repo entry point matches packaged checker (--all)
+OK: repo entry point matches packaged checker (C:\Users\PC PRO MAX\AppData\Local\Temp\tmpca1cxc2y\candidate.html)
+OK: repo entry point reports findings and exits 1
+OK: installed copy checks its own assets
+All label geometry tests passed.

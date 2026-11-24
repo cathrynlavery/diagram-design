@@ -1,0 +1,4 @@
+OK: billion-scale counts preserve the grid; non-finite/negative values remain findings
+OK: equivalent pixel lengths pass; unsupported/non-finite lengths are named findings
+OK: translucent AA foregrounds pass; weak-alpha text still fails in both themes
+OK — every heatmap verifier case passed.

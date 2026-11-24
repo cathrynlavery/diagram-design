@@ -1,0 +1,103 @@
+OK: shipped example-steps-dark.html passes
+OK: shipped example-steps-full.html passes
+OK: shipped example-steps.html passes
+OK: documented 6-stage fixture passes
+OK: documented 7-stage fixture passes
+OK: old clipped seven-stage formula rejected
+OK: gap in the rail rejected
+OK: one segment is wider rejected
+OK: duplicate stage index rejected
+OK: focal rail removed rejected
+OK: medallion shifted off center rejected
+OK: printed number disagrees rejected
+OK: duplicate and missing medallion reports the full census first
+OK: rail transform rejected
+OK: rail ancestor transform rejected
+OK: rail CSS transform rejected
+OK: rail inline scale rejected
+OK: rail inline rotate rejected
+OK: rail inline display rejected
+OK: rail inline visibility rejected
+OK: rail inline opacity rejected
+OK: rail inline width rejected
+OK: rail ancestor inline style rejected
+OK: medallion inline display rejected
+OK: number inline visibility rejected
+OK: rail class a stylesheet can reach rejected
+OK: rail display attribute rejected
+OK: rail visibility attribute rejected
+OK: rail ancestor opacity attribute rejected
+OK: rail clip-path attribute rejected
+OK: container inline display rejected
+OK: stylesheet hides rail rejected
+OK: stylesheet fades svg rejected
+OK: stylesheet repaints rail rejected
+OK: stylesheet resizes rail rejected
+OK: stylesheet rotates svg rejected
+OK: stylesheet scales rail rejected
+OK: malformed alpha rejected
+OK: repeated attribute rejected
+OK: medallion stroke too wide rejected
+OK: number font-size under 8 rejected
+OK: number off-house font rejected
+OK: number anchored at its end rejected
+OK: narrow rem frame rejected
+OK: svg inside a list item rejected
+OK: number with a child rejected
+OK: malformed alpha is a finding and later files are still checked
+OK: svg stroke rejected
+OK: container svg stroke rejected
+OK: :root stroke rejected
+OK: body stroke rejected
+OK: zero-height container rejected
+OK: 1px svg rejected
+OK: frame off screen rejected
+OK: comment before transform rejected
+OK: webkit transform rejected
+OK: comment inside property rejected
+OK: inline div transform rejected
+OK: inline div webkit transform rejected
+OK: data stylesheet link rejected
+OK: @import rejected
+OK: HTML hidden rejected
+OK: rail fill none rejected
+OK: rail fill-opacity 0 rejected
+OK: rail systemLanguage rejected
+OK: number font-size 0 rejected
+OK: number in paper rejected
+OK: number off canvas rejected
+OK: numbers swapped by dx rejected
+OK: numbers swapped by duplicate x rejected
+OK: number bidi override rejected
+OK: number hidden tspan rejected
+OK: number tspan dx rejected
+OK: number textLength rejected
+OK: rails in a comment rejected
+OK: rails in defs rejected
+OK: rails in a nested svg rejected
+OK: universal svg fill rejected
+OK: child group stroke rejected
+OK: :has fill rejected
+OK: sibling universal fill rejected
+OK: @media rect fill rejected
+OK: @supports rejected
+OK: @layer rejected
+OK: uppercase rejected
+OK: escaped selector rejected
+OK: comment inside fill rejected
+OK: @keyframes rejected
+OK: full page with a list passes
+OK: full page in main passes
+OK: quoted custom property passes
+OK: page-only class rule passes
+OK: page attribute selector passes
+OK: page structural pseudo-class passes
+OK: page pseudo-element passes
+OK: @font-face passes
+OK: responsive svg passes
+OK: reduced motion passes
+OK: medallion 1px outline passes
+OK: rail ink with fill-opacity passes
+OK: number typography on the text passes
+OK: frame max-width in rem passes
+All Steps verifier tests passed.

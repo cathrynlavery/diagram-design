@@ -1,0 +1,100 @@
+ok    shipped example-marimekko.html passes untouched
+ok    shipped example-marimekko-dark.html passes untouched
+ok    shipped example-marimekko-full.html passes untouched
+ok    an honest three-column fixture passes
+ok    a column with one series is honest: an absent series is omitted, not drawn at zero
+ok    scenery rects (background, paper masks, legend swatches) are ignored
+ok    no focal segment is a valid figure
+ok    a printed integer percentage within 1pp of the true share passes
+ok    the stylesheet's `text-transform` and `width` on the svg are not geometry moves
+ok    an information marker inside a segment passes
+ok    a segment rect inside a comment is not live markup
+ok    a repeated attribute keeps its FIRST value (honest first, junk second)
+ok    a repeated attribute keeps its FIRST value (junk first, honest second)
+ok    a quoted `>` inside an attribute does not end the tag: the ancestor transform behind it is still seen
+ok    upper-case tag and attribute names parse as their canonical form
+ok    a column drawn wider than its share is rejected
+ok    a segment narrower than its column is rejected
+ok    a segment boundary moved off its share is rejected
+ok    a gap between segments is rejected
+ok    overlapping segments are rejected
+ok    a column shorter than the plot is rejected
+ok    an inflated column is also caught by the area check, on every segment it holds
+ok    an unequal gutter is rejected
+ok    overlapping columns are rejected
+ok    a series drawn in a different order in one column is rejected, once
+ok    a second accent segment is rejected, once
+ok    a transform attribute on a segment is refused
+ok    an inline style translate on a bound label is refused
+ok    an inline style transform on a caption is refused
+ok    a transform on an ancestor <g> is refused
+ok    a transform in a <style> block is refused
+ok    a CSS `x` geometry property in a <style> block is refused
+ok    a vendor-prefixed transform in a <style> block is refused
+ok    an inline style width on a segment rect is refused
+ok    an inline style height on a segment rect is refused
+ok    an inline style width on an ancestor <g> is refused
+ok    an inline style height on an ancestor <g> is refused
+ok    a `width` rule selecting rects in a <style> block is refused
+ok    a `height` rule selecting by data-segment in a <style> block is refused
+ok    a `width` rule reaching rects through a `*` subject is refused
+ok    a `width`/`height` rule whose subject no segment rect can be (the svg, a legend swatch class) is not a geometry move
+ok    a `/**/`-prefixed inline transform on a segment is refused
+ok    a `/**/`-prefixed width in a <style> rule is refused
+ok    a transform inside a CSS comment, inline or in a <style> block, is not a geometry move
+ok    a caption anchored off its column centre is rejected
+ok    a caption that does not name its column is rejected
+ok    a caption printing the wrong column share is rejected
+ok    a missing caption is rejected
+ok    a second caption for one column is rejected
+ok    a caption binding an undeclared column is rejected
+ok    a missing legend key is rejected
+ok    a legend key that does not name its series is rejected
+ok    a second legend key for one series is rejected
+ok    a legend key naming an undeclared series is rejected
+ok    a label anchored outside the segment it binds is rejected
+ok    a label that overflows its segment is rejected
+ok    a label printing the wrong amount is rejected
+ok    a label printing the wrong within-column share is rejected
+ok    a label binding a segment no rect declares is rejected
+ok    a bound text with an unknown role is rejected
+ok    a bound text with no role is rejected
+ok    an information marker crossing its segment edge is rejected
+ok    a second rect for one segment is rejected
+ok    a zero amount is rejected: an absent series is omitted, never drawn
+ok    a non-numeric amount is rejected
+ok    a NaN amount is rejected, not silently accepted by every tolerance
+ok    a segment with no data-amount is rejected
+ok    a segment with no data-column is rejected
+ok    a segment with unparseable geometry is rejected
+ok    a file named for the type that declares nothing is a finding, not a pass
+ok    a single column is not a marimekko
+ok    a file whose description claims the type is held to the contract
+ok    data-segment on a <rect> claims a file whatever it is called
+ok    a data-segment rect that exists only inside a comment never claims a file
+ok    the CLI skips the commented-out fixture cleanly, as an --all run would
+ok    a data-segment swallowed by an unbalanced quote, behind a quoted `>`, still claims the file
+ok    a data-segment that no parsed element carries is a finding, never a skip
+ok    a live rect with a quoted `>` before its data-segment claims the file
+ok    ... and an honest one passes
+ok    ... and a dishonest one is verified, not skipped
+ok    the parent treemap's data-share on a <rect> never claims a file for this checker
+ok    data-segment on a <text> alone (no <rect>) never claims a file
+ok    the beeswarm's data-value on a <circle> never claims a file
+ok    shipped example-treemap-dark.html is out of scope
+ok    shipped example-treemap-full.html is out of scope
+ok    shipped example-treemap.html is out of scope
+ok    verify-slopegraph.py skips all three shipped marimekko files
+ok    verify-bump.py skips all three shipped marimekko files
+ok    verify-ridgeline.py skips all three shipped marimekko files
+ok    verify-bubble.py skips all three shipped marimekko files
+ok    verify-beeswarm.py skips all three shipped marimekko files
+ok    verify-streamgraph.py skips all three shipped marimekko files
+ok    verify-treemap.py --all never reads the shipped marimekko files
+ok    the CLI reports the parent's files as skipped, not as passing
+ok    the CLI exits 2 with no arguments
+ok    a pre-existing file sharing a fixture name is never touched
+ok    two harnesses use different directories, so parallel runs cannot collide
+ok    fixtures are written outside the repository
+
+OK marimekko checker: 98 case(s), both polarities

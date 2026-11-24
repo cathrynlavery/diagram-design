@@ -1,0 +1,24 @@
+OK: the shipped style guide has no contrast findings ([])
+OK: every text and non-text use is measured in both skins (20 rows)
+OK: retired dark `link` is reported
+OK: retired dark `soft` is reported
+OK: retired light `accent` is reported
+OK: retired light `soft` is reported
+OK: the unchanged dark accent is not reported
+OK: the unchanged light link is not reported
+OK: retired light accent fails the 3:1 non-text bar at 2.86:1
+OK: the CLI exits 1 on the retired palette
+OK: soft at 0.5 opacity fails although the opaque value passes
+OK: rgba() at alpha 1 measures the same as its hex
+OK: compositing blends channels linearly by alpha
+OK: fixture accent sits between the bars (4.09:1)
+OK: an accent that clears 3:1 still fails as text
+OK: the same accent is not reported as a non-text failure
+OK: ink-strong that reads on paper but not on the accent fill is reported
+OK: an unclassified role is a finding
+OK: a missing role is a finding
+OK: an unparseable value is a finding
+OK: a style guide without the table fails
+OK: the CLI exits 0 on the shipped style guide
+
+OK verify-contrast: both polarities behave, on both skins

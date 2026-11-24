@@ -1,0 +1,40 @@
+OK Architecture delta: canonical routing requires its own discovery hook
+OK gallery: duplicate eyebrow number caught
+OK gallery: unique eyebrow numbers produce no error
+OK gallery: missing -dark variant caught
+OK gallery: missing -full variant caught
+OK gallery: data-single tab exempt from variant check
+OK gallery: complete non-single tab passes
+OK gallery: variant sharing parent eyebrow is allowed
+OK gallery: variant with wrong eyebrow number caught
+OK gallery: variant with missing parent caught
+OK gallery: lifecycle phase map is a complete State variant
+OK gallery: out-of-order independent ordinals caught
+OK gallery: gapped independent ordinals caught
+OK gallery: contiguous ascending independent ordinals pass
+OK gallery: unlettered variant caught
+OK gallery: variant away from its parent caught
+OK gallery: repeated variant letter caught
+OK gallery: lettered independent tab caught
+OK gallery: numbered tabs match the shipped type references
+OK reference assets: missing asset citation caught
+OK reference assets: valid asset citations produce no error
+OK font links: every css2 surface requests the template's families
+OK font links: a css2 copy in SKILL.md or any reference is held to parity
+OK title stacks: 'Noto Serif' leads every CJK serif face
+OK title links: every template loads the Noto Serif its stack names
+OK style-guide anchors: every SKILL.md link lands on a heading
+OK heading syntax: closing hashes stripped, fenced lines skipped
+OK size presets: every size-selection surface names the output-spec presets
+OK type ramp: the moved grid and patterns are held to the output-spec ramp
+OK mutate: a CRLF fixture mutates in place and a stale needle still raises
+OK split routes: every section the split thinned still links its new home
+OK export surface parity: missing command rule caught
+OK export surface parity: missing prompt rule caught
+OK export surface parity: commands Defaults listing --svg-only caught
+OK export surface parity: commands missing produce-both bullet caught
+OK export surface parity: prompts Defaults listing --svg-only caught
+OK export surface parity: prompts missing produce-both bullet caught
+OK export surface parity: missing commands file caught
+OK export surface parity: missing prompts file caught
+PASS: docs sync checks references, style-guide anchors, asset citations, strict-bundler packaging, routing surfaces, size-preset surfaces, Factory install contract, type-count routing, High-Level invariants, font-link parity, the Cyrillic title fallback order, the type-ramp contract, split routing, the CRLF fixture fallback in the fixture helper, and gallery guards (parent/variant model, contiguous ordinals, variant letters, type parity)

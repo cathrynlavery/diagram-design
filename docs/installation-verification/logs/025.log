@@ -1,0 +1,397 @@
+OK: valid chart
+OK: wrong filled count
+OK: nonuniform cell
+OK: duplicate index
+OK: missing cell
+OK: overlapping cells
+OK: irregular gutter
+OK: indices out of reading order
+OK: filled cells out of reading order
+OK: single quoted chart
+OK: wrong headline
+OK: wrong printed count
+OK: wrong remaining count
+OK: missing headline
+OK: missing count
+OK: cell transform
+OK: inline transform
+OK: group transform
+OK: root transform
+OK: CSS transform
+OK: CSS translate
+OK: group inline translate
+OK: inline rotate
+OK: inline scale
+OK: vendor transform
+OK: CSS position
+OK: CSS offset
+OK: CSS comment allowed
+OK: HTML comment allowed
+OK: CSS text transform allowed
+OK: single quoted transform
+OK: group fill inherited
+OK: default black fill
+OK: group opacity
+OK: root inline opacity
+OK: cell in defs
+OK: cell in mask
+OK: missing tokens
+OK: second accent
+OK: one accent allowed
+OK: opacity one allowed
+OK: 0 filled cells
+OK: 100 filled cells
+OK: example-unit-grid-dark.html valid
+OK: example-unit-grid-dark.html wrong headline
+OK: example-unit-grid-dark.html filled cell painted empty
+OK: example-unit-grid-dark.html empty cell painted filled
+OK: example-unit-grid-dark.html filled cell fill none
+OK: example-unit-grid-dark.html filled cell inline fill
+OK: example-unit-grid-dark.html filled cell translucent fill
+OK: example-unit-grid-dark.html opacity zero
+OK: example-unit-grid-dark.html fill-opacity zero
+OK: example-unit-grid-dark.html inline opacity
+OK: example-unit-grid-dark.html visibility hidden
+OK: example-unit-grid-dark.html display none
+OK: example-unit-grid-dark.html mask
+OK: example-unit-grid-dark.html CSS fill
+OK: example-unit-grid-dark.html CSS opacity
+OK: example-unit-grid-dark.html CSS display none
+OK: example-unit-grid-dark.html SMIL set
+OK: example-unit-grid-dark.html overlay rect
+OK: example-unit-grid-dark.html cells in HTML comment
+OK: example-unit-grid-dark.html cells in text/plain script
+OK: example-unit-grid-dark.html duplicate fill attribute
+OK: example-unit-grid-dark.html duplicate x attribute
+OK: example-unit-grid-dark.html fake root in comment
+OK: example-unit-grid-dark.html cells in <desc>
+OK: example-unit-grid-dark.html cells in <text>
+OK: example-unit-grid-dark.html cells in <foreignObject>
+OK: example-unit-grid-dark.html cells in <switch>
+OK: example-unit-grid-dark.html cells in <metadata>
+OK: example-unit-grid-dark.html cells in <svg>
+OK: example-unit-grid-dark.html cells in <symbol>
+OK: example-unit-grid-dark.html cells in <clipPath>
+OK: example-unit-grid-dark.html cells in title
+OK: example-unit-grid-dark.html group systemLanguage
+OK: example-unit-grid-dark.html group requiredExtensions
+OK: example-unit-grid-dark.html group requiredFeatures
+OK: example-unit-grid-dark.html anchor transform
+OK: example-unit-grid-dark.html anchor style transform
+OK: example-unit-grid-dark.html group style
+OK: example-unit-grid-dark.html anchor allowed
+OK: example-unit-grid-dark.html wide stroke on empty
+OK: example-unit-grid-dark.html wide stroke from group
+OK: example-unit-grid-dark.html paint-order
+OK: example-unit-grid-dark.html mix-blend-mode
+OK: example-unit-grid-dark.html empty fill near ink
+OK: example-unit-grid-dark.html huge corner radius
+OK: example-unit-grid-dark.html CSS hex escape
+OK: example-unit-grid-dark.html CSS six-digit escape
+OK: example-unit-grid-dark.html CSS char reference
+OK: example-unit-grid-dark.html CSS @import
+OK: example-unit-grid-dark.html extra stylesheet link
+OK: example-unit-grid-dark.html CSS stroke
+OK: example-unit-grid-dark.html CSS stroke-width
+OK: example-unit-grid-dark.html CSS all
+OK: example-unit-grid-dark.html CSS mix-blend-mode
+OK: example-unit-grid-dark.html CSS paint-order
+OK: example-unit-grid-dark.html overlay path
+OK: example-unit-grid-dark.html overlay relative path
+OK: example-unit-grid-dark.html overlay arc path
+OK: example-unit-grid-dark.html overlay circle
+OK: example-unit-grid-dark.html overlay ellipse
+OK: example-unit-grid-dark.html overlay polygon
+OK: example-unit-grid-dark.html overlay polyline
+OK: example-unit-grid-dark.html overlay line
+OK: example-unit-grid-dark.html overlay thick line beside grid
+OK: example-unit-grid-dark.html overlay text
+OK: example-unit-grid-dark.html overlay text with tspan
+OK: example-unit-grid-dark.html overlay image
+OK: example-unit-grid-dark.html overlay use
+OK: example-unit-grid-dark.html overlay foreignObject
+OK: example-unit-grid-dark.html overlay stroked empty rect
+OK: example-unit-grid-dark.html overlay rect px units
+OK: example-unit-grid-dark.html overlay rect percent
+OK: example-unit-grid-dark.html overlay rect CSS position
+OK: example-unit-grid-dark.html overlay rect transform
+OK: example-unit-grid-dark.html overlay rect in moved group
+OK: example-unit-grid-dark.html label outside grid
+OK: example-unit-grid-dark.html source note beside grid
+OK: example-unit-grid-dark.html note with plain tspan
+OK: example-unit-grid-dark.html source note reaching grid
+OK: example-unit-grid-dark.html note with inherited font-size on grid
+OK: example-unit-grid-dark.html note with inherited end anchor on grid
+OK: example-unit-grid-dark.html note with positioned tspan
+OK: example-unit-grid-dark.html path outside grid
+OK: example-unit-grid-dark.html CSS width on a cell
+OK: example-unit-grid-dark.html CSS height on a cell
+OK: example-unit-grid-dark.html CSS rx on a cell
+OK: example-unit-grid-dark.html CSS ry on a cell
+OK: example-unit-grid-dark.html CSS r on a cell
+OK: example-unit-grid-dark.html CSS cx on a cell
+OK: example-unit-grid-dark.html CSS cy on a cell
+OK: example-unit-grid-dark.html CSS width on every element
+OK: example-unit-grid-dark.html CSS width by id
+OK: example-unit-grid-dark.html CSS width by class
+OK: example-unit-grid-dark.html inline width on a cell
+OK: example-unit-grid-dark.html CSS width on page elements allowed
+OK: example-unit-grid-dark.html both labels display none
+OK: example-unit-grid-dark.html count label visibility hidden
+OK: example-unit-grid-dark.html percent label opacity zero
+OK: example-unit-grid-dark.html percent label style
+OK: example-unit-grid-dark.html percent label in hidden group
+OK: example-unit-grid-dark.html percent label in defs
+OK: example-unit-grid-dark.html percent label painted empty
+OK: example-unit-grid-dark.html percent label tiny
+OK: example-unit-grid-dark.html percent label off canvas
+OK: example-unit-grid-dark.html percent label hides a tspan
+OK: example-unit-grid-dark.html count label outside the svg
+OK: example-unit-grid-dark.html overlay smooth quadratic
+OK: example-unit-grid-dark.html overlay smooth cubic
+OK: example-unit-grid-dark.html empty fill percent rgb near ink
+OK: example-unit-grid-dark.html empty fill percent rgb near accent
+OK: example-unit-grid-dark.html empty fill as percent rgb allowed
+OK: example-unit-grid-dark.html stroked X beside grid
+OK: example-unit-grid-dark.html group-stroked X beside grid
+OK: example-unit-grid-dark.html stroked tspan beside grid
+OK: example-unit-grid-dark.html unstroked X beside grid allowed
+OK: example-unit-grid-dark.html second :root rule
+OK: example-unit-grid-dark.html later :root moves --ink
+OK: example-unit-grid-dark.html moved cell
+OK: example-unit-grid-full.html valid
+OK: example-unit-grid-full.html wrong headline
+OK: example-unit-grid-full.html filled cell painted empty
+OK: example-unit-grid-full.html empty cell painted filled
+OK: example-unit-grid-full.html filled cell fill none
+OK: example-unit-grid-full.html filled cell inline fill
+OK: example-unit-grid-full.html filled cell translucent fill
+OK: example-unit-grid-full.html opacity zero
+OK: example-unit-grid-full.html fill-opacity zero
+OK: example-unit-grid-full.html inline opacity
+OK: example-unit-grid-full.html visibility hidden
+OK: example-unit-grid-full.html display none
+OK: example-unit-grid-full.html mask
+OK: example-unit-grid-full.html CSS fill
+OK: example-unit-grid-full.html CSS opacity
+OK: example-unit-grid-full.html CSS display none
+OK: example-unit-grid-full.html SMIL set
+OK: example-unit-grid-full.html overlay rect
+OK: example-unit-grid-full.html cells in HTML comment
+OK: example-unit-grid-full.html cells in text/plain script
+OK: example-unit-grid-full.html duplicate fill attribute
+OK: example-unit-grid-full.html duplicate x attribute
+OK: example-unit-grid-full.html fake root in comment
+OK: example-unit-grid-full.html cells in <desc>
+OK: example-unit-grid-full.html cells in <text>
+OK: example-unit-grid-full.html cells in <foreignObject>
+OK: example-unit-grid-full.html cells in <switch>
+OK: example-unit-grid-full.html cells in <metadata>
+OK: example-unit-grid-full.html cells in <svg>
+OK: example-unit-grid-full.html cells in <symbol>
+OK: example-unit-grid-full.html cells in <clipPath>
+OK: example-unit-grid-full.html cells in title
+OK: example-unit-grid-full.html group systemLanguage
+OK: example-unit-grid-full.html group requiredExtensions
+OK: example-unit-grid-full.html group requiredFeatures
+OK: example-unit-grid-full.html anchor transform
+OK: example-unit-grid-full.html anchor style transform
+OK: example-unit-grid-full.html group style
+OK: example-unit-grid-full.html anchor allowed
+OK: example-unit-grid-full.html wide stroke on empty
+OK: example-unit-grid-full.html wide stroke from group
+OK: example-unit-grid-full.html paint-order
+OK: example-unit-grid-full.html mix-blend-mode
+OK: example-unit-grid-full.html empty fill near ink
+OK: example-unit-grid-full.html huge corner radius
+OK: example-unit-grid-full.html CSS hex escape
+OK: example-unit-grid-full.html CSS six-digit escape
+OK: example-unit-grid-full.html CSS char reference
+OK: example-unit-grid-full.html CSS @import
+OK: example-unit-grid-full.html extra stylesheet link
+OK: example-unit-grid-full.html CSS stroke
+OK: example-unit-grid-full.html CSS stroke-width
+OK: example-unit-grid-full.html CSS all
+OK: example-unit-grid-full.html CSS mix-blend-mode
+OK: example-unit-grid-full.html CSS paint-order
+OK: example-unit-grid-full.html overlay path
+OK: example-unit-grid-full.html overlay relative path
+OK: example-unit-grid-full.html overlay arc path
+OK: example-unit-grid-full.html overlay circle
+OK: example-unit-grid-full.html overlay ellipse
+OK: example-unit-grid-full.html overlay polygon
+OK: example-unit-grid-full.html overlay polyline
+OK: example-unit-grid-full.html overlay line
+OK: example-unit-grid-full.html overlay thick line beside grid
+OK: example-unit-grid-full.html overlay text
+OK: example-unit-grid-full.html overlay text with tspan
+OK: example-unit-grid-full.html overlay image
+OK: example-unit-grid-full.html overlay use
+OK: example-unit-grid-full.html overlay foreignObject
+OK: example-unit-grid-full.html overlay stroked empty rect
+OK: example-unit-grid-full.html overlay rect px units
+OK: example-unit-grid-full.html overlay rect percent
+OK: example-unit-grid-full.html overlay rect CSS position
+OK: example-unit-grid-full.html overlay rect transform
+OK: example-unit-grid-full.html overlay rect in moved group
+OK: example-unit-grid-full.html label outside grid
+OK: example-unit-grid-full.html source note beside grid
+OK: example-unit-grid-full.html note with plain tspan
+OK: example-unit-grid-full.html source note reaching grid
+OK: example-unit-grid-full.html note with inherited font-size on grid
+OK: example-unit-grid-full.html note with inherited end anchor on grid
+OK: example-unit-grid-full.html note with positioned tspan
+OK: example-unit-grid-full.html path outside grid
+OK: example-unit-grid-full.html CSS width on a cell
+OK: example-unit-grid-full.html CSS height on a cell
+OK: example-unit-grid-full.html CSS rx on a cell
+OK: example-unit-grid-full.html CSS ry on a cell
+OK: example-unit-grid-full.html CSS r on a cell
+OK: example-unit-grid-full.html CSS cx on a cell
+OK: example-unit-grid-full.html CSS cy on a cell
+OK: example-unit-grid-full.html CSS width on every element
+OK: example-unit-grid-full.html CSS width by id
+OK: example-unit-grid-full.html CSS width by class
+OK: example-unit-grid-full.html inline width on a cell
+OK: example-unit-grid-full.html CSS width on page elements allowed
+OK: example-unit-grid-full.html both labels display none
+OK: example-unit-grid-full.html count label visibility hidden
+OK: example-unit-grid-full.html percent label opacity zero
+OK: example-unit-grid-full.html percent label style
+OK: example-unit-grid-full.html percent label in hidden group
+OK: example-unit-grid-full.html percent label in defs
+OK: example-unit-grid-full.html percent label painted empty
+OK: example-unit-grid-full.html percent label tiny
+OK: example-unit-grid-full.html percent label off canvas
+OK: example-unit-grid-full.html percent label hides a tspan
+OK: example-unit-grid-full.html count label outside the svg
+OK: example-unit-grid-full.html overlay smooth quadratic
+OK: example-unit-grid-full.html overlay smooth cubic
+OK: example-unit-grid-full.html empty fill percent rgb near ink
+OK: example-unit-grid-full.html empty fill percent rgb near accent
+OK: example-unit-grid-full.html empty fill as percent rgb allowed
+OK: example-unit-grid-full.html stroked X beside grid
+OK: example-unit-grid-full.html group-stroked X beside grid
+OK: example-unit-grid-full.html stroked tspan beside grid
+OK: example-unit-grid-full.html unstroked X beside grid allowed
+OK: example-unit-grid-full.html second :root rule
+OK: example-unit-grid-full.html later :root moves --ink
+OK: example-unit-grid-full.html moved cell
+OK: example-unit-grid.html valid
+OK: example-unit-grid.html wrong headline
+OK: example-unit-grid.html filled cell painted empty
+OK: example-unit-grid.html empty cell painted filled
+OK: example-unit-grid.html filled cell fill none
+OK: example-unit-grid.html filled cell inline fill
+OK: example-unit-grid.html filled cell translucent fill
+OK: example-unit-grid.html opacity zero
+OK: example-unit-grid.html fill-opacity zero
+OK: example-unit-grid.html inline opacity
+OK: example-unit-grid.html visibility hidden
+OK: example-unit-grid.html display none
+OK: example-unit-grid.html mask
+OK: example-unit-grid.html CSS fill
+OK: example-unit-grid.html CSS opacity
+OK: example-unit-grid.html CSS display none
+OK: example-unit-grid.html SMIL set
+OK: example-unit-grid.html overlay rect
+OK: example-unit-grid.html cells in HTML comment
+OK: example-unit-grid.html cells in text/plain script
+OK: example-unit-grid.html duplicate fill attribute
+OK: example-unit-grid.html duplicate x attribute
+OK: example-unit-grid.html fake root in comment
+OK: example-unit-grid.html cells in <desc>
+OK: example-unit-grid.html cells in <text>
+OK: example-unit-grid.html cells in <foreignObject>
+OK: example-unit-grid.html cells in <switch>
+OK: example-unit-grid.html cells in <metadata>
+OK: example-unit-grid.html cells in <svg>
+OK: example-unit-grid.html cells in <symbol>
+OK: example-unit-grid.html cells in <clipPath>
+OK: example-unit-grid.html cells in title
+OK: example-unit-grid.html group systemLanguage
+OK: example-unit-grid.html group requiredExtensions
+OK: example-unit-grid.html group requiredFeatures
+OK: example-unit-grid.html anchor transform
+OK: example-unit-grid.html anchor style transform
+OK: example-unit-grid.html group style
+OK: example-unit-grid.html anchor allowed
+OK: example-unit-grid.html wide stroke on empty
+OK: example-unit-grid.html wide stroke from group
+OK: example-unit-grid.html paint-order
+OK: example-unit-grid.html mix-blend-mode
+OK: example-unit-grid.html empty fill near ink
+OK: example-unit-grid.html huge corner radius
+OK: example-unit-grid.html CSS hex escape
+OK: example-unit-grid.html CSS six-digit escape
+OK: example-unit-grid.html CSS char reference
+OK: example-unit-grid.html CSS @import
+OK: example-unit-grid.html extra stylesheet link
+OK: example-unit-grid.html CSS stroke
+OK: example-unit-grid.html CSS stroke-width
+OK: example-unit-grid.html CSS all
+OK: example-unit-grid.html CSS mix-blend-mode
+OK: example-unit-grid.html CSS paint-order
+OK: example-unit-grid.html overlay path
+OK: example-unit-grid.html overlay relative path
+OK: example-unit-grid.html overlay arc path
+OK: example-unit-grid.html overlay circle
+OK: example-unit-grid.html overlay ellipse
+OK: example-unit-grid.html overlay polygon
+OK: example-unit-grid.html overlay polyline
+OK: example-unit-grid.html overlay line
+OK: example-unit-grid.html overlay thick line beside grid
+OK: example-unit-grid.html overlay text
+OK: example-unit-grid.html overlay text with tspan
+OK: example-unit-grid.html overlay image
+OK: example-unit-grid.html overlay use
+OK: example-unit-grid.html overlay foreignObject
+OK: example-unit-grid.html overlay stroked empty rect
+OK: example-unit-grid.html overlay rect px units
+OK: example-unit-grid.html overlay rect percent
+OK: example-unit-grid.html overlay rect CSS position
+OK: example-unit-grid.html overlay rect transform
+OK: example-unit-grid.html overlay rect in moved group
+OK: example-unit-grid.html label outside grid
+OK: example-unit-grid.html source note beside grid
+OK: example-unit-grid.html note with plain tspan
+OK: example-unit-grid.html source note reaching grid
+OK: example-unit-grid.html note with inherited font-size on grid
+OK: example-unit-grid.html note with inherited end anchor on grid
+OK: example-unit-grid.html note with positioned tspan
+OK: example-unit-grid.html path outside grid
+OK: example-unit-grid.html CSS width on a cell
+OK: example-unit-grid.html CSS height on a cell
+OK: example-unit-grid.html CSS rx on a cell
+OK: example-unit-grid.html CSS ry on a cell
+OK: example-unit-grid.html CSS r on a cell
+OK: example-unit-grid.html CSS cx on a cell
+OK: example-unit-grid.html CSS cy on a cell
+OK: example-unit-grid.html CSS width on every element
+OK: example-unit-grid.html CSS width by id
+OK: example-unit-grid.html CSS width by class
+OK: example-unit-grid.html inline width on a cell
+OK: example-unit-grid.html CSS width on page elements allowed
+OK: example-unit-grid.html both labels display none
+OK: example-unit-grid.html count label visibility hidden
+OK: example-unit-grid.html percent label opacity zero
+OK: example-unit-grid.html percent label style
+OK: example-unit-grid.html percent label in hidden group
+OK: example-unit-grid.html percent label in defs
+OK: example-unit-grid.html percent label painted empty
+OK: example-unit-grid.html percent label tiny
+OK: example-unit-grid.html percent label off canvas
+OK: example-unit-grid.html percent label hides a tspan
+OK: example-unit-grid.html count label outside the svg
+OK: example-unit-grid.html overlay smooth quadratic
+OK: example-unit-grid.html overlay smooth cubic
+OK: example-unit-grid.html empty fill percent rgb near ink
+OK: example-unit-grid.html empty fill percent rgb near accent
+OK: example-unit-grid.html empty fill as percent rgb allowed
+OK: example-unit-grid.html stroked X beside grid
+OK: example-unit-grid.html group-stroked X beside grid
+OK: example-unit-grid.html stroked tspan beside grid
+OK: example-unit-grid.html unstroked X beside grid allowed
+OK: example-unit-grid.html second :root rule
+OK: example-unit-grid.html later :root moves --ink
+OK: example-unit-grid.html moved cell

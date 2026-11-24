@@ -1,0 +1,30 @@
+OK: single root block
+OK: valid parent-child pair
+OK: valid three-level chain
+OK: shared parent, two children
+OK: duplicate id
+OK: orphan parent reference
+OK: self-parent cycle
+OK: two-node cycle
+OK: missing name attribute
+OK: empty name attribute
+OK: whitespace-only name attribute
+OK: empty id attribute
+OK: whitespace-only id attribute
+OK: blank id never satisfies a blank parent
+OK: blank parent attribute is unresolved
+OK: no blocks in file
+OK: unrelated data attribute is not a block
+OK: full optional metadata set present
+OK: multiple independent trees
+OK: literal greater-than before id does not truncate the tag
+OK: literal greater-than after id does not truncate the tag
+OK: single-quoted attribute values are recognized
+OK: mixed quoting styles in one tag
+OK: unquoted attribute values are recognized
+OK: whitespace around the attribute equals sign is recognized
+OK: case-insensitive data-block-* attribute names are recognized
+OK: a boolean data-block-id attribute is a blank id, not an invisible block
+OK: a commented-out block is not scanned as live
+OK: a duplicated attribute name keeps its first value, matching a browser
+All block registry tests passed.

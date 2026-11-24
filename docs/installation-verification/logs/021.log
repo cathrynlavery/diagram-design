@@ -1,0 +1,2 @@
+Playwright is not installed. Install it with:
+  pip install playwright && playwright install chromium

@@ -1,0 +1,52 @@
+OK: the shipped bump chart passes
+OK: a vertex nudged off its rank row is rejected
+OK: two series tying at one rank is rejected
+OK: a spline between two snapshots is rejected
+OK: a series drawn with relative path commands is rejected
+OK: a printed rank its geometry does not draw is rejected
+OK: a rank label printed without its sigil is rejected
+OK: a name label drawn beside another series' endpoint is rejected
+OK: a name label reading a different name than it binds is rejected
+OK: a series with no first rank label is rejected
+OK: an endpoint label with no y coordinate is rejected
+OK: an endpoint label with no x coordinate is rejected
+OK: an endpoint label whose y is present but empty is rejected
+OK: an endpoint label whose x overflows to infinity is rejected
+OK: a first-end label moved toward the middle of the chart is rejected
+OK: a whole first-end name gutter moved inside the plot is rejected
+OK: a first-end label moved off the gutter its peers share is rejected
+OK: a transform on a series path is rejected
+OK: a series wrapped in a transformed group is rejected
+OK: a CSS transform reaching the figure is rejected
+OK: an inline transform style moving a series path is rejected
+OK: an inline translate style moving a series path is rejected
+OK: an inline y style moving a series path is rejected
+OK: an inline d style moving a series path is rejected
+OK: an inline offset style moving a series path is rejected
+OK: an inline translate style moving a series ancestor is rejected
+OK: a CSS geometry property reaching the figure is rejected
+OK: a caption whose visible text was edited without its binding is rejected
+OK: a snapshot with no caption is rejected
+OK: two series carrying the accent stroke is rejected
+OK: a focal stroke at non-focal weight is rejected
+OK: a vertex with no dot is rejected
+OK: a focal vertex with a non-focal dot is rejected
+OK: a series path with no declared ranks is rejected
+OK: a rank that is not a whole number is rejected
+OK: a series path this checker cannot read is rejected
+OK: scientific notation is parsed as numbers, not path commands
+OK: trailing-decimal coordinates follow the SVG number grammar
+OK: an unknown SVG path command is rejected
+OK: a series with more points than ranks is rejected
+OK: a series visiting its own private column is rejected
+OK: single-quoted attributes are read
+OK: a falsified rank in single-quoted attributes is rejected
+OK: a bump chart this checker cannot read is refused
+OK: a valid bump chart on a different grid passes
+OK: nine series against a budget of eight is rejected
+OK: three series against a budget floor of four is rejected
+OK: seven snapshots against a budget of six is rejected
+OK: two snapshots, which is a slopegraph is rejected
+OK: verify-slopegraph skips the bump chart (scope treaty holds)
+
+All bump checker cases passed.

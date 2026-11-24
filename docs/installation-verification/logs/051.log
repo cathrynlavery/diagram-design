@@ -1,0 +1,121 @@
+OK: shipped template passes
+OK: shipped animated example passes
+OK: shipped static example passes
+OK: truncated document rejected
+OK: mojibake rejected
+OK: dropped closing tag rejected
+OK: swapped closing tag rejected
+OK: stray closing tag rejected
+OK: unclosed span rejected
+OK: incomplete shell rejected
+OK: tag names in a page title passes
+OK: tag names in a textarea passes
+OK: trailing comment after the html end tag passes
+OK: space before the html end tag's > passes
+OK: newline inside the html end tag passes
+OK: unclosed textarea rejected
+OK: optional end tag passes
+OK: optional head end tag passes
+OK: optional body end tag passes
+OK: void element passes
+OK: opening tag text in an attribute passes
+OK: closing tag text in an attribute passes
+OK: markup and an unclosed CSS comment in a stylesheet passes
+OK: heading before SVG rejected
+OK: description duplicate rejected
+OK: heading after SVG rejected
+OK: distinct heading ID passes
+OK: unreferenced duplicate IDs passes
+OK: executable attribute rejected
+OK: remote image rejected
+OK: CSS import rejected
+OK: external CSS URL rejected
+OK: escaped CSS import rejected
+OK: escaped CSS URL rejected
+OK: CSS continuation URL rejected
+OK: CSS LF continuation normalized
+OK: CSS CRLF continuation normalized
+OK: CSS CR continuation normalized
+OK: CSS form feed continuation normalized
+OK: CSS image set rejected
+OK: inline style URL rejected
+OK: SVG presentation URL rejected
+OK: duplicate style URL rejected
+OK: CSS string comment bypass rejected
+OK: CSS-looking prose passes
+OK: lookalike fonts host rejected
+OK: javascript URL rejected
+OK: data html URL rejected
+OK: iframe injection rejected
+OK: arbitrary script rejected
+OK: missing svg role rejected
+OK: modified controller rejected
+OK: second script rejected
+OK: hidden motion item rejected
+OK: missing noscript rejected
+OK: non-decimal step count rejected
+OK: legend below the viewBox rejected
+OK: rect past the right edge rejected
+OK: translated text above the top edge rejected
+OK: line past the left edge rejected
+OK: circle past the bottom edge rejected
+OK: polygon past the right edge rejected
+OK: square-cornered rect past the right edge rejected
+OK: rect on the viewBox edges passes
+OK: overhang within tolerance passes
+OK: definitions off-canvas passes
+OK: rotated group passes
+OK: percentage size passes
+OK: display none group passes
+OK: inline display none passes
+OK: visibility hidden group passes
+OK: oversized artwork clipped inside the canvas passes
+OK: masked group passes
+OK: zero-width rect placeholder passes
+OK: zero-height rect placeholder passes
+OK: zero-radius circle placeholder passes
+OK: zero-radius ellipse placeholder passes
+OK: stylesheet transform moves it inside passes
+OK: stylesheet display none on an ancestor passes
+OK: stylesheet transform under a combinator passes
+OK: stylesheet rule that only colors it rejected
+OK: transform keyframes alone do not exempt it rejected
+OK: aria-hidden decorative SVG passes
+OK: every shipped asset stays inside its viewBox
+OK: sans node name overflows its box rejected
+OK: mono sublabel overflows its box rejected
+OK: end-anchored ghost number flipped to start rejected
+OK: longer name that still fits passes
+OK: connector label past its paper mask passes
+OK: free caption with no box passes
+OK: stylesheet font size leaves the estimate to the browser passes
+OK: root svg text-anchor centers the label passes
+OK: root svg font-size is inherited rejected
+OK: box painted through inline style rejected
+OK: box painted by its group rejected
+OK: box painted by a stylesheet rule is left alone passes
+OK: text with dx="-40" is not measured passes
+OK: text with dy="2" is not measured passes
+OK: text with rotate="0" is not measured passes
+OK: text with textLength="90" is not measured passes
+OK: label over a box that draws nothing (opacity="0") passes
+OK: label over a box that draws nothing (fill-opacity="0") passes
+OK: label over a box that draws nothing (fill="rgba(0,0,0,0)") passes
+OK: label over a box that draws nothing (fill="#0000") passes
+OK: label over a box that draws nothing (fill="#ececec00") passes
+OK: label over a box that draws nothing (fill="hsl(0 0% 50% / 0%)") passes
+OK: label over a box inside a transparent group passes
+OK: stroke still draws when only the fill is transparent rejected
+OK: box still draws when a child resets opacity rejected
+OK: text with direction="rtl" is not measured passes
+OK: text with unicode-bidi="bidi-override" is not measured passes
+OK: text with writing-mode="tb" is not measured passes
+OK: text with xml:space="preserve" is not measured passes
+OK: text with style="white-space:pre" is not measured passes
+OK: text with style="direction:rtl" is not measured passes
+OK: root svg direction is inherited passes
+OK: stylesheet direction leaves the text alone passes
+OK: every shipped asset's boxed text fits the width budget
+OK: offline mode rejects the Google Fonts link
+OK: offline mode passes a file without the font link
+All self-check tests passed

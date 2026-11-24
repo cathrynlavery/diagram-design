@@ -1,0 +1,10 @@
+Doctor summary: WARN (3 pass, 2 warn, 0 fail)
+[PASS] Python runtime: Python 3.15.2 found via python3 at C:\Users\PC PRO MAX\AppData\Local\Microsoft\WindowsApps\python3.EXE.
+[WARN] Playwright PNG export readiness: Playwright package is not available in the active Python interpreter.
+[PASS] Expected script presence: All required scripts are present (7 checked).
+[PASS] Plugin wiring surfaces: All command/prompt routing surfaces are present and wired (13 checked).
+[WARN] Common path mistakes: Path contains spaces on Windows; unquoted shell examples can fail for import/export commands.
+
+Next actions
+- Provision an approved Playwright renderer in the host environment, then re-run this check.
+- Use quoted paths, e.g. "C:/path with spaces/diagram.html".

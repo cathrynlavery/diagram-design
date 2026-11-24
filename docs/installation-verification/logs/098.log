@@ -1,0 +1,97 @@
+ok    shipped example-arc-diagram.html exists
+ok    shipped example-arc-diagram.html is clean
+ok    shipped example-arc-diagram-dark.html exists
+ok    shipped example-arc-diagram-dark.html is clean
+ok    shipped example-arc-diagram-full.html exists
+ok    shipped example-arc-diagram-full.html is clean
+ok    an honest synthetic arc diagram passes
+ok    a <style> rule path[data-from]{stroke:#bf4520 !important} is one finding
+ok    a <style> rule path{stroke:#bf4520} is one finding
+ok    a <style> rule [data-span]{fill:#bf4520} is one finding
+ok    a <style> rule path[data-from]{display:none} is one finding
+ok    a <style> rule circle{visibility:hidden} is one finding
+ok    a <style> rule svg{opacity:0} is one finding
+ok    a <style> rule svg{opacity:0 !important} is one finding
+ok    a <style> rule [data-span]{stroke-opacity:0} is one finding
+ok    a <style> rule [role]{display:none} is one finding
+ok    a <style> rule body{display:none} is one finding
+ok    a <style> rule @media print{path{display:none}} is one finding
+ok    a <style> rule svg{display:block;width:100%} passes
+ok    a <style> rule body{display:flex} passes
+ok    a <style> rule h1{display:none} passes
+ok    a <style> rule .footer{display:none} passes
+ok    a <style> rule g{visibility:hidden} passes
+ok    a <style> rule p.note{opacity:0} passes
+ok    a <style> rule path{stroke-width:2} passes
+ok    a <style> rule svg{opacity:0.9} passes
+ok    a <style> block with rules wrapped in <!-- --> inside <style> is one finding
+ok    a <style> block with an end tag written </style > is one finding
+ok    a <style> block with an unclosed <style> is one finding
+ok    a <style> block with a nested rule after stroke is one finding
+ok    a <style> block with a nested rule after display:none is one finding
+ok    a <style> block with an attribute value holding a space is one finding
+ok    a <style> block with the all shorthand is one finding
+ok    a <style> block with stroke-width:0 is one finding
+ok    a <style> block with stroke-width:0px !important is one finding
+ok    a <style> block with a block left open at the end is one finding
+ok    the light example re-skinned with a custom accent passes
+ok    a second arc in the custom accent is one finding
+ok    a hiding rule still reaches the imports when a logo <svg> comes first
+ok    a rule hiding the unbound arrowhead inside the diagram is one finding
+ok    another component's --color-accent does not re-skin the diagram
+ok    a nested skin's accent wins over its parent's
+ok    a final --color-accent in a block left open at the end of <style> counts
+ok    a --color-accent inside a CSS comment is ignored
+ok    an earlier --color-accent overridden by the skin's own is ignored
+ok    a <style> rule that moves marks inside <!-- --> is still refused
+ok    a <style> inside a real HTML comment passes
+ok    a 0%/100% fade keyframe passes
+ok    a from/to fade keyframe passes
+ok    a prefixed fade keyframe passes
+ok    an all reset on page chrome passes
+ok    a neighbour drawn at a skip's radius is one finding
+ok    a declared span that is not the seat count is a finding
+ok    a second accent arc is one finding
+ok    a muted arc that imports leftward is one finding
+ok    the accent arc may import leftward
+ok    sweep 0 draws the import under the seats
+ok    a transform on an arc is a finding
+ok    an import inside nested <svg x="40"> is a finding
+ok    an import inside nested <svg y="12"> is a finding
+ok    an import inside nested <svg viewBox="40 0 1000 500"> is a finding
+ok    a nested <svg> with no viewport attributes passes
+ok    a bound node with style="display:none" is a finding
+ok    a bound node with display="none" is a finding
+ok    a bound node with visibility="hidden" is a finding
+ok    a bound node with style="opacity: 0" is a finding
+ok    a bound node with opacity="0%" is a finding
+ok    a hidden import path is a finding
+ok    a bound node inside <g style="display: none"> is a finding
+ok    a bound node inside <g visibility="hidden"> is a finding
+ok    a bound node inside <defs> is a finding
+ok    a bound node inside <symbol id="s"> is a finding
+ok    an unbound decorative circle in <defs> passes
+ok    a visible opacity on a bound node passes
+ok    two nodes sharing a name is a finding
+ok    three nodes is fail-closed
+ok    an omitted fill is a finding
+ok    an arc drawn right to left is a finding
+ok    an import path missing data-span is a finding
+ok    a label without a readable x is a finding
+ok    a CSS-variable stroke is a finding
+ok    a currentColor stroke is a finding
+ok    a class-painted arc is a finding
+ok    an inline-style stroke is a finding
+ok    an uneven pitch is a finding
+ok    the parent dependency graph is not an arc diagram
+ok    data-value on a <circle> never claims a file — the beeswarm contract
+ok    no shipped arc-diagram file declares data-value on a circle, data-q1, data-series, data-ranks or data-size, so no sibling verifier claims one
+ok    verify-slopegraph.py skips all three shipped arc-diagram files
+ok    verify-bump.py skips all three shipped arc-diagram files
+ok    verify-bubble.py skips all three shipped arc-diagram files
+ok    verify-beeswarm.py skips all three shipped arc-diagram files
+ok    verify-git-graph.py skips all three shipped arc-diagram files
+ok    a pre-existing file sharing a fixture name is never touched
+ok    fixtures are written outside the repository
+
+OK arc-diagram checker: 95 case(s), both polarities

@@ -1,0 +1,54 @@
+OK: source anchors verified
+Traceback (most recent call last):
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-pdf.py", line 612, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-pdf.py", line 604, in main
+    require_cli_errors(tmp)
+    ~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-pdf.py", line 400, in require_cli_errors
+    raise AssertionError(f"no-svg should exit 2, got {r.returncode}: {r.stderr}")
+AssertionError: no-svg should exit 2, got 1: Traceback (most recent call last):
+  File "C:\Users\PC PRO MAX\diagram-design\skills\diagram-design\scripts\export_pdf.py", line 237, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\PC PRO MAX\diagram-design\skills\diagram-design\scripts\export_pdf.py", line 232, in main
+    export_pdf(args.src, out, page_size=args.page_size, full_page=args.full_page)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC PRO MAX\diagram-design\skills\diagram-design\scripts\export_pdf.py", line 50, in export_pdf
+    browser = playwright.chromium.launch()
+  File "C:\Users\PC PRO MAX\.diagram-design-runtime\Lib\site-packages\playwright\sync_api\_generated.py", line 16702, in launch
+    self._sync(
+    ~~~~~~~~~~^
+        self._impl_obj.launch(
+        ^^^^^^^^^^^^^^^^^^^^^^
+    ...<17 lines>...
+        )
+        ^
+    )
+    ^
+  File "C:\Users\PC PRO MAX\.diagram-design-runtime\Lib\site-packages\playwright\_impl\_sync_base.py", line 115, in _sync
+    return task.result()
+           ~~~~~~~~~~~^^
+  File "C:\Users\PC PRO MAX\.diagram-design-runtime\Lib\site-packages\playwright\_impl\_browser_type.py", line 97, in launch
+    await self._channel.send(
+        "launch", TimeoutSettings.launch_timeout, params
+    )
+  File "C:\Users\PC PRO MAX\.diagram-design-runtime\Lib\site-packages\playwright\_impl\_connection.py", line 76, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\PC PRO MAX\.diagram-design-runtime\Lib\site-packages\playwright\_impl\_connection.py", line 632, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at C:\Users\PC PRO MAX\AppData\Local\ms-playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     playwright install                                     ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+

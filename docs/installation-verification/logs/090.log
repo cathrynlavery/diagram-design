@@ -1,0 +1,87 @@
+ok    distinct x values cannot collapse onto one column
+ok    distinct y values cannot collapse onto one row
+ok    a finite nonzero inverted axis remains measurable
+ok    shipped example-bubble.html verifies clean
+ok    shipped example-bubble-dark.html verifies clean
+ok    shipped example-bubble-full.html verifies clean
+ok    an honest synthetic bubble chart passes
+ok    a chart with no accent bubble at all passes
+ok    single-quoted attributes are parsed, not dropped
+ok    a lying bubble inside a comment is markup that never renders
+ok    an inverted y axis with a shared scale passes
+ok    overlapping bubbles drawn largest-first pass
+ok    a small bubble buried under a later larger one is reported
+ok    equal-radius overlap passes in either order — order cannot bury a tie
+ok    one bubble nudged 8px in x is one finding, not a cascade
+ok    one bubble nudged 6px in y is reported against its peers' scale
+ok    an axis where every bubble declares the same value is unverifiable
+ok    a bubble holding the only distinct x value is reported, not skipped
+ok    radius-proportional sizing is reported — r^2/size is not constant
+ok    one bubble drawn 6px too large is reported by name
+ok    a non-positive size is reported, not scaled
+ok    a zero radius is reported — a bubble with no area states no value
+ok    a second accent bubble is reported — one focal claim per figure
+ok    the dark-skin accent counts toward the same limit
+ok    a small-caps label matches its mixed-case binding
+ok    a label naming an undeclared bubble is reported
+ok    a label whose text disagrees with its binding is reported
+ok    a label drawn nearer another bubble renames the mark
+ok    a second label for one bubble is reported
+ok    a tick printing a different number than it declares is reported
+ok    a tick drawn off the scale the bubbles set is reported
+ok    an axis with fewer than two bound ticks is reported
+ok    a tick with no data-value is reported as unbound
+ok    a tick printing two numeric tokens is ambiguous, not first-token-parsed
+ok    a transform on a bubble is rejected, not resolved
+ok    an ancestor <g> transform moves every mark inside it
+ok    an UNCLOSED transformed group covers everything after it
+ok    a transform on a bound label is rejected
+ok    a CSS transform declaration is rejected — no telling what it moves
+ok    text-transform in CSS is styling, not movement
+ok    an unquoted data-size circle is read as the browser reads it, and its missing name is reported
+ok    a bubble without data-name is reported
+ok    a bubble missing cx is reported with the missing attribute named
+ok    a NaN coordinate is unreadable, not silently within every tolerance
+ok    an ancestor <g> hiding its transform behind a quoted > is still reported
+ok    an ancestor <g> hiding an inline style transform behind a quoted > is reported
+ok    an honest bubble with a quoted > before its bindings is parsed and passes
+ok    a dishonest bubble with a quoted > before its bindings is still reported
+ok    a label with a quoted > before its bindings is still bound and checked
+ok    a tick hiding a transform behind a quoted > is reported
+ok    an inline style transform on a bubble is reported
+ok    an inline CSS r property on a bubble replaces the verified radius and is reported
+ok    an inline translate property on a bound label is reported
+ok    a vendor-prefixed transform on an ancestor group's inline style is reported
+ok    an inline text-transform on a bound label is not read as a transform
+ok    a CSS translate declaration in a style block is reported
+ok    a vendor-prefixed CSS transform declaration in a style block is reported
+ok    a duplicated style on an ancestor keeps the browser's first, honest value
+ok    a duplicated style on an ancestor keeps the browser's first, dishonest value
+ok    a duplicated r is read first-wins, so an inflated first r is reported
+ok    a duplicated r whose first value is honest still passes
+ok    a self-closing <g/> with a transform encloses nothing and is not reported
+ok    a commented-out ancestor transform is not read as live markup
+ok    an end tag inside a quoted attribute does not end a bound label's text
+ok    upper-case tag and attribute names are read case-insensitively, as the browser does
+ok    a broken attribute quote never crashes the checker and never passes
+ok    a comment-prefixed inline transform on a bubble is reported
+ok    a comment-prefixed inline transform on a bound label is reported
+ok    a comment-prefixed inline transform on an ancestor <g> is reported
+ok    a <style> rule with a comment before the property is reported
+ok    a <style> declaration behind a multi-line comment is reported on its own line
+ok    a <style> comment that merely mentions transform: is not read as a declaration
+ok    an inline style comment that merely mentions transform: is not read as a declaration
+ok    a broken-quoted <circle data-size> that is the file's only signal is reported, not skipped
+ok    a commented-out <circle data-size> as the file's only signal is out of scope
+ok    a live <circle data-size> behind a quoted > is still claimed and checked
+ok    three bubbles are too few for leave-one-out — refused, not passed
+ok    a file that claims the type by filename but parses nothing is a finding
+ok    a file that claims the type in its description is held to the contract
+ok    the parent scatter is out of scope — points are not bubbles
+ok    the shipped slopegraph is out of scope — data-series is not data-size
+ok    no shipped bubble file declares data-series, so verify-slopegraph never claims one
+ok    a pre-existing file sharing a fixture name is never touched
+ok    two harnesses use different directories, so parallel runs cannot collide
+ok    fixtures are written outside the repository
+
+OK bubble checker: 85 case(s), both polarities

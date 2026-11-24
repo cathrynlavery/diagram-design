@@ -1,0 +1,95 @@
+ok    distinct values cannot collapse to a flat value axis
+ok    a finite nonzero inverted axis remains measurable
+ok    an honest slopegraph reports nothing
+ok    the shipped light example reports nothing
+ok    two series with identical values drawn at identical y is legal
+ok    a correct indexed slopegraph (every series starts at the index base) is not rejected
+ok    coordinates rounded to one decimal stay within tolerance
+ok    coordinates rounded to whole pixels stay within tolerance
+ok    the rotated value-axis caption's transform is not reported
+ok    a CSS text-transform declaration is not read as a transform
+ok    example-line.html is not detected as a slopegraph at all
+ok    example-bar.html is not detected as a slopegraph at all
+ok    example-treemap.html is not detected as a slopegraph at all
+ok    example-scatter.html is not detected as a slopegraph at all
+ok    a single endpoint nudged 3px reports as one point, not as a bad axis
+ok    an equal-valued series pulled 3px clear of its twin's labels is reported
+ok    an indexed slopegraph with one endpoint 3px wrong is reported
+ok    a right axis compressed to 80% reports as a scale mismatch and stops there
+ok    a right axis shifted 12px at an identical slope reports as an origin offset
+ok    a transform on a series line is reported
+ok    a transform on a bound label is reported
+ok    an ancestor <g> transform over the series is reported
+ok    a CSS transform declaration is reported
+ok    a printed value that contradicts the declared one is reported
+ok    a thousands separator that changes the value is reported
+ok    a label carrying two numeric tokens is reported, not half-read
+ok    a unit suffix on a printed value is accepted
+ok    a series missing one endpoint value label is reported
+ok    swapping only the visible caption text is reported
+ok    swapping the caption x values is reported
+ok    a caption with no data-state is reported
+ok    a missing state caption is reported
+ok    two captions reading the same thing is reported
+ok    two series names swapped between rows is reported
+ok    a name label drawn on another series' row is reported
+ok    a series with no name label is reported
+ok    a second label for the same endpoint is reported
+ok    an endpoint label for a series with no line is reported
+ok    a file named example-slopegraph with no series is reported, not passed
+ok    a file whose desc says slopegraph but declares no series is reported
+ok    a slopegraph declared only in a desc past 4000 chars is still detected
+ok    a series line missing data-from is reported rather than dropped
+ok    a series line missing data-to is reported rather than dropped
+ok    a series line missing y1 is reported rather than dropped
+ok    a series line missing y2 is reported rather than dropped
+ok    a declared value that is not a finite number is reported rather than dropped
+ok    a NaN coordinate is reported, not silently accepted
+ok    a commented-out series line is ignored, not read as data
+ok    an honest slopegraph written with single-quoted attributes is parsed
+ok    a single-quoted series line with a nudged endpoint is reported
+ok    an unquoted series line is read as the browser reads it, and its lie is reported
+ok    axis rules and legend swatches without data-series are skipped silently
+ok    a series that does not share the left axis position is reported
+ok    a series that does not share the right axis position is reported
+ok    a figure where every series holds one value on each axis is reported as unverifiable
+ok    scientific-notation labels are parsed, not truncated to the mantissa
+ok    a shared scale on billion-magnitude values is not reported as shifted
+ok    an ancestor <g> hiding its transform behind a quoted > is still reported
+ok    an ancestor <g> hiding an inline style transform behind a quoted > is reported
+ok    an honest series line with a quoted > before its bindings is parsed and passes
+ok    a dishonest series line with a quoted > before its bindings is still reported
+ok    a value label with a quoted > before its bindings is still bound and checked
+ok    a state caption hiding a transform behind a quoted > is reported
+ok    an inline style transform on a series line is reported
+ok    an inline translate property on a bound label is reported
+ok    an inline CSS y property on a bound label replaces the verified y and is reported
+ok    a vendor-prefixed transform on an ancestor group's inline style is reported
+ok    an inline text-transform on a bound label is not read as a transform
+ok    a CSS translate declaration in a style block is reported
+ok    a vendor-prefixed CSS transform declaration in a style block is reported
+ok    a duplicated style on an ancestor keeps the browser's first, honest value
+ok    a duplicated style on an ancestor keeps the browser's first, dishonest value
+ok    a duplicated y2 is read first-wins, so a dishonest first y2 is reported
+ok    a duplicated y2 whose first value is honest still passes
+ok    a self-closing <g/> with a transform encloses nothing and is not reported
+ok    a commented-out ancestor transform is not read as live markup
+ok    an end tag inside a quoted attribute does not end a bound label's text
+ok    upper-case tag and attribute names are read case-insensitively, as the browser does
+ok    a broken attribute quote never crashes the checker and never passes
+ok    a comment-prefixed inline transform on a series line is reported
+ok    a comment-prefixed inline transform on a bound label is reported
+ok    a comment-prefixed inline transform on an ancestor <g> is reported
+ok    a <style> rule with a comment before the property is reported
+ok    a <style> declaration behind a multi-line comment is reported on its own line
+ok    a <style> comment that merely mentions transform: is not read as a declaration
+ok    an inline style comment that merely mentions transform: is not read as a declaration
+ok    a broken-quoted <line data-series> that is the file's only signal is reported, not skipped
+ok    a commented-out <line data-series> as the file's only signal is out of scope
+ok    a live <line data-series> behind a quoted > is still claimed and checked
+ok    data-series on a <path> alone (the bump chart's binding) is not claimed by the raw signal
+ok    a pre-existing file sharing a fixture name is never touched
+ok    two harnesses use different directories, so parallel runs cannot collide
+ok    fixtures are written outside the repository
+
+OK slopegraph checker: 93 case(s), both polarities

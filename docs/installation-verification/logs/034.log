@@ -1,0 +1,42 @@
+OK: all PlantUML import artifacts present
+OK: sequence parses: participants, order, alt, activations, skinparam ledger
+OK: class parses: members, inheritance, composition, cardinality
+OK: --diagram 1 isolates a class block past a malformed include in block 0
+OK: review regressions: timeline positions, declaration tails, case, packages, styling, braces, comments, stereotypes
+OK: kind detection uses arrow form, so class relationships win and unlabeled messages count
+OK: forward and backward package links attach to the same package classes
+OK: diamond arrows keep navigability apart from the diamond in JSON and the digest
+OK: oversized dash lines hit the statement cap before kind detection
+OK: attached cache note stays plain text in the IR, the example, and the fidelity row
+OK: kind detection ignores note, legend, and class body text
+OK: digest edges and summaries name endpoints by id, with the label alongside
+OK: an unclosed block comment fails only its own block
+OK: generic parameters survive in labels, members, messages, and the digest
+OK: source and target cardinalities stay separate in JSON and the digest
+OK: sequence notes keep all covered participants and their message position
+OK: package scope wins over top-level names, and every lifeline kind marks a sequence
+OK: activation shortcuts follow the message's sender and receiver on reverse arrows
+OK: arrows parse whole (long, styled, directed, decorated) and malformed ones fail by line
+OK: messages and links named after styling commands survive; the commands are still discarded
+OK: activate/deactivate drop a color and refuse extra names
+OK: together blocks add no container and do not qualify class ids
+OK: inline and mid-line block comments are removed like whole-line ones
+OK: cardinality is read next to the arrow, so quoted class names stay names
+OK: kind detection reads arrows with the same parser as the edge parsers
+OK: note bodies split at the first colon outside quotes
+OK: endpoints resolve by raw code, inline `as` declarations work, labels are cleaned separately
+OK: blocks need their own @end marker, nesting fails, and BOM/CRLF/names/padding are accepted
+OK: participants and classes named after command words keep their messages and links
+OK: only top-level plantuml fences are imported, matching the Mermaid importer
+OK: arrow lines are edges before declarations, in kind detection and parsing
+OK: declarations read one name and alias, drop color and keep stereotype, and reject leftovers
+OK: 9 block-level failures stay on their block and fire only when it is selected
+OK: generic-then-alias declarations and `<<...>>` inside quoted names keep their text
+OK: adversarial labels stay inert escaped text in JSON and --out
+OK: all documented exit-2 paths and resource caps fire specifically
+OK: PlantUML stdout stays lossless UTF-8 under a legacy Windows encoding
+OK: kind detection and the parsers agree on every line of 86 diagrams
+OK: reference, SKILL.md, command, prompt, and example stay in sync
+OK: worked example has the static mobile-containment contract (browser check runs in lint-render)
+
+All PlantUML import gates passed.

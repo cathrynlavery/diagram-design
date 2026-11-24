@@ -1,0 +1,49 @@
+OK: valid synchronized bump accepted
+OK: missing bump rejected
+OK: no-bump mode accepts unchanged versions
+OK: version bump inside a pull request rejected
+OK: version rollback inside a pull request rejected
+OK: current-only mode accepts a valid tree
+OK: current-only mode with desynchronized manifests rejected
+OK: current-only mode with malformed versions rejected
+OK: mismatched manifests rejected
+OK: Factory version drift rejected
+OK: Qoder version drift rejected
+OK: malformed versions rejected
+OK: missing marketplace target rejected
+OK: non-native Factory marketplace source rejected
+OK: missing shared command surface rejected
+OK: synchronized Factory bootstrap accepted
+OK: Factory bootstrap without package bump rejected
+OK: Factory bootstrap with manifest drift rejected
+OK: Factory manifest deletion rejected
+OK: Qoder manifest deletion rejected
+OK: missing Qoder command surface rejected
+OK: non-canonical Qoder skill surface rejected
+OK: non-canonical Qoder command surface rejected
+OK: version line outside frontmatter rejected
+OK: version outside metadata mapping rejected
+OK: malformed version plus valid duplicate rejected
+OK: duplicate valid metadata versions rejected
+OK: malformed surrounding frontmatter rejected
+OK: version value without YAML separation rejected
+OK: unquoted colon in frontmatter scalar rejected
+OK: invalid double-quoted YAML escape rejected
+OK: valid double-quoted YAML escapes accepted
+OK: maximum Unicode YAML escape U+10FFFF accepted
+OK: out-of-range Unicode YAML escape rejected
+OK: patch bump produced 1.2.4 and synced SKILL.md
+OK: minor bump produced 1.3.0 and synced SKILL.md
+OK: major bump produced 2.0.0 and synced SKILL.md
+OK: version bumper rejects mismatched manifests
+OK: version bumper fails closed on SKILL.md drift, manifests untouched
+OK: prepare and publish workflow allowlists match bumper paths
+OK: untouched PR judged against its recorded base after a main bump rejected
+OK: merge first parent accepts a PR opened before a main bump
+OK: PR version bump judged against the merge commit's first parent rejected
+OK: CI version gate compares the PR merge against its first parent
+SKIP: bash not found or Windows; the CI version gate step was not executed
+OK: version history ignores manifest metadata-only commits
+OK: version history rejects deletion of an established manifest
+OK: only pre-introduction Qoder absence is accepted
+All plugin package tests passed

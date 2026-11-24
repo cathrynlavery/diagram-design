@@ -1,0 +1,16 @@
+OK: all Excalidraw import artifacts present
+OK: deeply nested JSON imports or fails cleanly; shallow JSON still imports
+OK: visible text survives unsupported containers
+OK: wrapped text keeps the typed text; typed line breaks stay
+OK: whiteboard parses: shapes, frames, bound labels, groups, cycle, ledger
+OK: nested groups keep the outer cluster and the inner cluster
+OK: bindings, arrowheads, waypoints, dangling edges, unknown elements
+OK: start-only, end-only, bidirectional, and undirected arrows keep their semantics
+OK: bidirectional cycles are reported and excluded from tree candidates
+OK: adversarial labels stay inert and escaped; URLs and payloads stay out
+OK: all documented exit-2 paths and resource caps fire specifically
+OK: Excalidraw stdout stays lossless UTF-8 under a legacy Windows encoding
+OK: reference, SKILL.md, command, prompt, and example stay in sync
+OK: worked example has the static mobile-containment contract (browser check runs in lint-render)
+
+All Excalidraw import gates passed.

@@ -1,0 +1,63 @@
+OK: canonical-template accepted
+OK: decorative-header-icon accepted
+OK: only-decorative-svgs rejected — motion document needs an accessible SVG
+OK: unnamed-accessible-header-icon rejected — needs role=img
+OK: script-free-none accepted
+OK: none-with-controls rejected — none mode must not expose playback controls or live status
+OK: loop-two-semantic-items rejected — loop mode allows at most one semantic item
+OK: shipped animated example accepted
+OK: required shipped motion inventory is parsed and complete
+OK: bad-mode rejected — data-motion-mode must be one of
+OK: too-many-steps rejected — semantic step count must be 1..8
+OK: step-gap rejected — semantic steps must be contiguous
+OK: missing-pause rejected — missing actions: pause
+OK: bad-live-region rejected — motion status needs role=status
+OK: status-inside-hidden-controls rejected — motion status must be outside data-motion-controls
+OK: hidden-fallback rejected — fallback must be visible
+OK: decorative-focus rejected — needs aria-hidden=true and focusable=false
+OK: missing-reduced-motion rejected — missing reduced-motion CSS fallback
+OK: comment-cannot-spoof-reduced-motion rejected — missing reduced-motion CSS fallback
+OK: reduced-motion-controls-visible rejected — missing reduced-motion hidden controls
+OK: hidden-controls-overridden rejected — missing hidden control override
+OK: comment-cannot-spoof-script-contract rejected — missing background-tab pause
+OK: missing-static-override rejected — missing deterministic static override
+OK: late-title rejected — title must be its first child
+OK: nested-group-title accepted
+OK: nested-group-title parsed identically by verify-motion and self_check
+OK: nested-group-desc accepted
+OK: nested-group-desc parsed identically by verify-motion and self_check
+OK: nested-icon-title accepted
+OK: nested-icon-title parsed identically by verify-motion and self_check
+OK: nested-title-masks-wrong-root-id rejected — aria-labelledby must name title then desc
+OK: nested-title-masks-wrong-root-id parsed identically by verify-motion and self_check
+OK: nested-title-fills-empty-root-title rejected — needs non-empty title and desc
+OK: nested-title-fills-empty-root-title parsed identically by verify-motion and self_check
+OK: nested-desc-replaces-missing-root-desc rejected — needs non-empty title and desc
+OK: nested-desc-replaces-missing-root-desc parsed identically by verify-motion and self_check
+OK: nested-title-replaces-missing-root-title rejected — needs non-empty title and desc
+OK: nested-title-replaces-missing-root-title parsed identically by verify-motion and self_check
+OK: color-only-stage rejected — needs a non-color aria-label
+OK: unicode-step-count rejected — data-step-count must be an ASCII decimal integer
+OK: underscored-item-step rejected — non-ASCII-decimal data-step
+OK: double-space-ready-scope accepted
+OK: comma-unscoped-opacity rejected — unscoped data-motion-item hiding
+OK: unscoped-visibility rejected — unscoped data-motion-item hiding
+OK: unscoped-display rejected — unscoped data-motion-item hiding
+OK: unscoped-infinite-iteration-count rejected — infinite animation must be scoped to data-motion-mode=loop
+OK: null-test-frame rejected — missing non-null test frame validation
+OK: fractional-test-frame rejected — missing integer test frame validation
+OK: negative-test-frame rejected — missing non-negative decimal test frame validation
+OK: modified-replay-shortcut rejected — missing modified-shortcut guard
+OK: over-budget-test-frame rejected — missing bounded test frame validation
+OK: modified-controller rejected — must exactly match the controller in template-motion.html
+OK: early-motion-ready rejected — motion-ready must be added only after the initial render succeeds
+OK: remote-controller rejected — must carry only the canonical data-diagram-controls attribute
+OK: duplicate-controller-attribute rejected — must carry only the canonical data-diagram-controls attribute
+OK: controls-outside-root rejected — controlled mode needs one in-root control group; found 0
+OK: unclosed-controller rejected — must have a closing script tag
+OK: Trace B connector cannot continue through terminal rows
+OK: semantic verifier accepts an accessible decorative motion item
+OK: missing semantic-pattern router anchor is rejected
+OK: missing visual-type guide anchor is rejected
+OK: CLI accepts canonical template
+All motion contract tests passed.

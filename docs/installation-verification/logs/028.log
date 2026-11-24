@@ -1,0 +1,6 @@
+OK: example-sequence-oauth.html: 28 valid forms and 132 rejected mutations
+OK: example-sequence-oauth-dark.html: 28 valid forms and 132 rejected mutations
+OK: example-sequence-oauth-full.html: 28 valid forms and 132 rejected mutations
+OK: shipped repo passes verify-sequence-oauth.py
+OK: removing the dashed 401 return marker is rejected
+All sequence-oauth verifier tests passed.

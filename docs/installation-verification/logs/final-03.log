@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-wait.py", line 406, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-wait.py", line 394, in main
+    require_stalled_fallback(tmp)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-wait.py", line 182, in require_stalled_fallback
+    stderr = run_export_with_timeout(src, out)
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-export-wait.py", line 118, in run_export_with_timeout
+    result = subprocess.run(
+        [
+    ...<12 lines>...
+        timeout=FALLBACK_BUDGET_SECONDS,
+    )
+  File "C:\Users\PC PRO MAX\AppData\Local\Programs\Python\Python314\Lib\subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['C:\\Users\\PC PRO MAX\\.diagram-design-runtime\\Scripts\\python.exe', '-c', '\nimport importlib.util\nimport pathlib\nimport sys\n\nspec = importlib.util.spec_from_file_location("diagram_export_png", sys.argv[1])\nmodule = importlib.util.module_from_spec(spec)\nspec.loader.exec_module(module)\nmodule.rasterize(\n    pathlib.Path(sys.argv[2]),\n    pathlib.Path(sys.argv[3]),\n    2,\n    network_idle_timeout_ms=int(sys.argv[4]),\n    fallback_settle_ms=int(sys.argv[5]),\n)\n', 'C:\\Users\\PC PRO MAX\\diagram-design\\skills\\diagram-design\\scripts\\export_png.py', 'C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-export-wait-5f4f5kqg\\stall-fixture.html', 'C:\\Users\\PC PRO MAX\\AppData\\Local\\Temp\\diagram-export-wait-5f4f5kqg\\stall-fixture.png', '1500', '150']' returned non-zero exit status 1.

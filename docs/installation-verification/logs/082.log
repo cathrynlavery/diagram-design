@@ -1,0 +1,158 @@
+OK: the shipped sankey passes
+OK: a ribbon that narrows along its run is rejected
+OK: a node that puts out less than it takes in is rejected
+OK: a stage carrying less than the stage before it is rejected
+OK: a node labelled with a value its height does not draw is rejected
+OK: a ribbon whose control point collapses onto its endpoint is rejected
+OK: a path the checker cannot parse as a ribbon is rejected
+OK: a ribbon that leaves from no node bar is rejected
+OK: a file whose node bars the parser cannot see is rejected
+OK: a rect that is not any shape this figure draws is rejected
+OK: a swatch-sized rect parked inside the plot band is rejected
+OK: a bar-width rect below the plot band is rejected
+OK: a figure with node bars but no ribbons is rejected
+OK: a ribbon moved by a transform is rejected
+OK: a ribbon moved by a clip path is rejected
+OK: a dashed unfilled path is allowed, as the reference promises
+OK: a filled path that is not a readable ribbon is rejected
+OK: an unfilled path drawn as a 40px band is rejected
+OK: a dashed unfilled path too wide to be a hairline is rejected
+OK: an unfilled hairline with no dash pattern is rejected
+OK: a node bar whose printed value cannot be read is rejected
+OK: a ribbon end overrunning the bar it attaches to is rejected
+OK: a hairline widened by an inline style is rejected
+OK: a hairline widened by a stylesheet class is rejected
+OK: a ribbon widened past its fill by an inline style is rejected
+OK: a hairline widened by a bare element selector is rejected
+OK: stroke-width inherited from the svg element is rejected
+OK: a ribbon with a fat stroke-width attribute is rejected
+OK: a unit-bearing stroke-width is accepted
+OK: a node with two value lines in its block is rejected
+OK: a value line sitting where two bars could claim it is rejected
+OK: stroke-width='.5' is accepted
+OK: stroke-width='+1' is accepted
+OK: stroke-width='1e0' is accepted
+OK: stroke-width='1em' is reported as uncomparable
+OK: a dashed relationship written 0.75px is accepted
+OK: a ribbon made invisible by none is rejected
+OK: a ribbon made invisible by transparent is rejected
+OK: a ribbon made invisible by alpha0 is rejected
+OK: a non-numeric rgba alpha is reported, not crashed
+OK: a non-numeric stroke-width is reported, not crashed
+OK: a malformed stroke-width is reported, not crashed
+OK: an empty stroke-width is reported, not crashed
+OK: a non-numeric fill-opacity is reported, not crashed
+OK: a malformed fill-opacity is reported, not crashed
+OK: fill='rgb(79 93 117 / 0.18)' reads as visible
+OK: fill='rgb(79 93 117)' reads as visible
+OK: fill='rgba(79 93 117 / 18%)' reads as visible
+OK: fill='#4f5d752e' reads as visible
+OK: fill='rgb(79 93 117 / 0)' reads as invisible
+OK: fill='#4f5d7500' reads as invisible
+OK: fill='hsl(215 20% 38% / 0)' reads as invisible
+OK: stroke-dasharray='4 3' reads as dashed
+OK: stroke-dasharray='4,3' reads as dashed
+OK: stroke-dasharray='2' reads as dashed
+OK: stroke-dasharray='4px 3px' reads as dashed
+OK: stroke-dasharray='banana' reads as solid
+OK: stroke-dasharray='0' reads as solid
+OK: stroke-dasharray='0 0' reads as solid
+OK: stroke-dasharray='none' reads as solid
+OK: stroke-dasharray='-4 3' reads as solid
+OK: stroke-dasharray='4em 3em' reads as dashed
+OK: stroke-dasharray='4% 3%' reads as dashed
+OK: stroke-dasharray='4foo 3foo' reads as solid
+OK: stroke-dasharray='4 3foo' reads as solid
+OK: stroke-dasharray='4bar' reads as solid
+OK: stroke-dasharray='4cap 3cap' reads as dashed
+OK: stroke-dasharray='4lh 3lh' reads as dashed
+OK: stroke-dasharray='4ic 3ic' reads as dashed
+OK: stroke-dasharray='4rex 3rex' reads as dashed
+OK: stroke-dasharray='4rlh 3rlh' reads as dashed
+OK: stroke-dasharray='4ric 3ric' reads as dashed
+OK: stroke-dasharray='4vi 3vi' reads as dashed
+OK: stroke-dasharray='4vb 3vb' reads as dashed
+OK: stroke-dasharray='4dvh 3dvh' reads as dashed
+OK: stroke-dasharray='4svw 3svw' reads as dashed
+OK: stroke-dasharray='4lvmin 3lvmin' reads as dashed
+OK: stroke-dasharray='4cqw 3cqw' reads as dashed
+OK: stroke-dasharray='4cqmin 3cqmin' reads as dashed
+OK: stroke-dasharray='4CAP 3CAP' reads as dashed
+OK: stroke-dasharray='4Q 3Q' reads as dashed
+OK: a ribbon whose fill is inherited from the svg element is rejected
+OK: a ribbon whose fill comes from a stylesheet rule is rejected
+OK: an svg carrying an inline paint style is rejected
+OK: an svg carrying an inline stroke-width style is rejected
+OK: a group carrying an inline paint style is rejected
+OK: a fill alpha CSS clamps to zero reads the way it renders
+OK: a percentage fill alpha CSS clamps to zero reads the way it renders
+OK: an alpha above 1, which clamps to 1 and still paints reads the way it renders
+OK: a fill-opacity CSS clamps to zero reads the way it renders
+OK: an ordinary fill-opacity reads the way it renders
+OK: the one spelling of zero opacity the old pattern caught reads the way it renders
+OK: zero opacity written as a percentage reads the way it renders
+OK: zero opacity written without its leading digit reads the way it renders
+OK: zero opacity written with a sign reads the way it renders
+OK: zero opacity written in exponent form reads the way it renders
+OK: a negative opacity, which clamps to zero reads the way it renders
+OK: an opacity that is not a number reads the way it renders
+OK: an ordinary opacity, which must still pass reads the way it renders
+OK: a ribbon under an <a> that zeroes its fill is rejected
+OK: a ribbon under an <a> with a zero group opacity is rejected
+OK: a ribbon under a <switch> that unpaints it is rejected
+OK: a ribbon parked in <defs> is rejected
+OK: a ribbon suppressed by conditional processing is rejected
+OK: a ribbon hidden by visibility=collapse is rejected
+OK: a ribbon painted from a paint server is rejected
+OK: a nested <svg> rescaling the figure is rejected
+OK: a fill of none written as a character reference is rejected
+OK: a single-quoted style, invisible to a double-quote scan is rejected
+OK: a duplicate fill, where the browser keeps the first is rejected
+OK: a > inside a quoted value, which truncates a [^>]* capture is rejected
+OK: a <line> wide enough to read as volume is rejected
+OK: a rect painted over the figure is rejected
+OK: a dash pattern with no gap, which renders solid is rejected
+OK: a comment between a property and its colon is rejected
+OK: a CSS transform, which the attribute ban never saw is rejected
+OK: a node bar that paints no fill reads the way it renders
+OK: a node bar painted transparent reads the way it renders
+OK: a node bar whose fill alpha is zero reads the way it renders
+OK: a node bar with a zero fill-opacity reads the way it renders
+OK: a node bar width carrying a unit reads the way it renders
+OK: a node bar height carrying a unit reads the way it renders
+OK: a node bar width carrying a sign reads the way it renders
+OK: node bar coordinates carrying units reads the way it renders
+OK: a bar width in em, which resolves against a font reads the way it renders
+OK: a bar height in %, which resolves against a viewport reads the way it renders
+OK: a bar coordinate in vw reads the way it renders
+OK: a bar width in pt, which is exactly 12px reads the way it renders
+OK: a bar width in px reads the way it renders
+OK: a bar fill whose alpha cannot be read reads the way it renders
+OK: a bar fill-opacity that is not a number reads the way it renders
+OK: a five-digit hex, which is not a colour reads the way it renders
+OK: a four-digit hex, which is RGBA and legal reads the way it renders
+OK: an eight-digit hex whose alpha is zero reads the way it renders
+OK: a ribbon whose coordinates are in exponent form reads the way it renders
+OK: a ribbon whose coordinates carry a leading plus reads the way it renders
+OK: a label coordinate carrying a unit reads the way it renders
+OK: a label coordinate in exponent form reads the way it renders
+OK: a label coordinate in em, which resolves against a font reads the way it renders
+OK: a falsified value on a label whose x carries a unit reads the way it renders
+OK: the three shipped variants agree on geometry
+OK: a variant edited out of step with the others is rejected
+OK: a reference sample that is a real excerpt passes
+OK: a reference sample drifting from the example is rejected
+OK: --all refuses to run with a shipped variant missing
+OK: numeric case equivalent scientific
+OK: numeric case explicit plus and uppercase exponent
+OK: numeric case leading decimal with exponent
+OK: numeric case fractional quantity scale
+OK: numeric case wrong exponent
+OK: numeric case negative quantity
+OK: numeric case overflowing quantity
+OK: numeric case incomplete exponent
+OK: numeric case eight tiny quantities cannot bypass scale fidelity
+OK: numeric case tiny quantities with a finite shared scale
+OK: numeric case finite scales with an overflowing relative comparison
+
+All sankey checker cases passed.

@@ -1,0 +1,42 @@
+OK: shipped example-axonometric-plan-campus-animated.html passes
+OK: shipped example-axonometric-plan-campus-dark.html passes
+OK: shipped example-axonometric-plan-campus-full.html passes
+OK: shipped example-axonometric-plan-campus.html passes
+OK: shipped example-axonometric-plan-coffee-shop-animated.html passes
+OK: shipped example-axonometric-plan-coffee-shop-dark.html passes
+OK: shipped example-axonometric-plan-coffee-shop-full.html passes
+OK: shipped example-axonometric-plan-coffee-shop.html passes
+OK: shipped example-axonometric-plan-dark.html passes
+OK: shipped example-axonometric-plan-full.html passes
+OK: shipped example-axonometric-plan-warehouse-animated.html passes
+OK: shipped example-axonometric-plan-warehouse-dark.html passes
+OK: shipped example-axonometric-plan-warehouse-full.html passes
+OK: shipped example-axonometric-plan-warehouse.html passes
+OK: shipped example-axonometric-plan.html passes
+OK: --all passes on the shipped set
+OK: styled span retains the declared name
+OK: mixed nested span text retains the declared name
+OK: undrawn title and desc retains the declared name
+OK: fails on silhouette vertex moved
+OK: fails on plate corner arc sweeps the wrong way
+OK: fails on box outside the plate
+OK: fails on two boxes share floor
+OK: fails on box painted out of order
+OK: fails on tag off its plan point
+OK: fails on two tags overlap
+OK: fails on three-word tag
+OK: fails on room with no tag
+OK: fails on room with two tags
+OK: fails on tag text disagrees with its name
+OK: fails on second focal element
+OK: fails on transform moves a box
+OK: fails on style positions a box
+OK: fails on room tag on another room
+OK: fails on building tag on another roof
+OK: fails on box floating off the plate
+OK: fails on silhouette missing
+OK: scientific path spelling, signed=False
+OK: scientific path spelling, signed=True
+OK: usage error exits 2
+
+OK: verify-axonometric-plan passes 15 shipped files and fails all 18 mutations

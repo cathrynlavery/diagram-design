@@ -1,0 +1,71 @@
+OK: shipped example-exploded-ai-stack-animated.html passes
+OK: shipped example-exploded-ai-stack-dark.html passes
+OK: shipped example-exploded-ai-stack-full.html passes
+OK: shipped example-exploded-ai-stack.html passes
+OK: shipped example-exploded-dark.html passes
+OK: shipped example-exploded-full.html passes
+OK: shipped example-exploded-keyboard-animated.html passes
+OK: shipped example-exploded-keyboard-dark.html passes
+OK: shipped example-exploded-keyboard-full.html passes
+OK: shipped example-exploded-keyboard.html passes
+OK: shipped example-exploded-phone-animated.html passes
+OK: shipped example-exploded-phone-dark.html passes
+OK: shipped example-exploded-phone-full.html passes
+OK: shipped example-exploded-phone.html passes
+OK: shipped example-exploded-unboxing-animated.html passes
+OK: shipped example-exploded-unboxing-dark.html passes
+OK: shipped example-exploded-unboxing-full.html passes
+OK: shipped example-exploded-unboxing.html passes
+OK: shipped example-exploded.html passes
+OK: --all passes on the shipped set
+OK: styled span retains the declared name
+OK: mixed nested span text retains the declared name
+OK: undrawn title and desc retains the declared name
+OK: fails on duplicate path data follows browser first value
+OK: fails on ordinary start tag keeps first duplicate path data
+OK: fails on silhouette vertex moved
+OK: fails on corner arc off the 2:1 ellipse
+OK: fails on corner arc sweeps the wrong way
+OK: fails on transform moves a part
+OK: fails on transform on a silhouette
+OK: fails on duplicate label for one part
+OK: fails on silhouette missing
+OK: fails on unequal gap
+OK: fails on bottom level lifted
+OK: fails on one level split across two heights
+OK: fails on gap under the floor
+OK: fails on leader crosses another part
+OK: fails on labels crowd
+OK: fails on second focal part
+OK: fails on three-word label
+OK: fails on slanted leader
+OK: fails on leader off the right extreme
+OK: fails on label out of the column
+OK: fails on label without a name
+OK: fails on trace line leans
+OK: fails on trace line solid
+OK: fails on animated lift disagrees with geometry
+OK: fails on static part positioned by style
+OK: fails on css transform on a silhouette
+OK: fails on comment-prefixed css transform on a silhouette
+OK: quoted transform text is not a declaration
+OK: CSS declaration moves=True: \74 ransform:translate(4px)
+OK: CSS declaration moves=True: tr\000061nsform:translate(4px)
+OK: CSS declaration moves=True: translate:4px 0
+OK: CSS declaration moves=True: rotate:3deg
+OK: CSS declaration moves=True: scale:1.1
+OK: CSS declaration moves=False: --note:{transform:translate(999px)}
+OK: CSS declaration moves=False: --note:{a:1; transform:translate(999px)}; fill:red
+OK: CSS declaration moves=True: --note:{transform:none}; rotate:3deg
+OK: CSS declaration moves=False: --note:func(transform:translate(999px)); fill:red
+OK: scientific path spelling, signed=False
+OK: scientific path spelling, signed=True
+OK: malformed, non-finite, or unsupported path is rejected
+OK: malformed, non-finite, or unsupported path is rejected
+OK: malformed, non-finite, or unsupported path is rejected
+OK: malformed, non-finite, or unsupported path is rejected
+OK: malformed, non-finite, or unsupported path is rejected
+OK: invalid numeric arc-flag spelling is rejected by public verifier
+OK: usage error exits 2
+
+OK: verify-exploded passes 19 shipped files and fails all 27 mutations

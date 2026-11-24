@@ -1,0 +1,14 @@
+OK: expected scripts pass when all are present
+OK: missing expected script fails
+OK: routing surfaces pass when all are wired
+OK: routing mismatch fails
+OK: common path check returns non-fail in normal repository roots
+Traceback (most recent call last):
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-verify-doctor.py", line 409, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\PC PRO MAX\diagram-design\scripts\test-verify-doctor.py", line 170, in main
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: healthy installed skill outside the maintainer repository did not pass: CheckResult(name='Common path mistakes', status='warn', message='Path contains spaces on Windows; unquoted shell examples can fail for import/export commands.', fix='Use quoted paths, e.g. "C:/path with spaces/diagram.html".')

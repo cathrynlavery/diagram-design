@@ -1,0 +1,90 @@
+ok    shipped example-git-graph.html exists
+ok    shipped example-git-graph.html is clean
+ok    shipped example-git-graph-dark.html exists
+ok    shipped example-git-graph-dark.html is clean
+ok    shipped example-git-graph-full.html exists
+ok    shipped example-git-graph-full.html is clean
+ok    an honest synthetic git graph passes
+ok    empty columns on a shared pitch pass
+ok    quoted CSS data that looks like transform is not a declaration
+ok    single-quoted CSS data that looks like transform is not a declaration
+ok    a live transform in a <style> rule is a finding
+ok    a live transform after a quoted string is still a finding
+ok    a layout-only width/height rule passes
+ok    a <style> rule that moves marks inside <!-- --> is still refused
+ok    a merge with one parent is a finding
+ok    a merge elbow that passes through an unrelated commit is a finding
+ok    a connector going backwards is a finding
+ok    a branch that runs along the parent lane is a finding
+ok    a branch collinear with the parent lane is a finding
+ok    a merge that runs along the destination lane is a finding
+ok    a merge collinear with the destination lane is a finding
+ok    a commit off its lane is a finding
+ok    a commit off the shared pitch is a finding
+ok    a tag attached to a missing commit is a finding
+ok    three coral commits are a finding
+ok    three coral commits via style fill are a finding
+ok    three coral commits via inherited fill are a finding
+ok    overlapping lanes are a finding
+ok    a fifth lane at the 140px pitch falls off the 720px canvas
+ok    five lanes at the 96px pitch stay on the 720px canvas
+ok    a transform on a commit is a finding
+ok    a bound commit with style="display:none" is a finding
+ok    a bound commit with display="none" is a finding
+ok    a bound commit with visibility="hidden" is a finding
+ok    a bound commit with opacity="0" is a finding
+ok    a connector with stroke="none" is a finding
+ok    a connector with stroke="transparent" is a finding
+ok    a connector with stroke="rgba(0,0,0,0)" is a finding
+ok    a connector with style="stroke:none" is a finding
+ok    a connector with stroke-width="0" is a finding
+ok    a connector with style="stroke-width:0px" is a finding
+ok    a connector with no stroke anywhere is a finding
+ok    a connector inheriting stroke-width 0 from its group is a finding
+ok    a connector inheriting its stroke from a group passes
+ok    a connector in a visible-stroke group nested in a stroke:none group passes
+ok    a connector in a positive stroke-width group nested in a zero-width group passes
+ok    a connector in a stroke:none group nested in a visible-stroke group is a finding
+ok    an inline stroke:none outranks a visible stroke attribute
+ok    shipped example contains expected c2 circle
+ok    shipped c2 circle changed to fill="none" is a finding
+ok    a commit with fill='none' and no stroke is a finding
+ok    a commit with fill='transparent' and no stroke is a finding
+ok    a commit with fill='rgba(0,0,0,0)' and no stroke is a finding
+ok    an inline style fill:none outranks a visible fill attribute
+ok    a commit inheriting fill="none" from an enclosing <g fill="none"> is a finding
+ok    a commit in a fill="none" group nested in a visible-fill group is a finding
+ok    a commit in a visible-fill group nested in a fill="none" group passes
+ok    a commit with unset fill and no enclosing fill uses SVG default black and passes
+ok    a commit with fill="none" and a visible stroke passes
+ok    a commit with fill="none" inheriting a visible stroke from a group passes
+ok    a commit with fill="none" and stroke="none" is a finding
+ok    a commit with fill="none" and stroke="transparent" is a finding
+ok    a commit with fill="none" and stroke="#2d3142" stroke-width="0" is a finding
+ok    a commit with fill="none" and stroke="#2d3142" style="stroke-width:0px" is a finding
+ok    a commit with fill="none" and stroke inheriting stroke-width 0 is a finding
+ok    a <style> rule that hides a bound commit is a finding
+ok    a hiding rule aimed at page chrome passes
+ok    a second moveto is not a continuous connector
+ok    an unsupported path command is not dropped
+ok    a branch that leaves its route after the first turn is a finding
+ok    a branch that turns more than once is a finding
+ok    a later diagonal segment is a finding
+ok    two commits on the same lane and column are a finding
+ok    a feature merge and a release branch sharing a vertical are a finding
+ok    three commits is fail-closed
+ok    one lane is fail-closed
+ok    no merge commit is fail-closed
+ok    a timeline is not a git graph
+ok    data-value on a <circle> never claims a file — the beeswarm contract
+ok    no shipped git-graph file declares data-value on a circle, data-q1, data-span, data-series, data-ranks or data-size, so no sibling verifier claims one
+ok    verify-arc-diagram.py skips all three shipped git-graph files
+ok    verify-beeswarm.py skips all three shipped git-graph files
+ok    verify-box-plot.py skips all three shipped git-graph files
+ok    verify-bubble.py skips all three shipped git-graph files
+ok    verify-slopegraph.py skips all three shipped git-graph files
+ok    verify-bump.py skips all three shipped git-graph files
+ok    a pre-existing file sharing a fixture name is never touched
+ok    fixtures are written outside the repository
+
+OK git-graph checker: 88 case(s), both polarities

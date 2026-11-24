@@ -1,0 +1,56 @@
+OK: all-zero data yields a non-degenerate domain
+OK: all-zero data produces finite coordinates
+OK: all-zero data puts every dot on the floor, which is the truth
+OK: finite extreme values resolve finite axis bounds
+OK: finite extreme values scale without overflow
+OK: extreme values remain inside the plot
+OK: finite extreme values resolve finite axis bounds
+OK: finite extreme values scale without overflow
+OK: extreme values remain inside the plot
+OK: finite extreme values resolve finite axis bounds
+OK: finite extreme values scale without overflow
+OK: extreme values remain inside the plot
+OK: opposite extreme endpoints retain the whole plot width
+OK: positive data touching zero anchors the floor at zero
+OK: negative data touching zero anchors the ceiling at zero
+OK: zero-touching positive scales finitely
+OK: zero-touching negative scales finitely
+OK: all-positive data anchors the floor at zero
+OK: all-negative data anchors the ceiling at zero
+OK: data crossing zero brackets both sides
+OK: a pair of identical non-zero values still scales
+OK: sub-unit magnitudes still yield a usable domain
+OK: small values [4e-13, 9e-13] remain inside the outward-rounded domain
+OK: small values [4e-13, 9e-13] map inside the prescribed plot
+OK: small values [-9e-13, -4e-13] remain inside the outward-rounded domain
+OK: small values [-9e-13, -4e-13] map inside the prescribed plot
+OK: small values [-4e-13, 9e-13] remain inside the outward-rounded domain
+OK: small values [-4e-13, 9e-13] map inside the prescribed plot
+OK: small values [0, 9e-13] remain inside the outward-rounded domain
+OK: small values [0, 9e-13] map inside the prescribed plot
+OK: small values [-9e-13, 0] remain inside the outward-rounded domain
+OK: small values [-9e-13, 0] map inside the prescribed plot
+OK: small values [4e-100, 9e-100] remain inside the outward-rounded domain
+OK: small values [4e-100, 9e-100] map inside the prescribed plot
+OK: small values [1e-13, 1e-13] remain inside the outward-rounded domain
+OK: small values [1e-13, 1e-13] map inside the prescribed plot
+OK: small positive data chooses the first enclosing ladder magnitude
+OK: empty input is rejected
+OK: NaN in input is rejected
+OK: infinity in input is rejected
+OK: bounds taken from the observed extremes are reported as truncation
+OK: correctly resolved bounds are NOT reported as truncation
+OK: a doubled data gap draws exactly twice as wide
+OK: connector (light) clears 3:1 (3.194:1)
+OK: connector (dark) clears 3:1 (3.237:1)
+OK: solid endpoint stroke (light) clears 3:1 (11.820:1)
+OK: solid endpoint stroke (dark) clears 3:1 (11.820:1)
+OK: the original 25%% hairline connector is correctly under 3:1
+OK: the retired accent #eb6c36 is correctly under 3:1 on light paper
+OK: the retired soft #7a8399 is correctly under 4.5:1 and unusable for text
+OK: a reference with no dumbbell section is a finding, not a pass
+OK: a dumbbell section missing the connector tokens is a finding
+OK: a missing reference file is a finding, not a pass
+OK: the shipped reference documents every token the checker verifies
+
+All dumbbell checker tests passed

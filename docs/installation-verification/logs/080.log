@@ -1,0 +1,79 @@
+OK: the shipped ridgeline passes
+OK: a ridge drawn on its own amplitude is rejected
+OK: a baseline nudged off the stack's pitch is rejected
+OK: a baseline rule drawn off its ridge's row is rejected
+OK: a ridge with no drawn baseline is rejected
+OK: a spline between two bins is rejected
+OK: a ridge drawn with relative path commands is rejected
+OK: lowercase z is accepted (it is not a relative command)
+OK: a coordinate in scientific notation is accepted
+OK: a falsified coordinate written in scientific notation is rejected
+OK: a path using implicit command repetition is rejected
+OK: a distribution clipped mid-mass is rejected
+OK: a vertex drawn below its own baseline is rejected
+OK: a ridge declaring a negative bin is rejected
+OK: a ridge sampled on its own x positions is rejected
+OK: a name label drawn on a neighbour's row is rejected
+OK: a name label reading a different name than it binds is rejected
+OK: a ridge with no range label is rejected
+OK: a printed range wider than the ridge's nonzero bins is rejected
+OK: a tick whose visible text was edited without its binding is rejected
+OK: a tick drawn off the bins it labels is rejected
+OK: a transform on a ridge outline is rejected
+OK: a ridge wrapped in a transformed group is rejected
+OK: a CSS transform reaching the figure is rejected
+OK: two ridges carrying the accent stroke is rejected
+OK: a focal stroke at non-focal weight is rejected
+OK: a ridge outline with no declared bins is rejected
+OK: a ridge with no declared baseline is rejected
+OK: a bin that is not a number is rejected
+OK: a ridge outline this checker cannot read is rejected
+OK: a ridge with more vertices than bins is rejected
+OK: two outlines declaring the same ridge is rejected
+OK: single-quoted attributes are read
+OK: a falsified bin in single-quoted attributes is rejected
+OK: an ancestor <g> hiding its transform behind a quoted > is rejected
+OK: an ancestor <g> hiding an inline style transform behind a quoted > is rejected
+OK: an honest ridge with a quoted > before its bindings is accepted
+OK: a ridge on its own amplitude with a quoted > before its bindings is rejected
+OK: a name label hiding a transform behind a quoted > is rejected
+OK: an inline style transform on a ridge outline is rejected
+OK: an inline CSS d property replacing a verified outline is rejected
+OK: an inline style transform on a baseline rule is rejected
+OK: an inline translate property on a bound label is rejected
+OK: a vendor-prefixed transform on an ancestor group's inline style is rejected
+OK: an inline text-transform on a bound label is accepted
+OK: a CSS translate declaration in a style block is rejected
+OK: a vendor-prefixed CSS transform declaration in a style block is rejected
+OK: a duplicated style on an ancestor whose first value is honest is accepted
+OK: a duplicated style on an ancestor whose first value moves the ridge is rejected
+OK: a duplicated d whose first value is on a private amplitude is rejected
+OK: a duplicated d whose first value is honest is accepted
+OK: a self-closing <g/> with a transform, which encloses nothing is accepted
+OK: a commented-out ancestor transform is accepted
+OK: an end tag inside a quoted attribute of a bound label is accepted
+OK: a ridge on its own amplitude written with upper-case tag and attribute names is rejected
+OK: a broken attribute quote neither crashes nor passes
+OK: a comment-prefixed inline transform on a ridge outline is rejected
+OK: a comment-prefixed inline transform on a bound label is rejected
+OK: a comment-prefixed inline transform on an ancestor group is rejected
+OK: a <style> rule with a comment before the property is rejected
+OK: a <style> comment that merely mentions transform: is accepted
+OK: a broken-quoted <path data-bins> that is the file's only signal is reported, not skipped
+OK: a commented-out <path data-bins> as the file's only signal is out of scope
+OK: a live <path data-bins> behind a quoted > in a file that names the family nowhere else is rejected
+OK: a ridgeline this checker cannot read is refused
+OK: a valid ridgeline on a different grid passes
+OK: thirteen ridges against a budget of twelve is rejected
+OK: two ridges against a budget floor of three is rejected
+OK: forty-one bins against a budget of forty is rejected
+OK: seven bins against a budget floor of eight is rejected
+OK: a peak reaching past the row two above it is rejected
+OK: verify-slopegraph.py skips the ridgeline examples (scope treaty holds)
+OK: verify-bump.py skips the ridgeline examples (scope treaty holds)
+OK: verify-streamgraph.py skips the ridgeline examples (scope treaty holds)
+OK: verify-ridgeline skips example-slopegraph.html
+OK: verify-ridgeline skips example-bump.html
+OK: verify-ridgeline skips example-streamgraph.html
+
+All ridgeline checker cases passed.

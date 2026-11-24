@@ -1,0 +1,38 @@
+OK: shipped example-service-blueprint-dark.html passes
+OK: shipped example-service-blueprint-full.html passes
+OK: shipped example-service-blueprint.html passes
+OK: --all passes on the shipped set
+OK: swap two layers: customer and frontstage labels trade places fails by name
+OK: drop the visibility line fails by name
+OK: put the visibility line above the customer row fails by name
+OK: shift one cell off its column fails by name
+OK: drop a backstage cell fails by name
+OK: two focal cells fails by name
+OK: seven stages fails by name
+OK: CSS translate on a cell fails by name
+OK: move one customer cell below the visibility line fails by name
+OK: widen one cell into the next stage fails by name
+OK: transparent visibility line fails by name
+OK: second cell painted with the accent but no data-focal fails by name
+OK: cell label moved by a transform fails by name
+OK: stage header moved by a transform fails by name
+OK: cell label inside a translated group fails by name
+OK: printed text disagrees with data-name fails by name
+OK: cell widened by an inline CSS width fails by name
+OK: cells stretched by a stylesheet height fails by name
+OK: classed cell widened from the stylesheet fails by name
+OK: cell widened by a selector with a quoted space fails by name
+OK: cells widened through :is() fails by name
+OK: cells widened by an attribute selector with a hash in its value fails by name
+OK: HTML-only attribute selector passes
+OK: :is() over HTML-only alternatives passes
+OK: escaped-quote wrapper rule passes
+OK: overlapping columns fail by name
+OK: Japanese two <text> lines pass
+OK: Japanese two <tspan> lines pass
+OK: English two <text> lines still pass
+OK: partial Japanese label fails printed check
+OK: cross-cell split fails printed check (cell-scoped join holds)
+OK: scripts/fixtures/service-blueprint-japanese-two-line.html passes
+OK: single-quoted cell below the line fails by name
+OK service-blueprint verifier: shipped files pass, named mutations fail

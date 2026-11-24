@@ -1,0 +1,216 @@
+ok    selector escape detection for ''
+ok    selector escape detection for '.b\\6fx { fill: red; }'
+ok    selector escape detection for '.box { content: "\\62"; }'
+ok    selector escape detection for '.box { content: "\\62"; } .b\\6fx { fill: red; }'
+ok    selector escape detection for '\\'
+ok    selector escape scan matches the original regex on short inputs
+ok    20,000 declarations scan within 10 seconds
+ok    shipped example-box-plot.html exists
+ok    shipped example-box-plot.html is clean
+ok    shipped example-box-plot-dark.html exists
+ok    shipped example-box-plot-dark.html is clean
+ok    shipped example-box-plot-full.html exists
+ok    shipped example-box-plot-full.html is clean
+ok    an honest synthetic box plot passes
+ok    a median drawn off q2 is one finding
+ok    a box whose right edge is not q3 is a finding
+ok    a low whisker that misses wlo is one finding
+ok    an outlier declared inside the whiskers is one finding
+ok    a second accent series is one finding
+ok    q2 greater than q3 is one finding
+ok    a transform on a box is a finding
+ok    an outlier outside the whiskers but inside the Tukey fence is one finding
+ok    a whisker that reaches past the Tukey fence is one finding
+ok    a slanted median whose second end misses q2 is one finding
+ok    a high whisker detached from the box is one finding
+ok    a whisker drawn on another row is one finding
+ok    series wrapped in a plain <g> are all still read
+ok    a wrapped series is not dropped from the checks
+ok    an inline style width on a box is a finding
+ok    a <style> rule sizing rect is one finding
+ok    a <style> rule sizing only the <svg> is not a finding
+ok    a label that names another series is one finding
+ok    a label parked beside another row is one finding
+ok    a series with no bound label is one finding
+ok    a second box with an accent fill rgba(191,69,32,0.12) and muted stroke is one finding
+ok    a second box with an accent fill rgba(240,138,89,0.12) and muted stroke is one finding
+ok    an accent outlier on a muted series is one finding
+ok    a declared outlier with no data-x is one finding
+ok    a tick that prints the wrong number is one finding
+ok    a data-tick=y label is one finding
+ok    two series sharing a name is one finding
+ok    two series is fail-closed
+ok    a missing median is a finding
+ok    a data-outlier circle outside its series group is one finding
+ok    outliers moved into their own layer are one finding
+ok    a :nth-child size rule reaches a box
+ok    a :not() size rule with no typed subject reaches a box
+ok    a backslash escape in a selector is one finding
+ok    a CSS comment hiding a width rule is one finding
+ok    a CSS comment hiding a transform is one finding
+ok    an inline style comment hiding a width is a finding
+ok    a backslash escape in an inline style is a finding
+ok    a stylesheet link other than the font link is one finding
+ok    the Google font stylesheet link is not a finding
+ok    a <set> inside the figure is one finding
+ok    an <animate> inside the figure is one finding
+ok    dx/dy on a bound label is one finding
+ok    a positioned tspan in a bound label is one finding
+ok    an unpositioned tspan in a bound label is not a finding
+ok    a label drawn off the label rail is one finding
+ok    a hidden bound label is one finding
+ok    an inline accent fill on a muted box is one finding
+ok    a class rule painting a muted box with the accent is one finding
+ok    accent fill #bf4520ff on a muted box is one finding
+ok    accent fill rgb(191,69,32) on a muted box is one finding
+ok    an accent fill on the paper underlay is one finding
+ok    an accent stroke on the median is one finding
+ok    a nested svg viewport shifting a series is one finding
+ok    a <use> shifting a series is one finding
+ok    a series stashed in <defs> is a finding
+ok    a series stashed in <defs> after a self-closing <mask/> is a finding
+ok    a drawn copy with no data-q1 is a finding
+ok    a second median off q2 is one finding
+ok    a cap off the whisker end is one finding
+ok    an unbound circle inside a series is one finding
+ok    a paper mask on a bound outlier is not a finding
+ok    a paper mask repainted by an inline style is one finding
+ok    an <animateColor> inside the figure is one finding
+ok    an accent fill inherited from a muted series group is one finding
+ok    an accent path inside a muted series is one finding
+ok    a paper mask inheriting a group stroke is one finding
+ok    a paper mask inheriting a wrapper stroke is one finding
+ok    a hidden tspan inside a bound label is one finding
+ok    a descendant class rule painting a muted series with the accent is one finding
+ok    a polygon class rule painting a muted series with the accent is one finding
+ok    a cap on the whisker end but off its row is one finding
+ok    the parent scatter is not a box plot
+ok    a second box rect in a series is one finding
+ok    a second whisker-hi in a series is one finding
+ok    bound marks wrapped in <defs> inside a visible series are a finding
+ok    a compound class rule does not paint groups carrying only one of its classes
+ok    a compound class rule painting a second series is one finding
+ok    a rect.hot:not(.muted) rule painting a muted box is a finding
+ok    a rect:is(.hot) rule painting a muted box is a finding
+ok    a stroked sibling group does not repaint a paper mask
+ok    a bound outlier with a missing radius is one finding
+ok    a bound outlier with a zero radius is one finding
+ok    a series group's stroke="none" overrides a root stroke on a paper mask
+ok    a root stroke reaching a paper mask with no override is one finding
+ok    a class rule painting stroke:none on a series' rects does not override a root stroke on a paper mask
+ok    stroke="none" on a series overrides a class stroke on an outer group
+ok    a class rule stroking circles under an outer group reaches a paper mask through an inner stroke="none"
+ok    a class rule stroking groups under an outer group reaches a paper mask
+ok    a class selector listed after a type-only one still repaints a paper mask
+ok    a leaf-shape class rule (rect.m) cannot paint a paper mask circle with class m
+ok    a leaf-shape class rule (line.m) cannot paint a paper mask circle with class m
+ok    a type-only rule on a leaf shape (rect) cannot paint a paper mask circle
+ok    a type-only rule on a leaf shape (line) cannot paint a paper mask circle
+ok    a leaf-shape accent rule on the focal series rect leaves a paper mask clean
+ok    an inline var(--color-accent) fill on a muted series is one finding
+ok    a var() chained to the accent through another custom property on a muted series is one finding
+ok    an hsl() spelling of the accent on a muted series is one finding
+ok    an hsla() spelling one rounding step off the accent on a muted series is one finding
+ok    a space-separated hsl() with a turn hue on a muted series is one finding
+ok    an attribute selector on a muted series is one finding
+ok    an id selector on a muted series is one finding
+ok    a descendant attribute selector on a muted series is one finding
+ok    a prefix attribute selector painting var(--color-accent) on a muted series is one finding
+ok    an hsl() spelling of the dark accent on a muted series is one finding
+ok    a type selector painting the accent cannot be held to one series and is a finding
+ok    a series hidden by display="none" on the series group is one finding
+ok    a series hidden by visibility="hidden" on the series group is one finding
+ok    a series hidden by style="display:none" on the series group is one finding
+ok    a series hidden by style="visibility:hidden" on the box is one finding
+ok    a series hidden by opacity="0" on the box is one finding
+ok    a series hidden by display="none" on a wrapper group is one finding
+ok    display=none unquoted on the series group is 1 finding(s)
+ok    visibility=hidden unquoted on the series group is 1 finding(s)
+ok    opacity=0 unquoted on the box is 1 finding(s)
+ok    a boolean hidden on the page element around the svg is 5 finding(s)
+ok    stroke=none unquoted on the median is 1 finding(s)
+ok    display=none unquoted on the bound label is 1 finding(s)
+ok    display:none after a quote in an unquoted style is 1 finding(s)
+ok    display:none after = in an unquoted style is 1 finding(s)
+ok    display=none after a stray quote in an unquoted value is 1 finding(s)
+ok    an unquoted style holding =" on a wrapper around the svg is 5 finding(s)
+ok    an unquoted style holding =' on a wrapper around the svg is 5 finding(s)
+ok    unquoted rx and stroke-width on the box passes
+ok    a quoted value that spells display=none passes
+ok    a boolean data attribute on the series group passes
+ok    one valueless attribute whose name holds a dot passes
+ok    a quoted > inside the series group's aria-label passes
+ok    an unquoted value holding a no-break space passes
+ok    a valueful attribute whose name holds a quote passes
+ok    a bound mark with stroke="none" on the median is one finding
+ok    a bound mark with stroke-width="0" on the median is one finding
+ok    a bound mark with stroke-opacity="0" on the median is one finding
+ok    a bound mark with stroke="none" on whisker-lo is one finding
+ok    a bound mark with stroke="transparent" on whisker-hi is one finding
+ok    a bound mark with stroke-width="0" on a cap is one finding
+ok    a bound mark with style="stroke:none" on the median is one finding
+ok    a bound mark with style="stroke-width:0" on the median is one finding
+ok    a bound mark with fill="none" and stroke="none" on the box is one finding
+ok    a bound mark with style="stroke:transparent" on whisker-lo is one finding
+ok    a bound mark with style="stroke:#2d3142; stroke:none !important" on the median is one finding
+ok    a hollow box with fill=none still stroked passes
+ok    a box with fill-opacity=0 still stroked passes
+ok    a median with no stroke of its own under a stroked series group passes
+ok    a median with a hairline stroke-width=0.5 passes
+ok    a median whose inline style restores a colour over stroke=none passes
+ok    a cap with stroke-opacity=0.25 passes
+ok    a stroke-width in percent, 100% passes
+ok    a width this checker cannot read is held to paint passes
+ok    a median whose !important stroke beats a later stroke:none passes
+ok    a median whose later !important stroke beats stroke:none passes
+ok    a median whose last !important declaration wins passes
+ok    a median whose ! important wins with a space after the bang passes
+ok    a stylesheet rule removing a bound stroke is the other class of the issue, and passes here
+ok    the focal series painted through var(--color-accent) passes
+ok    an attribute selector painting only the focal series passes
+ok    a muted box stroked through var(--color-muted) passes
+ok    a muted hsl() fill passes
+ok    a type selector painting a muted stroke passes
+ok    a series group that states visibility and a nonzero opacity passes
+ok    a stylesheet rule [data-name="Auth"]{display:none} is 1 never-drawn finding(s)
+ok    a stylesheet rule #auth{display:none} on the series id is 1 never-drawn finding(s)
+ok    a stylesheet rule [data-name="Auth"] rect{visibility:hidden} is 1 never-drawn finding(s)
+ok    a stylesheet rule [data-name="Auth"] line{display:none !important} is 1 never-drawn finding(s)
+ok    a stylesheet rule a type-only g{opacity:0} is 5 never-drawn finding(s)
+ok    a stylesheet rule .frame{display:none} on the page element around the svg is 5 never-drawn finding(s)
+ok    a stylesheet rule text[data-name]{display:none} is 5 hidden-label finding(s)
+ok    a stylesheet rule [data-name="Auth"] text{visibility:hidden} is 1 hidden-label finding(s)
+ok    a stylesheet rule text[data-name="Auth"]{opacity:0} is 1 hidden-label finding(s)
+ok    a stylesheet rule text[data-name="Auth"]{fill-opacity:0} is 1 hidden-label finding(s)
+ok    a stylesheet rule .tag{display:none} on a group around the label is 1 hidden-label finding(s)
+ok    a stylesheet rule .tag{fill-opacity:0} on a group around the label is 1 hidden-label finding(s)
+ok    a stylesheet rule fill-opacity="0" on a group around the label is 1 hidden-label finding(s)
+ok    a stylesheet rule g[data-q1]{fill-opacity:0} on every series is 5 hidden-label finding(s)
+ok    a stylesheet rule svg{fill-opacity:0} on the page is 5 hidden-label finding(s)
+ok    a stylesheet rule .n{display:none} on the label's tspan is 1 hidden-label finding(s)
+ok    a stylesheet rule .outer .inner{display:none} on a nested tspan is 1 hidden-label finding(s)
+ok    a rule .inner .outer{display:none} on nested tspans with no .inner around the .outer matches nothing and passes
+ok    a label rule that only paints passes
+ok    a label rule with a nonzero opacity passes
+ok    a hollow box (fill-opacity:0 still draws its stroke) passes
+ok    a hiding rule on a class used only outside the svg passes
+ok    a type-only hiding rule no chart element can match passes
+ok    a rule body .frame{display:none} (a real ancestor) is 5 finding(s)
+ok    a rule svg > g[data-name="Auth"]{display:none} (its real parent) is 1 finding(s)
+ok    a rule .frame rect painting the accent (an ancestor outside the svg) is 1 finding(s)
+ok    a rule [role="img"] [data-name="Auth"] rect painting the accent is 1 finding(s)
+ok    a rule .frame .frame{display:none} (no .frame around the .frame) matches nothing and passes
+ok    a rule g g[data-name="Auth"]{display:none} (no <g> around Auth) matches nothing and passes
+ok    a rule [data-name="Auth"] [data-name="Auth"] rect painting the accent matches nothing and passes
+ok    a rule g [data-name="Auth"] rect painting the accent (no <g> around Auth) matches nothing and passes
+ok    data-value on a <circle> never claims a file — the beeswarm contract
+ok    no shipped box-plot file declares data-value on a circle, data-series, data-ranks or data-size, so no sibling verifier claims one
+ok    verify-slopegraph.py skips all three shipped box-plot files
+ok    verify-bump.py skips all three shipped box-plot files
+ok    verify-bubble.py skips all three shipped box-plot files
+ok    verify-beeswarm.py skips all three shipped box-plot files
+ok    verify-git-graph.py skips all three shipped box-plot files
+ok    a pre-existing file sharing a fixture name is never touched
+ok    fixtures are written outside the repository
+
+OK box-plot checker: 214 case(s), both polarities

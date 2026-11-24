@@ -1,0 +1,11 @@
+Could not launch a browser: BrowserType.launch: Executable doesn't exist at C:\Users\PC PRO MAX\AppData\Local\ms-playwright\chromium_headless_shell-1234\chrome-headless-shell-win64\chrome-headless-shell.exe
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     playwright install                                     ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+  playwright install chromium
+  (or set DIAGRAM_LINT_BROWSER_CHANNEL=chrome to use a system Chrome)

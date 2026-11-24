@@ -1,0 +1,39 @@
+OK: Unicode state identifiers keep their colon-form descriptions
+OK: Unicode ER entity blocks and relationships keep identifiers, fields and endpoints
+OK: standalone ER entity declarations, including Unicode names, become tables
+OK: ER entity aliases and quoted names keep labels, attributes and endpoints
+OK: ER cardinality word aliases, dotted links and spaced symbols keep their ends
+OK: bare states retain shapes and exclude multiline state note bodies
+OK: all Mermaid import artifacts present
+OK: flowchart parses: shapes, subgraphs, labels, cycle, budgets, tables
+OK: bidirectional flowchart analysis preserves both directions
+OK: node declarations update shapes while bare references preserve them
+OK: invisible ~~~ links declare their nodes without becoming edges
+OK: invisible links keep x/o endpoint identity in solid, thick, dotted and repeated chains
+OK: pipe labels may follow whitespace after the link operator
+OK: hyphenated flowchart node ids stay whole; only real link operators split them
+OK: flowchart statements after the header semicolon are retained
+OK: flowchart apostrophes stay label text; @{ } attributes keep YAML quotes
+OK: Mermaid edge IDs and edge property statements are ignored
+OK: edge IDs cover circle/cross operators without changing literal labels or titles
+OK: Mermaid decimal/named entity labels decode once in nodes and edges
+OK: documented shape families and edge forms normalize
+OK: frontmatter and %%{init}%% are skipped and counted, and an unterminated block still fails specifically
+OK: outer code fences keep Mermaid samples literal and preserve live block order
+OK: Markdown selection plus sequence, state, and ER grammars parse
+OK: multiple state descriptions retain source order and ordinary transitions
+OK: named composite states retain aliases, child membership and transitions
+OK: the older stateDiagram header reads the same as stateDiagram-v2
+OK: --diagram selects a block before parsing it; selected bad blocks still fail
+OK: UTF-8 BOM does not prevent Mermaid or Markdown import
+OK: Mermaid stdout stays lossless UTF-8 under a legacy Windows encoding
+OK: quoted participants, create, and the full sequence arrow vocabulary parse
+OK: sequence highlight blocks preserve semantic fragment regions and depth
+OK: digest lists the else/and/option regions of sequence fragments
+OK: sequence autonumber directives are kept with their start and step
+OK: adversarial labels stay inert; nesting, chains, fan-out, discards work
+OK: all documented exit-2 paths and resource caps fire specifically
+OK: quadrantChart parses, refuses named failures, and keeps docs in sync
+OK: reference, SKILL.md, command, prompt, and example stay in sync
+
+All Mermaid import gates passed.

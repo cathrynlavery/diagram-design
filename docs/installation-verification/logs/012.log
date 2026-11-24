@@ -1,0 +1,16 @@
+OK: shipped SKILL.md / semantic-patterns.md / animation.md pass verify_markdown
+OK: shipped policy-trace example passes verify_example
+OK: missing semantic-pattern router link is rejected
+OK: missing semantic-pattern name is rejected
+OK: missing lifecycle phase-map route is rejected
+OK: SKILL.md passes at 40000 LF-normalized bytes and is rejected at 40001, with LF, CRLF, and mixed line endings alike
+OK: .gitattributes must pin SKILL.md to LF, as git resolves it
+OK: semantic-patterns.md must state the enforced visual-type count
+OK: ADR 0002 must record the enforced visual-type count, in date order, with readable amendment titles
+OK: duplicate HTML/SVG id in the animated example is rejected
+OK: decorative icon
+OK: only decorative SVG
+OK: extra accessible icon
+OK: late outer description
+OK: missing outer description
+All semantic-motion verifier tests passed.

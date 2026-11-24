@@ -1,0 +1,71 @@
+OK: shipped_treemap_variants_pass
+OK: shipped_assets_pass
+OK: all_run_reports_a_nonzero_claim_count
+OK: light explicit fill-opacity ramp passes
+OK: dark explicit fill-opacity ramp passes
+OK: presentation opacity measures 0.1
+OK: presentation opacity measures 0.25
+OK: explicit opacity that breaks rank order is rejected
+OK: single_quoted_ramp_attributes_pass
+OK: browser_valid_color_is_measured[#2d314280]
+OK: browser_valid_color_is_measured[#abc8]
+OK: browser_valid_color_is_measured[rgb(45 49 66 / 16%)]
+OK: browser_valid_color_is_measured[rgb(17.647% 19.216% 25.882% / .16)]
+OK: space_separated_rgb_ramp_passes
+OK: dark_ramp_called_darker_is_larger_fails
+OK: light_ramp_called_darker_is_larger_passes
+OK: light_ramp_called_lighter_is_larger_fails
+OK: dark_ramp_called_lighter_is_larger_passes
+OK: contrast_wording_fails_when_the_light_ramp_is_inverted
+OK: contrast_wording_fails_when_the_dark_ramp_is_inverted
+OK: flat_ramp_with_a_claim_fails_closed
+OK: tied_ranks_with_a_claim_fail_closed
+OK: claim_without_a_ramp_fails_closed
+OK: claim_without_paper_fails_closed
+OK: file_without_a_tone_claim_passes
+OK: claim_split_across_tspans_is_still_read
+OK: rank_declared_on_the_mask_rect_still_joins_the_ramp
+OK: unparseable_directional_wording_fails_closed[comma_correlative]
+OK: unparseable_directional_wording_fails_closed[passive_voice]
+OK: darker_represents_larger_passes_on_light_and_fails_on_dark[light]
+OK: darker_represents_larger_passes_on_light_and_fails_on_dark[dark]
+OK: bound_claim_does_not_excuse_unparsed_wording_beside_it
+OK: first_duplicate_rank_matches_browser_semantics
+OK: tone_word_far_from_magnitude_word_is_not_a_claim
+OK: missing_file_is_a_usage_error
+OK: no_arguments_is_a_usage_error
+OK: accent_cell_is_excluded_from_the_ramp
+OK: dark_ink_on_light_paper_darkens_as_opacity_rises
+OK: white_ink_on_dark_paper_lightens_as_opacity_rises
+OK: shipped_wording_binds_as_a_contrast_claim
+OK: unreadable light fill-opacity=oops is reported
+OK: unreadable light fill-opacity=nan is reported
+OK: unreadable light fill-opacity=inf is reported
+OK: unreadable light opacity=oops is reported
+OK: unreadable light opacity=nan is reported
+OK: unreadable light opacity=inf is reported
+OK: unreadable dark fill-opacity=oops is reported
+OK: unreadable dark fill-opacity=nan is reported
+OK: unreadable dark fill-opacity=inf is reported
+OK: unreadable dark opacity=oops is reported
+OK: unreadable dark opacity=nan is reported
+OK: unreadable dark opacity=inf is reported
+OK: transparent largest light fill-opacity=0 remains a ramp member
+OK: transparent largest light fill-opacity=-0.25 remains a ramp member
+OK: transparent largest light opacity=0 remains a ramp member
+OK: transparent largest light opacity=-0.25 remains a ramp member
+OK: valid zero-alpha smallest light member passes
+OK: transparent largest dark fill-opacity=0 remains a ramp member
+OK: transparent largest dark fill-opacity=-0.25 remains a ramp member
+OK: transparent largest dark opacity=0 remains a ramp member
+OK: transparent largest dark opacity=-0.25 remains a ramp member
+OK: valid zero-alpha smallest dark member passes
+OK: archived HTML comment is not a visible claim
+OK: inline comment preserves adjacent visible text
+OK: incorrect visible claim remains rejected across an inline comment
+OK: unparsed visible claim remains rejected beside an archived comment
+OK: archived-inline-correct preserves complete visible copy
+OK: archived-inline-wrong preserves complete visible copy
+OK: archived-inline-unparsed preserves complete visible copy
+
+OK verify-skin-polarity: both polarities behave, on both skins

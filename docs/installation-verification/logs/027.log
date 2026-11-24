@@ -1,0 +1,8 @@
+OK: type-sequence.md fragments + async + budget present
+OK: cold-cache sequence trio intact (no ALT tab)
+OK: oauth trio has ALT two-region structure + async open + dashed returns
+Summary: 3 file(s) checked, 0 skipped, 0 finding(s).
+OK: lint-skin.py clean on oauth examples
+Summary: 243 file(s) checked, 20 skipped, 0 finding(s).
+OK: lint-skin.py --all --baseline green
+ALL GATES PASSED

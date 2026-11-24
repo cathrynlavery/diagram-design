@@ -1,0 +1,1 @@
+PASS: README thumbnails reject source, digest, decode, dimensions, orphan, manifest, and wiring drift without writing in --check mode
