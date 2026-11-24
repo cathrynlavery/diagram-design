@@ -328,6 +328,22 @@ The helper's overflow release matters for the wide presets. `min-width` equals t
 
 `example-architecture.html` → `example-architecture.png`, written next to the source. Honour explicit user-provided paths. The rasterizer encodes the absolute source path as a file URI, so literal `#` and `%` characters in filenames remain filename content.
 
+## PDF export procedure
+
+Render the original HTML with Playwright Chromium into a single-page vector `.pdf` so text stays selectable and lines stay sharp at any zoom level. Reuses the same Playwright detection rule above — never auto-install Playwright.
+
+Invoke the packaged helper by its absolute path under the resolved skill directory:
+
+```
+python3 <skill-dir>/scripts/export_pdf.py <src.html> [<out.pdf>] [--page-size a4|a3|letter] [--full-page]
+```
+
+- **Default (exact viewBox bounds, diagram-only):** Requests `?motion=static`, awaits `document.fonts.ready` (with the same 15 s `networkidle` timeout and `window.stop()` stalled-webfont fallback warning as `export_png.py`), verifies `[data-motion-root]` is `data-frame="static"`, keeps screen media colors with `print_background=True` so dark skins retain their palette, isolates the first top-level `<svg>` at 1 CSS px per viewBox unit, and writes a zero-margin single-page vector PDF.
+- **`--page-size a4|a3|letter`:** Switches to print media and fits the diagram cleanly onto a landscape A4, A3, or US Letter sheet with 10 mm margins.
+- **`--full-page`:** Retains the editorial header, summary cards, and footer from `-full` variants while removing motion controls and decorative overlays.
+- **Refusals (exit 2):** Refuses missing files, gallery `assets/index.html`, files without an `<svg>`, and root `<svg>` elements lacking a nonzero finite `viewBox`.
+- **Defaults & mutual exclusion:** `/diagram-design:export-diagram` with no format flags continues to emit `.svg` + `.png` only. Pass `--pdf` to also emit `.pdf`, or `--pdf-only` to emit only `.pdf` (`--svg-only`, `--png-only`, and `--pdf-only` are mutually exclusive).
+
 ## Sizing the export
 
 The PNG's pixel dimensions are the SVG's `viewBox` × `device_scale_factor`. The rasterizer establishes the capture viewport from the finite, nonzero viewBox dimensions so page CSS cannot enlarge or shrink the promised output. So the size decision was already made when the diagram was drawn — see [`output-spec.md` §2](output-spec.md) for the presets. Export only picks the multiplier.

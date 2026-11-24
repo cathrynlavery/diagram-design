@@ -1,6 +1,6 @@
 ---
 name: diagram-design
-description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, steps, timeline, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, unit grid, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm, box plot), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph (arc diagram), UML class, story map, database schema, SBGN, requirement traceability, event modeling, or schedule network diagrams as HTML/SVG/PNG, with .drawio, Mermaid, .excalidraw, and PlantUML import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
+description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, steps, timeline, git graph, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, unit grid, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm, box plot), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph (arc diagram), UML class, story map, database schema, SBGN, requirement traceability, event modeling, or schedule network diagrams as HTML/SVG/PNG, with .drawio, Mermaid, .excalidraw, and PlantUML import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
 license: MIT
 metadata:
   version: "2.6"
@@ -10,7 +10,7 @@ metadata:
 
 Create diagrams as self-contained HTML files with inline SVG and an editorial design system.
 
-Fifty visual types. Semantic patterns describe behavior; type references describe layout.
+Fifty-two visual types. Semantic patterns describe behavior; type references describe layout.
 
 ---
 
@@ -49,7 +49,7 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 51 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 52 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
 
@@ -80,7 +80,7 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
-### Visual-type guide (51)
+### Visual-type guide (52)
 
 | If you're showing… | Use | Reference |
 |---|---|---|
@@ -93,6 +93,7 @@ The pattern owns semantic primitives and its tighter budget; the type owns layou
 | Entities + fields + relationships | **ER / data model** | [type-er.md](references/type-er.md) |
 | A short ordered method with numbered stages, icons, and brief explanations | **Steps** | [type-steps.md](references/type-steps.md) |
 | Events positioned in time | **Timeline** | [type-timeline.md](references/type-timeline.md) |
+| Branching models, release and hotfix flows, backports, rebase vs merge | **Git graph** | [type-git-graph.md](references/type-git-graph.md) |
 | Cross-functional process with handoffs | **Swimlane** | [type-swimlane.md](references/type-swimlane.md) |
 | Two-axis positioning / prioritization | **Quadrant** | [type-quadrant.md](references/type-quadrant.md) |
 | Multiple entities scored across 3–5 quantitative criteria | **Radar / Spider** | [type-radar.md](references/type-radar.md) |
@@ -378,8 +379,8 @@ Every diagram is an accessible figure by default (long form: [primitives-core.md
 5. `<desc>` is one sentence about the content, not the geometry.
 6. Decorative-only SVG, such as the glyphs in `assets/icons.html`, carries `aria-hidden="true"` instead.
 
-### Exporting to PNG / SVG
+### Exporting to PNG / SVG / PDF
 
-When the user asks to export, save, rasterize, or convert a generated diagram to `.png` or `.svg`, load [`references/export.md`](references/export.md) and follow the procedure there. Run the packaged helpers `scripts/export_svg.py` and `scripts/export_png.py`; the reference owns their arguments and availability checks. Both formats deliver the diagram only (the `<svg>` node) — editorial wrappers like cards and headers are dropped by design. Export is **manual** — never produce export files unprompted. The scratch preview from the render-and-look step (§10) is not an export: it stays in a temporary folder.
+When the user asks to export, save, rasterize, or convert a generated diagram to `.png`, `.svg`, or `.pdf`, load [`references/export.md`](references/export.md) and follow the procedure there. Run the packaged helpers `scripts/export_svg.py`, `scripts/export_png.py`, and `scripts/export_pdf.py`; the reference owns their arguments and availability checks. All three formats deliver the diagram only (the `<svg>` node) by default — editorial wrappers like cards and headers are dropped unless `--full-page` is requested for PDF. Export is **manual** — never produce export files unprompted. The scratch preview from the render-and-look step (§10) is not an export: it stays in a temporary folder.
 
 For an imported diagram, pixel dimensions come from the `viewBox` × scale factor, so its size decision belongs to §11, not to export. For any diagram that needs an exact frame (an OG card or a slide image), see [`export.md` § Sizing the export](references/export.md).

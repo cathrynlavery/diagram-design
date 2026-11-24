@@ -20,6 +20,7 @@ Infer choices that are clear from the request (for example, "for my deck" implie
 | `html` | self-contained `.html` (default) | header, diagram, summary cards, footer, live fonts | nothing |
 | `svg` | `.svg` next to the source | the `<svg>` node, vector text | editorial wrapper; fonts substitute in offline tools |
 | `png` | `.png` at `device_scale_factor` | pixels exactly as the browser renders them | vector editability |
+| `pdf` | `.pdf` vector document (`export_pdf.py`) | crisp vector paths, selectable text, dark/light background | live animation controls |
 | `html+png` | both | — | — |
 
 Always generate the HTML first — `svg` and `png` are produced *from* it via [`export.md`](export.md). Never hand-author an SVG file directly; the HTML is the source of truth and the only artifact the taste gate (SKILL.md §9) is written against.
