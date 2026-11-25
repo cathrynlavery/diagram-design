@@ -97,6 +97,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -138,7 +139,7 @@ CSS_MOVES_MARK_RE = re.compile(
 # is exactly what a broken quote defeats (see declares_series). Scoped to a
 # <line> start tag: `data-series` on a <path> is the bump chart's vocabulary.
 DECLARES_SERIES_RE = re.compile(r"<line\b[^>]*\bdata-series\s*=", re.IGNORECASE)
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 # The COMPLETE numeric token an author may print: sign, comma-grouped thousands,
 # decimals, leading-dot decimals, exponents. Matching only `-?\d+(\.\d+)?` read
 # "1e3" as 1 and "512,000" as 512, so a mangled label agreed with its metadata.
@@ -281,7 +282,7 @@ def first_wins(attrs) -> dict:
     return seen
 
 
-class _Scanner(HTMLParser):
+class _Scanner(TokenizerComments, HTMLParser):
     """Collect lines, texts, title/desc and style elements with ancestry.
 
     HTMLParser already lowercases tag and attribute names, tolerates unquoted

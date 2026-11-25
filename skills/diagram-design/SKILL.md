@@ -167,6 +167,7 @@ These mark "AI slop" schematics of any type:
 | Shadow on any element | Shadows are out. Borders are in. |
 | `rounded-2xl` on boxes | Max radius 6–10px or none |
 | Coral on every "important" node | Coral is 1–2 editorial accents, not a signaling system |
+| Hidden-by-default disclosure (hover or `:target` panels) | The default, no-interaction frame must carry every fact; PNG export, print, and embeds capture only that frame (nested `<title>` excepted — see [animation.md](references/animation.md)) |
 | Reproducing Mermaid's renderer layout | Imports automatic spacing and routing instead of making an editorial layout |
 | Any breach of the six §6 connector rules | Automatic fail: diagonal slants, labels touching their stroke, masks clipped by a later node, overlapping paths, shared attach points, transit behind a non-endpoint box |
 
@@ -379,8 +380,8 @@ Every diagram is an accessible figure by default (long form: [primitives-core.md
 5. `<desc>` is one sentence about the content, not the geometry.
 6. Decorative-only SVG, such as the glyphs in `assets/icons.html`, carries `aria-hidden="true"` instead.
 
-### Exporting to PNG / SVG
+### Exporting to PNG / SVG / PDF
 
-When the user asks to export, save, rasterize, or convert a generated diagram to `.png` or `.svg`, load [`references/export.md`](references/export.md) and follow the procedure there. Run the packaged helpers `scripts/export_svg.py` and `scripts/export_png.py`; the reference owns their arguments and availability checks. Both formats deliver the diagram only (the `<svg>` node) — editorial wrappers like cards and headers are dropped by design. Export is **manual** — never produce export files unprompted. The scratch preview from the render-and-look step (§10) is not an export: it stays in a temporary folder.
+When the user asks to export, save, rasterize, or convert a generated diagram to `.png`, `.svg`, or `.pdf`, load [`references/export.md`](references/export.md) and follow the procedure there. Run the packaged helpers `scripts/export_svg.py`, `scripts/export_png.py`, and `scripts/export_pdf.py`; the reference owns their arguments and availability checks. All three formats deliver the diagram only (the `<svg>` node) by default — editorial wrappers like cards and headers are dropped unless `--full-page` is requested for PDF. Export is **manual** — never produce export files unprompted. The scratch preview from the render-and-look step (§10) is not an export: it stays in a temporary folder.
 
 For an imported diagram, pixel dimensions come from the `viewBox` × scale factor, so its size decision belongs to §11, not to export. For any diagram that needs an exact frame (an OG card or a slide image), see [`export.md` § Sizing the export](references/export.md).

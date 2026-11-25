@@ -101,7 +101,7 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
-from css_property_scan import escaped_property_findings
+from css_property_scan import HTML_END_TAG_RE, escaped_property_findings
 
 import argparse
 import colorsys
@@ -109,7 +109,9 @@ import html
 import math
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -133,7 +135,7 @@ TEXT_RE = re.compile(r"<text\b(?P<attrs>" + TAG_BODY + r"*)>(?P<body>.*?)</text>
                      re.IGNORECASE | re.DOTALL)
 G_OPEN_RE = re.compile(r"<g\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 G_CLOSE_RE = re.compile(r"</g\s*>", re.IGNORECASE)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b" + TAG_BODY + r"*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>",
@@ -907,10 +909,11 @@ def stroke_paints(attrs: dict, paints: dict) -> list:
     return values
 
 
-def wears_accent(tag: str, attrs: dict, chain: list, accent_vars: set, rules: list) -> bool:
+def wears_accent(tag: str, attrs: dict, chain: list, accent_vars: set, rules: list,
+                 at=None) -> bool:
     """Accent from the element's own attribute or inline style, or a <style> rule selecting it."""
     return any(is_accent(value, accent_vars) for value in element_paints(attrs, {})) \
-        or css_matches(tag, element_tokens(attrs), chain, rules)
+        or css_matches(tag, element_tokens(attrs), chain, rules, at)
 
 
 def figure_paper(source: str):
@@ -1164,22 +1167,17 @@ def declares_hidden_animation(css: str, keyframes: dict) -> bool:
     return False
 
 
-def animation_selector_rules(source: str, keyframes: dict) -> list:
-    """Parse only top-level animation rules, leaving selector_rules unchanged."""
-    rules = []
-    for match in STYLE_RE.finditer(source):
-        for prelude, body in nested_css_blocks(match.group("body")):
-            if prelude.lstrip().startswith("@") or not declares_hidden_animation(body, keyframes):
-                continue
-            for alternative in prelude.split(","):
-                kinds = [compound_kind(compound) for compound in COMPOUND_RE.findall(alternative)]
-                if not kinds:
-                    continue
-                siblings = re.search(r"[+~]", re.sub(r"\[[^\]]*\]|\([^)]*\)", "", alternative))
-                ancestors = [] if siblings else [
-                    kind for kind in kinds[:-1] if kind != (None, frozenset())]
-                rules.append(kinds[-1] + (ancestors,))
-    return rules
+def animation_selector_rules(source: str, keyframes: dict, document=None) -> list:
+    """Rules retaining a hidden animation endpoint, including nested blocks."""
+    if not keyframes:
+        return []
+    return selector_rules(
+        source,
+        lambda body: declares_hidden_animation(body, keyframes),
+        document,
+        lambda css: ((prelude, body) for prelude, body in nested_css_blocks(css)
+                     if not prelude.lstrip().startswith("@")),
+    )
 
 
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
@@ -1213,36 +1211,250 @@ def compound_kind(compound: str) -> tuple:
             compound_requirement(compound) or frozenset())
 
 
-def selector_rules(source: str, wanted) -> list:
-    """(type, subject tokens, ancestors) for each selector of a rule `wanted` accepts.
+SVG_BREAKOUT_TAGS = {
+    "b", "big", "blockquote", "body", "br", "center", "code", "dd", "div", "dl", "dt",
+    "em", "embed", "h1", "h2", "h3", "h4", "h5", "h6", "head", "hr", "i", "img", "li",
+    "listing", "menu", "meta", "nobr", "ol", "p", "pre", "ruby", "s", "small", "span",
+    "strong", "strike", "sub", "sup", "table", "tt", "u", "ul", "var",
+}
+IMPLIED_HTML_TAGS = {"html", "head", "body", "tbody", "colgroup", "tr", "p", "br"}
+IMPLIED_HTML_ANCESTORS = {"html", "body", "tbody", "tr"}
+
+
+class SelectorDocument(TokenizerComments, HTMLParser):
+    """Element positions, parents and preceding element siblings for CSS matching."""
+
+    def __init__(self, source: str):
+        super().__init__(convert_charrefs=False)
+        self.lines = [0] + [match.end() for match in re.finditer("\n", source)]
+        self.nodes = {}
+        self.svg_scope = set()
+        self.svg_elements = set()
+        self.unreliable_svg = False
+        self.stack = []
+        self.last_child = {}
+        self.feed(source)
+
+    def parse_endtag(self, i):
+        # HTML treats </ followed by anything but an ASCII letter as a bogus
+        # comment. Do not let an older HTMLParser close a real SVG element.
+        if self.cdata_elem is None and not HTML_END_TAG_RE.match(self.rawdata, i):
+            return self.parse_bogus_comment(i)
+        return super().parse_endtag(i)
+
+    def handle_starttag(self, tag, attrs):
+        line, column = self.getpos()
+        at = self.lines[line - 1] + column
+        parent = self.stack[-1] if self.stack else None
+        foreign_content = parent in self.svg_scope and self.nodes[parent][0] not in (
+            "foreignobject", "desc", "title")
+        if foreign_content and (tag in SVG_BREAKOUT_TAGS or (
+                tag == "font" and any(name in ("color", "face", "size") for name, _ in attrs))):
+            self.unreliable_svg = True
+        if tag == "svg":
+            self.svg_elements.add(at)
+        if not self.unreliable_svg and (tag == "svg" or foreign_content):
+            self.svg_scope.add(at)
+        first_attrs = {}
+        for name, value in attrs:
+            first_attrs.setdefault(name, value or "")
+        self.nodes[at] = (tag, element_tokens(first_attrs),
+            parent, self.last_child.get(parent))
+        self.last_child[parent] = at
+        if tag not in VOID_TAGS or at in self.svg_scope:
+            self.stack.append(at)
+
+    def handle_startendtag(self, tag, attrs):
+        depth = len(self.stack)
+        self.handle_starttag(tag, attrs)
+        if len(self.stack) > depth:
+            self.stack.pop()
+
+    def handle_endtag(self, tag):
+        if tag in ("br", "p") and self.stack and self.stack[-1] in self.svg_scope:
+            self.unreliable_svg = True
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.nodes[self.stack[index]][0] == tag:
+                del self.stack[index:]
+                break
+
+
+def selector_steps(selector: str) -> list:
+    """Selector alternatives as compounds and their top-level combinators."""
+    alternatives, compounds, relations, current = [], [], [], []
+    brackets = parentheses = 0
+    quote = None
+    relation = " "
+    escaped = False
+    for char in selector + ",":
+        if not quote and not brackets and not parentheses and char in " \t\n\r\f>+~,":
+            if current:
+                if compounds:
+                    relations.append(relation)
+                compounds.append("".join(current))
+                current = []
+                relation = " "
+            if char == ",":
+                if compounds:
+                    alternatives.append((compounds, relations))
+                compounds, relations = [], []
+                relation = " "
+            elif char in ">+~":
+                relation = char
+            continue
+        current.append(char)
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif quote:
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char == "[":
+            brackets += 1
+        elif char == "]":
+            brackets = max(0, brackets - 1)
+        elif not brackets:
+            if char == "(":
+                parentheses += 1
+            elif char == ")":
+                parentheses = max(0, parentheses - 1)
+    return alternatives
+
+
+def sibling_kind(compound: str) -> tuple:
+    """Keep outer requirements; unsupported pseudo-classes can only widen a match."""
+    positive, depth, brackets = [], 0, 0
+    quote = None
+    pseudo = escaped = False
+    for char in compound:
+        if escaped:
+            if not depth:
+                positive.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+            if not depth:
+                positive.append(char)
+        elif quote:
+            if not depth:
+                positive.append(char)
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+            if not depth:
+                positive.append(char)
+        elif char == "[" and not depth:
+            pseudo = False
+            brackets += 1
+            positive.append(char)
+        elif char == "]" and not depth:
+            brackets = max(0, brackets - 1)
+            positive.append(char)
+        elif char == "(" and not brackets:
+            pseudo = False
+            depth += 1
+        elif char == ")" and not brackets:
+            depth = max(0, depth - 1)
+        elif not brackets and not depth and char == ":":
+            pseudo = True
+        elif not depth:
+            if pseudo and (char.isalnum() or char in "_-"):
+                continue
+            pseudo = False
+            positive.append(char)
+    positive = "".join(positive)
+    positive = re.sub(r"^(?:[\w*-]+)?\|", "", positive)
+    return compound_kind(positive)
+
+
+def sibling_positions(compounds: list, relations: list, document) -> set:
+    """Match reliable SVG edges; widen HTML edges that a browser may repair."""
+    previous = set()
+    missing_element = False
+    recorded_kinds = {node[0] for node in document.nodes.values()}
+    for index, compound in enumerate(compounds):
+        kind, required = sibling_kind(compound)
+        matched, reaches = set(), {}
+        relation = relations[index - 1] if index else None
+        uncertain_previous = missing_element or any(
+            at not in document.svg_scope
+            or (relation in ("+", "~") and at in document.svg_elements)
+            for at in previous)
+        for at, (tag, tokens, parent, sibling) in document.nodes.items():
+            if relation == " ":
+                reaches[at] = parent in previous or reaches.get(parent, False)
+            elif relation == "~":
+                reaches[at] = sibling in previous or reaches.get(sibling, False)
+            else:
+                reaches[at] = not index or (parent if relation == ">" else sibling) in previous
+            reachable = (reaches[at] or uncertain_previous or at not in document.svg_scope
+                         or at in document.svg_elements)
+            if reachable and kind in (None, tag) and required <= tokens:
+                matched.add(at)
+        previous = matched
+        missing_element = (kind is not None and not required
+                           and (kind not in recorded_kinds or kind in IMPLIED_HTML_TAGS))
+    if missing_element and kind in IMPLIED_HTML_ANCESTORS:
+        return set(document.nodes)
+    return previous
+
+
+def style_rule_blocks(css: str):
+    css = mask_keyframes(blank_css_comments(css))
+    for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
+        yield rule.group(1), rule.group(2)
+
+
+def selector_rules(source: str, wanted, document=None,
+                   blocks_of=style_rule_blocks) -> list:
+    """(type, subject tokens, ancestors, sibling positions) for accepted rules.
 
     The subject compound must match the element itself, by type when it
     names one. `ancestors` holds (type, tokens) for every other compound,
     outermost first, and they must match the element's strict ancestors in
-    that order. `>` reads as any ancestor and a sibling combinator drops
-    them; both only widen the match. A subject naming only a type, `*` or
-    pseudo-classes matches every element of that type.
+    that order. Without siblings, `>` still reads as any ancestor. Sibling
+    selectors preserve combinators within SVG, widening relationships in
+    HTML where implicit end tags can change the parsed structure.
     """
     rules = []
     for match in STYLE_RE.finditer(source):
-        css = mask_keyframes(blank_css_comments(match.group("body")))
-        for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
-            if not wanted(rule.group(2)):
+        for prelude, body in blocks_of(match.group("body")):
+            if not wanted(body):
                 continue
-            for alternative in rule.group(1).split(","):
-                kinds = [compound_kind(compound) for compound in COMPOUND_RE.findall(alternative)]
+            for compounds, relations in selector_steps(prelude):
+                kinds = [compound_kind(compound) for compound in compounds]
                 if not kinds:
                     continue
-                siblings = re.search(r"[+~]", re.sub(r"\[[^\]]*\]|\([^)]*\)", "", alternative))
-                ancestors = [] if siblings else [
+                if any(relation in ("+", "~") for relation in relations):
+                    if document is None:
+                        document = SelectorDocument(source)
+                    positions = sibling_positions(compounds, relations, document)
+                    last_sibling = max(index for index, relation in enumerate(relations)
+                                       if relation in ("+", "~"))
+                    suffix = [sibling_kind(compound)
+                              for compound in compounds[last_sibling + 1:-1]]
+                    rules.append(sibling_kind(compounds[-1])
+                                 + (suffix, (positions, document.nodes)))
+                    continue
+                ancestors = [
                     kind for kind in kinds[:-1] if kind != (None, frozenset())]
-                rules.append(kinds[-1] + (ancestors,))
+                rules.append(kinds[-1] + (ancestors, None))
     return rules
 
 
-def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
+def css_matches(tag: str, tokens: set, chain: list, rules: list, at=None) -> bool:
     """Does a rule select this element? `chain`: (tag, tokens) of its strict ancestors, outermost first."""
-    for kind, subject, ancestors in rules:
+    for kind, subject, ancestors, positions in rules:
+        if positions is not None:
+            matched, nodes = positions
+            if at in matched:
+                return True
+            if at in nodes:
+                continue
         if kind not in (None, tag) or not subject <= tokens:
             continue
         # Nearest matching ancestor first, walking outwards, which finds a
@@ -1263,8 +1475,8 @@ def css_matches(tag: str, tokens: set, chain: list, rules: list) -> bool:
 TSPAN_TAG_RE = re.compile(r"<(?P<close>/?)tspan\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 
 
-def tspan_chains(body: str, chain: list) -> list:
-    """(tokens, strict ancestors) for every <tspan> in a label, nested ones included."""
+def tspan_chains(body: str, chain: list, body_at: int) -> list:
+    """(tokens, strict ancestors, position) for every <tspan> in a label."""
     found, stack = [], []
     for tag in TSPAN_TAG_RE.finditer(body):
         if tag.group("close"):
@@ -1272,7 +1484,7 @@ def tspan_chains(body: str, chain: list) -> list:
                 stack.pop()
             continue
         tokens = element_tokens(attrs_of(tag.group("attrs")))
-        found.append((tokens, chain + stack))
+        found.append((tokens, chain + stack, body_at + tag.start()))
         if not tag.group("selfclose"):
             stack.append(("tspan", tokens))
     return found
@@ -1341,31 +1553,41 @@ def parse_series(source: str, findings: list, name: str) -> list:
     hidden = nonrendering_spans(source)
     series = []
     groups = groups_of(source)
+    document = SelectorDocument(source)
     # fail closed: no cascade, so a later rule that restores visibility does not clear a hide
-    hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)))
+    hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)), document)
     keyframes = keyframe_visibility(source)
-    animation_hide_rules = animation_selector_rules(source, keyframes)
+    animation_hide_rules = animation_selector_rules(source, keyframes, document)
 
-    def hides_mark(tag, attrs, chain):
+    def hides_mark(tag, attrs, chain, at=None):
         tokens = element_tokens(attrs)
         inline = blank_css_comments(attrs.get("style", ""))
         return (hides(attrs, ("opacity",))
                 or (bool(keyframes) and declares_hidden_animation(inline, keyframes))
-                or css_matches(tag, tokens, chain, hide_rules)
-                or css_matches(tag, tokens, chain, animation_hide_rules))
+                or css_matches(tag, tokens, chain, hide_rules, at)
+                or css_matches(tag, tokens, chain, animation_hide_rules, at))
 
     label_hide_rules = selector_rules(
-        source, lambda css: declares_hidden(css, ("opacity", "fill-opacity")))
+        source, lambda css: declares_hidden(css, ("opacity", "fill-opacity")), document)
     accent_rules = selector_rules(source, lambda css: any(
-        is_accent(value, accent_vars) for value in declared_paints(css)))
+        is_accent(value, accent_vars) for value in declared_paints(css)), document)
     page = svg_ancestors(source)
     outer = [(tag, element_tokens(attrs)) for tag, attrs in page]
+    page_positions = []
+    svg_at = next((at for at, node in document.nodes.items() if node[0] == "svg"), None)
+    while svg_at is not None:
+        page_positions.append(svg_at)
+        svg_at = document.nodes[svg_at][2]
+    page_positions.reverse()
+    if len(page_positions) != len(page):
+        page_positions = [None] * len(page)
     # Hiding or painting the <svg> or a page element around it reaches every
     # series. Only whole-element opacity counts: a box with fill-opacity 0
     # still draws its stroke.
-    page_hidden = any(hides_mark(tag, attrs, outer[:index])
+    page_hidden = any(hides_mark(tag, attrs, outer[:index], page_positions[index])
                       for index, (tag, attrs) in enumerate(page))
-    page_accent = any(wears_accent(tag, attrs, outer[:index], accent_vars, accent_rules)
+    page_accent = any(wears_accent(tag, attrs, outer[:index], accent_vars, accent_rules,
+                                  page_positions[index])
                       for index, (tag, attrs) in enumerate(page))
     # Each group's strict ancestors, outermost first, and whether it or one
     # of them wears the accent, which every series inside inherits.
@@ -1376,24 +1598,26 @@ def parse_series(source: str, findings: list, name: str) -> list:
         gattrs = attrs_of(group.group("attrs"))
         around[group.start()] = outer + [entry for _end, entry, _accent in stack]
         accented[group.start()] = (stack[-1][2] if stack else page_accent) or wears_accent(
-            "g", gattrs, around[group.start()], accent_vars, accent_rules)
+            "g", gattrs, around[group.start()], accent_vars, accent_rules, group.start())
         stack.append((group.body_at() + len(group.group("body")),
                       ("g", element_tokens(gattrs)), accented[group.start()]))
     # Groups that stop everything inside them drawing.
     hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
               for group in groups
-              if hides_mark("g", attrs_of(group.group("attrs")), around[group.start()])]
+              if hides_mark("g", attrs_of(group.group("attrs")),
+                            around[group.start()], group.start())]
     # A label is drawn by its fill, so fill-opacity 0 on it or anything
     # around it hides it too, though a box with fill-opacity 0 still draws.
     text_opacities = ("opacity", "fill-opacity")
     page_hides_labels = any(hides(attrs, text_opacities)
-                            or css_matches(tag, outer[index][1], outer[:index], label_hide_rules)
+                            or css_matches(tag, outer[index][1], outer[:index], label_hide_rules,
+                                           page_positions[index])
                             for index, (tag, attrs) in enumerate(page))
     label_hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
                     for group in groups
                     if hides(attrs_of(group.group("attrs")), text_opacities)
                     or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
-                                   around[group.start()], label_hide_rules)]
+                                   around[group.start()], label_hide_rules, group.start())]
     svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
@@ -1497,7 +1721,7 @@ def parse_series(source: str, findings: list, name: str) -> list:
             at = body_at + mark.start()
             if drawn and {"data-role", "data-outlier"} & set(mattrs) and (
                     page_hidden or inside_span(at, hiding)
-                    or hides_mark(mark.group("tag").lower(), mattrs, chain_at(at))):
+                    or hides_mark(mark.group("tag").lower(), mattrs, chain_at(at), at)):
                 drawn = False
                 findings.append(
                     "%s:%d: series %r has a bound <%s> hidden by display, "
@@ -1541,7 +1765,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
         # series draws, not only the rect/line/circle marks bound above.
         accent = accented[match.start()] or any(
             wears_accent(mark.group("tag").lower(), attrs_of(mark.group("attrs")),
-                         chain_at(body_at + mark.start()), accent_vars, accent_rules)
+                         chain_at(body_at + mark.start()), accent_vars, accent_rules,
+                         body_at + mark.start())
             for mark in OPEN_TAG_RE.finditer(body)
             if mark.group("tag").lower() not in NON_MARK_TAGS
         )
@@ -1653,10 +1878,11 @@ def parse_series(source: str, findings: list, name: str) -> list:
                     drawn and (
                         page_hides_labels or inside_span(at, label_hiding)
                         or css_matches("text", element_tokens(tattrs), chain_at(at),
-                                       label_hide_rules)
-                        or any(css_matches("tspan", tokens, ancestors, label_hide_rules)
-                               for tokens, ancestors in tspan_chains(text.group("body"),
-                                                                     text_chain)))):
+                                       label_hide_rules, at)
+                        or any(css_matches("tspan", tokens, ancestors, label_hide_rules, position)
+                               for tokens, ancestors, position in tspan_chains(
+                                   text.group("body"), text_chain,
+                                   body_at + text.start("body"))))):
                 findings.append(
                     "%s: series %r hides its bound label — the name the "
                     "checker reads is not the name a reader sees"

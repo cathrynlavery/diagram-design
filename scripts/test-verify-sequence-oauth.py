@@ -266,6 +266,8 @@ def main() -> int:
         temp_verifier = temp_root / "scripts/verify-sequence-oauth.py"
         temp_verifier.parent.mkdir(parents=True, exist_ok=True)
         temp_verifier.write_text(VERIFIER.read_text(encoding="utf-8"), encoding="utf-8")
+        helper = VERIFIER.with_name("html_comments.py")
+        (temp_verifier.parent / helper.name).write_text(helper.read_text(encoding="utf-8"), encoding="utf-8")
 
         temp_type_seq = temp_root / TYPE_SEQ.relative_to(ROOT)
         temp_type_seq.parent.mkdir(parents=True, exist_ok=True)

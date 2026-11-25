@@ -165,7 +165,7 @@ def line_of(source: str, offset: int) -> int:
 
 
 STYLE_OR_COMMENT_RE = re.compile(
-    r"<style\b[^>]*>.*?(?:</style\s*>|\Z)|<!--.*?-->", re.IGNORECASE | re.DOTALL)
+    r"<style\b[^>]*>.*?(?:</style\s*>|\Z)|<!--(?:-?>|.*?--!?>)", re.IGNORECASE | re.DOTALL)
 
 
 def blank_comments(source: str) -> str:

@@ -102,11 +102,11 @@ PAPER_VAR_RE = re.compile(r"--color-paper\s*:\s*(?P<value>[^;}]+)", re.IGNORECAS
 # Copy a reader - or a screen reader - actually receives as a statement: rendered
 # SVG strings, the accessible description, and the editorial prose the full
 # variant wraps around the chart.
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 # A complete inline comment must stay indivisible: its archived closing tags
 # cannot terminate the surrounding visible copy element.
 COPY_RE = re.compile(
-    r"<!--.*?-->|<(?P<tag>text|desc|p|h1|h2|h3|h4|li|figcaption)\b[^>]*>(?P<body>(?:<!--.*?-->|(?!<!--).)*?)</(?P=tag)>",
+    r"<!--(?:-?>|.*?--!?>)|<(?P<tag>text|desc|p|h1|h2|h3|h4|li|figcaption)\b[^>]*>(?P<body>(?:<!--(?:-?>|.*?--!?>)|(?!<!--).)*?)</(?P=tag)>",
     re.IGNORECASE | re.DOTALL,
 )
 TAG_RE = re.compile(r"<[^>]+>")

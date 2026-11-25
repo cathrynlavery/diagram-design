@@ -35,6 +35,8 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Plugin bump helper and adversarial package cases | `python3 scripts/test-plugin-package.py` |
 | Maintainer policy matches native manifests and current CI gates | `python3 scripts/test-maintainer-policy.py` |
 | OpenAI plugin directory listing limits and upload ZIP contents | `python3 scripts/test-build-openai-plugin-zip.py` |
+| Claude Desktop skill ZIP include rule, file count, and referenced paths | `python3 scripts/test-build-claude-skill-zip.py` |
+| Claude Desktop skill ZIP stays under the upload file limit | `python3 scripts/build-claude-skill-zip.py --check` |
 | Manifest versions untouched and synchronized; valid marketplace paths; packaged skill | `python3 scripts/verify-plugin-package.py --require-no-bump origin/main` |
 | Claude marketplace and plugin schema, with warnings treated as errors | `claude plugin validate . --strict` |
 | Accessible SVG contract (unit tests for the a11y linter) | `python3 scripts/test-lint-a11y.py` |
@@ -64,6 +66,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Docs/routing sync (description hooks, gallery, README tree, reference links and style-guide anchors, strict-bundler support paths, command/prompt surfaces, font-link parity, template title fallback order, SKILL.md split routing) | `python3 scripts/verify-docs-sync.py && python3 scripts/test-verify-docs-sync.py` |
 | Canonical README screenshots match their example HTML sources and recorded PNG digests | `python3 scripts/verify-screenshot-freshness.py` |
 | Packaged PNG exporter's stalled-webfont fallback (window.stop on timeout, warning, normal load) | `python3 scripts/test-export-wait.py` (requires Playwright; skips without it) |
+| Packaged vector PDF exporter (exact viewBox bounds, sheet sizing, full-page, stalled-webfont fallback) | `python3 scripts/test-export-pdf.py` (requires Playwright; skips browser cases without it) |
 | Screenshot freshness checker behaves (CRLF checkout, real source drift, raw PNG digests) | `python3 scripts/test-verify-screenshot-freshness.py` |
 | README WebP previews match their PNGs, manifest, dimensions, and full-size links | `python3 scripts/test-build-readme-thumbs.py && python3 scripts/build-readme-thumbs.py --check` (requires `Pillow==12.1.1`) |
 | Packaged output self-check behaves (pass + adversarial cases, including `--offline`) | `python3 scripts/test-self-check.py` |
@@ -117,6 +120,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Git-graph commits sit on lanes and a shared time grid; every merge has two earlier parents | `python3 scripts/verify-git-graph.py --all` |
 | Git-graph checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-git-graph.py` |
 | Quoted CSS data is not read as a geometry declaration by any verifier (pass + adversarial cases) | `python3 scripts/test-css-string-scan.py` |
+| Every verifier ends an HTML comment where the browser does (`<!-->`, `<!--->`, `--!>`) | `python3 scripts/test-html-comment-forms.py` |
 | Every directional tone claim matches the ramp it describes, on every skin | `python3 scripts/verify-skin-polarity.py --all` |
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
@@ -144,6 +148,12 @@ The Codex `interface` block doubles as the OpenAI plugin directory listing, so
 enforces those limits. The maintainer publishes the directory listing; please
 don't submit this plugin to OpenAI or any other plugin directory yourself.
 
+Claude Desktop's custom-skill upload rejects a ZIP with more than 200 files
+([#525](https://github.com/cathrynlavery/diagram-design/issues/525)).
+`scripts/build-claude-skill-zip.py --check` enforces that limit with a margin,
+the uncompressed size, SKILL.md `name`/`description` length, and that every
+path SKILL.md or a reference markdown-links to is in the ZIP.
+
 Static geometry verifiers using `scripts/css_property_scan.py` refuse escaped CSS declaration names, including escaped custom-property names ([#518](https://github.com/cathrynlavery/diagram-design/issues/518)). Spell declaration names literally. Escapes in values, quoted data, comments and selector preludes retain each verifier's existing restrictions; `scripts/test-css-string-scan.py` covers both accepted data and rejected declarations.
 
 Run them all at once before pushing:
@@ -152,6 +162,8 @@ Run them all at once before pushing:
 python3 scripts/test-plugin-package.py \
   && python3 scripts/test-maintainer-policy.py \
   && python3 scripts/test-build-openai-plugin-zip.py \
+  && python3 scripts/test-build-claude-skill-zip.py \
+  && python3 scripts/build-claude-skill-zip.py --check \
   && python3 scripts/verify-plugin-package.py --require-no-bump origin/main \
   && claude plugin validate . --strict \
   && python3 scripts/test-lint-a11y.py \
@@ -240,6 +252,7 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/verify-git-graph.py --all \
   && python3 scripts/test-verify-git-graph.py \
   && python3 scripts/test-css-string-scan.py \
+  && python3 scripts/test-html-comment-forms.py \
   && python3 scripts/verify-skin-polarity.py --all \
   && python3 scripts/test-verify-skin-polarity.py \
   && python3 scripts/test-export-wait.py

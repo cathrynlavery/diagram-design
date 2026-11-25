@@ -71,6 +71,21 @@ After installing, run `/plugin`, open **Marketplaces**, select **diagram-design*
 </details>
 
 <details>
+<summary><b>Claude Desktop</b></summary>
+
+Claude Desktop's skill upload rejects a ZIP with more than 200 files, so the full `skills/diagram-design/` tree cannot be imported as-is. From a checkout, build a bounded ZIP:
+
+```bash
+python3 scripts/build-claude-skill-zip.py
+```
+
+That writes `dist/diagram-design-claude-skill.zip` (gitignored). In Claude Desktop, open **Customize → Skills**, choose **Upload a skill**, and select that file. The archive is a top-level `diagram-design/` folder with `SKILL.md` at its root. It includes the references, packaged scripts, templates, and the default-light examples the skill copies or opens; it leaves out the gallery page and the dark, full, and animated example variants that the website and CI use.
+
+If a later GitHub release attaches this ZIP, you can download that instead of building it. Rebuild from this repository after you pull updates.
+
+</details>
+
+<details>
 <summary><b>Cursor</b>, Cline, Gemini CLI, Windsurf, Amp, Zed, Warp, Roo, Kilo and other Agent Skills hosts</summary>
 
 The cross-agent [`skills` CLI](https://skills.sh) resolves this repository, detects `skills/diagram-design/SKILL.md`, and installs the whole skill (`references/`, `assets/`, `scripts/`) into every host root you select, including Cursor's:
@@ -647,6 +662,7 @@ diagram-design/
 │       │   ├── plantuml_extract.py   # PlantUML → structured IR
 │       │   ├── export_svg.py         # standalone SVG export
 │       │   ├── export_png.py         # Playwright PNG renderer
+│       │   ├── export_pdf.py         # Playwright vector PDF exporter
 │       │   ├── self_check.py         # packaged output self-check (runs installed)
 │       │   └── verify_geometry.py    # label, connector and port geometry (runs installed)
 │       └── assets/
