@@ -71,7 +71,7 @@ SVG_MARK_TAG_RE = re.compile(
     r"<(?:rect|line|text|tspan|g|path|polygon|polyline|circle|ellipse|use)\b[^>]*>", re.IGNORECASE
 )
 SVG_TOKEN_RE = re.compile(r"""\b(?:class|id)\s*=\s*(?:"([^"]*)"|'([^']*)')""")
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)

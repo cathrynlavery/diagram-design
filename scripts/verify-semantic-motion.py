@@ -18,6 +18,7 @@ from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from html_comments import TokenizerComments
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -83,7 +84,7 @@ def is_approved_google_fonts_stylesheet(value: str) -> bool:
     )
 
 
-class ContractParser(HTMLParser):
+class ContractParser(TokenizerComments, HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.ids: list[str] = []

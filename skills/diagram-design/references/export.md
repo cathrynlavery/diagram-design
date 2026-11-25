@@ -340,7 +340,7 @@ python3 <skill-dir>/scripts/export_pdf.py <src.html> [<out.pdf>] [--page-size a4
 
 - **Default (exact viewBox bounds, diagram-only):** Requests `?motion=static`, awaits `document.fonts.ready` (with the same 15 s `networkidle` timeout and `window.stop()` stalled-webfont fallback warning as `export_png.py`), verifies `[data-motion-root]` is `data-frame="static"`, keeps screen media colors with `print_background=True` so dark skins retain their palette, isolates the first top-level `<svg>` at 1 CSS px per viewBox unit, and writes a zero-margin single-page vector PDF.
 - **`--page-size a4|a3|letter`:** Switches to print media and fits the diagram cleanly onto a landscape A4, A3, or US Letter sheet with 10 mm margins.
-- **`--full-page`:** Retains the editorial header, summary cards, and footer from `-full` variants while removing motion controls and decorative overlays.
+- **`--full-page`:** Retains the editorial header, summary cards, and footer from `-full` variants while removing motion controls and decorative overlays. With `--page-size`, the whole layout is scaled down to fit the same sheet, so it still prints on one page.
 - **Refusals (exit 2):** Refuses missing files, gallery `assets/index.html`, files without an `<svg>`, and root `<svg>` elements lacking a nonzero finite `viewBox`.
 - **Defaults & mutual exclusion:** `/diagram-design:export-diagram` with no format flags continues to emit `.svg` + `.png` only. Pass `--pdf` to also emit `.pdf`, or `--pdf-only` to emit only `.pdf` (`--svg-only`, `--png-only`, and `--pdf-only` are mutually exclusive).
 

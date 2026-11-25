@@ -15,6 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 TYPE_SEQ = ROOT / "skills/diagram-design/references/type-sequence.md"
@@ -55,7 +56,7 @@ class Element:
             node = node.parent
 
 
-class SequenceParser(HTMLParser):
+class SequenceParser(TokenizerComments, HTMLParser):
     """Read actual elements, excluding comments and raw style/script markup."""
 
     def __init__(self, source: str):

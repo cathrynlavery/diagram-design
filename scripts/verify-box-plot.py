@@ -134,7 +134,7 @@ TEXT_RE = re.compile(r"<text\b(?P<attrs>" + TAG_BODY + r"*)>(?P<body>.*?)</text>
                      re.IGNORECASE | re.DOTALL)
 G_OPEN_RE = re.compile(r"<g\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>", re.IGNORECASE)
 G_CLOSE_RE = re.compile(r"</g\s*>", re.IGNORECASE)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b" + TAG_BODY + r"*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>" + TAG_BODY + r"*?)(?P<selfclose>/?)>",

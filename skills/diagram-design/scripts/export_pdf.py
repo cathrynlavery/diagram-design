@@ -127,11 +127,30 @@ def export_pdf(
                         {"sheetW": sheet_w, "sheetH": sheet_h, "marginMm": PAGE_MARGIN_MM},
                     )
                 else:
+                    sheet_w, sheet_h = PAGE_SIZES[page_size]
                     page.evaluate(
-                        """() => {
+                        """({sheetW, sheetH, marginMm}) => {
                             document.querySelectorAll('[data-motion-controls], [data-motion-decorative]')
                                 .forEach(el => el.remove());
-                        }"""
+                            // Freeze the layout width, then zoom the whole page so it fits
+                            // the printable area on both axes and prints on one sheet.
+                            const px = inches => parseFloat(inches) * 96;
+                            const margin = (marginMm / 25.4) * 96;
+                            // 2px reserve so zoom rounding cannot push the footer onto page 2.
+                            const availW = Math.floor(px(sheetW) - 2 * margin) - 2;
+                            const availH = Math.floor(px(sheetH) - 2 * margin) - 2;
+                            document.querySelectorAll('.diagram-container').forEach(el => {
+                                el.style.setProperty('overflow', 'visible', 'important');
+                            });
+                            const root = document.documentElement;
+                            const width = Math.max(root.clientWidth, root.scrollWidth);
+                            root.style.width = `${width}px`;
+                            const height = root.scrollHeight;
+                            const scale = Math.min(1, availW / width, availH / height);
+                            root.style.zoom = String(Math.floor(scale * 1000) / 1000);
+                            root.style.margin = '0 auto';
+                        }""",
+                        {"sheetW": sheet_w, "sheetH": sheet_h, "marginMm": PAGE_MARGIN_MM},
                     )
                 width, height = PAGE_SIZES[page_size]
                 page.pdf(
