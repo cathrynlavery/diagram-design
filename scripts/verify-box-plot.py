@@ -111,6 +111,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -997,7 +998,7 @@ IMPLIED_HTML_TAGS = {"html", "head", "body", "tbody", "colgroup", "tr", "p", "br
 IMPLIED_HTML_ANCESTORS = {"html", "body", "tbody", "tr"}
 
 
-class SelectorDocument(HTMLParser):
+class SelectorDocument(TokenizerComments, HTMLParser):
     """Element positions, parents and preceding element siblings for CSS matching."""
 
     def __init__(self, source: str):
