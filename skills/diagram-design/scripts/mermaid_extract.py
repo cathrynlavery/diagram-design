@@ -1502,8 +1502,28 @@ def _parse_quadrant_statement(
     if len(text) > MAX_STATEMENT_CHARS:
         _statement_too_long(line_number)
     # Point names may themselves be style or click keywords (`Class A: [0.2, 0.3]`,
-    # `click here: [0.1, 0.2]`). Keywords and points are recognized first; a
+    # `click here: [0.1, 0.2]`, `Title of X: [0.1, 0.2]`), so the point form is
+    # matched before the `title` and `accTitle`/`accDescr` keywords; a keyword or
     # discard applies only to a statement that is not a point.
+    parsed = _quadrant_point(text)
+    if parsed is not None:
+        label_text, suffix, body, style = parsed
+        coords = [part.strip() for part in body.split(",")]
+        if len(coords) != 2:
+            _fail(f"non-numeric point coordinate at line {line_number}")
+        x_value = _unit_coordinate(coords[0], line_number)
+        y_value = _unit_coordinate(coords[1], line_number)
+        label = _quadrant_label(label_text)
+        if not label:
+            _fail(f"non-numeric point coordinate at line {line_number}")
+        if any(point["label"] == label for point in diagram.points):
+            _fail(f"duplicate point label at line {line_number}")
+        if suffix or style.strip():
+            diagram.discarded["style_directives"] += 1
+        if len(diagram.points) >= MAX_POINTS:
+            _fail(f"point limit exceeded (max {MAX_POINTS})")
+        diagram.points.append({"label": label, "x": x_value, "y": y_value})
+        return
     if _QUADRANT_ACC.match(text):
         return
     title = re.match(r"^title(?:\s+(.*))?$", text, re.I)
@@ -1524,25 +1544,6 @@ def _parse_quadrant_statement(
     quadrant = re.match(r"^quadrant-([1-4])\b\s*(.*)$", text, re.I)
     if quadrant:
         diagram.quadrants[quadrant.group(1)] = _quadrant_label(quadrant.group(2))
-        return
-    parsed = _quadrant_point(text)
-    if parsed is not None:
-        label_text, suffix, body, style = parsed
-        coords = [part.strip() for part in body.split(",")]
-        if len(coords) != 2:
-            _fail(f"non-numeric point coordinate at line {line_number}")
-        x_value = _unit_coordinate(coords[0], line_number)
-        y_value = _unit_coordinate(coords[1], line_number)
-        label = _quadrant_label(label_text)
-        if not label:
-            _fail(f"non-numeric point coordinate at line {line_number}")
-        if any(point["label"] == label for point in diagram.points):
-            _fail(f"duplicate point label at line {line_number}")
-        if suffix or style.strip():
-            diagram.discarded["style_directives"] += 1
-        if len(diagram.points) >= MAX_POINTS:
-            _fail(f"point limit exceeded (max {MAX_POINTS})")
-        diagram.points.append({"label": label, "x": x_value, "y": y_value})
         return
     if _discard_nonsemantic(diagram, text):
         return

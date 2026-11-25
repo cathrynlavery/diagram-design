@@ -98,7 +98,7 @@ def fixture(dark=False, full=False):
         )
         for field, value, dx, dy, size in [
             ("name", id + ": " + name, 16, 24, 12),
-            ("duration", "DUR " + dur + " days", 16, 48, 12),
+            ("duration", "DUR " + dur + " " + ("day" if dur == "1" else "days"), 16, 48, 12),
             ("es", "ES " + es, 16, 76, 12),
             ("ef", "EF " + ef, 128, 76, 12),
             ("ls", "LS " + ls, 16, 104, 12),

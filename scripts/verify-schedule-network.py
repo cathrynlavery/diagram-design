@@ -401,7 +401,10 @@ def check_source(source: str) -> list[str]:
             raise ValueError(f"{id}: each printed field is required once")
         expected = {
             "name": id + ": " + node.get("data-task-name"),
-            "duration": "DUR " + printed(durations[id]) + " " + unit,
+            "duration": "DUR "
+            + printed(durations[id])
+            + " "
+            + (unit[:-1] if printed(durations[id]) == "1" and unit.endswith("s") else unit),
             **{
                 k: k.upper() + " " + printed(values[k])
                 for k in ("es", "ef", "ls", "lf", "tf")
