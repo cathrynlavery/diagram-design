@@ -536,6 +536,35 @@ def require_diagram_exports(tmp: Path) -> None:
             raise AssertionError(f"full-page height ({fh:.1f}pt) should exceed diagram-only height ({h_pt:.1f}pt)")
         print(f"OK: --full-page editorial PDF verified ({full_boxes[0][2]:.0f}x{fh:.0f}pt)")
 
+    # Full-page wrapper on a sheet: the whole layout scales onto one landscape page.
+    sheet_src = ASSETS / "example-sequence-oauth-full.html"
+    sheet_out = tmp / "sequence-full-a4.pdf"
+    r = run_cli("--page-size", "a4", "--full-page", str(sheet_src), str(sheet_out))
+    if r.returncode != 0:
+        raise AssertionError(f"full-page A4 export failed ({r.returncode}): {r.stderr}")
+    sheet_bytes = sheet_out.read_bytes()
+    sheet_boxes = parse_pdf_mediaboxes(sheet_bytes)
+    if len(sheet_boxes) != 1:
+        raise AssertionError(f"full-page layout overflowed A4: expected 1 page, got {len(sheet_boxes)}")
+    sw, sh = sheet_boxes[0][2] - sheet_boxes[0][0], sheet_boxes[0][3] - sheet_boxes[0][1]
+    if not (835 <= sw <= 848 and 590 <= sh <= 602):
+        raise AssertionError(f"unexpected full-page A4 MediaBox: {sw:.1f}x{sh:.1f}pt")
+    sheet_text = pdf_text(sheet_bytes)
+    for expected in ("Bearer call with refresh", "Valid token is one hop", "alt refresh sequence"):
+        if expected not in sheet_text:
+            raise AssertionError(f"full-page A4 PDF is missing {expected!r}")
+    print("OK: --page-size a4 --full-page fits header, cards and footer on one sheet")
+
+    # A width-limited layout on another sheet size stays on one page too.
+    wide_out = tmp / "arch-full-letter.pdf"
+    r = run_cli("--page-size", "letter", "--full-page", str(full_src), str(wide_out))
+    if r.returncode != 0:
+        raise AssertionError(f"full-page letter export failed ({r.returncode}): {r.stderr}")
+    wide_boxes = parse_pdf_mediaboxes(wide_out.read_bytes())
+    if len(wide_boxes) != 1:
+        raise AssertionError(f"full-page layout overflowed letter: expected 1 page, got {len(wide_boxes)}")
+    print("OK: --page-size letter --full-page fits a full architecture layout on one sheet")
+
 
 def require_stalled_fallback(tmp: Path) -> None:
     server = start_stall_server()

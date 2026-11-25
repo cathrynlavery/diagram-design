@@ -302,7 +302,7 @@ def check(path: Path) -> list[str]:
     # Keep diagnostic line numbers in comment placeholders; plain() removes
     # the whole placeholder so archived newlines never become label glyphs.
     source = re.sub(
-        r"<!--.*?(?:-->|$)",
+        r"<!--(?:-?>|.*?(?:--!?>|$))",
         lambda match: "<!--" + "\n" * match.group(0).count("\n") + "-->",
         source,
         flags=re.DOTALL,

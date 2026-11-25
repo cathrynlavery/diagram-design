@@ -22,6 +22,7 @@ import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -126,7 +127,7 @@ class Node:
             parent = parent.parent
 
 
-class Scanner(HTMLParser):
+class Scanner(TokenizerComments, HTMLParser):
     """HTML parsing honors unquoted attrs, entities, comments and raw style text.
 
     SVG must be properly nested; silently repairing malformed SVG would assign

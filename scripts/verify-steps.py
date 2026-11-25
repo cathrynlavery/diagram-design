@@ -36,6 +36,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -108,7 +109,7 @@ class Node:
         return found
 
 
-class Tree(HTMLParser):
+class Tree(TokenizerComments, HTMLParser):
     """Build the element tree the browser sees: comments dropped, first duplicate attribute wins."""
 
     def __init__(self) -> None:
