@@ -961,24 +961,24 @@ def declares_hidden(css: str, opacities) -> bool:
     return False
 
 
+def mask_css_tokens(css: str) -> str:
+    """Same-length CSS with comments, strings, unquoted url() and escapes blanked."""
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\r\n]", " ", found.group()),
+        css,
+    )
+
+
 def css_blocks(css: str):
     """Yield top-level CSS (prelude, body) blocks, retaining nested blocks."""
     css = blank_css_comments(css)
+    scanned = mask_css_tokens(css)
     start = 0
     depth = 0
     body_start = None
-    quote = None
-    index = 0
-    while index < len(css):
-        char = css[index]
-        if quote:
-            if char == "\\":
-                index += 2
-                continue
-            if char == quote:
-                quote = None
-        elif char in "\"'":
-            quote = char
+    for index, char in enumerate(scanned):
+        if char == ";" and depth == 0:
+            start = index + 1
         elif char == "{":
             if depth == 0:
                 prelude = css[start:index].strip()
@@ -989,29 +989,37 @@ def css_blocks(css: str):
             if depth == 0:
                 yield prelude, css[body_start:index]
                 start = index + 1
-        index += 1
 
 
 KEYFRAME_RE = re.compile(r"^@(?:-webkit-)?keyframes\s+([-\w]+)\b", re.IGNORECASE)
 KEYFRAME_LABEL_RE = re.compile(r"^(?:from|to|(?:100|0)(?:\.0*)?%)$", re.IGNORECASE)
-KEYFRAME_OPEN_RE = re.compile(r"@(?:-webkit-)?keyframes\b[^{}]*\{", re.IGNORECASE)
+KEYFRAME_OPEN_RE = re.compile(
+    r"(?:^|(?<=[{;}]))\s*(@(?:-(?:webkit|moz)-)?keyframes(?![-\w\x80-\U0010ffff])[^{};]*\{)",
+    re.IGNORECASE,
+)
 
 
 def mask_keyframes(css: str) -> str:
-    """Blank balanced keyframe blocks before ordinary selector inspection."""
+    """Blank balanced keyframe blocks outside quoted CSS, comments and url()."""
+    scanned = mask_css_tokens(css)
     masked = list(css)
-    for match in KEYFRAME_OPEN_RE.finditer(css):
+    cursor = 0
+    while True:
+        match = KEYFRAME_OPEN_RE.search(scanned, cursor)
+        if match is None:
+            break
         depth = 1
-        index = match.end()
-        while index < len(css) and depth:
-            if css[index] == "{":
+        index = match.end(1)
+        while index < len(scanned) and depth:
+            if scanned[index] == "{":
                 depth += 1
-            elif css[index] == "}":
+            elif scanned[index] == "}":
                 depth -= 1
             index += 1
-        for position in range(match.start(), index):
+        for position in range(match.start(1), index):
             if masked[position] not in "\r\n":
                 masked[position] = " "
+        cursor = index
     return "".join(masked)
 
 
@@ -1405,8 +1413,8 @@ def sibling_positions(compounds: list, relations: list, document) -> set:
 
 def style_rule_blocks(css: str):
     css = mask_keyframes(blank_css_comments(css))
-    for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
-        yield rule.group(1), rule.group(2)
+    for rule in re.finditer(r"([^{};]+)\{([^{}]*)\}", mask_css_tokens(css)):
+        yield css[rule.start(1):rule.end(1)], css[rule.start(2):rule.end(2)]
 
 
 def selector_rules(source: str, wanted, document=None,

@@ -1383,6 +1383,81 @@ def run_cases(h: Harness) -> int:
             '.missing + [data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
         )),
     )
+    quoted_selector_css = (
+        '[data-note="@keyframes vanish {"] { color: inherit }\n'
+        "@keyframes real {\n  from { --b: \"}\"; opacity: 1 }\n  to { opacity: 0 }\n}\n"
+        '[data-name="Auth"] rect { display: none }\n'
+    )
+    masked_css = verify.mask_keyframes(quoted_selector_css)
+    h.check(
+        "mask_keyframes preserves exact length, newlines and surrounding rule offsets",
+        len(masked_css) == len(quoted_selector_css)
+        and [idx for idx, ch in enumerate(masked_css) if ch == "\n"]
+        == [idx for idx, ch in enumerate(quoted_selector_css) if ch == "\n"]
+        and masked_css.startswith('[data-note="@keyframes vanish {"] { color: inherit }\n')
+        and masked_css.index('[data-name="Auth"] rect { display: none }')
+        == quoted_selector_css.index('[data-name="Auth"] rect { display: none }')
+        and "@keyframes real" not in masked_css,
+        "masked_css=%r" % masked_css,
+    )
+    h.check(
+        "mask_keyframes handles unclosed keyframe at EOF without raising",
+        len(verify.mask_keyframes("@keyframes open {\n  from { opacity: 0 }"))
+        == len("@keyframes open {\n  from { opacity: 0 }")
+        and verify.mask_keyframes("@keyframes open {\n  from { opacity: 0 }") == "                 \n                     ",
+    )
+    for title, css in (
+        ("double-quoted @keyframes with opening brace in selector",
+         '[data-note="@keyframes vanish {"]{color:inherit}'
+         '[data-name="Auth"] rect{display:none}'),
+        ("single-quoted @-webkit-keyframes with opening brace in selector",
+         "[data-note='@-webkit-keyframes vanish {']{color:inherit}"
+         '[data-name="Auth"] line[data-role="median"]{opacity:0}'),
+        ("negated quoted @keyframes selector on the hiding rule itself",
+         ':not([data-note="@keyframes vanish {"]) [data-name="Auth"] rect{display:none}'),
+        ("unquoted non-prelude @keyframes attribute selector before a hiding rule",
+         '[data-note=@keyframes]{color:inherit}[data-name="Auth"] rect{display:none}'),
+        ("semicolon-terminated @keyframes statement before a hiding rule",
+         '@keyframes stray;[data-name="Auth"] rect{display:none}'),
+        ("quoted semicolon in selector attribute on a hiding rule",
+         ':not([data-note="a;b"]) [data-name="Auth"] rect{display:none}'),
+        ("genuine @keyframes followed by a static hiding rule",
+         "@keyframes pulse{from{opacity:1}to{opacity:1}}"
+         '[data-name="Auth"] rect{display:none}'),
+        ("quoted @keyframes selector before a genuine hidden keyframe animation",
+         '[data-note="@keyframes fake {"]{color:inherit}'
+         '@keyframes vanish{from{--note:"}";opacity:1}to{opacity:0}}'
+         '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'),
+        ("@layer statement before a genuine hidden keyframe animation",
+         "@layer base; @keyframes vanish{from{opacity:1}to{opacity:0}}"
+         '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'),
+    ):
+        h.expect_findings(
+            "%s still flags the hidden mark" % title,
+            shipped_with(styled(css)), 1, "never drawn",
+        )
+    h.expect_findings(
+        "quoted @keyframes selector does not swallow a following sibling hide rule",
+        shipped_with(
+            (AUTH_G, '<g class="x"></g>' + AUTH_G),
+            styled(
+                '[data-note="@keyframes vanish {"]{color:inherit}'
+                '.x + [data-name="Auth"] rect{display:none}'
+            ),
+        ), 1, "series 'Auth'",
+    )
+    h.expect_clean(
+        "unmatched quoted @keyframes selector with opening brace does not false-flag",
+        shipped_with(styled('[data-note="@keyframes vanish {"] rect{display:none}')),
+    )
+    h.expect_clean(
+        "quoted @keyframes selector beside a genuine visible keyframe animation passes",
+        shipped_with(styled(
+            '[data-note="@keyframes fake {"]{color:inherit}'
+            '@keyframes appear{from{--note:"}";opacity:0}to{opacity:1}}'
+            '[data-name="Auth"] line[data-role="median"]{animation:appear 1s forwards}'
+        )),
+    )
     # The HTML parser also reads an unquoted value (`display=none`) and an
     # attribute with no value at all (`<div hidden>`), so the checker must
     # read them too (#487 item 4). Quoted text that only spells an attribute
