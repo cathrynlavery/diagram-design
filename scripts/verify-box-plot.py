@@ -101,7 +101,7 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
-from css_property_scan import escaped_property_findings
+from css_property_scan import HTML_END_TAG_RE, escaped_property_findings
 
 import argparse
 import colorsys
@@ -1011,6 +1011,13 @@ class SelectorDocument(TokenizerComments, HTMLParser):
         self.stack = []
         self.last_child = {}
         self.feed(source)
+
+    def parse_endtag(self, i):
+        # HTML treats </ followed by anything but an ASCII letter as a bogus
+        # comment. Do not let an older HTMLParser close a real SVG element.
+        if self.cdata_elem is None and not HTML_END_TAG_RE.match(self.rawdata, i):
+            return self.parse_bogus_comment(i)
+        return super().parse_endtag(i)
 
     def handle_starttag(self, tag, attrs):
         line, column = self.getpos()

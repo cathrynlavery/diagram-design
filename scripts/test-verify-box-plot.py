@@ -1420,6 +1420,22 @@ def run_cases(h: Harness) -> int:
     ):
         h.expect_clean("%s passes" % title, shipped_with(styled(css)))
 
+    for bogus in ("</ g>", "</>"):
+        h.expect_findings(
+            "a bogus end tag does not break a sibling hide (%s)" % bogus,
+            shipped_with(
+                (AUTH_BOX, '<a class="x">%s</a>' % bogus + AUTH_BOX),
+                styled("a.x + rect{display:none}"),
+            ), 1, "series 'Auth'",
+        )
+        h.expect_clean(
+            "an unrelated bogus-end-tag sibling rule passes (%s)" % bogus,
+            shipped_with(
+                (AUTH_BOX, '<a class="x">%s</a>' % bogus + AUTH_BOX),
+                styled("a.y + rect{display:none}"),
+            ),
+        )
+
     for title, opening, closing, selector in (
         ("a paragraph implicitly closed by figure", '<p>intro<figure>', '</figure>',
          'p + figure rect'),
