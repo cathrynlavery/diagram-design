@@ -32,7 +32,8 @@ are credible, dependencies complete or a real project feasible.
 
 ## Layout grammar
 
-Use an accessible SVG with `viewBox="0 0 1200 H"`, H between 368 and 1248, using
+Use an accessible SVG with `viewBox="0 0 1200 H"`, H between 692 and 1248 (the
+summary rows sit at y=660 and y=688 and must stay inside the viewport), using
 the shared static page shell shown by the examples. Tasks of one precedence rank
 share x; rank is the longest predecessor chain, increasing left to right. Rank
 spacing is at least box width plus 40px. Multiple starts/ends are valid.
