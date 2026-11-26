@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify that routing and browsing surfaces stay in sync with the skill.
 
-Seventeen drift classes. The first fourteen and the seventeenth have each
+Eighteen drift classes. The first fourteen and the seventeenth have each
 shipped before; the fifteenth nearly did (#217); the sixteenth guards the
 ADR 0004 split:
 
@@ -49,6 +49,9 @@ ADR 0004 split:
 17. Every type-loop.md sentence that names the top station must name station 0,
    as theta_k = -90deg + k * 360/N does, and each Loop example must draw its
    first station topmost (#443).
+18. An icon total stated in a reader-facing doc or reference must equal the
+   number of entries in the generated icon catalog. This is class 9's twin:
+   `type-it-state.md` said the catalog had 41 icons while it shipped 87.
 """
 
 from __future__ import annotations
@@ -795,6 +798,63 @@ def check_type_counts(errors: list[str], root: Path) -> None:
                 f"{relative.as_posix()}:{number} hardcodes the visual-type count "
                 f"({phrase!r}); point at SKILL.md \u00a73 instead so adding a type "
                 f"cannot leave it stale"
+            )
+
+
+# The icon count drifts the same way the type count did, and by the same
+# mechanism: the catalog is generated from `ICONS` in scripts/build-icons.py, so
+# prose that spells the total out goes stale every time an icon is added. Only
+# `type-it-state.md` states one, and it sat at 41 while the catalog grew to 87.
+# The surface is every reference plus the three reader-facing docs, because an
+# icon count can appear anywhere a type count can.
+#
+# Size units are excluded rather than matched: the same references describe
+# `24\u00d724` icons (`primitive-icons.md`, `type-it-state.md`, `type-steps.md`) and
+# `24px` icons, and none of those is a catalog total. A section marker
+# (`\u00a75 icons`) is a cross-reference, not a count.
+_ICON_SIZE_UNIT = r"px|em|rem|pt|mm|dp|[\u00d7x]"
+ICON_COUNT_RE = re.compile(
+    r"(?<![\w\u00d7x#\u00a7-])\b(\d{1,4})\s+"
+    rf"(?:(?!{_ICON_SIZE_UNIT}\b|\d)[\w/&+-]+\s+){{0,3}}?icons?\b",
+    re.IGNORECASE,
+)
+ICON_REFERENCE_SURFACES = (
+    Path("README.md"),
+    Path("CONTRIBUTING.md"),
+    Path("skills/diagram-design/SKILL.md"),
+)
+ICON_REFERENCE_GLOB = "skills/diagram-design/references/*.md"
+ICON_CATALOG = Path("skills/diagram-design/references/primitive-icons.md")
+
+
+def shipped_icon_count(root: Path) -> int:
+    """Count the catalog entries the generator writes as `### name` headings."""
+    markdown = (root / ICON_CATALOG).read_text(encoding="utf-8")
+    return len(re.findall(r"(?m)^### (\S+)$", markdown))
+
+
+def check_icon_counts(errors: list[str], root: Path) -> None:
+    """Every stated icon total must equal the generated catalog's entry count."""
+    shipped = shipped_icon_count(root)
+    surfaces = list(ICON_REFERENCE_SURFACES) + [
+        path.relative_to(root)
+        for path in sorted(root.glob(ICON_REFERENCE_GLOB))
+    ]
+    for relative in surfaces:
+        path = root / relative
+        if not path.is_file():
+            errors.append(f"icon-count surface is missing: {relative.as_posix()}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for match in ICON_COUNT_RE.finditer(text):
+            number = text.count("\n", 0, match.start()) + 1
+            phrase = " ".join(match.group(0).split())
+            if int(match.group(1)) == shipped:
+                continue
+            errors.append(
+                f"{relative.as_posix()}:{number} states the icon count ({phrase!r}) "
+                f"but {shipped} icons ship in {ICON_CATALOG.name}; use {shipped} "
+                f"or drop the number"
             )
 
 
@@ -1837,6 +1897,7 @@ def main() -> int:
         SKILL.parent,
     )
     check_type_counts(errors, ROOT)
+    check_icon_counts(errors, ROOT)
     check_high_level_reference(errors, HIGH_LEVEL_REFERENCE.read_text(encoding="utf-8"))
     check_onboarding_trust_boundary(
         errors, ONBOARDING_REFERENCE.read_text(encoding="utf-8")
@@ -1873,6 +1934,7 @@ def main() -> int:
         "reference links and style-guide anchors, asset citations, packaged support "
         "files, routing surfaces, size-preset surfaces, "
         "manifest descriptions, Factory install contract, type-count routing, "
+        "icon-count routing, "
         "High-Level invariants, onboarding trust boundary, Line dark-skin contract, "
         "Loop station origin, "
         "font-link parity, title fallback order, type-ramp contract, registered legacy "
