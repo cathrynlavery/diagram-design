@@ -184,6 +184,10 @@ HIDE_DECL_RE = re.compile(
     r"\s*:\s*([^;}{]+)",
     re.IGNORECASE,
 )
+ANIMATION_DECL_RE = re.compile(
+    r"(?:^|[{;])\s*((?:-webkit-)?animation(?:-name|-fill-mode|-direction|-iteration-count|-duration)?)\s*:\s*([^;}{]+)",
+    re.IGNORECASE,
+)
 TAG_RE = re.compile(r"<" + TAG_BODY + r"+>")
 OPEN_TAG_RE = re.compile(r"<(?P<tag>[A-Za-z][\w-]*)\b(?P<attrs>" + TAG_BODY + r"*)>")
 NON_MARK_TAGS = {"text", "tspan", "title", "desc"}
@@ -957,6 +961,233 @@ def declares_hidden(css: str, opacities) -> bool:
     return False
 
 
+def mask_css_tokens(css: str) -> str:
+    """Same-length CSS with comments, strings, unquoted url() and escapes blanked."""
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\r\n]", " ", found.group()),
+        css,
+    )
+
+
+def css_blocks(css: str):
+    """Yield top-level CSS (prelude, body) blocks, retaining nested blocks."""
+    css = blank_css_comments(css)
+    scanned = mask_css_tokens(css)
+    start = 0
+    depth = 0
+    body_start = None
+    for index, char in enumerate(scanned):
+        if char == ";" and depth == 0:
+            start = index + 1
+        elif char == "{":
+            if depth == 0:
+                prelude = css[start:index].strip()
+                body_start = index + 1
+            depth += 1
+        elif char == "}" and depth:
+            depth -= 1
+            if depth == 0:
+                yield prelude, css[body_start:index]
+                start = index + 1
+
+
+KEYFRAME_RE = re.compile(r"^@(?:-webkit-)?keyframes\s+([-\w]+)\b", re.IGNORECASE)
+KEYFRAME_LABEL_RE = re.compile(r"^(?:from|to|(?:100|0)(?:\.0*)?%)$", re.IGNORECASE)
+KEYFRAME_OPEN_RE = re.compile(
+    r"(?:^|(?<=[{;}]))\s*(@(?:-(?:webkit|moz)-)?keyframes(?![-\w\x80-\U0010ffff])[^{};]*\{)",
+    re.IGNORECASE,
+)
+
+
+def mask_keyframes(css: str) -> str:
+    """Blank balanced keyframe blocks outside quoted CSS, comments and url()."""
+    scanned = mask_css_tokens(css)
+    masked = list(css)
+    cursor = 0
+    while True:
+        match = KEYFRAME_OPEN_RE.search(scanned, cursor)
+        if match is None:
+            break
+        depth = 1
+        index = match.end(1)
+        while index < len(scanned) and depth:
+            if scanned[index] == "{":
+                depth += 1
+            elif scanned[index] == "}":
+                depth -= 1
+            index += 1
+        for position in range(match.start(1), index):
+            if masked[position] not in "\r\n":
+                masked[position] = " "
+        cursor = index
+    return "".join(masked)
+
+
+def terminal_visibility(css: str):
+    """Return terminal visibility for each independently animated property."""
+    state = {}
+    for declaration in css.split(";"):
+        name, separator, value = declaration.partition(":")
+        if not separator:
+            continue
+        name = name.strip().lower()
+        value = value.split("!", 1)[0].strip().lower()
+        if name == "display":
+            state["display"] = value == "none"
+        elif name == "visibility":
+            state["visibility"] = value in {"hidden", "collapse"}
+        elif name == "opacity":
+            try:
+                amount = number(value.rstrip("%"))
+            except (TypeError, ValueError):
+                amount = None
+            state["opacity"] = amount is not None and amount <= 0
+    return state
+
+
+def nested_css_blocks(css: str):
+    """Yield each CSS block, including blocks nested in conditional rules."""
+    for prelude, body in css_blocks(css):
+        yield prelude, body
+        yield from nested_css_blocks(body)
+
+
+def split_css_list(value: str) -> list:
+    """Split a CSS comma list without splitting functions or quoted strings."""
+    parts, start, depth, quote = [], 0, 0, None
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if quote:
+            if char == "\\":
+                index += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")" and depth:
+            depth -= 1
+        elif char == "," and depth == 0:
+            parts.append(value[start:index].strip())
+            start = index + 1
+        index += 1
+    parts.append(value[start:].strip())
+    return [part for part in parts if part]
+
+
+def keyframe_visibility(source: str) -> dict:
+    """Return explicit 0% and 100% visibility states for CSS keyframes."""
+    found = {}
+    for style in STYLE_RE.finditer(source):
+        for prelude, body in nested_css_blocks(style.group("body")):
+            match = KEYFRAME_RE.match(prelude)
+            if not match:
+                continue
+            frames = {}
+            for frame, declarations in css_blocks(body):
+                for label in frame.split(","):
+                    label = label.strip().lower()
+                    if not KEYFRAME_LABEL_RE.fullmatch(label):
+                        continue
+                    try:
+                        position = 0 if label == "from" or label.startswith("0") else 1
+                    except (TypeError, ValueError):
+                        continue
+                    values = frames.setdefault(position, {})
+                    values.update(terminal_visibility(declarations))
+            if frames:
+                found[match.group(1)] = frames
+    return found
+
+
+def animation_terminal_direction(direction: str, iterations: str):
+    """Return the retained keyframe endpoint, or None for unsupported timing."""
+    direction = direction.strip().lower()
+    if direction not in {"normal", "reverse", "alternate", "alternate-reverse"}:
+        return None
+    try:
+        count = float(iterations.strip())
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(count) or count <= 0 or not count.is_integer():
+        return None
+    count = int(count)
+    if direction == "normal":
+        return 1
+    if direction == "reverse":
+        return 0
+    if direction == "alternate":
+        return 1 if count % 2 else 0
+    return 0 if count % 2 else 1
+
+
+def declares_hidden_animation(css: str, keyframes: dict) -> bool:
+    """Whether a rule retains a definitely hidden terminal keyframe value."""
+    state = {"name": [], "fill-mode": [], "direction": [], "iteration-count": []}
+
+    def set_list(prop, value):
+        parts = split_css_list(value)
+        state[prop] = [part.strip() if prop == "name" else part.strip().lower()
+                       for part in parts]
+
+    def shorthand_parts(value):
+        names, fills, directions, counts = [], [], [], []
+        for spec in split_css_list(value):
+            token_spec = re.sub(r"[\w-]+\([^)]*\)", " ", spec)
+            tokens = re.findall(r"[-+]?(?:\d*\.\d+|\d+)(?:[a-zA-Z%]+)?|[-\w]+",
+                                token_spec)
+            lowered = [token.lower() for token in tokens]
+            names.append(next((token for token in tokens if token in keyframes), ""))
+            fills.append(next((token for token in lowered
+                               if token in {"forwards", "backwards", "both", "none"}), "none"))
+            directions.append(next((token for token in lowered
+                                    if token in {"normal", "reverse", "alternate", "alternate-reverse"}), "normal"))
+            counts.append(next((token for token in lowered
+                                if token == "infinite" or re.fullmatch(r"\d+(?:\.\d+)?", token)), "1"))
+        state["name"], state["fill-mode"], state["direction"], state["iteration-count"] = (
+            names, fills, directions, counts)
+
+    for match in ANIMATION_DECL_RE.finditer(blank_css_comments(css)):
+        prop = match.group(1).lower().removeprefix("-webkit-")
+        value = match.group(2).strip()
+        if prop == "animation":
+            shorthand_parts(value)
+        else:
+            longhand = prop.removeprefix("animation-")
+            if longhand in state:
+                set_list(longhand, value)
+
+    names = state["name"]
+    if not names:
+        return False
+    for index, name in enumerate(names):
+        fill = state["fill-mode"][index % len(state["fill-mode"])] if state["fill-mode"] else "none"
+        if name not in keyframes or fill not in {"forwards", "both"}:
+            continue
+        direction = state["direction"][index % len(state["direction"])] if state["direction"] else "normal"
+        count = state["iteration-count"][index % len(state["iteration-count"])] if state["iteration-count"] else "1"
+        endpoint = animation_terminal_direction(direction, count)
+        if endpoint is not None and any(keyframes[name].get(endpoint, {}).values()):
+            return True
+    return False
+
+
+def animation_selector_rules(source: str, keyframes: dict, document=None) -> list:
+    """Rules retaining a hidden animation endpoint, including nested blocks."""
+    if not keyframes:
+        return []
+    return selector_rules(
+        source,
+        lambda body: declares_hidden_animation(body, keyframes),
+        document,
+        lambda css: ((prelude, body) for prelude, body in nested_css_blocks(css)
+                     if not prelude.lstrip().startswith("@")),
+    )
+
+
 VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link",
              "meta", "source", "track", "wbr"}
 ANY_TAG_RE = re.compile(
@@ -1180,7 +1411,14 @@ def sibling_positions(compounds: list, relations: list, document) -> set:
     return previous
 
 
-def selector_rules(source: str, wanted, document=None) -> list:
+def style_rule_blocks(css: str):
+    css = mask_keyframes(blank_css_comments(css))
+    for rule in re.finditer(r"([^{};]+)\{([^{}]*)\}", mask_css_tokens(css)):
+        yield css[rule.start(1):rule.end(1)], css[rule.start(2):rule.end(2)]
+
+
+def selector_rules(source: str, wanted, document=None,
+                   blocks_of=style_rule_blocks) -> list:
     """(type, subject tokens, ancestors, sibling positions) for accepted rules.
 
     The subject compound must match the element itself, by type when it
@@ -1192,11 +1430,10 @@ def selector_rules(source: str, wanted, document=None) -> list:
     """
     rules = []
     for match in STYLE_RE.finditer(source):
-        css = blank_css_comments(match.group("body"))
-        for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
-            if not wanted(rule.group(2)):
+        for prelude, body in blocks_of(match.group("body")):
+            if not wanted(body):
                 continue
-            for compounds, relations in selector_steps(rule.group(1)):
+            for compounds, relations in selector_steps(prelude):
                 kinds = [compound_kind(compound) for compound in compounds]
                 if not kinds:
                     continue
@@ -1327,6 +1564,17 @@ def parse_series(source: str, findings: list, name: str) -> list:
     document = SelectorDocument(source)
     # fail closed: no cascade, so a later rule that restores visibility does not clear a hide
     hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)), document)
+    keyframes = keyframe_visibility(source)
+    animation_hide_rules = animation_selector_rules(source, keyframes, document)
+
+    def hides_mark(tag, attrs, chain, at=None):
+        tokens = element_tokens(attrs)
+        inline = blank_css_comments(attrs.get("style", ""))
+        return (hides(attrs, ("opacity",))
+                or (bool(keyframes) and declares_hidden_animation(inline, keyframes))
+                or css_matches(tag, tokens, chain, hide_rules, at)
+                or css_matches(tag, tokens, chain, animation_hide_rules, at))
+
     label_hide_rules = selector_rules(
         source, lambda css: declares_hidden(css, ("opacity", "fill-opacity")), document)
     accent_rules = selector_rules(source, lambda css: any(
@@ -1344,9 +1592,7 @@ def parse_series(source: str, findings: list, name: str) -> list:
     # Hiding or painting the <svg> or a page element around it reaches every
     # series. Only whole-element opacity counts: a box with fill-opacity 0
     # still draws its stroke.
-    page_hidden = any(hides(attrs, ("opacity",))
-                      or css_matches(tag, outer[index][1], outer[:index], hide_rules,
-                                     page_positions[index])
+    page_hidden = any(hides_mark(tag, attrs, outer[:index], page_positions[index])
                       for index, (tag, attrs) in enumerate(page))
     page_accent = any(wears_accent(tag, attrs, outer[:index], accent_vars, accent_rules,
                                   page_positions[index])
@@ -1366,9 +1612,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
     # Groups that stop everything inside them drawing.
     hiding = [(group.body_at(), group.body_at() + len(group.group("body")))
               for group in groups
-              if hides(attrs_of(group.group("attrs")), ("opacity",))
-              or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
-                             around[group.start()], hide_rules, group.start())]
+              if hides_mark("g", attrs_of(group.group("attrs")),
+                            around[group.start()], group.start())]
     # A label is drawn by its fill, so fill-opacity 0 on it or anything
     # around it hides it too, though a box with fill-opacity 0 still draws.
     text_opacities = ("opacity", "fill-opacity")
@@ -1483,10 +1728,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
             # The series group's own span is in `hiding` when it hides itself.
             at = body_at + mark.start()
             if drawn and {"data-role", "data-outlier"} & set(mattrs) and (
-                    page_hidden or hides(mattrs, ("opacity",))
-                    or inside_span(at, hiding)
-                    or css_matches(mark.group("tag").lower(), element_tokens(mattrs),
-                                   chain_at(at), hide_rules, at)):
+                    page_hidden or inside_span(at, hiding)
+                    or hides_mark(mark.group("tag").lower(), mattrs, chain_at(at), at)):
                 drawn = False
                 findings.append(
                     "%s:%d: series %r has a bound <%s> hidden by display, "

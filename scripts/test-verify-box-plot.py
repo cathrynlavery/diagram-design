@@ -1185,6 +1185,279 @@ def run_cases(h: Harness) -> int:
             "a series hidden by %s is one finding" % title,
             shipped_with(*swaps), 1, "never drawn",
         )
+
+    # A CSS animation can leave an essential mark hidden after it finishes.
+    # The browser keeps that terminal value only when the animation's fill
+    # mode is forwards or both. A nonzero terminal value and the default none
+    # fill mode are positive controls.
+    for title, css in (
+        ("animation shorthand with forwards",
+         "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+         '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'),
+        ("animation shorthand with both",
+         "@keyframes vanish { 0% { opacity: 1 } 100% { opacity: 0 } } "
+         '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s both}'),
+        ("separate animation name and forwards fill mode",
+         "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+         '[data-name="Auth"] line[data-role="median"]{animation-name:vanish;animation-duration:1s;'
+         'animation-fill-mode:forwards}'),
+    ):
+        h.expect_findings(
+            "a bound mark hidden by %s is one finding" % title,
+            shipped_with(styled(css)), 1, "never drawn",
+        )
+    vanish = styled("@keyframes vanish { from { opacity: 1 } to { opacity: 0 } }")
+    h.expect_findings(
+        "a bound mark hidden by an inline animation is one finding",
+        shipped_with(vanish, (AUTH_MEDIAN, AUTH_MEDIAN.replace(
+            'data-role="median"', 'data-role="median" style="animation: vanish 1s forwards"'
+        ))), 1, "never drawn",
+    )
+    h.expect_findings(
+        "a series hidden by an inline animation on its group is one finding",
+        shipped_with(vanish, (AUTH_G, '<g style="animation: vanish 1s forwards" data-name="Auth"')),
+        1, "never drawn",
+    )
+    h.expect_findings(
+        "animation-direction longhand is read independently",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation-name:vanish;'
+            'animation-duration:1s;animation-direction:reverse;animation-fill-mode:forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "animation-iteration-count longhand is read independently",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation-name:vanish;'
+            'animation-duration:1s;animation-direction:alternate;'
+            'animation-iteration-count:2;animation-fill-mode:forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "a decimal animation duration is not an iteration count",
+        shipped_with(styled(
+            "@keyframes appear { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:appear 2.5s alternate forwards}'
+        )),
+    )
+    h.expect_findings(
+        "duplicate keyframe endpoints merge independent hidden properties",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1; visibility:visible } "
+            "to { opacity: 0 } to { visibility:visible } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "commas inside timing functions do not split animation lists",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s '
+            'cubic-bezier(0.42,0,1,1) forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "short animation longhand lists cycle across animation names",
+        shipped_with(styled(
+            "@keyframes pulse { from { opacity: 1 } to { opacity: 1 } } "
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:pulse 1s,vanish 1s '
+            'forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "a later explicit animation-fill-mode reset wins",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards;'
+            'animation-fill-mode:none}'
+        )),
+    )
+    h.expect_findings(
+        "nested conditional rules are traversed without assuming inactivity",
+        shipped_with(styled(
+            "@media all { @keyframes vanish { from { opacity: 1 } to { opacity: 0 } } } "
+            "@media all { [data-name=\"Auth\"] line[data-role=\"median\"]{"
+            "animation:vanish 1s forwards} }"
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "an inline animation without persistent fill stays drawn after finishing",
+        shipped_with(vanish, (AUTH_MEDIAN, AUTH_MEDIAN.replace(
+            'data-role="median"', 'data-role="median" style="animation: vanish 1s"'
+        ))),
+    )
+    h.expect_clean(
+        "a bound mark with a nonzero animation endpoint stays drawn",
+        shipped_with(styled(
+            "@keyframes appear { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:appear 1s forwards}'
+        )),
+    )
+    h.expect_clean(
+        "a hidden animation endpoint without forwards fill mode does not persist",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s}'
+        )),
+    )
+    h.expect_clean(
+        "a hidden 50 percent keyframe without an explicit 100 percent endpoint is not terminal",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } 50% { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
+        )),
+    )
+    h.expect_findings(
+        "reverse direction retains the hidden 0 percent endpoint",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s reverse forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "alternate direction with one iteration retains the visible 100 percent endpoint",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s alternate 1 forwards}'
+        )),
+    )
+    h.expect_findings(
+        "alternate direction with two iterations retains the hidden 0 percent endpoint",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 0 } to { opacity: 1 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s alternate 2 forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "animation names remain case-sensitive",
+        shipped_with(styled(
+            "@keyframes Vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
+        )),
+    )
+    h.expect_findings(
+        "matching case-sensitive animation name hides the median",
+        shipped_with(styled(
+            "@keyframes Vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:Vanish 1s forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_findings(
+        "a webkit animation with a webkit keyframe hides the median",
+        shipped_with(styled(
+            "@-webkit-keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{-webkit-animation:vanish 1s forwards}'
+        )), 1, "never drawn",
+    )
+    h.expect_clean(
+        "an invalid keyframe percentage is ignored without raising",
+        shipped_with(styled(
+            "@keyframes malformed { 25.% { opacity: 0 } nope% { opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:malformed 1s forwards}'
+        )),
+    )
+    h.expect_clean(
+        "animated fill-opacity does not hide a stroked median",
+        shipped_with(styled(
+            "@keyframes fillaway { from { fill-opacity: 1 } to { fill-opacity: 0 } } "
+            '[data-name="Auth"] line[data-role="median"]{animation:fillaway 1s forwards}'
+        )),
+    )
+    h.expect_findings(
+        "sibling animation rule hides only the matched series",
+        shipped_with(
+            (AUTH_G, '<g class="x"></g>' + AUTH_G),
+            styled(
+                "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+                '.x + [data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
+            ),
+        ), 1, "series 'Auth'",
+    )
+    h.expect_clean(
+        "impossible sibling animation rule passes",
+        shipped_with(styled(
+            "@keyframes vanish { from { opacity: 1 } to { opacity: 0 } } "
+            '.missing + [data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'
+        )),
+    )
+    quoted_selector_css = (
+        '[data-note="@keyframes vanish {"] { color: inherit }\n'
+        "@keyframes real {\n  from { --b: \"}\"; opacity: 1 }\n  to { opacity: 0 }\n}\n"
+        '[data-name="Auth"] rect { display: none }\n'
+    )
+    masked_css = verify.mask_keyframes(quoted_selector_css)
+    h.check(
+        "mask_keyframes preserves exact length, newlines and surrounding rule offsets",
+        len(masked_css) == len(quoted_selector_css)
+        and [idx for idx, ch in enumerate(masked_css) if ch == "\n"]
+        == [idx for idx, ch in enumerate(quoted_selector_css) if ch == "\n"]
+        and masked_css.startswith('[data-note="@keyframes vanish {"] { color: inherit }\n')
+        and masked_css.index('[data-name="Auth"] rect { display: none }')
+        == quoted_selector_css.index('[data-name="Auth"] rect { display: none }')
+        and "@keyframes real" not in masked_css,
+        "masked_css=%r" % masked_css,
+    )
+    h.check(
+        "mask_keyframes handles unclosed keyframe at EOF without raising",
+        len(verify.mask_keyframes("@keyframes open {\n  from { opacity: 0 }"))
+        == len("@keyframes open {\n  from { opacity: 0 }")
+        and verify.mask_keyframes("@keyframes open {\n  from { opacity: 0 }") == "                 \n                     ",
+    )
+    for title, css in (
+        ("double-quoted @keyframes with opening brace in selector",
+         '[data-note="@keyframes vanish {"]{color:inherit}'
+         '[data-name="Auth"] rect{display:none}'),
+        ("single-quoted @-webkit-keyframes with opening brace in selector",
+         "[data-note='@-webkit-keyframes vanish {']{color:inherit}"
+         '[data-name="Auth"] line[data-role="median"]{opacity:0}'),
+        ("negated quoted @keyframes selector on the hiding rule itself",
+         ':not([data-note="@keyframes vanish {"]) [data-name="Auth"] rect{display:none}'),
+        ("unquoted non-prelude @keyframes attribute selector before a hiding rule",
+         '[data-note=@keyframes]{color:inherit}[data-name="Auth"] rect{display:none}'),
+        ("semicolon-terminated @keyframes statement before a hiding rule",
+         '@keyframes stray;[data-name="Auth"] rect{display:none}'),
+        ("quoted semicolon in selector attribute on a hiding rule",
+         ':not([data-note="a;b"]) [data-name="Auth"] rect{display:none}'),
+        ("genuine @keyframes followed by a static hiding rule",
+         "@keyframes pulse{from{opacity:1}to{opacity:1}}"
+         '[data-name="Auth"] rect{display:none}'),
+        ("quoted @keyframes selector before a genuine hidden keyframe animation",
+         '[data-note="@keyframes fake {"]{color:inherit}'
+         '@keyframes vanish{from{--note:"}";opacity:1}to{opacity:0}}'
+         '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'),
+        ("@layer statement before a genuine hidden keyframe animation",
+         "@layer base; @keyframes vanish{from{opacity:1}to{opacity:0}}"
+         '[data-name="Auth"] line[data-role="median"]{animation:vanish 1s forwards}'),
+    ):
+        h.expect_findings(
+            "%s still flags the hidden mark" % title,
+            shipped_with(styled(css)), 1, "never drawn",
+        )
+    h.expect_findings(
+        "quoted @keyframes selector does not swallow a following sibling hide rule",
+        shipped_with(
+            (AUTH_G, '<g class="x"></g>' + AUTH_G),
+            styled(
+                '[data-note="@keyframes vanish {"]{color:inherit}'
+                '.x + [data-name="Auth"] rect{display:none}'
+            ),
+        ), 1, "series 'Auth'",
+    )
+    h.expect_clean(
+        "unmatched quoted @keyframes selector with opening brace does not false-flag",
+        shipped_with(styled('[data-note="@keyframes vanish {"] rect{display:none}')),
+    )
+    h.expect_clean(
+        "quoted @keyframes selector beside a genuine visible keyframe animation passes",
+        shipped_with(styled(
+            '[data-note="@keyframes fake {"]{color:inherit}'
+            '@keyframes appear{from{--note:"}";opacity:0}to{opacity:1}}'
+            '[data-name="Auth"] line[data-role="median"]{animation:appear 1s forwards}'
+        )),
+    )
     # The HTML parser also reads an unquoted value (`display=none`) and an
     # attribute with no value at all (`<div hidden>`), so the checker must
     # read them too (#487 item 4). Quoted text that only spells an attribute
