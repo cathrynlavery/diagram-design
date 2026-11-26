@@ -1197,6 +1197,25 @@ def _parse_sequence(
             _fail(f"malformed edge at line {line_number}")
 
 
+def _strip_state_comment(text: str) -> str:
+    """Drop an inline `%%` comment that follows a state ID.
+
+    Mermaid's state lexer ends an ID at `%%` and skips the rest of the line,
+    while a `: description` and a quoted name keep `%%` as text.
+    """
+    quoted = False
+    for index, char in enumerate(text):
+        if char == '"':
+            quoted = not quoted
+        elif quoted:
+            continue
+        elif char == ":" and text[index - 1 : index] != ":" and text[index + 1 : index + 2] != ":":
+            return text
+        elif text.startswith("%%", index) and not text.startswith("%%{", index):
+            return text[:index].rstrip()
+    return text
+
+
 def _state_endpoint(
     diagram: Diagram,
     token: str,
@@ -1248,6 +1267,9 @@ def _parse_state(
                 note_start = line_number
             else:
                 diagram.notes.append(clean_label(note.group(1)))
+            continue
+        text = _strip_state_comment(text)
+        if not text:
             continue
         if _discard_nonsemantic(diagram, text):
             continue

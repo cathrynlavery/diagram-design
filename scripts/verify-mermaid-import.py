@@ -1026,6 +1026,49 @@ def check_older_state_header(tmp: Path) -> None:
     ok("the older stateDiagram header reads the same as stateDiagram-v2")
 
 
+def check_state_inline_comments(tmp: Path) -> None:
+    """As in Mermaid's state lexer, `%%` after a state ID ends the line."""
+    path = tmp / "state-inline-comment.mmd"
+    commented = (
+        "stateDiagram-v2\n"
+        "    [*] --> Still %% start\n"
+        "    Still --> [*]%%done\n"
+        "    Still --> Moving : go\n"
+        "    Moving --> Still %% another comment\n"
+        "    state Moving %% declared\n"
+        "    state Box { %% composite\n"
+        "        Inner\n"
+        "    } %% closed\n"
+        "    Moving --> Box : 50%% done\n"
+        '    state "Odd %% name" as Odd\n'
+    )
+    plain = (
+        "stateDiagram-v2\n"
+        "    [*] --> Still\n"
+        "    Still --> [*]\n"
+        "    Still --> Moving : go\n"
+        "    Moving --> Still\n"
+        "    state Moving\n"
+        "    state Box {\n"
+        "        Inner\n"
+        "    }\n"
+        "    Moving --> Box : 50%% done\n"
+        '    state "Odd %% name" as Odd\n'
+    )
+    path.write_text(commented, encoding="utf-8")
+    with_comments = run_extract([str(path), "--json"])
+    path.write_text(plain, encoding="utf-8")
+    if with_comments != run_extract([str(path), "--json"]):
+        fail("an inline `%%` comment after a state ID changed the state IR")
+    diagram = json.loads(with_comments)["diagrams"][0]
+    labels = {edge["label"] for edge in diagram["edges"]}
+    if "50%% done" not in labels:
+        fail(f"a transition label lost its `%%` text: {sorted(labels)}")
+    if not any(node["id"] == "Odd" and node["label"] == "Odd %% name" for node in diagram["nodes"]):
+        fail("a quoted state name lost its `%%` text")
+    ok("inline `%%` comments after state IDs are skipped; labels and quoted names keep `%%`")
+
+
 def check_flowchart_header_forms(tmp: Path) -> None:
     path = tmp / "flowchart-header.mmd"
     body = "\n  A[Start] --> B{Ok?}\n  B -->|yes| C[Done]\n"
@@ -2269,6 +2312,7 @@ def main() -> int:
         check_state_descriptions(tmp)
         check_named_composite_states(tmp)
         check_older_state_header(tmp)
+        check_state_inline_comments(tmp)
         check_flowchart_header_forms(tmp)
         check_selection_before_parse(tmp)
         check_utf8_bom(tmp)
