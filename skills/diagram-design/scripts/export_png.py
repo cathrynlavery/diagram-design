@@ -29,11 +29,12 @@ def rasterize(
     out: pathlib.Path,
     scale: float = 2,
     *,
+    channel: str | None = None,
     network_idle_timeout_ms: int = NETWORK_IDLE_TIMEOUT_MS,
     fallback_settle_ms: int = FALLBACK_SETTLE_MS,
 ) -> None:
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
+        browser = playwright.chromium.launch(channel=channel)
         try:
             page = browser.new_page(device_scale_factor=scale)
             page.goto(
@@ -84,8 +85,13 @@ def main() -> int:
     parser.add_argument("src", type=pathlib.Path, help="diagram HTML input")
     parser.add_argument("out", type=pathlib.Path, help="PNG output")
     parser.add_argument("scale", nargs="?", type=exact_size_scale, default=2)
+    parser.add_argument(
+        "--channel",
+        help="Installed Chromium browser channel, e.g. msedge or chrome; "
+        "default: Playwright's bundled Chromium",
+    )
     args = parser.parse_args()
-    rasterize(args.src, args.out, args.scale)
+    rasterize(args.src, args.out, args.scale, channel=args.channel)
     return 0
 
 
