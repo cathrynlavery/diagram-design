@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>在线书店 · 系统架构</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #123a43;
+      --muted: #58777b;
+      --paper: #f3faf8;
+      --line: #cfe2df;
+      --teal: #087f82;
+      --blue: #2874a6;
+      --mint: #e3f5ef;
+      --sans: "Segoe UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: clamp(20px, 4vw, 56px);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 82% 8%, rgba(119, 207, 183, 0.18), transparent 34rem),
+        var(--paper);
+      font-family: var(--sans);
+    }
+    main { width: min(100%, 1440px); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--teal);
+      font: 700 12px/1.4 var(--mono);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.15;
+      letter-spacing: -.04em;
+    }
+    .intro {
+      max-width: 720px;
+      margin: 14px 0 26px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+    .diagram-shell {
+      overflow-x: auto;
+      border: 1px solid rgba(163, 199, 193, .72);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .76);
+      box-shadow: 0 20px 60px rgba(27, 79, 77, .08);
+      scrollbar-color: #9dc9c2 transparent;
+    }
+    svg { display: block; width: 100%; min-width: 900px; height: auto; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      align-items: center;
+      padding: 18px 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .legend-title {
+      color: var(--ink);
+      font: 700 11px var(--mono);
+      letter-spacing: .12em;
+    }
+    .key { display: inline-flex; gap: 9px; align-items: center; }
+    .swatch { width: 24px; height: 3px; border-radius: 2px; background: var(--blue); }
+    .swatch.async { background: var(--teal); }
+    .swatch.return {
+      height: 0;
+      border-top: 2px dashed #7e9ca0;
+      background: transparent;
+    }
+    .footnote {
+      margin: 15px 2px 0;
+      color: #6d898c;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .zone-label { fill: #779496; font: 700 11px var(--mono); letter-spacing: .16em; }
+    .zone-rule { stroke: #dcebe8; stroke-width: 1; }
+    .node {
+      fill: #fff;
+      stroke: #c8dfda;
+      stroke-width: 1.4;
+      filter: url(#shadow);
+    }
+    .node-web { fill: #f0f8fc; stroke: #b7d6e5; }
+    .node-api { fill: #e8f7f3; stroke: #7bc2b2; stroke-width: 1.8; }
+    .node-queue { fill: #e8f7f3; stroke: #91cbbd; }
+    .badge { font: 700 10px var(--mono); letter-spacing: .08em; }
+    .title { fill: var(--ink); font: 700 17px var(--sans); }
+    .subtitle { fill: #638084; font: 12px var(--sans); }
+    .detail { fill: #618084; font: 11px var(--mono); }
+    .icon-stroke { fill: none; stroke: #287c82; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .flow-request { fill: none; stroke: #2874a6; stroke-width: 2.2; marker-end: url(#arrow-blue); }
+    .flow-data { fill: none; stroke: #087f82; stroke-width: 2.2; marker-end: url(#arrow-teal); }
+    .flow-return { fill: none; stroke: #7e9ca0; stroke-width: 1.8; stroke-dasharray: 6 5; marker-end: url(#arrow-muted); }
+    .flow-email { fill: none; stroke: #087f82; stroke-width: 2.2; marker-end: url(#arrow-teal); }
+    .flow-label-bg { fill: #fff; stroke: #d7e8e4; stroke-width: .8; }
+    .flow-label { fill: #355f68; font: 700 10px var(--mono); letter-spacing: .02em; }
+    .flow-label-blue { fill: #28678d; }
+    .flow-label-teal { fill: #087a78; }
+    .number { fill: #bddbd4; font: 700 26px var(--mono); }
+    .callout { fill: #e4f3ef; stroke: #cee6df; stroke-width: 1; }
+    .callout-text { fill: #477177; font: 11px var(--sans); }
+
+    @media (max-width: 600px) {
+      body { padding: 22px 14px; }
+      .intro { font-size: 14px; }
+      .diagram-shell { border-radius: 14px; }
+      .legend { gap: 12px 18px; padding: 16px; }
+    }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .diagram-shell { overflow: visible; border: 0; box-shadow: none; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">系统架构 · 在线书店</p>
+      <h1>从浏览到下单，确认邮件自动送达</h1>
+      <p class="intro">网页通过 API 读取商品并提交订单；API 使用 Redis 加速热门商品查询、以 PostgreSQL 持久化商品与订单，再通过消息队列异步触发邮件确认。</p>
+    </header>
+
+    <section class="diagram-shell" aria-label="在线书店系统架构图">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="online-bookstore-architecture-title online-bookstore-architecture-desc">
+        <title id="online-bookstore-architecture-title">在线书店系统架构</title>
+        <desc id="online-bookstore-architecture-desc">顾客通过网页浏览商品并下单，网页请求后端 API。API 查询 Redis 热门商品缓存并读写 PostgreSQL 商品和订单；订单提交后 API 发布消息到队列，由邮件服务发送确认邮件给顾客。</desc>
+        <defs>
+          <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="1" fill="#d9eae6"/>
+          </pattern>
+          <filter id="shadow" x="-15%" y="-20%" width="130%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#28675f" flood-opacity=".08"/>
+          </filter>
+          <marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 9 4.5 0 9Z" fill="#2874a6"/>
+          </marker>
+          <marker id="arrow-teal" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 9 4.5 0 9Z" fill="#087f82"/>
+          </marker>
+          <marker id="arrow-muted" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0 0 8 4 0 8Z" fill="#7e9ca0"/>
+          </marker>
+        </defs>
+
+        <rect width="1280" height="720" fill="#fbfefd"/>
+        <rect width="1280" height="720" fill="url(#grid)" opacity=".42"/>
+
+        <text class="zone-label" x="48" y="54">用户与应用</text>
+        <line class="zone-rule" x1="48" y1="66" x2="765" y2="66"/>
+        <text class="zone-label" x="890" y="54">数据与异步服务</text>
+        <line class="zone-rule" x1="890" y1="66" x2="1232" y2="66"/>
+
+        <!-- Flows are drawn behind the service cards. -->
+        <path class="flow-request" d="M205 322 H275"/>
+        <path class="flow-return" d="M275 362 H205"/>
+        <path class="flow-request" d="M465 322 H555"/>
+        <path class="flow-return" d="M555 362 H465"/>
+        <path class="flow-data" d="M700 280 V252 H985 V225"/>
+        <path class="flow-return" d="M1025 225 V270 H738 V280"/>
+        <path class="flow-data" d="M765 335 H890"/>
+        <path class="flow-return" d="M890 374 H765"/>
+        <path class="flow-data" d="M690 430 V472 H842 Q857 472 857 487 V562 H900"/>
+        <path class="flow-data" d="M1080 562 H1120"/>
+        <path class="flow-email" d="M1185 620 V678 H122 Q106 678 106 662 V400"/>
+
+        <!-- Connector labels -->
+        <g>
+          <rect class="flow-label-bg" x="209" y="297" width="62" height="19" rx="8"/>
+          <text class="flow-label flow-label-blue" x="240" y="310" text-anchor="middle">浏览 / 下单</text>
+          <rect class="flow-label-bg" x="210" y="366" width="58" height="19" rx="8"/>
+          <text class="flow-label" x="239" y="379" text-anchor="middle">网页响应</text>
+          <rect class="flow-label-bg" x="476" y="297" width="68" height="19" rx="8"/>
+          <text class="flow-label flow-label-blue" x="510" y="310" text-anchor="middle">HTTPS · JSON</text>
+          <rect class="flow-label-bg" x="477" y="366" width="64" height="19" rx="8"/>
+          <text class="flow-label" x="509" y="379" text-anchor="middle">API 响应</text>
+          <rect class="flow-label-bg" x="800" y="226" width="104" height="19" rx="8"/>
+          <text class="flow-label flow-label-teal" x="852" y="239" text-anchor="middle">热门商品缓存</text>
+          <rect class="flow-label-bg" x="789" y="252" width="93" height="19" rx="8"/>
+          <text class="flow-label" x="835" y="265" text-anchor="middle">命中 / 未命中</text>
+          <rect class="flow-label-bg" x="790" y="309" width="83" height="19" rx="8"/>
+          <text class="flow-label flow-label-teal" x="831" y="322" text-anchor="middle">查询 / 写入</text>
+          <rect class="flow-label-bg" x="792" y="378" width="78" height="19" rx="8"/>
+          <text class="flow-label" x="831" y="391" text-anchor="middle">商品 / 订单</text>
+          <rect class="flow-label-bg" x="750" y="480" width="108" height="19" rx="8"/>
+          <text class="flow-label flow-label-teal" x="804" y="493" text-anchor="middle">订单已创建事件</text>
+          <rect class="flow-label-bg" x="1083" y="536" width="32" height="19" rx="8"/>
+          <text class="flow-label flow-label-teal" x="1099" y="549" text-anchor="middle">消费</text>
+          <rect class="flow-label-bg" x="534" y="650" width="136" height="19" rx="8"/>
+          <text class="flow-label flow-label-teal" x="602" y="663" text-anchor="middle">订单确认邮件 · SMTP</text>
+        </g>
+
+        <!-- Customer -->
+        <g aria-label="顾客">
+          <rect class="node" x="40" y="280" width="165" height="120" rx="14"/>
+          <circle cx="77" cy="323" r="17" fill="#e1f1ec"/>
+          <circle class="icon-stroke" cx="77" cy="318" r="5"/>
+          <path class="icon-stroke" d="M67 335c1.4-7 18.6-7 20 0"/>
+          <text class="badge" x="102" y="310" fill="#508079">SHOPPER</text>
+          <text class="title" x="102" y="338">顾客</text>
+          <text class="subtitle" x="57" y="371">浏览商品 · 提交订单</text>
+          <text class="number" x="175" y="390" text-anchor="end">01</text>
+        </g>
+
+        <!-- Web application -->
+        <g aria-label="书店网页应用">
+          <rect class="node node-web" x="275" y="280" width="190" height="120" rx="14"/>
+          <rect x="295" y="301" width="39" height="31" rx="5" fill="#dceef6"/>
+          <rect x="301" y="307" width="27" height="19" rx="2" fill="none" stroke="#347da2" stroke-width="1.5"/>
+          <path class="icon-stroke" d="M306 312h17M306 317h12M306 322h8"/>
+          <text class="badge" x="345" y="310" fill="#477c98">PRESENTATION</text>
+          <text class="title" x="345" y="338">书店网页</text>
+          <text class="subtitle" x="294" y="371">商品目录 · 购物车 · 结账</text>
+          <text class="number" x="435" y="390" text-anchor="end">02</text>
+        </g>
+
+        <!-- Backend API -->
+        <g aria-label="后端 API">
+          <rect class="node node-api" x="555" y="280" width="210" height="150" rx="16"/>
+          <circle cx="589" cy="315" r="17" fill="#cdebe2"/>
+          <path class="icon-stroke" d="m585 308-6 7 6 7m8-14 6 7-6 7m-3-17-4 20"/>
+          <text class="badge" x="617" y="308" fill="#087f82">CORE SERVICE</text>
+          <text class="title" x="617" y="337">后端 API</text>
+          <text class="subtitle" x="575" y="365">商品查询 · 订单处理</text>
+          <rect class="callout" x="575" y="380" width="170" height="29" rx="8"/>
+          <text class="callout-text" x="660" y="398" text-anchor="middle">同步响应 + 异步事件</text>
+          <text class="number" x="735" y="423" text-anchor="end">03</text>
+        </g>
+
+        <!-- Redis cache -->
+        <g aria-label="Redis 热门商品缓存">
+          <rect class="node" x="900" y="115" width="180" height="110" rx="14"/>
+          <rect x="920" y="137" width="33" height="27" rx="5" fill="#d9f0e8"/>
+          <path class="icon-stroke" d="M926 144h21m-21 6h21m-21 6h13"/>
+          <text class="badge" x="964" y="144" fill="#087f82">CACHE</text>
+          <text class="title" x="920" y="184">Redis</text>
+          <text class="subtitle" x="920" y="204">热门商品 · 快速读取</text>
+          <text class="number" x="1051" y="214" text-anchor="end">04</text>
+        </g>
+
+        <!-- PostgreSQL -->
+        <g aria-label="PostgreSQL 商品与订单数据库">
+          <rect class="node" x="890" y="300" width="190" height="130" rx="14"/>
+          <ellipse cx="929" cy="330" rx="16" ry="6" fill="#dceef6" stroke="#4382a0" stroke-width="1.5"/>
+          <path d="M913 330v19c0 3 7 6 16 6s16-3 16-6v-19" fill="#eaf5fa" stroke="#4382a0" stroke-width="1.5"/>
+          <path d="M913 339c0 3 7 6 16 6s16-3 16-6" fill="none" stroke="#4382a0" stroke-width="1.2"/>
+          <text class="badge" x="956" y="333" fill="#39758f">PERSISTENCE</text>
+          <text class="title" x="914" y="377">PostgreSQL</text>
+          <text class="subtitle" x="914" y="400">商品表 · 订单表</text>
+          <text class="number" x="1052" y="418" text-anchor="end">05</text>
+        </g>
+
+        <!-- Message queue -->
+        <g aria-label="订单消息队列">
+          <rect class="node node-queue" x="900" y="520" width="180" height="100" rx="14"/>
+          <circle cx="928" cy="552" r="4" fill="#087f82"/>
+          <circle cx="942" cy="552" r="4" fill="#54aaa0"/>
+          <circle cx="956" cy="552" r="4" fill="#9acfc1"/>
+          <path class="icon-stroke" d="M924 564h37m-5-5 5 5-5 5"/>
+          <text class="badge" x="975" y="552" fill="#087f82">ASYNC</text>
+          <text class="title" x="920" y="590">消息队列</text>
+          <text class="subtitle" x="920" y="608">order.placed</text>
+          <text class="number" x="1052" y="610" text-anchor="end">06</text>
+        </g>
+
+        <!-- Email service -->
+        <g aria-label="邮件服务">
+          <rect class="node" x="1120" y="520" width="130" height="100" rx="14"/>
+          <rect x="1140" y="539" width="34" height="25" rx="4" fill="#e0f2ed" stroke="#328c86" stroke-width="1.4"/>
+          <path class="icon-stroke" d="m1142 542 15 11 15-11"/>
+          <text class="badge" x="1182" y="550" fill="#087f82">EMAIL</text>
+          <text class="title" x="1140" y="586">邮件服务</text>
+          <text class="subtitle" x="1140" y="605">发送确认</text>
+          <text class="number" x="1233" y="610" text-anchor="end">07</text>
+        </g>
+      </svg>
+      <div class="legend" aria-label="图例">
+        <span class="legend-title">流向图例</span>
+        <span class="key"><span class="swatch"></span>同步请求</span>
+        <span class="key"><span class="swatch return"></span>响应 / 返回数据</span>
+        <span class="key"><span class="swatch async"></span>缓存与异步消息</span>
+      </div>
+    </section>
+    <p class="footnote">热门商品优先从 Redis 缓存读取；缓存未命中时由 API 查询 PostgreSQL。下单写入成功后再投递事件，邮件发送与用户请求解耦。</p>
+  </main>
+</body>
+</html>
