@@ -85,6 +85,13 @@ def main() -> int:
                 print(f"OK: {name} rejected — {expected}")
 
         check("canonical-template", source, None)
+        decorative = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 12 12">'
+                      '<path d="M2 2 L10 2 L10 10 L2 10 Z"/></svg>')
+        check("decorative-header-icon", source.replace("<body>", "<body>" + decorative, 1), None)
+        check("only-decorative-svgs", source.replace('<svg ', '<svg aria-hidden="true" ', 1),
+              "motion document needs an accessible SVG")
+        check("unnamed-accessible-header-icon", source.replace("<body>",
+              "<body>" + decorative.replace(' aria-hidden="true"', ''), 1), "needs role=img")
         script_free_none = re.sub(
             r"<script\b[^>]*>.*?</script\s*>", "", source, flags=re.IGNORECASE | re.DOTALL
         )

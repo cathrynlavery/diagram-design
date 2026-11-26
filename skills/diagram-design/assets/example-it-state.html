@@ -9,8 +9,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142;
-      --muted: #4f5d75; --soft: #7a8399; --rule: rgba(45,49,66,0.12);
-      --accent: #eb6c36; --link: #2e5aa8;
+      --muted: #4f5d75; --soft: #5a6580; --rule: rgba(45,49,66,0.12);
+      --accent: #bf4520; --link: #2e5aa8;
       --sans: 'Geist', system-ui, sans-serif;
       --serif: 'Instrument Serif', serif;
       --mono: 'Geist Mono', ui-monospace, monospace;
@@ -28,12 +28,12 @@
     svg .zone-label { fill: rgba(45,49,66,0.40); font-size: 8px; letter-spacing: 0.14em; }
     svg .node { fill: #fff; stroke: #2d3142; stroke-width: 1; }
     svg .node.external { stroke: #4f5d75; stroke-dasharray: 4 3; }
-    svg .node.focal { fill: rgba(235,108,54,0.07); stroke: #eb6c36; stroke-width: 1.4; }
+    svg .node.focal { fill: rgba(191,69,32,0.07); stroke: #bf4520; stroke-width: 1.4; }
     svg .node.survivor { fill: rgba(124,143,111,0.06); stroke: rgba(124,143,111,0.45); }
     svg .node-name { fill: #2d3142; font: 600 12px 'Geist', sans-serif; }
     svg .node-name.survivor { fill: #7c8f6f; }
     svg .sub { fill: #4f5d75; font: 400 10px 'Geist Mono', monospace; }
-    svg .sub.focal { fill: #eb6c36; }
+    svg .sub.focal { fill: #bf4520; }
     svg .arrow-label { font-size: 8px; font-weight: 600; letter-spacing: 0.08em; }
     svg .legend-label { fill: #4f5d75; font-size: 8px; }
   </style>
@@ -50,7 +50,7 @@
         <defs>
           <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
           <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
-          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
           <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2"/></symbol>
           <symbol id="icon-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M7 20h10M9 16v4M15 16v4"/></symbol>
           <symbol id="icon-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
@@ -74,9 +74,9 @@
         <path d="M 252,108 H 340" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
         <path d="M 252,196 H 308 Q 316,196 316,188 V 132 Q 316,124 324,124 H 340" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
         <path d="M 252,284 H 324 Q 332,284 332,276 V 148 Q 332,140 340,140" fill="none" stroke="#2e5aa8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow-link)"/>
-        <line x1="472" y1="148" x2="472" y2="232" stroke="#eb6c36" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow-accent)"/>
+        <line x1="472" y1="148" x2="472" y2="232" stroke="#bf4520" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow-accent)"/>
         <line x1="472" y1="304" x2="472" y2="344" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
-        <path d="M 604,268 H 654 Q 662,268 662,260 V 72 Q 662,64 670,64 H 800 Q 808,64 808,72 V 80" fill="none" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <path d="M 604,268 H 654 Q 662,268 662,260 V 72 Q 662,64 670,64 H 800 Q 808,64 808,72 V 80" fill="none" stroke="#bf4520" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <line x1="808" y1="140" x2="808" y2="216" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
         <line x1="808" y1="272" x2="808" y2="344" stroke="#2e5aa8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow-link)"/>
 
@@ -90,7 +90,7 @@
 
         <!-- Processing -->
         <rect class="node-mask" x="340" y="80" width="264" height="68" rx="6"/><rect class="node focal" x="340" y="80" width="264" height="68" rx="6"/>
-        <use href="#icon-file" x="352" y="100" width="24" height="24" color="#eb6c36"/><text class="node-name" x="384" y="108">Shared Drive</text><text class="sub focal" x="384" y="124">no version control</text><text class="sub" x="384" y="140">department folders</text>
+        <use href="#icon-file" x="352" y="100" width="24" height="24" color="#bf4520"/><text class="node-name" x="384" y="108">Shared Drive</text><text class="sub focal" x="384" y="124">no version control</text><text class="sub" x="384" y="140">department folders</text>
         <rect class="node-mask" x="340" y="232" width="264" height="72" rx="6"/><rect class="node" x="340" y="232" width="264" height="72" rx="6"/>
         <use href="#icon-screen" x="352" y="256" width="24" height="24" color="#2d3142"/><text class="node-name" x="384" y="262">Spreadsheet Handoffs</text><text class="sub" x="384" y="278">local workbooks · macros</text><text class="sub" x="384" y="292">manual reconciliation</text>
         <rect class="node-mask" x="340" y="344" width="264" height="56" rx="6"/><rect class="node survivor" x="340" y="344" width="264" height="56" rx="6"/>
@@ -98,7 +98,7 @@
 
         <!-- Dissemination -->
         <rect class="node-mask" x="704" y="80" width="208" height="60" rx="6"/><rect class="node focal" x="704" y="80" width="208" height="60" rx="6"/>
-        <use href="#icon-screen" x="716" y="100" width="24" height="24" color="#eb6c36"/><text class="node-name" x="748" y="108">Reporting Portal</text><text class="sub focal" x="748" y="124">manual refresh</text>
+        <use href="#icon-screen" x="716" y="100" width="24" height="24" color="#bf4520"/><text class="node-name" x="748" y="108">Reporting Portal</text><text class="sub focal" x="748" y="124">manual refresh</text>
         <rect class="node-mask" x="704" y="216" width="208" height="56" rx="6"/><rect class="node" x="704" y="216" width="208" height="56" rx="6"/>
         <use href="#icon-file" x="716" y="232" width="24" height="24" color="#2d3142"/><text class="node-name" x="748" y="242">Email Report Packs</text><text class="sub" x="748" y="258">weekly · PDF</text>
         <rect class="node-mask" x="704" y="344" width="208" height="56" rx="6"/><rect class="node external" x="704" y="344" width="208" height="56" rx="6"/>
@@ -108,9 +108,9 @@
         <rect class="label-mask" x="260" y="86" width="40" height="16" rx="2"/><text class="arrow-label" x="280" y="98" text-anchor="middle" fill="#2e5aa8">CSV</text>
         <rect class="label-mask" x="260" y="174" width="52" height="16" rx="2"/><text class="arrow-label" x="286" y="186" text-anchor="middle" fill="#2e5aa8">EXPORT</text>
         <rect class="label-mask" x="260" y="262" width="44" height="16" rx="2"/><text class="arrow-label" x="282" y="274" text-anchor="middle" fill="#2e5aa8">XLSX</text>
-        <rect class="label-mask" x="478" y="156" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="168" text-anchor="middle" fill="#eb6c36">COPY</text>
+        <rect class="label-mask" x="478" y="156" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="168" text-anchor="middle" fill="#bf4520">COPY</text>
         <rect class="label-mask" x="478" y="312" width="40" height="16" rx="2"/><text class="arrow-label" x="498" y="324" text-anchor="middle" fill="#4f5d75">LOAD</text>
-        <rect class="label-mask" x="612" y="246" width="44" height="16" rx="2"/><text class="arrow-label" x="634" y="258" text-anchor="middle" fill="#eb6c36">XLSX</text>
+        <rect class="label-mask" x="612" y="246" width="44" height="16" rx="2"/><text class="arrow-label" x="634" y="258" text-anchor="middle" fill="#bf4520">XLSX</text>
         <rect class="label-mask" x="814" y="148" width="36" height="16" rx="2"/><text class="arrow-label" x="832" y="160" text-anchor="middle" fill="#2e5aa8">PDF</text>
         <rect class="label-mask" x="814" y="280" width="48" height="16" rx="2"/><text class="arrow-label" x="838" y="292" text-anchor="middle" fill="#2e5aa8">EMAIL</text>
 
@@ -118,9 +118,9 @@
         <line x1="16" y1="440" x2="944" y2="440" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
         <text class="legend-label" x="16" y="460" letter-spacing="0.14em">LEGEND</text>
         <line x1="80" y1="456" x2="104" y2="456" stroke="#2e5aa8" stroke-width="1.2"/><text class="legend-label" x="112" y="460">data flow</text>
-        <line x1="208" y1="456" x2="232" y2="456" stroke="#eb6c36" stroke-width="1.4"/><text class="legend-label" x="240" y="460">pain-point</text>
+        <line x1="208" y1="456" x2="232" y2="456" stroke="#bf4520" stroke-width="1.4"/><text class="legend-label" x="240" y="460">pain-point</text>
         <rect x="372" y="450" width="16" height="12" rx="2" fill="#fff" stroke="#4f5d75" stroke-width="0.8" stroke-dasharray="4 3"/><text class="legend-label" x="396" y="460">external</text>
-        <rect x="492" y="450" width="16" height="12" rx="2" fill="rgba(235,108,54,0.07)" stroke="#eb6c36"/><text class="legend-label" x="516" y="460">bottleneck</text>
+        <rect x="492" y="450" width="16" height="12" rx="2" fill="rgba(191,69,32,0.07)" stroke="#bf4520"/><text class="legend-label" x="516" y="460">bottleneck</text>
       </svg>
     </div>
   </main>

@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from decimal import Decimal
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-exploded.py"
@@ -103,7 +104,29 @@ def main() -> int:
     crowded = page(module, module.FIGURES["exploded-phone"]())
     module.explode = real_explode
 
+    # Inline SVG spans style the label without changing its visible name.
+    with tempfile.TemporaryDirectory(prefix="verify-label-spans-") as tmp:
+        for label, replacement in (
+            ("styled span", '<tspan font-weight="600">Data</tspan>'),
+            ("mixed nested span text", 'D<tspan>a<tspan>t</tspan></tspan>a'),
+            ("undrawn title and desc", 'Data<title>Data part</title><desc>Storage layer</desc>'),
+        ):
+            path = Path(tmp) / "label-span.html"
+            path.write_text(stack.replace(">Data</text>", ">" + replacement + "</text>", 1), encoding="utf-8")
+            code, output = run(str(path))
+            if code != 0:
+                failures.append(f"{label} failed: {output}")
+            else:
+                print(f"OK: {label} retains the declared name")
+
     cases = {
+        "duplicate path data follows browser first value": (
+            once(r'(<path\b[^>]*?)\bd="', r'\1d="M0 0 L0 1 Z" d="', stack),
+            "silhouette"),
+        "ordinary start tag keeps first duplicate path data": (
+            once(r'(<path\b[^>]*?)/>', r'\1>',
+                 once(r'(<path\b[^>]*?)\bd="', r'\1d="M0 0 L0 1 Z" d="', stack)),
+            "silhouette"),
         "silhouette vertex moved": (
             once(r'(data-role="silhouette" d="M )(-?\d+(?:\.\d+)?)', bump_first_number, stack),
             "silhouette vertex 0"),
@@ -167,6 +190,12 @@ def main() -> int:
         "static part positioned by style": (
             once(r'(data-part="logic")', r'\1 style="transform:translateY(-8px)"', stack),
             "carries a style attribute"),
+        "css transform on a silhouette": (
+            once(r'(data-role="silhouette")', r'\1 style="transform:translate(4px,0)"', stack),
+            "a CSS transform moves projected geometry"),
+        "comment-prefixed css transform on a silhouette": (
+            once(r'(data-role="silhouette")', r'\1 style="/**/transform: translate(4px)"', stack),
+            "a CSS transform moves projected geometry"),
     }
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -180,6 +209,94 @@ def main() -> int:
                 failures.append(f"mutation {name!r} failed for the wrong reason (wanted {expect!r}):\n{output}")
             else:
                 print(f"OK: fails on {name}")
+
+    # A custom property may store the characters "transform:" without moving
+    # the silhouette. The same file with a real declaration is a case above.
+    with tempfile.TemporaryDirectory(prefix="quoted-css-transform-") as tmp:
+        quoted = once(
+            r'(data-role="silhouette")',
+            r'''\1 style="--note: 'literal;transform:translate(999px)'"''',
+            stack,
+        )
+        path = Path(tmp) / "quoted.html"
+        path.write_text(quoted, encoding="utf-8")
+        code, output = run(str(path))
+        if code != 0:
+            failures.append(f"quoted transform text was read as a declaration:\n{output}")
+        else:
+            print("OK: quoted transform text is not a declaration")
+
+    # Declaration parsing must follow CSS escapes and nesting, rather than
+    # treating text stored in a custom property as active declarations.
+    css_cases = [
+        (r"\74 ransform:translate(4px)", True),
+        (r"tr\000061nsform:translate(4px)", True),
+        ("translate:4px 0", True),
+        ("rotate:3deg", True),
+        ("scale:1.1", True),
+        ("--note:{transform:translate(999px)}", False),
+        ("--note:{a:1; transform:translate(999px)}; fill:red", False),
+        ("--note:{transform:none}; rotate:3deg", True),
+        ("--note:func(transform:translate(999px)); fill:red", False),
+    ]
+    with tempfile.TemporaryDirectory(prefix="css-declarations-") as tmp:
+        for index, (style, moves) in enumerate(css_cases):
+            source = once(r'(data-role="silhouette")',
+                          lambda match: match.group(0) + f' style="{style}"', stack)
+            path = Path(tmp) / f"declaration-{index}.html"
+            path.write_text(source, encoding="utf-8")
+            code, output = run(str(path))
+            if bool(code) != moves or (moves and "a CSS transform moves" not in output):
+                failures.append(f"CSS declaration {style!r} expected moves={moves}:\n{output}")
+            else:
+                print(f"OK: CSS declaration moves={moves}: {style}")
+
+    # Standard SVG numeric spellings do not change the projected silhouette.
+    with tempfile.TemporaryDirectory(prefix="silhouette-numeric-") as tmp:
+        original = (ASSETS / "example-exploded-phone.html").read_text(encoding="utf-8")
+        for signed in (False, True):
+            def reencode_path(match):
+                def number(token):
+                    text = token.group(0)
+                    if text in ("0", "1"):
+                        return text  # SVG arc flags are single digits, not numbers.
+                    encoded = format(Decimal(text), "E")
+                    return ("+" if signed and not encoded.startswith("-") else "") + encoded
+                return match.group(1) + re.sub(r"-?\d+(?:\.\d+)?", number, match.group(2)) + match.group(3)
+            encoded = re.sub(r'(<path\b[^>]*?\bd=")([^"]+)(")', reencode_path, original)
+            path = Path(tmp) / "numeric.html"
+            path.write_text(encoded, encoding="utf-8")
+            code, output = run(str(path))
+            if code:
+                failures.append(f"valid scientific path spelling (signed={signed}) rejected: {output}")
+            else:
+                print(f"OK: scientific path spelling, signed={signed}")
+
+    spec = importlib.util.spec_from_file_location("verify_exploded_numeric", CHECKER)
+    verifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(verifier)
+    points, arcs, _ = verifier.parse_path("M .5 +.25 L -1e1 2E+1 Z")
+    if points != [(0.5, 0.25), (-10.0, 20.0)] or arcs != [False, False]:
+        failures.append(f"signed/leading-decimal operands misread: {points}, {arcs}")
+    for malformed in ("M 1e+ 2 L 3 4 Z", "M 1e999 2 L 3 4 Z", "M 1 2 q 3 4 Z",
+                      "M 1 2 A 3 4 0 0e0 1 5 6 Z", "M 1 2 A 3 4 0 0 1.0 5 6 Z"):
+        try:
+            verifier.parse_path(malformed)
+        except (ValueError, IndexError):
+            print("OK: malformed, non-finite, or unsupported path is rejected")
+        else:
+            failures.append(f"invalid path accepted: {malformed}")
+
+    with tempfile.TemporaryDirectory(prefix="silhouette-flag-") as tmp:
+        changed = once(r'(data-role="silhouette" d="M [^"]*? A [\d.]+ [\d.]+ 0 )0( 1 )',
+                       r'\g<1>0e0\2', phone)
+        path = Path(tmp) / "invalid-flag.html"
+        path.write_text(changed, encoding="utf-8")
+        code, output = run(str(path))
+        if not code or "arc flags must be literal 0 or 1" not in output:
+            failures.append(f"invalid native arc flag accepted: {output}")
+        else:
+            print("OK: invalid numeric arc-flag spelling is rejected by public verifier")
 
     code, _ = run()
     if code != 2:

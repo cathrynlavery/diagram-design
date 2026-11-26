@@ -111,6 +111,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -123,7 +125,7 @@ ASSET_DIR = ROOT / "skills/diagram-design/assets"
 
 CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
@@ -183,7 +185,7 @@ DECLARES_VALUE_RE = re.compile(r"\bdata-value\s*=", re.IGNORECASE)
 # by, and an accent FILL on a muted-stroked dot already fails the one-ink
 # rule instead.
 ACCENT_RE = re.compile(
-    r"#eb6c36\b|#f08a59\b|rgba\(\s*235\s*,\s*108\s*,\s*54\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
 
@@ -202,6 +204,68 @@ OVERLAP_SLACK = 0.5        # px, separation below which two dots overprint
 
 MIN_DOTS, MAX_DOTS = 20, 300   # the documented budget, enforced at both ends
 MAX_NAMED = 6                  # labeled dots; past this the tail is a list
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 class Dot:
@@ -346,7 +410,7 @@ def transform_carrier(attrs: dict):
         return "transform=%r" % attrs["transform"]
     style = attrs.get("style")
     if style is not None:
-        found = CSS_MOVES_MARK_RE.search(style)
+        found = CSS_MOVES_MARK_RE.search(blank_css_strings(style))
         if found is not None:
             return "style=%r (the %s property)" % (style, found.group("prop").lower())
     return None
@@ -495,7 +559,7 @@ def check_transforms(source: str, findings: list, name: str) -> None:
                       % (kind, plain(match.group("body"))[:20]))
 
     for match in STYLE_RE.finditer(source):
-        found = CSS_MOVES_MARK_RE.search(match.group("body"))
+        found = CSS_MOVES_MARK_RE.search(blank_css_strings(match.group("body")))
         if found:
             findings.append(
                 "%s:%d: a CSS `%s` declaration — this checker cannot tell "
@@ -543,6 +607,12 @@ def check_scale(dots: list, findings: list, source: str, name: str):
         return None, None
 
     slope, intercept = fit(points)
+    if slope == 0 or not all(map(math.isfinite, (slope, intercept))):
+        findings.append(
+            "%s: the value axis has a zero or non-finite scale — distinct "
+            "values must map to distinct finite positions" % name
+        )
+        return None, None
     if len(points) >= 4:
         for index, (value, drawn) in enumerate(points):
             peers = points[:index] + points[index + 1:]
@@ -828,6 +898,9 @@ def check_ticks(scale, source: str, findings: list, name: str) -> None:
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     """Findings for one already-read document."""
     source = blank_comments(raw)
     findings: list = []

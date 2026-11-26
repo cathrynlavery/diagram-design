@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="utf-8"/><title>service-blueprint japanese two-line labels (#438)</title>
+<style>
+  :root { --color-paper: #ffffff; --color-accent: #e4572e; }
+  body { margin: 0; background: var(--color-paper); }
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="420" viewBox="0 0 560 420">
+  <rect x="40" y="24" width="200" height="24" fill="#ffffff" data-stage="sign-up"/>
+  <text x="140" y="40" fill="#2d3142" font-size="12" text-anchor="middle">sign-up</text>
+  <rect x="260" y="24" width="200" height="24" fill="#ffffff" data-stage="use"/>
+  <text x="360" y="40" fill="#2d3142" font-size="12" text-anchor="middle">use</text>
+
+  <g data-layer="customer">
+    <!-- Japanese split across two <text> lines -->
+    <rect x="40" y="80" width="200" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+          data-stage="sign-up" data-name="歓迎メール"/>
+    <text x="140" y="98" fill="#2d3142" font-size="12" text-anchor="middle">歓迎</text>
+    <text x="140" y="114" fill="#2d3142" font-size="12" text-anchor="middle">メール</text>
+    <!-- Japanese split across two <tspan>s inside one <text> -->
+    <rect x="260" y="80" width="200" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+          data-stage="use" data-name="注文確認"/>
+    <text x="360" y="108" fill="#2d3142" font-size="12" text-anchor="middle">
+      <tspan x="360" dy="0">注文</tspan>
+      <tspan x="360" dy="16">確認</tspan>
+    </text>
+  </g>
+
+  <g data-layer="frontstage">
+    <!-- English two-line still joins with a space -->
+    <rect x="40" y="160" width="200" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+          data-stage="sign-up" data-name="Welcome email"/>
+    <text x="140" y="184" fill="#2d3142" font-size="12" text-anchor="middle">Welcome</text>
+    <text x="140" y="200" fill="#2d3142" font-size="12" text-anchor="middle">email</text>
+    <rect x="260" y="160" width="200" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+          data-stage="use" data-name="Track order"/>
+    <text x="360" y="196" fill="#2d3142" font-size="12" text-anchor="middle">Track order</text>
+  </g>
+
+  <line x1="40" y1="250" x2="460" y2="250" stroke="rgba(45,49,66,0.55)" stroke-width="2" data-role="visibility"/>
+
+  <g data-layer="backstage">
+    <rect x="40" y="280" width="200" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+          data-stage="sign-up" data-name="Create account"/>
+    <text x="140" y="308" fill="#2d3142" font-size="12" text-anchor="middle">Create account</text>
+    <rect x="260" y="280" width="200" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"
+          data-stage="use" data-name="Fulfillment"/>
+    <text x="360" y="308" fill="#2d3142" font-size="12" text-anchor="middle">Fulfillment</text>
+  </g>
+</svg>
+</body>
+</html>

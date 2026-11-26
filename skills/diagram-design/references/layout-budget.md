@@ -17,16 +17,18 @@ Routed from SKILL.md §7 and §8. SKILL.md keeps the grid rule in one line, the 
 
 ### Complexity budget (per diagram)
 
-These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 coral elements, 2 annotation callouts, and the motion limits) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them.
+These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 arrows or transitions, 2 coral elements, 2 annotation callouts, and the motion limits) apply to every type on top of these, and a semantic pattern's own budget in [semantic-patterns.md](semantic-patterns.md) can only tighten them. One type is the exception: SBGN replaces the 9 nodes and 12 arrows rows with its own ceiling below, because a process square is a reaction marker rather than a node and every reaction needs its consumption and production arcs. Its other universal rows still apply, and no other type may exceed 9 nodes or 12 arrows by analogy.
 
 | Limit | Rule |
 |---|---|
 | Max unique components / relationships / ledger entries (architecture delta) | 8 / 10 / 8 |
+| Max admin bands / traffic scopes / nodes (architecture containment) | 2 / 4 / 8 |
 | Max lifelines (sequence) | 5 |
 | Max combined fragments (sequence) | 1 (default); 2 only if each is single-region `opt`/`loop` |
 | Max `alt` regions (sequence) | 2 |
 | Max fragment nesting (sequence) | 1 |
 | Max lanes (swimlane) | 5 |
+| Max lanes / commits / coral (git graph) | 5 / 16 / 2 |
 | Max items (quadrant) | 12 |
 | Max entities (ER) | 8 |
 | Max nesting levels (nested) | 6 |
@@ -49,26 +51,35 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max cells (treemap) | 8 |
 | Max series (line chart) | 5 |
 | Max tasks (Gantt) | 12 |
+| Max stages (steps) | 7, exactly 1 focal stage |
 | Max points (scatter plot) | 30 |
+| Max series / outliers (box plot) | 8 / 8, 1 focal series |
 | Max stages / nodes / flows (sankey) | 3 / 8 / 12 |
 | Max categories (fishbone) | 6 bones, 3 sub-causes each |
 | Max components / links (wardley) | 9 / 12, 2 movement arrows |
 | Max columns / cards (kanban) | 5 / 12 total, 4 per column |
 | Max stages / rows (user journey) | 6 / 3, 2 pain markers |
+| Max stages / layers (service blueprint) | 6 stages; required customer / frontstage / backstage; optional evidence / support; 1 focal cell |
+| Unit Grid | 100 equal cells; 10 × 10; 4px gutters; 1 count; at most 1 focal completed cell |
+| Max tasks / precedence links / ranks (schedule network) | 8 / 12 / 5; all critical paths and total float |
 | Max zones / nodes / paths (deployment) | 3 / 6 / 8, 9 artifacts |
 | Max nodes / edges (dependency) | 9 / 14, 4 ranks, 1 cycle |
+| Max nodes / arcs (arc diagram) | 9 / 14, 1 focal arc |
+| Max requirement rows / primary design links / primary verification links (requirement traceability) | 6 / 1 per row / 1 per row, 1 focal row |
+| Max stages / commands / events / read models (event modeling) | 6 / 1 per stage / 1 per stage / 1 per stage, 2 accent uses |
 | Max classes / relationships (UML class) | 7 / 8, 5 members per compartment |
 | Max activities / slices / cards (story map) | 5 / 3 / 12 |
 | Max tables / columns / FKs (db schema) | 5 / 8 shown / 6 |
+| Max macromolecules / processes / compartments / source-sink / arcs (SBGN) | 7 / 6 / 1 / 2 / 16; replaces the 9 nodes and 12 arrows rows |
 
 If you exceed, split into two diagrams (overview + detail).
 
 ### Page layout
 
-1. **Header** — eyebrow (Geist Mono), title (Instrument Serif), optional subtitle (Geist muted).
+1. **Header** — `eyebrow` role, `title` role, optional subtitle (`node-name` family, `muted`).
 2. **Diagram container** — default: **clean, borderless**, no background — the SVG sits directly on the page paper. Optional *framed* variant (for card-heavy layouts or hero placements): `paper-2` bg + 1px `rule` border + 8px radius + `1.5rem` padding + `overflow-x: auto`.
 3. **Summary cards** — 2–3 col grid with *varied* widths (e.g., `1.1fr 1fr 0.9fr`).
-4. **Footer** — colophon in Geist Mono, muted, hairline top border.
+4. **Footer** — colophon in the `sublabel` role, `muted`, hairline top border.
 
 ## Summary Card Pattern
 
@@ -88,7 +99,7 @@ Don't use 3 identical generic cards. Vary the treatment:
 Rules:
 
 - `background: #ffffff` (not paper — slight lift without shadow)
-- `border: 1px solid rgba(45,49,66,0.12)`
+- `border: 1px solid` the `rule` color
 - `border-radius: 6px`, `padding: 1.25rem`
 - **No `box-shadow`**
 - Card dots: 7px, `border-radius: 50%` — ink / muted / coral / link / soft variants

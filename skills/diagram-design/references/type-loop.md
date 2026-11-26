@@ -60,7 +60,7 @@ station_x(k)        = station_center_x(k) - station_w/2
 station_y(k)        = station_center_y(k) - station_h/2
 ```
 
-Thus station 1 sits at the top, and increasing `k` moves clockwise. Round station rectangles to the nearest 4px grid point after computing the ideal geometry; preserve symmetry when rounding paired stations. Keep ring-circle intersection points to three decimal places so every arc remains on the same circle.
+Thus station 0 sits at the top, and increasing `k` moves clockwise. Round station rectangles to the nearest 4px grid point after computing the ideal geometry; preserve symmetry when rounding paired stations. Keep ring-circle intersection points to three decimal places so every arc remains on the same circle.
 
 ### 2.2 Solid ring-flow endpoints
 

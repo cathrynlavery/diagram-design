@@ -7,10 +7,12 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from math import cos, hypot, isfinite, pi, radians, sin
 from pathlib import Path
+import html
 import re
 import sys
 from typing import Sequence
 from urllib.parse import urlsplit
+from html_comments import TokenizerComments
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -44,10 +46,73 @@ CSS_RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
 CSS_COMBINATOR = re.compile(r"\s+|[>+~]")
 
 
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
+
+
 @dataclass
 class ValueLabel:
     attrs: dict[str, str]
     text: str
+    hidden: bool
 
 
 @dataclass
@@ -104,12 +169,13 @@ def _geometry_tolerance(radius: float | None) -> float:
 
 
 def _contains_geometry_css(css: str) -> bool:
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-    return "\\" in without_comments or CSS_GEOMETRY_PROPERTY.search(without_comments) is not None
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
+    without_strings = blank_comments_outside_strings(blank_css_strings(css))
+    return "\\" in without_comments or CSS_GEOMETRY_PROPERTY.search(without_strings) is not None
 
 
 def _contains_stylesheet_loading(css: str) -> bool:
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
     return CSS_STYLESHEET_LOADING.search(without_comments) is not None
 
 
@@ -142,7 +208,7 @@ def _selector_can_target_chart(selector: str) -> bool:
 
 
 def _stylesheet_can_target_chart(css: str) -> bool:
-    without_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
     if "\\" in without_comments:
         return True
     for prelude, declarations in CSS_RULE.findall(without_comments):
@@ -167,13 +233,21 @@ def _allowed_stylesheet(href: str) -> bool:
 
 
 def _style_property(attrs: dict[str, str], property_name: str) -> str | None:
+    # The last declaration wins, except that an !important declaration beats
+    # any later normal one, as in the CSS cascade.
     result: str | None = None
+    result_important = False
     for declaration in attrs.get("style", "").split(";"):
         if ":" not in declaration:
             continue
         name, raw_value = declaration.split(":", 1)
-        if name.strip().casefold() == property_name:
-            result = raw_value.split("!", 1)[0].strip().casefold()
+        if name.strip().casefold() != property_name:
+            continue
+        value, _, priority = raw_value.partition("!")
+        important = re.fullmatch(r"\s*important\s*", priority, re.I) is not None
+        if important or not result_important:
+            result = value.strip().casefold()
+            result_important = result_important or important
     return result
 
 
@@ -184,7 +258,7 @@ def _presentation_property(attrs: dict[str, str], property_name: str) -> str:
     return attrs.get(property_name, "").strip().casefold()
 
 
-class PolarParser(HTMLParser):
+class PolarParser(TokenizerComments, HTMLParser):
     """Capture charts and the geometry-bearing descendants of each category."""
 
     def __init__(self) -> None:
@@ -194,6 +268,7 @@ class PolarParser(HTMLParser):
         self.style_blocks: list[str] = []
         self.stylesheet_urls: list[str] = []
         self._stack: list[str] = []
+        self._visibility_stack: list[tuple[bool, str]] = []
         self._style_stack: list[tuple[int, int]] = []
         self._chart_depth: int | None = None
         self._chart: Chart | None = None
@@ -219,6 +294,10 @@ class PolarParser(HTMLParser):
             else:
                 data[key] = raw_value or ""
         depth = len(self._stack)
+        parent_state = (
+            self._visibility_stack[-1] if self._visibility_stack else (False, "visible")
+        )
+        visibility_state = _visibility_state(data, parent_state)
 
         if tag == "style":
             self.style_blocks.append("")
@@ -291,7 +370,14 @@ class PolarParser(HTMLParser):
             current = self._current_category()
             if current is not None:
                 if tag == "text" and "data-polar-value-label" in data:
-                    label = ValueLabel(attrs=data, text="")
+                    label = ValueLabel(
+                        attrs=data,
+                        text="",
+                        hidden=(
+                            visibility_state[0]
+                            or visibility_state[1] in {"hidden", "collapse"}
+                        ),
+                    )
                     current.value_labels.append(label)
                     self._value_label_stack.append((depth, label))
             if tag == "line":
@@ -323,6 +409,7 @@ class PolarParser(HTMLParser):
 
         if tag not in VOID_ELEMENTS:
             self._stack.append(tag)
+            self._visibility_stack.append(visibility_state)
 
     def handle_data(self, data: str) -> None:
         if self._style_stack:
@@ -344,6 +431,7 @@ class PolarParser(HTMLParser):
                 self.parse_findings.append(f"mismatched closing tag </{tag}>")
             return
         self._stack.pop()
+        self._visibility_stack.pop()
         depth = len(self._stack)
 
         while self._style_stack and self._style_stack[-1][0] >= depth:
@@ -379,28 +467,43 @@ def _point(attrs: dict[str, str], x_key: str, y_key: str) -> tuple[float, float]
     return x, y
 
 
-def _explicitly_hidden(attrs: dict[str, str]) -> bool:
-    if "hidden" in attrs or attrs.get("aria-hidden", "").strip().casefold() == "true":
-        return True
-    if attrs.get("display", "").strip().casefold() == "none":
-        return True
-    if attrs.get("visibility", "").strip().casefold() == "hidden":
-        return True
-    if "opacity" in attrs and _float(attrs["opacity"].strip()) == 0:
-        return True
-    for declaration in attrs.get("style", "").split(";"):
-        if ":" not in declaration:
-            continue
-        name, raw_value = declaration.split(":", 1)
-        name = name.strip().casefold()
-        value = raw_value.split("!", 1)[0].strip().casefold()
-        if (name == "display" and value == "none") or (
-            name == "visibility" and value == "hidden"
-        ):
-            return True
-        if name == "opacity" and _float(value) == 0:
-            return True
+def _opacity(value: str) -> float:
+    if value.endswith("%"):
+        return _float(value[:-1]) / 100
+    return _float(value)
+
+
+def _stylesheet_can_hide_ancestors(css: str) -> bool:
+    # Without a CSS cascade engine, a hiding rule on an allowed HTML selector
+    # cannot prove readable labels. Reject the rule rather than guessing which
+    # ancestor or competing declaration wins; ordinary layout remains allowed.
+    without_comments = blank_comments_outside_strings(blank_css_strings(css))
+    for _, declarations in CSS_RULE.findall(without_comments):
+        for declaration in declarations.split(";"):
+            suppressed, visibility = _visibility_state({"style": declaration}, (False, "visible"))
+            if suppressed or visibility in {"hidden", "collapse"}:
+                return True
     return False
+
+
+def _visibility_state(
+    attrs: dict[str, str], parent: tuple[bool, str]
+) -> tuple[bool, str]:
+    # Display and group opacity suppress all descendants. Visibility is inherited
+    # but can be restored explicitly on a child, unlike those ancestor effects.
+    suppressed, visibility = parent
+    suppressed = suppressed or (
+        "hidden" in attrs
+        or attrs.get("aria-hidden", "").strip().casefold() == "true"
+        or _presentation_property(attrs, "display") == "none"
+        or _opacity(_presentation_property(attrs, "opacity")) <= 0
+    )
+    own_visibility = _presentation_property(attrs, "visibility")
+    if own_visibility in {"visible", "hidden", "collapse"}:
+        visibility = own_visibility
+    elif own_visibility == "initial":
+        visibility = "visible"
+    return suppressed, visibility
 
 
 def check(path: Path) -> list[str]:
@@ -419,6 +522,8 @@ def check(path: Path) -> list[str]:
         findings.append("CSS stylesheet loading is forbidden in polar documents")
     if any(_contains_geometry_css(css) for css in parser.style_blocks):
         findings.append("CSS geometry properties are forbidden in polar documents")
+    if any(_stylesheet_can_hide_ancestors(css) for css in parser.style_blocks):
+        findings.append("CSS visibility rules can hide chart ancestors")
     if any(_stylesheet_can_target_chart(css) for css in parser.style_blocks):
         findings.append("CSS selectors must not target data-polar-chart")
     if any(not _allowed_stylesheet(href) for href in parser.stylesheet_urls):
@@ -668,7 +773,7 @@ def check(path: Path) -> list[str]:
         else:
             label = category.value_labels[0]
             label_value = _float(label.text.strip())
-            if _explicitly_hidden(label.attrs):
+            if label.hidden:
                 findings.append(f"category {category.name!r} value label is explicitly hidden")
             if not isfinite(label_value):
                 findings.append(f"category {category.name!r} value label must be finite numeric")

@@ -1034,6 +1034,51 @@ def main() -> int:
         else:
             print("OK: --all refuses to run with a shipped variant missing")
 
+    with tempfile.TemporaryDirectory() as raw:
+        directory = Path(raw)
+        # Printed quantities may use scientific notation without changing the geometry.
+        fractional = re.sub(r'>([0-9][0-9,]*) min</text>',
+                            lambda m: f'>{int(m.group(1).replace(",", "")) / 100000:g} min</text>', source)
+        fractional = re.sub(r'>0(\.[0-9]+) min</text>', r'>\1 min</text>', fractional)
+        quantity_pattern = r'>([0-9][0-9,]*) min</text>'
+        tiny, count = re.subn(quantity_pattern, '>1e-310 min</text>', source)
+        if count != 8:
+            failures.append(f"tiny-quantity fixture expected eight labels, found {count}")
+        tiny_finite = re.sub(
+            quantity_pattern,
+            lambda m: f'>{int(m.group(1).replace(",", "")) * 1e-305:g} min</text>',
+            source,
+        )
+        large_finite = re.sub(
+            quantity_pattern,
+            lambda m: f'>{int(m.group(1).replace(",", "")) * 1e300:g} min</text>',
+            source,
+        )
+        relative_overflow = large_finite.replace('>1.2e+304 min</text>', '>1e-305 min</text>', 1)
+        if relative_overflow == large_finite:
+            failures.append("could not build the relative-scale overflow fixture")
+        numeric_cases = (
+            ("equivalent scientific", source.replace('>12,000 min</text>', '>1.2e4 min</text>'), True, ""),
+            ("explicit plus and uppercase exponent", source.replace('>12,000 min</text>', '>+1.2E4 min</text>'), True, ""),
+            ("leading decimal with exponent", source.replace('>12,000 min</text>', '>.12e5 min</text>'), True, ""),
+            ("fractional quantity scale", fractional, True, ""),
+            ("wrong exponent", source.replace('>12,000 min</text>', '>1.2e3 min</text>'), False, "off the scale"),
+            ("negative quantity", source.replace('>12,000 min</text>', '>−1.2e4 min</text>'), False, "must be finite and positive"),
+            ("overflowing quantity", source.replace('>12,000 min</text>', '>1e400 min</text>'), False, "must be finite and positive"),
+            ("incomplete exponent", source.replace('>12,000 min</text>', '>1.2e min</text>'), False, "no readable value"),
+            ("eight tiny quantities cannot bypass scale fidelity", tiny, False, "scale must be finite and positive"),
+            ("tiny quantities with a finite shared scale", tiny_finite, True, ""),
+            ("finite scales with an overflowing relative comparison", relative_overflow, False, "non-finite relative scale"),
+        )
+        for index, (name, changed, expected_pass, finding) in enumerate(numeric_cases):
+            path = directory / f'numeric-{index}.html'
+            path.write_text(changed, encoding="utf-8")
+            code, output = run(path)
+            if (code == 0) != expected_pass or (not expected_pass and finding not in output) or "Traceback" in output:
+                failures.append(f"numeric case {name} unexpected result: {output.strip()}")
+            else:
+                print(f"OK: numeric case {name}")
+
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:

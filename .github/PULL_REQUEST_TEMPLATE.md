@@ -32,6 +32,7 @@ Write "Not applicable" only when the PR has no visual output changes.
 
 ## Checklist
 
+- [ ] I have no more than five open PRs here, including drafts, and have addressed feedback on my existing PRs
 - [ ] No new entries added to `scripts/lint-skin-baseline.txt`
 - [ ] Generated and source files are consistent (extractor ↔ verifier ↔ reference ↔ command)
 - [ ] Accessible SVG contract satisfied for new/changed examples

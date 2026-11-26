@@ -46,11 +46,15 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
 import re
 import sys
+from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -61,7 +65,7 @@ LINE_RE = re.compile(r"<line\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>", re.IGNORECASE | re.DOTALL)
 ATTR_RE = re.compile(r'(?P<name>[\w:-]+)="(?P<value>[^"]*)"')
 TAG_RE = re.compile(r"<[^>]+>")
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
@@ -79,11 +83,73 @@ GEOMETRY_TOLERANCE = 0.75
 # A carry must reach both bars it connects. 2px forgives stroke caps, nothing
 # more.
 CARRY_SPAN_TOLERANCE = 2.0
-VALUE_TOLERANCE = 1e-9
+HORIZONTAL_TOLERANCE = 1e-9
 MAX_BARS = 8
 MAX_SUBTOTALS = 1
-ACCENT_STROKES = {"#eb6c36", "#f08a59"}
-SIGN_CHARS = {"+": 1.0, "-": -1.0, "\u2212": -1.0}
+ACCENT_STROKES = {"#bf4520", "#f08a59"}
+SIGN_CHARS = {"+": 1, "-": -1, "\u2212": -1}
+
+
+# Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).
+# A quote opens a string only where the browser tokenizes one, so a comment, an
+# unquoted url() (escapes included, so `url(a\)"b)` is one token; not a `url(` right
+# after a name character, `#`, `@` or a NUL (read as U+FFFD), as in `myurl(`, `#url(` or
+# `@url(`) and an escaped character are consumed first and kept as written. A string
+# that never closes on its line is kept as well - a line feed, carriage return or form
+# feed ends it - so the checker still fails closed on it, though its `/*` and `*/`
+# become spaces: they open and close no comment. Every other character of a string becomes a space and its newlines
+# stay, so each offset and line number still points into the CSS as written.
+# Only a string in a declaration is blanked. One the next `{` follows before any `;` or `}`
+# sits in a selector or an at-rule prelude, as does one in a statement that starts with
+# `@`; it is kept exactly as written, because selectors are matched against it. Inside
+# a url() every character but a name character becomes `_`. Comments are removed with
+# blank_comments_outside_strings, never a bare `/* ... */` regex, so a `/*` or `*/` in a
+# kept string opens and closes no comment.
+# CSS the browser may read differently comes back unblanked: a character reference
+# (decoded before CSS sees it inside <svg> and in every attribute value) or an escape
+# left outside a string (`u\72 l(` is `url(`). Its `/*` and `*/` become spaces, since
+# a string may hold them, so no comment remover can hide a declaration in it.
+CSS_STRING_RE = re.compile(
+    r"""/\*.*?(?:\*/|\Z)|(?<![-#@\w\x00\x80-\U0010ffff])url\((?![ \t\n\r\f]*["'])(?:\\[\s\S]|[^)\\])*\)|\\[\s\S]"""
+    r"""|(?P<string>"(?:\\[\s\S]|[^"\\\n\r\f])*"|'(?:\\[\s\S]|[^'\\\n\r\f])*')"""
+    r"""|(?P<bad>"(?:\\[\s\S]|[^"\\\n\r\f])*|'(?:\\[\s\S]|[^'\\\n\r\f])*)""",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def blank_css_strings(css: str) -> str:
+    """CSS with the contents of every quoted string in a declaration blanked, same length and lines."""
+    masked = CSS_STRING_RE.sub(lambda found: " " * len(found.group()), css)
+
+    def blank(found):
+        text = found.group()
+        if text[0] in "/\\":
+            return text  # a comment or an escape
+        if found.group("bad") is not None:
+            return text.replace("/*", "  ").replace("*/", "  ")
+        if text[0] not in "\"'":
+            return text[:4] + re.sub(r"[^\w\n-]", "_", text[4:-1]) + ")"  # url()
+        after = re.compile(r"[{;}]").search(masked, found.end())
+        start = max(masked.rfind(mark, 0, found.start()) for mark in "{;}") + 1
+        if (after and after.group() == "{") or masked[start:found.start()].lstrip().startswith("@"):
+            return text
+        return re.sub(r"[^\n]", " ", text)
+
+    blanked = CSS_STRING_RE.sub(blank, css)
+    if "\\" in blanked or html.unescape(css) != css:
+        return css.replace("/*", "  ").replace("*/", "  ")
+    return blanked
+
+
+def blank_comments_outside_strings(css: str) -> str:
+    """CSS with every comment the browser sees turned to spaces, newlines kept, same length.
+
+    A `/*` inside a string or a url() opens no comment, as in the CSS tokenizer.
+    """
+    return CSS_STRING_RE.sub(
+        lambda found: re.sub(r"[^\n]", " ", found.group()) if found.group().startswith("/*") else found.group(),
+        css,
+    )
 
 
 def attrs_of(tag_attrs: str) -> dict[str, str]:
@@ -98,13 +164,33 @@ def parse_number(raw: str) -> float | None:
         return None
 
 
+def parse_exact_number(raw: str) -> Fraction | None:
+    """Keep finite decimal declarations exact; geometry still uses floats."""
+    projected = parse_number(raw)
+    if projected is None:
+        return None
+    if projected == 0:
+        # Inspect only the decimal coefficient/exponent before constructing a
+        # rational denominator; nonzero underflow is not representable geometry.
+        try:
+            if not Decimal(raw).is_zero():
+                return None
+        except InvalidOperation:
+            return None
+        return Fraction(0)
+    try:
+        return Fraction(raw)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
 def transform_carrier(attrs: dict[str, str]) -> str | None:
     """Describe an attribute or inline style that can move verified geometry."""
     if "transform" in attrs:
         return f"transform={attrs['transform']!r}"
     style = attrs.get("style")
     if style is not None:
-        found = CSS_MOVES_MARK_RE.search(style)
+        found = CSS_MOVES_MARK_RE.search(blank_css_strings(style))
         if found is not None:
             return f"style={style!r} (the {found.group('prop').lower()} property)"
     return None
@@ -164,7 +250,7 @@ def check_transforms(source: str, errors: list[str]) -> None:
                 )
 
     for match in STYLE_RE.finditer(source):
-        found = CSS_MOVES_MARK_RE.search(match.group("body"))
+        found = CSS_MOVES_MARK_RE.search(blank_css_strings(match.group("body")))
         if found is not None:
             errors.append(
                 f"CSS {found.group('prop').lower()!r} declaration can move verified waterfall "
@@ -173,13 +259,14 @@ def check_transforms(source: str, errors: list[str]) -> None:
 
 
 class Bar:
-    __slots__ = ("role", "value", "name", "x", "y", "w", "h", "fill", "stroke", "index")
+    __slots__ = ("role", "value", "exact_value", "name", "x", "y", "w", "h", "fill", "stroke", "index")
 
-    def __init__(self, index: int, role: str, value: float, name: str,
+    def __init__(self, index: int, role: str, value: Fraction, name: str,
                  x: float, y: float, w: float, h: float, fill: str, stroke: str) -> None:
         self.index = index
         self.role = role
-        self.value = value
+        self.value = float(value)
+        self.exact_value = value
         self.name = name
         self.x, self.y, self.w, self.h = x, y, w, h
         self.fill = fill
@@ -198,20 +285,20 @@ class Bar:
         return f"{self.name!r} (bar {self.index + 1})"
 
 
-def parse_signed(raw: str, *, signed_required: bool) -> tuple[float | None, bool]:
+def parse_signed(raw: str, *, signed_required: bool) -> tuple[Fraction | None, bool]:
     """Return (value, had_explicit_sign) for a declared or printed value."""
     text = raw.strip()
     if not text:
         return None, False
     sign = SIGN_CHARS.get(text[0])
     if sign is not None:
-        magnitude = parse_number(text[1:].strip())
+        magnitude = parse_exact_number(text[1:].strip())
         if magnitude is None:
             return None, True
         return sign * magnitude, True
     if signed_required:
-        return parse_number(text), False
-    return parse_number(text), False
+        return parse_exact_number(text), False
+    return parse_exact_number(text), False
 
 
 def parse_bars(source: str, errors: list[str]) -> list[Bar]:
@@ -286,39 +373,43 @@ def check_structure(bars: list[Bar], errors: list[str]) -> bool:
     return True
 
 
-def running_levels(bars: list[Bar], errors: list[str]) -> list[tuple[float, float]] | None:
+def running_levels(bars: list[Bar], errors: list[str]) -> list[tuple[Fraction, Fraction]] | None:
     """Return each bar's (level_before, level_after); None when conservation fails."""
-    levels: list[tuple[float, float]] = []
-    running = bars[0].value
-    levels.append((0.0, running))
+    levels: list[tuple[Fraction, Fraction]] = []
+    running = bars[0].exact_value
+    levels.append((Fraction(0), running))
     conserved = True
     for bar in bars[1:]:
         if bar.role == "delta":
             before = running
-            running += bar.value
-            if not math.isfinite(running):
+            running += bar.exact_value
+            try:
+                finite_running = math.isfinite(float(running))
+            except OverflowError:
+                finite_running = False
+            if not finite_running:
                 errors.append(f"{bar.label}: the running total must remain finite")
                 return None
             levels.append((before, running))
             if running < 0:
                 errors.append(
-                    f"{bar.label}: the running total falls to {running:g}; this grammar anchors totals "
+                    f"{bar.label}: the running total falls to {float(running):g}; this grammar anchors totals "
                     "at a zero floor and cannot draw a negative walk"
                 )
                 conserved = False
         else:
-            if abs(running - bar.value) > VALUE_TOLERANCE:
+            if running != bar.exact_value:
                 errors.append(
-                    f"{bar.label}: declares {bar.value:g} but the walk arrives at {running:g}; "
+                    f"{bar.label}: declares {bar.value:g} but the walk arrives at {float(running):g}; "
                     "the running total must conserve"
                 )
                 conserved = False
             levels.append((running, running))
-            running = bar.value
+            running = bar.exact_value
     return levels if conserved else None
 
 
-def check_geometry(bars: list[Bar], levels: list[tuple[float, float]], errors: list[str]) -> tuple[float, float] | None:
+def check_geometry(bars: list[Bar], levels: list[tuple[Fraction, Fraction]], errors: list[str]) -> tuple[float, float] | None:
     start = bars[0]
     if start.h <= 0:
         errors.append(f"{start.label}: the start anchor has no height; no scale can be fitted")
@@ -338,31 +429,31 @@ def check_geometry(bars: list[Bar], levels: list[tuple[float, float]], errors: l
         if abs(bar.y - expected_top) > GEOMETRY_TOLERANCE:
             errors.append(
                 f"{bar.label}: top edge drawn at y={bar.y:g} but the shared scale puts "
-                f"the {hi:g} level at y={expected_top:.1f}"
+                f"the {float(hi):g} level at y={expected_top:.1f}"
             )
         if abs(bar.bottom - expected_bottom) > GEOMETRY_TOLERANCE:
             errors.append(
                 f"{bar.label}: bottom edge drawn at y={bar.bottom:g} but the shared scale puts "
-                f"the {lo:g} level at y={expected_bottom:.1f}"
+                f"the {float(lo):g} level at y={expected_bottom:.1f}"
             )
     return baseline, scale
 
 
-def check_carries(source: str, bars: list[Bar], levels: list[tuple[float, float]],
+def check_carries(source: str, bars: list[Bar], levels: list[tuple[Fraction, Fraction]],
                   baseline: float, scale: float, errors: list[str]) -> None:
-    carries: list[tuple[float, float, float, float, str]] = []
+    carries: list[tuple[float, float, float, Fraction, str]] = []
     for match in LINE_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
         declared = attrs.get("data-carry")
         if declared is None:
             continue
-        value = parse_number(declared)
+        value = parse_exact_number(declared)
         coords = [parse_number(attrs.get(key, "")) for key in ("x1", "y1", "x2", "y2")]
         if value is None or any(v is None for v in coords):
             errors.append(f"carry {declared!r}: non-numeric data-carry or coordinates")
             continue
         x1, y1, x2, y2 = coords  # type: ignore[assignment]
-        if abs(y1 - y2) > VALUE_TOLERANCE:
+        if abs(y1 - y2) > HORIZONTAL_TOLERANCE:
             errors.append(f"carry {declared!r}: a carry is horizontal; drawn from y={y1:g} to y={y2:g}")
             continue
         carries.append((min(x1, x2), max(x1, x2), y1, value, declared))
@@ -382,19 +473,19 @@ def check_carries(source: str, bars: list[Bar], levels: list[tuple[float, float]
             errors.append(f"{gap_label}: {len(matched)} carries cross one gap; a gap has one running total")
             continue
         _, _, y, value, declared = matched[0]
-        if abs(value - level) > VALUE_TOLERANCE:
+        if value != level:
             errors.append(
-                f"{gap_label}: carry declares {declared} but the running total between these bars is {level:g}"
+                f"{gap_label}: carry declares {declared} but the running total between these bars is {float(level):g}"
             )
         expected_y = baseline - scale * level
         if abs(y - expected_y) > GEOMETRY_TOLERANCE:
             errors.append(
-                f"{gap_label}: carry drawn at y={y:g} but the {level:g} level sits at y={expected_y:.1f}"
+                f"{gap_label}: carry drawn at y={y:g} but the {float(level):g} level sits at y={expected_y:.1f}"
             )
 
 
-def printed_values(source: str, bar: Bar) -> list[tuple[float, bool]]:
-    values: list[tuple[float, bool]] = []
+def printed_values(source: str, bar: Bar) -> list[tuple[Fraction, bool]]:
+    values: list[tuple[Fraction, bool]] = []
     for match in TEXT_RE.finditer(source):
         attrs = attrs_of(match.group("attrs"))
         x, y = (parse_number(attrs.get(key, "")) for key in ("x", "y"))
@@ -417,7 +508,7 @@ def check_printed(source: str, bars: list[Bar], errors: list[str]) -> None:
         printed = printed_values(source, bar)
         needs_sign = bar.role == "delta"
         hit = any(
-            abs(value - bar.value) <= VALUE_TOLERANCE and (signed or not needs_sign)
+            value == bar.exact_value and (signed or not needs_sign)
             for value, signed in printed
         )
         if not hit:
@@ -473,6 +564,7 @@ def check_sign_treatment(bars: list[Bar], errors: list[str], paper: str) -> None
 def verify_file(path: Path) -> list[str]:
     errors: list[str] = []
     source = path.read_text(encoding="utf-8")
+    errors.extend(escaped_property_findings(source))
     paper_match = re.search(r'--color-paper\s*:\s*(#[0-9a-fA-F]{6})', source)
     paper = paper_match[1].lower() if paper_match else None
     bars = parse_bars(source, errors)

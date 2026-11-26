@@ -53,7 +53,7 @@ Except for the schema backfill described below, copy the body byte-for-byte. Sav
 Before onboarding overwrites a pristine working copy, and again on the first `save` or `load`, check for `~/.diagram-design/profiles/default.md`. If it is absent:
 
 1. **Read** the current package's pristine shipped `references/style-guide.md`. During onboarding, use the pre-diff body retained before Step 5 writes custom tokens.
-2. Verify it has no profile header and still has all shipped default semantic values and font families. Never snapshot a customized guide as `default`.
+2. Verify it has no profile header and still has all shipped default semantic values, font families, and the shipped `Font source` value (`web`). Never snapshot a customized guide as `default`.
 3. **Bash:** create the library with `mkdir -p ~/.diagram-design/profiles`.
 4. **Write** `default.md` as a normal profile named `Default`, slug `default`, with `source-url: none`, today's created/updated dates, and note `Pristine shipped style guide`; its body is the verified pristine guide.
 5. Re-read the written file and verify one header plus the complete body.
@@ -88,7 +88,7 @@ Marker-first direct reads are what make two parallel workspaces with different c
 **Read** the installed working copy:
 
 1. A valid leading profile header names the active copied-in profile. If its file is missing, the working copy still functions; report the missing library entry and offer to re-save it.
-2. With no header, compare every row in `### Semantic roles` and every font family in the `## Typography` table with the shipped defaults. If any differs, classify it as **custom-unsaved** and offer `save`.
+2. With no header, compare every row in `### Semantic roles`, every font family in the `## Typography` table, and the `Font source` line under `### Font source` with the shipped defaults. If any differs, classify it as **custom-unsaved** and offer `save`. A guide whose only change is `Font source: system` is customized: the offline preference must survive as a saved profile.
 3. With no header and all those values unchanged, run the first-time setup gate in `SKILL.md`.
 
 Do not infer customization from `accent` alone. Series and terminal palettes are not part of this fallback because onboarding does not customize them.

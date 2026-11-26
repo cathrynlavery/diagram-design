@@ -13,7 +13,7 @@ and fails when the drawing and the declaration disagree:
   extreme, or crosses another part; labels outside one column, closer than
   36px, or longer than two words;
 - more than one focal part, a trace line that is not vertical and dashed, an
-  SVG transform anywhere in the figure, a part with two labels, or an
+  SVG or CSS transform anywhere in the figure, a part with two labels, or an
   animated part whose lift is not its exploded z minus its closed z.
 
     python3 scripts/verify-exploded.py --all
@@ -28,12 +28,80 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 TOL = 0.05
 LABEL_PITCH = 36
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+# Scan declaration boundaries before decoding escapes: escaped punctuation,
+# strings, comments and nested custom-property blocks do not delimit CSS.
+CSS_ESCAPE_RE = re.compile(r"\\(?:[0-9a-fA-F]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f])")
+STYLE_TRANSFORM_RE = re.compile(
+    r"(?:-(?:webkit|moz|ms|o)-)?transform|translate|rotate|scale", re.IGNORECASE
+)
+
+
+def decode_css_escape(match: re.Match) -> str:
+    token = match.group()[1:]
+    if token[0] not in "0123456789abcdefABCDEF":
+        return token
+    value = int(token.strip(), 16)
+    return chr(value) if 0 < value <= 0x10ffff and not 0xd800 <= value <= 0xdfff else "\ufffd"
+
+
+def style_declares_transform(style: str) -> bool:
+    nesting = []
+    property_text = []
+    in_value = False
+    index = 0
+    while index < len(style):
+        char = style[index]
+        if style.startswith("/*", index):
+            if not in_value:
+                property_text.append(" ")
+            close = style.find("*/", index + 2)
+            index = len(style) if close < 0 else close + 2
+            continue
+        if char == "\\":
+            escape = CSS_ESCAPE_RE.match(style, index)
+            if escape:
+                if not in_value:
+                    property_text.append(escape.group())
+                index = escape.end()
+                continue
+        if char in "\"'":
+            quote = char
+            if not in_value:
+                property_text.append(char)  # A string cannot be a property name.
+            index += 1
+            while index < len(style):
+                if style[index] == "\\":
+                    index += 2
+                elif style[index] == quote:
+                    index += 1
+                    break
+                else:
+                    index += 1
+            continue
+        if char in "({[":
+            nesting.append(char)
+        elif char in ")}]" and nesting:
+            if nesting[-1] == {")": "(", "}": "{", "]": "["}[char]:
+                nesting.pop()
+        elif not nesting and char == ":" and not in_value:
+            name = CSS_ESCAPE_RE.sub(decode_css_escape, "".join(property_text)).strip()
+            if STYLE_TRANSFORM_RE.fullmatch(name):
+                return True
+            in_value = True
+        elif not nesting and char == ";":
+            property_text = []
+            in_value = False
+        elif not in_value:
+            property_text.append(char)
+        index += 1
+    return False
 
 
 class Element:
@@ -54,7 +122,14 @@ class Element:
             yield from child.walk()
 
 
-class Tree(HTMLParser):
+def first_attributes(attrs):
+    result = {}
+    for name, value in attrs:
+        result.setdefault(name, value if value is not None else "")
+    return result
+
+
+class Tree(TokenizerComments, HTMLParser):
     VOID = {"path", "line", "circle", "rect", "polygon", "ellipse", "meta", "link", "br", "img", "input", "stop"}
 
     def __init__(self):
@@ -63,13 +138,13 @@ class Tree(HTMLParser):
         self.cur = self.root
 
     def handle_starttag(self, tag, attrs):
-        el = Element(tag, {k: (v if v is not None else "") for k, v in attrs}, self.cur)
+        el = Element(tag, first_attributes(attrs), self.cur)
         self.cur.children.append(el)
         if tag not in self.VOID:
             self.cur = el
 
     def handle_startendtag(self, tag, attrs):
-        el = Element(tag, {k: (v if v is not None else "") for k, v in attrs}, self.cur)
+        el = Element(tag, first_attributes(attrs), self.cur)
         self.cur.children.append(el)
 
     def handle_endtag(self, tag):
@@ -80,7 +155,17 @@ class Tree(HTMLParser):
             self.cur = node.parent
 
     def handle_data(self, data):
+        # A label's visible name includes inline tspan descendants, in source
+        # order, as well as text before and after them. <title> and <desc> are
+        # never drawn, so their text stays out of the label.
         self.cur.text += data
+        if self.cur.tag in ("title", "desc"):
+            return
+        for ancestor in self.cur.ancestors():
+            if ancestor.tag in ("title", "desc"):
+                return
+            if ancestor.tag == "text":
+                ancestor.text += data
 
 
 # ---------------------------------------------------------------- projection (independent of the builder)
@@ -139,18 +224,35 @@ def silhouette_poly(origin, r, z0, z1, n=24):
 
 def parse_path(d):
     """Return (endpoints, is_arc, arcs as (rx, ry, rotation, large-arc, sweep)) for an absolute M/L/A/Z path."""
-    tokens = re.findall(r"[MLAZ]|-?\d+(?:\.\d+)?", d)
+    token_re = re.compile(r"[MLAZ]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?")
+    tokens = []
+    end = 0
+    for match in token_re.finditer(d):
+        if d[end:match.start()].strip(" \t\r\n,"):
+            raise ValueError(f"unsupported path token {d[end:match.start()]!r}")
+        tokens.append(match.group())
+        end = match.end()
+    if d[end:].strip(" \t\r\n,"):
+        raise ValueError(f"unsupported path token {d[end:]!r}")
+
+    def operand(index):
+        value = float(tokens[index])
+        if not math.isfinite(value):
+            raise ValueError("non-finite path operand")
+        return value
     pts, arcs, radii = [], [], []
     i = 0
     while i < len(tokens):
         cmd = tokens[i]
         if cmd in ("M", "L"):
-            pts.append((float(tokens[i + 1]), float(tokens[i + 2])))
+            pts.append((operand(i + 1), operand(i + 2)))
             arcs.append(False)
             i += 3
         elif cmd == "A":
-            radii.append(tuple(float(tokens[i + k]) for k in range(1, 6)))
-            pts.append((float(tokens[i + 6]), float(tokens[i + 7])))
+            if tokens[i + 4] not in {"0", "1"} or tokens[i + 5] not in {"0", "1"}:
+                raise ValueError("arc flags must be literal 0 or 1")
+            radii.append(tuple(operand(i + k) for k in range(1, 6)))
+            pts.append((operand(i + 6), operand(i + 7)))
             arcs.append(True)
             i += 8
         elif cmd == "Z":
@@ -335,10 +437,13 @@ def verify_source(source: str, name: str) -> list[str]:
             if not el.attrs.get("stroke-dasharray"):
                 errors.append(f"{name}: trace line must be dashed")
 
-    # 6. Geometry comes from coordinates alone: no SVG transform anywhere in the figure.
+    # 6. Geometry comes from coordinates alone: no SVG or CSS transform in the figure.
     for el in [fig, *fig.walk()]:
         if "transform" in el.attrs:
             errors.append(f"{name}: <{el.tag}> carries transform={el.attrs['transform']!r}; position comes from projected coordinates")
+        style = el.attrs.get("style", "")
+        if style_declares_transform(style):
+            errors.append(f"{name}: <{el.tag}> carries style={style!r}; a CSS transform moves projected geometry")
 
     # 7. Animated parts lift by exactly their explode distance.
     for p in parts:

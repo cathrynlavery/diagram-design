@@ -46,7 +46,7 @@ CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 FOCAL_D = 'd="M320,88 L440,144 L560,256 L680,368"'
 FOCAL_PATH = ('<path data-series="legacy-http" data-ranks="1,2,4,6" '
               'd="M320,88 L440,144 L560,256 L680,368" fill="none" '
-              'stroke="#eb6c36" stroke-width="2.4"/>')
+              'stroke="#bf4520" stroke-width="2.4"/>')
 # The focal series' left-gutter name label, and the gutter it shares with the
 # five other series. The shipped left gutter is x=272 (names) against a first
 # column at x=320; the right gutter mirrors it from x=728.
@@ -105,7 +105,7 @@ def synthetic(n_series, n_cols, top=100, pitch=40, x0=200, dx=150):
         pts = ["%d,%d" % (x, top + (r - 1) * pitch) for x, r in zip(xs, ranks)]
         d = "M" + pts[0] + " " + " ".join("L" + p for p in pts[1:])
         focal = s == 0
-        stroke = "#eb6c36" if focal else "rgba(45,49,66,0.70)"
+        stroke = "#bf4520" if focal else "rgba(45,49,66,0.70)"
         width = "2.4" if focal else "1.2"
         parts.append('<path data-series="s%d" data-ranks="%s" d="%s" fill="none" '
                      'stroke="%s" stroke-width="%s"/>'
@@ -386,7 +386,7 @@ def main() -> int:
         case(
             failures, directory, "two-focal",
             source.replace('d="M320,144 L440,200 L560,200 L680,144" fill="none" stroke="rgba(45,49,66,0.80)" stroke-width="1.2"',
-                           'd="M320,144 L440,200 L560,200 L680,144" fill="none" stroke="#eb6c36" stroke-width="2.4"'),
+                           'd="M320,144 L440,200 L560,200 L680,144" fill="none" stroke="#bf4520" stroke-width="2.4"'),
             source, "exactly one editorially focal",
             "two series carrying the accent stroke",
         )
@@ -394,8 +394,8 @@ def main() -> int:
         # 13. Colour and weight sending focus to different series.
         case(
             failures, directory, "weight-mismatch",
-            source.replace('stroke="#eb6c36" stroke-width="2.4"/>',
-                           'stroke="#eb6c36" stroke-width="1.2"/>', 1),
+            source.replace('stroke="#bf4520" stroke-width="2.4"/>',
+                           'stroke="#bf4520" stroke-width="1.2"/>', 1),
             source, "focus cue",
             "a focal stroke at non-focal weight",
         )
@@ -403,14 +403,14 @@ def main() -> int:
         # 14. Dots: a vertex with no dot, and a focal dot at non-focal size.
         case(
             failures, directory, "dotless",
-            source.replace('      <circle cx="560" cy="256" r="4" fill="#eb6c36"/>\n', "", 1),
+            source.replace('      <circle cx="560" cy="256" r="4" fill="#bf4520"/>\n', "", 1),
             source, "no dot at",
             "a vertex with no dot",
         )
         case(
             failures, directory, "small-dot",
-            source.replace('<circle cx="680" cy="368" r="4" fill="#eb6c36"/>',
-                           '<circle cx="680" cy="368" r="3" fill="#eb6c36"/>'),
+            source.replace('<circle cx="680" cy="368" r="4" fill="#bf4520"/>',
+                           '<circle cx="680" cy="368" r="3" fill="#bf4520"/>'),
             source, "dot size",
             "a focal vertex with a non-focal dot",
         )

@@ -47,6 +47,7 @@ import sys
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -62,7 +63,7 @@ class Block:
     line: int
 
 
-class _BlockScanner(HTMLParser):
+class _BlockScanner(TokenizerComments, HTMLParser):
     """Collect one Block per start tag carrying a data-block-id attribute.
 
     HTMLParser already lowercases tag/attribute names, tolerates unquoted

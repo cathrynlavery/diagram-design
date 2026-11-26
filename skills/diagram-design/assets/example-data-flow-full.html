@@ -9,8 +9,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142; --muted: #4f5d75;
-      --soft: #7a8399; --rule: rgba(45,49,66,0.12); --accent: #eb6c36;
-      --accent-tint: rgba(235,108,54,0.08); --link: #2e5aa8;
+      --soft: #5a6580; --rule: rgba(45,49,66,0.12); --accent: #bf4520;
+      --accent-tint: rgba(191,69,32,0.08); --link: #2e5aa8;
       --sans: 'Geist', system-ui, sans-serif; --serif: 'Instrument Serif', serif;
       --mono: 'Geist Mono', ui-monospace, monospace;
     }
@@ -64,7 +64,7 @@
       <defs>
         <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="0.8" fill="rgba(45,49,66,0.10)"/></pattern>
         <marker id="arr-muted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#4f5d75"/></marker>
-        <marker id="arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#eb6c36"/></marker>
+        <marker id="arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#bf4520"/></marker>
         <marker id="arr-link" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 Z" fill="#2e5aa8"/></marker>
       </defs>
       <rect width="728" height="356" fill="#f5f5f5"/>
@@ -82,7 +82,7 @@
       <g aria-label="Pipeline steps">
         <rect x="180" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/><text x="196" y="14" class="step-number">01</text><text x="196" y="29" class="step-label">INGEST</text>
         <rect x="292" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/><text x="308" y="14" class="step-number">02</text><text x="308" y="29" class="step-label">STORE</text>
-        <rect x="404" y="6" width="32" height="16" rx="8" fill="rgba(235,108,54,0.20)"/><text x="420" y="14" class="step-number focal-text">03</text><text x="420" y="29" class="step-label focal-text">TRANSFORM</text>
+        <rect x="404" y="6" width="32" height="16" rx="8" fill="rgba(191,69,32,0.20)"/><text x="420" y="14" class="step-number focal-text">03</text><text x="420" y="29" class="step-label focal-text">TRANSFORM</text>
         <rect x="516" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/><text x="532" y="14" class="step-number">04</text><text x="532" y="29" class="step-label">ANALYZE</text>
         <rect x="628" y="6" width="32" height="16" rx="8" fill="rgba(45,49,66,0.12)"/><text x="644" y="14" class="step-number">05</text><text x="644" y="29" class="step-label">PUBLISH</text>
       </g>
@@ -95,11 +95,11 @@
 
       <!-- Connectors first. Cross-lane paths use r=8 orthogonal elbows. -->
       <path d="M246 76 H258" fill="none" stroke="#4f5d75" marker-end="url(#arr-muted)"/>
-      <path d="M358 76 H412 Q420 76 420 84 V124" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arr-accent)"/>
+      <path d="M358 76 H412 Q420 76 420 84 V124" fill="none" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arr-accent)"/>
       <path d="M470 156 H482" fill="none" stroke="#4f5d75" marker-end="url(#arr-muted)"/>
       <path d="M582 156 H636 Q644 156 644 164 V204" fill="none" stroke="#2e5aa8" marker-end="url(#arr-link)"/>
       <rect x="368" y="56" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="392" y="65" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RAW TABLE</text>
+      <text x="392" y="65" fill="#bf4520" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RAW TABLE</text>
 
       <!-- Data Engineer: Capture Events -->
       <rect x="146" y="44" width="100" height="64" rx="6" fill="#f5f5f5" stroke="rgba(45,49,66,0.25)"/>
@@ -116,8 +116,8 @@
       <rect x="338" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="346" y="104" class="chip-text">DB</text>
 
       <!-- Data Scientist: Clean and Model (focal) -->
-      <rect x="370" y="124" width="100" height="64" rx="6" fill="rgba(235,108,54,0.07)" stroke="#eb6c36" stroke-width="1.2"/>
-      <rect x="374" y="128" width="18" height="10" rx="3" fill="rgba(235,108,54,0.20)"/><text x="383" y="133" class="role-text focal-text">SCI</text>
+      <rect x="370" y="124" width="100" height="64" rx="6" fill="rgba(191,69,32,0.07)" stroke="#bf4520" stroke-width="1.2"/>
+      <rect x="374" y="128" width="18" height="10" rx="3" fill="rgba(191,69,32,0.20)"/><text x="383" y="133" class="role-text focal-text">SCI</text>
       <text x="420" y="147" class="node-title">Clean &amp; Model</text><text x="420" y="159" class="node-sub">raw → trusted table</text><text x="420" y="171" class="node-tool">Trino · notebooks</text>
       <rect x="374" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="382" y="184" class="chip-text">DB</text>
       <rect x="450" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="458" y="184" class="chip-text">TB</text>
@@ -140,7 +140,7 @@
       <text x="164" y="293" class="legend-label">STEPS</text>
       <rect x="180" y="284" width="24" height="12" rx="6" fill="rgba(45,49,66,0.12)"/><text x="192" y="292" class="step-number">01</text><text x="212" y="293" class="legend-text">Ingest</text>
       <rect x="272" y="284" width="24" height="12" rx="6" fill="rgba(45,49,66,0.12)"/><text x="284" y="292" class="step-number">02</text><text x="304" y="293" class="legend-text">Store</text>
-      <rect x="360" y="284" width="24" height="12" rx="6" fill="rgba(235,108,54,0.20)"/><text x="372" y="292" class="step-number focal-text">03</text><text x="392" y="293" class="legend-text">Transform</text>
+      <rect x="360" y="284" width="24" height="12" rx="6" fill="rgba(191,69,32,0.20)"/><text x="372" y="292" class="step-number focal-text">03</text><text x="392" y="293" class="legend-text">Transform</text>
       <rect x="468" y="284" width="24" height="12" rx="6" fill="rgba(45,49,66,0.12)"/><text x="480" y="292" class="step-number">04</text><text x="500" y="293" class="legend-text">Analyze</text>
       <rect x="568" y="284" width="24" height="12" rx="6" fill="rgba(45,49,66,0.12)"/><text x="580" y="292" class="step-number">05</text><text x="600" y="293" class="legend-text">Publish</text>
 
@@ -155,7 +155,7 @@
       <!-- Legend: flow -->
       <text x="164" y="336" class="legend-label">FLOW</text>
       <line x1="180" y1="333" x2="204" y2="333" stroke="#4f5d75" marker-end="url(#arr-muted)"/><text x="212" y="336" class="legend-text">Standard handoff</text>
-      <line x1="324" y1="333" x2="348" y2="333" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arr-accent)"/><text x="356" y="336" class="legend-text">Focal handoff</text>
+      <line x1="324" y1="333" x2="348" y2="333" stroke="#bf4520" stroke-width="1.2" marker-end="url(#arr-accent)"/><text x="356" y="336" class="legend-text">Focal handoff</text>
       <line x1="460" y1="333" x2="484" y2="333" stroke="#2e5aa8" marker-end="url(#arr-link)"/><text x="492" y="336" class="legend-text">Published output</text>
     </svg>
     </div>

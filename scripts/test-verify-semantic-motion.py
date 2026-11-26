@@ -353,6 +353,47 @@ def main() -> int:
             raise AssertionError(f"duplicate id was accepted: {errors}")
         print("OK: duplicate HTML/SVG id in the animated example is rejected")
 
+    with tempfile.TemporaryDirectory(prefix="verify-semantic-motion-decorative-") as temp_dir:
+        source = module.EXAMPLE.read_text(encoding="utf-8")
+        icon = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 12 12">'
+                '<path d="M2 2 L10 2 L10 10 L2 10 Z"/></svg>')
+        for label, html, expected in (
+            ("decorative icon", source.replace("<body>", "<body>" + icon, 1), None),
+            ("only decorative SVG", source.replace('<svg ', '<svg aria-hidden="true" ', 1),
+             "expected one accessible SVG"),
+            ("extra accessible icon", source.replace("<body>",
+             "<body>" + icon.replace(' aria-hidden="true"', ''), 1),
+             "expected one accessible SVG"),
+        ):
+            candidate = Path(temp_dir) / "candidate.html"
+            candidate.write_text(html, encoding="utf-8")
+            errors = module.verify_example(candidate)
+            if (expected is None and errors) or (expected and not any(expected in e for e in errors)):
+                raise AssertionError(f"{label}: unexpected result {errors}")
+            print(f"OK: {label}")
+
+    # A nested decorative viewport must not replace its outer naming record.
+    with tempfile.TemporaryDirectory(prefix="verify-semantic-motion-nested-") as temp_dir:
+        source = module.EXAMPLE.read_text(encoding="utf-8")
+        start = source.index("<desc ")
+        end = source.index("</desc>", start) + len("</desc>")
+        description = source[start:end]
+        without_desc = source[:start] + source[end:]
+        icon = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 12 12">'
+                '<title>Decorative icon</title><desc>Icon only</desc>'
+                '<path d="M2 2 L10 2 L10 10 L2 10 Z"/></svg>')
+        for label, html, expected in (
+            ("late outer description", without_desc.replace("</svg>", icon + description + "</svg>", 1), None),
+            ("missing outer description", without_desc.replace("</svg>", icon + "</svg>", 1),
+             "description must be non-empty"),
+        ):
+            candidate = Path(temp_dir) / "candidate.html"
+            candidate.write_text(html, encoding="utf-8")
+            errors = module.verify_example(candidate)
+            if (expected is None and errors) or (expected and not any(expected in e for e in errors)):
+                raise AssertionError(f"{label}: unexpected result {errors}")
+            print(f"OK: {label}")
+
     print("All semantic-motion verifier tests passed.")
     return 0
 
