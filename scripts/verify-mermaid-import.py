@@ -1026,6 +1026,32 @@ def check_older_state_header(tmp: Path) -> None:
     ok("the older stateDiagram header reads the same as stateDiagram-v2")
 
 
+def check_flowchart_header_forms(tmp: Path) -> None:
+    path = tmp / "flowchart-header.mmd"
+    body = "\n  A[Start] --> B{Ok?}\n  B -->|yes| C[Done]\n"
+    path.write_text("graph TB" + body, encoding="utf-8")
+    expected = run_extract([str(path), "--json"])
+    for header in ("graph", "flowchart", "graph \t"):
+        path.write_text(header + body, encoding="utf-8")
+        if run_extract([str(path), "--json"]) != expected:
+            fail(f"`{header}` did not read the same as `graph TB`")
+    for header, direction in (
+        ("graph >", "LR"), ("graph <", "RL"), ("flowchart ^", "BT"),
+        ("flowchart v", "TB"), ("graph V", "TB"), ("flowchart-elk TD", "TD"),
+    ):
+        path.write_text(f"{header}; A --> B\n", encoding="utf-8")
+        diagram = json.loads(run_extract([str(path), "--json"]))["diagrams"][0]
+        edges = [(e["source"], e["target"]) for e in diagram["edges"]]
+        if (diagram["kind"], diagram["direction"], edges) != ("flowchart", direction, [("A", "B")]):
+            fail(f"`{header}; A --> B` read as {diagram['kind']} {diagram['direction']} {edges}")
+    for header in (
+        "flowchart XY", "graphics TD", "graph TD2", "graph vertex", "graph v-x", "graph;",
+    ):
+        path.write_text(f"{header}\nA --> B\n", encoding="utf-8")
+        expect_error([str(path)], "not a Mermaid file at line 1")
+    ok("flowchart headers without a direction or with arrow directions parse")
+
+
 def check_selection_before_parse(tmp: Path) -> None:
     """A malformed block fails only when it is selected (#209)."""
     bad_first = tmp / "bad-first-block.md"
@@ -2241,6 +2267,7 @@ def main() -> int:
         check_state_descriptions(tmp)
         check_named_composite_states(tmp)
         check_older_state_header(tmp)
+        check_flowchart_header_forms(tmp)
         check_selection_before_parse(tmp)
         check_utf8_bom(tmp)
         check_legacy_stdout_encoding(tmp)
