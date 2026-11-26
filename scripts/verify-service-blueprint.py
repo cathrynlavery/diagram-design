@@ -40,6 +40,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -69,7 +71,7 @@ SVG_MARK_TAG_RE = re.compile(
     r"<(?:rect|line|text|tspan|g|path|polygon|polyline|circle|ellipse|use)\b[^>]*>", re.IGNORECASE
 )
 SVG_TOKEN_RE = re.compile(r"""\b(?:class|id)\s*=\s*(?:"([^"]*)"|'([^']*)')""")
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 GROUP_OPEN_RE = re.compile(r"<(?:g|svg)\b(?P<attrs>[^>]*?)(?P<selfclose>/?)>", re.IGNORECASE)
 GROUP_CLOSE_RE = re.compile(r"</(?:g|svg)\s*>", re.IGNORECASE)
 STYLE_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
@@ -968,6 +970,7 @@ def check_printed(source: str, cells: list[Cell], errors: list[str]) -> None:
 def verify_file(path: Path) -> list[str]:
     errors: list[str] = []
     source = path.read_text(encoding="utf-8")
+    errors.extend(escaped_property_findings(source))
     check_transforms(source, errors)
     row_marks: list[RowMark] = []
     headers, cells, visibility = parse_marks(source, errors, row_marks)

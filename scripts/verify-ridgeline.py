@@ -98,12 +98,15 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -147,7 +150,7 @@ CSS_MOVES_MARK_RE = re.compile(
 # held to the contract even when the parser cannot read the tag that binds it.
 # See declares_bins.
 DECLARES_BINS_RE = re.compile(r"\bdata-bins\s*=", re.IGNORECASE)
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 NUM_RE = re.compile(r"[-+]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][-+]?\d+)?")
 # Path-data tokens, number branch FIRST so an exponent's `e` is consumed as part
 # of its number instead of being read as a command. See parse_d.
@@ -292,7 +295,7 @@ def first_wins(attrs) -> dict:
     return seen
 
 
-class _Scanner(HTMLParser):
+class _Scanner(TokenizerComments, HTMLParser):
     """Collect paths, lines, texts, title/desc and style elements with ancestry.
 
     HTMLParser already lowercases tag and attribute names, tolerates unquoted
@@ -1130,6 +1133,9 @@ def check_labels(ridges: list, doc: _Scanner, findings: list, name: str, scale) 
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     findings: list = []
     doc = parse_document(raw)
     if doc.error is not None:

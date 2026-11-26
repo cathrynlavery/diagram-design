@@ -52,6 +52,10 @@ Kept out on purpose, so the next audit does not relitigate them.
 - **UML use case** — stick-figure actors and ovals inside a system boundary. A real grammar, but the ovals carry no structure and the figure rarely survives an editorial cut.
 - **Pie / donut** — the repository's own rule ("lists of anything → a table") already rejects it.
 - **Git graph and packet / bit-field** — real grammars, but narrow audiences and weak editorial fit. Revisit only on demand.
+
+## Amendment — git graph admitted on demand (2026-11-15)
+
+Demand for a branching-model grammar is now present. Git graph ships as type 52 under ADR 0002's escape clause: lanes × a shared time-grid with two-parent merge commits. Packet / bit-field stays deferred.
 - **Treemap** — originally rejected here, then overtaken by the implementation admitted in #87 under ADR 0002's escape clause. The 28 → 38 count includes it.
 
 ## Consequences
@@ -69,4 +73,4 @@ The ten types now have canonical PNGs, image-grid entries in README, and source/
 
 ## Amendment — packet structure revisited on demand
 
-On 2026-11-13 the contributor requested Packet structure specifically, satisfying the revisit-on-demand boundary above (issue #519). Its narrow reader question is where fields sit within fixed-width bit rows. The shared ruler, proportional field widths and absolute row offsets are distinct from Layers, Unit Grid and Database schema. The illustrative example claims no real-protocol conformance. This amendment revisits Packet structure only; the earlier Git graph deferral is unchanged. The full shipping set and geometry-aware checker accompany the new type.
+On 2026-11-13 the contributor requested Packet structure specifically, satisfying the revisit-on-demand boundary above (issue #519). Its narrow reader question is where fields sit within fixed-width bit rows. The shared ruler, proportional field widths and absolute row offsets are distinct from Layers, Unit Grid and Database schema. The illustrative example claims no real-protocol conformance. This amendment revisits Packet structure only; the separate Git graph amendment above records its later admission. The full shipping set and geometry-aware checker accompany the new type.

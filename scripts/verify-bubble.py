@@ -101,6 +101,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -108,6 +110,7 @@ import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -153,7 +156,7 @@ DIGIT_RE = re.compile(r"\d")
 # held to the contract even when the parser cannot read the tag that binds it.
 # See declares_bubble.
 DECLARES_BUBBLE_RE = re.compile(r"\bdata-size\s*=", re.IGNORECASE)
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 
 # The accent stroke on either skin, hex or rgba. The focal count keys on the
 # STROKE because the fill is a translucent tint the paper shows through; the
@@ -288,7 +291,7 @@ def first_wins(attrs) -> dict:
     return seen
 
 
-class _Scanner(HTMLParser):
+class _Scanner(TokenizerComments, HTMLParser):
     """Collect circles, texts, title/desc and style elements with ancestry.
 
     HTMLParser already lowercases tag and attribute names, tolerates unquoted
@@ -929,6 +932,9 @@ def check_ticks(x_fit, y_fit, doc: _Scanner, findings: list, name: str) -> None:
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     """Findings for one already-read document."""
     findings: list = []
     doc = parse_document(raw)

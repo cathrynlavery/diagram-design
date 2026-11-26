@@ -182,6 +182,15 @@ class PacketChecks(unittest.TestCase):
         damaged = source.replace('width="128"', 'width="1"', 1)
         self.assertTrue(self.check(damaged.replace('<body>', '<body><!--' + false_svg + '-->')))
 
+    def test_parser_keeps_marks_after_abrupt_comment_endings(self):
+        for opening, visible in (('<!-->', True), ('<!--->', True),
+                                 ('<!-- a --!>', True), ('<!-- ', False)):
+            with self.subTest(opening=opening):
+                parser = self.module.SvgTree()
+                parser.feed('<svg>' + opening + '<rect width="1200" height="600"/><!-- --></svg>')
+                parser.close()
+                self.assertEqual([node.tag for node in parser.roots[0]], ['rect'] if visible else [])
+
     def test_wrong_row_and_overlong_labels_fail(self):
         source = specimen()
         self.assertTrue(self.check(source.replace('data-packet-row="0"', 'data-packet-row="32"', 1)))

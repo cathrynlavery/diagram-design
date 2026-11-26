@@ -2,6 +2,8 @@
 
 **Best for:** what depends on what, across packages, modules, or services — specifically to show two things a **tree** cannot structurally express: (a) a node with **more than one parent** (a shared dependency that several things converge on), and (b) a **cycle**. If neither appears in the data — every node has exactly one parent and nothing points backward — use [Tree](type-tree.md) instead; say so explicitly rather than forcing a graph layout on tree-shaped data.
 
+For task durations, critical paths and total float, use [Schedule network](type-schedule-network.md). Its fixed ES/EF/LS/LF grid and acyclic finish-to-start contract are separate from this view.
+
 ## Layout conventions
 
 - **Ranked layers.** Nodes sit in horizontal rank rows by dependency depth: rank 0 (entry points nothing depends on) at the top, deeper ranks below. Forward edges point downward across ranks, or run horizontal within a single rank row when a dependency compresses to the same depth as its dependent (e.g. a shallow sibling dependency) — never upward outside the one marked cycle. Rank rows are 120px apart.

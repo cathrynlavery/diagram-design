@@ -77,6 +77,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -91,7 +93,7 @@ CIRCLE_RE = re.compile(r"<circle\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 PATH_RE = re.compile(r"<path\b(?P<attrs>[^>]*?)/?>", re.IGNORECASE)
 TEXT_RE = re.compile(r"<text\b(?P<attrs>[^>]*)>(?P<body>.*?)</text>",
                      re.IGNORECASE | re.DOTALL)
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 NAMED_RE = re.compile(r"<(?P<tag>title|desc)\b[^>]*>(?P<body>.*?)</(?P=tag)>",
                       re.IGNORECASE | re.DOTALL)
 CONTAINER_TAGS = r"g|svg|defs|symbol|marker|mask|clipPath|pattern"
@@ -234,7 +236,7 @@ def line_of(source: str, offset: int) -> int:
 # A <style> body is raw text, so comment markers inside it do not hide its
 # rules; the leftmost match wins, so a <style> inside a real comment is blanked.
 STYLE_OR_COMMENT_RE = re.compile(
-    r"<style\b[^>]*>.*?(?:</style\s*>|\Z)|<!--.*?-->", re.IGNORECASE | re.DOTALL)
+    r"<style\b[^>]*>.*?(?:</style\s*>|\Z)|<!--(?:-?>|.*?--!?>)", re.IGNORECASE | re.DOTALL)
 
 
 def blank_comments(source: str) -> str:
@@ -959,6 +961,9 @@ def check_focal(arcs: list, findings: list, name: str) -> None:
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     source = blank_comments(raw)
     findings: list = []
     name = path.name

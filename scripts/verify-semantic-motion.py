@@ -18,6 +18,7 @@ from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+from html_comments import TokenizerComments
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,7 +29,7 @@ ANIMATION = ROOT / "skills/diagram-design/references/animation.md"
 EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
 ADR_0002 = ROOT / "docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md"
 MAX_SKILL_BYTES = 40_000
-VISUAL_TYPE_COUNT = 51
+VISUAL_TYPE_COUNT = 53
 
 PATTERN_NAMES = (
     "Fan-in queue / bottleneck",
@@ -83,7 +84,7 @@ def is_approved_google_fonts_stylesheet(value: str) -> bool:
     )
 
 
-class ContractParser(HTMLParser):
+class ContractParser(TokenizerComments, HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.ids: list[str] = []

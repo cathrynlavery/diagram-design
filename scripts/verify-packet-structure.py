@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
 
+from html_comments import TokenizerComments
 from verify_static_svg_visibility import FONT_FAMILIES, INK, normalize, page
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,7 +34,7 @@ ATTRIBUTES = {
 }
 
 
-class SvgTree(HTMLParser):
+class SvgTree(TokenizerComments, HTMLParser):
     """Collect actual SVG elements, ignoring comments and raw-text HTML titles."""
 
     def __init__(self):

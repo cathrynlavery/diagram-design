@@ -34,6 +34,7 @@ This repository does not duplicate `SKILL.md` into host-specific loader stubs. F
 | Host | How it finds the skill | What you do |
 |---|---|---|
 | **Claude Code** | Marketplace plugin, `~/.claude/skills/`, or project `.claude/skills/` | Use `/plugin install` for managed updates or link the inner skill for editable work. |
+| **Claude Desktop** | **Customize → Skills → Upload a skill** | Build `dist/diagram-design-claude-skill.zip` with `python3 scripts/build-claude-skill-zip.py` and upload that ZIP. The full skill tree is over the upload file limit. |
 | **Codex** | Marketplace plugin or `~/.agents/skills/` | Use the marketplace for managed updates or link the inner skill for editable work. |
 | **Cursor** | `~/.cursor/skills/`, `~/.agents/skills/`, project `.cursor/skills/`, or project `.agents/skills/` | Link the inner skill, then ask in Agent chat. |
 | **Cline CLI / VS Code** | `~/.cline/skills/`, `~/.agents/skills/`, workspace `.cline/skills/`, or workspace `.agents/skills/` | Link the inner skill and enable it from the Skills view when needed. |
@@ -109,7 +110,8 @@ Work in the **project that will own the HTML**, not inside `skills/diagram-desig
 2. **Confirm before drawing** ([SKILL.md §3](../skills/diagram-design/SKILL.md)): visual type, optional semantic pattern, size preset, and what the complexity budget will cut.
 3. **Load** the matching `references/type-*.md` before writing SVG. If a semantic pattern applies, load [`semantic-patterns.md`](../skills/diagram-design/references/semantic-patterns.md) first.
 4. **Write** a self-contained HTML file in the project (for example `docs/diagrams/<name>.html`). Do not silently overwrite gallery examples.
-5. **Run** the pre-output checklist ([SKILL.md §9](../skills/diagram-design/SKILL.md)). Orthogonal connectors, 4px grid, ≤9 nodes unless you split, accent on ≤2 focals.
+5. **Render and look** ([SKILL.md §10](../skills/diagram-design/SKILL.md)): rasterize a scratch preview with `scripts/export_png.py`, open it, and fix overlaps or clipping before the checklist.
+6. **Run** the pre-output checklist ([SKILL.md §9](../skills/diagram-design/SKILL.md)). Orthogonal connectors, 4px grid, ≤9 nodes unless you split, accent on ≤2 focals.
 
 Marker file at the project root, entire file:
 

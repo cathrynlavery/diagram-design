@@ -237,7 +237,7 @@ OPEN_TAG_RE = re.compile(
 ATTRIBUTE_RE = re.compile(
     r"""(?P<name>[^\s=/>]+)\s*(?:=\s*(?P<value>"[^"]*"|'[^']*'|[^\s>]*))?"""
 )
-COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 
 
 def attributes(raw: str) -> dict:

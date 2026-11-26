@@ -95,6 +95,8 @@ Exit: 0 clean, 1 findings, 2 usage.
 
 from __future__ import annotations
 
+from css_property_scan import escaped_property_findings
+
 import argparse
 import html
 import math
@@ -103,6 +105,7 @@ import sys
 import unicodedata
 from html.parser import HTMLParser
 from pathlib import Path
+from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSET_DIR = ROOT / "skills/diagram-design/assets"
@@ -137,7 +140,7 @@ CSS_SIZE_PROPS = ("width", "height")
 # An HTML comment. The parser already refuses to tokenize its contents; scope
 # detection reads raw text and must refuse the same way, or a commented-out
 # draft claims an unrelated file.
-HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--(?:-?>|.*?--!?>)", re.DOTALL)
 # The complete numeric token a label may print. Matching only the first
 # fragment is how "2,140" once agreed with metadata that said 2.
 NUMBER_RE = re.compile(
@@ -334,7 +337,7 @@ def first_wins(attrs) -> dict:
     return seen
 
 
-class _Scanner(HTMLParser):
+class _Scanner(TokenizerComments, HTMLParser):
     """Collect rects, circles, texts, title/desc and style elements with ancestry.
 
     HTMLParser already lowercases tag and attribute names, tolerates unquoted
@@ -1062,6 +1065,9 @@ def check_markers(doc: _Scanner, segments: list, findings: list, name: str) -> N
 
 
 def check_source(path: Path, raw: str) -> list:
+    escaped = escaped_property_findings(raw)
+    if escaped:
+        return [f"{path.name}: {finding}" for finding in escaped]
     """Findings for one already-read document."""
     findings: list = []
     doc = parse_document(raw)
