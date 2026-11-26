@@ -433,7 +433,7 @@ See [`skills/diagram-design/references/onboarding.md`](skills/diagram-design/ref
 
 Onboard a brand once, save the result as a named profile, then add a `.diagram-design` marker containing `profile: <slug>` to each client project. Marker projects read `~/.diagram-design/profiles/<slug>.md` directly, so parallel workspaces can use different brands without overwriting a shared installed `style-guide.md`.
 
-The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. Use `/diagram-design:profile` in Claude Code, `/profile` in Factory Droid or Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagram-design/references/profiles.md) for the storage, marker, and recovery contract.
+The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. Use `/diagram-design:profile` in Claude Code, `/profile` in Factory Droid or Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagram-design/references/profiles.md) for the storage, marker, and recovery contract. Three shipped presets (`blueprint`, `mono-print`, `graphite`) live in [`skills/diagram-design/references/presets/`](skills/diagram-design/references/presets/) and load like profiles.
 
 ---
 
@@ -585,6 +585,10 @@ diagram-design/
 │       ├── SKILL.md                  # philosophy, selection guide, checklist
 │       ├── references/               # loaded only when a type or primitive is chosen
 │       │   ├── style-guide.md        # single source of truth for colors + fonts
+│       │   ├── presets/
+│       │   │   ├── blueprint.md      # cool white, one blueprint-blue accent
+│       │   │   ├── mono-print.md     # black/grey ink, heavier-ink accent
+│       │   │   └── graphite.md       # dark paper, one copper accent
 │       │   ├── semantic-patterns.md  # behavior patterns independent of layout
 │       │   ├── animation.md          # optional motion + accessibility contract
 │       │   ├── onboarding.md         # the URL-to-tokens flow

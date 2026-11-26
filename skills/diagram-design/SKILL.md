@@ -24,7 +24,7 @@ First resolve any project `.diagram-design` marker per [`references/profiles.md`
 
 Open [`references/style-guide.md`](references/style-guide.md) and check the default tokens. If they are still the shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#bf4520`), **pause and ask the user**:
 
-> *"This is your first diagram in this project and the style guide is still default. Customize now? Options: (a) website URL, (b) installed skill, (c) local folder/design-system, (d) paste tokens, (e) keep default, (f) load saved profile."*
+> *"This is your first diagram in this project and the style guide is still default. Customize now? Options: (a) website URL, (b) installed skill, (c) local folder/design-system, (d) paste tokens, (e) keep default, (f) load saved profile or shipped preset (blueprint, mono-print, graphite)."*
 
 Then branch per the matching section of [`references/onboarding.md`](references/onboarding.md); for **(f)** follow [`references/profiles.md`](references/profiles.md).
 
@@ -177,7 +177,7 @@ Type-specific anti-patterns live in each type reference linked in the guide.
 
 ## 5. Design System
 
-**The design system is skinnable.** [`references/style-guide.md`](references/style-guide.md) is the single source of truth for colors, typography, tokens, and the default palette; this file names semantic roles (`paper`, `ink`, `muted`, `accent`, `link`, …). To apply a brand, edit `style-guide.md` or run the URL-based flow in [`references/onboarding.md`](references/onboarding.md).
+**The design system is skinnable.** [`references/style-guide.md`](references/style-guide.md) is the single source of truth for colors, typography, tokens, and the default palette; this file names semantic roles (`paper`, `ink`, `muted`, `accent`, `link`, …). To apply a brand, edit `style-guide.md` or run the URL-based flow in [`references/onboarding.md`](references/onboarding.md). Shipped presets `blueprint`, `mono-print`, and `graphite` load like named profiles; see [`references/profiles.md`](references/profiles.md).
 
 > When specs below or in type references mention "ink", "accent", "muted", etc., look up the current hex value in `style-guide.md`.
 

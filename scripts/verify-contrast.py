@@ -21,9 +21,15 @@ Every row in the table must be classified below. A role this file does not
 know, a role it expects that is missing, or a value it cannot parse is a
 finding, so a new token cannot slip past the gate unmeasured.
 
+In `--all-presets` mode, each preset's optional `### Series palette` table
+(`series-N` rows) is also checked against that skin's `paper` at the 3:1
+non-text threshold for full-opacity strokes.
+
 Usage:
     python3 scripts/verify-contrast.py
     python3 scripts/verify-contrast.py --style-guide path/to/style-guide.md
+    python3 scripts/verify-contrast.py --all-presets
+    python3 scripts/verify-contrast.py --all-presets --presets-dir path/to/presets
 
 Exit: 0 every token clears its bar, 1 a finding.
 """
@@ -37,6 +43,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STYLE_GUIDE = ROOT / "skills/diagram-design/references/style-guide.md"
+PRESETS_DIR = ROOT / "skills/diagram-design/references/presets"
+REQUIRED_PRESET_SLUGS = ("blueprint", "mono-print", "graphite")
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 SKINS = ("light", "dark")
 
@@ -74,6 +83,8 @@ RGBA_RE = re.compile(
     re.IGNORECASE,
 )
 ROW_RE = re.compile(r"^\|\s*`([a-z0-9-]+)`\s*\|")
+SERIES_HEADING_RE = re.compile(r"^### Series palette\b", re.MULTILINE)
+SERIES_ROW_RE = re.compile(r"^\|\s*`(series-\d+)`\s*\|")
 
 
 class ColorError(ValueError):
@@ -128,6 +139,46 @@ def parse_tokens(markdown: str) -> tuple[dict[str, dict[str, str]], list[str]]:
     return tokens, findings
 
 
+def parse_series_tokens(markdown: str) -> tuple[dict[str, dict[str, str]], list[str]]:
+    """Return ({skin: {series-N: raw cell}}, findings) from the Series palette table.
+
+    A preset without a `### Series palette` table is fine and returns empty maps.
+    """
+    findings: list[str] = []
+    tokens: dict[str, dict[str, str]] = {skin: {} for skin in SKINS}
+    heading = SERIES_HEADING_RE.search(markdown)
+    if not heading:
+        return tokens, findings
+
+    table_started = False
+    light_idx, dark_idx = 1, 2
+    for line in markdown[heading.start():].splitlines()[1:]:
+        if not line.startswith("|"):
+            if table_started or line.startswith("#"):
+                break
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if not table_started:
+            table_started = True
+            if not ROW_RE.match(line):
+                lower = [cell.lower() for cell in cells]
+                light_cols = [i for i, cell in enumerate(lower) if "light" in cell]
+                dark_cols = [i for i, cell in enumerate(lower) if "dark" in cell]
+                if light_cols and dark_cols:
+                    light_idx, dark_idx = light_cols[0], dark_cols[0]
+                continue
+        match = SERIES_ROW_RE.match(line)
+        if not match:
+            continue
+        token = match.group(1)
+        if len(cells) <= max(light_idx, dark_idx):
+            findings.append(f"row `{token}` does not have light and dark columns")
+            continue
+        tokens["light"][token] = cells[light_idx]
+        tokens["dark"][token] = cells[dark_idx]
+    return tokens, findings
+
+
 def _channel(value: float) -> float:
     fraction = value / 255
     if fraction <= 0.04045:
@@ -151,7 +202,10 @@ def composite(rgb, alpha: float, background) -> tuple[float, float, float]:
     return tuple(rgb[i] * alpha + background[i] * (1 - alpha) for i in range(3))
 
 
-def measure(tokens: dict[str, dict[str, str]]) -> tuple[list[tuple], list[str]]:
+def measure(
+    tokens: dict[str, dict[str, str]],
+    series: dict[str, dict[str, str]] | None = None,
+) -> tuple[list[tuple], list[str]]:
     """Return (rows, findings). Each row is (skin, role, use, ratio, threshold, ok)."""
     rows: list[tuple] = []
     findings: list[str] = []
@@ -204,41 +258,163 @@ def measure(tokens: dict[str, dict[str, str]]) -> tuple[list[tuple], list[str]]:
                     findings.append(
                         f"{skin}: `{role}` as {use} is {ratio:.2f}:1, below {threshold:g}:1"
                     )
+
+        if series:
+            threshold = THRESHOLDS["non-text"]
+            for token, cell in series.get(skin, {}).items():
+                try:
+                    rgb, alpha = parse_color(cell)
+                except ColorError as error:
+                    findings.append(f"{skin}: `{token}` {error}")
+                    continue
+                foreground = composite(rgb, alpha, paper_rgb)
+                ratio = contrast(foreground, paper_rgb)
+                passed = ratio >= threshold
+                rows.append((skin, token, "non-text", ratio, threshold, passed))
+                if not passed:
+                    findings.append(
+                        f"{skin}: `{token}` as non-text is {ratio:.2f}:1, below {threshold:g}:1"
+                    )
     return rows, findings
 
 
-def check(markdown: str) -> tuple[list[tuple], list[str]]:
+def check(markdown: str, *, include_series: bool = False) -> tuple[list[tuple], list[str]]:
     tokens, findings = parse_tokens(markdown)
-    rows, measured = measure(tokens)
+    series = None
+    if include_series:
+        series, series_findings = parse_series_tokens(markdown)
+        findings = findings + series_findings
+    rows, measured = measure(tokens, series)
     return rows, findings + measured
+
+
+def shipped_preset_paths(presets_dir: Path | None = None) -> list[Path]:
+    """Return `references/presets/<slug>.md` files whose stem is a valid slug."""
+    directory = PRESETS_DIR if presets_dir is None else presets_dir
+    if not directory.is_dir():
+        return []
+    return sorted(
+        path for path in directory.glob("*.md") if SLUG_RE.fullmatch(path.stem)
+    )
+
+
+def report(rows: list[tuple], findings: list[str], quiet: bool, label: str | None = None) -> int:
+    """Print one file's measurements. Return 0 when every measured use passed."""
+    prefix = f"{label}: " if label else ""
+    if not quiet:
+        for skin, role, use, ratio, threshold, passed in rows:
+            mark = "ok  " if passed else "FAIL"
+            print(f"{mark} {prefix}{skin:5} {role:11} {use:10} {ratio:5.2f}:1 (min {threshold:g}:1)")
+    for finding in findings:
+        print(f"FAIL: {prefix}{finding}")
+    if findings or not rows:
+        if not rows:
+            print(f"FAIL: {prefix}no token was measured")
+        print(f"\n{len(findings)} contrast finding(s){f' in {label}' if label else ''}.")
+        return 1
+    print(
+        f"\nOK verify-contrast{f' {label}' if label else ''}: "
+        f"{len(rows)} role checks clear their thresholds in both skins"
+    )
+    return 0
+
+
+def check_path(
+    path: Path, *, include_series: bool = False
+) -> tuple[list[tuple], list[str], str | None]:
+    try:
+        markdown = path.read_text(encoding="utf-8")
+    except OSError as error:
+        return [], [], f"cannot read {path}: {error}"
+    rows, findings = check(markdown, include_series=include_series)
+    return rows, findings, None
+
+
+def check_all_presets(quiet: bool, presets_dir: Path | None = None) -> int:
+    """Measure every shipped preset. Fail closed if a required slug is missing."""
+    directory = PRESETS_DIR if presets_dir is None else presets_dir
+    if not directory.is_dir():
+        print(f"FAIL: shipped presets directory is missing: {directory}")
+        return 1
+    extras = sorted(
+        path.name for path in directory.glob("*.md") if not SLUG_RE.fullmatch(path.stem)
+    )
+    paths = shipped_preset_paths(directory)
+    found = {path.stem for path in paths}
+    missing = [slug for slug in REQUIRED_PRESET_SLUGS if slug not in found]
+    findings: list[str] = []
+    if extras:
+        findings.append(
+            "presets directory has files whose names are not valid slugs: "
+            + ", ".join(extras)
+        )
+    if missing:
+        findings.append(
+            "missing required shipped preset(s): " + ", ".join(missing)
+        )
+    if not paths and not extras:
+        findings.append("presets directory has no .md files")
+    if findings and not paths:
+        for finding in findings:
+            print(f"FAIL: {finding}")
+        print(f"\n{len(findings)} contrast finding(s).")
+        return 1
+
+    failed = 0
+    total_rows = 0
+    for path in paths:
+        rows, measured, error = check_path(path, include_series=True)
+        if error:
+            print(f"FAIL: {error}")
+            failed += 1
+            continue
+        total_rows += len(rows)
+        failed += report(rows, measured, quiet, label=path.stem)
+    for finding in findings:
+        print(f"FAIL: {finding}")
+        failed += 1
+    if failed:
+        print(f"\n{failed} preset check(s) failed.")
+        return 1
+    print(
+        f"\nOK verify-contrast --all-presets: {len(paths)} presets, "
+        f"{total_rows} role checks clear their thresholds"
+    )
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--style-guide", type=Path, default=STYLE_GUIDE)
+    parser.add_argument("--style-guide", type=Path, default=None)
+    parser.add_argument(
+        "--all-presets",
+        action="store_true",
+        help="check every shipped preset in references/presets/",
+    )
+    parser.add_argument(
+        "--presets-dir",
+        type=Path,
+        default=None,
+        help="directory for --all-presets (default: references/presets/)",
+    )
     parser.add_argument("--quiet", action="store_true", help="print only findings and the summary")
     args = parser.parse_args(argv)
 
-    try:
-        markdown = args.style_guide.read_text(encoding="utf-8")
-    except OSError as error:
-        print(f"FAIL: cannot read {args.style_guide}: {error}")
+    if args.presets_dir is not None and not args.all_presets:
+        print("FAIL: --presets-dir requires --all-presets")
         return 1
+    if args.all_presets:
+        if args.style_guide is not None:
+            print("FAIL: --all-presets and --style-guide cannot be combined")
+            return 1
+        return check_all_presets(args.quiet, args.presets_dir)
 
-    rows, findings = check(markdown)
-    if not args.quiet:
-        for skin, role, use, ratio, threshold, passed in rows:
-            mark = "ok  " if passed else "FAIL"
-            print(f"{mark} {skin:5} {role:11} {use:10} {ratio:5.2f}:1 (min {threshold:g}:1)")
-    for finding in findings:
-        print(f"FAIL: {finding}")
-    if findings or not rows:
-        if not rows:
-            print("FAIL: no token was measured")
-        print(f"\n{len(findings)} contrast finding(s).")
+    style_guide = args.style_guide if args.style_guide is not None else STYLE_GUIDE
+    rows, findings, error = check_path(style_guide)
+    if error:
+        print(f"FAIL: {error}")
         return 1
-    print(f"\nOK verify-contrast: {len(rows)} role checks clear their thresholds in both skins")
-    return 0
+    return report(rows, findings, args.quiet)
 
 
 if __name__ == "__main__":

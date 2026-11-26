@@ -202,6 +202,7 @@ jobs:
         run: |
           python scripts/test-verify-contrast.py
           python scripts/verify-contrast.py
+          python scripts/verify-contrast.py --all-presets
 
       - name: Verify quantitative polar chart
         if: always()

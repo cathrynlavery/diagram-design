@@ -20,7 +20,7 @@ Slugs must match this whole expression:
 [a-z0-9][a-z0-9-]{0,63}
 ```
 
-They are lowercase, at most 64 characters, and contain only ASCII letters, digits, and hyphens. A slug is always a filename stem, never a path. Reject slashes, dots, `~`, whitespace, backslashes, percent escapes, and any other character. `default` is reserved for the built-in shipped profile; users may load or reset to it but may not overwrite, update, or delete it.
+They are lowercase, at most 64 characters, and contain only ASCII letters, digits, and hyphens. A slug is always a filename stem, never a path. Reject slashes, dots, `~`, whitespace, backslashes, percent escapes, and any other character. `default` is reserved for the built-in shipped profile; users may load or reset to it but may not overwrite, update, or delete it. Shipped preset slugs (`blueprint`, `mono-print`, `graphite`) are reserved the same way for the packaged files in `references/presets/`; a user copy in the library wins, and `load` copies a missing slug there before the rest of the procedure.
 
 ## Profile file format
 
@@ -61,6 +61,25 @@ Before onboarding overwrites a pristine working copy, and again on the first `sa
 If the working copy is already customized and no pristine current-package copy can be read, say that the default snapshot could not be created. Do not mislabel the custom skin as `default`. Saving another profile may continue, but `reset` is unavailable until a pristine package copy is available (for example, after reinstall/update); explain that limitation.
 
 When a newer skill schema adds required rows, refresh only the missing structure in `default.md` from the newer pristine shipped guide. Preserve existing rows and metadata dates except for `updated`.
+
+## Shipped presets
+
+The skill ships three complete profiles in `references/presets/` next to this file: `blueprint.md`, `mono-print.md`, and `graphite.md`. Each is the full `style-guide.md` body with a profile header, so every semantic-role row, typography row, and token role is present. Only the values and the prose that describes them differ.
+
+| Slug | Register |
+|---|---|
+| `blueprint` | Cool white paper, one blueprint-blue accent and linework. Specs, deployment, IT current-state. Title and callout use Geist (sans); Geist is already in the font link and in `lint-skin.py`. |
+| `mono-print` | Print off-white paper, black and grey ink, no tinted fills. The accent is a heavier ink weight (`#111111` light / `#f0f0f0` dark), not a second hue, so it survives grayscale. |
+| `graphite` | Bone paper in light, warm charcoal in dark, one copper accent. Slides and dark docs. |
+
+`load <slug>` / `switch <slug>` look in `~/.diagram-design/profiles/` first. If the slug is missing there and matches a shipped preset, copy the packaged file into the library (so `update` can edit the copy) and continue. Never write into the installed plugin to store that copy. `list` is read-only: it inspects the library without creating it and shows shipped presets that are not yet there as shipped; it does not copy them. A user library file of the same slug wins over the packaged file. The packaged files cannot be overwritten or deleted; `save` / `update` / `delete` of a preset slug operate on the library copy only, and `delete` of that copy leaves the shipped preset available for the next `load` / `list`. `default` is unchanged.
+
+### Make your own preset
+
+1. Copy a shipped preset (or the current `style-guide.md`) to a new `<slug>.md`.
+2. Keep every row and token role. Change values, and the prose that describes those values, only.
+3. Run `python3 scripts/verify-contrast.py --style-guide <file>` from a repository checkout (or `python3 scripts/verify-contrast.py --all-presets` for the shipped set). Every text token must clear 4.5:1 and every essential mark 3:1, in both skins.
+4. `save` or `load` it as a normal profile. Do not add a new web-font host; fonts must come from the families `lint-skin.py` already allows.
 
 ## Resolution before every generation
 
@@ -114,7 +133,7 @@ Save the effective style guide as a new named profile.
 1. **Read** the effective guide using marker-first resolution, then the working-copy fallback.
 2. Ensure `default.md` as described above.
 3. Ask for an explicit slug if none was supplied. If a supplied client name is not already a valid slug, propose a valid normalization and wait for approval; never choose one silently. Ask for the display name; source URL and notes are optional.
-4. Validate the whole slug before forming the canonical profile path. Refuse `default`.
+4. Validate the whole slug before forming the canonical profile path. Refuse `default`. A shipped preset slug writes the library copy, never the packaged file.
 5. **Bash:** run `mkdir -p ~/.diagram-design/profiles`. If the directory cannot be created or written, report the failure and offer to paste/save the full profile manually; do not claim success.
 6. If the target exists, show its name and updated date and confirm before overwriting. Prefer `update` when it is the intended profile.
 7. Strip a leading profile header from the body, prepend one fresh header with today's created/updated dates, and **Write** only the canonical `<slug>.md` path.
@@ -127,7 +146,7 @@ Save the effective style guide as a new named profile.
 These are synonyms. They are the explicit “change my skin” flow.
 
 1. If no slug was supplied, run `list` and ask which exact slug to load. Validate it before constructing a path; never guess.
-2. Ensure `default.md`, then **Read** the canonical profile file. If missing, report it and offer `list`.
+2. Ensure `default.md`, then **Read** the canonical profile file. If missing, look for `references/presets/<slug>.md` relative to the installed skill. When that shipped preset exists, **Bash:** `mkdir -p ~/.diagram-design/profiles`, **Write** the packaged file to the canonical library path, re-read it, and continue. Never write that copy into the installed plugin. If neither the library file nor a shipped preset exists, report it and offer `list`.
 3. Run the current-schema structural check.
 4. If a syntactically valid project marker exists—even one naming a missing profile—explain that marker-first projects do not use the shared working copy and ask permission to replace the marker with exactly `profile: <slug>`. On approval, **Write** the marker and do not touch the installed `style-guide.md`.
 5. Without a marker, **Write** the checked full profile (one header plus body) over the installed working copy. This copy-over is allowed only because the user explicitly invoked load/switch.
@@ -136,10 +155,11 @@ These are synonyms. They are the explicit “change my skin” flow.
 
 ### `list`
 
-1. Inspect `~/.diagram-design/profiles/` without creating it. If absent or empty, say no saved profiles exist; mention that `default` is created on first save/load.
+1. Inspect `~/.diagram-design/profiles/` without creating it. If absent or empty, say no saved profiles exist; mention that `default` is created on first save/load, and list shipped presets that are not yet in the library.
 2. Consider only filenames whose stem is a valid slug and whose extension is `.md`. Ignore and report other entries.
 3. **Read** each leading profile header and list display name, slug, source URL, and updated date. Mark the profile selected by a valid project marker; otherwise mark the working-copy header selection.
 4. If a header is missing or its slug disagrees with the filename, label the entry invalid rather than trusting it.
+5. For each shipped preset whose slug is not already listed from the library, **Read** `references/presets/<slug>.md` from the installed skill and list it the same way, marked as shipped. A library copy of the same slug wins; do not list both.
 
 ### `show`
 
@@ -151,7 +171,7 @@ These are synonyms. They are the explicit “change my skin” flow.
 
 Re-save the current effective body over an existing named profile.
 
-1. Resolve the target from the supplied valid slug, or from the active valid marker/header. If neither provides one, ask. Refuse `default`.
+1. Resolve the target from the supplied valid slug, or from the active valid marker/header. If neither provides one, ask. Refuse `default`. A shipped preset slug is allowed only as a library copy; never write the packaged file.
 2. Require the canonical target to exist. **Read** its header and preserve `created`; use today's date for `updated`. Ask for changed source URL/notes, otherwise preserve them.
 3. **Read** the effective guide, strip its leading profile header, prepend exactly one fresh target header, and **Write** the target.
 4. Re-read and verify exactly one header and an unchanged body. If the markerless working-copy header names this target, refresh that header over its unchanged body too. Report the updated path.
@@ -166,7 +186,7 @@ Re-save the current effective body over an existing named profile.
 
 ### `delete [slug]`
 
-1. Require and validate an explicit slug. Refuse `default`.
+1. Require and validate an explicit slug. Refuse `default`. A shipped preset slug deletes only the library copy; never the packaged file. After that copy is gone, `load` / `list` find the shipped preset again.
 2. Resolve only the canonical library file and **Read** its header. If absent, report that nothing was deleted.
 3. State whether a project marker or working-copy header currently names it. Confirm deletion immediately before removing the file.
 4. **Bash:** delete only that one validated file after confirmation. Never glob and never remove the profiles directory.
