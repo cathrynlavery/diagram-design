@@ -7,7 +7,7 @@
   </picture>
 </h1>
 
-**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>52 diagram types. No shadows. No Mermaid slop.**
+**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>53 diagram types. No shadows. No Mermaid slop.**
 
 [![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
 [![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
@@ -260,7 +260,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-52 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+53 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>
@@ -350,6 +350,8 @@ The model already understood the content. What it was missing was taste, so I wr
 </tr>
 <tr>
   <td align="center" width="33%"><a href="docs/screenshots/git-graph.png"><img src="docs/screenshots/thumbs/git-graph.webp" alt="Git graph"></a><br><b>Git graph</b><br><sub>Branches, merges and tags</sub></td>
+  <td align="center" width="33%"><a href="docs/screenshots/packet-structure.png"><img src="docs/screenshots/thumbs/packet-structure.webp" alt="Packet structure"></a><br><b>Packet structure</b><br><sub>Bit positions and field widths</sub></td>
+  <td></td>
 </tr>
 </table>
 
@@ -365,7 +367,7 @@ Axonometric plan uses the same projection for one floor or one site: walls cut a
 
 SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagram-design/assets/example-sbgn.html) and its [reference](skills/diagram-design/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 52; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 53; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
 ---
 
@@ -631,6 +633,7 @@ diagram-design/
 │       │   ├── type-medallion.md
 │       │   ├── type-nested.md
 │       │   ├── type-org-chart.md
+│       │   ├── type-packet-structure.md
 │       │   ├── type-polar.md
 │       │   ├── type-process.md
 │       │   ├── type-pyramid.md

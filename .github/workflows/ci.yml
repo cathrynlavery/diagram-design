@@ -447,6 +447,16 @@ jobs:
         id: schedule_network_tests
         run: python scripts/test-verify-schedule-network.py
 
+      - name: Verify packet bit ruler and field geometry
+        if: always()
+        id: packet_structure
+        run: python scripts/verify-packet-structure.py --all
+
+      - name: Verify packet structure checker
+        if: always()
+        id: packet_structure_tests
+        run: python scripts/test-verify-packet-structure.py
+
       - name: Verify Steps ordered rail
         if: always()
         id: steps
@@ -741,6 +751,9 @@ jobs:
           echo "| Event Modeling Checker | ${{ steps.event_modeling_tests.outcome == 'success' && '✅ Passed' || (steps.event_modeling_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Schedule Network CPM & Printed Fields | ${{ steps.schedule_network.outcome == 'success' && '✅ Passed' || (steps.schedule_network.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Schedule Network Checker | ${{ steps.schedule_network_tests.outcome == 'success' && '✅ Passed' || (steps.schedule_network_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| Packet Structure | ${{ steps.packet_structure.outcome == 'success' && '✅ Passed' || (steps.packet_structure.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Packet Structure Checker | ${{ steps.packet_structure_tests.outcome == 'success' && '✅ Passed' || (steps.packet_structure_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Shared Amplitude | ${{ steps.ridgeline.outcome == 'success' && '✅ Passed' || (steps.ridgeline.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Ridgeline Checker | ${{ steps.ridgeline_tests.outcome == 'success' && '✅ Passed' || (steps.ridgeline_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bubble Position & Area | ${{ steps.bubble.outcome == 'success' && '✅ Passed' || (steps.bubble.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
