@@ -22,7 +22,7 @@ VERSION_HISTORY_SCRIPT = ROOT / "scripts/plugin_version_history.py"
 AUTO_BUMP_WORKFLOW = ROOT / ".github/workflows/auto-bump.yml"
 CI_WORKFLOW = ROOT / ".github/workflows/ci.yml"
 VERSION_GATE_STEP = "Forbid manifest version changes in pull requests"
-PLUGIN_NAME = "diagram-design"
+PLUGIN_NAME = "diagrams-design-quind"
 
 
 def load_module(name: str, path: Path) -> ModuleType:

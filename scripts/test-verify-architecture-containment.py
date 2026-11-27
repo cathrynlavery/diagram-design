@@ -331,7 +331,7 @@ class ContractTests(unittest.TestCase):
                      "innermost enclosing scope")
 
     def test_shipped_missing_parent_cannot_hide_misaligned_sibling(self):
-        path = ROOT / "skills/diagram-design/assets/example-architecture-containment.html"
+        path = ROOT / "skills/diagrams-design-quind/assets/example-architecture-containment.html"
         source = path.read_text(encoding="utf-8")
         mutated = source.replace('data-scope-id="vnet-hub" data-scope-kind="traffic" data-parent="rg"',
                                  'data-scope-id="vnet-hub" data-scope-kind="traffic"', 1)
@@ -521,7 +521,7 @@ class ContractTests(unittest.TestCase):
 
     def test_all_shipped_variants(self):
         for suffix in ("", "-dark", "-full"):
-            path = ROOT / f"skills/diagram-design/assets/example-architecture-containment{suffix}.html"
+            path = ROOT / f"skills/diagrams-design-quind/assets/example-architecture-containment{suffix}.html"
             with self.subTest(variant=suffix):
                 self.assertTrue(path.is_file(), f"missing shipped variant: {path.name}")
                 source = path.read_text(encoding="utf-8")
@@ -535,7 +535,7 @@ class ContractTests(unittest.TestCase):
         # type-architecture.md: zone labels use `soft`, never ink at an opacity.
         soft = {"": "#5a6580", "-dark": "#949eb2", "-full": "#5a6580"}
         for suffix, colour in soft.items():
-            path = ROOT / f"skills/diagram-design/assets/example-architecture-containment{suffix}.html"
+            path = ROOT / f"skills/diagrams-design-quind/assets/example-architecture-containment{suffix}.html"
             scanner = checker.Scanner()
             scanner.finish(path.read_text(encoding="utf-8"))
             labels = [item for item in scanner.nodes

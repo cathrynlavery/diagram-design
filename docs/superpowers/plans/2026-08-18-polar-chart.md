@@ -199,10 +199,10 @@ git commit -m "test(polar): verify linear radius encoding"
 ### Task 2: Add the type reference and three verified static examples
 
 **Files:**
-- Create: `skills/diagram-design/references/type-polar.md`
-- Create: `skills/diagram-design/assets/example-polar.html`
-- Create: `skills/diagram-design/assets/example-polar-dark.html`
-- Create: `skills/diagram-design/assets/example-polar-full.html`
+- Create: `skills/diagrams-design-quind/references/type-polar.md`
+- Create: `skills/diagrams-design-quind/assets/example-polar.html`
+- Create: `skills/diagrams-design-quind/assets/example-polar-dark.html`
+- Create: `skills/diagrams-design-quind/assets/example-polar-full.html`
 
 **Interfaces:**
 - Consumes: `scripts/verify-polar.py` and the approved spec.
@@ -243,7 +243,7 @@ Copy the formulas, zero behavior, exclusions, scale validation, label-anchor rul
 
 - [ ] **Step 3: Build the minimal-light example with exact geometry**
 
-Start from `skills/diagram-design/assets/template.html`. Use this dataset and endpoint table; retain three decimals where shown so the verifier tolerance is meaningful:
+Start from `skills/diagrams-design-quind/assets/template.html`. Use this dataset and endpoint table; retain three decimals where shown so the verifier tolerance is meaningful:
 
 | i | label | value | spoke end | value end | label point (`R+28`) |
 |---|---|---:|---|---|---|
@@ -301,13 +301,13 @@ Run:
 python3 scripts/test-verify-polar.py
 python3 scripts/verify-polar.py
 python3 scripts/lint-skin.py \
-  skills/diagram-design/assets/example-polar.html \
-  skills/diagram-design/assets/example-polar-dark.html \
-  skills/diagram-design/assets/example-polar-full.html
+  skills/diagrams-design-quind/assets/example-polar.html \
+  skills/diagrams-design-quind/assets/example-polar-dark.html \
+  skills/diagrams-design-quind/assets/example-polar-full.html
 python3 scripts/verify-geometry.py \
-  skills/diagram-design/assets/example-polar.html \
-  skills/diagram-design/assets/example-polar-dark.html \
-  skills/diagram-design/assets/example-polar-full.html
+  skills/diagrams-design-quind/assets/example-polar.html \
+  skills/diagrams-design-quind/assets/example-polar-dark.html \
+  skills/diagrams-design-quind/assets/example-polar-full.html
 ```
 
 Expected: all commands exit 0 and report zero findings.
@@ -318,10 +318,10 @@ Open each HTML file in a fresh browser tab. Verify: the focal ray is the only ac
 
 ```bash
 git add \
-  skills/diagram-design/references/type-polar.md \
-  skills/diagram-design/assets/example-polar.html \
-  skills/diagram-design/assets/example-polar-dark.html \
-  skills/diagram-design/assets/example-polar-full.html
+  skills/diagrams-design-quind/references/type-polar.md \
+  skills/diagrams-design-quind/assets/example-polar.html \
+  skills/diagrams-design-quind/assets/example-polar-dark.html \
+  skills/diagrams-design-quind/assets/example-polar-full.html
 git commit -m "feat(types): add quantitative polar chart"
 ```
 
@@ -330,14 +330,14 @@ git commit -m "feat(types): add quantitative polar chart"
 ### Task 3: Wire the 28th type through routing, gallery, documentation, and count gates
 
 **Files:**
-- Modify: `skills/diagram-design/SKILL.md:1-13,52,81-112,356-385`
-- Modify: `skills/diagram-design/assets/index.html:197-309`
+- Modify: `skills/diagrams-design-quind/SKILL.md:1-13,52,81-112,356-385`
+- Modify: `skills/diagrams-design-quind/assets/index.html:197-309`
 - Modify: `README.md:15-88,188,209,373,431`
 - Create: `docs/screenshots/polar.png`
 - Modify: `commands/import-drawio.md:25`
 - Modify: `commands/import-mermaid.md:25`
-- Modify: `skills/diagram-design/references/onboarding.md:162`
-- Modify: `skills/diagram-design/references/semantic-patterns.md:3`
+- Modify: `skills/diagrams-design-quind/references/onboarding.md:162`
+- Modify: `skills/diagrams-design-quind/references/semantic-patterns.md:3`
 - Modify: `docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md:1-17`
 - Modify: `CONTRIBUTING.md:11,130`
 - Modify: `scripts/verify-docs-sync.py:22-79`
@@ -419,7 +419,7 @@ Run from the repository root:
 
 ```bash
 chrome='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-page="file://$(pwd)/skills/diagram-design/assets/example-polar.html"
+page="file://$(pwd)/skills/diagrams-design-quind/assets/example-polar.html"
 "$chrome" --headless=new --hide-scrollbars --force-device-scale-factor=2 \
   --window-size=1200,601 --screenshot=docs/screenshots/polar.png "$page"
 sips -g pixelWidth -g pixelHeight docs/screenshots/polar.png
@@ -442,12 +442,12 @@ Expected: all pass; semantic verification reports 28 visual types and SKILL.md r
 
 ```bash
 git add \
-  skills/diagram-design/SKILL.md \
-  skills/diagram-design/assets/index.html \
+  skills/diagrams-design-quind/SKILL.md \
+  skills/diagrams-design-quind/assets/index.html \
   README.md docs/screenshots/polar.png \
   commands/import-drawio.md commands/import-mermaid.md \
-  skills/diagram-design/references/onboarding.md \
-  skills/diagram-design/references/semantic-patterns.md \
+  skills/diagrams-design-quind/references/onboarding.md \
+  skills/diagrams-design-quind/references/semantic-patterns.md \
   docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md \
   CONTRIBUTING.md \
   scripts/verify-docs-sync.py scripts/verify-semantic-motion.py \
@@ -576,8 +576,8 @@ python3 scripts/test-plugin-package.py \
   && python3 scripts/test-verify-geometry.py \
   && python3 scripts/build-icons.py \
   && git diff --ignore-space-at-eol --exit-code -- \
-       skills/diagram-design/assets/icons.html \
-       skills/diagram-design/references/primitive-icons.md
+       skills/diagrams-design-quind/assets/icons.html \
+       skills/diagrams-design-quind/references/primitive-icons.md
 ```
 
 Expected: exit 0, no failures, no warnings from plugin validation, zero lint/geometry findings, and no generated icon drift.

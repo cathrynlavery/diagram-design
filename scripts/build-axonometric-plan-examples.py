@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, Proj, Rect,  # noqa: E402
                         animated_page, cards_html, f, finish, outline, prism, solid, styles)
 

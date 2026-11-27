@@ -37,7 +37,7 @@ the scan, CI green as if the file had none.
 
 Usage:
     python3 scripts/verify-block-registry.py --all
-    python3 scripts/verify-block-registry.py skills/diagram-design/assets/example-x.html
+    python3 scripts/verify-block-registry.py skills/diagrams-design-quind/assets/example-x.html
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 
 DATA_BLOCK_PREFIX = "data-block-"
 

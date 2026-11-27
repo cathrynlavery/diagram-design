@@ -1,11 +1,11 @@
 {
-  "name": "diagram-design",
+  "name": "diagrams-design-quind",
   "interface": {
     "displayName": "Diagram Design"
   },
   "plugins": [
     {
-      "name": "diagram-design",
+      "name": "diagrams-design-quind",
       "source": {
         "source": "local",
         "path": "./"

@@ -13,9 +13,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 VERIFIER = ROOT / "scripts/verify-motion.py"
 SEMANTIC_VERIFIER = ROOT / "scripts/verify-semantic-motion.py"
-TEMPLATE = ROOT / "skills/diagram-design/assets/template-motion.html"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
-SELF_CHECK = ROOT / "skills/diagram-design/scripts/self_check.py"
+TEMPLATE = ROOT / "skills/diagrams-design-quind/assets/template-motion.html"
+EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-policy-trace-animated.html"
+SELF_CHECK = ROOT / "skills/diagrams-design-quind/scripts/self_check.py"
 
 
 def load_self_check():

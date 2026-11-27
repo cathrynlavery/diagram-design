@@ -24,7 +24,7 @@ allow-list rather than a list of known tricks:
 
 Usage:
     python3 scripts/verify-steps.py --all
-    python3 scripts/verify-steps.py skills/diagram-design/assets/example-steps.html
+    python3 scripts/verify-steps.py skills/diagrams-design-quind/assets/example-steps.html
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 TOLERANCE = 0.01
 CHECKED_ROLES = {"rail": "rect", "medallion": "circle", "number": "text"}
 MARK_ATTRS = {

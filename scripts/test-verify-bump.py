@@ -37,7 +37,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-bump.py"
 SIBLING = ROOT / "scripts/verify-slopegraph.py"
-GOOD = ROOT / "skills/diagram-design/assets/example-bump.html"
+GOOD = ROOT / "skills/diagrams-design-quind/assets/example-bump.html"
 
 CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 

@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-bubble")
 
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SHIPPED = [ASSETS / name for name in (
     "example-bubble.html", "example-bubble-dark.html", "example-bubble-full.html",
 )]

@@ -9,7 +9,7 @@ error the issue reported, with a margin so a new type cannot land on the
 ceiling unnoticed.
 
 The ZIP is a top-level folder named for the skill, with SKILL.md at its root.
-Contents come from the git index under ``skills/diagram-design/``, never the
+Contents come from the git index under ``skills/diagrams-design-quind/``, never the
 working tree, so the upload matches what the repository ships.
 
 Include rule (product decision for this host; adjust here, not with a hand
@@ -33,7 +33,7 @@ rule would drop, ``--check`` fails so the omit is visible.
 
 Usage:
   python3 scripts/build-claude-skill-zip.py --check
-  python3 scripts/build-claude-skill-zip.py           # dist/diagram-design-claude-skill.zip
+  python3 scripts/build-claude-skill-zip.py           # dist/diagrams-design-quind-claude-skill.zip
 """
 
 from __future__ import annotations
@@ -48,8 +48,8 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_PREFIX = "skills/diagram-design/"
-OUTPUT_NAME = "diagram-design-claude-skill.zip"
+SKILL_PREFIX = "skills/diagrams-design-quind/"
+OUTPUT_NAME = "diagrams-design-quind-claude-skill.zip"
 
 # Upload file count from the Claude Desktop error in issue #525. Public docs
 # checked 2026-11-19 (Agent Skills overview, skills-guide, "How to create

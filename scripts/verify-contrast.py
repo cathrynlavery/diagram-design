@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-STYLE_GUIDE = ROOT / "skills/diagram-design/references/style-guide.md"
+STYLE_GUIDE = ROOT / "skills/diagrams-design-quind/references/style-guide.md"
 
 SKINS = ("light", "dark")
 

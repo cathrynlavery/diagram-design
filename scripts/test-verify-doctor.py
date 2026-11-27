@@ -34,7 +34,7 @@ def touch(path: Path, content: str = "placeholder\n") -> None:
 
 
 def seed_repo(module, root: Path) -> None:
-    touch(root / "skills/diagram-design/SKILL.md", "# Skill\n")
+    touch(root / "skills/diagrams-design-quind/SKILL.md", "# Skill\n")
     for relative in module.MAINTAINER_MARKERS:
         touch(root / relative)
     for relative in module.EXPECTED_SCRIPTS:

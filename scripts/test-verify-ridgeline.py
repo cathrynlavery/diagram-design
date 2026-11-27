@@ -41,13 +41,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-ridgeline.py"
-GOOD = ROOT / "skills/diagram-design/assets/example-ridgeline.html"
+GOOD = ROOT / "skills/diagrams-design-quind/assets/example-ridgeline.html"
 
 # The sibling Line-variant gates. Any that exists in the tree must skip the
 # ridgeline examples rather than claim them; the ones not yet landed are absent,
 # and their absence is printed rather than passed over in silence.
 SIBLINGS = ["verify-slopegraph.py", "verify-bump.py", "verify-streamgraph.py"]
-RIDGELINES = sorted((ROOT / "skills/diagram-design/assets").glob("example-ridgeline*.html"))
+RIDGELINES = sorted((ROOT / "skills/diagrams-design-quind/assets").glob("example-ridgeline*.html"))
 
 CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 
@@ -808,7 +808,7 @@ def main() -> int:
         # And the reverse direction: this checker must skip the siblings' files.
         for sibling in ("example-slopegraph.html", "example-bump.html",
                         "example-streamgraph.html"):
-            other = ROOT / "skills/diagram-design/assets" / sibling
+            other = ROOT / "skills/diagrams-design-quind/assets" / sibling
             if not other.is_file():
                 continue
             code, output = run(other)

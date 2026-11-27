@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic tests for the packaged vector PDF exporter.
 
-Drives ``skills/diagram-design/scripts/export_pdf.py`` against shipped diagrams
+Drives ``skills/diagrams-design-quind/scripts/export_pdf.py`` against shipped diagrams
 and local fixtures:
 
 - static structural anchors (stalled-load cancellation, ?motion=static, no bare except);
@@ -29,8 +29,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-EXPORT_PDF = ROOT / "skills/diagram-design/scripts/export_pdf.py"
-ASSETS = ROOT / "skills/diagram-design/assets"
+EXPORT_PDF = ROOT / "skills/diagrams-design-quind/scripts/export_pdf.py"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 
 FAST_IDLE_TIMEOUT_MS = 1_500
 FAST_SETTLE_MS = 150

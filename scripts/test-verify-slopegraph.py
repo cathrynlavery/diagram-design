@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-slopegraph")
 
-SHIPPED = ROOT / "skills/diagram-design/assets/example-slopegraph.html"
+SHIPPED = ROOT / "skills/diagrams-design-quind/assets/example-slopegraph.html"
 
 HEAD = """<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><title>t</title></head><body>
@@ -283,7 +283,7 @@ def run_cases(h: Harness) -> int:
     # The detector must not drag the other example types into scope.
     for other in ("example-line.html", "example-bar.html", "example-treemap.html",
                   "example-scatter.html"):
-        path = ROOT / "skills/diagram-design/assets" / other
+        path = ROOT / "skills/diagrams-design-quind/assets" / other
         if path.exists():
             h.expect_out_of_scope(
                 "%s is not detected as a slopegraph at all" % other,

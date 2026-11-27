@@ -9,7 +9,7 @@ allowed-tools:
   - Glob
 ---
 
-Export the diagram HTML at `$1` to `.svg`, `.png`, and/or `.pdf`, following the procedure documented in [`skills/diagram-design/references/export.md`](../skills/diagram-design/references/export.md). Treat that reference as the source of truth — don't reimplement the logic here. Run the packaged `skills/diagram-design/scripts/export_svg.py`, `skills/diagram-design/scripts/export_png.py`, and `skills/diagram-design/scripts/export_pdf.py` helpers for the requested formats. If `--registry` is present, also follow [`skills/diagram-design/references/export-registry.md`](../skills/diagram-design/references/export-registry.md) to emit the metadata sidecar — a separate procedure from the SVG/PNG/PDF export above.
+Export the diagram HTML at `$1` to `.svg`, `.png`, and/or `.pdf`, following the procedure documented in [`skills/diagrams-design-quind/references/export.md`](../skills/diagrams-design-quind/references/export.md). Treat that reference as the source of truth — don't reimplement the logic here. Run the packaged `skills/diagrams-design-quind/scripts/export_svg.py`, `skills/diagrams-design-quind/scripts/export_png.py`, and `skills/diagrams-design-quind/scripts/export_pdf.py` helpers for the requested formats. If `--registry` is present, also follow [`skills/diagrams-design-quind/references/export-registry.md`](../skills/diagrams-design-quind/references/export-registry.md) to emit the metadata sidecar — a separate procedure from the SVG/PNG/PDF export above.
 
 Full argument string: `$ARGUMENTS`
 
@@ -29,7 +29,7 @@ Full argument string: `$ARGUMENTS`
 - `--full-page` — include the editorial wrapper (header, cards, footer) in PDF output instead of diagram-only SVG.
 - `--scale=N` — override the PNG device scale factor with a finite number from `1` to `4`, including fractional values such as `1.25`. Default `2`.
 - `--output=<path>` — override the output base path; the format extension is appended. Applies to all produced formats.
-- `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Follows [`skills/diagram-design/references/export-registry.md`](../skills/diagram-design/references/export-registry.md), a procedure independent of the SVG/PNG/PDF export above — it never needs Playwright. Used alone (see Defaults), it is the *only* output produced. Combine with `--svg-only`, `--png-only`, `--pdf`, or `--pdf-only` to also produce an image or PDF in the same call.
+- `--registry` — emit `<basename>.registry.json`, a metadata sidecar of every block's `data-block-*` attributes. Follows [`skills/diagrams-design-quind/references/export-registry.md`](../skills/diagrams-design-quind/references/export-registry.md), a procedure independent of the SVG/PNG/PDF export above — it never needs Playwright. Used alone (see Defaults), it is the *only* output produced. Combine with `--svg-only`, `--png-only`, `--pdf`, or `--pdf-only` to also produce an image or PDF in the same call.
 
 ## Required behaviour
 

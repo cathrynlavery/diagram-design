@@ -315,7 +315,7 @@ class ContractTests(unittest.TestCase):
                 self.rejects(GOOD.replace('d="M 112,60 H 160"', f'd="{d}"', 1), "subpaths; use a single M")
 
     def test_shipped_second_subpath_is_rejected(self):
-        path = ROOT / "skills/diagram-design/assets/example-sbgn.html"
+        path = ROOT / "skills/diagrams-design-quind/assets/example-sbgn.html"
         source = path.read_text(encoding="utf-8")
         arc = re.search(r'<path data-kind="consumption" data-from="bcar" data-to="v1"\s+d="([^"]*)"', source)
         self.assertIsNotNone(arc, "shipped bcar to v1 arc not found")
@@ -478,7 +478,7 @@ class ContractTests(unittest.TestCase):
     def test_budget_docs_agree_with_checker(self):
         # SBGN replaces the shared 9 node / 12 arrow rows, so the shared
         # budget page must say so and carry the checker's numbers.
-        budget = (ROOT / "skills/diagram-design/references/layout-budget.md").read_text(encoding="utf-8")
+        budget = (ROOT / "skills/diagrams-design-quind/references/layout-budget.md").read_text(encoding="utf-8")
         ceiling = (f"{checker.MAX_MACRO} / {checker.MAX_PROCESS} / {checker.MAX_COMPARTMENT} / "
                    f"{checker.MAX_SOURCE} / {checker.MAX_ARC}")
         rows = [line for line in budget.splitlines() if line.startswith("|") and "(SBGN)" in line]
@@ -486,7 +486,7 @@ class ContractTests(unittest.TestCase):
         self.assertIn(ceiling, rows[0])
         intro = budget.split("| Limit | Rule |")[0]
         self.assertRegex(intro, r"SBGN[^.]*replaces[^.]*9 nodes[^.]*12 arrows")
-        reference = (ROOT / "skills/diagram-design/references/type-sbgn.md").read_text(encoding="utf-8")
+        reference = (ROOT / "skills/diagrams-design-quind/references/type-sbgn.md").read_text(encoding="utf-8")
         section = reference.split("## Budget", 1)[1].split("\n## ", 1)[0]
         for phrase in (f"≤{checker.MAX_MACRO} macromolecules", f"≤{checker.MAX_PROCESS} processes",
                        f"≤{checker.MAX_COMPARTMENT} compartment", f"≤{checker.MAX_SOURCE} source/sink",
@@ -495,7 +495,7 @@ class ContractTests(unittest.TestCase):
 
     def test_all_shipped_variants(self):
         for suffix in ("", "-dark", "-full"):
-            path = ROOT / f"skills/diagram-design/assets/example-sbgn{suffix}.html"
+            path = ROOT / f"skills/diagrams-design-quind/assets/example-sbgn{suffix}.html"
             with self.subTest(variant=suffix):
                 self.assertTrue(path.is_file(), f"missing shipped variant: {path.name}")
                 source = path.read_text(encoding="utf-8")
@@ -510,7 +510,7 @@ class ContractTests(unittest.TestCase):
         # opaque soft role (style-guide.md), not ink at 40% opacity.
         soft = {"": "#5a6580", "-dark": "#949eb2", "-full": "#5a6580"}
         for suffix, color in soft.items():
-            path = ROOT / f"skills/diagram-design/assets/example-sbgn{suffix}.html"
+            path = ROOT / f"skills/diagrams-design-quind/assets/example-sbgn{suffix}.html"
             with self.subTest(variant=suffix):
                 source = path.read_text(encoding="utf-8")
                 labels = re.findall(r"<text\b([^>]*)>\s*CYTOSOL\s*</text>", source)
@@ -522,7 +522,7 @@ class ContractTests(unittest.TestCase):
 
     def test_shipped_text_is_opaque(self):
         for suffix in ("", "-dark", "-full"):
-            path = ROOT / f"skills/diagram-design/assets/example-sbgn{suffix}.html"
+            path = ROOT / f"skills/diagrams-design-quind/assets/example-sbgn{suffix}.html"
             with self.subTest(variant=suffix):
                 source = path.read_text(encoding="utf-8")
                 for attrs in re.findall(r"<text\b([^>]*)>", source):

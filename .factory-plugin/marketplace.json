@@ -1,8 +1,8 @@
 {
-  "name": "diagram-design",
+  "name": "diagrams-design-quind",
   "plugins": [
     {
-      "name": "diagram-design",
+      "name": "diagrams-design-quind",
       "source": "./"
     }
   ]

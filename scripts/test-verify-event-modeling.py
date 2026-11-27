@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 VERIFIER = ROOT / "scripts/verify-event-modeling.py"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-event-modeling.html"
+EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-event-modeling.html"
 
 
 def main() -> None:

@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-beeswarm")
 
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SHIPPED = [ASSETS / name for name in (
     "example-beeswarm.html", "example-beeswarm-dark.html",
     "example-beeswarm-full.html",

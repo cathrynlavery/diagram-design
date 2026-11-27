@@ -18,8 +18,8 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-TYPE_SEQ = ROOT / "skills/diagram-design/references/type-sequence.md"
-ASSETS = ROOT / "skills/diagram-design/assets"
+TYPE_SEQ = ROOT / "skills/diagrams-design-quind/references/type-sequence.md"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 COLD = [
     ASSETS / "example-sequence.html",
     ASSETS / "example-sequence-dark.html",

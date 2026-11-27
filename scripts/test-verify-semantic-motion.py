@@ -150,7 +150,7 @@ def main() -> int:
             if shutil.which("git") is None:
                 print("SKIP: git not found; the SKILL.md LF pin cases were not run")
             else:
-                pin = "skills/diagram-design/SKILL.md text eol=lf\n"
+                pin = "skills/diagrams-design-quind/SKILL.md text eol=lf\n"
                 original_root = module.GIT_ROOT
                 for label, attributes, pinned in (
                     ("no pin", "*.png binary\n", False),

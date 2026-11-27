@@ -60,16 +60,16 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-GALLERY = ROOT / "skills/diagram-design/assets/index.html"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+SKILL = ROOT / "skills/diagrams-design-quind/SKILL.md"
+GALLERY = ROOT / "skills/diagrams-design-quind/assets/index.html"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 README = ROOT / "README.md"
-HIGH_LEVEL_REFERENCE = ROOT / "skills/diagram-design/references/type-high-level.md"
-ONBOARDING_REFERENCE = ROOT / "skills/diagram-design/references/onboarding.md"
-LINE_DARK_EXAMPLE = ROOT / "skills/diagram-design/assets/example-line-dark.html"
-LOOP_REFERENCE = ROOT / "skills/diagram-design/references/type-loop.md"
+HIGH_LEVEL_REFERENCE = ROOT / "skills/diagrams-design-quind/references/type-high-level.md"
+ONBOARDING_REFERENCE = ROOT / "skills/diagrams-design-quind/references/onboarding.md"
+LINE_DARK_EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-line-dark.html"
+LOOP_REFERENCE = ROOT / "skills/diagrams-design-quind/references/type-loop.md"
 LOOP_EXAMPLE_GLOB = "example-loop*.html"
-OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagram-design/references/output-spec.md"
+OUTPUT_SPEC_REFERENCE = ROOT / "skills/diagrams-design-quind/references/output-spec.md"
 VARIANTS = ("", "-dark", "-full")
 VISUAL_TYPE_COUNT = 52
 AGENT_SKILLS_DESCRIPTION_MAX = 1024
@@ -107,7 +107,7 @@ ROUTING_SURFACES = {
 # the line that carries the list. The output-spec.md size table is the source.
 SIZE_PRESET_TABLE_HEADING = "## 2. Size"
 SIZE_PRESET_SURFACES = {
-    Path("skills/diagram-design/SKILL.md"): "| **Size** |",
+    Path("skills/diagrams-design-quind/SKILL.md"): "| **Size** |",
     Path("README.md"): "| **Size** |",
     Path("commands/import-drawio.md"): "- `--size` — any preset in `output-spec.md` §2:",
     Path("commands/import-mermaid.md"): "- `--size` — any preset in `output-spec.md` §2:",
@@ -606,9 +606,9 @@ def check_packaged_support_references(
 
 def check_routing_surfaces(errors: list[str], root: Path) -> None:
     for relative, reference_link in ROUTING_SURFACES.items():
-        reference = root / "skills/diagram-design" / reference_link
+        reference = root / "skills/diagrams-design-quind" / reference_link
         if not reference.is_file():
-            errors.append(f"routing source of truth is missing: skills/diagram-design/{reference_link}")
+            errors.append(f"routing source of truth is missing: skills/diagrams-design-quind/{reference_link}")
         path = root / relative
         if not path.is_file():
             errors.append(f"routing surface is missing: {relative.as_posix()}")
@@ -639,7 +639,7 @@ def surface_size_presets(markdown: str, marker: str) -> list[str] | None:
 
 
 def check_size_preset_surfaces(errors: list[str], root: Path) -> None:
-    spec = root / "skills/diagram-design/references/output-spec.md"
+    spec = root / "skills/diagrams-design-quind/references/output-spec.md"
     presets = spec_size_presets(spec.read_text(encoding="utf-8"))
     if not presets:
         errors.append("output-spec.md size table names no presets")
@@ -753,16 +753,16 @@ COUNT_SURFACES = (
     Path("commands/import-plantuml.md"),
     Path("README.md"),
     Path("CONTRIBUTING.md"),
-    Path("skills/diagram-design/SKILL.md"),
-    Path("skills/diagram-design/references/onboarding.md"),
-    Path("skills/diagram-design/references/semantic-patterns.md"),
+    Path("skills/diagrams-design-quind/SKILL.md"),
+    Path("skills/diagrams-design-quind/references/onboarding.md"),
+    Path("skills/diagrams-design-quind/references/semantic-patterns.md"),
 )
 
 
 # Reader-facing docs may state the count, but it must match the shipped type
 # references. Import commands stay count-free and route to SKILL.md instead.
 VERIFIED_COUNT_SURFACES = frozenset(p for p in COUNT_SURFACES if p.parts[0] != "commands")
-TYPE_REFERENCE_GLOB = "skills/diagram-design/references/type-*.md"
+TYPE_REFERENCE_GLOB = "skills/diagrams-design-quind/references/type-*.md"
 
 
 def shipped_type_count(root: Path) -> int:
@@ -865,8 +865,8 @@ TYPE_SIZE_SUFFIXES = (".html", ".svg", ".md")
 # Where diagram type lives. The gallery pages (index.html, icons.html) are site
 # chrome, not diagrams, so the type ramp does not govern them.
 TYPE_SIZE_SURFACES = (
-    ("skills/diagram-design/assets", ("example-", "template")),
-    ("skills/diagram-design/references", ("type-",)),
+    ("skills/diagrams-design-quind/assets", ("example-", "template")),
+    ("skills/diagrams-design-quind/references", ("type-",)),
 )
 
 
@@ -1575,7 +1575,7 @@ def check_manifest_descriptions(errors: list[str], root: Path) -> None:
                     )
 
 
-SKILL_PACKAGE = Path("skills/diagram-design")
+SKILL_PACKAGE = Path("skills/diagrams-design-quind")
 # Either quote style: the backreference ends the value at its own quote.
 FONT_LINK = re.compile(
     r"""href=(?P<quote>["'])(?P<url>(?:(?!(?P=quote)).)*fonts\.googleapis\.com(?:(?!(?P=quote)).)*)(?P=quote)"""

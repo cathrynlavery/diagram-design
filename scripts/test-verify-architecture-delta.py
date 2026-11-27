@@ -303,7 +303,7 @@ class ContractTests(unittest.TestCase):
 
     def test_all_shipped_variants(self):
         for suffix in ('', '-dark', '-full'):
-            path = ROOT / f'skills/diagram-design/assets/example-architecture-delta{suffix}.html'
+            path = ROOT / f'skills/diagrams-design-quind/assets/example-architecture-delta{suffix}.html'
             with self.subTest(variant=suffix):
                 self.assertTrue(path.is_file(), f'missing shipped variant: {path.name}')
                 source = path.read_text(encoding='utf-8')

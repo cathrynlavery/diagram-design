@@ -6,7 +6,7 @@ Convert a generated diagram HTML file into a portable `.svg` and/or `.png` next 
 
 Load this file when:
 
-- The user invokes `/diagram-design:export-diagram <html-file>` (the plugin's slash command — defined in `commands/export-diagram.md` at the repo root).
+- The user invokes `/diagrams-design-quind:export-diagram <html-file>` (the plugin's slash command — defined in `commands/export-diagram.md` at the repo root).
 - The user asks in natural language to export, save, rasterize, convert, or download a diagram in `.svg` or `.png` form. Typical phrasings:
   - "export this as PNG"
   - "save as SVG"
@@ -342,7 +342,7 @@ python3 <skill-dir>/scripts/export_pdf.py <src.html> [<out.pdf>] [--page-size a4
 - **`--page-size a4|a3|letter`:** Switches to print media and fits the diagram cleanly onto a landscape A4, A3, or US Letter sheet with 10 mm margins.
 - **`--full-page`:** Retains the editorial header, summary cards, and footer from `-full` variants while removing motion controls and decorative overlays. With `--page-size`, the whole layout is scaled down to fit the same sheet, so it still prints on one page.
 - **Refusals (exit 2):** Refuses missing files, gallery `assets/index.html`, files without an `<svg>`, and root `<svg>` elements lacking a nonzero finite `viewBox`.
-- **Defaults & mutual exclusion:** `/diagram-design:export-diagram` with no format flags continues to emit `.svg` + `.png` only. Pass `--pdf` to also emit `.pdf`, or `--pdf-only` to emit only `.pdf` (`--svg-only`, `--png-only`, and `--pdf-only` are mutually exclusive).
+- **Defaults & mutual exclusion:** `/diagrams-design-quind:export-diagram` with no format flags continues to emit `.svg` + `.png` only. Pass `--pdf` to also emit `.pdf`, or `--pdf-only` to emit only `.pdf` (`--svg-only`, `--png-only`, and `--pdf-only` are mutually exclusive).
 
 ## Sizing the export
 

@@ -28,14 +28,14 @@ from urllib.parse import quote
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-EXTRACT = ROOT / "skills/diagram-design/scripts/drawio_extract.py"
-IMPORT_REF = ROOT / "skills/diagram-design/references/import-drawio.md"
-OUTPUT_REF = ROOT / "skills/diagram-design/references/output-spec.md"
-EXPORT_REF = ROOT / "skills/diagram-design/references/export.md"
+SKILL = ROOT / "skills/diagrams-design-quind/SKILL.md"
+EXTRACT = ROOT / "skills/diagrams-design-quind/scripts/drawio_extract.py"
+IMPORT_REF = ROOT / "skills/diagrams-design-quind/references/import-drawio.md"
+OUTPUT_REF = ROOT / "skills/diagrams-design-quind/references/output-spec.md"
+EXPORT_REF = ROOT / "skills/diagrams-design-quind/references/export.md"
 COMMAND = ROOT / "commands/import-drawio.md"
 FIXTURE = ROOT / "scripts/fixtures/sample-architecture.drawio"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-drawio.html"
+EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-import-drawio.html"
 
 
 def fail(msg: str) -> None:
@@ -856,9 +856,9 @@ def check_security_and_limits(tmp: Path) -> None:
 
 def check_docs() -> None:
     import_text = IMPORT_REF.read_text(encoding="utf-8")
-    expected_slash_command = f"/diagram-design:{COMMAND.stem}"
+    expected_slash_command = f"/diagrams-design-quind:{COMMAND.stem}"
     documented_slash_commands = set(
-        re.findall(r"`(/diagram-design:[a-z0-9-]+)`", import_text)
+        re.findall(r"`(/diagrams-design-quind:[a-z0-9-]+)`", import_text)
     )
     if documented_slash_commands != {expected_slash_command}:
         rendered = ", ".join(sorted(documented_slash_commands)) or "none"

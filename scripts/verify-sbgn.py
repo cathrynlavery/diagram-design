@@ -34,7 +34,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 NUMBER = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 NUMBER_RE = re.compile(NUMBER)
 ID_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.:-]*\Z")

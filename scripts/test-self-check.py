@@ -10,8 +10,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SELF_CHECK = ROOT / "skills/diagram-design/scripts/self_check.py"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+SELF_CHECK = ROOT / "skills/diagrams-design-quind/scripts/self_check.py"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 TEMPLATE = ASSET_DIR / "template-motion.html"
 EXAMPLE = ASSET_DIR / "example-policy-trace-animated.html"
 STATIC_EXAMPLE = ASSET_DIR / "example-architecture.html"

@@ -244,7 +244,7 @@ def main() -> int:
             for required in (
                 "plugin.json",
                 ".codex-plugin/plugin.json",
-                "skills/diagram-design/SKILL.md",
+                "skills/diagrams-design-quind/SKILL.md",
                 "LICENSE",
                 "THIRD_PARTY_LICENSES.md",
                 "PRIVACY.md",

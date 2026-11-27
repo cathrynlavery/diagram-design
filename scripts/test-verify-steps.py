@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-steps.py"
-GOOD = ROOT / "skills/diagram-design/assets/example-steps.html"
+GOOD = ROOT / "skills/diagrams-design-quind/assets/example-steps.html"
 
 
 def stage_fixture(count: int, stage_width: int | None = None) -> str:

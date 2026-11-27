@@ -24,7 +24,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 
 # Match declarations, not text-transform or custom-property names. As in the
 # waterfall verifier, CSS movement is rejected rather than cascade-resolved.

@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-git-graph")
 
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SHIPPED = [ASSETS / name for name in (
     "example-git-graph.html", "example-git-graph-dark.html",
     "example-git-graph-full.html",

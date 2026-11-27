@@ -87,7 +87,7 @@ WHAT THIS DOES NOT CHECK, deliberately:
 
 Usage:
     python3 scripts/verify-streamgraph.py --all
-    python3 scripts/verify-streamgraph.py skills/diagram-design/assets/example-streamgraph.html
+    python3 scripts/verify-streamgraph.py skills/diagrams-design-quind/assets/example-streamgraph.html
 
 Exit: 0 clean, 1 findings, 2 usage.
 """
@@ -106,7 +106,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 
 # Every CSS property that can move or reshape a verified mark WITHOUT touching
 # the attributes this checker reads. The enumeration IS the invariant - it is

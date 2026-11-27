@@ -73,13 +73,13 @@ After installing, run `/plugin`, open **Marketplaces**, select **diagram-design*
 <details>
 <summary><b>Claude Desktop</b></summary>
 
-Claude Desktop's skill upload rejects a ZIP with more than 200 files, so the full `skills/diagram-design/` tree cannot be imported as-is. From a checkout, build a bounded ZIP:
+Claude Desktop's skill upload rejects a ZIP with more than 200 files, so the full `skills/diagrams-design-quind/` tree cannot be imported as-is. From a checkout, build a bounded ZIP:
 
 ```bash
 python3 scripts/build-claude-skill-zip.py
 ```
 
-That writes `dist/diagram-design-claude-skill.zip` (gitignored). In Claude Desktop, open **Customize → Skills**, choose **Upload a skill**, and select that file. The archive is a top-level `diagram-design/` folder with `SKILL.md` at its root. It includes the references, packaged scripts, templates, and the default-light examples the skill copies or opens; it leaves out the gallery page and the dark, full, and animated example variants that the website and CI use.
+That writes `dist/diagrams-design-quind-claude-skill.zip` (gitignored). In Claude Desktop, open **Customize → Skills**, choose **Upload a skill**, and select that file. The archive is a top-level `diagram-design/` folder with `SKILL.md` at its root. It includes the references, packaged scripts, templates, and the default-light examples the skill copies or opens; it leaves out the gallery page and the dark, full, and animated example variants that the website and CI use.
 
 If a later GitHub release attaches this ZIP, you can download that instead of building it. Rebuild from this repository after you pull updates.
 
@@ -88,7 +88,7 @@ If a later GitHub release attaches this ZIP, you can download that instead of bu
 <details>
 <summary><b>Cursor</b>, Cline, Gemini CLI, Windsurf, Amp, Zed, Warp, Roo, Kilo and other Agent Skills hosts</summary>
 
-The cross-agent [`skills` CLI](https://skills.sh) resolves this repository, detects `skills/diagram-design/SKILL.md`, and installs the whole skill (`references/`, `assets/`, `scripts/`) into every host root you select, including Cursor's:
+The cross-agent [`skills` CLI](https://skills.sh) resolves this repository, detects `skills/diagrams-design-quind/SKILL.md`, and installs the whole skill (`references/`, `assets/`, `scripts/`) into every host root you select, including Cursor's:
 
 ```bash
 npx skills add cathrynlavery/diagram-design
@@ -126,7 +126,7 @@ qoder plugins install ./diagram-design
 qoder plugins list
 ```
 
-Qoder loads the canonical `skills/diagram-design/` tree and the shared command
+Qoder loads the canonical `skills/diagrams-design-quind/` tree and the shared command
 definitions directly; no Qoder-specific copy is maintained. For Qoder IDE,
 build a bounded ZIP from the tracked plugin surfaces and import it through
 **Extensions → Plugins → Add Plugins → Upload Plugin**:
@@ -189,7 +189,7 @@ Run `/reload` in an open Pi session. Pi makes the skill available for matching d
 Import the Agent Skill from the repository subdirectory URL:
 
 ```text
-https://github.com/cathrynlavery/diagram-design/tree/main/skills/diagram-design
+https://github.com/cathrynlavery/diagram-design/tree/main/skills/diagrams-design-quind
 ```
 
 Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/skills/` globally, so re-import the URL to pick up updates. Custom agents that declare resources should include `skill://diagram-design/**/SKILL.md`.
@@ -199,7 +199,7 @@ Kiro copies imported skills into `.kiro/skills/` for a workspace or `~/.kiro/ski
 <details>
 <summary><b>OpenCode</b></summary>
 
-Copy or symlink `skills/diagram-design/` to `.opencode/skills/diagram-design` in a project or `~/.config/opencode/skills/diagram-design` globally. OpenCode has no Diagram Design marketplace package; copied installs update only when you replace the directory from a newer checkout.
+Copy or symlink `skills/diagrams-design-quind/` to `.opencode/skills/diagrams-design-quind` in a project or `~/.config/opencode/skills/diagrams-design-quind` globally. OpenCode has no Diagram Design marketplace package; copied installs update only when you replace the directory from a newer checkout.
 
 </details>
 
@@ -215,19 +215,19 @@ git clone git@github.com:cathrynlavery/diagram-design.git ~/code/diagram-design
 pi install ~/code/diagram-design
 
 # Claude Code: symlink the inner skill
-ln -s ~/code/diagram-design/skills/diagram-design ~/.claude/skills/diagram-design
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.claude/skills/diagrams-design-quind
 
 # Other Agent Skills hosts: create only the roots you use
 mkdir -p ~/.agents/skills ~/.cursor/skills ~/.cline/skills ~/.kiro/skills ~/.config/opencode/skills ~/.copilot/skills
-ln -s ~/code/diagram-design/skills/diagram-design ~/.agents/skills/diagram-design
-ln -s ~/code/diagram-design/skills/diagram-design ~/.cursor/skills/diagram-design
-ln -s ~/code/diagram-design/skills/diagram-design ~/.cline/skills/diagram-design
-ln -s ~/code/diagram-design/skills/diagram-design ~/.kiro/skills/diagram-design
-ln -s ~/code/diagram-design/skills/diagram-design ~/.config/opencode/skills/diagram-design
-ln -s ~/code/diagram-design/skills/diagram-design ~/.copilot/skills/diagram-design
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.agents/skills/diagrams-design-quind
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.cursor/skills/diagrams-design-quind
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.cline/skills/diagrams-design-quind
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.kiro/skills/diagrams-design-quind
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.config/opencode/skills/diagrams-design-quind
+ln -s ~/code/diagram-design/skills/diagrams-design-quind ~/.copilot/skills/diagrams-design-quind
 ```
 
-The shared skill lives at `skills/diagram-design/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, Cursor, and other Agent Skills-compatible tools use the same files.
+The shared skill lives at `skills/diagrams-design-quind/`. Pi discovers it through the repo's standard `skills/` package directory; Claude Code, GitHub Copilot, Codex, Factory Droid, Cursor, and other Agent Skills-compatible tools use the same files.
 
 </details>
 
@@ -355,17 +355,17 @@ The model already understood the content. What it was missing was taste, so I wr
 
 Several types have named variants that share their reference: Line covers slopegraph, ridgeline, streamgraph and bump; Scatter covers bubble, beeswarm and box plot; Treemap covers marimekko; Dependency covers arc diagram.
 
-Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagram-design/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagram-design/references/type-architecture.md).
+Architecture can nest administrative bands and traffic boxes in one snapshot when the hierarchy itself is the claim: dashed rx=4 bands for billing and permissions, solid rx=8 boxes for networks, and managed services outside every subnet. See the [containment example](skills/diagrams-design-quind/assets/example-architecture-containment.html) and [type-architecture.md](skills/diagrams-design-quind/references/type-architecture.md).
 
-Architecture delta compares synchronized topologies through a Before · Changes · After ledger of added, removed, changed, moved, and rewired objects. See its [reference](skills/diagram-design/references/type-architecture-delta.md) and [order-fulfilment example](skills/diagram-design/assets/example-architecture-delta.html). Attribute-only comparisons remain tables; a single snapshot uses Architecture.
+Architecture delta compares synchronized topologies through a Before · Changes · After ledger of added, removed, changed, moved, and rewired objects. See its [reference](skills/diagrams-design-quind/references/type-architecture-delta.md) and [order-fulfilment example](skills/diagrams-design-quind/assets/example-architecture-delta.html). Attribute-only comparisons remain tables; a single snapshot uses Architecture.
 
-Exploded axonometric draws one object in 2:1 dimetric projection with its parts lifted apart at equal gaps: a [phone teardown](skills/diagram-design/assets/example-exploded-phone.html), an [unboxing](skills/diagram-design/assets/example-exploded-unboxing.html), an [app stack](skills/diagram-design/assets/example-exploded.html), an [AI agent stack](skills/diagram-design/assets/example-exploded-ai-stack.html), or a [mechanical keyboard](skills/diagram-design/assets/example-exploded-keyboard.html). Every coordinate comes from one projection function, and the [animated phone](skills/diagram-design/assets/example-exploded-phone-animated.html) opens assembled and explodes once. See its [reference](skills/diagram-design/references/type-exploded.md).
+Exploded axonometric draws one object in 2:1 dimetric projection with its parts lifted apart at equal gaps: a [phone teardown](skills/diagrams-design-quind/assets/example-exploded-phone.html), an [unboxing](skills/diagrams-design-quind/assets/example-exploded-unboxing.html), an [app stack](skills/diagrams-design-quind/assets/example-exploded.html), an [AI agent stack](skills/diagrams-design-quind/assets/example-exploded-ai-stack.html), or a [mechanical keyboard](skills/diagrams-design-quind/assets/example-exploded-keyboard.html). Every coordinate comes from one projection function, and the [animated phone](skills/diagrams-design-quind/assets/example-exploded-phone-animated.html) opens assembled and explodes once. See its [reference](skills/diagrams-design-quind/references/type-exploded.md).
 
-Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagram-design/assets/example-axonometric-plan.html), the [campus](skills/diagram-design/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagram-design/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagram-design/assets/example-axonometric-plan-warehouse.html), the [phased campus animation](skills/diagram-design/assets/example-axonometric-plan-campus-animated.html), and the [reference](skills/diagram-design/references/type-axonometric-plan.md).
+Axonometric plan uses the same projection for one floor or one site: walls cut at desk height so every room reads from a single view, or buildings on a campus tagged by build phase. See the [office floor](skills/diagrams-design-quind/assets/example-axonometric-plan.html), the [campus](skills/diagrams-design-quind/assets/example-axonometric-plan-campus.html), the [coffee shop](skills/diagrams-design-quind/assets/example-axonometric-plan-coffee-shop.html), the [fulfillment floor](skills/diagrams-design-quind/assets/example-axonometric-plan-warehouse.html), the [phased campus animation](skills/diagrams-design-quind/assets/example-axonometric-plan-campus-animated.html), and the [reference](skills/diagrams-design-quind/references/type-axonometric-plan.md).
 
-SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagram-design/assets/example-sbgn.html) and its [reference](skills/diagram-design/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
+SBGN draws a biological process as a bipartite species/process map: macromolecules and process squares inside a compartment, with consumption, production, reversible, and modulation arcs. See the [carotenoid cleavage example](skills/diagrams-design-quind/assets/example-sbgn.html) and its [reference](skills/diagrams-design-quind/references/type-sbgn.md). Architecture and Nested remain the types for runtime systems and containment without reactions.
 
-**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagram-design/assets/index.html`](skills/diagram-design/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 52; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
+**Browse the live gallery:** [cathrynlavery.github.io/diagram-design](https://cathrynlavery.github.io/diagram-design/), or open [`skills/diagrams-design-quind/assets/index.html`](skills/diagrams-design-quind/assets/index.html) locally to flip through every diagram with light / dark / full-editorial tabs. Each type has one number, 01 to 52; its variants and worked examples carry the same number with a letter. The searchable diagram navigation starts open; click the preview to collapse it and use **Diagrams** to reopen it. The active diagram name and variant controls stay visible.
 
 ---
 
@@ -415,11 +415,11 @@ Every diagram template gives the inline SVG an accessible name and description: 
 
 ### Offline fonts
 
-By default a diagram loads Instrument Serif, Geist and Geist Mono from Google Fonts, the only network request it makes. Ask for **system fonts** (or set the font source to `system` in your style guide) and the file makes no network requests at all: the stacks fall back to the platform's own serif, sans and monospace faces. See [Font source](skills/diagram-design/references/style-guide.md#font-source).
+By default a diagram loads Instrument Serif, Geist and Geist Mono from Google Fonts, the only network request it makes. Ask for **system fonts** (or set the font source to `system` in your style guide) and the file makes no network requests at all: the stacks fall back to the platform's own serif, sans and monospace faces. See [Font source](skills/diagrams-design-quind/references/style-guide.md#font-source).
 
 ### Manual override
 
-Prefer to set tokens by hand? Open [`skills/diagram-design/references/style-guide.md`](skills/diagram-design/references/style-guide.md) and edit the table. Everything downstream reads from there: every diagram, the annotation primitive, and the gallery all use semantic role names (`accent`, not a hex value).
+Prefer to set tokens by hand? Open [`skills/diagrams-design-quind/references/style-guide.md`](skills/diagrams-design-quind/references/style-guide.md) and edit the table. Everything downstream reads from there: every diagram, the annotation primitive, and the gallery all use semantic role names (`accent`, not a hex value).
 
 ### First-run gate
 
@@ -427,13 +427,13 @@ The skill won't silently ship default-skinned diagrams into a branded project. O
 
 > *"This is your first diagram in this project. The style guide is still at the default. Want to run onboarding, paste tokens manually, or proceed with default?"*
 
-See [`skills/diagram-design/references/onboarding.md`](skills/diagram-design/references/onboarding.md) for the full spec.
+See [`skills/diagrams-design-quind/references/onboarding.md`](skills/diagrams-design-quind/references/onboarding.md) for the full spec.
 
 ### Working with multiple clients
 
 Onboard a brand once, save the result as a named profile, then add a `.diagram-design` marker containing `profile: <slug>` to each client project. Marker projects read `~/.diagram-design/profiles/<slug>.md` directly, so parallel workspaces can use different brands without overwriting a shared installed `style-guide.md`.
 
-The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. Use `/diagram-design:profile` in Claude Code, `/profile` in Factory Droid or Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagram-design/references/profiles.md) for the storage, marker, and recovery contract.
+The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. Use `/diagrams-design-quind:profile` in Claude Code, `/profile` in Factory Droid or Pi, or ask in natural language in any host. See [`profiles.md`](skills/diagrams-design-quind/references/profiles.md) for the storage, marker, and recovery contract.
 
 ---
 
@@ -441,27 +441,27 @@ The profile library is shared across Claude Code, Codex, Factory Droid, and Pi. 
 
 ```bash
 # From a cloned checkout, open the gallery to see every diagram
-open skills/diagram-design/assets/index.html       # macOS
-xdg-open skills/diagram-design/assets/index.html  # Linux
+open skills/diagrams-design-quind/assets/index.html       # macOS
+xdg-open skills/diagrams-design-quind/assets/index.html  # Linux
 ```
 
-Then ask your agent for a diagram, like the prompts at the top of this page. A sequence with token refresh uses the ALT combined-fragment grammar in `type-sequence.md`; see [`example-sequence-oauth.html`](skills/diagram-design/assets/example-sequence-oauth.html).
+Then ask your agent for a diagram, like the prompts at the top of this page. A sequence with token refresh uses the ALT combined-fragment grammar in `type-sequence.md`; see [`example-sequence-oauth.html`](skills/diagrams-design-quind/assets/example-sequence-oauth.html).
 
 Operator recipes for editable installs, first diagrams, brand setup, import, export, validation, Windows junctions, and reusable prompts live in [`docs/cookbook.md`](docs/cookbook.md).
 
 You can also start from a template directly:
 
 ```bash
-cp skills/diagram-design/assets/template.html my-diagram.html        # minimal light
-cp skills/diagram-design/assets/template-full.html my-diagram.html   # editorial with summary cards
-cp skills/diagram-design/assets/template-motion.html my-diagram.html # optional accessible motion
+cp skills/diagrams-design-quind/assets/template.html my-diagram.html        # minimal light
+cp skills/diagrams-design-quind/assets/template-full.html my-diagram.html   # editorial with summary cards
+cp skills/diagrams-design-quind/assets/template-motion.html my-diagram.html # optional accessible motion
 ```
 
 ### Semantic patterns and optional motion
 
-When behavior matters, the skill chooses a semantic pattern first and a visual type second. The nine routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, compensating security layers, traceable block decomposition, and lifecycle phase maps. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagram-design/references/semantic-patterns.md).
+When behavior matters, the skill chooses a semantic pattern first and a visual type second. The nine routed patterns cover fan-in queues and bottlenecks, repeated stage slots, unstructured-input transformation, paired policy traces, secure paved roads, governance catalogs, compensating security layers, traceable block decomposition, and lifecycle phase maps. Each pattern defines its triggers, primitives, budget, anti-patterns, static fallback, and nearest visual type in [`semantic-patterns.md`](skills/diagrams-design-quind/references/semantic-patterns.md).
 
-Motion is optional and does not create another visual type. [`animation.md`](skills/diagram-design/references/animation.md) defines `none`, `reveal`, `step`, and `loop` modes with a complete static first frame, deterministic timing, and controls when interaction is available. Reduced-motion output shows the complete static frame and hides/disables playback controls. Motion HTML uses the exact reviewed controller from `template-motion.html`; arbitrary or modified inline scripts, remote assets, CSS imports, and executable HTML attributes are rejected. The default is `none`: ordinary output remains static and script-free. [`example-policy-trace-animated.html`](skills/diagram-design/assets/example-policy-trace-animated.html) is the self-contained interactive example.
+Motion is optional and does not create another visual type. [`animation.md`](skills/diagrams-design-quind/references/animation.md) defines `none`, `reveal`, `step`, and `loop` modes with a complete static first frame, deterministic timing, and controls when interaction is available. Reduced-motion output shows the complete static frame and hides/disables playback controls. Motion HTML uses the exact reviewed controller from `template-motion.html`; arbitrary or modified inline scripts, remote assets, CSS imports, and executable HTML attributes are rejected. The default is `none`: ordinary output remains static and script-free. [`example-policy-trace-animated.html`](skills/diagrams-design-quind/assets/example-policy-trace-animated.html) is the self-contained interactive example.
 
 ---
 
@@ -474,14 +474,14 @@ Already have diagrams in draw.io / diagrams.net, Mermaid, Excalidraw, or PlantUM
 *A 12-node draw.io file redrawn at `balanced` detail for a blog post. The source's six pastel fills became one accent; its hand-dragged coordinates became a 4px grid.*
 
 ```
-/diagram-design:import-drawio platform.drawio
-/diagram-design:import-drawio platform.drawio --size=slide-16x9 --detail=simplified --audience=executive
-/diagram-design:import-drawio platform.drawio --detail=faithful --format=png --page=all
-/diagram-design:import-mermaid README.md --diagram=all
-/diagram-design:import-mermaid architecture.mmd --size=slide-16x9 --detail=simplified
-/diagram-design:import-excalidraw whiteboard.excalidraw --size=slide-16x9 --detail=simplified
-/diagram-design:import-plantuml sequence.puml
-/diagram-design:import-plantuml classes.puml --size=slide-16x9 --detail=simplified
+/diagrams-design-quind:import-drawio platform.drawio
+/diagrams-design-quind:import-drawio platform.drawio --size=slide-16x9 --detail=simplified --audience=executive
+/diagrams-design-quind:import-drawio platform.drawio --detail=faithful --format=png --page=all
+/diagrams-design-quind:import-mermaid README.md --diagram=all
+/diagrams-design-quind:import-mermaid architecture.mmd --size=slide-16x9 --detail=simplified
+/diagrams-design-quind:import-excalidraw whiteboard.excalidraw --size=slide-16x9 --detail=simplified
+/diagrams-design-quind:import-plantuml sequence.puml
+/diagrams-design-quind:import-plantuml classes.puml --size=slide-16x9 --detail=simplified
 ```
 
 Or just ask: *"redraw this drawio file for my deck"*, *"make this Mermaid block editorial"*, *"make this whiteboard sketch presentable"*, *"redraw this PlantUML sequence"*, or *"この Mermaid をスライド用にきれいにして"*.
@@ -510,7 +510,7 @@ Dropped:   1 sticky note ("legacy path, to be retired"), unconnected in source
 Kept in full: the request path (Web/Mobile → Gateway → Orders → Postgres)
 ```
 
-What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, Excalidraw's hand-drawn geometry, or PlantUML skinparams. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagram-design/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagram-design/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagram-design/references/import-excalidraw.md), [`references/import-plantuml.md`](skills/diagram-design/references/import-plantuml.md), and [`references/output-spec.md`](skills/diagram-design/references/output-spec.md).
+What never carries over: source or renderer coordinates, source palette, source fonts, draw.io's diagonal connector spaghetti, Mermaid's automatic layout, Excalidraw's hand-drawn geometry, or PlantUML skinparams. What always does: components, relationships, grouping, and direction. See [`references/import-drawio.md`](skills/diagrams-design-quind/references/import-drawio.md), [`references/import-mermaid.md`](skills/diagrams-design-quind/references/import-mermaid.md), [`references/import-excalidraw.md`](skills/diagrams-design-quind/references/import-excalidraw.md), [`references/import-plantuml.md`](skills/diagrams-design-quind/references/import-plantuml.md), and [`references/output-spec.md`](skills/diagrams-design-quind/references/output-spec.md).
 
 ---
 
@@ -530,10 +530,10 @@ Diagrams ship as self-contained HTML, but you can export the diagram itself for 
 **Claude Code:**
 
 ```
-/diagram-design:export-diagram path/to/diagram.html
-/diagram-design:export-diagram path/to/diagram.html --svg-only
-/diagram-design:export-diagram path/to/diagram.html --png-only --scale=3
-/diagram-design:export-diagram path/to/diagram.html --registry
+/diagrams-design-quind:export-diagram path/to/diagram.html
+/diagrams-design-quind:export-diagram path/to/diagram.html --svg-only
+/diagrams-design-quind:export-diagram path/to/diagram.html --png-only --scale=3
+/diagrams-design-quind:export-diagram path/to/diagram.html --registry
 ```
 
 Or just ask in natural language:
@@ -546,9 +546,9 @@ Or just ask in natural language:
 - **SVG** extracts the `<svg>` node and injects Google Fonts so it renders standalone in browsers, Figma, and Illustrator. Animation bindings follow namespaced keyframes even when property names use CSS escapes. Pass `--system-fonts` to skip the font import for offline use.
 - **PNG** rasterizes the diagram via Playwright at 2× by default. One-time setup: `pip install playwright && playwright install chromium`.
 
-Both formats are diagram-only: editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagram-design/references/export.md`](skills/diagram-design/references/export.md) for the full procedure.
+Both formats are diagram-only: editorial cards and headers from `-full` variants aren't included. For a screenshot of the full editorial layout, use your browser's print-to-PDF or full-page screenshot. See [`skills/diagrams-design-quind/references/export.md`](skills/diagrams-design-quind/references/export.md) for the full procedure.
 
-- **`--registry`**: for diagrams using the [traceable block decomposition](skills/diagram-design/references/semantic-patterns.md) pattern, also emits `<basename>.registry.json`, a structured projection of every block's `data-block-*` metadata. Combine with either raster format or run alone. See [`skills/diagram-design/references/export-registry.md`](skills/diagram-design/references/export-registry.md).
+- **`--registry`**: for diagrams using the [traceable block decomposition](skills/diagrams-design-quind/references/semantic-patterns.md) pattern, also emits `<basename>.registry.json`, a structured projection of every block's `data-block-*` metadata. Combine with either raster format or run alone. See [`skills/diagrams-design-quind/references/export-registry.md`](skills/diagrams-design-quind/references/export-registry.md).
 
 For motion-enabled HTML, export the explicit final state: open `?motion=static`, wait for `document.fonts.ready`, and confirm the motion root has `data-frame="static"` before capture. Use `?motion=step&step=N` only when a named intermediate frame was requested.
 
@@ -735,22 +735,22 @@ No matter how many types exist, the agent only reads the one you need. Add a new
 - Before drawing, the agent states the chosen type, pattern, size, and planned cuts, then renders.
 - The output is one `.html` file that opens double-clicked, offline, with no network requests beyond Google Fonts, and none at all with system fonts.
 - Screen readers announce the diagram's title and description; `prefers-reduced-motion` shows the complete static frame.
-- `python3 skills/diagram-design/scripts/self_check.py <file>` prints `OK` on the generated file (add `--offline` to also fail on the Google Fonts link).
+- `python3 skills/diagrams-design-quind/scripts/self_check.py <file>` prints `OK` on the generated file (add `--offline` to also fail on the Google Fonts link).
 - After brand onboarding, new diagrams use your site's paper, ink, accent, and fonts, with a fidelity receipt naming each.
 
 If any of these fail, that's a bug worth filing.
 
 ## The design system (in one paragraph)
 
-One accent color, 1 or 2 focal elements per diagram. Three font families: Instrument Serif (title + italic callouts), Geist sans (node names), Geist Mono (technical sublabels). 1px hairline borders, no shadows, max border-radius 10px. Every coordinate, width, and gap is divisible by 4. That rule is non-negotiable; it's what keeps the diagrams from feeling AI-generated. Mono is for technical content (ports, URLs, field types), not a blanket "dev" aesthetic. Accent-tinted focal nodes draw the eye to the 1 or 2 things that matter. Full spec in [`SKILL.md`](skills/diagram-design/SKILL.md#5-design-system).
+One accent color, 1 or 2 focal elements per diagram. Three font families: Instrument Serif (title + italic callouts), Geist sans (node names), Geist Mono (technical sublabels). 1px hairline borders, no shadows, max border-radius 10px. Every coordinate, width, and gap is divisible by 4. That rule is non-negotiable; it's what keeps the diagrams from feeling AI-generated. Mono is for technical content (ports, URLs, field types), not a blanket "dev" aesthetic. Accent-tinted focal nodes draw the eye to the 1 or 2 things that matter. Full spec in [`SKILL.md`](skills/diagrams-design-quind/SKILL.md#5-design-system).
 
 ---
 
 ## Primitives
 
-- **Annotation callout**: italic Instrument Serif + dashed Bézier leader, for editorial asides that sit in the margins. See [`skills/diagram-design/references/primitive-annotation.md`](skills/diagram-design/references/primitive-annotation.md).
-- **Sketchy filter**: SVG turbulence + displacement map for a hand-drawn variant. Good for essays, not for technical docs. See [`skills/diagram-design/references/primitive-sketchy.md`](skills/diagram-design/references/primitive-sketchy.md).
-- **Icon set**: 87 monochrome IT/cloud icons (laptop, phone, user, server, database, Docker, Kubernetes, AWS, Azure, GitHub, Postgres…) for richer architecture and sequence diagrams. Stroked icons from [Tabler Icons](https://tabler.io/icons) (MIT); brand silhouettes from [Simple Icons](https://simpleicons.org) (CC0). Each icon uses `currentColor` so it inherits the editorial skin or your onboarded brand. See [`skills/diagram-design/references/primitive-icons.md`](skills/diagram-design/references/primitive-icons.md); browse the [gallery](skills/diagram-design/assets/icons.html). Regenerate with `python scripts/build-icons.py`.
+- **Annotation callout**: italic Instrument Serif + dashed Bézier leader, for editorial asides that sit in the margins. See [`skills/diagrams-design-quind/references/primitive-annotation.md`](skills/diagrams-design-quind/references/primitive-annotation.md).
+- **Sketchy filter**: SVG turbulence + displacement map for a hand-drawn variant. Good for essays, not for technical docs. See [`skills/diagrams-design-quind/references/primitive-sketchy.md`](skills/diagrams-design-quind/references/primitive-sketchy.md).
+- **Icon set**: 87 monochrome IT/cloud icons (laptop, phone, user, server, database, Docker, Kubernetes, AWS, Azure, GitHub, Postgres…) for richer architecture and sequence diagrams. Stroked icons from [Tabler Icons](https://tabler.io/icons) (MIT); brand silhouettes from [Simple Icons](https://simpleicons.org) (CC0). Each icon uses `currentColor` so it inherits the editorial skin or your onboarded brand. See [`skills/diagrams-design-quind/references/primitive-icons.md`](skills/diagrams-design-quind/references/primitive-icons.md); browse the [gallery](skills/diagrams-design-quind/assets/icons.html). Regenerate with `python scripts/build-icons.py`.
 
 ---
 

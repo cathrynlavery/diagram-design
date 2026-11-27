@@ -166,7 +166,7 @@ Covers 2.1.0 only.
 
 ### Added
 
-- draw.io import and the `/diagram-design:import` redraw workflow for raw, compressed, PNG-embedded, and SVG-embedded files (#22).
+- draw.io import and the `/diagrams-design-quind:import` redraw workflow for raw, compressed, PNG-embedded, and SVG-embedded files (#22).
 - A GitHub Actions workflow that runs the lint and verification gates (#23).
 - The accessible SVG pattern as a linted contract: `role="img"`, a resolving `aria-labelledby`, and `<title>` and `<desc>` slots in every template (#25).
 

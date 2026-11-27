@@ -17,7 +17,7 @@ and fails when the drawing and the declaration disagree:
   animated part whose lift is not its exploded z minus its closed z.
 
     python3 scripts/verify-exploded.py --all
-    python3 scripts/verify-exploded.py skills/diagram-design/assets/example-exploded.html
+    python3 scripts/verify-exploded.py skills/diagrams-design-quind/assets/example-exploded.html
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 TOL = 0.05
 LABEL_PITCH = 36
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")

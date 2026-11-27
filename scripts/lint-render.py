@@ -70,7 +70,7 @@ Because the oracle is pixels, CI must pin Playwright and its bundled Chromium
 rather than taking whatever is newest; see ``.github/workflows/ci.yml``.
 
     python3 scripts/lint-render.py --all
-    python3 scripts/lint-render.py skills/diagram-design/assets/example-venn.html
+    python3 scripts/lint-render.py skills/diagrams-design-quind/assets/example-venn.html
     python3 scripts/lint-render.py --self-test   # proves every check still fires
 
 Requires Playwright (same dev dependency the PNG export uses):
@@ -91,8 +91,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
-EXPORT_PNG = ROOT / "skills/diagram-design/scripts/export_png.py"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
+EXPORT_PNG = ROOT / "skills/diagrams-design-quind/scripts/export_png.py"
 
 VIEWPORT = {"width": 1600, "height": 1000}
 TOLERANCE = 1.0  # px of slop before page overflow counts, absorbs subpixel layout
@@ -1127,7 +1127,7 @@ def template_mobile_failures(context, template_paths=None):
     return failures
 
 
-OUTPUT_SPEC_DOC = ROOT / "skills/diagram-design/references/output-spec.md"
+OUTPUT_SPEC_DOC = ROOT / "skills/diagrams-design-quind/references/output-spec.md"
 
 
 def output_spec_widest_preset():

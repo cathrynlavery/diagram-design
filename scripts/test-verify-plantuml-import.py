@@ -11,10 +11,10 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = Path("skills/diagram-design/references/import-plantuml.md")
-EXAMPLE = Path("skills/diagram-design/assets/example-import-plantuml.html")
+REFERENCE = Path("skills/diagrams-design-quind/references/import-plantuml.md")
+EXAMPLE = Path("skills/diagrams-design-quind/assets/example-import-plantuml.html")
 COMMAND = Path("commands/import-plantuml.md")
-EXTRACTOR = Path("skills/diagram-design/scripts/plantuml_extract.py")
+EXTRACTOR = Path("skills/diagrams-design-quind/scripts/plantuml_extract.py")
 FIXTURE = Path("scripts/fixtures/sample-sequence.puml")
 VERIFIER = Path("scripts/verify-plantuml-import.py")
 
@@ -46,8 +46,8 @@ def main() -> int:
             )
 
         reference = clone / REFERENCE
-        stale_name = "/diagram-design:import"
-        valid_name = "/diagram-design:import-plantuml"
+        stale_name = "/diagrams-design-quind:import"
+        valid_name = "/diagrams-design-quind:import-plantuml"
         text = reference.read_text(encoding="utf-8")
         if valid_name not in text:
             raise AssertionError("test fixture lacks the valid slash name")

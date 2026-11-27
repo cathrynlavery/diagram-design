@@ -36,9 +36,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-sankey.py"
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 GOOD = ASSETS / "example-sankey.html"
-REFERENCE = ROOT / "skills/diagram-design/references/type-sankey.md"
+REFERENCE = ROOT / "skills/diagrams-design-quind/references/type-sankey.md"
 
 # The first ribbon of the shipped figure (Budget → Unit tests), in full and as
 # the opening fragment mutations prepend attributes to.
@@ -957,13 +957,13 @@ def main() -> int:
         #    directory, so the variants are copied out, mutated, and checked
         #    against a checker pointed at the copy.
         sandbox = directory / "variants"
-        (sandbox / "skills/diagram-design/assets").mkdir(parents=True)
-        (sandbox / "skills/diagram-design/references").mkdir(parents=True)
+        (sandbox / "skills/diagrams-design-quind/assets").mkdir(parents=True)
+        (sandbox / "skills/diagrams-design-quind/references").mkdir(parents=True)
         (sandbox / "scripts").mkdir()
         shutil.copy(CHECKER, sandbox / "scripts/verify-sankey.py")
-        shutil.copy(REFERENCE, sandbox / "skills/diagram-design/references" / REFERENCE.name)
+        shutil.copy(REFERENCE, sandbox / "skills/diagrams-design-quind/references" / REFERENCE.name)
         for variant in sorted(ASSETS.glob("example-sankey*.html")):
-            shutil.copy(variant, sandbox / "skills/diagram-design/assets" / variant.name)
+            shutil.copy(variant, sandbox / "skills/diagrams-design-quind/assets" / variant.name)
 
         sandboxed = [sys.executable, str(sandbox / "scripts/verify-sankey.py"), "--all"]
         code, output = invoke(sandboxed)
@@ -972,7 +972,7 @@ def main() -> int:
         else:
             print("OK: the three shipped variants agree on geometry")
 
-        dark = sandbox / "skills/diagram-design/assets/example-sankey-dark.html"
+        dark = sandbox / "skills/diagrams-design-quind/assets/example-sankey-dark.html"
         original_dark = dark.read_text(encoding="utf-8")
         nudged = original_dark.replace(
             '<rect x="880" y="344" width="12" height="32"',
@@ -997,7 +997,7 @@ def main() -> int:
         #     pass, and the same excerpt nudged 2px must not. Nothing renders a
         #     code sample, so this is the one piece of geometry that can rot in
         #     total silence — and it is exactly what the next contributor copies.
-        doc = sandbox / "skills/diagram-design/references" / REFERENCE.name
+        doc = sandbox / "skills/diagrams-design-quind/references" / REFERENCE.name
         original_doc = doc.read_text(encoding="utf-8")
         excerpt = '<rect x="500" y="120" width="12" height="104" fill="#2d3142"/>'
         if excerpt not in GOOD.read_text(encoding="utf-8"):
@@ -1025,7 +1025,7 @@ def main() -> int:
 
         # 11. Remove a shipped variant. --all must not read two files, find
         #     nothing wrong, and call that a pass.
-        (sandbox / "skills/diagram-design/assets" / "example-sankey-full.html").unlink()
+        (sandbox / "skills/diagrams-design-quind/assets" / "example-sankey-full.html").unlink()
         code, output = invoke(sandboxed)
         if code == 0:
             failures.append("--all passed with a shipped variant missing")

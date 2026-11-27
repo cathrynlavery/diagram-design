@@ -386,7 +386,7 @@ class ScheduleTests(unittest.TestCase):
             self.assertTrue(self.v.check(p))
 
     def test_shipped_sibling_scope(self):
-        for p in (ROOT / "skills/diagram-design/assets").glob("example-*.html"):
+        for p in (ROOT / "skills/diagrams-design-quind/assets").glob("example-*.html"):
             if "schedule-network" not in p.name:
                 with self.subTest(file=p.name):
                     self.assertEqual(self.v.check(p), [])
@@ -395,7 +395,7 @@ class ScheduleTests(unittest.TestCase):
         for suffix in ("", "-dark", "-full"):
             p = (
                 ROOT
-                / f"skills/diagram-design/assets/example-schedule-network{suffix}.html"
+                / f"skills/diagrams-design-quind/assets/example-schedule-network{suffix}.html"
             )
             self.assertTrue(p.is_file(), str(p))
             self.assertEqual(self.v.check(p), [])

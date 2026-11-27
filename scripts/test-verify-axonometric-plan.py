@@ -23,7 +23,7 @@ from decimal import Decimal
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-axonometric-plan.py"
 BUILDER = ROOT / "scripts/build-axonometric-plan-examples.py"
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 OFFICE = ASSETS / "example-axonometric-plan.html"
 CAMPUS = ASSETS / "example-axonometric-plan-campus.html"
 SHIPPED = sorted(ASSETS.glob("example-axonometric-plan*.html"))

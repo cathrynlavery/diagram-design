@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN_NAME = "diagram-design"
+PLUGIN_NAME = "diagrams-design-quind"
 MANIFEST_PATHS = {
     "Claude": Path(".claude-plugin/plugin.json"),
     "Codex": Path(".codex-plugin/plugin.json"),

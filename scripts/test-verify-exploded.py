@@ -23,7 +23,7 @@ from decimal import Decimal
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-exploded.py"
 BUILDER = ROOT / "scripts/build-exploded-examples.py"
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 STACK = ASSETS / "example-exploded.html"
 PHONE = ASSETS / "example-exploded-phone.html"
 ANIMATED = ASSETS / "example-exploded-phone-animated.html"

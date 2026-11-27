@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-contrast.py"
-STYLE_GUIDE = ROOT / "skills/diagram-design/references/style-guide.md"
+STYLE_GUIDE = ROOT / "skills/diagrams-design-quind/references/style-guide.md"
 
 NS = runpy.run_path(str(CHECKER), run_name="verify_contrast_test")
 CHECK = NS["check"]

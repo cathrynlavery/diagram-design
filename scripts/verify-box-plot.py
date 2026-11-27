@@ -94,7 +94,7 @@ never bound here either.
 
 Usage:
     python3 scripts/verify-box-plot.py --all
-    python3 scripts/verify-box-plot.py skills/diagram-design/assets/example-box-plot.html
+    python3 scripts/verify-box-plot.py skills/diagrams-design-quind/assets/example-box-plot.html
 
 Exit: 0 clean, 1 findings, 2 usage.
 """
@@ -114,7 +114,7 @@ from pathlib import Path
 from html_comments import TokenizerComments
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 
 # One unit of a tag's inside, read as the HTML tokenizer does: a separator
 # (ASCII whitespace or `/`), or one attribute. A name runs to whitespace, `/`,

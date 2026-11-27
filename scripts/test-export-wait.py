@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic tests for the packaged PNG exporter's stalled-load fallback.
 
-Drives ``skills/diagram-design/scripts/export_png.py`` against local fixtures:
+Drives ``skills/diagrams-design-quind/scripts/export_png.py`` against local fixtures:
 
 - a stalled stylesheet request is cancelled with window.stop(), the renderer
   warns about fallback typography, and capture completes quickly;
@@ -31,7 +31,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-EXPORT_PNG = ROOT / "skills/diagram-design/scripts/export_png.py"
+EXPORT_PNG = ROOT / "skills/diagrams-design-quind/scripts/export_png.py"
 
 # Fast-but-deterministic substitutes for the renderer's production waits.
 FAST_IDLE_TIMEOUT_MS = 1_500
@@ -356,7 +356,7 @@ def require_other_errors_propagate(exporter, tmp: Path) -> None:
 
 def require_static_motion_frame(exporter, tmp: Path) -> None:
     # Exercise the exact shipped controller, avoiding external font requests.
-    source = (ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html").read_text(encoding="utf-8")
+    source = (ROOT / "skills/diagrams-design-quind/assets/example-policy-trace-animated.html").read_text(encoding="utf-8")
     source = re.sub(r"<link\b[^>]*>", "", source, flags=re.I)
     src = tmp / "motion-fixture.html"
     src.write_text(source, encoding="utf-8")

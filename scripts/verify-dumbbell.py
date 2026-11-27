@@ -44,7 +44,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = ROOT / "skills/diagram-design/references/type-bar.md"
+REFERENCE = ROOT / "skills/diagrams-design-quind/references/type-bar.md"
 
 # --- composition constants, quoted from the reference -----------------------
 PLOT_X0 = 200          # left edge of the plot area

@@ -1,6 +1,6 @@
 # Environment doctor
 
-Load this file when the user asks to run diagnostics, health checks, or first-run troubleshooting, or when they invoke `/diagram-design:doctor` or `/doctor`.
+Load this file when the user asks to run diagnostics, health checks, or first-run troubleshooting, or when they invoke `/diagrams-design-quind:doctor` or `/doctor`.
 
 The goal is a one-shot report that checks local readiness for Diagram Design import/export and command routing, without mutating user files or installing dependencies.
 
@@ -126,5 +126,5 @@ Doctor summary: WARN (6 pass, 2 warn, 0 fail)
 
 Next actions
 - Provision an approved PNG export renderer, then re-run the doctor check
-- Re-run: /diagram-design:doctor --strict
+- Re-run: /diagrams-design-quind:doctor --strict
 ```

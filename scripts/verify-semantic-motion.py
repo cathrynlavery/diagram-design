@@ -22,11 +22,11 @@ from html_comments import TokenizerComments
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
+SKILL = ROOT / "skills/diagrams-design-quind/SKILL.md"
 GIT_ROOT = ROOT
-PATTERNS = ROOT / "skills/diagram-design/references/semantic-patterns.md"
-ANIMATION = ROOT / "skills/diagram-design/references/animation.md"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-policy-trace-animated.html"
+PATTERNS = ROOT / "skills/diagrams-design-quind/references/semantic-patterns.md"
+ANIMATION = ROOT / "skills/diagrams-design-quind/references/animation.md"
+EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-policy-trace-animated.html"
 ADR_0002 = ROOT / "docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md"
 MAX_SKILL_BYTES = 40_000
 VISUAL_TYPE_COUNT = 52
@@ -244,7 +244,7 @@ def verify_type_count_record() -> list[str]:
     return errors
 
 
-SKILL_PATH_IN_REPO = "skills/diagram-design/SKILL.md"
+SKILL_PATH_IN_REPO = "skills/diagrams-design-quind/SKILL.md"
 
 
 def skill_lf_pin_problem(root: Path) -> str | None:
@@ -296,7 +296,7 @@ def skill_lf_pin_problem(root: Path) -> str | None:
     )
     if values.get("text") not in ("set", "auto") or values.get("eol") != "lf":
         return (
-            ".gitattributes must pin skills/diagram-design/SKILL.md to `text eol=lf` "
+            ".gitattributes must pin skills/diagrams-design-quind/SKILL.md to `text eol=lf` "
             f"so the byte cap measures the committed file (git resolves text={values.get('text')}, "
             f"eol={values.get('eol')})"
         )

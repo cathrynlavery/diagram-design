@@ -427,8 +427,8 @@ SYNTHETIC_POLICY_COMMANDS = [
     "python3 scripts/lint-render.py --self-test",
     "python3 scripts/lint-render.py --all",
     "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- "
-    "skills/diagram-design/assets/icons.html "
-    "skills/diagram-design/references/primitive-icons.md",
+    "skills/diagrams-design-quind/assets/icons.html "
+    "skills/diagrams-design-quind/references/primitive-icons.md",
 ]
 
 SYNTHETIC_CI = """\
@@ -499,8 +499,8 @@ jobs:
         run: |
           python scripts/build-icons.py
           git diff --ignore-space-at-eol --exit-code -- \\
-            skills/diagram-design/assets/icons.html \\
-            skills/diagram-design/references/primitive-icons.md
+            skills/diagrams-design-quind/assets/icons.html \\
+            skills/diagrams-design-quind/references/primitive-icons.md
 
       - name: Generate CI execution summary table
         run: |

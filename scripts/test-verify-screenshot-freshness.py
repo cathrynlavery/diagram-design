@@ -64,7 +64,7 @@ class Checkout:
     def __init__(self, base: Path, slugs: list[str]) -> None:
         self.base = base
         self.slugs = list(slugs)
-        self.assets = base / "skills/diagram-design/assets"
+        self.assets = base / "skills/diagrams-design-quind/assets"
         self.shots = base / "docs/screenshots"
         self.assets.mkdir(parents=True)
         self.shots.mkdir(parents=True)

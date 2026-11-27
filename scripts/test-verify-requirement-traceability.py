@@ -10,8 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 VERIFIER = ROOT / "scripts/verify-requirement-traceability.py"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-requirement-traceability.html"
-DARK = ROOT / "skills/diagram-design/assets/example-requirement-traceability-dark.html"
+EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-requirement-traceability.html"
+DARK = ROOT / "skills/diagrams-design-quind/assets/example-requirement-traceability-dark.html"
 
 
 def load_verifier():

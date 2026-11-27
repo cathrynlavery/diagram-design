@@ -23,17 +23,17 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-EXTRACT = ROOT / "skills/diagram-design/scripts/plantuml_extract.py"
-IMPORT_REF = ROOT / "skills/diagram-design/references/import-plantuml.md"
+SKILL = ROOT / "skills/diagrams-design-quind/SKILL.md"
+EXTRACT = ROOT / "skills/diagrams-design-quind/scripts/plantuml_extract.py"
+IMPORT_REF = ROOT / "skills/diagrams-design-quind/references/import-plantuml.md"
 COMMAND = ROOT / "commands/import-plantuml.md"
 PROMPT = ROOT / "prompts/import-plantuml.md"
 SEQUENCE = ROOT / "scripts/fixtures/sample-sequence.puml"
 CLASS_FIXTURE = ROOT / "scripts/fixtures/sample-class.puml"
 ADVERSARIAL = ROOT / "scripts/fixtures/sample-adversarial.puml"
 MULTI = ROOT / "scripts/fixtures/sample-multi.puml"
-EXAMPLE = ROOT / "skills/diagram-design/assets/example-import-plantuml.html"
-OUTPUT_SPEC = ROOT / "skills/diagram-design/references/output-spec.md"
+EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-import-plantuml.html"
+OUTPUT_SPEC = ROOT / "skills/diagrams-design-quind/references/output-spec.md"
 SUPPORTED_KINDS = "sequence, class"
 
 
@@ -1316,9 +1316,9 @@ def check_cache_note_example() -> None:
 
 def check_docs_and_wiring() -> None:
     import_text = IMPORT_REF.read_text(encoding="utf-8")
-    expected_slash_command = f"/diagram-design:{COMMAND.stem}"
+    expected_slash_command = f"/diagrams-design-quind:{COMMAND.stem}"
     documented_slash_commands = set(
-        re.findall(r"`(/diagram-design:[a-z0-9-]+)`", import_text)
+        re.findall(r"`(/diagrams-design-quind:[a-z0-9-]+)`", import_text)
     )
     if documented_slash_commands != {expected_slash_command}:
         rendered = ", ".join(sorted(documented_slash_commands)) or "none"

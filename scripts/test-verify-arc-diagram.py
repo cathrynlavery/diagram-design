@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-arc-diagram")
 
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SHIPPED = [ASSETS / name for name in (
     "example-arc-diagram.html", "example-arc-diagram-dark.html",
     "example-arc-diagram-full.html",

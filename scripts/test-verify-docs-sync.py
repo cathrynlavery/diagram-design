@@ -170,9 +170,9 @@ def font_fixture():
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-fonts-") as temp_dir:
         root = Path(temp_dir)
         for relative in FONT_SURFACES:
-            target = root / "skills/diagram-design" / relative
+            target = root / "skills/diagrams-design-quind" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+            target.write_bytes((ROOT / "skills/diagrams-design-quind" / relative).read_bytes())
         yield root
 
 
@@ -209,7 +209,7 @@ def link_error(relative: str) -> str:
 def check_font_link_parity(verify) -> None:
     """Every css2 surface requests the template's families, each one checked."""
     with font_fixture() as root:
-        skill = root / "skills/diagram-design"
+        skill = root / "skills/diagrams-design-quind"
         errors = run_checks(root, verify.check_export_font_parity)
         if errors:
             raise AssertionError(f"shipped font links failed parity: {errors}")
@@ -256,7 +256,7 @@ def check_font_link_parity(verify) -> None:
 def check_title_stack_order(verify) -> None:
     """Every --font-serif in every template reaches 'Noto Serif' first."""
     with font_fixture() as root:
-        skill = root / "skills/diagram-design"
+        skill = root / "skills/diagrams-design-quind"
         errors = run_checks(root, verify.check_title_fallback_order)
         if errors:
             raise AssertionError(f"shipped title stacks failed the fallback order: {errors}")
@@ -330,7 +330,7 @@ def check_title_font_link(verify) -> None:
     """A stack naming Noto Serif is only as good as the link that loads it."""
     with font_fixture() as root:
         mutate(
-            root / "skills/diagram-design/assets/template-motion.html",
+            root / "skills/diagrams-design-quind/assets/template-motion.html",
             NOTO_SERIF_FAMILY,
             "",
         )
@@ -347,7 +347,7 @@ def check_title_font_link(verify) -> None:
 
     # A failing stack must not hide the failing link beside it.
     with font_fixture() as root:
-        motion = root / "skills/diagram-design/assets/template-motion.html"
+        motion = root / "skills/diagrams-design-quind/assets/template-motion.html"
         mutate(motion, "'Noto Serif', ", "")
         mutate(motion, NOTO_SERIF_FAMILY, "")
         errors = run_checks(
@@ -371,7 +371,7 @@ def check_title_font_link(verify) -> None:
                 if relative == "references/export.md"
                 else NOTO_SERIF_FAMILY
             )
-            mutate(root / "skills/diagram-design" / relative, family, "")
+            mutate(root / "skills/diagrams-design-quind" / relative, family, "")
         errors = run_checks(root, verify.check_export_font_parity)
         if errors:
             raise AssertionError(f"a coordinated removal should pass parity: {errors}")
@@ -389,7 +389,7 @@ def check_font_link_copies(verify) -> None:
     typography to style-guide.md. A copy that comes back, in SKILL.md or in any
     reference, must match the template like every required one does.
     """
-    style_guide = (ROOT / "skills/diagram-design/references/style-guide.md").read_text(
+    style_guide = (ROOT / "skills/diagrams-design-quind/references/style-guide.md").read_text(
         encoding="utf-8"
     )
     link = next(line for line in style_guide.splitlines() if "fonts.googleapis.com/css2" in line)
@@ -397,9 +397,9 @@ def check_font_link_copies(verify) -> None:
     if drifted == link:
         raise AssertionError("style-guide.md font link no longer requests Noto Serif")
     for relative in ("SKILL.md", "references/primitives-core.md"):
-        shipped = (ROOT / "skills/diagram-design" / relative).read_text(encoding="utf-8")
+        shipped = (ROOT / "skills/diagrams-design-quind" / relative).read_text(encoding="utf-8")
         with font_fixture() as root:
-            path = root / "skills/diagram-design" / relative
+            path = root / "skills/diagrams-design-quind" / relative
             path.write_text(shipped, encoding="utf-8")
             errors = run_checks(root, verify.check_export_font_parity)
             if errors:
@@ -431,7 +431,7 @@ def check_font_link_copies(verify) -> None:
     # A required surface may quote its href either way; drift is still drift,
     # not a missing link.
     with font_fixture() as root:
-        path = root / "skills/diagram-design/references/style-guide.md"
+        path = root / "skills/diagrams-design-quind/references/style-guide.md"
         path.write_text(style_guide.replace(link, single_quoted(link)), encoding="utf-8")
         errors = run_checks(root, verify.check_export_font_parity)
         if errors:
@@ -463,9 +463,9 @@ def type_ramp_fixture():
     with tempfile.TemporaryDirectory(prefix="verify-docs-sync-ramp-") as temp_dir:
         root = Path(temp_dir)
         for relative in TYPE_RAMP_FILES:
-            target = root / "skills/diagram-design" / relative
+            target = root / "skills/diagrams-design-quind" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes((ROOT / "skills/diagram-design" / relative).read_bytes())
+            target.write_bytes((ROOT / "skills/diagrams-design-quind" / relative).read_bytes())
         yield root
 
 
@@ -477,7 +477,7 @@ def check_split_type_ramp(verify) -> None:
         raise AssertionError(f"shipped type-ramp surfaces disagree with output-spec.md: {errors}")
 
     with type_ramp_fixture() as root:
-        package = root / "skills/diagram-design"
+        package = root / "skills/diagrams-design-quind"
         grid = package / "references/layout-budget.md"
         primitives = package / "references/primitives-core.md"
         skill = package / "SKILL.md"
@@ -809,14 +809,14 @@ def check_heading_syntax(verify) -> None:
 # surface puts between presets: a surface dropped from the verifier's own list
 # must fail a test, not shrink it.
 SIZE_SURFACES = {
-    "skills/diagram-design/SKILL.md": " · ",
+    "skills/diagrams-design-quind/SKILL.md": " · ",
     "README.md": " · ",
     "commands/import-drawio.md": ", ",
     "commands/import-mermaid.md": ", ",
     "commands/import-excalidraw.md": ", ",
     "commands/import-plantuml.md": ", ",
 }
-OUTPUT_SPEC = "skills/diagram-design/references/output-spec.md"
+OUTPUT_SPEC = "skills/diagrams-design-quind/references/output-spec.md"
 LETTER_ROW = "| `print-letter-landscape` | `0 0 1056 816` |"
 A2_ROW = "| `print-a2-landscape` | `0 0 2244 1584` | ~1.41:1 | @3 | print | A2 |\n"
 
@@ -872,10 +872,10 @@ def check_size_preset_surfaces(verify) -> None:
             raise AssertionError(f"reordered presets were not reported: {errors}")
         readme.write_bytes(original)
 
-        skill = root / "skills/diagram-design/SKILL.md"
+        skill = root / "skills/diagrams-design-quind/SKILL.md"
         original = mutate(skill, "| **Size** |", "| **Canvas** |")
         errors = run_checks(root, verify.check_size_preset_surfaces)
-        expected = ["skills/diagram-design/SKILL.md has no size-preset list"]
+        expected = ["skills/diagrams-design-quind/SKILL.md has no size-preset list"]
         if errors != expected:
             raise AssertionError(f"a lost size-preset list was not reported: {errors}")
         skill.write_bytes(original)
@@ -1114,7 +1114,7 @@ def main() -> int:
         )
 
     line_dark = (
-        ROOT / "skills/diagram-design/assets/example-line-dark.html"
+        ROOT / "skills/diagrams-design-quind/assets/example-line-dark.html"
     ).read_text(encoding="utf-8")
     errors = []
     verify.check_line_dark_skin(errors, line_dark)
@@ -1135,11 +1135,11 @@ def main() -> int:
 
     # ── Loop station origin (#443) ───────────────────────────────────────────
     loop_reference = (
-        ROOT / "skills/diagram-design/references/type-loop.md"
+        ROOT / "skills/diagrams-design-quind/references/type-loop.md"
     ).read_text(encoding="utf-8")
     loop_examples = {
         path.name: path.read_text(encoding="utf-8")
-        for path in sorted((ROOT / "skills/diagram-design/assets").glob("example-loop*.html"))
+        for path in sorted((ROOT / "skills/diagrams-design-quind/assets").glob("example-loop*.html"))
     }
     errors = []
     verify.check_loop_station_origin(errors, loop_reference, loop_examples)
@@ -1345,8 +1345,8 @@ def main() -> int:
     )
     with tempfile.TemporaryDirectory(prefix="legacy-type-sizes-") as temp_dir:
         fake_root = Path(temp_dir)
-        assets = fake_root / "skills/diagram-design/assets"
-        references = fake_root / "skills/diagram-design/references"
+        assets = fake_root / "skills/diagrams-design-quind/assets"
+        references = fake_root / "skills/diagrams-design-quind/references"
         assets.mkdir(parents=True)
         references.mkdir(parents=True)
         legacy = assets / "example-legacy.html"
@@ -1614,16 +1614,16 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
             raise AssertionError(f"omitted runtime helper was not reported: {errors}")
 
         root = Path(temp_dir) / "repo"
-        profile_reference = root / "skills/diagram-design/references/profiles.md"
-        doctor_reference = root / "skills/diagram-design/references/doctor.md"
-        export_reference = root / "skills/diagram-design/references/export.md"
-        drawio_reference = root / "skills/diagram-design/references/import-drawio.md"
-        mermaid_reference = root / "skills/diagram-design/references/import-mermaid.md"
+        profile_reference = root / "skills/diagrams-design-quind/references/profiles.md"
+        doctor_reference = root / "skills/diagrams-design-quind/references/doctor.md"
+        export_reference = root / "skills/diagrams-design-quind/references/export.md"
+        drawio_reference = root / "skills/diagrams-design-quind/references/import-drawio.md"
+        mermaid_reference = root / "skills/diagrams-design-quind/references/import-mermaid.md"
         excalidraw_reference = (
-            root / "skills/diagram-design/references/import-excalidraw.md"
+            root / "skills/diagrams-design-quind/references/import-excalidraw.md"
         )
         plantuml_reference = (
-            root / "skills/diagram-design/references/import-plantuml.md"
+            root / "skills/diagrams-design-quind/references/import-plantuml.md"
         )
         export_command = root / "commands/export-diagram.md"
         drawio_command = root / "commands/import-drawio.md"
@@ -1717,14 +1717,14 @@ From a repository checkout, run `python3 <repo-root>/scripts/verify-geometry.py 
         factory_manifest.write_text(
             json.dumps(
                 {
-                    "name": "diagram-design",
+                    "name": "diagrams-design-quind",
                     "repository": "https://github.com/example/diagram-design",
                 }
             ),
             encoding="utf-8",
         )
         factory_marketplace.write_text(
-            json.dumps({"name": "diagram-design"}),
+            json.dumps({"name": "diagrams-design-quind"}),
             encoding="utf-8",
         )
         valid_readme = """# Diagram Design
@@ -1873,7 +1873,7 @@ diagram-design/
 
         # README may state the count only when it equals the shipped number of
         # type references, so the number a reader sees cannot go stale.
-        references = root / "skills/diagram-design/references"
+        references = root / "skills/diagrams-design-quind/references"
         references.mkdir(parents=True, exist_ok=True)
         for index in range(3):
             (references / f"type-shipped-{index}.md").write_text("# t\n", encoding="utf-8")
@@ -1906,7 +1906,7 @@ diagram-design/
             if len(errors) != 1 or relative.as_posix() not in errors[0]:
                 raise AssertionError(f"a stale count in {relative} was not reported: {errors}")
             surface.write_text("See the shipped visual types.\n", encoding="utf-8")
-        skill_surface = root / "skills/diagram-design/SKILL.md"
+        skill_surface = root / "skills/diagrams-design-quind/SKILL.md"
         skill_surface.write_text("See §3 visual-type guide.\n", encoding="utf-8")
         errors = []
         verify.check_type_counts(errors, root)

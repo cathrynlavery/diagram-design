@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Adversarial tests for scripts/build-claude-skill-zip.py.
 
-The builder packages skills/diagram-design for Claude Desktop's custom-skill
+The builder packages skills/diagrams-design-quind for Claude Desktop's custom-skill
 upload. These cases pin the include rule (SKILL.md, references, packaged
 scripts, templates, icons, and default-light examples), the files left out
 (gallery index, dark/full/animated variants), the host file-count and
@@ -25,7 +25,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILDER = ROOT / "scripts" / "build-claude-skill-zip.py"
-SKILL = "skills/diagram-design"
+SKILL = "skills/diagrams-design-quind"
 
 _spec = importlib.util.spec_from_file_location("build_claude_skill_zip", BUILDER)
 _builder = importlib.util.module_from_spec(_spec)
@@ -35,7 +35,7 @@ include_skill_path = _builder.include_skill_path
 
 DEFAULT_SKILL_MD = """\
 ---
-name: diagram-design
+name: diagrams-design-quind
 description: Create branded architecture and flowchart diagrams as HTML.
 ---
 
@@ -177,7 +177,7 @@ def zip_file_names(path: Path) -> list[str]:
     return [info.filename for info in zipfile.ZipFile(path).infolist() if not info.is_dir()]
 
 
-def zip_structure_problems(path: Path, folder: str = "diagram-design") -> list[str]:
+def zip_structure_problems(path: Path, folder: str = "diagrams-design-quind") -> list[str]:
     problems = []
     archive = zipfile.ZipFile(path)
     names = archive.namelist()
@@ -226,30 +226,30 @@ def main() -> int:
         check("repo second build succeeds", second.returncode == 0, second.stdout + second.stderr)
         if first.returncode == 0 and second.returncode == 0:
             zip_a, zip_b = built_zip(out_a), built_zip(out_b)
-            check("repo ZIP is named diagram-design-claude-skill.zip", zip_a.name == "diagram-design-claude-skill.zip")
+            check("repo ZIP is named diagrams-design-quind-claude-skill.zip", zip_a.name == "diagrams-design-quind-claude-skill.zip")
             names = zip_file_names(zip_a)
             problems = zip_structure_problems(zip_a)
             check("repo ZIP matches the upload layout", not problems, "; ".join(problems[:5]))
-            check("repo ZIP has SKILL.md at the skill root", "diagram-design/SKILL.md" in names)
+            check("repo ZIP has SKILL.md at the skill root", "diagrams-design-quind/SKILL.md" in names)
             check(
                 "repo ZIP has a type reference",
-                any(n.startswith("diagram-design/references/type-") and n.endswith(".md") for n in names),
+                any(n.startswith("diagrams-design-quind/references/type-") and n.endswith(".md") for n in names),
             )
-            check("repo ZIP has template.html", "diagram-design/assets/template.html" in names)
-            check("repo ZIP has icons.html", "diagram-design/assets/icons.html" in names)
-            check("repo ZIP has a packaged script", "diagram-design/scripts/self_check.py" in names)
+            check("repo ZIP has template.html", "diagrams-design-quind/assets/template.html" in names)
+            check("repo ZIP has icons.html", "diagrams-design-quind/assets/icons.html" in names)
+            check("repo ZIP has a packaged script", "diagrams-design-quind/scripts/self_check.py" in names)
             check(
                 "repo ZIP has a default-light example",
-                "diagram-design/assets/example-flowchart.html" in names,
+                "diagrams-design-quind/assets/example-flowchart.html" in names,
             )
-            check("repo ZIP excludes the gallery index", "diagram-design/assets/index.html" not in names)
+            check("repo ZIP excludes the gallery index", "diagrams-design-quind/assets/index.html" not in names)
             with zipfile.ZipFile(zip_a) as archive:
-                onboarding = archive.read("diagram-design/references/onboarding.md").decode("utf-8")
+                onboarding = archive.read("diagrams-design-quind/references/onboarding.md").decode("utf-8")
             after = onboarding.split("After onboarding, the user should:", 1)[-1].split("\n---", 1)[0]
             previews = re.findall(r"`(assets/example-[^`]+\.html)`", after)
             check(
                 "repo ZIP onboarding preview step names a bundled example",
-                bool(previews) and all(f"diagram-design/{p}" in names for p in previews),
+                bool(previews) and all(f"diagrams-design-quind/{p}" in names for p in previews),
                 ", ".join(previews) or "no example named",
             )
             dark = [n for n in names if n.endswith("-dark.html") and "/example-" in n]
@@ -258,7 +258,7 @@ def main() -> int:
             check("repo ZIP excludes full example variants", not full, ", ".join(full[:5]))
             animated = [n for n in names if n.endswith("-animated.html")]
             check("repo ZIP excludes animated example variants", not animated, ", ".join(animated[:5]))
-            stray = [n for n in names if not n.startswith("diagram-design/")]
+            stray = [n for n in names if not n.startswith("diagrams-design-quind/")]
             check("repo ZIP has only the skill folder", not stray, ", ".join(stray[:5]))
             check(
                 "repo ZIP is under the host file limit",
@@ -271,14 +271,14 @@ def main() -> int:
                 == hashlib.sha256(zip_b.read_bytes()).digest(),
             )
             index_skill = subprocess.run(
-                ["git", "show", ":skills/diagram-design/SKILL.md"],
+                ["git", "show", ":skills/diagrams-design-quind/SKILL.md"],
                 cwd=ROOT,
                 capture_output=True,
                 check=True,
             ).stdout
             check(
                 "repo ZIP SKILL.md matches the git index",
-                zipfile.ZipFile(zip_a).read("diagram-design/SKILL.md") == index_skill,
+                zipfile.ZipFile(zip_a).read("diagrams-design-quind/SKILL.md") == index_skill,
             )
 
         good = fixture(tmp, "good")
@@ -289,22 +289,22 @@ def main() -> int:
             names = zip_file_names(built_zip(out))
             problems = zip_structure_problems(built_zip(out))
             check("fixture ZIP matches the upload layout", not problems, "; ".join(problems[:5]))
-            check("fixture ZIP includes the light example", "diagram-design/assets/example-flowchart.html" in names)
-            check("fixture ZIP includes templates", "diagram-design/assets/template-dark.html" in names)
-            check("fixture ZIP excludes gallery index", "diagram-design/assets/index.html" not in names)
+            check("fixture ZIP includes the light example", "diagrams-design-quind/assets/example-flowchart.html" in names)
+            check("fixture ZIP includes templates", "diagrams-design-quind/assets/template-dark.html" in names)
+            check("fixture ZIP excludes gallery index", "diagrams-design-quind/assets/index.html" not in names)
             check(
                 "fixture ZIP excludes dark example",
-                "diagram-design/assets/example-flowchart-dark.html" not in names,
+                "diagrams-design-quind/assets/example-flowchart-dark.html" not in names,
             )
             check(
                 "fixture ZIP excludes full example",
-                "diagram-design/assets/example-flowchart-full.html" not in names,
+                "diagrams-design-quind/assets/example-flowchart-full.html" not in names,
             )
             check(
                 "fixture ZIP excludes animated example",
-                "diagram-design/assets/example-queue-animated.html" not in names,
+                "diagrams-design-quind/assets/example-queue-animated.html" not in names,
             )
-            check("fixture ZIP is named for Claude Desktop", built_zip(out).name == "diagram-design-claude-skill.zip")
+            check("fixture ZIP is named for Claude Desktop", built_zip(out).name == "diagrams-design-quind-claude-skill.zip")
 
         linked = fixture(
             tmp,
@@ -510,7 +510,7 @@ def main() -> int:
         if result.returncode == 0:
             check(
                 "ZIP holds staged bytes, not the working tree",
-                zipfile.ZipFile(built_zip(out)).read("diagram-design/SKILL.md") == staged,
+                zipfile.ZipFile(built_zip(out)).read("diagrams-design-quind/SKILL.md") == staged,
             )
 
         junk = fixture(
@@ -524,7 +524,7 @@ def main() -> int:
         if result.returncode == 0:
             check(
                 "untracked file stays out of the ZIP",
-                "diagram-design/assets/example-secret.html" not in zip_file_names(built_zip(out)),
+                "diagrams-design-quind/assets/example-secret.html" not in zip_file_names(built_zip(out)),
             )
 
         ita = fixture(tmp, "ita", intent_to_add=(f"{SKILL}/references/new.md",))
@@ -563,7 +563,7 @@ def main() -> int:
         if result.returncode == 0:
             check(
                 "unusual path ships unchanged",
-                "diagram-design/references/caf\u00e9 notes.md" in zip_file_names(built_zip(out)),
+                "diagrams-design-quind/references/caf\u00e9 notes.md" in zip_file_names(built_zip(out)),
             )
 
     if failures:

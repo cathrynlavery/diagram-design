@@ -13,7 +13,7 @@ from pathlib import Path
 from verify_static_svg_visibility import check_static_svg, hidden, local, number, rectangle
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
 KINDS = {"source": "SRC-", "requirement": "REQ-", "design": "DES-", "test": "TST-"}
 RELATIONS = {"derives": "source", "satisfies": "design", "verifies": "test"}

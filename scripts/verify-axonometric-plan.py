@@ -18,7 +18,7 @@ projection in verify-exploded.py rather than the example builder, and fails on:
   attribute anywhere in the figure.
 
     python3 scripts/verify-axonometric-plan.py --all
-    python3 scripts/verify-axonometric-plan.py skills/diagram-design/assets/example-axonometric-plan.html
+    python3 scripts/verify-axonometric-plan.py skills/diagrams-design-quind/assets/example-axonometric-plan.html
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 TOL = 0.05
 TRUNK = 8  # a tree canopy stands this far above the plate on its trunk
 

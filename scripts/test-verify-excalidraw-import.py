@@ -12,8 +12,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = Path("skills/diagram-design/references/import-excalidraw.md")
-EXAMPLE = Path("skills/diagram-design/assets/example-import-excalidraw.html")
+REFERENCE = Path("skills/diagrams-design-quind/references/import-excalidraw.md")
+EXAMPLE = Path("skills/diagrams-design-quind/assets/example-import-excalidraw.html")
 FIXTURE = Path("scripts/fixtures/sample-adversarial.excalidraw")
 VERIFIER = Path("scripts/verify-excalidraw-import.py")
 
@@ -45,8 +45,8 @@ def main() -> int:
             )
 
         reference = clone / REFERENCE
-        stale_name = "/diagram-design:import"
-        valid_name = "/diagram-design:import-excalidraw"
+        stale_name = "/diagrams-design-quind:import"
+        valid_name = "/diagrams-design-quind:import-excalidraw"
         text = reference.read_text(encoding="utf-8")
         if valid_name not in text:
             raise AssertionError("test fixture lacks the valid slash name")

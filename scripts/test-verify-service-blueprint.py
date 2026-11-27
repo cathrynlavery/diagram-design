@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-service-blueprint.py"
-GOOD = ROOT / "skills/diagram-design/assets/example-service-blueprint.html"
+GOOD = ROOT / "skills/diagrams-design-quind/assets/example-service-blueprint.html"
 SHIPPED = sorted(GOOD.parent.glob("example-service-blueprint*.html"))
 
 

@@ -11,9 +11,9 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-VERIFIER = ROOT / "skills/diagram-design/scripts/verify_geometry.py"
+VERIFIER = ROOT / "skills/diagrams-design-quind/scripts/verify_geometry.py"
 REPO_ENTRY = ROOT / "scripts/verify-geometry.py"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 ARCHITECTURE = ASSET_DIR / "example-architecture.html"
 SWIMLANE = ASSET_DIR / "example-swimlane.html"
 ZONED = ASSET_DIR / "example-dp-integration.html"

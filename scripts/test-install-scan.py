@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills" / "diagram-design"
+SKILL = ROOT / "skills" / "diagrams-design-quind"
 
 # Copied from Hermes Agent (NousResearch/hermes-agent) tools/skills_guard.py,
 # rule html_comment_injection, scanner skills-guard-v10; installed copy at

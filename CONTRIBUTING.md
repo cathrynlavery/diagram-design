@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagram-design/SKILL.md` is the index, each of the 52 visual types has its own reference file, and the extractor scripts in `skills/diagram-design/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagrams-design-quind/SKILL.md` is the index, each of the 52 visual types has its own reference file, and the extractor scripts in `skills/diagrams-design-quind/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 
@@ -51,7 +51,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Heatmap monotone opacity ramp, complete N×M grid, ≤1 focal cell | `python3 scripts/test-verify-heatmap.py && python3 scripts/verify-heatmap.py --all` |
 | Requirement traceability IDs, typed links, and explicit gaps | `python3 scripts/verify-requirement-traceability.py --all && python3 scripts/test-verify-requirement-traceability.py` |
 | Event modeling stage order, role IDs, and typed link endpoints | `python3 scripts/verify-event-modeling.py --all && python3 scripts/test-verify-event-modeling.py` |
-| A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html` |
+| A single file, e.g. a new example | `python3 scripts/lint-skin.py skills/diagrams-design-quind/assets/example-my-type.html` |
 | Sequence-doc consistency, visible ALT guards, ordinary OAuth returns, and headline activation | `python3 scripts/verify-sequence-oauth.py` |
 | Semantic-motion verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-semantic-motion.py` |
 | Sequence-oauth verifier behaves (pass + adversarial cases) | `python3 scripts/test-verify-sequence-oauth.py` |
@@ -125,7 +125,7 @@ Every validation gate below must pass before a PR is ready. They also run automa
 | Skin-polarity checker behaves (pass + adversarial cases) | `python3 scripts/test-verify-skin-polarity.py` |
 | Generated icon assets are up to date (`icons.html`, `primitive-icons.md`) | `python3 scripts/build-icons.py` then `git diff --exit-code` on the two generated files |
 
-The semantic-pattern gate also caps `skills/diagram-design/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter. SKILL.md is a router: SVG markup and the long form of the connector rules live in `references/primitives-core.md`, and the 4px grid table, per-type complexity budget rows, page layout, and summary cards live in `references/layout-budget.md` (ADR 0004, 2026-09-27 amendment). A new type's budget row goes in `layout-budget.md`, not SKILL.md.
+The semantic-pattern gate also caps `skills/diagrams-design-quind/SKILL.md` at 40,000 bytes so the installed skill remains practical to load. If that gate fails, reduce duplication or move detail into a routed reference; do not remove routing vocabulary from frontmatter. SKILL.md is a router: SVG markup and the long form of the connector rules live in `references/primitives-core.md`, and the 4px grid table, per-type complexity budget rows, page layout, and summary cards live in `references/layout-budget.md` (ADR 0004, 2026-09-27 amendment). A new type's budget row goes in `layout-budget.md`, not SKILL.md.
 
 ### Keep diagram claims checked
 
@@ -260,8 +260,8 @@ python3 scripts/test-plugin-package.py \
 
 ### If a gate fails
 
-- **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagram-design/SKILL.md`.
-- **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagram-design/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
+- **`verify-plugin-package.py`:** if it reports a version change, drop the manifest edits from your branch — versions are bumped on `main` after merge, never in a PR. If packaging validation fails, keep all native marketplaces pointed at the repository root and keep the shared skill at `skills/diagrams-design-quind/SKILL.md`.
+- **`lint-skin.py`:** the failure message names the file, line, and category (`color`, `font-family`, `a11y`, `external-asset`, `pure-black`, `script`). Colors must come from the palette in `skills/diagrams-design-quind/references/style-guide.md`; fonts from the allowed list; diagrams must satisfy the accessible SVG contract (see below). The linter also requires the SHA-pinned controller from `template-motion.html` verbatim and rejects remote resources, CSS `@import`, non-fragment CSS `url()`, event handlers, `srcdoc`, executable URLs, and extra scripts.
 - **`verify-*.py`:** the extractor's real behavior no longer matches its fixture or the documentation, or the reference/command/prompt wiring drifted. Fix the source of truth — do not widen a test to avoid a failure.
 - **`verify-screenshot-freshness.py`:** a canonical minimal-light example or its committed PNG changed without a synchronized catalog refresh. Before the first regeneration, install the renderer with `python3 -m pip install playwright && python3 -m playwright install chromium`. Then run `python3 scripts/render-canonical-screenshots.py`, inspect all 52 renders, and commit the updated PNGs plus `docs/screenshots/manifest.json`. The gate hashes example sources in their canonical LF form, so a checkout that converts LF to CRLF still passes; `scripts/test-verify-screenshot-freshness.py` covers that case, real source drift, and raw PNG digests.
 - **`build-readme-thumbs.py --check`:** a README preview is missing, stale, corrupt, the wrong size, orphaned, or no longer links to its full PNG. Install the pinned renderer with `python3 -m pip install Pillow==12.1.1`, run `python3 scripts/build-readme-thumbs.py`, inspect the preview changes, and commit the WebPs plus `docs/screenshots/thumbs/manifest.json`.
@@ -312,7 +312,7 @@ Treemaps get a second geometric gate, because their whole claim is that area *is
 
 The same count check covers this guide, `SKILL.md`, and the current onboarding and semantic-pattern references. Historical changelog entries and ADRs keep the count that was accurate when they were written. After a new type merges, a maintainer must also update the repository's GitHub About description, [Cathryn's profile README](https://github.com/cathrynlavery/cathrynlavery/blob/main/README.md), and [diagramdesign.dev](https://diagramdesign.dev); those live outside this CI check.
 
-The skill also ships `skills/diagram-design/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. The geometry checker ships the same way as `skills/diagram-design/scripts/verify_geometry.py`; `scripts/verify-geometry.py` only runs it, so the gate commands stay the same.
+The skill also ships `skills/diagrams-design-quind/scripts/self_check.py`, a distilled output checker installed agents can run on their own generated diagrams; `python3 scripts/test-self-check.py` keeps it honest. The geometry checker ships the same way as `skills/diagrams-design-quind/scripts/verify_geometry.py`; `scripts/verify-geometry.py` only runs it, so the gate commands stay the same.
 
 ### Render lint
 
@@ -356,18 +356,18 @@ The contract lives in `scripts/lint-skin.py` (`lint_accessible_svgs`) and is uni
 
 Every diagram type ships three variants: minimal light (`example-<type>.html`), minimal dark (`example-<type>-dark.html`), and full editorial (`example-<type>-full.html`).
 
-1. Copy the closest template (`skills/diagram-design/assets/template.html`, `template-dark.html`, or `template-full.html`).
+1. Copy the closest template (`skills/diagrams-design-quind/assets/template.html`, `template-dark.html`, or `template-full.html`).
 2. Load the matching `references/type-<name>.md` and follow its layout conventions.
 3. Replace the eyebrow, h1, and SVG body; replace the `[diagram-slug]` placeholders with your file's slug and keep the `<title>`/`<desc>` slots filled.
 4. Run the taste gate in `SKILL.md` §9, then the linter:
 
 ```bash
-python3 scripts/lint-skin.py skills/diagram-design/assets/example-my-type.html
+python3 scripts/lint-skin.py skills/diagrams-design-quind/assets/example-my-type.html
 ```
 
 New examples should be added to the gallery (`assets/index.html`) so they stay browsable.
 
-Motion is opt-in. Start from `skills/diagram-design/assets/template-motion.html`, follow `references/animation.md`, and run `python3 scripts/verify-motion.py <file>` plus `python3 scripts/test-verify-motion.py`. A motion file must preserve complete no-JavaScript, reduced-motion, print, screenshot, and export states. Keep the controller byte-for-byte identical to the template; changes require updating the canonical template, example, documentation, and adversarial tests together.
+Motion is opt-in. Start from `skills/diagrams-design-quind/assets/template-motion.html`, follow `references/animation.md`, and run `python3 scripts/verify-motion.py <file>` plus `python3 scripts/test-verify-motion.py`. A motion file must preserve complete no-JavaScript, reduced-motion, print, screenshot, and export states. Keep the controller byte-for-byte identical to the template; changes require updating the canonical template, example, documentation, and adversarial tests together.
 
 ## Design decisions (ADRs)
 
@@ -375,8 +375,8 @@ Settled policies live as short records in `docs/adr/` — one pinned motion cont
 
 ## Adding a new diagram type
 
-1. Write `skills/diagram-design/references/type-<name>.md` — layout conventions, anti-patterns, and a worked pattern for that type. Mirror an existing reference's structure.
-2. Add the row to the selection table in `skills/diagram-design/SKILL.md` §3 **and** the type's name to the frontmatter `description` and the Codex `interface.longDescription` in `.codex-plugin/plugin.json`. `verify-docs-sync.py` fails if either loses or lacks a type's lexical hook.
+1. Write `skills/diagrams-design-quind/references/type-<name>.md` — layout conventions, anti-patterns, and a worked pattern for that type. Mirror an existing reference's structure.
+2. Add the row to the selection table in `skills/diagrams-design-quind/SKILL.md` §3 **and** the type's name to the frontmatter `description` and the Codex `interface.longDescription` in `.codex-plugin/plugin.json`. `verify-docs-sync.py` fails if either loses or lacks a type's lexical hook.
 3. Add the three example variants (see above) and register them in the gallery (`assets/index.html`) with the next type number; extra examples of an existing type go directly after it as lettered variants (`data-parent-type`, eyebrow `04a`). `verify-docs-sync.py` fails on any shipped example the gallery can't reach and on any numbered tab without a matching `type-*.md`.
 4. Run the full gate suite — new examples are linted automatically by `--all`.
 5. After merge, the maintainer updates the GitHub About description, Cathryn's profile README, and diagramdesign.dev to the new count, then checks the live pages. Contributors do not need write access to those surfaces.
@@ -390,15 +390,15 @@ Icons are generated, never hand-edited:
 
 ```bash
 python3 scripts/build-icons.py
-git diff --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-design/references/primitive-icons.md
+git diff --exit-code -- skills/diagrams-design-quind/assets/icons.html skills/diagrams-design-quind/references/primitive-icons.md
 ```
 
 ## Touching the import paths
 
-- draw.io: `skills/diagram-design/scripts/drawio_extract.py` — must pass `scripts/verify-drawio-import.py`, which drives the extractor against `scripts/fixtures/sample-architecture.drawio` in all four container formats (raw XML, deflate+base64, PNG-embedded, SVG-embedded).
-- Mermaid: `skills/diagram-design/scripts/mermaid_extract.py` — must pass `scripts/verify-mermaid-import.py`, which covers every supported grammar, multi-block Markdown, adversarial labels, trust-boundary behavior, resource caps, and named failures.
-- Excalidraw: `skills/diagram-design/scripts/excalidraw_extract.py` — must pass `scripts/verify-excalidraw-import.py`, which covers scene parsing, bound labels, groups and frames, adversarial labels, trust-boundary behavior, resource caps, and named failures.
-- PlantUML: `skills/diagram-design/scripts/plantuml_extract.py` — must pass `scripts/verify-plantuml-import.py`, which covers sequence and class grammars, multi-block files, adversarial labels, trust-boundary behavior, resource caps, and named failures.
+- draw.io: `skills/diagrams-design-quind/scripts/drawio_extract.py` — must pass `scripts/verify-drawio-import.py`, which drives the extractor against `scripts/fixtures/sample-architecture.drawio` in all four container formats (raw XML, deflate+base64, PNG-embedded, SVG-embedded).
+- Mermaid: `skills/diagrams-design-quind/scripts/mermaid_extract.py` — must pass `scripts/verify-mermaid-import.py`, which covers every supported grammar, multi-block Markdown, adversarial labels, trust-boundary behavior, resource caps, and named failures.
+- Excalidraw: `skills/diagrams-design-quind/scripts/excalidraw_extract.py` — must pass `scripts/verify-excalidraw-import.py`, which covers scene parsing, bound labels, groups and frames, adversarial labels, trust-boundary behavior, resource caps, and named failures.
+- PlantUML: `skills/diagrams-design-quind/scripts/plantuml_extract.py` — must pass `scripts/verify-plantuml-import.py`, which covers sequence and class grammars, multi-block files, adversarial labels, trust-boundary behavior, resource caps, and named failures.
 
 All four scripts treat their input as **untrusted data** — they never render, fetch, or execute source content. Keep it that way. If you add a grammar or a new security boundary, extend the corresponding verifier with a fixture before merging.
 

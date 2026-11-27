@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-treemap.py"
-GOOD = ROOT / "skills/diagram-design/assets/example-treemap.html"
+GOOD = ROOT / "skills/diagrams-design-quind/assets/example-treemap.html"
 SHIPPED = sorted(GOOD.parent.glob("example-treemap*.html"))
 VERIFY_NAMESPACE = runpy.run_path(str(CHECKER), run_name="verify_treemap_test")
 ESTIMATED_ADVANCE = VERIFY_NAMESPACE["estimated_advance"]

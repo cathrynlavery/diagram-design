@@ -27,7 +27,7 @@ from pathlib import Path
 from css_property_scan import escaped_property_findings
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 
 TYPES = ("arc-diagram", "architecture-delta", "beeswarm", "box-plot", "bump", "bubble", "git-graph", "marimekko", "ridgeline",
          "service-blueprint", "polar", "steps", "streamgraph", "slopegraph", "unit-grid", "waterfall")

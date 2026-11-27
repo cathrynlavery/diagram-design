@@ -26,7 +26,7 @@ from verify_static_svg_visibility import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SVG_RE = re.compile(r"<svg\b[^>]*>.*?</svg\s*>", re.S | re.I)
 DECIMAL = re.compile(r"(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,6})?\Z")
 PATH_TOKEN = re.compile(r"[MLHVQ]|[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)")

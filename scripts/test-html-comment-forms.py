@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 VERIFIERS = sorted((ROOT / "scripts").glob("verify-*.py")) + [
-    ROOT / "skills/diagram-design/scripts/verify_geometry.py"
+    ROOT / "skills/diagrams-design-quind/scripts/verify_geometry.py"
 ]
 # A comment body read lazily up to `-->` only, in either spelling.
 OLD_PATTERN_RE = re.compile(r"<!--(?:\.\*\?|\[\\s\\S\]\*\?)(?:-->|\(\?:-->)")
@@ -136,7 +136,7 @@ def run_cases(name: str, verifier: str, cases: dict, finding: str, ok: str) -> i
 
 def check_bubble() -> int:
     """HTMLParser path: a bubble off its scale, hidden from Python < 3.13 by `<!-->`."""
-    example = (ROOT / "skills/diagram-design/assets/example-bubble.html").read_text(encoding="utf-8")
+    example = (ROOT / "skills/diagrams-design-quind/assets/example-bubble.html").read_text(encoding="utf-8")
     anchor = '<circle data-name="Gateway"'
     end = example.index("/>", example.index(anchor)) + 2
     ghost = example[example.index(anchor):end].replace('"Gateway"', '"Ghost"').replace('cx="229.6"', 'cx="900"')
@@ -154,7 +154,7 @@ def check_bubble() -> int:
 
 
 def check_box_plot() -> int:
-    example = (ROOT / "skills/diagram-design/assets/example-box-plot.html").read_text(encoding="utf-8")
+    example = (ROOT / "skills/diagrams-design-quind/assets/example-box-plot.html").read_text(encoding="utf-8")
     start = example.index('<g data-name="Auth"')
     end = example.index("</g>", start)
     circle = '<circle cx="700" cy="80" r="6" fill="#bf4520"/>'

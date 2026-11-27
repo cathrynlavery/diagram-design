@@ -163,7 +163,7 @@ jobs:
       - name: Lint animated example skin
         if: always()
         id: animated_lint
-        run: python scripts/lint-skin.py skills/diagram-design/assets/example-policy-trace-animated.html
+        run: python scripts/lint-skin.py skills/diagrams-design-quind/assets/example-policy-trace-animated.html
 
       - name: Verify every shipped motion file
         if: always()
@@ -670,8 +670,8 @@ jobs:
         run: |
           python scripts/build-icons.py
           git diff --ignore-space-at-eol --exit-code -- \
-            skills/diagram-design/assets/icons.html \
-            skills/diagram-design/references/primitive-icons.md
+            skills/diagrams-design-quind/assets/icons.html \
+            skills/diagrams-design-quind/references/primitive-icons.md
 
       - name: Generate CI execution summary table
         if: always()

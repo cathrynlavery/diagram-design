@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-ASSETS = Path(__file__).resolve().parent.parent / "skills/diagram-design/assets"
+ASSETS = Path(__file__).resolve().parent.parent / "skills/diagrams-design-quind/assets"
 MOTION_TEMPLATE = ASSETS / "template-motion.html"
 
 S2 = math.sqrt(2)

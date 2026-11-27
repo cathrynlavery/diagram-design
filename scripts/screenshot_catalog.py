@@ -9,8 +9,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL = ROOT / "skills/diagram-design/SKILL.md"
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+SKILL = ROOT / "skills/diagrams-design-quind/SKILL.md"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 SCREENSHOT_DIR = ROOT / "docs/screenshots"
 MANIFEST = SCREENSHOT_DIR / "manifest.json"
 

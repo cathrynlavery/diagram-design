@@ -47,7 +47,7 @@
       "python3 scripts/test-lint-a11y.py",
       "python3 scripts/verify-semantic-motion.py --markdown-only",
       "python3 scripts/verify-semantic-motion.py --example-only",
-      "python3 scripts/lint-skin.py skills/diagram-design/assets/example-policy-trace-animated.html",
+      "python3 scripts/lint-skin.py skills/diagrams-design-quind/assets/example-policy-trace-animated.html",
       "python3 scripts/test-verify-semantic-motion.py",
       "python3 scripts/verify-motion.py --shipped",
       "python3 scripts/test-build-icons-quoted-attributes.py",
@@ -145,7 +145,7 @@
       "python3 scripts/test-export-pdf.py",
       "python3 scripts/test-verify-heatmap.py",
       "python3 scripts/verify-heatmap.py --all",
-      "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- skills/diagram-design/assets/icons.html skills/diagram-design/references/primitive-icons.md"
+      "python3 scripts/build-icons.py && git diff --ignore-space-at-eol --exit-code -- skills/diagrams-design-quind/assets/icons.html skills/diagrams-design-quind/references/primitive-icons.md"
     ],
     "required_check_names": [],
     "review": {

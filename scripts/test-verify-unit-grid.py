@@ -257,7 +257,7 @@ def main() -> int:
     for filled in (0, 100):
         marks = "".join(cell(index, "filled" if index < filled else "empty") for index in range(100))
         cases.append((f"{filled} filled cells", chart(marks, filled), None))
-    for path in sorted((ROOT / "skills/diagram-design/assets").glob("example-unit-grid*.html")):
+    for path in sorted((ROOT / "skills/diagrams-design-quind/assets").glob("example-unit-grid*.html")):
         source = path.read_text(encoding="utf-8")
         cases.append((f"{path.name} valid", source, None))
         cases.append((f"{path.name} wrong headline", source.replace('>64%</text>', '>74%</text>'), "printed percentage"))

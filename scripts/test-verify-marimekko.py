@@ -41,7 +41,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 verify = __import__("verify-marimekko")
 
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 SHIPPED = [ASSETS / name for name in (
     "example-marimekko.html", "example-marimekko-dark.html",
     "example-marimekko-full.html",

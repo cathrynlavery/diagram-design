@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-REFERENCE = Path("skills/diagram-design/references/import-drawio.md")
-EXAMPLE = Path("skills/diagram-design/assets/example-import-drawio.html")
+REFERENCE = Path("skills/diagrams-design-quind/references/import-drawio.md")
+EXAMPLE = Path("skills/diagrams-design-quind/assets/example-import-drawio.html")
 VERIFIER = Path("scripts/verify-drawio-import.py")
 
 
@@ -37,8 +37,8 @@ def main() -> int:
         )
 
         reference = clone / REFERENCE
-        stale_name = "/diagram-design:import"
-        valid_name = "/diagram-design:import-drawio"
+        stale_name = "/diagrams-design-quind:import"
+        valid_name = "/diagrams-design-quind:import-drawio"
         text = reference.read_text(encoding="utf-8")
         if valid_name not in text:
             raise AssertionError("test fixture lacks the valid slash name")

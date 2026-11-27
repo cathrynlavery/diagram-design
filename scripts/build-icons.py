@@ -4,8 +4,8 @@ Pulls SVGs from Tabler Icons (MIT), Simple Icons (CC0), log-z/logos (MIT),
 and Devicon (MIT), normalizes them to a 24x24 viewBox using `currentColor`
 so they inherit ink from context, and emits two artifacts:
 
-  - skills/diagram-design/references/primitive-icons.md  (catalog with snippets)
-  - skills/diagram-design/assets/icons.html               (visual gallery)
+  - skills/diagrams-design-quind/references/primitive-icons.md  (catalog with snippets)
+  - skills/diagrams-design-quind/assets/icons.html               (visual gallery)
 
 Run:    python scripts/build-icons.py
 Reqs:   stdlib only (urllib, re, pathlib)
@@ -24,8 +24,8 @@ import urllib.error
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
-MD_OUT = REPO / "skills" / "diagram-design" / "references" / "primitive-icons.md"
-HTML_OUT = REPO / "skills" / "diagram-design" / "assets" / "icons.html"
+MD_OUT = REPO / "skills" / "diagrams-design-quind" / "references" / "primitive-icons.md"
+HTML_OUT = REPO / "skills" / "diagrams-design-quind" / "assets" / "icons.html"
 VENDOR_DIR = REPO / "scripts" / "vendor" / "icons"
 
 

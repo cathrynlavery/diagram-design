@@ -41,9 +41,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-heatmap.py"
-GOOD = ROOT / "skills/diagram-design/assets/example-heatmap.html"
-GOOD_DARK = ROOT / "skills/diagram-design/assets/example-heatmap-dark.html"
-GOOD_FULL = ROOT / "skills/diagram-design/assets/example-heatmap-full.html"
+GOOD = ROOT / "skills/diagrams-design-quind/assets/example-heatmap.html"
+GOOD_DARK = ROOT / "skills/diagrams-design-quind/assets/example-heatmap-dark.html"
+GOOD_FULL = ROOT / "skills/diagrams-design-quind/assets/example-heatmap-full.html"
 
 CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 

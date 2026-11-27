@@ -38,7 +38,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CHECKER = ROOT / "scripts/verify-skin-polarity.py"
-ASSETS = ROOT / "skills/diagram-design/assets"
+ASSETS = ROOT / "skills/diagrams-design-quind/assets"
 LIGHT = ASSETS / "example-treemap.html"
 DARK = ASSETS / "example-treemap-dark.html"
 FULL = ASSETS / "example-treemap-full.html"

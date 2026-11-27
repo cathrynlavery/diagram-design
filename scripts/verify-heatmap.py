@@ -41,7 +41,7 @@ WHAT THIS DOES NOT CHECK, deliberately:
 
 Usage:
     python3 scripts/verify-heatmap.py --all
-    python3 scripts/verify-heatmap.py skills/diagram-design/assets/example-heatmap.html
+    python3 scripts/verify-heatmap.py skills/diagrams-design-quind/assets/example-heatmap.html
 
 Exit: 0 clean, 1 findings, 2 usage.
 """
@@ -56,7 +56,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ASSET_DIR = ROOT / "skills/diagram-design/assets"
+ASSET_DIR = ROOT / "skills/diagrams-design-quind/assets"
 
 # A ">" inside a quoted attribute is text, not the end of the tag. Ending the
 # scan there drops the cell or axis label that follows it.
