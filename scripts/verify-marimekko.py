@@ -157,7 +157,7 @@ DECLARES_SEGMENT_RE = re.compile(r"\bdata-segment\s*=", re.IGNORECASE)
 # STROKE, as in verify-beeswarm.py: it is the mark's edge and the thing a
 # reader identifies the focal segment by.
 ACCENT_RE = re.compile(
-    r"#cc3b10\b|#ff8a5c\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#cc3b10\b|#ff8a5c\b|rgba\(\s*204\s*,\s*59\s*,\s*16\b|rgba\(\s*255\s*,\s*138\s*,\s*92\b",
     re.IGNORECASE,
 )
 

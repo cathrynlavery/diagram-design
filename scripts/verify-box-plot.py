@@ -206,8 +206,8 @@ DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
 TUKEY_K = 1.5
 ACCENT_RE = re.compile(
     r"#(?:cc3b10|ff8a5c)(?:[0-9a-f]{2})?\b|"
-    r"rgba?\(\s*191\s*,\s*69\s*,\s*32\b|"
-    r"rgba?\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"rgba?\(\s*204\s*,\s*59\s*,\s*16\b|"
+    r"rgba?\(\s*255\s*,\s*138\s*,\s*92\b",
     re.IGNORECASE,
 )
 ACCENT_RGBS = ((204, 59, 16), (255, 138, 92))
