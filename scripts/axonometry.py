@@ -23,7 +23,7 @@ S2 = math.sqrt(2)
 SKINS = {
     "light": dict(
         paper="#ffffff", ink="#0e1920", muted="#5b6770", soft="#66727c", accent="#cc3b10",
-        ink_rgb="45,49,66", acc_rgb="191,69,32", base="#ffffff", rule="rgba(14,25,32,0.12)",
+        ink_rgb="14,25,32", acc_rgb="204,59,16", base="#ffffff", rule="rgba(14,25,32,0.12)",
         shade=(None, "rgba(14,25,32,0.07)", "rgba(14,25,32,0.15)"),
         focal=("rgba(204,59,16,0.10)", "rgba(204,59,16,0.20)", "rgba(204,59,16,0.32)"),
         cavity="rgba(14,25,32,0.10)", floor="rgba(14,25,32,0.04)", well="rgba(14,25,32,0.14)",
@@ -34,7 +34,7 @@ SKINS = {
     ),
     "dark": dict(
         paper="#0e1920", ink="#ffffff", muted="#9ba9b2", soft="#8695a0", accent="#ff8a5c",
-        ink_rgb="245,245,245", acc_rgb="240,138,89", base="#16242c", rule="rgba(255,255,255,0.12)",
+        ink_rgb="255,255,255", acc_rgb="255,138,92", base="#16242c", rule="rgba(255,255,255,0.12)",
         shade=("rgba(255,255,255,0.10)", None, "rgba(14,25,32,0.45)"),
         focal=("rgba(255,138,92,0.18)", None, "rgba(14,25,32,0.45)"),
         cavity="rgba(14,25,32,0.55)", floor="rgba(14,25,32,0.25)", well="rgba(14,25,32,0.40)",
@@ -223,7 +223,7 @@ MINIMAL = """<!DOCTYPE html>
     h1 {{
       font-family: var(--font-serif);
       font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--color-ink);
@@ -268,7 +268,7 @@ FULL = """<!DOCTYPE html>
     .container {{ max-width: 1200px; margin: 0 auto; }}
     .header {{ margin-bottom: 2.5rem; }}
     .header-eyebrow {{ font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }}
-    h1 {{ font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }}
+    h1 {{ font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }}
     .subtitle {{ font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }}
     .diagram-container {{ overflow-x: auto; }}
     svg {{ width: 100%; min-width: 1000px; display: block; }}

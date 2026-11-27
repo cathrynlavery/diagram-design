@@ -45,9 +45,9 @@ SHIPPED = STYLE_GUIDE.read_text(encoding="utf-8")
 
 ROWS = {
     "soft": "| `soft` | Sublabels, boundary labels | `#66727c` | `#8695a0` |",
-    "accent": "| `accent` | Focal / 1–2 max per diagram | `#cc3b10` (burnt-tangerine) | `#ff8a5c` |",
-    "link": "| `link` | HTTP/API calls, external arrows | `#0b6e80` | `#5fd6ec` |",
-    "ink-strong": "| `ink-strong` | High-contrast text on warm accent fills | `#111111` | `#111111` |",
+    "accent": "| `accent` | Focal / 1–2 max per diagram | `#cc3b10` (QUIND orange, text grade) | `#ff8a5c` |",
+    "link": "| `link` | HTTP/API calls, external arrows | `#0b6e80` (QUIND teal, text grade) | `#5fd6ec` |",
+    "ink-strong": "| `ink-strong` | High-contrast text on accent fills | `#111111` | `#111111` |",
 }
 
 failures: list[str] = []
@@ -113,7 +113,7 @@ def test_alpha_is_composited_over_paper() -> None:
 def test_text_use_is_held_to_text_bar() -> None:
     # #c4562b on #ffffff is about 4.0:1: enough for a stroke, not for a label.
     rgb, _ = PARSE_COLOR("`#c4562b`")
-    ratio = CONTRAST(rgb, (245, 245, 245))
+    ratio = CONTRAST(rgb, (255, 255, 255))
     ok(3.0 <= ratio < 4.5, f"fixture accent sits between the bars ({ratio:.2f}:1)")
     source = with_row(SHIPPED, "accent", "| `accent` | Focal / 1–2 max per diagram | `#c4562b` | `#ff8a5c` |")
     findings = findings_for(source)
@@ -126,7 +126,7 @@ def test_text_use_is_held_to_text_bar() -> None:
 def test_ink_strong_is_measured_on_accent_fill() -> None:
     # #5a5a5a on paper is 6:1, but on the 0.85 accent fill it is about 1.6:1.
     source = with_row(SHIPPED, "ink-strong",
-                      "| `ink-strong` | High-contrast text on warm accent fills | `#5a5a5a` | `#111111` |")
+                      "| `ink-strong` | High-contrast text on accent fills | `#5a5a5a` | `#111111` |")
     ok(mentions(findings_for(source), "light", "ink-strong"),
        "ink-strong that reads on paper but not on the accent fill is reported")
 

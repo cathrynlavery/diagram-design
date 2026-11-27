@@ -8,7 +8,7 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. All contributions ar
 
 ## What this project is
 
-Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagrams-design-quind/SKILL.md` is the index, each of the 52 visual types has its own reference file, and the extractor scripts in `skills/diagrams-design-quind/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
+Diagram Design is an agent skill (Claude Code, Codex, Factory Droid, Pi) that produces editorial-quality diagrams as self-contained HTML files. The repo is documentation-first: `skills/diagrams-design-quind/SKILL.md` is the index, each of the 54 visual types has its own reference file, and the extractor scripts in `skills/diagrams-design-quind/scripts/` turn draw.io, Mermaid, Excalidraw, and PlantUML sources into a structured IR.
 
 See [README.md](README.md) for the full picture, including the design system and the import/export flows.
 

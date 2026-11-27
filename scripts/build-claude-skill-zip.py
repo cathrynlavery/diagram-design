@@ -20,6 +20,7 @@ list of names):
 - every file under ``scripts/`` (the packaged extractors, export helpers, and
   checkers the skill tells the agent to run)
 - ``assets/template*.html`` and ``assets/icons.html`` (copy sources)
+- every file under ``assets/icons/`` (the QUIND icon libraries)
 - every ``assets/example-*.html`` that is not a gallery or CI-only variant
 
 Gallery and CI-only, left out:
@@ -164,6 +165,8 @@ def include_skill_path(path: str) -> bool:
         return True
     if not rest.startswith("assets/"):
         return False
+    if rest.startswith("assets/icons/"):  # QUIND icon libraries (Lucide, AWS, Azure, GCP)
+        return True
     name = PurePosixPath(rest).name
     if name.startswith("template") and name.endswith(".html"):
         return True

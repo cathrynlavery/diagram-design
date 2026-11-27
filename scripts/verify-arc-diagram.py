@@ -135,7 +135,7 @@ LITERAL_PAINT_RE = re.compile(
 UNREADABLE_PAINT = {"currentcolor", "inherit", "initial", "unset", "revert", "context-stroke"}
 # The shipped accent on the light and dark skins; a custom skin adds its own
 # --color-accent, read from the document.
-DEFAULT_ACCENTS = {(191, 69, 32), (240, 138, 89)}
+DEFAULT_ACCENTS = {(204, 59, 16), (255, 138, 92)}
 COLOR_ACCENT_RE = re.compile(r"--color-accent\s*:\s*(?P<value>[^;}]+)", re.IGNORECASE)
 HEX_RE = re.compile(r"#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})", re.IGNORECASE)
 RGB_RE = re.compile(r"rgba?\(\s*([\d.]+)\s*[,\s]\s*([\d.]+)\s*[,\s]\s*([\d.]+)", re.IGNORECASE)

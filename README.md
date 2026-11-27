@@ -7,7 +7,16 @@
   </picture>
 </h1>
 
-**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>52 diagram types. No shadows. No Mermaid slop.**
+**An agent skill that draws diagrams as one self-contained HTML + SVG file, in your brand.<br>54 diagram types. No shadows. No Mermaid slop.**
+
+> **Fork QUIND · `diagrams-design-quind`.** Este repositorio es un fork de [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design) (MIT) adaptado a QUIND. Cambia tres cosas sobre el original:
+>
+> - **Piel QUIND por defecto**: papel blanco, tinta `#0e1920`, naranja QUIND como único acento, turquesa para enlaces; Poppins, Inter y Roboto Mono. Sin paso de onboarding. Fuente de verdad: [`style-guide.md`](skills/diagrams-design-quind/references/style-guide.md).
+> - **Dos tipos nuevos**: [C4](skills/diagrams-design-quind/references/type-c4.md) (contexto, contenedores, componentes, despliegue, dinámico) y [BPMN](skills/diagrams-design-quind/references/type-bpmn.md) (piscinas, carriles, tareas tipadas, compuertas).
+> - **Íconos QUIND**: Lucide y las marcas oficiales de AWS, Azure y GCP, con buscador ([`icons-quind.md`](skills/diagrams-design-quind/references/icons-quind.md)).
+>
+> Para traer cambios del original: haga el merge y ejecute `python3 scripts/quind-reskin.py`, que vuelve a aplicar la piel QUIND a plantillas, ejemplos y referencias. ZIP para Claude: `python3 scripts/build-claude-skill-zip.py` → `dist/diagrams-design-quind-claude-skill.zip`. El resto de este README es el del proyecto original.
+
 
 [![GitHub stars](https://img.shields.io/github/stars/cathrynlavery/diagram-design?style=flat-square&color=bf4520)](https://github.com/cathrynlavery/diagram-design/stargazers)
 [![skills.sh installs](https://skills.sh/b/cathrynlavery/diagram-design?style=flat-square)](https://skills.sh/cathrynlavery/diagram-design/diagram-design)
@@ -260,7 +269,7 @@ The model already understood the content. What it was missing was taste, so I wr
 
 ## What it makes
 
-52 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
+54 diagram types, each in three static variants: minimal light, minimal dark, and full-editorial. Open any of them directly in a browser. There is no build step, JavaScript, or external image dependency.
 
 <table>
 <tr>

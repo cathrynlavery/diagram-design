@@ -28,8 +28,8 @@ MAX_FONT_SIZE = 32
 FONT_FAMILIES = {"inter,sans-serif", "roboto mono,monospace"}
 FONTS_HREF = (
     "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400"
-    "&family=Inter+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600"
-    "&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap"
+    "&family=Roboto+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600"
+    "&family=Noto+Sans+TC:wght@400;500;600&display=swap"
 )
 # The page skeleton every example shares; anything else around the SVG can hide it.
 PAGE_TAGS = {

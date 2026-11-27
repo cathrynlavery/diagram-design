@@ -22,8 +22,8 @@ from screenshot_catalog import (
 
 def main() -> int:
     slugs = canonical_slugs()
-    if len(slugs) != 52 or len(slugs) != len(set(slugs)):
-        raise SystemExit(f"expected 52 unique canonical types; found {len(slugs)}")
+    if len(slugs) != 54 or len(slugs) != len(set(slugs)):
+        raise SystemExit(f"expected 54 unique canonical types; found {len(slugs)}")
 
     SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, object]] = []

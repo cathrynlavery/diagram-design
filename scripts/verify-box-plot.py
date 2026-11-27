@@ -205,12 +205,12 @@ ATTR_RE = re.compile(
 DECLARES_Q1_RE = re.compile(r"\bdata-q1\s*=", re.IGNORECASE)
 TUKEY_K = 1.5
 ACCENT_RE = re.compile(
-    r"#(?:bf4520|f08a59)(?:[0-9a-f]{2})?\b|"
+    r"#(?:cc3b10|ff8a5c)(?:[0-9a-f]{2})?\b|"
     r"rgba?\(\s*191\s*,\s*69\s*,\s*32\b|"
     r"rgba?\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
-ACCENT_RGBS = ((191, 69, 32), (240, 138, 89))
+ACCENT_RGBS = ((204, 59, 16), (255, 138, 92))
 HSL_RE = re.compile(
     r"hsla?\(\s*([-+]?[\d.]+)(deg|grad|rad|turn)?[\s,]+([\d.]+)%?[\s,]+([\d.]+)%?",
     re.IGNORECASE,

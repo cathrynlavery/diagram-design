@@ -283,7 +283,7 @@ def check_title_stack_order(verify) -> None:
                 template,
                 "</style>",
                 "@media (prefers-color-scheme: dark) {\n"
-                f"      :root {{ --font-serif: 'Poppins', 'Inter', system-ui, sans-serif}', "
+                f"      :root {{ --font-serif: 'Poppins', '{face}', "
                 "'Noto Serif', serif; }\n"
                 "    }\n"
                 "  </style>",

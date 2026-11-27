@@ -145,7 +145,7 @@ def _parse_color(
         return None
 
     if underlay is None:
-        underlay = (245, 245, 245)
+        underlay = (255, 255, 255)
 
     def blend(rgb: tuple[int, int, int], alpha: float) -> tuple[int, int, int]:
         if alpha >= 1.0:
@@ -504,7 +504,7 @@ def check_file(path: Path) -> list[str]:
                 canvas_underlay = parsed
                 break
     if canvas_underlay is None:
-        canvas_underlay = (245, 245, 245)
+        canvas_underlay = (255, 255, 255)
 
     text_labels = parse_text_labels(source, geometry_errors)
     errors.extend(f"{path.name}: {finding}" for finding in geometry_errors)

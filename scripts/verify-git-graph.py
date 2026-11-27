@@ -109,7 +109,7 @@ DECLARES_COMMIT_RE = re.compile(r"\bdata-commit\s*=", re.IGNORECASE)
 DECLARES_CONNECTOR_RE = re.compile(r"\bdata-(?:from|to)\s*=", re.IGNORECASE)
 HEX_RE = re.compile(r"#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})", re.IGNORECASE)
 RGB_RE = re.compile(r"rgba?\(\s*([\d.]+)\s*[,\s]\s*([\d.]+)\s*[,\s]\s*([\d.]+)", re.IGNORECASE)
-DEFAULT_ACCENTS = {(191, 69, 32), (240, 138, 89)}
+DEFAULT_ACCENTS = {(204, 59, 16), (255, 138, 92)}
 COLOR_ACCENT_RE = re.compile(r"--color-accent\s*:\s*(?P<value>[^;}]+)", re.IGNORECASE)
 RGBA_ZERO_RE = re.compile(
     r"^(?:rgb|hsl)a?\(\s*[^,/\s()]+(?:\s*,\s*|\s+)[^,/\s()]+(?:\s*,\s*|\s+)"
