@@ -107,6 +107,27 @@ def blank_comments_outside_strings(css: str) -> str:
     )
 
 
+def mask_css_strings(css: str) -> str:
+    """CSS with the inside of every complete quoted string turned to `_`, same length and lines.
+
+    Rules and selectors are split on this copy, so a `{`, `}`, `,` or space inside a
+    quoted attribute value cannot move a rule or compound boundary. Nothing here reads
+    attribute values. Comments, escapes, unquoted url()s and unclosed strings are
+    tokenized as CSS_STRING_RE reads them and kept as written.
+
+    A raw quote is not always a quote to the browser (inside <svg> it decodes `&quot;`,
+    and markup such as `<!-- " -->` is not stylesheet text), so callers read the rules
+    of both this copy and the CSS as written, and report what either one finds.
+    """
+    def mask(found):
+        text = found.group()
+        if found.group("string") is None:
+            return text
+        return text[0] + re.sub(r"[^\n]", "_", text[1:-1]) + text[-1]
+
+    return CSS_STRING_RE.sub(mask, css)
+
+
 @dataclass(eq=False)
 class Node:
     tag: str
@@ -407,17 +428,22 @@ def check_source(path: Path, source: str) -> list[str]:
         # CSS escapes could disguise transform or geometry property names.
         if "\\" in css or CSS_MOVES.search(clean_css(blank_css_strings(style.text()))):
             fail(style, "CSS geometry overrides or escaped CSS are unsupported")
-        for selectors, declarations in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
-            if css_hides(declarations) and any(
-                selector_may_match(selector, node)
-                for selector in selectors.split(",") for node in visible
-            ):
-                fail(style, "CSS must not hide snapshot objects or ledger")
-            if CSS_SIZE.search(declarations) and any(
-                selector_may_match(selector, bound)
-                for selector in selectors.split(",") for bound in bounds_nodes
-            ):
-                fail(style, "CSS geometry overrides are unsupported on bounds")
+        hides = resizes = False
+        for split in (css, mask_css_strings(css)):
+            for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", split):
+                selectors, declarations = rule.group(1), css[rule.start(2):rule.end(2)]
+                hides = hides or (css_hides(declarations) and any(
+                    selector_may_match(selector, node)
+                    for selector in selectors.split(",") for node in visible
+                ))
+                resizes = resizes or (bool(CSS_SIZE.search(declarations)) and any(
+                    selector_may_match(selector, bound)
+                    for selector in selectors.split(",") for bound in bounds_nodes
+                ))
+        if hides:
+            fail(style, "CSS must not hide snapshot objects or ledger")
+        if resizes:
+            fail(style, "CSS geometry overrides are unsupported on bounds")
 
     objects = []
     for node in scanner.nodes:

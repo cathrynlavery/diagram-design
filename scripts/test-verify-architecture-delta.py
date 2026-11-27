@@ -244,6 +244,28 @@ class ContractTests(unittest.TestCase):
             self.rejects(GOOD.replace('</style>', rule + '</style>'), 'CSS must not hide')
         self.clean(GOOD.replace('</style>', '.scroll-hint {display:none}</style>'))
 
+    def test_quoted_selector_text_does_not_move_rule_boundaries(self):
+        # A `{` or a space inside a quoted attribute value is selector text, not CSS
+        # structure (#518), also when an inert character reference sits elsewhere.
+        for tail in ('', ' /* &amp; */'):
+            self.rejects(GOOD.replace('</style>', f':not([data-x="{{.missing"]) {{display:none}}{tail}</style>'),
+                         'CSS must not hide')
+            self.rejects(GOOD.replace('</style>', f'[data-change="a b"] {{display:none}}{tail}</style>'),
+                         'CSS must not hide')
+            self.rejects(GOOD.replace('</style>', f'[data-x="a b"] {{width:1px}}{tail}</style>'), 'CSS geometry')
+
+    def test_quotes_the_browser_does_not_read_as_quotes_hide_no_rule(self):
+        # Inside <svg> the browser decodes `&quot;` and reads markup as nodes, so these raw
+        # quotes open no string around the rule between them.
+        root = '<svg data-diagram="architecture-delta" viewBox="0 0 760 180">'
+        for css, expected in (
+            ('[x="&quot;],[data-kind] {display:none} [b=&quot;"] {}', 'CSS must not hide'),
+            ('[x="&quot;],[data-role] {width:1px} [b=&quot;"] {}', 'CSS geometry'),
+            ('<!-- " -->[data-kind]{display:none}<!-- " --> x {}', 'CSS must not hide'),
+        ):
+            with self.subTest(css=css):
+                self.rejects(GOOD.replace(root, f'{root}<style>{css}</style>', 1), expected)
+
     def test_nonrendering_metadata(self):
         original = component('client', 'unchanged', 'web:v1', 0, 0)
         for tag in ('defs', 'symbol', 'mask', 'pattern', 'template', 'title'):

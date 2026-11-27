@@ -432,6 +432,41 @@ def run_cases(h: Harness) -> int:
                    honest("<style>svg { width: 100%; } .card-dot { width: 7px; height: 7px; }"
                           " .legend text { height: 1em; }</style>\n"))
 
+    # ── A `}` or a space inside a quoted selector value is selector text (#518) ──
+    h.expect_finding("a `}` in a quoted attribute value does not end the rule before a `width`",
+                     honest('<style>[data-segment="Linux"],[t="}"] { width: 1px; }</style>\n'),
+                     r"CSS `width` declaration")
+    h.expect_finding("a space in a quoted attribute value does not split the subject",
+                     honest('<style>[data-segment="a b"] { width: 1px; height: 1px; }</style>\n'),
+                     r"CSS `width` declaration")
+    h.expect_finding("a `}` in a quoted attribute value still counts beside an inert "
+                     "character reference",
+                     honest('<style>[data-segment="Linux"],[t="}"] { width: 1px; } /* &amp; */</style>\n'),
+                     r"CSS `width` declaration")
+    h.expect_finding("quotes inside markup in an svg <style> open no string around a rule",
+                     honest('<style><!-- " -->[data-segment]{width:1px}<!-- " --> x {}</style>\n'),
+                     r"CSS `width` declaration")
+    for quote in ("&quot;", "&#34;"):
+        h.expect_finding("a `%s` the browser decodes to a quote does not hide a rule inside a "
+                         "quoted value" % quote,
+                         honest('<style>[x="%s],[data-segment] { width: 1px; } [b=%s"] {}</style>\n'
+                                % (quote, quote)),
+                         r"CSS `width` declaration")
+    h.expect_clean("a quoted `{` in a selector no segment rect can match is still not a "
+                   "geometry move",
+                   honest('<style>.card-dot[data-note="{ }"] { width: 7px; }</style>\n'))
+    for quote in ("&quot;", "&#34;"):
+        h.expect_finding("a raw quote pair around a `%s` does not hide a live `width` on a "
+                         "segment rule" % quote,
+                         honest('<style>[data-segment]:not([n="}"]) { --a: "%s ; width: 5px; --b: "\n'
+                                '}</style>\n' % quote),
+                         r"CSS `width` declaration")
+    h.expect_finding("quotes inside comments do not hide a live `width` on a segment rule when "
+                     "the stylesheet holds a backslash",
+                     honest('<style>[data-segment] { fill: red; /* \\ "} .card-dot { */ width: 1px; }'
+                            ' .x /* " */ {}</style>\n'),
+                     r"CSS `width` declaration")
+
     # ── A CSS comment is whitespace to the browser, so it is here too ─────
     h.expect_finding("a `/**/`-prefixed inline transform on a segment is refused",
                      document(columns(), CAPTIONS, KEYS).replace(
