@@ -528,6 +528,10 @@ def css_geometry_declaration(css: str, segments: list):
     that fires on every shipped page is switched off, not obeyed.
     """
     for split in (css, mask_css_strings(css)):
+        # Declarations are found in the CSS as written in both passes; only rule boundaries
+        # come from `split`. When blank_css_strings keeps the CSS as written, a raw quote pair
+        # in the masked copy can cover a live declaration (a decoded `&quot;`, quotes inside
+        # comments), which finditer(split) would drop.
         for found in CSS_MOVES_MARK_RE.finditer(css):
             if found.group("prop").lower() not in CSS_SIZE_PROPS:
                 return found

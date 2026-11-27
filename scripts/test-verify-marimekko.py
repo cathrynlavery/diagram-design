@@ -455,6 +455,17 @@ def run_cases(h: Harness) -> int:
     h.expect_clean("a quoted `{` in a selector no segment rect can match is still not a "
                    "geometry move",
                    honest('<style>.card-dot[data-note="{ }"] { width: 7px; }</style>\n'))
+    for quote in ("&quot;", "&#34;"):
+        h.expect_finding("a raw quote pair around a `%s` does not hide a live `width` on a "
+                         "segment rule" % quote,
+                         honest('<style>[data-segment]:not([n="}"]) { --a: "%s ; width: 5px; --b: "\n'
+                                '}</style>\n' % quote),
+                         r"CSS `width` declaration")
+    h.expect_finding("quotes inside comments do not hide a live `width` on a segment rule when "
+                     "the stylesheet holds a backslash",
+                     honest('<style>[data-segment] { fill: red; /* \\ "} .card-dot { */ width: 1px; }'
+                            ' .x /* " */ {}</style>\n'),
+                     r"CSS `width` declaration")
 
     # ── A CSS comment is whitespace to the browser, so it is here too ─────
     h.expect_finding("a `/**/`-prefixed inline transform on a segment is refused",
