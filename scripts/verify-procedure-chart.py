@@ -38,6 +38,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import re
 import sys
@@ -45,7 +46,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from html_comments import COMMENT_RE
-from verify_static_svg_visibility import hidden, local
+from verify_static_svg_visibility import ancestry, hidden, local, normalize, paint_visible, properties
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
@@ -118,10 +119,12 @@ def path_commands(d: str) -> list[tuple[str, list[float]]] | None:
                 return None  # relative commands would hide where a stroke lands
             commands.append((token.upper(), []))
         else:
-            commands[-1][1].append(float(token))
+            commands[-1][1].append(num(token))
     arity = {"M": 2, "L": 2, "H": 1, "V": 1, "Q": 4, "A": 7, "Z": 0}
     for command, args in commands:
-        if command not in arity or (arity[command] and len(args) % arity[command]) or (
+        if any(not math.isfinite(value) for value in args) or command not in arity or (
+            arity[command] and len(args) != arity[command]
+        ) or (
             not arity[command] and args
         ):
             return None
@@ -192,7 +195,7 @@ def mark_shape(mark: ET.Element, cx: float, cy: float, half: float) -> str | Non
         return None
     if tag == "rect":
         x, y, w, h = (num(mark.get(k)) for k in ("x", "y", "width", "height"))
-        if close(w, h) and w >= 8 and close(x + w / 2, cx) and close(y + h / 2, cy) and w / 2 <= half + TOLERANCE:
+        if all(mark.get(k) is None or num(mark.get(k)) == 0 for k in ("rx", "ry")) and close(w, h) and w >= 8 and close(x + w / 2, cx) and close(y + h / 2, cy) and w / 2 <= half + TOLERANCE:
             return "origination"
         return None
     if tag == "polygon":
@@ -259,12 +262,43 @@ def check_svg(svg: ET.Element) -> list[str]:
     errors: list[str] = []
     parents = {child: parent for parent in svg.iter() for child in parent}
 
+    paper = next((normalize(e.get("fill", "")) for e in svg
+                  if local(e.tag) == "rect" and e.get("width") == "100%" and e.get("height") == "100%"), "")
+
+    def painted(element: ET.Element, channel: str) -> bool:
+        chain = list(ancestry(element, parents))
+        def inherited(key: str, default: str) -> str:
+            for node in chain:
+                values = list(properties(node, key))
+                if values and values[-1] != "inherit":
+                    return values[-1]
+            return default
+
+        ink = inherited(channel, "black" if channel == "fill" else "none")
+        if ink in {"none", "transparent", paper} or not paint_visible(chain, channel):
+            return False
+        return channel != "stroke" or (num(inherited("stroke-width", "1").removesuffix("px")) > 0)
+
+    def has_arrow(element: ET.Element) -> bool:
+        match = re.fullmatch(r"url\(#([^()\s]+)\)", element.get("marker-end", ""))
+        return bool(match and any(local(e.tag) == "marker" and e.get("id") == match[1] for e in svg.iter()))
+
     def shown(element: ET.Element) -> bool:
         node: ET.Element | None = element
         while node is not None:
             if hidden(node) or "transform" in node.attrib or "transform" in node.get("style", ""):
                 return False
             node = parents.get(node)
+        tag = local(element.tag)
+        if tag in {"text", "tspan"}:
+            return painted(element, "fill") or painted(element, "stroke")
+        if tag in {"line", "path", "polyline"}:
+            return painted(element, "stroke")
+        if tag in {"rect", "polygon", "circle"}:
+            return painted(element, "fill") or painted(element, "stroke")
+        if tag == "g":
+            labels = [e for e in element.iter() if local(e.tag) == "text"]
+            return all(shown(t) for t in labels)
         return True
 
     def in_group(element: ET.Element, role: str) -> bool:
@@ -345,6 +379,8 @@ def check_svg(svg: ET.Element) -> list[str]:
             errors.append(f"artifact {aid!r} needs a name, copies >= 1, a source and a disposition "
                           f"({', '.join(DISPOSITIONS)})")
             continue
+        if source not in elements:
+            errors.append(f"artifact {aid!r}: source must name an element column")
         labels = [t for t in art.iter() if t.get("data-proc-label") == "artifact"]
         expected = (f"{aid} {name} · {'1 copy' if copies == 1 else f'{copies} copies'} · source {source} · "
                     f"{DISPOSITIONS[disposition]}")
@@ -426,6 +462,11 @@ def check_svg(svg: ET.Element) -> list[str]:
         metas = [t for t in e.iter() if t.get("data-proc-label") == "meta"]
         if len(metas) != 1 or text_of(metas[0]) != " · ".join(meta) or not shown(metas[0]):
             errors.append(f"{where}: must print {' · '.join(meta)!r}")
+        if track == "personnel" and role in elements:
+            role_labels = [t for t in e.iter() if t.get("data-proc-label") == "role"]
+            if (len(role_labels) != 1 or text_of(role_labels[0]) != column_by_id[role][3].lower()
+                    or not shown(role_labels[0])):
+                errors.append(f"{where}: printed role must match data-proc-role")
         target = e.get("data-proc-target-artifact")
         if target is not None and (symbol != "information-take-off" or target not in artifacts or target == artifact):
             errors.append(f"{where}: data-proc-target-artifact belongs on an information take-off and must "
@@ -463,23 +504,93 @@ def check_svg(svg: ET.Element) -> list[str]:
             errors.append(f"activity {aid}: two symbols share step {a['step']} on one line")
         seen_slots.add(slot)
 
+    staff_rows = {a["step"]: a for a in activities.values() if a["track"] == "personnel"}
+    paperwork = [a for a in activities.values() if a["track"] == "paperwork"]
+    expected_takeoffs = {}
+    for aid, a in activities.items():
+        if a["track"] == "personnel":
+            papers = [p for p in paperwork if p["step"] == a["step"]]
+            if papers and not any(p["column"] == a["column"] for p in papers):
+                errors.append(f"activity {aid}: personnel role does not match paperwork custody")
+            if a["symbol"] == "move" and not any(p["column"] == a["column"] and p["symbol"] == "move"
+                                                 for p in papers):
+                errors.append(f"activity {aid}: personnel move has no matching paperwork move")
+        if a["symbol"] == "origination" and a["artifact"] in artifacts:
+            source = artifacts[a["artifact"]].get("data-proc-source")
+            if source != a["column"]:
+                errors.append(f"activity {aid}: origination must match the artifact source column")
+        if a["symbol"] != "information-take-off":
+            continue
+        target = a["el"].get("data-proc-target-artifact")
+        candidates = [(bid, b) for bid, b in activities.items() if b["artifact"] == target
+                      and b["step"] in (a["step"], a["step"] + 1)]
+        candidates.sort(key=lambda item: item[1]["step"])
+        labels = [t for t in a["el"].iter() if t.get("data-proc-label") == "target"]
+        if len(labels) != 1 or text_of(labels[0]) != f"To {target}" or not shown(labels[0]):
+            errors.append(f"activity {aid}: take-off must visibly name the receiving artifact")
+        if not candidates or any(p["artifact"] == target and p["step"] < a["step"]
+                                 and p["symbol"] in {"file", "destroy"} for p in paperwork):
+            errors.append(f"activity {aid}: take-off target needs a receiving activity on this or the next step "
+                          "before the artifact ends")
+        else:
+            expected_takeoffs[(aid, candidates[0][0])] = target
+
     # Lines: personnel track and one line per artifact ----------------------
     flows = [e for e in svg.iter() if e.get("data-proc-connector") == "flow"]
     handoffs = [e for e in svg.iter() if e.get("data-proc-connector") == "handoff"]
     flow_pairs: dict[tuple[str, str], ET.Element] = {}
+    connector_ids: set[str] = set()
     for f in flows:
+        cid = f.get("data-proc-connector-id", "").strip()
+        if not cid or cid in connector_ids or cid in block_ids:
+            errors.append(f"blank or duplicate flow connector id {cid!r}")
+        connector_ids.add(cid)
         pair = (f.get("data-from", ""), f.get("data-to", ""))
         if pair in flow_pairs:
             errors.append(f"duplicate flow line {pair[0]} -> {pair[1]}")
         flow_pairs[pair] = f
+    seen_takeoffs = set()
+    for edge in svg.iter():
+        kind = edge.get("data-proc-connector")
+        if kind is None or kind in {"flow", "handoff"}:
+            continue
+        if kind != "information-take-off":
+            errors.append(f"unknown procedure connector kind {kind!r}")
+            continue
+        cid = edge.get("data-proc-connector-id", "").strip()
+        if not cid or cid in connector_ids or cid in block_ids:
+            errors.append(f"blank or duplicate take-off connector id {cid!r}")
+        connector_ids.add(cid)
+        pair = (edge.get("data-from", ""), edge.get("data-to", ""))
+        if pair in seen_takeoffs or pair not in expected_takeoffs:
+            errors.append(f"take-off {cid}: must connect to its declared receiving activity exactly once")
+            continue
+        seen_takeoffs.add(pair)
+        a, b = (activities[bid] for bid in pair)
+        commands = path_commands(edge.get("d", "")) if local(edge.tag) == "path" else None
+        pts = path_vertices(edge.get("d", "")) if commands else None
+        start = (a["x"] + 6, a["y"])
+        end = (b["x"], b["y"] - HALF["paperwork"])
+        if (not pts or len(pts) < 2 or any(c not in {"L", "H", "V", "Q"} for c, _ in commands[1:])
+                or not all(close(x, y) for x, y in zip(pts[0] + pts[-1], start + end))
+                or not shown(edge) or not has_arrow(edge)
+                or edge.get("data-proc-artifact") != expected_takeoffs[pair]):
+            errors.append(f"take-off {cid}: needs a visible continuous arrow to the receiving artifact")
+    for a, b in sorted(set(expected_takeoffs) - seen_takeoffs):
+        errors.append(f"missing take-off connector {a} -> {b}")
+
     handoff_pairs: dict[tuple[str, str], ET.Element] = {}
     handoff_ids: set[str] = set()
     for h in handoffs:
         hid = h.get("data-proc-connector-id", "").strip()
-        if not hid or hid in handoff_ids or hid in block_ids:
+        if not hid or hid in connector_ids or hid in block_ids:
             errors.append(f"blank or duplicate handoff id {hid!r} (connector IDs live apart from block IDs)")
         handoff_ids.add(hid)
-        handoff_pairs[(h.get("data-from", ""), h.get("data-to", ""))] = h
+        connector_ids.add(hid)
+        pair = (h.get("data-from", ""), h.get("data-to", ""))
+        if pair in handoff_pairs:
+            errors.append(f"duplicate handoff {pair[0]} -> {pair[1]}")
+        handoff_pairs.setdefault(pair, h)
     if len(handoffs) > MAX_HANDOFFS:
         errors.append(f"{len(handoffs)} handoffs exceeds the budget of {MAX_HANDOFFS}")
 
@@ -509,6 +620,11 @@ def check_svg(svg: ET.Element) -> list[str]:
                 expected_flows.add((a, b))
             else:
                 expected_handoffs.add((a, b))
+
+    for idx, a in enumerate(paperwork):
+        if any(a["column"] == b["column"] and a["artifact"] != b["artifact"]
+               and abs(a["x"] - b["x"]) < 2 * HALF["paperwork"] for b in paperwork[idx+1:]):
+            errors.append(f"artifact {a['artifact']!r} overlaps another artifact line in {a['column']!r}")
 
     for pair in sorted(set(flow_pairs) - expected_flows):
         errors.append(f"flow line {pair[0]} -> {pair[1]} does not join consecutive symbols on one line "
@@ -549,9 +665,16 @@ def check_svg(svg: ET.Element) -> list[str]:
             errors.append(f"handoff {hid}: must start at a move symbol, not {a['symbol']!r}")
         if h.get("data-proc-artifact") != a["artifact"]:
             errors.append(f"handoff {hid}: data-proc-artifact must be {a['artifact']!r}")
-        if not h.get("marker-end"):
+        if not has_arrow(h):
             errors.append(f"handoff {hid}: needs an arrowhead (marker-end)")
-        vertices = path_vertices(h.get("d", "")) if local(h.tag) == "path" else None
+        carrier = staff_rows.get(a["step"])
+        if not carrier or carrier["symbol"] != "move" or carrier["column"] != a["column"]:
+            errors.append(f"handoff {hid}: no matching personnel move in the sending column")
+        d = h.get("d", "")
+        commands = path_commands(d) if local(h.tag) == "path" else None
+        if not commands or any(c not in {"L", "H", "V", "Q"} for c, _ in commands[1:]):
+            errors.append(f"handoff {hid}: must be one continuous path")
+        vertices = path_vertices(d) if commands else None
         start, end = ends(a, top=False), ends(b, top=True)
         if not vertices or not (close(vertices[0][0], start[0]) and close(vertices[0][1], start[1])
                                 and close(vertices[-1][0], end[0]) and close(vertices[-1][1], end[1])):
@@ -605,11 +728,23 @@ def check_svg(svg: ET.Element) -> list[str]:
         centre = points(entry.get("data-proc-at", ""))
         if len(centre) != 1 or mark_shape(mark, *centre[0], 12) != symbol:
             errors.append(f"legend entry {symbol!r} does not draw its own symbol")
-        if not shown(entry):
+        if not shown(entry) or not shown(mark):
             errors.append(f"legend entry {symbol!r} is hidden or transformed")
     for symbol in sorted({a["symbol"] for a in activities.values()} - legend_symbols):
         errors.append(f"legend is missing the {symbol!r} symbol used on the chart")
+    declared_inspections = {one_mark(a["el"]) for a in activities.values() if a["symbol"] == "inspection"}
+    declared_inspections.update(one_mark(e) for e in legend_entries if e.get("data-proc-legend") == "inspection")
     for e in svg.iter():
+        tag = local(e.tag)
+        pts = (points(e.get("points", "")) if tag == "polygon" else
+               path_vertices(e.get("d", "")) if tag == "path" else None)
+        if pts and e not in declared_inspections:
+            if len(pts) == 5 and pts[0] == pts[-1]:
+                pts = pts[:-1]
+            cx, cy = (sum(p[i] for p in pts)/len(pts) for i in (0, 1))
+            if len(pts) == 4 and any(is_diamond(order[j:] + order[:j], cx, cy)
+                                     for order in (pts, pts[::-1]) for j in range(4)):
+                errors.append("undeclared inspection diamond outside an inspection activity or the legend")
         if e.get("data-kind") == "decision" or e.get("data-flowchart") is not None:
             errors.append("flowchart decision markup inside a procedure chart")
 
@@ -664,12 +799,50 @@ def check(path: Path) -> list[str]:
     return check_svg(svg)
 
 
+def registry(path: Path) -> dict:
+    """Export validated procedure metadata without changing ordinary block export."""
+    source = COMMENT_RE.sub("", path.read_text(encoding="utf-8"))
+    svgs = SVG_RE.findall(source)
+    if len(svgs) != 1:
+        raise ValueError("registry export requires one procedure chart SVG")
+    svg = ET.fromstring(svgs[0])
+    if svg.get("data-diagram") != "procedure-chart":
+        raise ValueError("registry export requires a procedure chart")
+    errors = check_svg(svg)
+    if errors:
+        raise ValueError("; ".join(errors))
+    blocks, connectors = [], []
+    for node in svg.iter():
+        meta = {key.removeprefix("data-proc-"): value for key, value in node.attrib.items()
+                if key.startswith("data-proc-")}
+        if node.get("data-block-id"):
+            block = {key.removeprefix("data-block-"): value for key, value in node.attrib.items()
+                     if key.startswith("data-block-")}
+            block["procedure"] = meta
+            blocks.append(block)
+        elif node.get("data-proc-connector"):
+            connectors.append({"id": meta["connector-id"], "kind": meta["connector"],
+                               "from": node.get("data-from"), "to": node.get("data-to"),
+                               **({"artifact": meta["artifact"]} if "artifact" in meta else {})})
+    return {"source": path.name, "blocks": blocks, "connectors": connectors}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="*", type=Path)
     parser.add_argument("--all", action="store_true",
                         help="check every shipped asset: procedure charts in full, all others for stray vocabulary")
+    parser.add_argument("--registry", action="store_true", help="print validated block and connector JSON")
     args = parser.parse_args()
+    if args.registry:
+        if args.all or len(args.paths) != 1:
+            parser.error("--registry requires exactly one input file")
+        try:
+            print(json.dumps(registry(args.paths[0]), ensure_ascii=False, indent=2))
+        except (ValueError, ET.ParseError, OSError) as exc:
+            print(f"registry export failed: {exc}", file=sys.stderr)
+            return 1
+        return 0
     paths = sorted(ASSETS.glob("*.html")) if args.all else args.paths
     if not paths:
         parser.error("provide files or --all")

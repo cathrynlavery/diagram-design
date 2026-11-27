@@ -76,13 +76,14 @@ class Artifact:
 
 ARTIFACTS = (
     Artifact("EXP-001-A1", "Expense claim form", 1, "requester", "file"),
-    Artifact("EXP-001-A2", "Payment voucher", 1, "finance office", "move"),
+    Artifact("EXP-001-A2", "Payment voucher", 1, "finance", "move"),
 )
 DISPOSITION_WORD = {"file": "filed", "destroy": "destroyed", "move": "moved out"}
 
 
 @dataclass(frozen=True)
 class Activity:
+    id: str
     step: int
     track: str  # personnel | paperwork
     symbol: str
@@ -97,37 +98,37 @@ class Activity:
 
 # Personnel symbols speak in the present tense, paperwork symbols in the past
 # tense (AFMAN 38-102 §11.3.4.4).
-STEPS = (
-    Activity(1, "personnel", "operation", "Completes claim", "requester"),
-    Activity(1, "paperwork", "origination", "Claim created", "requester", "EXP-001-A1", elapsed=15),
-    Activity(2, "personnel", "move", "Takes claim to approver", "requester"),
-    Activity(2, "paperwork", "move", "Claim moved", "requester", "EXP-001-A1", distance=40),
-    Activity(3, "paperwork", "delay", "Claim waited in tray", "approver", "EXP-001-A1", elapsed=1440, accent=True),
-    Activity(4, "personnel", "inspection", "Checks receipt against claim", "approver"),
-    Activity(4, "paperwork", "inspection", "Claim verified", "approver", "EXP-001-A1", elapsed=10),
-    Activity(5, "personnel", "move", "Sends claim to finance", "approver"),
-    Activity(5, "paperwork", "move", "Claim moved", "approver", "EXP-001-A1"),
-    Activity(6, "personnel", "operation", "Keys amount into voucher", "finance"),
-    Activity(6, "paperwork", "information-take-off", "Amount taken off", "finance", "EXP-001-A1",
-             elapsed=5, target="EXP-001-A2"),
-    Activity(6, "paperwork", "origination", "Voucher created", "finance", "EXP-001-A2"),
-    Activity(7, "personnel", "operation", "Files claim", "finance"),
-    Activity(7, "paperwork", "file", "Claim filed", "finance", "EXP-001-A1", elapsed=2),
-    Activity(8, "personnel", "move", "Releases voucher to bank", "finance"),
-    Activity(8, "paperwork", "move", "Voucher released to bank", "finance", "EXP-001-A2"),
-)
 ROOT_ID = "EXP-001"
+STEPS = (
+    Activity(f"{ROOT_ID}-01", 1, "personnel", "operation", "Completes claim", "requester"),
+    Activity(f"{ROOT_ID}-02", 1, "paperwork", "origination", "Claim created", "requester", "EXP-001-A1", elapsed=15),
+    Activity(f"{ROOT_ID}-03", 2, "personnel", "move", "Takes claim to approver", "requester"),
+    Activity(f"{ROOT_ID}-04", 2, "paperwork", "move", "Claim moved", "requester", "EXP-001-A1", distance=40),
+    Activity(f"{ROOT_ID}-05", 3, "paperwork", "delay", "Claim waited in tray", "approver", "EXP-001-A1", elapsed=1440, accent=True),
+    Activity(f"{ROOT_ID}-06", 4, "personnel", "inspection", "Checks receipt against claim", "approver"),
+    Activity(f"{ROOT_ID}-07", 4, "paperwork", "inspection", "Claim verified", "approver", "EXP-001-A1", elapsed=10),
+    Activity(f"{ROOT_ID}-08", 5, "personnel", "move", "Sends claim to finance", "approver"),
+    Activity(f"{ROOT_ID}-09", 5, "paperwork", "move", "Claim moved", "approver", "EXP-001-A1"),
+    Activity(f"{ROOT_ID}-10", 6, "personnel", "operation", "Keys amount into voucher", "finance"),
+    Activity(f"{ROOT_ID}-11", 6, "paperwork", "information-take-off", "Amount taken off", "finance", "EXP-001-A1",
+             elapsed=5, target="EXP-001-A2"),
+    Activity(f"{ROOT_ID}-12", 6, "paperwork", "origination", "Voucher created", "finance", "EXP-001-A2"),
+    Activity(f"{ROOT_ID}-13", 7, "personnel", "operation", "Files claim", "finance"),
+    Activity(f"{ROOT_ID}-14", 7, "paperwork", "file", "Claim filed", "finance", "EXP-001-A1", elapsed=2),
+    Activity(f"{ROOT_ID}-15", 8, "personnel", "move", "Releases voucher to bank", "finance"),
+    Activity(f"{ROOT_ID}-16", 8, "paperwork", "move", "Voucher released to bank", "finance", "EXP-001-A2"),
+)
 ROOT_NAME = "Expense claim reimbursement"
 CHART_DATE = "2026-11-27"
 ANALYST = "J. Doe"
-STEP_COUNT = max(a.step for a in STEPS)
-IDS = {a: f"{ROOT_ID}-{i:02d}" for i, a in enumerate(STEPS, 1)}
+HANDOFF_IDS = {(f"{ROOT_ID}-04", f"{ROOT_ID}-05"): "EXP-H1",
+               (f"{ROOT_ID}-09", f"{ROOT_ID}-11"): "EXP-H2"}
 
 TRACE = (
-    ("TR-01", 4, "Mon 09:05", "claim leaves requester"),
-    ("TR-02", 5, "Mon 09:20", "claim lands in tray"),
-    ("TR-03", 7, "Tue 09:32", "claim verified"),
-    ("TR-04", 14, "Tue 10:02", "claim filed"),
+    ("TR-01", f"{ROOT_ID}-04", "Mon 09:05", "claim leaves requester"),
+    ("TR-02", f"{ROOT_ID}-05", "Mon 09:20", "claim lands in tray"),
+    ("TR-03", f"{ROOT_ID}-07", "Tue 09:32", "claim verified"),
+    ("TR-04", f"{ROOT_ID}-14", "Tue 10:02", "claim filed"),
 )
 
 
@@ -150,7 +151,7 @@ def half(a: Activity) -> int:
 
 
 def meta_text(a: Activity) -> str:
-    parts = [IDS[a]]
+    parts = [a.id]
     if a.elapsed is not None:
         parts.append(fmt_minutes(a.elapsed))
     if a.distance is not None:
@@ -242,7 +243,7 @@ def handoffs() -> list[tuple[str, Activity, Activity]]:
         line = [a for a in STEPS if a.artifact == artifact.id]
         for here, nxt in zip(line, line[1:]):
             if here.column != nxt.column:
-                found.append((f"EXP-H{len(found) + 1}", here, nxt))
+                found.append((HANDOFF_IDS[(here.id, nxt.id)], here, nxt))
     return found
 
 
@@ -257,7 +258,8 @@ def flows() -> list[tuple[Activity, Activity]]:
 
 
 def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
-    rows_bottom = ROW_TOP + ROW_H * STEP_COUNT
+    step_count = max(a.step for a in STEPS)
+    rows_bottom = ROW_TOP + ROW_H * step_count
     key_top = rows_bottom + 16
     legend_top = key_top + 48
     trace_top = legend_top + (88 if full_key else 48)
@@ -294,7 +296,7 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
           f'stroke-width="0.8"/>')
     w(f'    <line x1="24" y1="{ROW_TOP}" x2="{COLUMNS[-1].x1}" y2="{ROW_TOP}" stroke="{p["rule"]}" '
       f'stroke-width="0.8"/>')
-    for step in range(1, STEP_COUNT + 1):
+    for step in range(1, max(a.step for a in STEPS) + 1):
         w(f'    <text x="44" y="{cy(step) + 3}" fill="{p["soft"]}" font-size="9" font-family="{MONO}" '
           f'text-anchor="middle">{step:02d}</text>')
     w('  </g>')
@@ -313,9 +315,9 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
     w('  <g data-role="flow">')
     for a, b in flows():
         x = symbol_x(a)
-        w(f'    <line data-proc-connector="flow" data-from="{IDS[a]}" data-to="{IDS[b]}" x1="{x}" '
+        w(f'    <line data-proc-connector="flow" data-from="{a.id}" data-to="{b.id}" x1="{x}" '
           f'y1="{cy(a.step) + half(a)}" x2="{x}" y2="{cy(b.step) - half(b)}" stroke="{p["muted"]}" '
-          f'stroke-width="1.2"/>')
+          f'stroke-width="1.2" data-proc-connector-id="flow:{a.id}:{b.id}"/>')
     w('  </g>')
 
     # Handoffs: a move symbol, then an arrowed elbow into the next column.
@@ -326,8 +328,8 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
         y1, y2 = cy(a.step) + half(a), cy(b.step) - half(b)
         d = (f"M {x1},{y1} V {y_turn - 8} Q {x1},{y_turn} {x1 + 8},{y_turn} H {x2 - 8} "
              f"Q {x2},{y_turn} {x2},{y_turn + 8} V {y2}")
-        w(f'    <path data-proc-connector="handoff" data-proc-connector-id="{cid}" data-from="{IDS[a]}" '
-          f'data-to="{IDS[b]}" data-proc-artifact="{a.artifact}" d="{d}" fill="none" stroke="{p["muted"]}" '
+        w(f'    <path data-proc-connector="handoff" data-proc-connector-id="{cid}" data-from="{a.id}" '
+          f'data-to="{b.id}" data-proc-artifact="{a.artifact}" d="{d}" fill="none" stroke="{p["muted"]}" '
           f'stroke-width="1.2" marker-end="url(#arrow)"/>')
     for cid, a, b in handoffs():
         x1, x2 = symbol_x(a), symbol_x(b)
@@ -345,6 +347,23 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
         w('    </g>')
     w('  </g>')
 
+    # Route take-off arrows through the gap between rows, away from the labels.
+    w('  <g data-role="take-offs">')
+    for a in STEPS:
+        if a.target is None:
+            continue
+        b = min((b for b in STEPS if b.artifact == a.target and b.step in (a.step, a.step + 1)),
+                key=lambda b: b.step)
+        x, y = symbol_x(a), cy(a.step)
+        bx = symbol_x(b)
+        by = cy(b.step) - half(b)
+        bend = y - 26 if b.step == a.step else y + 31
+        d = f"M {x + 6},{y} H {x + 14} V {bend} H {bx} V {by}"
+        w(f'    <path data-proc-connector="information-take-off" data-proc-connector-id="take-off:{a.id}:{b.id}" '
+          f'data-from="{a.id}" data-to="{b.id}" data-proc-artifact="{b.artifact}" d="{d}" '
+          f'fill="none" stroke="{p["muted"]}" stroke-width="1.2" marker-end="url(#arrow)"/>')
+    w('  </g>')
+
     # Activities: one symbol, a comment, and the ID with any charted time.
     w('  <g data-role="activities">')
     for a in STEPS:
@@ -353,7 +372,7 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
         fill = p["accent_tint"] if a.accent else p["fill"]
         attrs = [
             f'data-proc-symbol="{a.symbol}"', f'data-proc-track="{a.track}"',
-            f'data-block-id="{IDS[a]}"', f'data-block-parent="{ROOT_ID}"', f'data-block-name="{a.name}"',
+            f'data-block-id="{a.id}"', f'data-block-parent="{ROOT_ID}"', f'data-block-name="{a.name}"',
             f'data-proc-step="{a.step}"', f'data-proc-at="{x} {y}"',
         ]
         if a.track == "personnel":
@@ -372,9 +391,13 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
         w(f'      <text data-proc-label="comment" x="{tx}" y="{y + 1}" fill="{p["ink"]}" font-size="10" '
           f'font-family="{SANS}">{a.name}</text>')
         meta_fill = p["accent"] if a.accent else p["muted"]
-        role = f"{COLUMN[a.column].label.lower()} · " if a.track == "personnel" else ""
+        role = (f'<tspan data-proc-label="role">{COLUMN[a.column].label.lower()}</tspan> · '
+                if a.track == "personnel" else "")
         w(f'      <text x="{tx}" y="{y + 13}" fill="{meta_fill}" font-size="8" font-family="{MONO}">{role}'
           f'<tspan data-proc-label="meta">{meta_text(a)}</tspan></text>')
+        if a.target is not None:
+            w(f'      <text data-proc-label="target" x="{tx}" y="{y + 26}" fill="{meta_fill}" '
+              f'font-size="8" font-family="{MONO}">To {a.target}</text>')
         w('    </g>')
     w('  </g>')
 
@@ -424,14 +447,13 @@ def svg(p: dict[str, str], slug: str, with_trace: bool, full_key: bool) -> str:
           f'stroke-width="0.8"/>')
         w(f'    <text x="24" y="{trace_top + 16}" fill="{p["muted"]}" font-size="8" font-family="{MONO}" '
           f'letter-spacing="0.18em">ILLUSTRATIVE TRACE · ONE IMAGINED RUN · NOT TELEMETRY</text>')
-        ids = {i + 1: IDS[a] for i, a in enumerate(STEPS)}
-        for i, (tid, index, at, note) in enumerate(TRACE):
+        for i, (tid, activity_id, at, note) in enumerate(TRACE):
             x = 24 + i * 268
-            w(f'    <g data-proc-trace-id="{tid}" data-proc-trace-of="{ids[index]}">')
+            w(f'    <g data-proc-trace-id="{tid}" data-proc-trace-of="{activity_id}">')
             w(f'      <text x="{x}" y="{trace_top + 40}" fill="{p["ink"]}" font-size="9" font-family="{MONO}">'
               f'{tid} {at}</text>')
             w(f'      <text x="{x}" y="{trace_top + 54}" fill="{p["muted"]}" font-size="8" font-family="{MONO}">'
-              f'{ids[index]} · {note}</text>')
+              f'{activity_id} · {note}</text>')
             w('    </g>')
         w('  </g>')
     w('</svg>')

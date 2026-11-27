@@ -10,6 +10,7 @@ that names it. Existing diagrams must stay untouched by the new vocabulary.
 from __future__ import annotations
 
 import importlib.util
+from dataclasses import replace
 import re
 import sys
 import tempfile
@@ -113,7 +114,8 @@ def mutations() -> None:
     expect("orphan parent", once(src, 'data-block-parent="EXP-001" data-block-name="Claim created"',
                                  'data-block-parent="EXP-009" data-block-name="Claim created"'),
            "must be the procedure root")
-    expect("unresolved artifact", once(src, 'data-proc-artifact="EXP-001-A2"', 'data-proc-artifact="EXP-001-A9"'),
+    expect("unresolved artifact", once(src, 'data-proc-column="finance" data-proc-artifact="EXP-001-A2"',
+                'data-proc-column="finance" data-proc-artifact="EXP-001-A9"'),
            "does not resolve to an artifact")
     expect("unresolved role", once(src, 'data-proc-role="approver"', 'data-proc-role="auditor"'),
            "must name an element column")
@@ -222,9 +224,91 @@ def mutations() -> None:
             failures.append(f"{path.name}: an existing diagram fails the procedure-chart check: {errors}")
 
 
+def review_regressions() -> None:
+    source = EXAMPLE.read_text(encoding="utf-8")
+    verify.ET.register_namespace("", "http://www.w3.org/2000/svg")
+
+    def probe(name, change, needle):
+        match = verify.SVG_RE.search(source)
+        svg = verify.ET.fromstring(match.group())
+        blocks = {e.get("data-block-id"): e for e in svg.iter() if e.get("data-block-id")}
+        edges = {e.get("data-proc-connector-id"): e for e in svg.iter() if e.get("data-proc-connector-id")}
+        change(svg, blocks, edges)
+        expect(name, source[:match.start()] + verify.ET.tostring(svg, encoding="unicode")
+               + source[match.end():], needle)
+
+    for attrs in ({"stroke-opacity": "0"}, {"style": "stroke-opacity:0"},
+                  {"fill": "none", "stroke": "none"}):
+        probe("invisible take-off mark", lambda s, b, e: verify.one_mark(b["EXP-001-11"]).attrib.update(attrs),
+              "symbol is hidden")
+    for attrs in ({"fill-opacity": "0"}, {"fill": "#f5f5f5"}):
+        probe("invisible comment", lambda s, b, e: b["EXP-001-02"][1].attrib.update(attrs),
+              "must print its data-block-name")
+    for attr in ("rx", "ry"):
+        probe("round origin", lambda s, b, e: verify.one_mark(b["EXP-001-02"]).set(attr, "8"),
+              "does not draw a 'origination'")
+    probe("disjoint handoff", lambda s, b, e: e["EXP-H1"].set("d", "M 324,208 V 224 M 564,240 V 256"),
+          "one continuous path")
+    def duplicate(svg, blocks, edges):
+        copy = verify.ET.fromstring(verify.ET.tostring(edges["EXP-H1"]))
+        copy.set("data-proc-connector-id", "EXP-H-DUP")
+        svg.append(copy)
+    probe("duplicate endpoints", duplicate, "duplicate handoff EXP-001-04 -> EXP-001-05")
+    probe("dangling marker", lambda s, b, e: e["EXP-H1"].set("marker-end", "url(#no-such-marker)"),
+          "needs an arrowhead")
+    probe("unready target", lambda s, b, e: b["EXP-001-12"].set("data-proc-step", "8"),
+          "take-off target needs a receiving activity")
+    probe("missing transfer drawing", lambda s, b, e: e["take-off:EXP-001-11:EXP-001-12"].set(
+          "data-proc-connector", "unknown"), "missing take-off connector")
+    probe("custody mismatch", lambda s, b, e: b["EXP-001-10"].set("data-proc-role", "requester"),
+          "does not match paperwork custody")
+    probe("printed role disagrees", lambda s, b, e: setattr(b["EXP-001-10"][2][0], "text", "requester"),
+          "printed role must match")
+    probe("unpaired handoff", lambda s, b, e: b["EXP-001-03"].set("data-proc-step", "3"),
+          "no matching personnel move")
+    probe("stray reversed diamond", lambda s, b, e: verify.ET.SubElement(s, "polygon",
+          {"points": "50,30 40,20 30,30 40,40"}), "undeclared inspection diamond")
+    probe("stray diamond path", lambda s, b, e: verify.ET.SubElement(s, "path",
+          {"d": "M 40,20 L 50,30 L 40,40 L 30,30 Z"}), "undeclared inspection diamond")
+    probe("bad artifact source", lambda s, b, e: b["EXP-001-A2"].set("data-proc-source", "nobody"),
+          "source must name an element column")
+    probe("overlapping lines", lambda s, b, e: b["EXP-001-12"].set("data-proc-at", "804 470"),
+          "overlaps another artifact line")
+    def extra_coordinate(svg, blocks, edges):
+        mark = verify.one_mark(blocks["EXP-001-11"])
+        mark.set("d", mark.get("d") + " 798,478")
+    probe("extra coordinate gets a finding", extra_coordinate, "does not draw a 'information-take-off'")
+
+    original_steps = build.STEPS
+    original_handoffs = [(cid, a.id, b.id) for cid, a, b in build.handoffs()]
+    try:
+        build.STEPS = (replace(original_steps[0], id="EXP-001-NEW"),) + tuple(
+            replace(a, step=a.step + 1) for a in original_steps)
+        actual = [(cid, a.id, b.id) for cid, a, b in build.handoffs()]
+        inserted = build.full(build.LIGHT, "procedure-chart-full")
+        if actual != original_handoffs or any(
+            f'data-proc-trace-id="{tid}" data-proc-trace-of="{aid}"' not in inserted
+            for tid, aid, _, _ in build.TRACE
+        ) or any(f'data-block-id="{a.id}"' not in inserted for a in original_steps):
+            failures.append("step insertion changed existing activity IDs, handoff IDs or trace targets")
+    finally:
+        build.STEPS = original_steps
+    data = verify.registry(EXAMPLE)
+    blocks = {b["id"]: b for b in data["blocks"]}
+    edges = {e["id"]: e for e in data["connectors"]}
+    if (data["source"] != EXAMPLE.name or len(blocks) != 19 or len(edges) != 14
+            or blocks["EXP-001-11"]["procedure"]["target-artifact"] != "EXP-001-A2"
+            or blocks["EXP-001-A2"]["procedure"]["kind"] != "artifact"
+            or blocks["EXP-001-07"]["procedure"]["elapsed-min"] != "10"
+            or edges["EXP-H1"]["from"] != "EXP-001-04"
+            or edges["take-off:EXP-001-11:EXP-001-12"]["to"] != "EXP-001-12"):
+        failures.append("procedure registry lost block metadata or typed connectors")
+
+
 def main() -> int:
     symbols()
     mutations()
+    review_regressions()
     for failure in failures:
         print(f"FAIL {failure}")
     if failures:
