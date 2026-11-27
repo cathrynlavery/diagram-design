@@ -1126,6 +1126,19 @@ def run_cases(h: Harness) -> int:
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
         ).replace("  <g ", '  <style>[data-name="Checkout"] rect{stroke:var(--color-accent)}</style>\n  <g ', 1),
     )
+    h.expect_clean(
+        "a type-only rule on a type this figure never uses cannot paint a paper mask",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", '  <style>symbol{stroke:#bf4520}</style>\n  <g ', 1),
+    )
+    h.expect_clean(
+        "a type-only rule that does select the mask paints it paper",
+        papered.replace(
+            '<circle data-outlier="B"',
+            mask.replace(' fill="#f5f5f5"', "", 1) + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", '  <style>circle{fill:#f5f5f5}</style>\n  <g ', 1),
+    )
 
     # The accent and visibility as a browser resolves them, on the shipped
     # example's muted Auth series: var(), hsl(), id and attribute selectors,

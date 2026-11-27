@@ -179,6 +179,8 @@ PAINT_DECL_RE = re.compile(
     re.IGNORECASE,
 )
 STROKE_DECL_RE = re.compile(r"(?:^|[{;])\s*stroke\s*:\s*([^;}{]+)", re.IGNORECASE)
+PAINT_PAIR_RE = re.compile(
+    r"(?:^|[{;])\s*(fill|stroke)\s*:\s*([^;}{]+)", re.IGNORECASE)
 HIDE_DECL_RE = re.compile(
     r"(?:^|[{;])\s*(opacity|fill-opacity|stroke-opacity|visibility|display)"
     r"\s*:\s*([^;}{]+)",
@@ -785,130 +787,99 @@ def element_tokens(attrs: dict) -> set:
     return tokens
 
 
-# Shapes that never hold another element, so a rule painting one of them
-# can't reach a paper-mask circle or pass a stroke down to it.
-LEAF_TAGS = {"rect", "line", "path", "text", "tspan", "polygon", "polyline",
-             "ellipse", "image", "use"}
+def selector_paints(source: str, document=None) -> list:
+    """Fill and stroke values per accepted <style> rule, matched like a browser.
 
+    The paper-mask check reads paint from an element's attribute, inline style
+    and <style> rules. A rule counts only on an element its subject compound
+    matches by type, class, id and attribute, with every other compound on a
+    strict ancestor, in order — the same matching `selector_rules()` gives the
+    accent check. A type-only rule therefore reaches exactly the elements of
+    that type (`rect{fill:#fff}` paints no circle), and one naming a type this
+    figure never uses paints nothing at all.
 
-def class_paints(source: str, accent_vars: set) -> dict:
-    """Required tokens -> fill/stroke values from a rule that names them.
-
-    Read for paper masks; the accent check uses selector_rules(). Each key
-    is the frozenset of classes, ids and attributes one compound selector
-    requires, so `.series.focal rect` paints only under an element
-    carrying both classes and `[data-name="Auth"] rect` only under Auth.
-    `("stroke", <tokens>)` keys hold the stroke values alone.
-    """
-    found = {}
-    for match in STYLE_RE.finditer(source):
-        css = blank_css_comments(match.group("body"))
-        for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
-            paints = declared_paints(rule.group(2))
-            if not paints:
-                continue
-            for alternative in rule.group(1).split(","):
-                compounds = COMPOUND_RE.findall(alternative)
-                if not compounds:
-                    continue
-                subject = compounds[-1]
-                typed = re.match(r"([A-Za-z][\w-]*)", subject)
-                if typed and (typed.group(1).lower() in NON_MARK_TAGS
-                              or typed.group(1).lower() in LEAF_TAGS):
-                    continue
-                # `.hot rect` paints the rects under whatever carries
-                # .hot, so an ancestor compound counts as well as the
-                # subject's. A compound such as `.series.focal` only matches
-                # an element that carries every class it names.
-                fills = paints
-                strokes = [value.strip() for value in STROKE_DECL_RE.findall(rule.group(2))]
-                required_sets = [required for required in map(compound_requirement, compounds)
-                                 if required is not None]
-                if not required_sets:
-                    # Only types, `*` and pseudo-classes: an accent it sets
-                    # may reach any paper mask.
-                    required_sets = [frozenset()]
-                    fills = [value for value in fills if is_accent(value, accent_vars)]
-                    strokes = [value for value in strokes if is_accent(value, accent_vars)]
-                for required in required_sets:
-                    found.setdefault(required, []).extend(fills)
-                    found.setdefault(("stroke", required), []).extend(strokes)
-    return found
-
-
-def class_stroke_rules(source: str) -> list:
-    """Stroke rules a paper mask's ancestors may pass down.
-
-    One (required classes, on_subject, reaches_mask, strokes) entry per
-    class-bearing compound. `on_subject` marks the compound the rule paints
-    (`.outer{stroke:...}` paints the group itself, so it inherits and can be
-    overridden further down). A non-subject compound (`.hot rect`) paints
-    descendants; `reaches_mask` says whether its subject can be the mask
-    or a group between it and the ancestor (anything but a leaf shape).
-    A descendant rule on a group (`.outer g`) is kept as reaching the mask
-    without working out which group it lands on, so it fails closed.
+    One (kind, subject tokens, ancestors, sibling positions,
+    ((property, value), ...)) entry per accepted rule alternative.
     """
     rules = []
     for match in STYLE_RE.finditer(source):
         css = blank_css_comments(match.group("body"))
         for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
-            strokes = [value.strip().lower()
-                       for value in STROKE_DECL_RE.findall(rule.group(2))]
-            if not strokes:
+            declared = [(property.lower(), value.strip().lower())
+                        for property, value in PAINT_PAIR_RE.findall(rule.group(2))]
+            if not declared:
                 continue
-            for alternative in rule.group(1).split(","):
-                compounds = [part for part in re.split(r"[\s>+~]+", alternative.strip())
-                             if part]
-                if not compounds:
+            for compounds, relations in selector_steps(rule.group(1)):
+                kinds = [compound_kind(compound) for compound in compounds]
+                if not kinds:
                     continue
-                typed = re.match(r"([A-Za-z][\w-]*)", compounds[-1])
-                reaches_mask = not typed or typed.group(1).lower() not in LEAF_TAGS
-                for index, compound in enumerate(compounds):
-                    positive = NEGATION_RE.sub("", compound)
-                    if FUNCTIONAL_PSEUDO_RE.search(positive):
-                        # Not modelled: fail closed, the stroke reaches the
-                        # mask and nothing overrides it.
-                        rules.append((frozenset(), False, True, strokes))
-                        continue
-                    required = frozenset(re.findall(r"\.([\w-]+)", positive))
-                    if required:
-                        rules.append((required, index == len(compounds) - 1,
-                                      reaches_mask, strokes))
+                if any(relation in ("+", "~") for relation in relations):
+                    if document is None:
+                        document = SelectorDocument(source)
+                    positions = sibling_positions(compounds, relations, document)
+                    last_sibling = max(index for index, relation in enumerate(relations)
+                                       if relation in ("+", "~"))
+                    suffix = [sibling_kind(compound)
+                              for compound in compounds[last_sibling + 1:-1]]
+                    rules.append(sibling_kind(compounds[-1])
+                                 + (suffix, (positions, document.nodes)) + (declared,))
+                    continue
+                ancestors = [
+                    kind for kind in kinds[:-1] if kind != (None, frozenset())]
+                rules.append(kinds[-1] + (ancestors, None) + (declared,))
     return rules
 
 
-def matching_class_paints(attrs: dict, paints: dict, stroke: bool) -> list:
-    tokens = element_tokens(attrs)
-    values = []
-    for key, found in paints.items():
-        required = key[1] if isinstance(key, tuple) else key
-        if isinstance(key, tuple) != stroke:
-            continue
-        if required <= tokens:
-            values.extend(found)
-    return values
+def rule_selects(kind, subject, ancestors, positions, tag: str, tokens: set,
+                 chain: list, at=None) -> bool:
+    """Does one selector rule select this element? See selector_rules()."""
+    if positions is not None:
+        matched, nodes = positions
+        if at in matched:
+            return True
+        if at in nodes:
+            return False
+    if kind not in (None, tag) or not subject <= tokens:
+        return False
+    index = len(chain)
+    for need_kind, need in reversed(ancestors):
+        while index:
+            index -= 1
+            if need_kind in (None, chain[index][0]) and need <= chain[index][1]:
+                break
+        else:
+            return False
+    return True
 
 
-def element_paints(attrs: dict, paints: dict) -> list:
+def element_rule_paints(tag: str, tokens: set, chain: list, rules: list,
+                        at=None) -> list:
+    """(property, value) pairs the rules that select this element declare."""
+    return [pair for kind, subject, ancestors, positions, declared in rules
+            if rule_selects(kind, subject, ancestors, positions, tag, tokens,
+                            chain, at)
+            for pair in declared]
+
+
+def element_paints(attrs: dict) -> list:
+    """Paint values an element states itself, by attribute or inline style."""
     values = [attrs[key] for key in ("fill", "stroke") if key in attrs]
     values.extend(declared_paints(attrs.get("style", "")))
-    values.extend(matching_class_paints(attrs, paints, stroke=False))
     return values
 
 
-def stroke_paints(attrs: dict, paints: dict) -> list:
-    """Stroke values an element states itself (attribute, style, class)."""
+def stroke_paints(attrs: dict) -> list:
+    """Stroke values an element states itself (attribute or inline style)."""
     values = [attrs["stroke"]] if "stroke" in attrs else []
     values.extend(value.strip() for value in
                   STROKE_DECL_RE.findall(blank_css_comments(attrs.get("style", ""))))
-    values.extend(matching_class_paints(attrs, paints, stroke=True))
     return values
 
 
 def wears_accent(tag: str, attrs: dict, chain: list, accent_vars: set, rules: list,
                  at=None) -> bool:
     """Accent from the element's own attribute or inline style, or a <style> rule selecting it."""
-    return any(is_accent(value, accent_vars) for value in element_paints(attrs, {})) \
+    return any(is_accent(value, accent_vars) for value in element_paints(attrs)) \
         or css_matches(tag, element_tokens(attrs), chain, rules, at)
 
 
@@ -1220,25 +1191,8 @@ def selector_rules(source: str, wanted, document=None) -> list:
 def css_matches(tag: str, tokens: set, chain: list, rules: list, at=None) -> bool:
     """Does a rule select this element? `chain`: (tag, tokens) of its strict ancestors, outermost first."""
     for kind, subject, ancestors, positions in rules:
-        if positions is not None:
-            matched, nodes = positions
-            if at in matched:
-                return True
-            if at in nodes:
-                continue
-        if kind not in (None, tag) or not subject <= tokens:
-            continue
-        # Nearest matching ancestor first, walking outwards, which finds a
-        # match for a chain of descendant combinators whenever one exists.
-        index = len(chain)
-        for need_kind, need in reversed(ancestors):
-            while index:
-                index -= 1
-                if need_kind in (None, chain[index][0]) and need <= chain[index][1]:
-                    break
-            else:
-                break
-        else:
+        if rule_selects(kind, subject, ancestors, positions, tag, tokens,
+                        chain, at):
             return True
     return False
 
@@ -1318,13 +1272,12 @@ def view_x_span(source: str) -> tuple:
 
 def parse_series(source: str, findings: list, name: str) -> list:
     accent_vars = accent_properties(source)
-    paints = class_paints(source, accent_vars)
-    stroke_rules = class_stroke_rules(source)
     paper = figure_paper(source)
     hidden = nonrendering_spans(source)
     series = []
     groups = groups_of(source)
     document = SelectorDocument(source)
+    paint_rules = selector_paints(source, document)
     # fail closed: no cascade, so a later rule that restores visibility does not clear a hide
     hide_rules = selector_rules(source, lambda css: declares_hidden(css, ("opacity",)), document)
     label_hide_rules = selector_rules(
@@ -1381,7 +1334,8 @@ def parse_series(source: str, findings: list, name: str) -> list:
                     if hides(attrs_of(group.group("attrs")), text_opacities)
                     or css_matches("g", element_tokens(attrs_of(group.group("attrs"))),
                                    around[group.start()], label_hide_rules, group.start())]
-    svgs = [attrs_of(m.group("attrs")) for m in GROUP_OPEN_RE.finditer(source)
+    svgs = [("svg", attrs_of(m.group("attrs")), m.start(), outer)
+            for m in GROUP_OPEN_RE.finditer(source)
             if m.group(0)[:4].lower() == "<svg"]
     for match in groups:
         raw = match.group("attrs")
@@ -1572,37 +1526,45 @@ def parse_series(source: str, findings: list, name: str) -> list:
         # stroke of the nearest ancestor that sets one (the <svg> itself, a
         # wrapper, the series group, a group inside it), so an inner
         # stroke="none" overrides an outer stroke. Only the circle's own
-        # ancestors count: a sibling group's stroke never reaches it.
-        # A class rule counts as the ancestor's own stroke only when the
-        # ancestor is the rule's subject (`.outer{stroke:...}`). A rule that
-        # paints descendants (`.hot circle`, `.hot g`) is treated as reaching
-        # the mask directly, so no inner group overrides it; one whose subject
-        # is a leaf shape (`.hot rect`) never reaches the mask at all.
+        # ancestors count: a sibling group's stroke never reaches it. A rule
+        # counts on the element its subject selects — the mask itself, or one
+        # of its ancestors — so `.outer{stroke:...}` paints the group and
+        # inherits, `.hot circle` paints the mask, and `.hot rect` paints
+        # neither.
         for cattrs, at in unbound:
-            ancestors = [attrs_of(g.group("attrs")) for g in groups
-                         if g.body_at() <= at < g.body_at() + len(g.group("body"))]
-            inherited, direct = set(), set()
-            for holder in svgs + ancestors:
-                classes = set(holder.get("class", "").split())
-                stated = {value.strip().lower()
-                          for value in stroke_paints(holder, {})}
-                for required, on_subject, reaches_mask, strokes in stroke_rules:
-                    if not required <= classes:
-                        continue
-                    if on_subject:
-                        stated.update(strokes)
-                    elif reaches_mask:
-                        direct.update(strokes)
-                if stated:
-                    inherited = stated
-            inherited |= direct
+            chain = chain_at(at)
+            tokens = element_tokens(cattrs)
+            holders = sorted(
+                svgs + [("g", attrs_of(g.group("attrs")), g.start(), chain_at(g.start()))
+                        for g in groups
+                        if g.body_at() <= at < g.body_at() + len(g.group("body"))],
+                key=lambda holder: holder[2])
+            rule_values = element_rule_paints("circle", tokens, chain, paint_rules, at)
+            painted = {value.strip().lower() for value in element_paints(cattrs)}
+            painted |= {value for _property, value in rule_values}
+            # Paint inherits: the nearest ancestor that states a stroke wins,
+            # and an inner stroke="none" overrides an outer stroke. A rule that
+            # selects the circle counts as its own paint above, and only the
+            # circle's own ancestors count — a sibling group's stroke never
+            # reaches it.
+            if not ({value.strip().lower() for value in stroke_paints(cattrs)}
+                    or any(property == "stroke" for property, _value in rule_values)):
+                inherited = set()
+                for tag, hattrs, holder_at, holder_chain in holders:
+                    stated = {value.strip().lower() for value in stroke_paints(hattrs)}
+                    stated |= {value for property, value in
+                               element_rule_paints(tag, element_tokens(hattrs),
+                                                   holder_chain, paint_rules, holder_at)
+                               if property == "stroke"}
+                    if stated:
+                        inherited = stated
+                painted |= inherited
             cx = number(cattrs.get("cx"))
             ccy = number(cattrs.get("cy"))
             fill = cattrs.get("fill", "").strip().lower()
-            painted = {value.strip().lower()
-                       for value in element_paints(cattrs, paints)}
-            if not stroke_paints(cattrs, paints):
-                painted |= inherited
+            rule_fills = {value for property, value in rule_values if property == "fill"}
+            if not fill and len(rule_fills) == 1:
+                fill = next(iter(rule_fills))
             colocated = (
                 cx is not None and ccy is not None
                 and any(abs(cx - ox) <= 0.5 and abs(ccy - oy) <= 0.5
