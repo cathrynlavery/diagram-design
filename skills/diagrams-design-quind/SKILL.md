@@ -21,6 +21,16 @@ Create diagrams as self-contained HTML files with inline SVG and the QUIND desig
 - **Para cliente**: figura autocontenida, sin referencias a procesos o versiones internas; un responsable de QUIND la revisa antes de enviarla. Recuerde validar el diagrama contra el sistema real.
 - **Arquitectura de software → C4** ([type-c4.md](references/type-c4.md)); **proceso con responsables y controles → BPMN** ([type-bpmn.md](references/type-bpmn.md)); **servicios de nube → íconos oficiales** ([icons-quind.md](references/icons-quind.md)).
 
+### Figuras para documentos y páginas QUIND
+
+Cuando el diagrama va dentro de un Word (`format-docs-quind`) o de una página (`format-artifact-quind`), guarde cada diagrama como `<ID>.html` (y, si la página tendrá tema oscuro, su variante `<ID>-dark.html` desde `assets/template-dark.html`), páselos por §9 y expórtelos:
+
+```bash
+python3 scripts/quind_figuras.py arquitectura.html arquitectura-dark.html --out figuras
+```
+
+Deja en `figuras/` el PNG (Word), el SVG (página) y `meta.json` con pie, texto alternativo y ancho. En el Markdown del documento cada figura es un bloque ```` ```diagrama <ID> ```` (una línea `pie: …` dentro cambia el pie). Use el tamaño `doc-inline` o `doc-wide` de [output-spec.md](references/output-spec.md) y deje fuera el título de página: el pie lo pone el documento.
+
 Fifty-four visual types. Semantic patterns describe behavior; type references describe layout.
 
 ---
