@@ -4,14 +4,14 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>The self-improving loop</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Inter:ital,wght@0,400;0,500;0,600;1,400&amp;family=Roboto+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --paper: #f5f5f5; --ink: #2d3142; --muted: #4f5d75; --soft: #5a6580;
-      --accent: #bf4520; --accent-tint: rgba(191,69,32,0.08); --link: #2e5aa8;
-      --sans: 'Geist', system-ui, sans-serif; --serif: 'Instrument Serif', serif;
-      --mono: 'Geist Mono', ui-monospace, monospace;
+      --paper: #ffffff; --ink: #0e1920; --muted: #5b6770; --soft: #66727c;
+      --accent: #cc3b10; --accent-tint: rgba(204,59,16,0.08); --link: #0b6e80;
+      --sans: 'Inter', system-ui, sans-serif; --serif: 'Poppins', 'Inter', system-ui, sans-serif;
+      --mono: 'Roboto Mono', ui-monospace, monospace;
     }
     body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; background: var(--paper); color: var(--ink); font-family: var(--sans); }
     .frame { width: 100%; max-width: 1200px; }
@@ -40,13 +40,13 @@
       <title id="loop-title">The self-improving loop</title>
       <desc id="loop-desc">Six stations flow clockwise from Capture through Learn and back to Capture. Each station writes shared state into one central memory hub, with Decide highlighted as the human approval gate.</desc>
       <defs>
-        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/></pattern>
-        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
-        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
-        <marker id="arrow-soft" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5a6580"/></marker>
+        <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(14,25,32,0.10)"/></pattern>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6770"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#cc3b10"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0b6e80"/></marker>
+        <marker id="arrow-soft" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#66727c"/></marker>
       </defs>
-      <rect width="1040" height="680" fill="#f5f5f5"/>
+      <rect width="1040" height="680" fill="#ffffff"/>
       <rect width="1040" height="680" fill="url(#dots)" opacity="0.55"/>
 
       <!-- Solid clockwise ring: six arcs on the same r=240 station circle. -->
@@ -66,9 +66,9 @@
       <path class="spoke" d="M368 252 L424 284" marker-end="url(#arrow-soft)"/>
 
       <!-- Curated spoke labels sit beside the line with an 8px visible gap. -->
-      <rect x="532" y="200" width="48" height="16" rx="4" fill="#f5f5f5"/>
+      <rect x="532" y="200" width="48" height="16" rx="4" fill="#ffffff"/>
       <text x="556" y="212" class="arrow-label">SIGNALS</text>
-      <rect x="460" y="464" width="52" height="16" rx="4" fill="#f5f5f5"/>
+      <rect x="460" y="464" width="52" height="16" rx="4" fill="#ffffff"/>
       <text x="486" y="476" class="arrow-label">OUTCOMES</text>
 
       <!-- Stations -->

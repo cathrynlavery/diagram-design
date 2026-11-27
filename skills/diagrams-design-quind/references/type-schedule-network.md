@@ -40,7 +40,7 @@ spacing is at least box width plus 40px. Multiple starts/ends are valid.
 Task and precedence groups must be direct children of the root SVG. Every task
 has one paper rectangle, first in its group: width 192–240px (equal
 across the view), height 176px, `rx="4"`. Text uses explicit house ink and
-`Geist Mono, monospace`. The repeated labelled schedule grid is:
+`Roboto Mono, monospace`. The repeated labelled schedule grid is:
 
 | Field | Text | Position relative to task origin | Size |
 |---|---|---|---|
@@ -77,8 +77,8 @@ scanner does not claim these open-head groups.
   <g data-task-id="A" data-task-name="Scope" data-duration="2"
      data-critical="true" data-rank="0" data-diagram-role="task">
     <!-- One paper rectangle, then eight individually bound text nodes. -->
-    <text data-schedule-field="es" x="64" y="316" fill="#2d3142"
-          font-size="12" font-family="Geist Mono, monospace">ES 0</text>
+    <text data-schedule-field="es" x="64" y="316" fill="#0e1920"
+          font-size="12" font-family="Roboto Mono, monospace">ES 0</text>
   </g>
 </svg>
 ```

@@ -32,14 +32,11 @@ from pathlib import Path
 from typing import Callable, Iterator
 
 GOOGLE_FONTS_IMPORT = (
-    "@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1"
-    "&amp;family=Geist:wght@400;500;600"
-    "&amp;family=Geist+Mono:wght@400;500;600"
-    "&amp;family=Noto+Serif:ital@0;1"
+    "@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700"
+    "&amp;family=Inter:ital,wght@0,400;0,500;0,600;1,400"
+    "&amp;family=Roboto+Mono:wght@400;500;600"
     "&amp;family=Noto+Sans+KR:wght@400;500;600"
-    "&amp;family=Noto+Serif+KR:wght@400"
     "&amp;family=Noto+Sans+TC:wght@400;500;600"
-    "&amp;family=Noto+Serif+TC:wght@400"
     "&amp;display=swap');"
 )
 

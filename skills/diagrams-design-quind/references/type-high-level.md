@@ -414,10 +414,10 @@ The chevron banner needs a **dark band with a light label in both modes**. `ink`
 
 | Token | Value | Use |
 |---|---|---|
-| `band-1` | `#2d3142` | Darkest step: odd chevrons, light mode |
-| `band-2` | `#3d4460` | Middle step: even chevrons light, odd chevrons dark |
-| `band-3` | `#4a5270` | Lightest step: even chevrons, dark mode |
-| `band-label` | `#f5f5f5` | Fixed label color: 11.82:1, 8.78:1, and 7.05:1 against the three bands |
+| `band-1` | `#0e1920` | Darkest step: odd chevrons, light mode |
+| `band-2` | `#22313a` | Middle step: even chevrons light, odd chevrons dark |
+| `band-3` | `#2a3a44` | Lightest step: even chevrons, dark mode |
+| `band-label` | `#ffffff` | Fixed label color: 11.82:1, 8.78:1, and 7.05:1 against the three bands |
 
 **These are type-scoped tokens, not skin roles, and they do not invert.** They are the one deliberate exception to the rule that hex values live only in [`style-guide.md`](style-guide.md). `scripts/lint-skin.py` rejects `band-2` and `band-3` as off-palette, which is why the shipped high-level examples are listed in `scripts/lint-skin-baseline.txt`. Phase labels always use `band-label`, and `band-label` has to hold at least 4.5:1 against every band, because these are 7px labels in either mode. When you re-skin, derive three analogous steps from the new brand's darkest neutral and pick a fixed label color that holds 4.5:1 against all three.
 

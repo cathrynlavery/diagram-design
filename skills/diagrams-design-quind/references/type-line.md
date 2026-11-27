@@ -258,7 +258,7 @@ Not for: exact per-period values (the reader gets shape, not numbers — use a *
 
 <!-- Legend entries: data-total binds the printed per-layer total. The family is the
      node-name family at regular weight; swap in the active skin's sans stack. -->
-<text data-layer="Docs" data-total="76" x="808" y="496" fill="{muted}" font-size="8.5" font-family="'Geist', sans-serif">Docs · 76 min · paused</text>
+<text data-layer="Docs" data-total="76" x="808" y="496" fill="{muted}" font-size="8.5" font-family="'Inter', sans-serif">Docs · 76 min · paused</text>
 ```
 
 What the checker holds against those bindings: every layer's on-curve vertices sit at the shared period columns; per-period thickness matches `data-values` on one shared scale; layers tile with no gap or overlap; the envelope stays centred on one midline; control points sit where Catmull-Rom at 1/6 chord puts them (so the curve between vertices is determined by the vertices, not free to editorialise); each legend entry names its own layer and no other, and its total matches both its printed text and the sum of the declared values; and each period caption sits on its own column reading exactly its `data-period`. Paths must use plain absolute `M`/`C`/`L`/`Z` — anything else is refused rather than half-parsed, and **no `transform`** may touch a layer path, a bound label, or an ancestor group, for the same reason as the slopegraph: the checker reads raw coordinates.

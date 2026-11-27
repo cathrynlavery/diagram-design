@@ -109,7 +109,7 @@ Every segment is one `<rect>` (over its paper mask, as in the parent) carrying t
 <text data-column="mobile" data-segment="macOS" data-role="label" x="596" y="152" fill="{muted}" font-size="9" font-family="{sublabel}">1,980 min · 83% of mobile</text>
 <text data-column="mobile" data-role="caption" x="688" y="438" fill="{muted}" font-size="9" font-family="{sublabel}" text-anchor="middle">mobile · 24%</text>
 <!-- Key: the node-name family at regular weight; swap in the active skin's sans stack -->
-<text data-segment="macOS" data-role="key" x="344" y="497" fill="{muted}" font-size="8.5" font-family="'Geist', sans-serif">macOS</text>
+<text data-segment="macOS" data-role="key" x="344" y="497" fill="{muted}" font-size="8.5" font-family="'Inter', sans-serif">macOS</text>
 ```
 
 `data-amount` is the basis of every geometric check, and `data-segment` on a `<rect>` is this contract's scope key: the parent binds `data-share` on a `<rect>` and reads only files named for it, slopegraph binds `data-series` on a `<line>`, bump `data-ranks` and ridgeline `data-bins` on a `<path>`, bubble `data-size` and beeswarm `data-value` on a `<circle>`. No two gates read one attribute, so no two gates claim one file. A label prints the segment's amount and its within-column share and nothing else numeric; a caption prints its column's name and share of the whole; a key names its series. `scripts/verify-marimekko.py` covers the shared plot, the constant gutter, the width, height and area shares, the tiling, the series order, the accent count, every binding and the marker fit; `scripts/test-verify-marimekko.py` proves each check in both polarities and pins the scope treaty with the parent and the sibling gates.

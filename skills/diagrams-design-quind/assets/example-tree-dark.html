@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Claude Code skill taxonomy · Tree</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #2d3142;
-      --color-ink:     #f5f5f5;
-      --color-muted:   #bfc0c0;
-      --color-accent:  #f08a59;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #0e1920;
+      --color-ink:     #ffffff;
+      --color-muted:   #9ba9b2;
+      --color-accent:  #ff8a5c;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
 
     body {
@@ -43,7 +43,7 @@
     h1 {
       font-family: var(--font-serif);
       font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--color-ink);
@@ -63,110 +63,110 @@
       <desc id="tree-dark-desc">Tree diagram showing a Skills root branching into Design, Engineering, and Research categories and their leaf skills.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.10)"/>
           </pattern>
         </defs>
 
-        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="#0e1920"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
         <!-- Tier tags (left margin) -->
-        <text x="40" y="108" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">TIER 0 · ROOT</text>
-        <text x="40" y="224" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em" text-anchor="start">TIER 1</text>
-        <text x="40" y="324" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em" text-anchor="start">TIER 2</text>
+        <text x="40" y="108" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">TIER 0 · ROOT</text>
+        <text x="40" y="224" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em" text-anchor="start">TIER 1</text>
+        <text x="40" y="324" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em" text-anchor="start">TIER 2</text>
 
         <!-- Connectors drawn first (behind nodes) -->
         <!-- Root → Tier 1 bus -->
-        <path d="M 500 128 L 500 168 L 220 168 L 220 208" fill="none" stroke="#bfc0c0" stroke-width="1"/>
-        <path d="M 500 168 L 500 208" fill="none" stroke="#bfc0c0" stroke-width="1"/>
-        <path d="M 500 168 L 780 168 L 780 208" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+        <path d="M 500 128 L 500 168 L 220 168 L 220 208" fill="none" stroke="#9ba9b2" stroke-width="1"/>
+        <path d="M 500 168 L 500 208" fill="none" stroke="#9ba9b2" stroke-width="1"/>
+        <path d="M 500 168 L 780 168 L 780 208" fill="none" stroke="#9ba9b2" stroke-width="1"/>
 
         <!-- Design → leaves -->
-        <path d="M 220 256 L 220 296 L 140 296 L 140 336" fill="none" stroke="#bfc0c0" stroke-width="1"/>
-        <path d="M 220 296 L 300 296 L 300 336" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+        <path d="M 220 256 L 220 296 L 140 296 L 140 336" fill="none" stroke="#9ba9b2" stroke-width="1"/>
+        <path d="M 220 296 L 300 296 L 300 336" fill="none" stroke="#9ba9b2" stroke-width="1"/>
 
         <!-- Engineering → leaves -->
-        <path d="M 500 256 L 500 296 L 480 296 L 480 336" fill="none" stroke="#bfc0c0" stroke-width="1"/>
-        <path d="M 500 296 L 660 296 L 660 336" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+        <path d="M 500 256 L 500 296 L 480 296 L 480 336" fill="none" stroke="#9ba9b2" stroke-width="1"/>
+        <path d="M 500 296 L 660 296 L 660 336" fill="none" stroke="#9ba9b2" stroke-width="1"/>
 
         <!-- Research → single leaf -->
-        <path d="M 780 256 L 780 296 L 840 296 L 840 336" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+        <path d="M 780 256 L 780 296 L 840 296 L 840 336" fill="none" stroke="#9ba9b2" stroke-width="1"/>
 
         <!-- Root node: Skills (coral focal) -->
-        <rect x="420" y="80" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="420" y="80" width="160" height="48" rx="6" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1"/>
-        <rect x="428" y="88" width="32" height="12" rx="2" fill="transparent" stroke="rgba(240,138,89,0.50)" stroke-width="0.8"/>
-        <text x="444" y="97" fill="#f08a59" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROOT</text>
-        <text x="500" y="118" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Skills</text>
+        <rect x="420" y="80" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="420" y="80" width="160" height="48" rx="6" fill="rgba(255,138,92,0.10)" stroke="#ff8a5c" stroke-width="1"/>
+        <rect x="428" y="88" width="32" height="12" rx="2" fill="transparent" stroke="rgba(255,138,92,0.50)" stroke-width="0.8"/>
+        <text x="444" y="97" fill="#ff8a5c" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ROOT</text>
+        <text x="500" y="118" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Skills</text>
 
         <!-- Tier 1: Design -->
-        <rect x="140" y="208" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="140" y="208" width="160" height="48" rx="6" fill="rgba(245,245,245,0.04)" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="148" y="216" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
-        <text x="162" y="225" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAT</text>
-        <text x="220" y="240" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Design</text>
-        <text x="220" y="252" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ui · visual · ux</text>
+        <rect x="140" y="208" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="140" y="208" width="160" height="48" rx="6" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="1"/>
+        <rect x="148" y="216" width="28" height="12" rx="2" fill="transparent" stroke="rgba(255,255,255,0.40)" stroke-width="0.8"/>
+        <text x="162" y="225" fill="#ffffff" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAT</text>
+        <text x="220" y="240" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Design</text>
+        <text x="220" y="252" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">ui · visual · ux</text>
 
         <!-- Tier 1: Engineering -->
-        <rect x="420" y="208" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="420" y="208" width="160" height="48" rx="6" fill="rgba(245,245,245,0.04)" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="428" y="216" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
-        <text x="442" y="225" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAT</text>
-        <text x="500" y="240" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Engineering</text>
-        <text x="500" y="252" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ship · review · test</text>
+        <rect x="420" y="208" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="420" y="208" width="160" height="48" rx="6" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="1"/>
+        <rect x="428" y="216" width="28" height="12" rx="2" fill="transparent" stroke="rgba(255,255,255,0.40)" stroke-width="0.8"/>
+        <text x="442" y="225" fill="#ffffff" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAT</text>
+        <text x="500" y="240" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Engineering</text>
+        <text x="500" y="252" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">ship · review · test</text>
 
         <!-- Tier 1: Research -->
-        <rect x="700" y="208" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="700" y="208" width="160" height="48" rx="6" fill="rgba(245,245,245,0.04)" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="708" y="216" width="28" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
-        <text x="722" y="225" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAT</text>
-        <text x="780" y="240" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Research</text>
-        <text x="780" y="252" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">investigate · analyze</text>
+        <rect x="700" y="208" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="700" y="208" width="160" height="48" rx="6" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="1"/>
+        <rect x="708" y="216" width="28" height="12" rx="2" fill="transparent" stroke="rgba(255,255,255,0.40)" stroke-width="0.8"/>
+        <text x="722" y="225" fill="#ffffff" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CAT</text>
+        <text x="780" y="240" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Research</text>
+        <text x="780" y="252" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">investigate · analyze</text>
 
         <!-- Tier 2: polish -->
-        <rect x="60" y="336" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="60" y="336" width="160" height="48" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="0.8"/>
-        <text x="140" y="360" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">polish</text>
-        <text x="140" y="372" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">align · space · rhythm</text>
+        <rect x="60" y="336" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="60" y="336" width="160" height="48" rx="6" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="0.8"/>
+        <text x="140" y="360" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">polish</text>
+        <text x="140" y="372" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">align · space · rhythm</text>
 
         <!-- Tier 2: critique -->
-        <rect x="220" y="336" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="220" y="336" width="160" height="48" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="0.8"/>
-        <text x="300" y="360" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">critique</text>
-        <text x="300" y="372" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">hierarchy · density</text>
+        <rect x="220" y="336" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="220" y="336" width="160" height="48" rx="6" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="0.8"/>
+        <text x="300" y="360" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">critique</text>
+        <text x="300" y="372" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">hierarchy · density</text>
 
         <!-- Tier 2: review -->
-        <rect x="400" y="336" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="400" y="336" width="160" height="48" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="0.8"/>
-        <text x="480" y="360" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">review</text>
-        <text x="480" y="372" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">pre-land diff · sql</text>
+        <rect x="400" y="336" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="400" y="336" width="160" height="48" rx="6" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="0.8"/>
+        <text x="480" y="360" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">review</text>
+        <text x="480" y="372" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">pre-land diff · sql</text>
 
         <!-- Tier 2: ship -->
-        <rect x="580" y="336" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="580" y="336" width="160" height="48" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="0.8"/>
-        <text x="660" y="360" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ship</text>
-        <text x="660" y="372" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">merge · deploy · verify</text>
+        <rect x="580" y="336" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="580" y="336" width="160" height="48" rx="6" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="0.8"/>
+        <text x="660" y="360" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ship</text>
+        <text x="660" y="372" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">merge · deploy · verify</text>
 
         <!-- Tier 2: investigate -->
-        <rect x="760" y="336" width="160" height="48" rx="6" fill="#2d3142"/>
-        <rect x="760" y="336" width="160" height="48" rx="6" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="0.8"/>
-        <text x="840" y="360" fill="#f5f5f5" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">investigate</text>
-        <text x="840" y="372" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">root cause · evidence</text>
+        <rect x="760" y="336" width="160" height="48" rx="6" fill="#0e1920"/>
+        <rect x="760" y="336" width="160" height="48" rx="6" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="0.8"/>
+        <text x="840" y="360" fill="#ffffff" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">investigate</text>
+        <text x="840" y="372" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">root cause · evidence</text>
 
         <!-- Legend strip -->
-        <line x1="40" y1="412" x2="960" y2="412" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
-        <text x="40" y="428" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <line x1="40" y1="412" x2="960" y2="412" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
+        <text x="40" y="428" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">LEGEND</text>
 
-        <rect x="40" y="444" width="14" height="10" rx="2" fill="rgba(240,138,89,0.10)" stroke="#f08a59" stroke-width="1"/>
-        <text x="60" y="452" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Root · focal</text>
+        <rect x="40" y="444" width="14" height="10" rx="2" fill="rgba(255,138,92,0.10)" stroke="#ff8a5c" stroke-width="1"/>
+        <text x="60" y="452" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Root · focal</text>
 
-        <rect x="180" y="444" width="14" height="10" rx="2" fill="rgba(245,245,245,0.04)" stroke="#f5f5f5" stroke-width="1"/>
-        <text x="200" y="452" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Category branch</text>
+        <rect x="180" y="444" width="14" height="10" rx="2" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="1"/>
+        <text x="200" y="452" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Category branch</text>
 
-        <rect x="340" y="444" width="14" height="10" rx="2" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="0.8"/>
-        <text x="360" y="452" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Leaf skill</text>
+        <rect x="340" y="444" width="14" height="10" rx="2" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="0.8"/>
+        <text x="360" y="452" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Leaf skill</text>
 
-        <text x="500" y="452" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Orthogonal connectors only. Coral marks the root — every branch descends from one idea.</text>
+        <text x="500" y="452" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif" font-style="italic">Orthogonal connectors only. Coral marks the root — every branch descends from one idea.</text>
       </svg>
   </div>
 </body>

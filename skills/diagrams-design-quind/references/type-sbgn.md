@@ -36,24 +36,24 @@ Authoring-only: the model arrives as text in the prompt. This type does not impo
 ```svg
 <!-- Macromolecule -->
 <g data-kind="macromolecule" data-entity-id="bcar" data-compartment="cyt">
-  <rect data-role="bounds" x="80" y="80" width="144" height="64" rx="16" fill="#f5f5f5"/>
+  <rect data-role="bounds" x="80" y="80" width="144" height="64" rx="16" fill="#ffffff"/>
   <rect x="80" y="80" width="144" height="64" rx="16"
-        fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1"/>
+        fill="rgba(204,59,16,0.08)" stroke="#cc3b10" stroke-width="1"/>
   <text x="152" y="108" …>B-carotene</text>
 </g>
 
 <!-- Process -->
 <g data-kind="process" data-process-id="v1" data-compartment="cyt">
   <rect data-role="bounds" x="280" y="96" width="32" height="32" rx="2"
-        fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
+        fill="#ffffff" stroke="#0e1920" stroke-width="1"/>
 </g>
 
 <!-- Consumption / production -->
 <path data-kind="consumption" data-from="bcar" data-to="v1"
-      d="M 224,112 H 280" fill="none" stroke="#4f5d75" stroke-width="1.2"
+      d="M 224,112 H 280" fill="none" stroke="#5b6770" stroke-width="1.2"
       marker-end="url(#arrow)"/>
 <path data-kind="production" data-from="v1" data-to="b10"
-      d="M 312,112 H 480" fill="none" stroke="#4f5d75" stroke-width="1.2"
+      d="M 312,112 H 480" fill="none" stroke="#5b6770" stroke-width="1.2"
       marker-end="url(#arrow)"/>
 ```
 

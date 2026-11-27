@@ -75,7 +75,7 @@ TEXT_FIT_IGNORED = {"font-weight", "font-style"}
 PAINT_PROPERTIES = frozenset({"fill", "stroke", "stroke-width", "fill-opacity", "stroke-opacity", "opacity"})
 # Bidi, vertical and preserved-space text lays out in ways the left-to-right budget can't place.
 TEXT_LAYOUT_PROPERTIES = ("direction", "unicode-bidi", "writing-mode", "white-space", "xml:space")
-# Half a narrow glyph. The budget is an average that runs wide of Geist (about 0.52em
+# Half a narrow glyph. The budget is an average that runs wide of Inter (about 0.52em
 # sans, 0.60em mono drawn), so a smaller overshoot is budget error on a label that
 # draws inside its box; a whole character past the edge is the real defect.
 TEXT_FIT_TOLERANCE_EM = 0.3

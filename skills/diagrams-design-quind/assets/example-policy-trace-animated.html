@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Where policy traces diverge</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --paper: #f5f5f5;
-      --paper-2: #ececec;
-      --ink: #2d3142;
-      --muted: #4f5d75;
-      --soft: #5a6580;
-      --rule: rgba(45,49,66,0.12);
-      --rule-strong: rgba(45,49,66,0.30);
-      --accent: #bf4520;
-      --accent-tint: rgba(191,69,32,0.08);
-      --sans: 'Geist', system-ui, sans-serif;
-      --serif: 'Instrument Serif', serif;
-      --mono: 'Geist Mono', ui-monospace, monospace;
+      --paper: #ffffff;
+      --paper-2: #f3f6f8;
+      --ink: #0e1920;
+      --muted: #5b6770;
+      --soft: #66727c;
+      --rule: rgba(14,25,32,0.12);
+      --rule-strong: rgba(14,25,32,0.30);
+      --accent: #cc3b10;
+      --accent-tint: rgba(204,59,16,0.08);
+      --sans: 'Inter', system-ui, sans-serif;
+      --serif: 'Poppins', 'Inter', system-ui, sans-serif;
+      --mono: 'Roboto Mono', ui-monospace, monospace;
       --motion-fast: 160ms;
       --motion-step: 480ms;
       --motion-hold: 720ms;
@@ -194,87 +194,87 @@
            data-motion-primitive="policy-evaluation">
         <title id="policy-trace-animated-title">Where two policy evaluations first diverge</title>
         <desc id="policy-trace-animated-desc">Two requests pass identity and audience checks. At the data-class rule, the read-only request passes while the sensitive-write request fails; later rules are skipped or not reached, producing permitted and denied outcomes.</desc>
-        <rect width="1200" height="660" fill="#f5f5f5"/>
+        <rect width="1200" height="660" fill="#ffffff"/>
 
         <!-- Persistent trace paths are meaningful in every frame. -->
-        <line x1="620" y1="104" x2="620" y2="576" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-        <line data-trace-connector="trace-b" x1="936" y1="104" x2="936" y2="336" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <line x1="620" y1="104" x2="620" y2="576" stroke="rgba(14,25,32,0.30)" stroke-width="1"/>
+        <line data-trace-connector="trace-b" x1="936" y1="104" x2="936" y2="336" stroke="rgba(14,25,32,0.30)" stroke-width="1"/>
 
         <!-- Shared rule column and trace headers. -->
-        <text x="72" y="76" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12" letter-spacing="1.6">ORDERED POLICY</text>
-        <rect x="500" y="44" width="240" height="60" rx="6" fill="#ffffff" stroke="#2d3142"/>
-        <text x="620" y="72" text-anchor="middle" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">Trace A · read-only</text>
-        <text x="620" y="92" text-anchor="middle" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">internal metrics request</text>
-        <rect x="816" y="44" width="240" height="60" rx="6" fill="#ffffff" stroke="#2d3142"/>
-        <text x="936" y="72" text-anchor="middle" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">Trace B · sensitive write</text>
-        <text x="936" y="92" text-anchor="middle" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">restricted records request</text>
+        <text x="72" y="76" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12" letter-spacing="1.6">ORDERED POLICY</text>
+        <rect x="500" y="44" width="240" height="60" rx="6" fill="#ffffff" stroke="#0e1920"/>
+        <text x="620" y="72" text-anchor="middle" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">Trace A · read-only</text>
+        <text x="620" y="92" text-anchor="middle" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">internal metrics request</text>
+        <rect x="816" y="44" width="240" height="60" rx="6" fill="#ffffff" stroke="#0e1920"/>
+        <text x="936" y="72" text-anchor="middle" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">Trace B · sensitive write</text>
+        <text x="936" y="92" text-anchor="middle" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">restricted records request</text>
 
         <g data-motion-item data-step="1" aria-label="Rule 1: Identity bound passes for both traces">
           <rect class="row-focus" x="48" y="124" width="1080" height="68" rx="4"/>
-          <text x="72" y="152" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">1 · Identity bound</text>
-          <text x="72" y="172" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">named principal required</text>
-          <rect x="532" y="132" width="176" height="52" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/>
-          <text x="620" y="164" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
-          <rect x="848" y="132" width="176" height="52" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/>
-          <text x="936" y="164" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <text x="72" y="152" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">1 · Identity bound</text>
+          <text x="72" y="172" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">named principal required</text>
+          <rect x="532" y="132" width="176" height="52" rx="4" fill="rgba(14,25,32,0.05)" stroke="#5b6770"/>
+          <text x="620" y="164" text-anchor="middle" fill="#0e1920" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <rect x="848" y="132" width="176" height="52" rx="4" fill="rgba(14,25,32,0.05)" stroke="#5b6770"/>
+          <text x="936" y="164" text-anchor="middle" fill="#0e1920" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
         </g>
 
         <g data-motion-item data-step="2" aria-label="Rule 2: Internal audience passes for both traces">
           <rect class="row-focus" x="48" y="200" width="1080" height="68" rx="4"/>
-          <text x="72" y="228" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">2 · Internal audience</text>
-          <text x="72" y="248" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">employees only</text>
-          <rect x="532" y="208" width="176" height="52" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/>
-          <text x="620" y="240" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
-          <rect x="848" y="208" width="176" height="52" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/>
-          <text x="936" y="240" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <text x="72" y="228" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">2 · Internal audience</text>
+          <text x="72" y="248" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">employees only</text>
+          <rect x="532" y="208" width="176" height="52" rx="4" fill="rgba(14,25,32,0.05)" stroke="#5b6770"/>
+          <text x="620" y="240" text-anchor="middle" fill="#0e1920" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <rect x="848" y="208" width="176" height="52" rx="4" fill="rgba(14,25,32,0.05)" stroke="#5b6770"/>
+          <text x="936" y="240" text-anchor="middle" fill="#0e1920" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
         </g>
 
         <g data-motion-item data-step="3" aria-label="Rule 3 is the first divergence: Trace A passes and Trace B fails">
           <rect class="row-focus" x="48" y="276" width="1080" height="80" rx="4"/>
-          <text x="72" y="304" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">3 · Data class</text>
-          <text x="72" y="324" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">restricted writes denied</text>
-          <rect x="532" y="284" width="176" height="52" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/>
-          <text x="620" y="316" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
-          <rect data-trace-b-terminal="fail" x="848" y="284" width="176" height="52" rx="4" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1.2"/>
-          <text x="936" y="316" text-anchor="middle" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">× FAIL</text>
-          <path d="M716 344 V352 H840 V344" fill="none" stroke="#bf4520" stroke-width="1.2"/>
-          <rect x="712" y="336" width="132" height="20" rx="2" fill="#f5f5f5"/>
-          <text x="778" y="351" text-anchor="middle" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="12" font-weight="600" letter-spacing=".8">FIRST DIVERGENCE</text>
+          <text x="72" y="304" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">3 · Data class</text>
+          <text x="72" y="324" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">restricted writes denied</text>
+          <rect x="532" y="284" width="176" height="52" rx="4" fill="rgba(14,25,32,0.05)" stroke="#5b6770"/>
+          <text x="620" y="316" text-anchor="middle" fill="#0e1920" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <rect data-trace-b-terminal="fail" x="848" y="284" width="176" height="52" rx="4" fill="rgba(204,59,16,0.08)" stroke="#cc3b10" stroke-width="1.2"/>
+          <text x="936" y="316" text-anchor="middle" fill="#cc3b10" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">× FAIL</text>
+          <path d="M716 344 V352 H840 V344" fill="none" stroke="#cc3b10" stroke-width="1.2"/>
+          <rect x="712" y="336" width="132" height="20" rx="2" fill="#ffffff"/>
+          <text x="778" y="351" text-anchor="middle" fill="#cc3b10" font-family="'Roboto Mono', monospace" font-size="12" font-weight="600" letter-spacing=".8">FIRST DIVERGENCE</text>
         </g>
 
         <g data-motion-item data-step="4" aria-label="Rule 4 is skipped for Trace A and not reached for Trace B">
           <rect class="row-focus" x="48" y="364" width="1080" height="68" rx="4"/>
-          <text x="72" y="392" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">4 · Human approval</text>
-          <text x="72" y="412" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">required only for writes</text>
-          <rect x="532" y="372" width="176" height="52" rx="4" fill="#f5f5f5" stroke="#5a6580" stroke-dasharray="4 4"/>
-          <text x="620" y="404" text-anchor="middle" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">— SKIPPED</text>
-          <rect data-trace-b-state="not-reached" x="848" y="372" width="176" height="52" rx="4" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-dasharray="4 4"/>
-          <text x="936" y="404" text-anchor="middle" fill="#5a6580" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">○ NOT REACHED</text>
+          <text x="72" y="392" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">4 · Human approval</text>
+          <text x="72" y="412" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">required only for writes</text>
+          <rect x="532" y="372" width="176" height="52" rx="4" fill="#ffffff" stroke="#66727c" stroke-dasharray="4 4"/>
+          <text x="620" y="404" text-anchor="middle" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">— SKIPPED</text>
+          <rect data-trace-b-state="not-reached" x="848" y="372" width="176" height="52" rx="4" fill="rgba(14,25,32,0.02)" stroke="rgba(14,25,32,0.30)" stroke-dasharray="4 4"/>
+          <text x="936" y="404" text-anchor="middle" fill="#66727c" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">○ NOT REACHED</text>
         </g>
 
         <g data-motion-item data-step="5" aria-label="Rule 5 passes for Trace A and is not reached for Trace B; outcomes are permitted and denied">
           <rect class="row-focus" x="48" y="440" width="1080" height="152" rx="4"/>
-          <text x="72" y="468" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">5 · Deploy gate</text>
-          <text x="72" y="488" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">all reached rules must pass</text>
-          <rect x="532" y="448" width="176" height="52" rx="4" fill="rgba(45,49,66,0.05)" stroke="#4f5d75"/>
-          <text x="620" y="480" text-anchor="middle" fill="#2d3142" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
-          <rect data-trace-b-state="not-reached" x="848" y="448" width="176" height="52" rx="4" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-dasharray="4 4"/>
-          <text x="936" y="480" text-anchor="middle" fill="#5a6580" font-family="'Geist Mono', monospace" font-size="10" font-weight="600">○ NOT REACHED</text>
+          <text x="72" y="468" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">5 · Deploy gate</text>
+          <text x="72" y="488" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">all reached rules must pass</text>
+          <rect x="532" y="448" width="176" height="52" rx="4" fill="rgba(14,25,32,0.05)" stroke="#5b6770"/>
+          <text x="620" y="480" text-anchor="middle" fill="#0e1920" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">✓ PASS</text>
+          <rect data-trace-b-state="not-reached" x="848" y="448" width="176" height="52" rx="4" fill="rgba(14,25,32,0.02)" stroke="rgba(14,25,32,0.30)" stroke-dasharray="4 4"/>
+          <text x="936" y="480" text-anchor="middle" fill="#66727c" font-family="'Roboto Mono', monospace" font-size="10" font-weight="600">○ NOT REACHED</text>
 
-          <rect x="500" y="528" width="240" height="56" rx="6" fill="#2d3142" stroke="#2d3142"/>
-          <text x="620" y="552" text-anchor="middle" fill="#f5f5f5" font-family="'Geist Mono', monospace" font-size="12" letter-spacing="1.2">OUTCOME</text>
-          <text x="620" y="572" text-anchor="middle" fill="#f5f5f5" font-family="'Geist', sans-serif" font-size="12" font-weight="600">Permitted</text>
-          <rect data-trace-b-outcome="denied" x="816" y="528" width="240" height="56" rx="6" fill="#f5f5f5"/>
-          <rect x="816" y="528" width="240" height="56" rx="6" fill="rgba(191,69,32,0.08)" stroke="#bf4520" stroke-width="1.2"/>
-          <text x="936" y="552" text-anchor="middle" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="12" letter-spacing="1.2">OUTCOME</text>
-          <text x="936" y="572" text-anchor="middle" fill="#2d3142" font-family="'Geist', sans-serif" font-size="12" font-weight="600">Denied · review</text>
+          <rect x="500" y="528" width="240" height="56" rx="6" fill="#0e1920" stroke="#0e1920"/>
+          <text x="620" y="552" text-anchor="middle" fill="#ffffff" font-family="'Roboto Mono', monospace" font-size="12" letter-spacing="1.2">OUTCOME</text>
+          <text x="620" y="572" text-anchor="middle" fill="#ffffff" font-family="'Inter', sans-serif" font-size="12" font-weight="600">Permitted</text>
+          <rect data-trace-b-outcome="denied" x="816" y="528" width="240" height="56" rx="6" fill="#ffffff"/>
+          <rect x="816" y="528" width="240" height="56" rx="6" fill="rgba(204,59,16,0.08)" stroke="#cc3b10" stroke-width="1.2"/>
+          <text x="936" y="552" text-anchor="middle" fill="#cc3b10" font-family="'Roboto Mono', monospace" font-size="12" letter-spacing="1.2">OUTCOME</text>
+          <text x="936" y="572" text-anchor="middle" fill="#0e1920" font-family="'Inter', sans-serif" font-size="12" font-weight="600">Denied · review</text>
         </g>
 
-        <line x1="72" y1="620" x2="1128" y2="620" stroke="rgba(45,49,66,0.12)"/>
-        <text x="72" y="640" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">✓ PASS</text>
-        <text x="176" y="640" fill="#bf4520" font-family="'Geist Mono', monospace" font-size="12">× FAIL</text>
-        <text x="272" y="640" fill="#4f5d75" font-family="'Geist Mono', monospace" font-size="12">— SKIPPED · rule intentionally bypassed</text>
-        <text x="564" y="640" fill="#5a6580" font-family="'Geist Mono', monospace" font-size="12">○ NOT REACHED · earlier terminal result</text>
+        <line x1="72" y1="620" x2="1128" y2="620" stroke="rgba(14,25,32,0.12)"/>
+        <text x="72" y="640" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">✓ PASS</text>
+        <text x="176" y="640" fill="#cc3b10" font-family="'Roboto Mono', monospace" font-size="12">× FAIL</text>
+        <text x="272" y="640" fill="#5b6770" font-family="'Roboto Mono', monospace" font-size="12">— SKIPPED · rule intentionally bypassed</text>
+        <text x="564" y="640" fill="#66727c" font-family="'Roboto Mono', monospace" font-size="12">○ NOT REACHED · earlier terminal result</text>
       </svg>
     </div>
 

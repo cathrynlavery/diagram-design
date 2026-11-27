@@ -310,10 +310,10 @@ Either chip may be omitted (e.g., a sink node has only an input chip; a source-o
 
 | Code | Color | Meaning |
 |------|-------|---------|
-| `WB` | `#6e6479` (mauve) | Web / Public data |
-| `DB` | `#5e7a9b` (steel-blue) | Dataset / Raw file |
-| `TB` | `#b8915a` (amber) | Table / Analysis-ready |
-| `FL` | `#9c6b50` (sienna) | File / Report / Export |
+| `WB` | `#24323c` (mauve) | Web / Public data |
+| `DB` | `#0b6e80` (steel-blue) | Dataset / Raw file |
+| `TB` | `#9a6400` (amber) | Table / Analysis-ready |
+| `FL` | `#7a8791` (sienna) | File / Report / Export |
 | `LS` | `#4a7c59` (forest) | Live stream / Event |
 
 Text inside chip: white, `eyebrow` role at 5px, weight 700.

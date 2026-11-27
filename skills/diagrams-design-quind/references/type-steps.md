@@ -140,7 +140,7 @@ The checker reads attributes, so every mark binds itself to its stage and draws 
 - **Geometry.** Rails share `y`, `width` and `height` and touch end to end. Medallions are centered on their segment with one shared radius; numbers are centered on it at `x` and print the two-digit index. Every mark stays inside the viewBox.
 - **Allowed attributes.** A rail may carry only `x y width height fill fill-opacity`, a medallion only `cx cy r fill stroke stroke-width`, a number only `x y fill font-size font-weight font-family text-anchor`, plus their `data-*` bindings. No `style`, `class`, `id`, `transform`, `dx`/`dy`, `opacity` or anything else. A number contains only its text.
 - **Groups.** Marks sit only inside plain `<g>` groups of the one root `<svg>`, never inside `defs`, a nested `svg` or any other element. A group above a mark may carry only `aria-hidden fill stroke stroke-width stroke-linecap stroke-linejoin font-family font-size font-weight letter-spacing text-anchor`. No attribute may appear twice on any element.
-- **Paint and type.** The first `<rect>` in the SVG is the paper (`#f5f5f5` light, `#2d3142` dark). Rails fill with a non-paper house ink above zero alpha. Medallion outlines and numbers use a house ink at 0.4 alpha or more. Numbers resolve to font-size 8 or more, a font family starting with Geist, Geist Mono or Instrument Serif, and `text-anchor="middle"`. Strokes are at most 4 wide.
+- **Paint and type.** The first `<rect>` in the SVG is the paper (`#ffffff` light, `#0e1920` dark). Rails fill with a non-paper house ink above zero alpha. Medallion outlines and numbers use a house ink at 0.4 alpha or more. Numbers resolve to font-size 8 or more, a font family starting with Inter, Roboto Mono or Instrument Serif, and `text-anchor="middle"`. Strokes are at most 4 wide.
 - **Page and CSS.** Style marks with presentation attributes. Stylesheet rules that can reach the SVG may set only `box-sizing`, `margin`, `padding` and custom properties; nothing may move or hide the diagram. CONTRIBUTING.md lists the page rules in full.
 
 A minimal three-stage figure that passes, with the second stage focal:
@@ -149,22 +149,22 @@ A minimal three-stage figure that passes, with the second stage focal:
 <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="steps-min-title steps-min-desc">
   <title id="steps-min-title">Plan, build, ship</title>
   <desc id="steps-min-desc">Three equal stages on one rail; build is the focal stage.</desc>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <rect width="100%" height="100%" fill="#ffffff"/>
   <g aria-hidden="true">
-    <rect x="304" y="240" width="224" height="48" fill="rgba(45,49,66,0.05)" data-role="rail" data-step="plan" data-index="1"/>
-    <rect x="528" y="240" width="224" height="48" fill="rgba(191,69,32,0.08)" data-role="rail" data-step="build" data-index="2" data-focal="true"/>
-    <rect x="752" y="240" width="224" height="48" fill="rgba(45,49,66,0.05)" data-role="rail" data-step="ship" data-index="3"/>
+    <rect x="304" y="240" width="224" height="48" fill="rgba(14,25,32,0.05)" data-role="rail" data-step="plan" data-index="1"/>
+    <rect x="528" y="240" width="224" height="48" fill="rgba(204,59,16,0.08)" data-role="rail" data-step="build" data-index="2" data-focal="true"/>
+    <rect x="752" y="240" width="224" height="48" fill="rgba(14,25,32,0.05)" data-role="rail" data-step="ship" data-index="3"/>
   </g>
-  <g font-family="'Geist Mono', monospace" font-size="8" font-weight="600" letter-spacing="0.14em" text-anchor="middle">
-    <text x="416" y="164" fill="#4f5d75" data-role="number" data-step="plan">01</text>
-    <text x="640" y="164" fill="#bf4520" data-role="number" data-step="build">02</text>
-    <text x="864" y="164" fill="#4f5d75" data-role="number" data-step="ship">03</text>
+  <g font-family="'Roboto Mono', monospace" font-size="8" font-weight="600" letter-spacing="0.14em" text-anchor="middle">
+    <text x="416" y="164" fill="#5b6770" data-role="number" data-step="plan">01</text>
+    <text x="640" y="164" fill="#cc3b10" data-role="number" data-step="build">02</text>
+    <text x="864" y="164" fill="#5b6770" data-role="number" data-step="ship">03</text>
   </g>
-  <g aria-hidden="true" fill="#f5f5f5" stroke-width="1">
-    <circle cx="416" cy="264" r="36" stroke="#2d3142" data-role="medallion" data-step="plan"/>
+  <g aria-hidden="true" fill="#ffffff" stroke-width="1">
+    <circle cx="416" cy="264" r="36" stroke="#0e1920" data-role="medallion" data-step="plan"/>
     <circle cx="640" cy="264" r="36" stroke="none"/>
-    <circle cx="640" cy="264" r="36" fill="rgba(191,69,32,0.08)" stroke="#bf4520" data-role="medallion" data-step="build" data-focal="true"/>
-    <circle cx="864" cy="264" r="36" stroke="#2d3142" data-role="medallion" data-step="ship"/>
+    <circle cx="640" cy="264" r="36" fill="rgba(204,59,16,0.08)" stroke="#cc3b10" data-role="medallion" data-step="build" data-focal="true"/>
+    <circle cx="864" cy="264" r="36" stroke="#0e1920" data-role="medallion" data-step="ship"/>
   </g>
 </svg>
 ```

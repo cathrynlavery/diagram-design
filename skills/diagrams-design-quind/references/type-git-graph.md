@@ -86,7 +86,7 @@ Time reads left to right on the column grid. Every commit sits on its lane's `y`
 ### Lanes
 
 - Draw one muted horizontal rail per lane from the first commit on that lane to the last.
-- Put the branch name at the lane start (`lane_label_x`), vertically centred on the rail, in `{eyebrow}` / Geist Mono.
+- Put the branch name at the lane start (`lane_label_x`), vertically centred on the rail, in `{eyebrow}` / Roboto Mono.
 - Rails share one muted stroke. Do not colour each lane a different hue.
 
 ### Commits
@@ -161,17 +161,17 @@ A minimal four-commit figure that passes:
 <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="git-graph-min-title git-graph-min-desc">
   <title id="git-graph-min-title">Feature merge on main</title>
   <desc id="git-graph-min-desc">Main on top; a feature branch merges back at the coral commit.</desc>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
-  <line data-lane="main" data-y="240" x1="280" y1="240" x2="640" y2="240" stroke="#4f5d75"/>
-  <line data-lane="feat" data-y="380" x1="400" y1="380" x2="520" y2="380" stroke="#4f5d75"/>
-  <path data-from="c0" data-to="m1" d="M 280,240 H 640" fill="none" stroke="#4f5d75"/>
-  <path data-from="c0" data-to="c1" d="M 280,240 V 380 H 400" fill="none" stroke="#4f5d75"/>
-  <path data-from="c1" data-to="c2" d="M 400,380 H 520" fill="none" stroke="#4f5d75"/>
-  <path data-from="c2" data-to="m1" d="M 520,380 H 640 V 240" fill="none" stroke="#4f5d75"/>
-  <circle data-commit="c0" data-lane="main" data-column="0" cx="280" cy="240" r="8" fill="#2d3142"/>
-  <circle data-commit="c1" data-lane="feat" data-column="1" cx="400" cy="380" r="8" fill="#2d3142"/>
-  <circle data-commit="c2" data-lane="feat" data-column="2" cx="520" cy="380" r="8" fill="#2d3142"/>
-  <circle data-commit="m1" data-lane="main" data-column="3" data-kind="merge" cx="640" cy="240" r="8" fill="#bf4520"/>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <line data-lane="main" data-y="240" x1="280" y1="240" x2="640" y2="240" stroke="#5b6770"/>
+  <line data-lane="feat" data-y="380" x1="400" y1="380" x2="520" y2="380" stroke="#5b6770"/>
+  <path data-from="c0" data-to="m1" d="M 280,240 H 640" fill="none" stroke="#5b6770"/>
+  <path data-from="c0" data-to="c1" d="M 280,240 V 380 H 400" fill="none" stroke="#5b6770"/>
+  <path data-from="c1" data-to="c2" d="M 400,380 H 520" fill="none" stroke="#5b6770"/>
+  <path data-from="c2" data-to="m1" d="M 520,380 H 640 V 240" fill="none" stroke="#5b6770"/>
+  <circle data-commit="c0" data-lane="main" data-column="0" cx="280" cy="240" r="8" fill="#0e1920"/>
+  <circle data-commit="c1" data-lane="feat" data-column="1" cx="400" cy="380" r="8" fill="#0e1920"/>
+  <circle data-commit="c2" data-lane="feat" data-column="2" cx="520" cy="380" r="8" fill="#0e1920"/>
+  <circle data-commit="m1" data-lane="main" data-column="3" data-kind="merge" cx="640" cy="240" r="8" fill="#cc3b10"/>
   <text data-lane="main" x="88" y="244">main</text>
   <text data-lane="feat" x="88" y="384">feat</text>
   <text data-tag="v1" data-commit="m1" x="640" y="212">v1</text>

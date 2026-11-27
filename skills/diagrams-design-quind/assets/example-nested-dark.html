@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Project Guidance Hierarchy</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #2d3142;
-      --color-ink:     #f5f5f5;
-      --color-muted:   #bfc0c0;
-      --color-accent:  #f08a59;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #0e1920;
+      --color-ink:     #ffffff;
+      --color-muted:   #9ba9b2;
+      --color-accent:  #ff8a5c;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
 
     body {
@@ -43,7 +43,7 @@
     h1 {
       font-family: var(--font-serif);
       font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--color-ink);
@@ -63,69 +63,69 @@
       <desc id="nested-dark-desc">Nested diagram showing how project guidance inherits broader scopes from the global, vault, business, and marketing levels.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.10)"/>
           </pattern>
         </defs>
 
-        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="#0e1920"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
         <!-- Level 1: ~/.claude/ (global) — outermost -->
-        <rect x="40" y="60" width="920" height="380" rx="8" fill="rgba(245,245,245,0.015)" stroke="rgba(245,245,245,0.30)" stroke-width="1"/>
+        <rect x="40" y="60" width="920" height="380" rx="8" fill="rgba(255,255,255,0.015)" stroke="rgba(255,255,255,0.30)" stroke-width="1"/>
         <!-- Level 2: ~/vault/ -->
-        <rect x="72" y="96" width="856" height="308" rx="8" fill="rgba(245,245,245,0.02)" stroke="rgba(245,245,245,0.35)" stroke-width="1"/>
+        <rect x="72" y="96" width="856" height="308" rx="8" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
         <!-- Level 3: /business -->
-        <rect x="104" y="132" width="792" height="236" rx="8" fill="rgba(245,245,245,0.025)" stroke="rgba(245,245,245,0.45)" stroke-width="1"/>
+        <rect x="104" y="132" width="792" height="236" rx="8" fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
         <!-- Level 4: /marketing -->
-        <rect x="136" y="168" width="728" height="164" rx="8" fill="rgba(245,245,245,0.03)" stroke="#bfc0c0" stroke-width="1"/>
+        <rect x="136" y="168" width="728" height="164" rx="8" fill="rgba(255,255,255,0.03)" stroke="#9ba9b2" stroke-width="1"/>
         <!-- Level 5: /project — innermost, coral focal -->
-        <rect x="168" y="204" width="664" height="92" rx="8" fill="rgba(240,138,89,0.08)" stroke="#f08a59" stroke-width="1"/>
+        <rect x="168" y="204" width="664" height="92" rx="8" fill="rgba(255,138,92,0.08)" stroke="#ff8a5c" stroke-width="1"/>
 
         <!-- Level labels on paper-colored masks -->
-        <rect x="56" y="52" width="188" height="16" fill="#2d3142"/>
-        <text x="64" y="64" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">~/.claude/ (global)</text>
+        <rect x="56" y="52" width="188" height="16" fill="#0e1920"/>
+        <text x="64" y="64" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">~/.claude/ (global)</text>
 
-        <rect x="88" y="88" width="148" height="16" fill="#2d3142"/>
-        <text x="96" y="100" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">~/vault/ (notes)</text>
+        <rect x="88" y="88" width="148" height="16" fill="#0e1920"/>
+        <text x="96" y="100" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">~/vault/ (notes)</text>
 
-        <rect x="120" y="124" width="96" height="16" fill="#2d3142"/>
-        <text x="128" y="136" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">/business</text>
+        <rect x="120" y="124" width="96" height="16" fill="#0e1920"/>
+        <text x="128" y="136" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">/business</text>
 
-        <rect x="152" y="160" width="108" height="16" fill="#2d3142"/>
-        <text x="160" y="172" fill="#f5f5f5" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">/marketing</text>
+        <rect x="152" y="160" width="108" height="16" fill="#0e1920"/>
+        <text x="160" y="172" fill="#ffffff" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">/marketing</text>
 
-        <rect x="184" y="196" width="88" height="16" fill="#2d3142"/>
-        <text x="192" y="208" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em" font-weight="600">/project</text>
+        <rect x="184" y="196" width="88" height="16" fill="#0e1920"/>
+        <text x="192" y="208" fill="#ff8a5c" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em" font-weight="600">/project</text>
 
         <!-- File-icon glyphs (simple rect with folded corner) inside each level -->
         <g transform="translate(908, 408)">
-          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#2d3142" stroke="rgba(245,245,245,0.35)" stroke-width="1"/>
-          <path d="M16 0 L16 4 L20 4" fill="none" stroke="rgba(245,245,245,0.35)" stroke-width="1"/>
+          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#0e1920" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+          <path d="M16 0 L16 4 L20 4" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
         </g>
         <g transform="translate(876, 372)">
-          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#2d3142" stroke="rgba(245,245,245,0.40)" stroke-width="1"/>
-          <path d="M16 0 L16 4 L20 4" fill="none" stroke="rgba(245,245,245,0.40)" stroke-width="1"/>
+          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#0e1920" stroke="rgba(255,255,255,0.40)" stroke-width="1"/>
+          <path d="M16 0 L16 4 L20 4" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1"/>
         </g>
         <g transform="translate(844, 336)">
-          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#2d3142" stroke="rgba(245,245,245,0.50)" stroke-width="1"/>
-          <path d="M16 0 L16 4 L20 4" fill="none" stroke="rgba(245,245,245,0.50)" stroke-width="1"/>
+          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#0e1920" stroke="rgba(255,255,255,0.50)" stroke-width="1"/>
+          <path d="M16 0 L16 4 L20 4" fill="none" stroke="rgba(255,255,255,0.50)" stroke-width="1"/>
         </g>
         <g transform="translate(812, 300)">
-          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#2d3142" stroke="#bfc0c0" stroke-width="1"/>
-          <path d="M16 0 L16 4 L20 4" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+          <path d="M0 0 L16 0 L20 4 L20 20 L0 20 Z" fill="#0e1920" stroke="#9ba9b2" stroke-width="1"/>
+          <path d="M16 0 L16 4 L20 4" fill="none" stroke="#9ba9b2" stroke-width="1"/>
         </g>
 
         <!-- Innermost label — human readable -->
-        <text x="500" y="248" fill="#f5f5f5" font-size="16" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PROJECT GUIDANCE</text>
-        <text x="500" y="272" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">inherits every level above</text>
+        <text x="500" y="248" fill="#ffffff" font-size="16" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">PROJECT GUIDANCE</text>
+        <text x="500" y="272" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">inherits every level above</text>
 
         <!-- Annotation top-right: italic callout with curved arrow -->
-        <text x="904" y="36" fill="#f5f5f5" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="end">no imports, no configuration</text>
-        <path d="M 820 44 Q 700 84 520 216" fill="none" stroke="rgba(245,245,245,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
-        <circle cx="520" cy="216" r="2" fill="#f5f5f5"/>
+        <text x="904" y="36" fill="#ffffff" font-size="14" font-style="italic" font-family="'Inter', system-ui, sans-serif" text-anchor="end">no imports, no configuration</text>
+        <path d="M 820 44 Q 700 84 520 216" fill="none" stroke="rgba(255,255,255,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <circle cx="520" cy="216" r="2" fill="#ffffff"/>
 
         <!-- Annotation bottom-left: italic callout -->
-        <text x="40" y="484" fill="#bfc0c0" font-size="14" font-style="italic" font-family="'Instrument Serif', serif">structure IS the index</text>
+        <text x="40" y="484" fill="#9ba9b2" font-size="14" font-style="italic" font-family="'Inter', system-ui, sans-serif">structure IS the index</text>
       </svg>
   </div>
 </body>

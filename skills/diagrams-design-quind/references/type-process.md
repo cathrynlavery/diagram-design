@@ -331,11 +331,11 @@ Same catalog as `type-data-flow.md` §8.
 
 | Code | Color (light) | Color (dark) | Meaning |
 |------|---------------|--------------|---------|
-| `LS` | `#7c8f6f` sage | `#9caf8f` | List / assignment / task |
-| `DB` | `#5e7a9b` dusty-blue | `#82a0c0` | Dataset / tabular records |
-| `TB` | `#b8915a` mustard | `#d3ad7a` | Table (analysis-ready) |
-| `FL` | `#9c6b50` rust-brown | `#b88670` | File / document / report |
-| `WB` | `#6e6479` slate | `#8d8298` | Web / press / public release |
+| `LS` | `#2fa36b` sage | `#6fd3a0` | List / assignment / task |
+| `DB` | `#0b6e80` dusty-blue | `#5fd6ec` | Dataset / tabular records |
+| `TB` | `#9a6400` mustard | `#ffc85a` | Table (analysis-ready) |
+| `FL` | `#7a8791` rust-brown | `#6c7b85` | File / document / report |
+| `WB` | `#24323c` slate | `#b8c2ca` | Web / press / public release |
 | N/A | omit chip entirely | — | Unknown or not applicable |
 
 Text inside chip: white, font-size 5, weight 700, mono.

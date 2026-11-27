@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Content platform · ER model</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #2d3142;
-      --color-ink:     #f5f5f5;
-      --color-muted:   #bfc0c0;
-      --color-accent:  #f08a59;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #0e1920;
+      --color-ink:     #ffffff;
+      --color-muted:   #9ba9b2;
+      --color-accent:  #ff8a5c;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
 
     body {
@@ -43,7 +43,7 @@
     h1 {
       font-family: var(--font-serif);
       font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--color-ink);
@@ -63,139 +63,139 @@
       <desc id="er-dark-desc">Entity-relationship diagram showing authors writing articles and articles connecting to tags and categories.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.10)"/>
           </pattern>
-          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bfc0c0"/></marker>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9ba9b2"/></marker>
         </defs>
 
-        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="#0e1920"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
         <!-- Relationship lines (drawn first) -->
         <!-- 1. Author — Article (1:N "writes") -->
-        <line x1="260" y1="240" x2="400" y2="240" stroke="#bfc0c0" stroke-width="1" />
+        <line x1="260" y1="240" x2="400" y2="240" stroke="#9ba9b2" stroke-width="1" />
         <!-- 2. Article — ArticleTag (1:N) -->
-        <path d="M 640,320 H 702 Q 710,320 710,328 H 780" fill="none" stroke="#bfc0c0" stroke-width="1"/>
+        <path d="M 640,320 H 702 Q 710,320 710,328 H 780" fill="none" stroke="#9ba9b2" stroke-width="1"/>
         <!-- 3. Tag — ArticleTag (1:N, vertical) -->
-        <line x1="880" y1="248" x2="880" y2="280" stroke="#bfc0c0" stroke-width="1" />
+        <line x1="880" y1="248" x2="880" y2="280" stroke="#9ba9b2" stroke-width="1" />
 
         <!-- Cardinality labels -->
-        <rect x="266" y="232" width="12" height="12" rx="2" fill="#2d3142"/>
-        <text x="272" y="242" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+        <rect x="266" y="232" width="12" height="12" rx="2" fill="#0e1920"/>
+        <text x="272" y="242" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="middle" font-weight="600">1</text>
 
-        <rect x="378" y="232" width="16" height="12" rx="2" fill="#2d3142"/>
-        <text x="386" y="242" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+        <rect x="378" y="232" width="16" height="12" rx="2" fill="#0e1920"/>
+        <text x="386" y="242" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="middle" font-weight="600">N</text>
 
-        <rect x="646" y="316" width="12" height="12" rx="2" fill="#2d3142"/>
-        <text x="652" y="326" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+        <rect x="646" y="316" width="12" height="12" rx="2" fill="#0e1920"/>
+        <text x="652" y="326" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="middle" font-weight="600">1</text>
 
-        <rect x="760" y="324" width="16" height="12" rx="2" fill="#2d3142"/>
-        <text x="768" y="334" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+        <rect x="760" y="324" width="16" height="12" rx="2" fill="#0e1920"/>
+        <text x="768" y="334" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="middle" font-weight="600">N</text>
 
-        <rect x="872" y="252" width="16" height="12" rx="2" fill="#2d3142"/>
-        <text x="880" y="262" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">1</text>
+        <rect x="872" y="252" width="16" height="12" rx="2" fill="#0e1920"/>
+        <text x="880" y="262" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="middle" font-weight="600">1</text>
 
-        <rect x="872" y="268" width="16" height="12" rx="2" fill="#2d3142"/>
-        <text x="880" y="278" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="middle" font-weight="600">N</text>
+        <rect x="872" y="268" width="16" height="12" rx="2" fill="#0e1920"/>
+        <text x="880" y="278" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="middle" font-weight="600">N</text>
 
         <!-- Relationship labels -->
-        <rect x="304" y="220" width="56" height="14" rx="2" fill="#2d3142"/>
-        <text x="332" y="230" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">WRITES</text>
+        <rect x="304" y="220" width="56" height="14" rx="2" fill="#0e1920"/>
+        <text x="332" y="230" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.12em">WRITES</text>
 
-        <rect x="688" y="300" width="56" height="14" rx="2" fill="#2d3142"/>
-        <text x="716" y="310" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">TAGGED</text>
+        <rect x="688" y="300" width="56" height="14" rx="2" fill="#0e1920"/>
+        <text x="716" y="310" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.12em">TAGGED</text>
 
         <!-- Entity: Author -->
-        <rect x="60" y="160" width="200" height="160" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="60" y="160" width="200" height="40" rx="6" fill="rgba(245,245,245,0.04)" stroke="none"/>
-        <rect x="60" y="192" width="200" height="8" fill="rgba(245,245,245,0.04)"/>
-        <line x1="60" y1="200" x2="260" y2="200" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
-        <text x="76" y="176" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">ENTITY</text>
-        <text x="76" y="192" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif">Author</text>
-        <text x="76" y="220" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace"># id</text>
-        <text x="220" y="220" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-        <text x="76" y="240" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">handle</text>
-        <text x="220" y="240" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-        <text x="76" y="260" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">name</text>
-        <text x="220" y="260" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-        <text x="76" y="280" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">bio</text>
-        <text x="220" y="280" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-        <text x="76" y="300" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">site_url</text>
-        <text x="220" y="300" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <rect x="60" y="160" width="200" height="160" rx="6" fill="#16242c" stroke="#ffffff" stroke-width="1"/>
+        <rect x="60" y="160" width="200" height="40" rx="6" fill="rgba(255,255,255,0.04)" stroke="none"/>
+        <rect x="60" y="192" width="200" height="8" fill="rgba(255,255,255,0.04)"/>
+        <line x1="60" y1="200" x2="260" y2="200" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <text x="76" y="176" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">ENTITY</text>
+        <text x="76" y="192" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Author</text>
+        <text x="76" y="220" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace"># id</text>
+        <text x="220" y="220" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">uuid</text>
+        <text x="76" y="240" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">handle</text>
+        <text x="220" y="240" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
+        <text x="76" y="260" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">name</text>
+        <text x="220" y="260" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
+        <text x="76" y="280" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">bio</text>
+        <text x="220" y="280" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
+        <text x="76" y="300" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">site_url</text>
+        <text x="220" y="300" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
 
         <!-- Entity: Article (focal coral) -->
-        <rect x="400" y="120" width="240" height="240" rx="6" fill="rgba(240,138,89,0.04)" stroke="#f08a59" stroke-width="1"/>
-        <rect x="400" y="120" width="240" height="40" rx="6" fill="rgba(240,138,89,0.10)" stroke="none"/>
-        <rect x="400" y="152" width="240" height="8" fill="rgba(240,138,89,0.10)"/>
-        <line x1="400" y1="160" x2="640" y2="160" stroke="rgba(240,138,89,0.40)" stroke-width="1"/>
-        <text x="416" y="136" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">ENTITY · AGGREGATE ROOT</text>
-        <text x="416" y="152" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif">Article</text>
-        <text x="416" y="180" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace"># id</text>
-        <text x="600" y="180" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-        <text x="416" y="200" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">title</text>
-        <text x="600" y="200" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-        <text x="416" y="220" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">slug</text>
-        <text x="600" y="220" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · unique</text>
-        <text x="416" y="240" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">body_mdx</text>
-        <text x="600" y="240" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-        <text x="416" y="260" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">published_at</text>
-        <text x="600" y="260" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">timestamp</text>
-        <text x="416" y="280" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">→ author_id</text>
-        <text x="600" y="280" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-        <text x="416" y="300" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">status</text>
-        <text x="600" y="300" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">enum</text>
-        <text x="416" y="320" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">og_image</text>
-        <text x="600" y="320" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · url</text>
+        <rect x="400" y="120" width="240" height="240" rx="6" fill="rgba(255,138,92,0.04)" stroke="#ff8a5c" stroke-width="1"/>
+        <rect x="400" y="120" width="240" height="40" rx="6" fill="rgba(255,138,92,0.10)" stroke="none"/>
+        <rect x="400" y="152" width="240" height="8" fill="rgba(255,138,92,0.10)"/>
+        <line x1="400" y1="160" x2="640" y2="160" stroke="rgba(255,138,92,0.40)" stroke-width="1"/>
+        <text x="416" y="136" fill="#ff8a5c" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">ENTITY · AGGREGATE ROOT</text>
+        <text x="416" y="152" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Article</text>
+        <text x="416" y="180" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace"># id</text>
+        <text x="600" y="180" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">uuid</text>
+        <text x="416" y="200" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">title</text>
+        <text x="600" y="200" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
+        <text x="416" y="220" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">slug</text>
+        <text x="600" y="220" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text · unique</text>
+        <text x="416" y="240" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">body_mdx</text>
+        <text x="600" y="240" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
+        <text x="416" y="260" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">published_at</text>
+        <text x="600" y="260" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">timestamp</text>
+        <text x="416" y="280" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">→ author_id</text>
+        <text x="600" y="280" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">uuid</text>
+        <text x="416" y="300" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">status</text>
+        <text x="600" y="300" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">enum</text>
+        <text x="416" y="320" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">og_image</text>
+        <text x="600" y="320" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text · url</text>
 
         <!-- Entity: Tag -->
-        <rect x="780" y="120" width="200" height="128" rx="6" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="780" y="120" width="200" height="40" rx="6" fill="rgba(245,245,245,0.04)" stroke="none"/>
-        <rect x="780" y="152" width="200" height="8" fill="rgba(245,245,245,0.04)"/>
-        <line x1="780" y1="160" x2="980" y2="160" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
-        <text x="796" y="136" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">ENTITY</text>
-        <text x="796" y="152" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif">Tag</text>
-        <text x="796" y="180" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace"># id</text>
-        <text x="940" y="180" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-        <text x="796" y="200" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">slug</text>
-        <text x="940" y="200" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text · unique</text>
-        <text x="796" y="220" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">name</text>
-        <text x="940" y="220" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
-        <text x="796" y="240" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">description</text>
-        <text x="940" y="240" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">text</text>
+        <rect x="780" y="120" width="200" height="128" rx="6" fill="#16242c" stroke="#ffffff" stroke-width="1"/>
+        <rect x="780" y="120" width="200" height="40" rx="6" fill="rgba(255,255,255,0.04)" stroke="none"/>
+        <rect x="780" y="152" width="200" height="8" fill="rgba(255,255,255,0.04)"/>
+        <line x1="780" y1="160" x2="980" y2="160" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <text x="796" y="136" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">ENTITY</text>
+        <text x="796" y="152" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Tag</text>
+        <text x="796" y="180" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace"># id</text>
+        <text x="940" y="180" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">uuid</text>
+        <text x="796" y="200" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">slug</text>
+        <text x="940" y="200" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text · unique</text>
+        <text x="796" y="220" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">name</text>
+        <text x="940" y="220" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
+        <text x="796" y="240" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">description</text>
+        <text x="940" y="240" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">text</text>
 
         <!-- Entity: ArticleTag (join) -->
-        <rect x="780" y="280" width="200" height="96" rx="6" fill="rgba(245,245,245,0.04)" stroke="#bfc0c0" stroke-width="1" stroke-dasharray="4,3"/>
-        <rect x="780" y="280" width="200" height="40" rx="6" fill="rgba(245,245,245,0.06)" stroke="none"/>
-        <rect x="780" y="312" width="200" height="8" fill="rgba(245,245,245,0.06)"/>
-        <line x1="780" y1="320" x2="980" y2="320" stroke="rgba(245,245,245,0.22)" stroke-width="1"/>
-        <text x="796" y="296" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">JOIN</text>
-        <text x="796" y="312" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif">ArticleTag</text>
-        <text x="796" y="340" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">→ article_id</text>
-        <text x="940" y="340" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
-        <text x="796" y="360" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace">→ tag_id</text>
-        <text x="940" y="360" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end">uuid</text>
+        <rect x="780" y="280" width="200" height="96" rx="6" fill="rgba(255,255,255,0.04)" stroke="#9ba9b2" stroke-width="1" stroke-dasharray="4,3"/>
+        <rect x="780" y="280" width="200" height="40" rx="6" fill="rgba(255,255,255,0.06)" stroke="none"/>
+        <rect x="780" y="312" width="200" height="8" fill="rgba(255,255,255,0.06)"/>
+        <line x1="780" y1="320" x2="980" y2="320" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <text x="796" y="296" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">JOIN</text>
+        <text x="796" y="312" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif">ArticleTag</text>
+        <text x="796" y="340" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">→ article_id</text>
+        <text x="940" y="340" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">uuid</text>
+        <text x="796" y="360" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace">→ tag_id</text>
+        <text x="940" y="360" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" text-anchor="end">uuid</text>
 
         <!-- Legend -->
-        <line x1="40" y1="404" x2="960" y2="404" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
-        <text x="40" y="420" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <line x1="40" y1="404" x2="960" y2="404" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
+        <text x="40" y="420" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">LEGEND</text>
 
-        <rect x="40" y="436" width="14" height="10" rx="2" fill="rgba(240,138,89,0.04)" stroke="#f08a59" stroke-width="1"/>
-        <text x="60" y="444" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Aggregate root</text>
+        <rect x="40" y="436" width="14" height="10" rx="2" fill="rgba(255,138,92,0.04)" stroke="#ff8a5c" stroke-width="1"/>
+        <text x="60" y="444" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Aggregate root</text>
 
-        <rect x="180" y="436" width="14" height="10" rx="2" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <text x="200" y="444" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Entity</text>
+        <rect x="180" y="436" width="14" height="10" rx="2" fill="#16242c" stroke="#ffffff" stroke-width="1"/>
+        <text x="200" y="444" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Entity</text>
 
-        <rect x="268" y="436" width="14" height="10" rx="2" fill="rgba(245,245,245,0.04)" stroke="#bfc0c0" stroke-width="1" stroke-dasharray="3,2"/>
-        <text x="288" y="444" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Join table</text>
+        <rect x="268" y="436" width="14" height="10" rx="2" fill="rgba(255,255,255,0.04)" stroke="#9ba9b2" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="288" y="444" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Join table</text>
 
-        <text x="372" y="444" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace" font-weight="600">#</text>
-        <text x="388" y="444" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Primary key</text>
+        <text x="372" y="444" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace" font-weight="600">#</text>
+        <text x="388" y="444" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Primary key</text>
 
-        <text x="476" y="444" fill="#f5f5f5" font-size="10" font-family="'Geist Mono', monospace" font-weight="600">→</text>
-        <text x="492" y="444" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Foreign key</text>
+        <text x="476" y="444" fill="#ffffff" font-size="10" font-family="'Roboto Mono', monospace" font-weight="600">→</text>
+        <text x="492" y="444" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Foreign key</text>
 
-        <text x="584" y="444" fill="#bfc0c0" font-size="10" font-family="'Geist Mono', monospace" font-weight="600">1 / N</text>
-        <text x="616" y="444" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Cardinality</text>
+        <text x="584" y="444" fill="#9ba9b2" font-size="10" font-family="'Roboto Mono', monospace" font-weight="600">1 / N</text>
+        <text x="616" y="444" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Cardinality</text>
       </svg>
   </div>
 </body>

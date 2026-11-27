@@ -1,11 +1,11 @@
-# Annotation Callout (italic-serif aside)
+# Annotation Callout (italic aside)
 
 Use for editorial asides — the "italic pointer" that marks a detail without competing with the primary diagram grammar. Think marginalia: *"structure IS the index"*, *"no imports, no configuration"*.
 
 ## Grammar
 
 ```svg
-<!-- 1. Italic serif text: the `callout` role from style-guide.md -->
+<!-- 1. Italic text: the `callout` role from style-guide.md -->
 <text x="904" y="36" fill="{ink}" font-size="14" font-style="italic"
       font-family="{callout}" text-anchor="end">no imports, no configuration</text>
 <!-- 2. Dashed Bézier leader -->
@@ -16,7 +16,7 @@ Use for editorial asides — the "italic pointer" that marks a detail without co
 ```
 
 ## Rules
-- Italic + serif together signal "editorial voice" against the diagram's sans/mono body. Don't substitute italic sans or italic mono — the combination is load-bearing.
+- Italic Inter at 14px signals "editorial voice" against the upright sans/mono body. The QUIND skin has no serif, so the italic alone carries the aside: never set a node name, sublabel, or arrow label in italic, and never use italic mono.
 - Dashed path (`stroke-dasharray="4,3"`) distinguishes the callout leader from primary arrows (which are solid).
 - Place callouts in margins (top-right, bottom-left). Never inside the active diagram area.
 - Max 2 callouts per diagram. More becomes commentary, not signal.
@@ -31,6 +31,6 @@ Use for editorial asides — the "italic pointer" that marks a detail without co
 
 ## Anti-patterns
 - Solid arrow leader (reads as a flow arrow).
-- Italic sans or italic mono — the serif is load-bearing.
+- Italic mono, or italic on anything that is not a callout — the italic is the callout's only signal.
 - Callouts crossing primary arrows / lifelines — offset to a clear margin.
 - Using a callout to label something the diagram should label directly — put the label on the element.

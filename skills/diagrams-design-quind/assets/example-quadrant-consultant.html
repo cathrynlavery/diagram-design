@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Workplace 2030 · Remote work × AI automation</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #f5f5f5;
-      --color-paper-2: #ececec;
-      --color-ink:     #2d3142;
-      --color-muted:   #4f5d75;
-      --color-soft:    #5a6580;
-      --color-rule:    rgba(45,49,66,0.12);
-      --color-accent:  #bf4520;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #ffffff;
+      --color-paper-2: #f3f6f8;
+      --color-ink:     #0e1920;
+      --color-muted:   #5b6770;
+      --color-soft:    #66727c;
+      --color-rule:    rgba(14,25,32,0.12);
+      --color-accent:  #cc3b10;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
 
     body { font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }
@@ -25,7 +25,7 @@
 
     .header { margin-bottom: 2.5rem; }
     .header-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.75rem; }
-    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
+    h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 0.5rem; }
     .subtitle { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; }
 
     .diagram-container { background: transparent; border: none; padding: 0; overflow-x: auto; }
@@ -35,7 +35,7 @@
     @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
     .card { background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }
     .card .eyebrow { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }
-    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(14,25,32,0.08); }
     .card-dot { width: 7px; height: 7px; border-radius: 50%; }
     .card-dot.ink { background: var(--color-ink); }
     .card-dot.muted { background: var(--color-muted); }
@@ -43,9 +43,9 @@
     .card h3 { font-size: 0.875rem; font-weight: 600; }
     .card p, .card ul { color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; list-style: none; }
     .card li { margin-bottom: 0.3rem; padding-left: 0.875rem; position: relative; }
-    .card li::before { content: '—'; position: absolute; left: 0; color: rgba(45,49,66,0.25); font-size: 0.75rem; }
+    .card li::before { content: '—'; position: absolute; left: 0; color: rgba(14,25,32,0.25); font-size: 0.75rem; }
 
-    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    .footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(14,25,32,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
   </style>
 </head>
 <body>
@@ -63,76 +63,76 @@
         <defs>
           <!-- Double-ended axis markers -->
           <marker id="axis-end" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
-            <polygon points="0 0, 9 3.5, 0 7" fill="#2d3142"/>
+            <polygon points="0 0, 9 3.5, 0 7" fill="#0e1920"/>
           </marker>
           <marker id="axis-start" markerWidth="9" markerHeight="7" refX="1" refY="3.5" orient="auto">
-            <polygon points="9 0, 0 3.5, 9 7" fill="#2d3142"/>
+            <polygon points="9 0, 0 3.5, 9 7" fill="#0e1920"/>
           </marker>
         </defs>
 
         <!-- Clean paper background, no dot pattern -->
-        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="#ffffff"/>
 
         <!-- Focal quadrant tint (TR) — coral at 3% -->
-        <rect x="500" y="80" width="400" height="220" fill="rgba(191,69,32,0.04)"/>
+        <rect x="500" y="80" width="400" height="220" fill="rgba(204,59,16,0.04)"/>
 
         <!-- Scenario cells — store treatment with hairline rule, slightly varied -->
         <!-- TL: Distributed humans -->
-        <rect x="140" y="120" width="300" height="160" rx="6" fill="rgba(45,49,66,0.04)" stroke="rgba(79,93,117,0.28)" stroke-width="1"/>
-        <text x="156" y="144" fill="#4f5d75" font-size="8" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.18em">01 · REMOTE / HUMAN</text>
-        <text x="156" y="180" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Distributed humans</text>
-        <text x="156" y="216" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">Async-first, global hiring,</text>
-        <text x="156" y="232" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">Slack-heavy. Human-centric</text>
-        <text x="156" y="248" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">workflows, low AI leverage.</text>
+        <rect x="140" y="120" width="300" height="160" rx="6" fill="rgba(14,25,32,0.04)" stroke="rgba(91,103,112,0.28)" stroke-width="1"/>
+        <text x="156" y="144" fill="#5b6770" font-size="8" font-weight="500" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">01 · REMOTE / HUMAN</text>
+        <text x="156" y="180" fill="#0e1920" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Distributed humans</text>
+        <text x="156" y="216" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">Async-first, global hiring,</text>
+        <text x="156" y="232" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">Slack-heavy. Human-centric</text>
+        <text x="156" y="248" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">workflows, low AI leverage.</text>
 
         <!-- TR: Agent teams (FOCAL) -->
-        <rect x="560" y="120" width="300" height="160" rx="6" fill="rgba(191,69,32,0.06)" stroke="#bf4520" stroke-width="1.2"/>
-        <text x="576" y="144" fill="#bf4520" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" letter-spacing="0.18em">02 · REMOTE / AI</text>
-        <text x="576" y="180" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Agent teams <tspan fill="#bf4520" font-size="13">●</tspan></text>
-        <text x="576" y="216" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">Humans orchestrate; AI</text>
-        <text x="576" y="232" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">handles the routine layer.</text>
-        <text x="576" y="248" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">Small, high-leverage teams.</text>
+        <rect x="560" y="120" width="300" height="160" rx="6" fill="rgba(204,59,16,0.06)" stroke="#cc3b10" stroke-width="1.2"/>
+        <text x="576" y="144" fill="#cc3b10" font-size="8" font-weight="600" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">02 · REMOTE / AI</text>
+        <text x="576" y="180" fill="#0e1920" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Agent teams <tspan fill="#cc3b10" font-size="13">●</tspan></text>
+        <text x="576" y="216" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">Humans orchestrate; AI</text>
+        <text x="576" y="232" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">handles the routine layer.</text>
+        <text x="576" y="248" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">Small, high-leverage teams.</text>
 
         <!-- BL: Office classic -->
-        <rect x="140" y="320" width="300" height="160" rx="6" fill="rgba(45,49,66,0.04)" stroke="rgba(79,93,117,0.28)" stroke-width="1"/>
-        <text x="156" y="344" fill="#4f5d75" font-size="8" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.18em">03 · IN-PERSON / HUMAN</text>
-        <text x="156" y="380" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Office classic</text>
-        <text x="156" y="416" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">Return-to-office mandates,</text>
-        <text x="156" y="432" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">manual work. Techlash</text>
-        <text x="156" y="448" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">prolongs the status quo.</text>
+        <rect x="140" y="320" width="300" height="160" rx="6" fill="rgba(14,25,32,0.04)" stroke="rgba(91,103,112,0.28)" stroke-width="1"/>
+        <text x="156" y="344" fill="#5b6770" font-size="8" font-weight="500" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">03 · IN-PERSON / HUMAN</text>
+        <text x="156" y="380" fill="#0e1920" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Office classic</text>
+        <text x="156" y="416" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">Return-to-office mandates,</text>
+        <text x="156" y="432" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">manual work. Techlash</text>
+        <text x="156" y="448" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">prolongs the status quo.</text>
 
         <!-- BR: In-person + AI -->
-        <rect x="560" y="320" width="300" height="160" rx="6" fill="rgba(45,49,66,0.04)" stroke="rgba(79,93,117,0.28)" stroke-width="1"/>
-        <text x="576" y="344" fill="#4f5d75" font-size="8" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.18em">04 · IN-PERSON / AI</text>
-        <text x="576" y="380" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">In-person + AI</text>
-        <text x="576" y="416" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">Smart offices, AI-augmented</text>
-        <text x="576" y="432" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">staff. Physical presence is</text>
-        <text x="576" y="448" fill="#4f5d75" font-size="11" font-family="'Geist', sans-serif">the moat, AI is the lever.</text>
+        <rect x="560" y="320" width="300" height="160" rx="6" fill="rgba(14,25,32,0.04)" stroke="rgba(91,103,112,0.28)" stroke-width="1"/>
+        <text x="576" y="344" fill="#5b6770" font-size="8" font-weight="500" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">04 · IN-PERSON / AI</text>
+        <text x="576" y="380" fill="#0e1920" font-size="16" font-weight="600" font-family="'Inter', sans-serif">In-person + AI</text>
+        <text x="576" y="416" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">Smart offices, AI-augmented</text>
+        <text x="576" y="432" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">staff. Physical presence is</text>
+        <text x="576" y="448" fill="#5b6770" font-size="11" font-family="'Inter', sans-serif">the moat, AI is the lever.</text>
 
         <!-- Axis cross — double-ended; horizontal shortened so the labels flank the tips cleanly -->
         <line x1="200" y1="300" x2="800" y2="300"
-              stroke="#2d3142" stroke-width="1.2"
+              stroke="#0e1920" stroke-width="1.2"
               marker-start="url(#axis-start)" marker-end="url(#axis-end)"/>
         <line x1="500" y1="60" x2="500" y2="540"
-              stroke="#2d3142" stroke-width="1.2"
+              stroke="#0e1920" stroke-width="1.2"
               marker-start="url(#axis-start)" marker-end="url(#axis-end)"/>
 
         <!-- Axis labels — one word at each arrow tip. No glyphs, no parentheticals. -->
-        <text x="500" y="48" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.18em">REMOTE</text>
+        <text x="500" y="48" fill="#0e1920" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.18em">REMOTE</text>
 
-        <text x="500" y="560" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.18em">IN-PERSON</text>
+        <text x="500" y="560" fill="#0e1920" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.18em">IN-PERSON</text>
 
-        <text x="188" y="300" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end" dominant-baseline="middle" letter-spacing="0.18em">HUMAN</text>
+        <text x="188" y="300" fill="#0e1920" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="end" dominant-baseline="middle" letter-spacing="0.18em">HUMAN</text>
 
-        <text x="812" y="300" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace" text-anchor="start" dominant-baseline="middle" letter-spacing="0.18em">AI</text>
+        <text x="812" y="300" fill="#0e1920" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="start" dominant-baseline="middle" letter-spacing="0.18em">AI</text>
 
         <!-- Legend — horizontal strip, placed BELOW the bottom axis labels (y=560/576) -->
-        <line x1="40" y1="604" x2="960" y2="604" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-        <rect x="40" y="616" width="16" height="16" rx="3" fill="rgba(191,69,32,0.06)" stroke="#bf4520" stroke-width="1"/>
-        <text x="64" y="628" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Headline bet</text>
-        <rect x="160" y="616" width="16" height="16" rx="3" fill="rgba(45,49,66,0.04)" stroke="rgba(79,93,117,0.28)" stroke-width="1"/>
-        <text x="184" y="628" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Candidate future</text>
-        <text x="304" y="628" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Every cell is named. The axes carry the range; the coral quadrant carries the commitment.</text>
+        <line x1="40" y1="604" x2="960" y2="604" stroke="rgba(14,25,32,0.10)" stroke-width="0.8"/>
+        <rect x="40" y="616" width="16" height="16" rx="3" fill="rgba(204,59,16,0.06)" stroke="#cc3b10" stroke-width="1"/>
+        <text x="64" y="628" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Headline bet</text>
+        <rect x="160" y="616" width="16" height="16" rx="3" fill="rgba(14,25,32,0.04)" stroke="rgba(91,103,112,0.28)" stroke-width="1"/>
+        <text x="184" y="628" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Candidate future</text>
+        <text x="304" y="628" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif" font-style="italic">Every cell is named. The axes carry the range; the coral quadrant carries the commitment.</text>
       </svg>
     </div>
 

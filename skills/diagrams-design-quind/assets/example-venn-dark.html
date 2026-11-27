@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Good design · Desirable × Feasible × Viable</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #2d3142;
-      --color-ink:     #f5f5f5;
-      --color-muted:   #bfc0c0;
-      --color-accent:  #f08a59;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #0e1920;
+      --color-ink:     #ffffff;
+      --color-muted:   #9ba9b2;
+      --color-accent:  #ff8a5c;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
 
     body {
@@ -43,7 +43,7 @@
     h1 {
       font-family: var(--font-serif);
       font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--color-ink);
@@ -63,7 +63,7 @@
       <desc id="venn-dark-desc">Venn diagram showing desirable, feasible, and viable product qualities intersecting at shippable.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.10)"/>
           </pattern>
           <clipPath id="clip-center">
             <circle cx="500" cy="180" r="140"/>
@@ -73,59 +73,59 @@
           </clipPath>
         </defs>
 
-        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="#0e1920"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
         <!-- Three set circles (stroke + very-low-opacity tint; tints compound in overlaps) -->
         <!-- Desirable — top, ink -->
-        <circle cx="500" cy="180" r="140" fill="rgba(245,245,245,0.04)" stroke="#f5f5f5" stroke-width="1"/>
+        <circle cx="500" cy="180" r="140" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="1"/>
         <!-- Feasible — bottom-left, muted -->
-        <circle cx="428" cy="320" r="140" fill="rgba(191,192,192,0.05)" stroke="#bfc0c0" stroke-width="1"/>
+        <circle cx="428" cy="320" r="140" fill="rgba(155,169,178,0.05)" stroke="#9ba9b2" stroke-width="1"/>
         <!-- Viable — bottom-right, soft -->
-        <circle cx="572" cy="320" r="140" fill="rgba(142,140,131,0.05)" stroke="#949eb2" stroke-width="1"/>
+        <circle cx="572" cy="320" r="140" fill="rgba(142,140,131,0.05)" stroke="#8695a0" stroke-width="1"/>
 
         <!-- Coral focal tint on the all-three intersection -->
         <g clip-path="url(#clip-center)">
           <g clip-path="url(#clip-center-2)">
-            <circle cx="572" cy="320" r="140" fill="rgba(240,138,89,0.14)"/>
+            <circle cx="572" cy="320" r="140" fill="rgba(255,138,92,0.14)"/>
           </g>
         </g>
 
         <!-- Set labels -->
-        <text x="500" y="20" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Desirable</text>
-        <text x="500" y="36" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PEOPLE WANT IT</text>
+        <text x="500" y="20" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Desirable</text>
+        <text x="500" y="36" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PEOPLE WANT IT</text>
 
-        <text x="152" y="400" fill="#bfc0c0" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Feasible</text>
-        <text x="152" y="416" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.14em">WE CAN BUILD IT</text>
+        <text x="152" y="400" fill="#9ba9b2" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="start">Feasible</text>
+        <text x="152" y="416" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="start" letter-spacing="0.14em">WE CAN BUILD IT</text>
 
-        <text x="848" y="400" fill="#949eb2" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="end">Viable</text>
-        <text x="848" y="416" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.14em">BUSINESS SUSTAINS</text>
+        <text x="848" y="400" fill="#8695a0" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Viable</text>
+        <text x="848" y="416" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="end" letter-spacing="0.14em">BUSINESS SUSTAINS</text>
 
         <!-- Pairwise intersection labels -->
-        <text x="360" y="232" fill="#bfc0c0" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Prototype</text>
-        <text x="360" y="248" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no business model</text>
+        <text x="360" y="232" fill="#9ba9b2" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Prototype</text>
+        <text x="360" y="248" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">no business model</text>
 
-        <text x="640" y="232" fill="#bfc0c0" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Vaporware</text>
-        <text x="640" y="248" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">can't build it</text>
+        <text x="640" y="232" fill="#9ba9b2" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Vaporware</text>
+        <text x="640" y="248" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">can't build it</text>
 
-        <text x="500" y="368" fill="#bfc0c0" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Internal tool</text>
-        <text x="500" y="384" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">nobody wants it</text>
+        <text x="500" y="368" fill="#9ba9b2" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Internal tool</text>
+        <text x="500" y="384" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">nobody wants it</text>
 
         <!-- Focal: all-three center -->
-        <text x="500" y="260" fill="#f08a59" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Shippable</text>
-        <text x="500" y="276" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">THE SWEET SPOT</text>
+        <text x="500" y="260" fill="#ff8a5c" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Shippable</text>
+        <text x="500" y="276" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.14em">THE SWEET SPOT</text>
 
         <!-- Legend strip -->
-        <line x1="40" y1="456" x2="960" y2="456" stroke="rgba(245,245,245,0.10)" stroke-width="0.8"/>
-        <text x="40" y="472" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <line x1="40" y1="456" x2="960" y2="456" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
+        <text x="40" y="472" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">LEGEND</text>
 
-        <circle cx="52" cy="488" r="6" fill="none" stroke="#f08a59" stroke-width="1.2"/>
-        <text x="68" y="492" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">All three — ship it</text>
+        <circle cx="52" cy="488" r="6" fill="none" stroke="#ff8a5c" stroke-width="1.2"/>
+        <text x="68" y="492" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">All three — ship it</text>
 
-        <circle cx="192" cy="488" r="6" fill="none" stroke="#bfc0c0" stroke-width="1"/>
-        <text x="208" y="492" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif">Two of three — incomplete</text>
+        <circle cx="192" cy="488" r="6" fill="none" stroke="#9ba9b2" stroke-width="1"/>
+        <text x="208" y="492" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif">Two of three — incomplete</text>
 
-        <text x="380" y="492" fill="#bfc0c0" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Coral marks the intersection that earns the work. The others name the traps.</text>
+        <text x="380" y="492" fill="#9ba9b2" font-size="8.5" font-family="'Inter', sans-serif" font-style="italic">Coral marks the intersection that earns the work. The others name the traps.</text>
       </svg>
   </div>
 </body>

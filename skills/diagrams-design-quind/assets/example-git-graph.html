@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>1.2.0 release train · Git graph</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75; --color-accent:#bf4520; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    :root { --color-paper:#ffffff; --color-ink:#0e1920; --color-muted:#5b6770; --color-accent:#cc3b10; --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Poppins', 'Inter', system-ui, sans-serif; --font-mono:'Roboto Mono',ui-monospace,monospace; }
     body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
     .frame { max-width:1280px; width:100%; }
     .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
-    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:600; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
     .diagram-container { width:100%; overflow-x:auto; }
     svg { width:100%; min-width:1280px; display:block; }
     @media print { .diagram-container { overflow-x:visible; } svg { min-width:0; } }
@@ -27,21 +27,21 @@
         <desc id="git-graph-desc">Main on top. A billing feature merges, main moves one column, release/1.2 is cut from that later commit, a timeout hotfix lands on that branch, v1.2.0 is tagged, and that commit is merged back to main.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/>
+            <circle cx="1" cy="1" r="0.9" fill="rgba(14,25,32,0.10)"/>
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <rect width="100%" height="100%" fill="#ffffff"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
-        <text x="280" y="176" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.12em" font-style="italic">time →</text>
+        <text x="280" y="176" fill="#5b6770" font-size="9" font-family="'Roboto Mono', monospace" letter-spacing="0.12em" font-style="italic">time →</text>
 
-        <g aria-hidden="true" stroke="#4f5d75" stroke-width="1.5" fill="none" stroke-linecap="round">
+        <g aria-hidden="true" stroke="#5b6770" stroke-width="1.5" fill="none" stroke-linecap="round">
           <line data-lane="main" data-y="240" x1="280" y1="240" x2="1240" y2="240"/>
           <line data-lane="release/1.2" data-y="380" x1="880" y1="380" x2="1120" y2="380"/>
           <line data-lane="feat/billing" data-y="520" x1="400" y1="520" x2="520" y2="520"/>
         </g>
 
-        <g fill="none" stroke="#4f5d75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <g fill="none" stroke="#5b6770" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path data-from="c0" data-to="m1" d="M 280,240 H 640"/>
           <path data-from="m1" data-to="c3" d="M 640,240 H 760"/>
           <path data-from="c3" data-to="m2" d="M 760,240 H 1240"/>
@@ -54,48 +54,48 @@
           <path data-from="r1" data-to="m2" d="M 1120,380 H 1240 V 240"/>
         </g>
 
-        <g aria-hidden="true" fill="none" stroke="#2d3142" stroke-width="1.5">
+        <g aria-hidden="true" fill="none" stroke="#0e1920" stroke-width="1.5">
           <circle cx="640" cy="240" r="12"/>
           <circle cx="1240" cy="240" r="12"/>
         </g>
         <g>
-          <circle data-commit="c0" data-lane="main" data-column="0" cx="280" cy="240" r="8" fill="#2d3142"/>
-          <circle data-commit="c1" data-lane="feat/billing" data-column="1" cx="400" cy="520" r="8" fill="#2d3142"/>
-          <circle data-commit="c2" data-lane="feat/billing" data-column="2" cx="520" cy="520" r="8" fill="#2d3142"/>
-          <circle data-commit="m1" data-lane="main" data-column="3" data-kind="merge" cx="640" cy="240" r="8" fill="#2d3142"/>
-          <circle data-commit="c3" data-lane="main" data-column="4" cx="760" cy="240" r="8" fill="#2d3142"/>
-          <circle data-commit="r0" data-lane="release/1.2" data-column="5" cx="880" cy="380" r="8" fill="#2d3142"/>
-          <circle data-commit="h1" data-lane="release/1.2" data-column="6" cx="1000" cy="380" r="8" fill="#bf4520"/>
-          <circle data-commit="r1" data-lane="release/1.2" data-column="7" cx="1120" cy="380" r="8" fill="#bf4520"/>
-          <circle data-commit="m2" data-lane="main" data-column="8" data-kind="merge" cx="1240" cy="240" r="8" fill="#2d3142"/>
+          <circle data-commit="c0" data-lane="main" data-column="0" cx="280" cy="240" r="8" fill="#0e1920"/>
+          <circle data-commit="c1" data-lane="feat/billing" data-column="1" cx="400" cy="520" r="8" fill="#0e1920"/>
+          <circle data-commit="c2" data-lane="feat/billing" data-column="2" cx="520" cy="520" r="8" fill="#0e1920"/>
+          <circle data-commit="m1" data-lane="main" data-column="3" data-kind="merge" cx="640" cy="240" r="8" fill="#0e1920"/>
+          <circle data-commit="c3" data-lane="main" data-column="4" cx="760" cy="240" r="8" fill="#0e1920"/>
+          <circle data-commit="r0" data-lane="release/1.2" data-column="5" cx="880" cy="380" r="8" fill="#0e1920"/>
+          <circle data-commit="h1" data-lane="release/1.2" data-column="6" cx="1000" cy="380" r="8" fill="#cc3b10"/>
+          <circle data-commit="r1" data-lane="release/1.2" data-column="7" cx="1120" cy="380" r="8" fill="#cc3b10"/>
+          <circle data-commit="m2" data-lane="main" data-column="8" data-kind="merge" cx="1240" cy="240" r="8" fill="#0e1920"/>
         </g>
 
-        <g font-family="'Geist Mono', monospace" font-size="11" font-weight="600" fill="#4f5d75" text-anchor="end">
+        <g font-family="'Roboto Mono', monospace" font-size="11" font-weight="600" fill="#5b6770" text-anchor="end">
           <text data-lane="main" x="88" y="244">main</text>
           <text data-lane="release/1.2" x="88" y="384">release/1.2</text>
           <text data-lane="feat/billing" x="88" y="524">feat/billing</text>
         </g>
 
-        <g font-family="'Geist Mono', monospace" font-size="9" text-anchor="middle">
-          <text x="640" y="272" fill="#4f5d75">merge</text>
-          <text x="880" y="412" fill="#4f5d75">cut</text>
-          <text x="1000" y="412" fill="#bf4520">hotfix</text>
+        <g font-family="'Roboto Mono', monospace" font-size="9" text-anchor="middle">
+          <text x="640" y="272" fill="#5b6770">merge</text>
+          <text x="880" y="412" fill="#5b6770">cut</text>
+          <text x="1000" y="412" fill="#cc3b10">hotfix</text>
         </g>
 
         <g>
-          <rect x="1084" y="332" width="72" height="22" rx="3" fill="#f5f5f5" stroke="#2d3142" stroke-width="1"/>
-          <text data-tag="v1.2.0" data-commit="r1" x="1120" y="347" fill="#2d3142" font-size="10" font-family="'Geist Mono', monospace" font-weight="600" text-anchor="middle">v1.2.0</text>
+          <rect x="1084" y="332" width="72" height="22" rx="3" fill="#ffffff" stroke="#0e1920" stroke-width="1"/>
+          <text data-tag="v1.2.0" data-commit="r1" x="1120" y="347" fill="#0e1920" font-size="10" font-family="'Roboto Mono', monospace" font-weight="600" text-anchor="middle">v1.2.0</text>
         </g>
 
-        <line x1="40" y1="600" x2="1240" y2="600" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-        <text x="40" y="620" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
-        <circle cx="52" cy="640" r="6" fill="#2d3142"/>
-        <text x="64" y="644" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Commit</text>
-        <circle cx="148" cy="640" r="6" fill="#bf4520"/>
-        <text x="160" y="644" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Hotfix / release</text>
-        <rect x="300" y="632" width="44" height="16" rx="2" fill="#f5f5f5" stroke="#2d3142"/>
-        <text x="352" y="644" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Tag</text>
-        <text x="420" y="644" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Columns are time; a merge is a dot with two parents.</text>
+        <line x1="40" y1="600" x2="1240" y2="600" stroke="rgba(14,25,32,0.10)" stroke-width="0.8"/>
+        <text x="40" y="620" fill="#5b6770" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+        <circle cx="52" cy="640" r="6" fill="#0e1920"/>
+        <text x="64" y="644" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Commit</text>
+        <circle cx="148" cy="640" r="6" fill="#cc3b10"/>
+        <text x="160" y="644" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Hotfix / release</text>
+        <rect x="300" y="632" width="44" height="16" rx="2" fill="#ffffff" stroke="#0e1920"/>
+        <text x="352" y="644" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Tag</text>
+        <text x="420" y="644" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif" font-style="italic">Columns are time; a merge is a dot with two parents.</text>
       </svg>
     </div>
   </div>

@@ -4,15 +4,15 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>The self-improving loop · Full</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;family=Inter:ital,wght@0,400;0,500;0,600;1,400&amp;family=Roboto+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --paper: #f5f5f5; --paper-2: #ececec; --ink: #2d3142; --muted: #4f5d75;
-      --soft: #5a6580; --rule: rgba(45,49,66,0.12); --accent: #bf4520;
-      --accent-tint: rgba(191,69,32,0.08); --link: #2e5aa8;
-      --sans: 'Geist', system-ui, sans-serif; --serif: 'Instrument Serif', serif;
-      --mono: 'Geist Mono', ui-monospace, monospace;
+      --paper: #ffffff; --paper-2: #f3f6f8; --ink: #0e1920; --muted: #5b6770;
+      --soft: #66727c; --rule: rgba(14,25,32,0.12); --accent: #cc3b10;
+      --accent-tint: rgba(204,59,16,0.08); --link: #0b6e80;
+      --sans: 'Inter', system-ui, sans-serif; --serif: 'Poppins', 'Inter', system-ui, sans-serif;
+      --mono: 'Roboto Mono', ui-monospace, monospace;
     }
     body { min-height: 100vh; padding: 3rem 2rem; background: var(--paper); color: var(--ink); font-family: var(--sans); }
     .container { width: 100%; max-width: 1200px; margin: 0 auto; }
@@ -36,14 +36,14 @@
     .cards { display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 1rem; margin-top: 1.5rem; }
     .card { padding: 1.25rem; background: #fff; border: 1px solid var(--rule); border-radius: 6px; }
     .card-eyebrow { margin-bottom: 0.5rem; color: var(--muted); font: 500 0.5rem var(--mono); letter-spacing: 0.18em; text-transform: uppercase; }
-    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }
+    .card-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(14,25,32,0.08); }
     .card-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; }
     .card-dot.coral { background: var(--accent); } .card-dot.ink { background: var(--ink); } .card-dot.muted { background: var(--muted); }
     .card h2 { font-size: 0.875rem; font-weight: 600; }
     .card p, .card ul { color: var(--muted); font-size: 0.8125rem; line-height: 1.55; list-style: none; }
     .card li { position: relative; margin-bottom: 0.3rem; padding-left: 0.875rem; }
-    .card li::before { position: absolute; left: 0; color: rgba(45,49,66,0.25); content: '—'; }
-    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 2rem; padding-top: 1.5rem; color: var(--soft); border-top: 1px solid rgba(45,49,66,0.10); font: 400 0.72rem var(--mono); letter-spacing: 0.06em; }
+    .card li::before { position: absolute; left: 0; color: rgba(14,25,32,0.25); content: '—'; }
+    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 2rem; padding-top: 1.5rem; color: var(--soft); border-top: 1px solid rgba(14,25,32,0.10); font: 400 0.72rem var(--mono); letter-spacing: 0.06em; }
     @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -60,13 +60,13 @@
         <title id="loop-full-title">The self-improving loop</title>
         <desc id="loop-full-desc">Six stations flow clockwise from Capture through Learn and back to Capture. Each station writes shared state into one central memory hub, with Decide highlighted as the human approval gate.</desc>
         <defs>
-          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(45,49,66,0.10)"/></pattern>
-          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
-          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bf4520"/></marker>
-          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
-          <marker id="arrow-soft" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5a6580"/></marker>
+          <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="rgba(14,25,32,0.10)"/></pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6770"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#cc3b10"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0b6e80"/></marker>
+          <marker id="arrow-soft" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#66727c"/></marker>
         </defs>
-        <rect width="1040" height="680" fill="#f5f5f5"/>
+        <rect width="1040" height="680" fill="#ffffff"/>
         <rect width="1040" height="680" fill="url(#dots)" opacity="0.55"/>
 
         <!-- Solid clockwise ring: six arcs on the same r=240 station circle. -->
@@ -86,9 +86,9 @@
         <path class="spoke" d="M368 252 L424 284" marker-end="url(#arrow-soft)"/>
 
         <!-- Curated spoke labels sit beside the line with an 8px visible gap. -->
-        <rect x="532" y="200" width="48" height="16" rx="4" fill="#f5f5f5"/>
+        <rect x="532" y="200" width="48" height="16" rx="4" fill="#ffffff"/>
         <text x="556" y="212" class="arrow-label">SIGNALS</text>
-        <rect x="460" y="464" width="52" height="16" rx="4" fill="#f5f5f5"/>
+        <rect x="460" y="464" width="52" height="16" rx="4" fill="#ffffff"/>
         <text x="486" y="476" class="arrow-label">OUTCOMES</text>
 
         <!-- Stations -->

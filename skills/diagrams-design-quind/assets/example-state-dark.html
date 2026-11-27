@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Article lifecycle · State machine</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #2d3142;
-      --color-ink:     #f5f5f5;
-      --color-muted:   #bfc0c0;
-      --color-accent:  #f08a59;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #0e1920;
+      --color-ink:     #ffffff;
+      --color-muted:   #9ba9b2;
+      --color-accent:  #ff8a5c;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
 
     body {
@@ -43,7 +43,7 @@
     h1 {
       font-family: var(--font-serif);
       font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.15;
       color: var(--color-ink);
@@ -63,84 +63,84 @@
       <desc id="state-dark-desc">State machine showing an article moving from Draft through In Review and Published to Archived, including rejection and revision.</desc>
         <defs>
           <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.9" fill="rgba(245,245,245,0.10)"/>
+            <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.10)"/>
           </pattern>
-          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bfc0c0"/></marker>
-          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f08a59"/></marker>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9ba9b2"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff8a5c"/></marker>
         </defs>
 
-        <rect width="100%" height="100%" fill="#2d3142"/>
+        <rect width="100%" height="100%" fill="#0e1920"/>
         <rect width="100%" height="100%" fill="url(#dots)" opacity="0.55"/>
 
         <!-- Transitions (drawn first) -->
         <!-- Start → Draft -->
-        <line x1="68" y1="200" x2="120" y2="200" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="68" y1="200" x2="120" y2="200" stroke="#9ba9b2" stroke-width="1.2" marker-end="url(#arrow)"/>
         <!-- Draft → In Review -->
-        <line x1="280" y1="200" x2="340" y2="200" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="280" y1="200" x2="340" y2="200" stroke="#9ba9b2" stroke-width="1.2" marker-end="url(#arrow)"/>
         <!-- In Review → Published (coral — happy path) -->
-        <line x1="500" y1="200" x2="560" y2="200" stroke="#f08a59" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <line x1="500" y1="200" x2="560" y2="200" stroke="#ff8a5c" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
         <!-- Published → Archived (down) -->
-        <line x1="640" y1="240" x2="640" y2="300" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="640" y1="240" x2="640" y2="300" stroke="#9ba9b2" stroke-width="1.2" marker-end="url(#arrow)"/>
         <!-- Archived → End (down) -->
-        <line x1="640" y1="400" x2="640" y2="432" stroke="#bfc0c0" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="640" y1="400" x2="640" y2="432" stroke="#9ba9b2" stroke-width="1.2" marker-end="url(#arrow)"/>
         <!-- In Review → Draft (curved back up-and-left) -->
-        <path d="M 420 160 C 420 96, 200 96, 200 160" fill="none" stroke="#bfc0c0" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <path d="M 420 160 C 420 96, 200 96, 200 160" fill="none" stroke="#9ba9b2" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
 
         <!-- Transition labels -->
-        <rect x="172" y="184" width="48" height="12" rx="2" fill="#2d3142"/>
-        <text x="196" y="194" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CREATE</text>
+        <rect x="172" y="184" width="48" height="12" rx="2" fill="#0e1920"/>
+        <text x="196" y="194" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CREATE</text>
 
-        <rect x="288" y="184" width="48" height="12" rx="2" fill="#2d3142"/>
-        <text x="312" y="194" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SUBMIT</text>
+        <rect x="288" y="184" width="48" height="12" rx="2" fill="#0e1920"/>
+        <text x="312" y="194" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SUBMIT</text>
 
-        <rect x="500" y="184" width="60" height="12" rx="2" fill="#2d3142"/>
-        <text x="530" y="194" fill="#f08a59" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APPROVE</text>
+        <rect x="500" y="184" width="60" height="12" rx="2" fill="#0e1920"/>
+        <text x="530" y="194" fill="#ff8a5c" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APPROVE</text>
 
-        <rect x="612" y="264" width="56" height="12" rx="2" fill="#2d3142"/>
-        <text x="640" y="274" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXPIRE</text>
+        <rect x="612" y="264" width="56" height="12" rx="2" fill="#0e1920"/>
+        <text x="640" y="274" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXPIRE</text>
 
-        <rect x="620" y="416" width="40" height="12" rx="2" fill="#2d3142"/>
-        <text x="640" y="426" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PURGE</text>
+        <rect x="620" y="416" width="40" height="12" rx="2" fill="#0e1920"/>
+        <text x="640" y="426" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PURGE</text>
 
         <!-- Reject label on curved path -->
-        <rect x="276" y="92" width="80" height="12" rx="2" fill="#2d3142"/>
-        <text x="316" y="102" fill="#bfc0c0" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">REJECT · REVISE</text>
+        <rect x="276" y="92" width="80" height="12" rx="2" fill="#0e1920"/>
+        <text x="316" y="102" fill="#9ba9b2" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">REJECT · REVISE</text>
 
         <!-- Start dot (filled ink) -->
-        <circle cx="60" cy="200" r="6" fill="#f5f5f5"/>
+        <circle cx="60" cy="200" r="6" fill="#ffffff"/>
 
         <!-- State: Draft -->
-        <rect x="120" y="160" width="160" height="80" rx="8" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="128" y="168" width="40" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
-        <text x="148" y="177" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
-        <text x="200" y="208" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Draft</text>
-        <text x="200" y="224" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">unpublished</text>
+        <rect x="120" y="160" width="160" height="80" rx="8" fill="#16242c" stroke="#ffffff" stroke-width="1"/>
+        <rect x="128" y="168" width="40" height="12" rx="2" fill="transparent" stroke="rgba(255,255,255,0.40)" stroke-width="0.8"/>
+        <text x="148" y="177" fill="#ffffff" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
+        <text x="200" y="208" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Draft</text>
+        <text x="200" y="224" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">unpublished</text>
 
         <!-- State: In Review -->
-        <rect x="340" y="160" width="160" height="80" rx="8" fill="#393e53" stroke="#f5f5f5" stroke-width="1"/>
-        <rect x="348" y="168" width="40" height="12" rx="2" fill="transparent" stroke="rgba(245,245,245,0.40)" stroke-width="0.8"/>
-        <text x="368" y="177" fill="#f5f5f5" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
-        <text x="420" y="208" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">In Review</text>
-        <text x="420" y="224" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">awaiting approval</text>
+        <rect x="340" y="160" width="160" height="80" rx="8" fill="#16242c" stroke="#ffffff" stroke-width="1"/>
+        <rect x="348" y="168" width="40" height="12" rx="2" fill="transparent" stroke="rgba(255,255,255,0.40)" stroke-width="0.8"/>
+        <text x="368" y="177" fill="#ffffff" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
+        <text x="420" y="208" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">In Review</text>
+        <text x="420" y="224" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">awaiting approval</text>
 
         <!-- State: Published (focal coral) -->
-        <rect x="560" y="160" width="160" height="80" rx="8" fill="rgba(240,138,89,0.08)" stroke="#f08a59" stroke-width="1"/>
-        <rect x="568" y="168" width="40" height="12" rx="2" fill="transparent" stroke="rgba(240,138,89,0.50)" stroke-width="0.8"/>
-        <text x="588" y="177" fill="#f08a59" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
-        <text x="640" y="208" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Published</text>
-        <text x="640" y="224" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">live on site</text>
+        <rect x="560" y="160" width="160" height="80" rx="8" fill="rgba(255,138,92,0.08)" stroke="#ff8a5c" stroke-width="1"/>
+        <rect x="568" y="168" width="40" height="12" rx="2" fill="transparent" stroke="rgba(255,138,92,0.50)" stroke-width="0.8"/>
+        <text x="588" y="177" fill="#ff8a5c" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
+        <text x="640" y="208" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Published</text>
+        <text x="640" y="224" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">live on site</text>
 
         <!-- State: Archived -->
-        <rect x="560" y="300" width="160" height="100" rx="8" fill="rgba(245,245,245,0.05)" stroke="#bfc0c0" stroke-width="1"/>
-        <rect x="568" y="308" width="40" height="12" rx="2" fill="transparent" stroke="rgba(191,192,192,0.50)" stroke-width="0.8"/>
-        <text x="588" y="317" fill="#bfc0c0" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
-        <text x="640" y="348" fill="#f5f5f5" font-size="14" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Archived</text>
-        <text x="640" y="364" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">noindex · hidden</text>
-        <text x="640" y="382" fill="#bfc0c0" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">redirect retained</text>
+        <rect x="560" y="300" width="160" height="100" rx="8" fill="rgba(255,255,255,0.05)" stroke="#9ba9b2" stroke-width="1"/>
+        <rect x="568" y="308" width="40" height="12" rx="2" fill="transparent" stroke="rgba(155,169,178,0.50)" stroke-width="0.8"/>
+        <text x="588" y="317" fill="#9ba9b2" font-size="7" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STATE</text>
+        <text x="640" y="348" fill="#ffffff" font-size="14" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Archived</text>
+        <text x="640" y="364" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">noindex · hidden</text>
+        <text x="640" y="382" fill="#9ba9b2" font-size="9" font-family="'Roboto Mono', monospace" text-anchor="middle">redirect retained</text>
 
         <!-- End ring dot -->
-        <circle cx="640" cy="440" r="8" fill="none" stroke="#f5f5f5" stroke-width="1"/>
-        <circle cx="640" cy="440" r="5" fill="#f5f5f5"/>
+        <circle cx="640" cy="440" r="8" fill="none" stroke="#ffffff" stroke-width="1"/>
+        <circle cx="640" cy="440" r="5" fill="#ffffff"/>
       </svg>
   </div>
 </body>
