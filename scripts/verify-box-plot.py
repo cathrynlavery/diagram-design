@@ -1535,9 +1535,12 @@ def parse_series(source: str, findings: list, name: str) -> list:
             chain = chain_at(at)
             tokens = element_tokens(cattrs)
             holders = sorted(
-                svgs + [("g", attrs_of(g.group("attrs")), g.start(), chain_at(g.start()))
-                        for g in groups
-                        if g.body_at() <= at < g.body_at() + len(g.group("body"))],
+                svgs + [
+                    ("g", attrs_of(g.group("attrs")), g.start(),
+                     around[g.start()])
+                    for g in groups
+                    if g.body_at() <= at < g.body_at() + len(g.group("body"))
+                ],
                 key=lambda holder: holder[2])
             rule_values = element_rule_paints("circle", tokens, chain, paint_rules, at)
             painted = {value.strip().lower() for value in element_paints(cattrs)}

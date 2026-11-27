@@ -1139,6 +1139,23 @@ def run_cases(h: Harness) -> int:
             mask.replace(' fill="#f5f5f5"', "", 1) + '<circle data-outlier="B"', 1,
         ).replace("  <g ", '  <style>circle{fill:#f5f5f5}</style>\n  <g ', 1),
     )
+    h.expect_clean(
+        "a `g g` rule above a top-level series cannot stroke its own paper "
+        "masks",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace("  <g ", '  <style>g g{stroke:#4f5d75}</style>\n  <g ', 1),
+    )
+    h.expect_findings(
+        "a `g g` rule that does select the series group strokes its paper "
+        "mask",
+        papered.replace(
+            '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
+        ).replace('  <g data-name="B"', '  <g class="outer">\n  <g data-name="B"', 1
+        ).replace("</svg>", "  </g>\n</svg>", 1
+        ).replace("  <g ", '  <style>g g{stroke:#4f5d75}</style>\n  <g ', 1),
+        1, "paper mask",
+    )
 
     # The accent and visibility as a browser resolves them, on the shipped
     # example's muted Auth series: var(), hsl(), id and attribute selectors,
