@@ -478,6 +478,15 @@
       "screenshot_sha256": "3cd3fbc30a9f742ae63be793ca6f175b99438da7a762555b428a35e620d79abe",
       "width": 2400,
       "height": 1440
+    },
+    {
+      "slug": "procedure-chart",
+      "source": "skills/diagram-design/assets/example-procedure-chart.html",
+      "screenshot": "docs/screenshots/procedure-chart.png",
+      "source_sha256": "ce36059919437a270d7fd1098708ab970a0dab1bee420d44cf32dc8056d48922",
+      "screenshot_sha256": "43588610d49e85214c0bb4ad37cabd4b11a2b6b51a780ab440f2e259aab71f0b",
+      "width": 2400,
+      "height": 1614
     }
   ]
 }
