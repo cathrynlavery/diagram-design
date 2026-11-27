@@ -51,8 +51,8 @@ TAIL = "</svg></body></html>\n"
 # 0-440 domain, dots r=4 on a y=230 midline with a 10px dodge pitch.
 MID, PITCH, R = 230, 10, 4
 
-INK = "rgba(45,49,66,0.55)"
-ACCENT_FILL = "rgba(191,69,32,0.55)"
+INK = "rgba(14,25,32,0.55)"
+ACCENT_FILL = "rgba(204,59,16,0.55)"
 
 
 def cx(value: float) -> float:
@@ -60,7 +60,7 @@ def cx(value: float) -> float:
 
 
 def dot(value: float, row: int = 0, name=None, drawn_cx=None, drawn_cy=None,
-        r: float = R, fill: str = INK, stroke: str = "#4f5d75",
+        r: float = R, fill: str = INK, stroke: str = "#5b6770",
         omit: str = "", extra: str = "") -> str:
     parts = ['data-value="%s"' % value]
     if name is not None:
@@ -79,7 +79,7 @@ def dot(value: float, row: int = 0, name=None, drawn_cx=None, drawn_cy=None,
 
 
 def focal(value: float, row: int = 0, name=None, **kw) -> str:
-    return dot(value, row, name, fill=ACCENT_FILL, stroke="#bf4520", **kw)
+    return dot(value, row, name, fill=ACCENT_FILL, stroke="#cc3b10", **kw)
 
 
 def label(name: str, x: float, y: float = 150, text=None,
@@ -308,7 +308,7 @@ def run_cases(h: Harness) -> int:
     )
     h.expect_finding(
         "a second non-focal fill is reported — tone would read as a value",
-        document(swarm(23), dot(300, fill="rgba(45,49,66,0.30)"), TICKS),
+        document(swarm(23), dot(300, fill="rgba(14,25,32,0.30)"), TICKS),
         r"one fill for every non-focal dot",
     )
     h.expect_finding(
@@ -324,7 +324,7 @@ def run_cases(h: Harness) -> int:
     h.expect_finding(
         "the dark-skin accent counts toward the same limit",
         document(swarm(22), focal(300),
-                 dot(320, fill="rgba(240,138,89,0.55)", stroke="#f08a59"),
+                 dot(320, fill="rgba(255,138,92,0.55)", stroke="#ff8a5c"),
                  TICKS),
         r"one accent dot max",
     )
@@ -560,7 +560,7 @@ def run_cases(h: Harness) -> int:
         "line-height and color in an inline style are not movement",
         document(swarm(23), dot(300, name="req-a"), TICKS,
                  label("req-a", cx(300),
-                       extra='style="line-height:1.4;color:#2d3142"')),
+                       extra='style="line-height:1.4;color:#0e1920"')),
     )
     h.expect_clean(
         "a CSS transition naming transform is not a transform declaration",

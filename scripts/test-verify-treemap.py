@@ -232,10 +232,10 @@ def main() -> int:
         #     Chromium measured 146.2px. A conservative 1em wide-glyph advance
         #     must fail closed without changing the Latin estimate.
         korean = source.replace(
-            '<text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600" '
-            'font-family="\'Geist\', sans-serif">South America</text>',
-            '<text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600" '
-            'font-family="\'Geist\', \'Apple SD Gothic Neo\', \'Noto Sans KR\', '
+            '<text x="804" y="324" fill="#0e1920" font-size="12" font-weight="600" '
+            'font-family="\'Inter\', sans-serif">South America</text>',
+            '<text x="804" y="324" fill="#0e1920" font-size="12" font-weight="600" '
+            'font-family="\'Inter\', \'Apple SD Gothic Neo\', \'Noto Sans KR\', '
             f'\'Malgun Gothic\', sans-serif">{KOREAN_LABEL}</text>',
         )
         if korean == source:
@@ -253,10 +253,10 @@ def main() -> int:
         #     CJK contract beyond Hangul with another label that fits under the
         #     old 0.60em estimate but overflows under the conservative contract.
         japanese = source.replace(
-            '<text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600" '
-            'font-family="\'Geist\', sans-serif">South America</text>',
-            '<text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600" '
-            'font-family="\'Geist\', \'Hiragino Sans\', \'Noto Sans JP\', '
+            '<text x="804" y="324" fill="#0e1920" font-size="12" font-weight="600" '
+            'font-family="\'Inter\', sans-serif">South America</text>',
+            '<text x="804" y="324" fill="#0e1920" font-size="12" font-weight="600" '
+            'font-family="\'Inter\', \'Hiragino Sans\', \'Noto Sans JP\', '
             f'\'Yu Gothic\', sans-serif">{JAPANESE_LABEL}</text>',
         )
         if japanese == source:
@@ -274,8 +274,8 @@ def main() -> int:
         #     only the right and bottom edges would pass this silently, and the
         #     text would read as belonging to the cell next door.
         left_over = source.replace(
-            '<text x="804" y="324" fill="#2d3142" font-size="12" font-weight="600"',
-            '<text x="804" y="324" text-anchor="end" fill="#2d3142" font-size="12" font-weight="600"',
+            '<text x="804" y="324" fill="#0e1920" font-size="12" font-weight="600"',
+            '<text x="804" y="324" text-anchor="end" fill="#0e1920" font-size="12" font-weight="600"',
         )
         if left_over == source:
             failures.append("could not build the left-overflow fixture (anchor moved)")
@@ -290,8 +290,8 @@ def main() -> int:
 
         # 4d. Overflow off the TOP edge — the label's ascent clears the cell.
         top_over = source.replace(
-            '<text x="592" y="68" fill="#2d3142" font-size="13"',
-            '<text x="592" y="44" fill="#2d3142" font-size="13"',
+            '<text x="592" y="68" fill="#0e1920" font-size="13"',
+            '<text x="592" y="44" fill="#0e1920" font-size="13"',
         )
         if top_over == source:
             failures.append("could not build the top-overflow fixture (anchor moved)")
@@ -446,7 +446,7 @@ def main() -> int:
         # 10. The mask/body pair is one logical cell. If both copies state a
         #     share, they must agree; retaining whichever rect was parsed first
         #     silently discards contradictory source data.
-        asia_mask = '<rect x="40" y="40" width="532" height="380" rx="2" fill="#f5f5f5"/>'
+        asia_mask = '<rect x="40" y="40" width="532" height="380" rx="2" fill="#ffffff"/>'
         conflicting = source.replace(
             asia_mask,
             asia_mask.replace(' fill=', ' data-share="42" fill='),
@@ -465,8 +465,8 @@ def main() -> int:
 
         asia_body = (
             '<rect x="40" y="40" width="532" height="380" rx="2" '
-            'data-share="59.04" fill="rgba(191,69,32,0.16)" '
-            'stroke="#bf4520" stroke-width="1.5"/>'
+            'data-share="59.04" fill="rgba(204,59,16,0.16)" '
+            'stroke="#cc3b10" stroke-width="1.5"/>'
         )
         triplicated = source.replace(asia_body, f"{asia_body}\n      {asia_body}", 1)
         if triplicated == source:

@@ -364,7 +364,7 @@ def check_source(source: str) -> list[str]:
         raise ValueError("missing full-paper SVG backdrop")
     paper = backdrop.get("fill")
     ink, muted = (
-        ("#f5f5f5", "#bfc0c0") if paper == "#2d3142" else ("#2d3142", "#4f5d75")
+        ("#ffffff", "#9ba9b2") if paper == "#0e1920" else ("#0e1920", "#5b6770")
     )
     widths = set()
     rank_x = {}
@@ -429,7 +429,7 @@ def check_source(source: str) -> list[str]:
             ):
                 errors.append(f"{id}: printed {field} is outside its fixed grid slot")
             if (
-                child.get("font-family") != "Geist Mono, monospace"
+                child.get("font-family") != "Roboto Mono, monospace"
                 or child.get("fill") != ink
             ):
                 errors.append(
@@ -585,7 +585,7 @@ def check_source(source: str) -> list[str]:
                 size,
             ) or n.get("text-anchor", "start") != "start":
                 errors.append("summary must keep its fixed visible start-anchored slot")
-            if n.get("fill") != ink or n.get("font-family") != "Geist Mono, monospace":
+            if n.get("fill") != ink or n.get("font-family") != "Roboto Mono, monospace":
                 errors.append(
                     "summary must use explicit visible house ink and mono font"
                 )

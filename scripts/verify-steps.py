@@ -58,12 +58,12 @@ SVG_TAGS = {"svg", "title", "desc", "defs", "pattern", "g", "rect", "circle", "l
 HIDING_PROPS = {"display", "visibility", "opacity", "fill-opacity", "stroke-opacity", "clip-path", "mask", "filter"}
 # House inks per paper (style-guide.md); a mark painted in the paper colour vanishes.
 INK = {
-    "#f5f5f5": {"#2d3142", "#4f5d75", "#2e5aa8", "#bf4520"},
-    "#2d3142": {"#f5f5f5", "#bfc0c0", "#739fdf", "#f08a59"},
+    "#ffffff": {"#0e1920", "#5b6770", "#0b6e80", "#cc3b10"},
+    "#0e1920": {"#ffffff", "#9ba9b2", "#5fd6ec", "#ff8a5c"},
 }
 MIN_OPACITY = 0.4
 MIN_FONT_SIZE = 8
-HOUSE_FONTS = {"geist", "geist mono", "instrument serif"}
+HOUSE_FONTS = {"inter", "roboto mono", "poppins"}
 MAX_STROKE_WIDTH = 4
 FONTS_HREF = "https://fonts.googleapis.com/css2?"
 PAGE_TAGS = {

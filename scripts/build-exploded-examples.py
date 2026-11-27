@@ -250,8 +250,8 @@ def label(sk, part, anchor, col_x, focal, motion):
     return (f'<g data-role="label"{cls}>'
             f'<line data-role="leader" x1="{f(ax + 6)}" y1="{f(ay)}" x2="{f(col_x - 12)}" y2="{f(ay)}" stroke="{lead}" stroke-width="0.8"/>'
             f'<circle cx="{f(ax)}" cy="{f(ay)}" r="2" fill="{dot}"/>'
-            f'<text data-role="name" x="{f(col_x)}" y="{f(ay - 1)}" fill="{sk["ink"]}" font-size="16" font-weight="600" font-family="\'Geist\', sans-serif">{part.name}</text>'
-            f'<text x="{f(col_x)}" y="{f(ay + 15)}" fill="{sub}" font-size="10" font-family="\'Geist Mono\', monospace" letter-spacing="0.08em">{part.sub}</text></g>')
+            f'<text data-role="name" x="{f(col_x)}" y="{f(ay - 1)}" fill="{sk["ink"]}" font-size="16" font-weight="600" font-family="\'Inter\', sans-serif">{part.name}</text>'
+            f'<text x="{f(col_x)}" y="{f(ay + 15)}" fill="{sub}" font-size="10" font-family="\'Roboto Mono\', monospace" letter-spacing="0.08em">{part.sub}</text></g>')
 
 
 def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
@@ -324,8 +324,8 @@ def build_svg(fig: Figure, skin: str, motion: bool, slug: str):
     out.append("</g>")
     if fig.caption:
         cy = vh - 28
-        out.append(f'<text x="{left}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{fig.caption[0]}</text>')
-        out.append(f'<text x="{left + 104}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{fig.caption[1]}</text>')
+        out.append(f'<text x="{left}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Roboto Mono\', monospace" letter-spacing="0.18em">{fig.caption[0]}</text>')
+        out.append(f'<text x="{left + 104}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Inter\', sans-serif" font-style="italic">{fig.caption[1]}</text>')
     return "\n        ".join(out), vh, steps
 
 
@@ -490,11 +490,11 @@ def interface_detail(P, r, z, sk, focal):
     x0, y0 = screen.x0 + 12, screen.y0 + 14
     for i, w in enumerate((60, 84, 44, 72, 0)):
         ly = y0 + i * 18
-        out.append(f'<path d="{outline(P, Rect(x0, ly, x0 + 6, ly + 4, 0), z)}" fill="rgba(245,245,245,0.85)"/>')
+        out.append(f'<path d="{outline(P, Rect(x0, ly, x0 + 6, ly + 4, 0), z)}" fill="rgba(255,255,255,0.85)"/>')
         if w:
-            out.append(f'<path d="{outline(P, Rect(x0 + 12, ly, x0 + 12 + w, ly + 4, 0), z)}" fill="rgba(245,245,245,0.40)"/>')
+            out.append(f'<path d="{outline(P, Rect(x0 + 12, ly, x0 + 12 + w, ly + 4, 0), z)}" fill="rgba(255,255,255,0.40)"/>')
         else:
-            out.append(f'<path d="{outline(P, Rect(x0 + 12, ly - 2, x0 + 18, ly + 6, 0), z)}" fill="rgba(245,245,245,0.85)"/>')
+            out.append(f'<path d="{outline(P, Rect(x0 + 12, ly - 2, x0 + 18, ly + 6, 0), z)}" fill="rgba(255,255,255,0.85)"/>')
     return out
 
 

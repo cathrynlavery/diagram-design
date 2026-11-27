@@ -70,7 +70,7 @@ def series(name: str, frm: float, to: float, y1=None, y2=None,
     parts.append('x2="%g"' % x2)
     if omit != "y2":
         parts.append('y2="%g"' % (y(to) if y2 is None else y2))
-    return "  <line %s stroke=\"#2d3142\" stroke-width=\"1.2\"/>\n" % " ".join(parts)
+    return "  <line %s stroke=\"#0e1920\" stroke-width=\"1.2\"/>\n" % " ".join(parts)
 
 
 def labels(name: str, frm: float, to: float, shown_from=None, shown_to=None,
@@ -507,14 +507,14 @@ def run_cases(h: Harness) -> int:
     # 6. Fail closed, and read what is actually there.
     h.expect_finding(
         "a file named example-slopegraph with no series is reported, not passed",
-        document('  <line x1="320" y1="40" x2="320" y2="420" stroke="#2d3142"/>\n'),
+        document('  <line x1="320" y1="40" x2="320" y2="420" stroke="#0e1920"/>\n'),
         r"presents as a slopegraph but declares 0 verifiable series",
         name="example-slopegraph-empty.html",
     )
 
     h.expect_finding(
         "a file whose desc says slopegraph but declares no series is reported",
-        document('  <line x1="320" y1="40" x2="320" y2="420" stroke="#2d3142"/>\n'),
+        document('  <line x1="320" y1="40" x2="320" y2="420" stroke="#0e1920"/>\n'),
         r"presents as a slopegraph but declares 0 verifiable series",
         name="figure.html",
     )
@@ -542,7 +542,7 @@ def run_cases(h: Harness) -> int:
         "a declared value that is not a finite number is reported rather than dropped",
         document('  <line data-series="Search" data-from="half a second" '
                  'data-to="208" x1="320" y1="72.1" x2="680" y2="328.8" '
-                 'stroke="#2d3142"/>\n'
+                 'stroke="#0e1920"/>\n'
                  + honest_rows_block([r for r in ROWS if r[0] != "Search"])),
         r"not a finite number",
     )
@@ -550,7 +550,7 @@ def run_cases(h: Harness) -> int:
     h.expect_finding(
         "a NaN coordinate is reported, not silently accepted",
         document('  <line data-series="a" data-from="nan" data-to="nan" x1="320" '
-                 'y1="nan" x2="680" y2="nan" stroke="#2d3142"/>\n'
+                 'y1="nan" x2="680" y2="nan" stroke="#0e1920"/>\n'
                  + honest_rows_block()),
         r"not a finite number",
     )
@@ -566,7 +566,7 @@ def run_cases(h: Harness) -> int:
         "an honest slopegraph written with single-quoted attributes is parsed",
         HEAD + CAPTIONS + "".join(
             "  <line data-series='%s' data-from='%s' data-to='%s' x1='320' "
-            "y1='%g' x2='680' y2='%g' stroke='#2d3142'/>\n"
+            "y1='%g' x2='680' y2='%g' stroke='#0e1920'/>\n"
             % (n, f, t, y(f), y(t)) + labels(n, f, t) for n, f, t in ROWS) + TAIL,
     )
 
@@ -574,7 +574,7 @@ def run_cases(h: Harness) -> int:
         "a single-quoted series line with a nudged endpoint is reported",
         HEAD + CAPTIONS + "".join(
             "  <line data-series='%s' data-from='%s' data-to='%s' x1='320' "
-            "y1='%g' x2='680' y2='%g' stroke='#2d3142'/>\n"
+            "y1='%g' x2='680' y2='%g' stroke='#0e1920'/>\n"
             % (n, f, t, y(f), y(t) - (3.0 if n == "Search" else 0.0))
             + labels(n, f, t) for n, f, t in ROWS) + TAIL,
         r"'Search' draws its to endpoint",
@@ -587,15 +587,15 @@ def run_cases(h: Harness) -> int:
         "an unquoted series line is read as the browser reads it, and its lie is reported",
         document(honest_rows_block()
                  + "  <line data-series=unquoted data-from=1 data-to=2 "
-                   "x1=320 y1=40 x2=680 y2=420 stroke='#2d3142'/>\n"),
+                   "x1=320 y1=40 x2=680 y2=420 stroke='#0e1920'/>\n"),
         r"series 'unquoted' draws its (from|to) endpoint",
     )
 
     h.expect_clean(
         "axis rules and legend swatches without data-series are skipped silently",
         document(honest_rows_block()
-                 + '  <line x1="320" y1="40" x2="320" y2="420" stroke="#2d3142"/>\n'
-                   '  <line x1="40" y1="492" x2="64" y2="492" stroke="#bf4520"/>\n'),
+                 + '  <line x1="320" y1="40" x2="320" y2="420" stroke="#0e1920"/>\n'
+                   '  <line x1="40" y1="492" x2="64" y2="492" stroke="#cc3b10"/>\n'),
     )
 
     for label in ("left", "right"):
@@ -866,7 +866,7 @@ def run_cases(h: Harness) -> int:
     h.expect_clean(
         "a <style> comment that merely mentions transform: is not read as a declaration",
         HEAD + "<style>/* no transforms here;\n   transform: none was the old rule */\n"
-        "line { stroke: #2d3142; }</style>\n" + CAPTIONS + honest_rows_block() + TAIL,
+        "line { stroke: #0e1920; }</style>\n" + CAPTIONS + honest_rows_block() + TAIL,
     )
 
     h.expect_clean(
@@ -915,7 +915,7 @@ def run_cases(h: Harness) -> int:
     h.expect_out_of_scope(
         "data-series on a <path> alone (the bump chart's binding) is not claimed "
         "by the raw signal",
-        plain_head + '  <line x1="320" y1="40" x2="320" y2="420" stroke="#2d3142"/>\n'
+        plain_head + '  <line x1="320" y1="40" x2="320" y2="420" stroke="#0e1920"/>\n'
         '  <path data-series="legacy-http" data-ranks="1,2" d="M320 40 L680 80"/>\n'
         + TAIL,
         "figure.html",

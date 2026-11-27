@@ -50,8 +50,8 @@ TAIL = "</svg></body></html>\n"
 Y = 400
 PITCH = 140
 ORIGIN = 80
-INK = "rgba(45,49,66,0.45)"
-ACCENT = "#bf4520"
+INK = "rgba(14,25,32,0.45)"
+ACCENT = "#cc3b10"
 
 
 def x_of(index: int) -> float:
@@ -62,8 +62,8 @@ def node(name: str, index: int, *, cy=None, cx=None, extra=""):
     cx = x_of(index) if cx is None else cx
     cy = Y if cy is None else cy
     return (
-        '  <circle data-name="%s" cx="%g" cy="%g" r="6" fill="rgba(45,49,66,0.55)" '
-        'stroke="#4f5d75"%s/>\n'
+        '  <circle data-name="%s" cx="%g" cy="%g" r="6" fill="rgba(14,25,32,0.55)" '
+        'stroke="#5b6770"%s/>\n'
         '  <text data-name="%s" x="%g" y="428">%s</text>\n'
         % (name, cx, cy, (" " + extra) if extra else "", name, cx, name)
     )
@@ -197,9 +197,9 @@ def run_cases(h: Harness) -> int:
     def styled(css: str) -> str:
         return honest().replace("</head>", "<style>%s</style></head>" % css, 1)
 
-    for css in ("path[data-from]{stroke:#bf4520 !important}",
-                "path{stroke:#bf4520}",
-                "[data-span]{fill:#bf4520}",
+    for css in ("path[data-from]{stroke:#cc3b10 !important}",
+                "path{stroke:#cc3b10}",
+                "[data-span]{fill:#cc3b10}",
                 "path[data-from]{display:none}",
                 "circle{visibility:hidden}",
                 "svg{opacity:0}",
@@ -225,10 +225,10 @@ def run_cases(h: Harness) -> int:
 
     for title, block in (
         ("rules wrapped in <!-- --> inside <style>",
-         "<style><!--\npath[data-from]{stroke:#bf4520}\n--></style>"),
-        ("an end tag written </style >", "<style>path[data-from]{stroke:#bf4520}</style >"),
-        ("an unclosed <style>", "<style>path[data-from]{stroke:#bf4520}"),
-        ("a nested rule after stroke", "<style>path[data-from]{stroke:#bf4520;&:hover{color:red}}</style>"),
+         "<style><!--\npath[data-from]{stroke:#cc3b10}\n--></style>"),
+        ("an end tag written </style >", "<style>path[data-from]{stroke:#cc3b10}</style >"),
+        ("an unclosed <style>", "<style>path[data-from]{stroke:#cc3b10}"),
+        ("a nested rule after stroke", "<style>path[data-from]{stroke:#cc3b10;&:hover{color:red}}</style>"),
         ("a nested rule after display:none",
          "<style>path[data-from]{display:none;&:hover{color:red}}</style>"),
         ("an attribute value holding a space",
@@ -242,7 +242,7 @@ def run_cases(h: Harness) -> int:
                           headed(block), 1, "<style> rule")
     # A custom skin's --color-accent is the accent: its leftward import is
     # legal and a second arc in that color is a second focal claim.
-    custom = re.sub("(?i)#bf4520", "#2a6fdb", SHIPPED[0].read_text(encoding="utf-8"))
+    custom = re.sub("(?i)#cc3b10", "#2a6fdb", SHIPPED[0].read_text(encoding="utf-8"))
     h.expect_clean("the light example re-skinned with a custom accent passes", custom)
     muted = [m for m in re.finditer(r"<path[^>]*data-from[^>]*>", custom)
              if "2a6fdb" not in m.group(0)][0]
@@ -274,20 +274,20 @@ def run_cases(h: Harness) -> int:
     h.expect_clean(
         "a nested skin's accent wins over its parent's",
         custom.replace("--color-accent: #2a6fdb;",
-                       "--color-accent: #bf4520;\n      .frame { --color-accent: #2a6fdb; }", 1),
+                       "--color-accent: #cc3b10;\n      .frame { --color-accent: #2a6fdb; }", 1),
     )
     h.expect_clean(
         "a final --color-accent in a block left open at the end of <style> counts",
-        custom.replace("--color-accent: #2a6fdb;", "--color-accent: #bf4520;", 1).replace(
+        custom.replace("--color-accent: #2a6fdb;", "--color-accent: #cc3b10;", 1).replace(
             "</head>", "<style>:root{--color-accent:#2a6fdb</style></head>", 1),
     )
     h.expect_clean(
         "a --color-accent inside a CSS comment is ignored",
-        light.replace("</style>", "/* --color-accent: #2d3142; */\n</style>", 1),
+        light.replace("</style>", "/* --color-accent: #0e1920; */\n</style>", 1),
     )
     h.expect_clean(
         "an earlier --color-accent overridden by the skin's own is ignored",
-        light.replace("<style>", "<style>:root{--color-accent:#2d3142}", 1),
+        light.replace("<style>", "<style>:root{--color-accent:#0e1920}", 1),
     )
     h.expect_named(
         "a <style> rule that moves marks inside <!-- --> is still refused",
@@ -296,7 +296,7 @@ def run_cases(h: Harness) -> int:
     )
     for title, block in (
         ("a <style> inside a real HTML comment",
-         "<!-- <style>path{stroke:#bf4520}</style> -->"),
+         "<!-- <style>path{stroke:#cc3b10}</style> -->"),
         ("a 0%/100% fade keyframe", "<style>@keyframes fade{0%{opacity:0}100%{opacity:1}}</style>"),
         ("a from/to fade keyframe", "<style>@keyframes fade{from{opacity:0}to{opacity:1}}</style>"),
         ("a prefixed fade keyframe",

@@ -43,14 +43,14 @@ REFERENCE = ROOT / "skills/diagrams-design-quind/references/type-sankey.md"
 # The first ribbon of the shipped figure (Budget → Unit tests), in full and as
 # the opening fragment mutations prepend attributes to.
 RIBBON = ('<path d="M132,120 C316,120 316,120 500,120 L500,224 '
-          'C316,224 316,224 132,224 Z" fill="rgba(79,93,117,0.18)"/>')
+          'C316,224 316,224 132,224 Z" fill="rgba(91,103,112,0.18)"/>')
 RIBBON_ANCHOR = '<path d="M132,120 C316,120 316,120 500,120'
-RIBBON_FILL = 'fill="rgba(79,93,117,0.18)"'
+RIBBON_FILL = 'fill="rgba(91,103,112,0.18)"'
 # The first legend swatch — the only stroked, stroke-width-bearing element the
 # stroke grammar cases can anchor on, since shipped ribbons carry no stroke.
-SWATCH = 'fill="rgba(79,93,117,0.18)" stroke="#4f5d75" stroke-width="1"'
+SWATCH = 'fill="rgba(91,103,112,0.18)" stroke="#5b6770" stroke-width="1"'
 # The Failed node bar — last stage, 32px for 1,600 min at 50 min/px.
-BAR = '<rect x="880" y="344" width="12" height="32" fill="#2d3142"/>'
+BAR = '<rect x="880" y="344" width="12" height="32" fill="#0e1920"/>'
 # Insertion point for extra paths: just before the legend block.
 ANNOT = "      <!-- Legend -->"
 SVG_OPEN = '<svg viewBox="0 0 1000 560"'
@@ -220,7 +220,7 @@ def main() -> int:
         #    a vacuous pass is the one failure a green checker cannot show you.)
         case(
             failures, directory, "no-bars",
-            re.sub(r'[ ]*<rect x="\d+" y="\d+" width="12" height="\d+" fill="#2d3142"/>\n', '', source),
+            re.sub(r'[ ]*<rect x="\d+" y="\d+" width="12" height="\d+" fill="#0e1920"/>\n', '', source),
             source, "Nothing here could be checked",
             "a file whose node bars the parser cannot see",
         )
@@ -245,7 +245,7 @@ def main() -> int:
         case(
             failures, directory, "swatch-in-plot",
             source.replace(ANNOT,
-                '      <rect x="600" y="300" width="16" height="8" fill="#f5f5f5"/>\n'
+                '      <rect x="600" y="300" width="16" height="8" fill="#ffffff"/>\n'
                 + ANNOT, 1),
             source, "neither a node bar",
             "a swatch-sized rect parked inside the plot band",
@@ -253,7 +253,7 @@ def main() -> int:
         case(
             failures, directory, "bar-below-band",
             source.replace(ANNOT,
-                '      <rect x="600" y="496" width="12" height="8" fill="#2d3142"/>\n'
+                '      <rect x="600" y="496" width="12" height="8" fill="#0e1920"/>\n'
                 + ANNOT, 1),
             source, "neither a node bar",
             "a bar-width rect below the plot band",
@@ -294,7 +294,7 @@ def main() -> int:
         anchor = ANNOT
         dashed = source.replace(
             anchor,
-            '      <path d="M140,64 L640,48" fill="none" stroke="#2d3142" '
+            '      <path d="M140,64 L640,48" fill="none" stroke="#0e1920" '
             'stroke-width="1" stroke-dasharray="4 3"/>\n' + anchor, 1)
         if dashed == source:
             failures.append("could not build the dashed-relationship fixture (anchor moved)")
@@ -308,7 +308,7 @@ def main() -> int:
         case(
             failures, directory, "filled-garbage",
             source.replace(anchor,
-                '      <path d="M140,64 L640,48 Z" fill="rgba(45,49,66,0.13)"/>\n' + anchor, 1),
+                '      <path d="M140,64 L640,48 Z" fill="rgba(14,25,32,0.13)"/>\n' + anchor, 1),
             source, "neither a readable ribbon",
             "a filled path that is not a readable ribbon",
         )
@@ -323,13 +323,13 @@ def main() -> int:
         # turns it down for want of a dash pattern.
         for name, frag, expect, why in (
             ("fat-stroke",
-             '<path d="M140,64 L640,48" fill="none" stroke="#2d3142" stroke-width="40"/>',
+             '<path d="M140,64 L640,48" fill="none" stroke="#0e1920" stroke-width="40"/>',
              "paints", "an unfilled path drawn as a 40px band"),
             ("fat-dashed",
-             '<path d="M140,64 L640,48" fill="none" stroke="#2d3142" stroke-width="40" stroke-dasharray="4 3"/>',
+             '<path d="M140,64 L640,48" fill="none" stroke="#0e1920" stroke-width="40" stroke-dasharray="4 3"/>',
              "paints", "a dashed unfilled path too wide to be a hairline"),
             ("undashed",
-             '<path d="M140,64 L640,48" fill="none" stroke="#2d3142" stroke-width="1"/>',
+             '<path d="M140,64 L640,48" fill="none" stroke="#0e1920" stroke-width="1"/>',
              "neither a readable ribbon", "an unfilled hairline with no dash pattern"),
         ):
             case(
@@ -367,7 +367,7 @@ def main() -> int:
         #     all. All three were live holes found in review.
         styled = source.replace(
             anchor,
-            '      <path d="M140,64 L640,48" fill="none" stroke="#2d3142" '
+            '      <path d="M140,64 L640,48" fill="none" stroke="#0e1920" '
             'stroke-width="1" stroke-dasharray="4 3" style="stroke-width:40px"/>\n' + anchor, 1)
         case(
             failures, directory, "css-inline", styled, source,
@@ -376,7 +376,7 @@ def main() -> int:
 
         classed = source.replace(
             anchor,
-            '      <path class="fat" d="M140,64 L640,48" fill="none" stroke="#2d3142" '
+            '      <path class="fat" d="M140,64 L640,48" fill="none" stroke="#0e1920" '
             'stroke-width="1" stroke-dasharray="4 3"/>\n' + anchor, 1
         ).replace("<style>", "<style>\n    .fat { stroke-width: 40px; }", 1)
         case(
@@ -399,7 +399,7 @@ def main() -> int:
         #     or nowhere.
         selector = source.replace(
             anchor,
-            '      <path d="M140,64 L640,48" fill="none" stroke="#2d3142" '
+            '      <path d="M140,64 L640,48" fill="none" stroke="#0e1920" '
             'stroke-width="1" stroke-dasharray="4 3"/>\n' + anchor, 1
         ).replace("<style>", "<style>\n    svg path { stroke-width: 40px; }", 1)
         case(
@@ -424,7 +424,7 @@ def main() -> int:
             failures, directory, "fat-attr",
             source.replace(
                 RIBBON_FILL + "/>",
-                RIBBON_FILL + ' stroke="#f5f5f5" stroke-width="30"/>', 1),
+                RIBBON_FILL + ' stroke="#ffffff" stroke-width="30"/>', 1),
             source, "paints",
             "a ribbon with a fat stroke-width attribute",
         )
@@ -497,7 +497,7 @@ def main() -> int:
         #     on one of them.
         dashed_units = source.replace(
             anchor,
-            '      <path d="M140,64 L640,48" fill="none" stroke="#2d3142" '
+            '      <path d="M140,64 L640,48" fill="none" stroke="#0e1920" '
             'stroke-width="0.75px" stroke-dasharray="4 3"/>\n' + anchor, 1)
         if dashed_units == source:
             failures.append("could not build the unit-bearing dashed fixture (anchor moved)")
@@ -516,7 +516,7 @@ def main() -> int:
         for name, repl in (
             ("inv-none", 'fill="none"'),
             ("inv-transparent", 'fill="transparent"'),
-            ("inv-alpha0", 'fill="rgba(79,93,117,0)"'),
+            ("inv-alpha0", 'fill="rgba(91,103,112,0)"'),
         ):
             case(
                 failures, directory, name,
@@ -538,7 +538,7 @@ def main() -> int:
         #     stroke-width fuzz on the first legend swatch, the only shipped
         #     element that declares one.
         malformed = (
-            (RIBBON_FILL, 'fill="rgba(79,93,117,zz)"', "a non-numeric rgba alpha"),
+            (RIBBON_FILL, 'fill="rgba(91,103,112,zz)"', "a non-numeric rgba alpha"),
             (SWATCH, SWATCH.replace('stroke-width="1"', 'stroke-width="abc"'), "a non-numeric stroke-width"),
             (SWATCH, SWATCH.replace('stroke-width="1"', 'stroke-width="1.2.3"'), "a malformed stroke-width"),
             (SWATCH, SWATCH.replace('stroke-width="1"', 'stroke-width=""'), "an empty stroke-width"),
@@ -622,7 +622,7 @@ def main() -> int:
             ("4cqw 3cqw", True), ("4cqmin 3cqmin", True),
             ("4CAP 3CAP", True), ("4Q 3Q", True),
         ):
-            frag = (f'<path d="M140,64 L640,48" fill="none" stroke="#2d3142" '
+            frag = (f'<path d="M140,64 L640,48" fill="none" stroke="#0e1920" '
                     f'stroke-width="1" stroke-dasharray="{dash}"/>')
             fixture = source.replace(anchor, "      " + frag + "\n" + anchor, 1)
             if fixture == source:
@@ -776,7 +776,7 @@ def main() -> int:
                 ("aud-charref", altered(RIBBON_FILL, 'fill="&#110;one"'),
                  "paints no fill", "a fill of none written as a character reference"),
                 ("aud-singlequote", altered(RIBBON_FILL,
-                                            "fill='rgba(79,93,117,0.18)' style='stroke-width:30'"),
+                                            "fill='rgba(91,103,112,0.18)' style='stroke-width:30'"),
                  "carries style", "a single-quoted style, invisible to a double-quote scan"),
                 ("aud-duplicate", altered("<path ", '<path fill="none" '),
                  "paints no fill", "a duplicate fill, where the browser keeps the first"),
@@ -784,14 +784,14 @@ def main() -> int:
                  "does not read", "a > inside a quoted value, which truncates a [^>]* capture"),
                 # Ink that is not a ribbon.
                 ("aud-fat-line", alongside('<line x1="150" y1="90" x2="150" y2="460" '
-                                           'stroke="#f5f5f5" stroke-width="40"/>'),
+                                           'stroke="#ffffff" stroke-width="40"/>'),
                  "reads as a band", "a <line> wide enough to read as volume"),
                 ("aud-cover", alongside('<rect x="600" y="90" width="300" height="380" '
-                                        'fill="#f5f5f5"/>'),
+                                        'fill="#ffffff"/>'),
                  "neither a node bar", "a rect painted over the figure"),
                 # A dash that is not a dash.
                 ("aud-zero-gap", alongside('<path d="M300,470 L700,470" fill="none" '
-                                           'stroke="#4f5d75" stroke-width="1" '
+                                           'stroke="#5b6770" stroke-width="1" '
                                            'stroke-dasharray="4000 0"/>'),
                  "neither a readable ribbon", "a dash pattern with no gap, which renders solid"),
                 # CSS reaching the figure.
@@ -824,14 +824,14 @@ def main() -> int:
                 return source.replace(BAR, BAR.replace(old, new, 1), 1)
 
             for name, mutated, reject, describe in (
-                ("bar-nofill", rebar('fill="#2d3142"', 'fill="none"'), True,
+                ("bar-nofill", rebar('fill="#0e1920"', 'fill="none"'), True,
                  "a node bar that paints no fill"),
-                ("bar-transparent", rebar('fill="#2d3142"', 'fill="transparent"'), True,
+                ("bar-transparent", rebar('fill="#0e1920"', 'fill="transparent"'), True,
                  "a node bar painted transparent"),
-                ("bar-alpha-zero", rebar('fill="#2d3142"', 'fill="rgba(45,49,66,0)"'), True,
+                ("bar-alpha-zero", rebar('fill="#0e1920"', 'fill="rgba(14,25,32,0)"'), True,
                  "a node bar whose fill alpha is zero"),
-                ("bar-fill-opacity", rebar('fill="#2d3142"',
-                                           'fill="#2d3142" fill-opacity="0"'), True,
+                ("bar-fill-opacity", rebar('fill="#0e1920"',
+                                           'fill="#0e1920" fill-opacity="0"'), True,
                  "a node bar with a zero fill-opacity"),
                 ("bar-unit-width", rebar('width="12"', 'width="12px"'), False,
                  "a node bar width carrying a unit"),
@@ -876,16 +876,16 @@ def main() -> int:
              "a bar width in pt, which is exactly 12px"),
             ("len-px", rebar('width="12"', 'width="12px"'), False,
              "a bar width in px"),
-            ("paint-bad-fn", rebar('fill="#2d3142"', 'fill="rgba(45,49,66,zz)"'), True,
+            ("paint-bad-fn", rebar('fill="#0e1920"', 'fill="rgba(14,25,32,zz)"'), True,
              "a bar fill whose alpha cannot be read"),
-            ("paint-bad-fo", rebar('fill="#2d3142"',
-                                   'fill="#2d3142" fill-opacity="abc"'), True,
+            ("paint-bad-fo", rebar('fill="#0e1920"',
+                                   'fill="#0e1920" fill-opacity="abc"'), True,
              "a bar fill-opacity that is not a number"),
-            ("paint-hex5", rebar('fill="#2d3142"', 'fill="#2d314"'), True,
+            ("paint-hex5", rebar('fill="#0e1920"', 'fill="#2d314"'), True,
              "a five-digit hex, which is not a colour"),
-            ("paint-hex4", rebar('fill="#2d3142"', 'fill="#2d31"'), False,
+            ("paint-hex4", rebar('fill="#0e1920"', 'fill="#2d31"'), False,
              "a four-digit hex, which is RGBA and legal"),
-            ("paint-hex8-zero", rebar('fill="#2d3142"', 'fill="#2d314200"'), True,
+            ("paint-hex8-zero", rebar('fill="#0e1920"', 'fill="#2d314200"'), True,
              "an eight-digit hex whose alpha is zero"),
         ):
             if mutated == source:
@@ -999,7 +999,7 @@ def main() -> int:
         #     total silence — and it is exactly what the next contributor copies.
         doc = sandbox / "skills/diagrams-design-quind/references" / REFERENCE.name
         original_doc = doc.read_text(encoding="utf-8")
-        excerpt = '<rect x="500" y="120" width="12" height="104" fill="#2d3142"/>'
+        excerpt = '<rect x="500" y="120" width="12" height="104" fill="#0e1920"/>'
         if excerpt not in GOOD.read_text(encoding="utf-8"):
             failures.append("could not build the excerpt fixtures (bar anchor moved)")
         else:

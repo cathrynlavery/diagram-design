@@ -138,7 +138,7 @@ def _parse_color(
 
     For rgba() values with alpha < 1, blend the color against the actual canvas
     underlay rather than assuming the light paper background. In dark heatmaps, the
-    underlay is the dark paper color (#2d3142), not #f5f5f5.
+    underlay is the dark paper color (#0e1920), not #ffffff.
     """
     value = color.strip()
     if not value:

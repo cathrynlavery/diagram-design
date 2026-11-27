@@ -20,8 +20,8 @@ def load_verifier():
     return module
 
 
-TOKENS = "<style>:root{--ink:#2d3142;--accent:#bf4520}</style>"
-INK, ACCENT, EMPTY = "#2d3142", "#bf4520", "#ececec"
+TOKENS = "<style>:root{--ink:#0e1920;--accent:#cc3b10}</style>"
+INK, ACCENT, EMPTY = "#0e1920", "#cc3b10", "#f3f6f8"
 CELL_RE = re.compile(r'<rect data-unit-cell="[a-z]+" data-unit-index="(\d+)"')
 
 
@@ -268,7 +268,7 @@ def main() -> int:
             (f"{path.name} empty cell painted filled", edit_cell(source, 99, fill=ink), "painted"),
             (f"{path.name} filled cell fill none", edit_cell(source, 0, fill="none"), "painted"),
             (f"{path.name} filled cell inline fill", edit_cell(source, 0, f'style="fill:{empty}"'), "painted"),
-            (f"{path.name} filled cell translucent fill", edit_cell(source, 0, fill="rgba(45,49,66,0)"), "painted"),
+            (f"{path.name} filled cell translucent fill", edit_cell(source, 0, fill="rgba(14,25,32,0)"), "painted"),
             (f"{path.name} opacity zero", edit_cell(source, 0, 'opacity="0"'), "hidden by opacity"),
             (f"{path.name} fill-opacity zero", edit_cell(source, 0, 'fill-opacity="0"'), "hidden by fill-opacity"),
             (f"{path.name} inline opacity", edit_cell(source, 0, 'style="opacity:.0"'), "hidden by opacity"),

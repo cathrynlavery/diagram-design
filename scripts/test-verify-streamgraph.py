@@ -110,7 +110,7 @@ def layer_markup(name, values, top_pts, bottom_pts, quote='"'):
     d = layer_path(top_pts, bottom_pts)
     q = quote
     return ("  <path data-layer=%s%s%s data-values=%s%s%s d=%s%s%s "
-            "fill=%s#2d3142%s/>\n"
+            "fill=%s#0e1920%s/>\n"
             % (q, name, q, q, ",".join(str(v) for v in values), q, q, d, q,
                q, q))
 
@@ -282,7 +282,7 @@ def run_cases(h):
     h.expect_clean(
         "scenery paths without data-layer are skipped silently",
         document(figure()
-                 + '  <path d="M 0 0 L 4 4 Z" fill="#2d3142"/>\n'),
+                 + '  <path d="M 0 0 L 4 4 Z" fill="#0e1920"/>\n'),
     )
 
     h.expect_clean(
@@ -300,7 +300,7 @@ def run_cases(h):
         PLAIN_HEAD
         + '  <!-- old draft: <path data-layer="ghost" data-values="1,2" '
           'd="M 0 0 Z"/> -->\n'
-        + '  <path d="M 0 0 L 4 4 Z" fill="#2d3142"/>\n' + TAIL,
+        + '  <path d="M 0 0 L 4 4 Z" fill="#0e1920"/>\n' + TAIL,
         "example-line-fixture.html",
     )
 
@@ -322,8 +322,8 @@ def run_cases(h):
     h.expect_finding(
         "renamed layer paths missing data-values fail closed, not skipped",
         PLAIN_HEAD.replace("<title>t</title>", "<title>Build minutes by team</title>")
-        + '  <path data-layer="Docs" d="M 80 230 L 160 230 Z" fill="#2d3142"/>\n'
-        + '  <path data-layer="Unit" d="M 80 240 L 160 240 Z" fill="#4f5d75"/>\n'
+        + '  <path data-layer="Docs" d="M 80 230 L 160 230 Z" fill="#0e1920"/>\n'
+        + '  <path data-layer="Unit" d="M 80 240 L 160 240 Z" fill="#5b6770"/>\n'
         + TAIL,
         r"presents as a streamgraph but declares 0 verifiable layer",
         name="figure.html",
@@ -605,14 +605,14 @@ def run_cases(h):
     # 7. Fail closed, and read what is actually there.
     h.expect_finding(
         "a file named example-streamgraph with no layers is reported, not passed",
-        document('  <path d="M 0 0 L 4 4 Z" fill="#2d3142"/>\n'),
+        document('  <path d="M 0 0 L 4 4 Z" fill="#0e1920"/>\n'),
         r"presents as a streamgraph but declares 0 verifiable layer",
         name="example-streamgraph-empty.html",
     )
 
     h.expect_finding(
         "a file whose desc says streamgraph but declares no layers is reported",
-        document('  <path d="M 0 0 L 4 4 Z" fill="#2d3142"/>\n'),
+        document('  <path d="M 0 0 L 4 4 Z" fill="#0e1920"/>\n'),
         r"presents as a streamgraph but declares 0 verifiable layer",
         name="figure.html",
     )
@@ -757,7 +757,7 @@ def run_cases(h):
     h.expect_clean(
         "a duplicated attribute whose first value is honest still passes",
         document(figure()).replace(
-            ' fill="#2d3142"/>', ' d="M 0 0 Z" fill="#2d3142"/>', 1),
+            ' fill="#0e1920"/>', ' d="M 0 0 Z" fill="#0e1920"/>', 1),
     )
 
     # 9. Markup is read as the browser reads it. A regex tag matcher stops at
@@ -903,7 +903,7 @@ def run_cases(h):
     h.expect_clean(
         "a transform inside a CSS comment is not read as a declaration",
         HEAD + "<style>path {\n  /*\n  transform: translateY(40px);\n  */\n"
-        "  fill: #2d3142;\n}</style>\n" + figure() + TAIL,
+        "  fill: #0e1920;\n}</style>\n" + figure() + TAIL,
     )
 
     # First-wins on an ancestor, both polarities: the browser applies the

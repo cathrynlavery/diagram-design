@@ -157,7 +157,7 @@ DECLARES_SEGMENT_RE = re.compile(r"\bdata-segment\s*=", re.IGNORECASE)
 # STROKE, as in verify-beeswarm.py: it is the mark's edge and the thing a
 # reader identifies the focal segment by.
 ACCENT_RE = re.compile(
-    r"#bf4520\b|#f08a59\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
+    r"#cc3b10\b|#ff8a5c\b|rgba\(\s*191\s*,\s*69\s*,\s*32\b|rgba\(\s*240\s*,\s*138\s*,\s*89\b",
     re.IGNORECASE,
 )
 
@@ -175,7 +175,7 @@ MARKER_EPSILON = 0.01      # px, an information marker crossing its segment
 
 # Text extent is estimated from font metrics rather than measured in a
 # browser, as verify-treemap.py does: the Latin advances are calibrated
-# against Chromium renderings of the shipped Geist / Geist Mono faces and
+# against Chromium renderings of the shipped Inter / Roboto Mono faces and
 # rounded UP, wide/full-width glyphs take a conservative 1em, so the estimate
 # reports overflow slightly before real overflow, never after.
 MONO_ADVANCE = 0.62

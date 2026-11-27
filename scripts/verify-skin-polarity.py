@@ -2,7 +2,7 @@
 """Verify a legend's tone claim against the ramp the file actually draws.
 
 Tone in this system is an `ink` opacity ramp, and `ink` is a *role*, not a
-color: it resolves to #2d3142 on light paper and #f5f5f5 on dark. One ramp,
+color: it resolves to #0e1920 on light paper and #ffffff on dark. One ramp,
 painted from one set of opacities, therefore composites **darker** as it
 strengthens in the light skin and **lighter** in the dark one. A legend key that
 names the ramp by lightness is consequently true in one variant and a lie in its
@@ -10,7 +10,7 @@ sibling - and both render perfectly, so nothing but a reader catches it.
 
 That is exactly how `Other continents - darker is larger` shipped on
 `example-treemap-dark.html`, whose ramp is white ink at 0.14 down to 0.04 over
-#2d3142 paper: larger cells are *lighter* there. `lint-skin.py` reads colors,
+#0e1920 paper: larger cells are *lighter* there. `lint-skin.py` reads colors,
 `verify-geometry.py` reads coordinates, `verify-treemap.py` reads areas against
 labels. None of them reads a claim against a ramp.
 

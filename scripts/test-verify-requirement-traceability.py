@@ -44,16 +44,16 @@ def main() -> None:
               'style="filter:opacity(0)"', 'clip-path="inset(50%)"',
               'clip-path="url(#empty)"', 'mask="url(#empty)"',
           )),
-        *((label_tag, label_tag.replace('fill="#4f5d75"', f'fill="{paint}"').replace('fill="#2e5aa8"', f'fill="{paint}"'),
+        *((label_tag, label_tag.replace('fill="#5b6770"', f'fill="{paint}"').replace('fill="#0b6e80"', f'fill="{paint}"'),
            "house ink")
-          for paint in ("rgba(0,0,0,0)", "#0000", "#f5f5f5")),
+          for paint in ("rgba(0,0,0,0)", "#0000", "#ffffff")),
         (label_tag, re.sub(r'font-size="[^"]+"', 'font-size="0"', label_tag), "font size"),
         ('data-trace-kind="source"', 'transform="scale(0)" data-trace-kind="source"', "unsupported SVG"),
         *((label_tag, motion + label_tag, "unsupported SVG")
           for motion in ('<set attributeName="display" to="none"/>',
                          '<animate attributeName="opacity" to="0" fill="freeze"/>')),
-        ("</svg>", '<rect width="1200" height="720" fill="#f5f5f5"/></svg>', "cover"),
-        ("</svg>", '<line x1="0" x2="1200" y1="360" y2="360" stroke="#f5f5f5" stroke-width="720"/></svg>', "cover"),
+        ("</svg>", '<rect width="1200" height="720" fill="#ffffff"/></svg>', "cover"),
+        ("</svg>", '<line x1="0" x2="1200" y1="360" y2="360" stroke="#ffffff" stroke-width="720"/></svg>', "cover"),
         (first_group, first_group.replace("<g ", r'<g style="display:n\6f ne" '), "hidden or too faint"),
         *((("</style>", rule + "</style>", "stylesheet")
           for rule in (
@@ -102,8 +102,8 @@ def main() -> None:
         ('>REQ-01</text>', '><tspan x="5000">REQ-01</tspan></text>', "label is outside the viewBox"),
         ('<rect x="64" y="124"', '<rect x="5064" y="124"', "rectangle is outside the viewBox"),
         # Paper-coloured rules and rules drawn across cells.
-        ("</svg>", '<line x1="0" x2="1200" y1="150" y2="150" stroke="#f5f5f5" stroke-width="4"/></svg>', "rule colour"),
-        ("</svg>", '<line x1="0" x2="1200" y1="150" y2="150" stroke="#bfc0c0" stroke-width="4"/></svg>', "crosses a cell"),
+        ("</svg>", '<line x1="0" x2="1200" y1="150" y2="150" stroke="#ffffff" stroke-width="4"/></svg>', "rule colour"),
+        ("</svg>", '<line x1="0" x2="1200" y1="150" y2="150" stroke="#9ba9b2" stroke-width="4"/></svg>', "crosses a cell"),
         # Faint ink: 10% opacity is about 1.2:1 against the paper.
         (first_group, first_group.replace("<g ", '<g opacity="0.1" '), "too faint"),
         (label_tag, label_tag.replace("<text ", '<text fill-opacity="0.1" '), "too faint"),
@@ -122,12 +122,12 @@ def main() -> None:
         *(("</svg></div>", "</svg></div>" + extra, "template order")
           for extra in ("<h1>x</h1>", '<div class="cards"><section><p>x</p></section></div>')),
         # Strokes that paint the paper over labels.
-        (label_tag, label_tag.replace("<text ", '<text stroke="#f5f5f5" stroke-width="4" '), "may not set stroke"),
-        (first_group, first_group.replace("<g ", '<g stroke="#f5f5f5" stroke-width="4" '), "may not set stroke"),
-        ('>REQ-01</text>', '><tspan stroke="#f5f5f5">REQ-01</tspan></text>', "may not set stroke"),
+        (label_tag, label_tag.replace("<text ", '<text stroke="#ffffff" stroke-width="4" '), "may not set stroke"),
+        (first_group, first_group.replace("<g ", '<g stroke="#ffffff" stroke-width="4" '), "may not set stroke"),
+        ('>REQ-01</text>', '><tspan stroke="#ffffff">REQ-01</tspan></text>', "may not set stroke"),
         # Oversized, unshipped or re-anchored labels, and headings drawn inside cells.
         (label_tag, label_tag.replace('font-size="16"', 'font-size="3000"'), "font size must be at most"),
-        (label_tag, label_tag.replace('font-family="Geist, sans-serif"', 'font-family="Flow Block"'), "font family"),
+        (label_tag, label_tag.replace('font-family="Inter, sans-serif"', 'font-family="Flow Block"'), "font family"),
         (label_tag, label_tag.replace("<text ", '<text text-anchor="end" '), "text-anchor"),
         (first_group, first_group.replace("<g ", '<g text-anchor="middle" '), "text-anchor"),
         ('<text x="864" y="64"', '<text x="900" y="200"', "inside a cell"),
@@ -158,7 +158,7 @@ def main() -> None:
         boxes = list(re.finditer(r"<rect\b[^>]*/>", source))
         assert len(boxes) > 2
         last_box = boxes[-1]
-        cover = '<rect x="0" y="0" width="1200" height="720" fill="#f5f5f5"/>'
+        cover = '<rect x="0" y="0" width="1200" height="720" fill="#ffffff"/>'
         candidate.write_text(source[:last_box.start()] + cover + source[last_box.end():], encoding="utf-8")
         errors = verifier.check(candidate)
         if not any("overlaps another cell" in error for error in errors):
@@ -194,9 +194,9 @@ def main() -> None:
             failures.append(("four rows at 896", "no errors", verifier.check(candidate)))
         # House font spellings and a centred footer outside every cell.
         passing = {
-            "quoted Geist": source.replace('font-family="Geist, sans-serif"', "font-family=\"'Geist', sans-serif\""),
-            "Geist Mono ID": source.replace(
-                'font-weight="700" font-family="Geist, sans-serif">SRC-01', "font-weight=\"700\" font-family=\"'Geist Mono', monospace\">SRC-01"),
+            "quoted Inter": source.replace('font-family="Inter, sans-serif"', "font-family=\"'Inter', sans-serif\""),
+            "Roboto Mono ID": source.replace(
+                'font-weight="700" font-family="Inter, sans-serif">SRC-01', "font-weight=\"700\" font-family=\"'Roboto Mono', monospace\">SRC-01"),
             "centred footer": source.replace('<text x="64" y="700"', '<text x="600" y="700" text-anchor="middle"'),
         }
         for name, page in passing.items():
@@ -210,8 +210,8 @@ def main() -> None:
             failures.append(("markup inside <title>", "no errors", verifier.check(candidate)))
         # The dark rule colour written with spaces is the same colour.
         dark = DARK.read_text(encoding="utf-8")
-        assert "rgba(245,245,245,0.12)" in dark
-        candidate.write_text(dark.replace("rgba(245,245,245,0.12)", "rgba(245, 245, 245, 0.12)"), encoding="utf-8")
+        assert "rgba(255,255,255,0.12)" in dark
+        candidate.write_text(dark.replace("rgba(255,255,255,0.12)", "rgba(255, 255, 255, 0.12)"), encoding="utf-8")
         if verifier.check(candidate):
             failures.append(("spaced rgba rule colour", "no errors", verifier.check(candidate)))
         for new, expected, errors in failures:

@@ -14,21 +14,21 @@ MIN_OPACITY = 0.4
 MIN_FONT_SIZE = 8
 MAX_STROKE_WIDTH = 4
 INK = {
-    "#f5f5f5": {"#2d3142", "#4f5d75", "#2e5aa8", "#bf4520"},
-    "#2d3142": {"#f5f5f5", "#bfc0c0", "#739fdf", "#f08a59"},
+    "#ffffff": {"#0e1920", "#5b6770", "#0b6e80", "#cc3b10"},
+    "#0e1920": {"#ffffff", "#9ba9b2", "#5fd6ec", "#ff8a5c"},
 }
-RULE_INK = {"#f5f5f5": "#bfc0c0", "#2d3142": "rgba(245,245,245,0.12)"}
-PAGE_COLOURS = {*INK, *INK["#f5f5f5"], *INK["#2d3142"], *RULE_INK.values()}
+RULE_INK = {"#ffffff": "#c9d1d8", "#0e1920": "rgba(255,255,255,0.12)"}
+PAGE_COLOURS = {*INK, *INK["#ffffff"], *INK["#0e1920"], *RULE_INK.values()}
 VIEW_WIDTH = "1200"
 # One to six trace rows at the shipped 176px row pitch.
 VIEW_HEIGHTS = (368, 1248)
 ROOT_ATTRIBUTES = {"viewBox", "role", "aria-labelledby", "data-diagram-type"}
 # Twice the largest shipped label.
 MAX_FONT_SIZE = 32
-FONT_FAMILIES = {"geist,sans-serif", "geist mono,monospace"}
+FONT_FAMILIES = {"inter,sans-serif", "roboto mono,monospace"}
 FONTS_HREF = (
-    "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600"
-    "&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600"
+    "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400"
+    "&family=Inter+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600"
     "&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap"
 )
 # The page skeleton every example shares; anything else around the SVG can hide it.
@@ -47,17 +47,17 @@ CARD = [(4, "section", None), (5, "h2", None), (5, "p", None)]
 # The shared page stylesheet; colours may be any house colour.
 TEMPLATE_CSS = """
 *,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:#f5f5f5;color:#2d3142;font-family:Geist,system-ui,sans-serif;padding:48px 32px}
+body{margin:0;background:#ffffff;color:#0e1920;font-family:Inter,system-ui,sans-serif;padding:48px 32px}
 .frame{max-width:1200px;margin:0 auto}
-.eyebrow{color:#bf4520;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}
-h1{font-family:Instrument Serif,system-ui,sans-serif;font-size:40px;line-height:1.1;margin:0 0 12px}
-.subtitle{font-size:20px;line-height:1.4;color:#4f5d75;margin:0 0 28px}
+.eyebrow{color:#cc3b10;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}
+h1{font-family:Poppins,Inter,system-ui,sans-serif;font-size:40px;line-height:1.1;margin:0 0 12px}
+.subtitle{font-size:20px;line-height:1.4;color:#5b6770;margin:0 0 28px}
 .canvas{overflow-x:auto}
 svg{display:block;width:100%;min-width:1200px}
 .cards{display:grid;grid-template-columns:1.1fr 1fr .9fr;gap:20px;margin-top:28px}
-.cards section{border-top:2px solid #bfc0c0;padding-top:16px}
-.cards h2{font-family:Instrument Serif,system-ui,sans-serif;font-size:20px;margin:0 0 8px}
-.cards p{font-size:16px;line-height:1.5;color:#4f5d75;margin:0}
+.cards section{border-top:2px solid #c9d1d8;padding-top:16px}
+.cards h2{font-family:Poppins,Inter,system-ui,sans-serif;font-size:20px;margin:0 0 8px}
+.cards p{font-size:16px;line-height:1.5;color:#5b6770;margin:0}
 @media(max-width:720px){.cards{grid-template-columns:1fr}}
 """
 COLOUR_RE = re.compile(r"#[0-9a-f]{3,8}\b|rgba?\([^)]*\)")

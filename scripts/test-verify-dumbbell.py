@@ -177,12 +177,12 @@ def test_documented_marks_clear_the_threshold():
 
 def test_rejected_treatments_are_caught():
     """The other polarity: the treatments this PR replaced must still fail."""
-    hairline = composite("#2d3142", 0.25, "#f5f5f5")
-    ok(contrast(hairline, "#f5f5f5") < 3.0,
+    hairline = composite("#0e1920", 0.25, "#ffffff")
+    ok(contrast(hairline, "#ffffff") < 3.0,
        "the original 25%% hairline connector is correctly under 3:1")
-    ok(contrast("#eb6c36", "#f5f5f5") < 3.0,
+    ok(contrast("#eb6c36", "#ffffff") < 3.0,
        "the retired accent #eb6c36 is correctly under 3:1 on light paper")
-    ok(contrast("#7a8399", "#f5f5f5") < 4.5,
+    ok(contrast("#7a8399", "#ffffff") < 4.5,
        "the retired soft #7a8399 is correctly under 4.5:1 and unusable for text")
 
 

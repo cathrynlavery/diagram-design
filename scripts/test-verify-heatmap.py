@@ -50,29 +50,29 @@ CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 # Anchors — literal excerpts of the shipped light example.
 FOCAL_CELL = (
     'data-row="payments" data-col="S4" data-value="47" data-focal="true" '
-    'x="520" y="124" width="116" height="56" fill="rgba(191,69,32,0.85)"'
+    'x="520" y="124" width="116" height="56" fill="rgba(204,59,16,0.85)"'
 )
 FIRST_NONFOCAL = (
     'data-row="auth" data-col="S1" data-value="4" '
-    'x="160" y="64" width="116" height="56" fill="rgba(45,49,66,0.29)"'
+    'x="160" y="64" width="116" height="56" fill="rgba(14,25,32,0.29)"'
 )
 HIGH_VALUE_CELL = (
     'data-row="billing" data-col="S3" data-value="9" '
-    'x="400" y="244" width="116" height="56" fill="rgba(45,49,66,0.65)"'
+    'x="400" y="244" width="116" height="56" fill="rgba(14,25,32,0.65)"'
 )
 LOW_VALUE_CELL = (
     'data-row="notifications" data-col="S1" data-value="1" '
-    'x="160" y="304" width="116" height="56" fill="rgba(45,49,66,0.07)"'
+    'x="160" y="304" width="116" height="56" fill="rgba(14,25,32,0.07)"'
 )
 # A non-focal cell used as the "missing" anchor in N2
 MISSING_TARGET = (
     'data-row="billing" data-col="S6" data-value="3" '
-    'x="760" y="244" width="116" height="56" fill="rgba(45,49,66,0.22)"'
+    'x="760" y="244" width="116" height="56" fill="rgba(14,25,32,0.22)"'
 )
 # A cell with value=5 used as the inconsistent-opacity anchor in N5
 FIVE_VALUE_CELL = (
     'data-row="auth" data-col="S2" data-value="5" '
-    'x="280" y="64" width="116" height="56" fill="rgba(45,49,66,0.36)"'
+    'x="280" y="64" width="116" height="56" fill="rgba(14,25,32,0.36)"'
 )
 
 
@@ -153,8 +153,8 @@ def main() -> int:
         case(failures, d, "P-mixed-quotes.html", mixed_quotes, original, True,
              "attribute-like metadata does not override the real fill")
         mixed_single = single_quoted.replace(
-            "fill='rgba(45,49,66,0.29)'",
-            "data-note='fill=\"red\"' fill='rgba(45,49,66,0.29)'",
+            "fill='rgba(14,25,32,0.29)'",
+            "data-note='fill=\"red\"' fill='rgba(14,25,32,0.29)'",
             1,
         )
         case(failures, d, "P-mixed-single-quotes.html", mixed_single, single_quoted, True,
@@ -204,8 +204,8 @@ def main() -> int:
 
         # N1: two focal cells
         second_focal = FIRST_NONFOCAL.replace(
-            'fill="rgba(45,49,66,0.29)"',
-            'data-focal="true" fill="rgba(191,69,32,0.85)"',
+            'fill="rgba(14,25,32,0.29)"',
+            'data-focal="true" fill="rgba(204,59,16,0.85)"',
         )
         case(
             failures,
@@ -291,7 +291,7 @@ def main() -> int:
 
         # N7: non-focal cell with no rgba fill — replace with a named color.
         no_rgba = original.replace(
-            'fill="rgba(45,49,66,0.07)"',
+            'fill="rgba(14,25,32,0.07)"',
             'fill="#f0eeec"',
             1,  # only the first occurrence
         )
@@ -352,7 +352,7 @@ def main() -> int:
         # N11: focal value text fails AA contrast against the focal accent fill.
         bad_focal_text = original.replace(
             'fill="#111111" font-size="10" font-weight="600"',
-            'fill="#f5f5f5" font-size="10" font-weight="600"',
+            'fill="#ffffff" font-size="10" font-weight="600"',
             1,
         )
         case(
@@ -367,9 +367,9 @@ def main() -> int:
 
         # N12: duplicate axis declarations must not quietly shrink the declared grid.
         duplicate_axis = original.replace(
-            'data-row-label="auth" x="148" y="96" fill="#2d3142" font-size="9" font-family="\'Geist Mono\', monospace" text-anchor="end">auth</text>',
-            'data-row-label="auth" x="148" y="96" fill="#2d3142" font-size="9" font-family="\'Geist Mono\', monospace" text-anchor="end">auth</text>\n'
-            '      <text data-row-label="auth" x="148" y="110" fill="#2d3142" font-size="9" font-family="\'Geist Mono\', monospace" text-anchor="end">auth</text>',
+            'data-row-label="auth" x="148" y="96" fill="#0e1920" font-size="9" font-family="\'Roboto Mono\', monospace" text-anchor="end">auth</text>',
+            'data-row-label="auth" x="148" y="96" fill="#0e1920" font-size="9" font-family="\'Roboto Mono\', monospace" text-anchor="end">auth</text>\n'
+            '      <text data-row-label="auth" x="148" y="110" fill="#0e1920" font-size="9" font-family="\'Roboto Mono\', monospace" text-anchor="end">auth</text>',
             1,
         )
         case(
@@ -384,8 +384,8 @@ def main() -> int:
 
         # N13: dark focal text must be evaluated against the dark background, not paper.
         dark_bad_focal_text = GOOD_DARK.read_text(encoding="utf-8").replace(
-            'fill="#111111" font-size="10" font-weight="600" font-family="\'Geist\', sans-serif" text-anchor="middle">47%</text>',
-            'fill="#f5f5f5" font-size="10" font-weight="600" font-family="\'Geist\', sans-serif" text-anchor="middle">47%</text>',
+            'fill="#111111" font-size="10" font-weight="600" font-family="\'Inter\', sans-serif" text-anchor="middle">47%</text>',
+            'fill="#ffffff" font-size="10" font-weight="600" font-family="\'Inter\', sans-serif" text-anchor="middle">47%</text>',
             1,
         )
         case(
@@ -449,7 +449,7 @@ def main() -> int:
     # Translucent foregrounds compose against the cell beneath them, not paper.
     with tempfile.TemporaryDirectory() as tmp:
         d = Path(tmp)
-        # The light focal cell (accent #bf4520 at 0.85) leaves solid #111111 at
+        # The light focal cell (accent #cc3b10 at 0.85) leaves solid #111111 at
         # 4.64:1, so only a nearly opaque translucent ink still clears 4.5:1 there.
         for template, theme, passing_alpha in ((original, "light", "0.98"),
                                                (GOOD_DARK.read_text(encoding="utf-8"), "dark", "0.8")):

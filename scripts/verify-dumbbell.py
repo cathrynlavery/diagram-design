@@ -56,23 +56,23 @@ MIN_GAP_PX = 16        # below this two r=6 marks read as one blob
 ALL_ZERO_SPAN = 1.0
 
 # --- skin tokens ------------------------------------------------------------
-PAPER_LIGHT, PAPER_DARK = "#f5f5f5", "#2d3142"
+PAPER_LIGHT, PAPER_DARK = "#ffffff", "#0e1920"
 WCAG_NON_TEXT = 3.0    # 1.4.11, graphical objects
 
 # (label, ink hex, alpha, paper) - the connector in each theme
 CONNECTORS = [
-    ("connector (light)", "#2d3142", 0.55, PAPER_LIGHT),
-    ("connector (dark)", "#f5f5f5", 0.40, PAPER_DARK),
+    ("connector (light)", "#0e1920", 0.55, PAPER_LIGHT),
+    ("connector (dark)", "#ffffff", 0.40, PAPER_DARK),
 ]
 # (label, stroke hex, paper) - the boundary of the solid endpoint
 ENDPOINT_STROKES = [
-    ("solid endpoint stroke (light)", "#2d3142", PAPER_LIGHT),
-    ("solid endpoint stroke (dark)", "#f5f5f5", PAPER_DARK),
+    ("solid endpoint stroke (light)", "#0e1920", PAPER_LIGHT),
+    ("solid endpoint stroke (dark)", "#ffffff", PAPER_DARK),
 ]
 # Tokens the reference must actually name, so prose and code cannot drift.
 REQUIRED_TOKENS = [
-    "rgba(45,49,66,0.55)",
-    "rgba(245,245,245,0.40)",
+    "rgba(14,25,32,0.55)",
+    "rgba(255,255,255,0.40)",
 ]
 
 

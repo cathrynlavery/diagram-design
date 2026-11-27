@@ -100,32 +100,32 @@ def main() -> int:
         ),
         (
             "geometry lie: the end total is drawn taller than its value",
-            '<rect x="832" y="196" width="96" height="224" fill="rgba(45,49,66,0.08)"',
-            '<rect x="832" y="160" width="96" height="260" fill="rgba(45,49,66,0.08)"',
+            '<rect x="832" y="196" width="96" height="224" fill="rgba(14,25,32,0.08)"',
+            '<rect x="832" y="160" width="96" height="260" fill="rgba(14,25,32,0.08)"',
             "shared scale puts",
         ),
         (
             "bridge lie: a bridge is stretched past its two running levels",
-            '<rect x="688" y="146" width="96" height="50" fill="rgba(191,69,32,0.12)"',
-            '<rect x="688" y="146" width="96" height="70" fill="rgba(191,69,32,0.12)"',
+            '<rect x="688" y="146" width="96" height="50" fill="rgba(204,59,16,0.12)"',
+            '<rect x="688" y="146" width="96" height="70" fill="rgba(204,59,16,0.12)"',
             "shared scale puts",
         ),
         (
             "bridge top lie: its bottom stays at the correct running level",
-            '<rect x="688" y="146" width="96" height="50" fill="rgba(191,69,32,0.12)"',
-            '<rect x="688" y="136" width="96" height="60" fill="rgba(191,69,32,0.12)"',
+            '<rect x="688" y="146" width="96" height="50" fill="rgba(204,59,16,0.12)"',
+            '<rect x="688" y="136" width="96" height="60" fill="rgba(204,59,16,0.12)"',
             "top edge drawn",
         ),
         (
             "missing carry: a gap has no connector conserving the total",
-            '<line x1="496" y1="167" x2="544" y2="167" stroke="rgba(45,49,66,0.55)" stroke-width="1" data-carry="266"/>',
+            '<line x1="496" y1="167" x2="544" y2="167" stroke="rgba(14,25,32,0.55)" stroke-width="1" data-carry="266"/>',
             "",
             "no carry spans it",
         ),
         (
             "misplaced carry: the connector reconnects the walk at the wrong level",
-            '<line x1="496" y1="167" x2="544" y2="167" stroke="rgba(45,49,66,0.55)" stroke-width="1" data-carry="266"/>',
-            '<line x1="496" y1="146" x2="544" y2="146" stroke="rgba(45,49,66,0.55)" stroke-width="1" data-carry="266"/>',
+            '<line x1="496" y1="167" x2="544" y2="167" stroke="rgba(14,25,32,0.55)" stroke-width="1" data-carry="266"/>',
+            '<line x1="496" y1="146" x2="544" y2="146" stroke="rgba(14,25,32,0.55)" stroke-width="1" data-carry="266"/>',
             "level sits at",
         ),
         (
@@ -154,8 +154,8 @@ def main() -> int:
         ),
         (
             "sign-treatment collapse: a decrease wears the increase fill",
-            '<rect x="400" y="131" width="96" height="36" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="-38"',
-            '<rect x="400" y="131" width="96" height="36" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="-38"',
+            '<rect x="400" y="131" width="96" height="36" fill="#ffffff" stroke="#5b6770" stroke-width="1" data-role="delta" data-value="-38"',
+            '<rect x="400" y="131" width="96" height="36" fill="rgba(91,103,112,0.15)" stroke="#5b6770" stroke-width="1" data-role="delta" data-value="-38"',
             "share the same fill",
         ),
         (
@@ -167,28 +167,28 @@ def main() -> int:
         (
             "label stolen from elsewhere: the bar's own label is gone and a "
             "decoy on the far side of the chart carries its number",
-            '<text x="448" y="179" fill="#4f5d75" font-size="8" '
-            'font-family="\'Geist Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
-            '<text x="5" y="5" fill="#4f5d75" font-size="8" '
-            'font-family="\'Geist Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
+            '<text x="448" y="179" fill="#5b6770" font-size="8" '
+            'font-family="\'Roboto Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
+            '<text x="5" y="5" fill="#5b6770" font-size="8" '
+            'font-family="\'Roboto Mono\', monospace" text-anchor="middle">\u2212 38</text>'.replace("\u2212 ", "\u2212"),
             "no printed label states its value",
         ),
         (
             "polarity swap on a lone decrease: the only fall wears the rise tint",
-            '<rect x="400" y="131" width="96" height="36" fill="#f5f5f5" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="-38"',
-            '<rect x="400" y="131" width="96" height="36" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="-38"',
+            '<rect x="400" y="131" width="96" height="36" fill="#ffffff" stroke="#5b6770" stroke-width="1" data-role="delta" data-value="-38"',
+            '<rect x="400" y="131" width="96" height="36" fill="rgba(91,103,112,0.15)" stroke="#5b6770" stroke-width="1" data-role="delta" data-value="-38"',
             "decreases require hollow paper",
         ),
         (
             "element transform: a translated bar no longer occupies its declared coordinates",
-            '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
-            '<rect transform="translate(0 80)" x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(91,103,112,0.15)" stroke="#5b6770"',
+            '<rect transform="translate(0 80)" x="256" y="131" width="96" height="61" fill="rgba(91,103,112,0.15)" stroke="#5b6770"',
             "waterfall bar carries transform",
         ),
         (
             "ancestor transform: a group moves a bar away from its declared coordinates",
-            '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="+64" data-name="Headcount"/>',
-            '<g transform="translate(0 80)"><rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1" data-role="delta" data-value="+64" data-name="Headcount"/></g>',
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(91,103,112,0.15)" stroke="#5b6770" stroke-width="1" data-role="delta" data-value="+64" data-name="Headcount"/>',
+            '<g transform="translate(0 80)"><rect x="256" y="131" width="96" height="61" fill="rgba(91,103,112,0.15)" stroke="#5b6770" stroke-width="1" data-role="delta" data-value="+64" data-name="Headcount"/></g>',
             "ancestor transform",
         ),
         (
@@ -199,8 +199,8 @@ def main() -> int:
         ),
         (
             "second accent bar: the focal treatment repeats",
-            '<rect x="256" y="131" width="96" height="61" fill="rgba(79,93,117,0.15)" stroke="#4f5d75"',
-            '<rect x="256" y="131" width="96" height="61" fill="rgba(191,69,32,0.12)" stroke="#bf4520"',
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(91,103,112,0.15)" stroke="#5b6770"',
+            '<rect x="256" y="131" width="96" height="61" fill="rgba(204,59,16,0.12)" stroke="#cc3b10"',
             "at most one bar",
         ),
         (

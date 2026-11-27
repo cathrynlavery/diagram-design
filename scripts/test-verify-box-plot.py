@@ -48,10 +48,10 @@ HEAD = """<!DOCTYPE html>
 """
 TAIL = "</svg></body></html>\n"
 
-INK = "rgba(45,49,66,0.15)"
-STROKE = "#4f5d75"
-ACCENT_FILL = "rgba(191,69,32,0.12)"
-ACCENT_STROKE = "#bf4520"
+INK = "rgba(14,25,32,0.15)"
+STROKE = "#5b6770"
+ACCENT_FILL = "rgba(204,59,16,0.12)"
+ACCENT_STROKE = "#cc3b10"
 
 
 def x(value: float) -> float:
@@ -89,13 +89,13 @@ def series(name, q1, q2, q3, wlo, whi, cy, *, focal=False, outliers=(),
     if "whisker-lo" not in omit:
         body.append(
             '    <line data-role="whisker-lo" x1="%g" y1="%g" x2="%g" y2="%g" '
-            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>'
+            'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>'
             % (lo, cy, box_x, cy)
         )
     if "whisker-hi" not in omit:
         body.append(
             '    <line data-role="whisker-hi" x1="%g" y1="%g" x2="%g" y2="%g" '
-            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>'
+            'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>'
             % (box_r, cy, hi, cy)
         )
     if "box" not in omit:
@@ -107,7 +107,7 @@ def series(name, q1, q2, q3, wlo, whi, cy, *, focal=False, outliers=(),
     if "median" not in omit:
         body.append(
             '    <line data-role="median" x1="%g" y1="%g" x2="%g" y2="%g" '
-            'stroke="#2d3142" stroke-width="1.5"/>'
+            'stroke="#0e1920" stroke-width="1.5"/>'
             % (med, y, med if median_x2 is None else median_x2, y + 32)
         )
     for ov in outliers:
@@ -116,7 +116,7 @@ def series(name, q1, q2, q3, wlo, whi, cy, *, focal=False, outliers=(),
             ox = med
         body.append(
             '    <circle data-outlier="%s" data-x="%s" cx="%g" cy="%g" r="4" '
-            'fill="rgba(45,49,66,0.55)" stroke="#4f5d75"/>'
+            'fill="rgba(14,25,32,0.55)" stroke="#5b6770"/>'
             % (name, ov, ox, cy)
         )
     if "label" not in omit:
@@ -165,19 +165,19 @@ A_BOX = 'data-role="box" x="200"'
 AUTH_G = '<g data-name="Auth"'
 SVG_OPEN = '<svg viewBox="0 0 1000 500"'
 AUTH_BOX = ('<rect data-role="box" x="196" y="64.0" width="20" height="32" rx="2" '
-            'fill="rgba(45,49,66,0.15)" stroke="#4f5d75" stroke-width="1"/>')
-AUTH_LABEL = ('<text data-name="Auth" x="148" y="84" fill="#2d3142" font-size="11" '
-              'font-weight="600" font-family="\'Geist\', sans-serif" text-anchor="end">Auth</text>')
+            'fill="rgba(14,25,32,0.15)" stroke="#5b6770" stroke-width="1"/>')
+AUTH_LABEL = ('<text data-name="Auth" x="148" y="84" fill="#0e1920" font-size="11" '
+              'font-weight="600" font-family="\'Inter\', sans-serif" text-anchor="end">Auth</text>')
 CHECKOUT_BOX = ('<rect data-role="box" x="320" y="200.0" width="240" height="32" '
-                'rx="2" fill="rgba(191,69,32,0.12)" stroke="#bf4520"')
+                'rx="2" fill="rgba(204,59,16,0.12)" stroke="#cc3b10"')
 AUTH_MEDIAN = ('<line data-role="median" x1="204" y1="64.0" x2="204" y2="96.0" '
-               'stroke="#2d3142" stroke-width="1.5"/>')
+               'stroke="#0e1920" stroke-width="1.5"/>')
 AUTH_WHISKER_LO = ('<line data-role="whisker-lo" x1="184" y1="80" x2="196" y2="80" '
-                   'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>')
+                   'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>')
 AUTH_WHISKER_HI = ('<line data-role="whisker-hi" x1="216" y1="80" x2="240" y2="80" '
-                   'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>')
+                   'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>')
 AUTH_CAP = ('<line data-role="cap" x1="184" y1="72" x2="184" y2="88" '
-            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>')
+            'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>')
 
 
 def shipped_with(*swaps: tuple, index: int = 0) -> str:
@@ -190,7 +190,7 @@ def shipped_with(*swaps: tuple, index: int = 0) -> str:
 
 
 def auth_fill(paint: str) -> tuple:
-    return AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"', paint, 1)
+    return AUTH_BOX, AUTH_BOX.replace('fill="rgba(14,25,32,0.15)"', paint, 1)
 
 
 def styled(css: str) -> tuple:
@@ -460,8 +460,8 @@ def run_cases(h: Harness) -> int:
     h.expect_findings(
         "a whisker drawn on another row is one finding",
         honest().replace(
-            'x2="%g" y2="80" stroke="rgba(45,49,66,0.55)"' % x(50),
-            'x2="%g" y2="160" stroke="rgba(45,49,66,0.55)"' % x(50),
+            'x2="%g" y2="80" stroke="rgba(14,25,32,0.55)"' % x(50),
+            'x2="%g" y2="160" stroke="rgba(14,25,32,0.55)"' % x(50),
             1,
         ),
         1, "off the row centre",
@@ -544,7 +544,7 @@ def run_cases(h: Harness) -> int:
         1, "bound category labels",
     )
 
-    for accent in (ACCENT_FILL, "rgba(240,138,89,0.12)"):
+    for accent in (ACCENT_FILL, "rgba(255,138,92,0.12)"):
         h.expect_findings(
             "a second box with an accent fill %s and muted stroke is one finding"
             % accent,
@@ -561,8 +561,8 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             series("C", 15, 22, 28, 8, 40, 240),
             series("C", 15, 22, 28, 8, 40, 240, outliers=(60,)).replace(
-                'fill="rgba(45,49,66,0.55)" stroke="#4f5d75"/>',
-                'fill="rgba(191,69,32,0.55)" stroke="#bf4520"/>'),
+                'fill="rgba(14,25,32,0.55)" stroke="#5b6770"/>',
+                'fill="rgba(204,59,16,0.55)" stroke="#cc3b10"/>'),
             1,
         ),
         1, "at most one focal",
@@ -632,7 +632,7 @@ def run_cases(h: Harness) -> int:
 
     b_dot = (
         '    <circle data-outlier="B" data-x="180" cx="%g" cy="160" r="4" '
-        'fill="rgba(45,49,66,0.55)" stroke="#4f5d75"/>' % x(180)
+        'fill="rgba(14,25,32,0.55)" stroke="#5b6770"/>' % x(180)
     )
     h.expect_findings(
         "outliers moved into their own layer are one finding",
@@ -703,7 +703,7 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             "<svg ",
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
-            'family=Geist&display=swap">\n<svg ',
+            'family=Inter&display=swap">\n<svg ',
             1,
         ),
     )
@@ -770,7 +770,7 @@ def run_cases(h: Harness) -> int:
         "an inline accent fill on a muted box is one finding",
         honest().replace(
             'x="200" y="64" width="40" height="32" fill="%s"' % INK,
-            'x="200" y="64" width="40" height="32" style="fill:#bf4520" fill="%s"'
+            'x="200" y="64" width="40" height="32" style="fill:#cc3b10" fill="%s"'
             % INK,
             1,
         ),
@@ -778,11 +778,11 @@ def run_cases(h: Harness) -> int:
     )
     h.expect_findings(
         "a class rule painting a muted box with the accent is one finding",
-        prepend_style(".hot{fill:#bf4520}").replace(
+        prepend_style(".hot{fill:#cc3b10}").replace(
             A_BOX, 'data-role="box" class="hot" x="200"', 1),
         1, "at most one focal",
     )
-    for accent in ("#bf4520ff", "rgb(191,69,32)"):
+    for accent in ("#bf4520ff", "rgb(204,59,16)"):
         h.expect_findings(
             "accent fill %s on a muted box is one finding" % accent,
             honest().replace(
@@ -796,7 +796,7 @@ def run_cases(h: Harness) -> int:
         "an accent fill on the paper underlay is one finding",
         honest().replace(
             "    <rect %s" % A_BOX,
-            '    <rect x="200" y="64" width="40" height="32" fill="#bf4520"/>\n'
+            '    <rect x="200" y="64" width="40" height="32" fill="#cc3b10"/>\n'
             "    <rect %s" % A_BOX,
             1,
         ),
@@ -805,8 +805,8 @@ def run_cases(h: Harness) -> int:
     h.expect_findings(
         "an accent stroke on the median is one finding",
         honest().replace(
-            'data-role="median" x1="220" y1="64" x2="220" y2="96" stroke="#2d3142"',
-            'data-role="median" x1="220" y1="64" x2="220" y2="96" stroke="#bf4520"',
+            'data-role="median" x1="220" y1="64" x2="220" y2="96" stroke="#0e1920"',
+            'data-role="median" x1="220" y1="64" x2="220" y2="96" stroke="#cc3b10"',
             1,
         ),
         1, "at most one focal",
@@ -847,11 +847,11 @@ def run_cases(h: Harness) -> int:
         "a second median off q2 is one finding",
         honest().replace(
             'data-role="median" x1="220" y1="64" x2="220" y2="96" '
-            'stroke="#2d3142" stroke-width="1.5"/>',
+            'stroke="#0e1920" stroke-width="1.5"/>',
             'data-role="median" x1="220" y1="64" x2="220" y2="96" '
-            'stroke="#2d3142" stroke-width="1.5"/>\n'
+            'stroke="#0e1920" stroke-width="1.5"/>\n'
             '    <line data-role="median" x1="500" y1="64" x2="500" y2="96" '
-            'stroke="#2d3142" stroke-width="1.5"/>',
+            'stroke="#0e1920" stroke-width="1.5"/>',
             1,
         ),
         1, "median line",
@@ -860,11 +860,11 @@ def run_cases(h: Harness) -> int:
         "a cap off the whisker end is one finding",
         honest().replace(
             '    <line data-role="whisker-hi" x1="240" y1="80" x2="260" y2="80" '
-            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>',
+            'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>',
             '    <line data-role="whisker-hi" x1="240" y1="80" x2="260" y2="80" '
-            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>\n'
+            'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>\n'
             '    <line data-role="cap" x1="800" y1="72" x2="800" y2="88" '
-            'stroke="#4f5d75"/>',
+            'stroke="#5b6770"/>',
             1,
         ),
         1, "cap",
@@ -873,14 +873,14 @@ def run_cases(h: Harness) -> int:
         "an unbound circle inside a series is one finding",
         honest().replace(
             A_LABEL,
-            '    <circle cx="300" cy="80" r="4" fill="#4f5d75"/>\n    ' + A_LABEL,
+            '    <circle cx="300" cy="80" r="4" fill="#5b6770"/>\n    ' + A_LABEL,
             1,
         ),
         1, "paper mask",
     )
     papered = honest().replace(
-        "  <g ", '  <rect width="100%" height="100%" fill="#f5f5f5"/>\n  <g ', 1)
-    mask = '<circle cx="520" cy="160" r="4" fill="#f5f5f5"/>\n    '
+        "  <g ", '  <rect width="100%" height="100%" fill="#ffffff"/>\n  <g ', 1)
+    mask = '<circle cx="520" cy="160" r="4" fill="#ffffff"/>\n    '
     h.expect_clean(
         "a paper mask on a bound outlier is not a finding",
         papered.replace('<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1),
@@ -889,7 +889,7 @@ def run_cases(h: Harness) -> int:
         "a paper mask repainted by an inline style is one finding",
         papered.replace(
             '<circle data-outlier="B"',
-            mask.replace("/>", ' style="fill:#4f5d75"/>', 1) + '<circle data-outlier="B"',
+            mask.replace("/>", ' style="fill:#5b6770"/>', 1) + '<circle data-outlier="B"',
             1,
         ),
         1, "paper mask",
@@ -897,32 +897,32 @@ def run_cases(h: Harness) -> int:
     h.expect_findings(
         "an <animateColor> inside the figure is one finding",
         honest().replace(
-            "</svg>", '  <animateColor attributeName="fill" to="#bf4520"/>\n</svg>', 1),
+            "</svg>", '  <animateColor attributeName="fill" to="#cc3b10"/>\n</svg>', 1),
         1, "<animatecolor>",
     )
     h.expect_findings(
         "an accent fill inherited from a muted series group is one finding",
-        honest().replace(block, block.replace("<g ", '<g fill="#bf4520" ', 1), 1),
+        honest().replace(block, block.replace("<g ", '<g fill="#cc3b10" ', 1), 1),
         1, "at most one focal",
     )
     h.expect_findings(
         "an accent path inside a muted series is one finding",
         honest().replace(
-            A_LABEL, '<path d="M200 64h40v32h-40z" fill="#bf4520"/>\n    ' + A_LABEL, 1),
+            A_LABEL, '<path d="M200 64h40v32h-40z" fill="#cc3b10"/>\n    ' + A_LABEL, 1),
         1, "at most one focal",
     )
     h.expect_findings(
         "a paper mask inheriting a group stroke is one finding",
         papered.replace(
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
-        ).replace('<g data-name="B"', '<g stroke="#4f5d75" data-name="B"', 1),
+        ).replace('<g data-name="B"', '<g stroke="#5b6770" data-name="B"', 1),
         1, "paper mask",
     )
     h.expect_findings(
         "a paper mask inheriting a wrapper stroke is one finding",
         papered.replace(
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
-        ).replace('  <g data-name="B"', '  <g stroke="#4f5d75">\n  <g data-name="B"', 1
+        ).replace('  <g data-name="B"', '  <g stroke="#5b6770">\n  <g data-name="B"', 1
         ).replace("</svg>", "  </g>\n</svg>", 1),
         1, "paper mask",
     )
@@ -938,13 +938,13 @@ def run_cases(h: Harness) -> int:
     )
     h.expect_findings(
         "a descendant class rule painting a muted series with the accent is one finding",
-        prepend_style(".hot rect{fill:#bf4520}").replace(
+        prepend_style(".hot rect{fill:#cc3b10}").replace(
             block, block.replace("<g ", '<g class="hot" ', 1), 1),
         1, "at most one focal",
     )
     h.expect_findings(
         "a polygon class rule painting a muted series with the accent is one finding",
-        prepend_style("polygon.hot{fill:#bf4520}").replace(
+        prepend_style("polygon.hot{fill:#cc3b10}").replace(
             A_LABEL,
             '<polygon class="hot" points="200,64 240,64 240,96"/>\n    ' + A_LABEL,
             1,
@@ -956,7 +956,7 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             A_LABEL,
             '<line data-role="cap" x1="260" y1="200" x2="260" y2="216" '
-            'stroke="#4f5d75"/>\n    ' + A_LABEL,
+            'stroke="#5b6770"/>\n    ' + A_LABEL,
             1,
         ),
         1, "cap runs",
@@ -966,7 +966,7 @@ def run_cases(h: Harness) -> int:
         "the parent scatter is not a box plot",
         "<svg role='img'><title>t</title><desc>A scatter of latency against "
         "errors.</desc>"
-        '<circle cx="200" cy="200" r="5" fill="rgba(45,49,66,0.20)"/>'
+        '<circle cx="200" cy="200" r="5" fill="rgba(14,25,32,0.20)"/>'
         "</svg>",
         "example-scatter-fixture.html",
     )
@@ -977,7 +977,7 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             A_LABEL,
             '<rect data-role="box" x="200" y="64" width="160" height="32" '
-            'fill="rgba(45,49,66,0.06)" stroke="#4f5d75"/>\n    ' + A_LABEL,
+            'fill="rgba(14,25,32,0.06)" stroke="#5b6770"/>\n    ' + A_LABEL,
             1,
         ),
         1, "data-role=box marks",
@@ -987,7 +987,7 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             A_LABEL,
             '<line data-role="whisker-hi" x1="240" y1="80" x2="400" y2="80" '
-            'stroke="rgba(45,49,66,0.55)" stroke-width="1"/>\n    ' + A_LABEL,
+            'stroke="rgba(14,25,32,0.55)" stroke-width="1"/>\n    ' + A_LABEL,
             1,
         ),
         1, "data-role=whisker-hi marks",
@@ -1003,7 +1003,7 @@ def run_cases(h: Harness) -> int:
         ),
         "non-rendering container",
     )
-    shared = prepend_style(".series.focal rect{fill:#bf4520}")
+    shared = prepend_style(".series.focal rect{fill:#cc3b10}")
     for group in ('<g data-name="A"', '<g data-name="C"'):
         shared = shared.replace(group, group.replace("<g ", '<g class="series" '), 1)
     h.expect_clean(
@@ -1016,7 +1016,7 @@ def run_cases(h: Harness) -> int:
                        '<g class="series focal" data-name="A"', 1),
         1, "at most one focal",
     )
-    for rule in ("rect.hot:not(.muted){fill:#bf4520}", "rect:is(.hot){fill:#bf4520}"):
+    for rule in ("rect.hot:not(.muted){fill:#cc3b10}", "rect:is(.hot){fill:#cc3b10}"):
         h.expect_named(
             "a %s rule painting a muted box is a finding" % rule.split("{")[0],
             prepend_style(rule).replace(A_BOX, 'class="hot" ' + A_BOX, 1),
@@ -1028,10 +1028,10 @@ def run_cases(h: Harness) -> int:
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
         ).replace(
             '    <line data-role="whisker-lo" x1="200"',
-            '    <g stroke="#4f5d75"><line data-role="whisker-lo" x1="200"', 1,
+            '    <g stroke="#5b6770"><line data-role="whisker-lo" x1="200"', 1,
         ).replace(
-            'x2="240" y2="160" stroke="rgba(45,49,66,0.55)" stroke-width="1"/>',
-            'x2="240" y2="160" stroke="rgba(45,49,66,0.55)" stroke-width="1"/></g>', 1,
+            'x2="240" y2="160" stroke="rgba(14,25,32,0.55)" stroke-width="1"/>',
+            'x2="240" y2="160" stroke="rgba(14,25,32,0.55)" stroke-width="1"/></g>', 1,
         ),
     )
     for radius, change in (("missing", ""), ("zero", ' r="0"')):
@@ -1043,7 +1043,7 @@ def run_cases(h: Harness) -> int:
         )
     stroked_root = papered.replace(
         '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
-    ).replace("<svg viewBox", '<svg stroke="#4f5d75" viewBox', 1)
+    ).replace("<svg viewBox", '<svg stroke="#5b6770" viewBox', 1)
     h.expect_clean(
         "a series group's stroke=\"none\" overrides a root stroke on a paper mask",
         stroked_root.replace('<g data-name="B"', '<g stroke="none" data-name="B"', 1),
@@ -1066,13 +1066,13 @@ def run_cases(h: Harness) -> int:
     ).replace("</svg>", "  </g>\n</svg>", 1)
     h.expect_clean(
         "stroke=\"none\" on a series overrides a class stroke on an outer group",
-        outer_stroke.replace("  <g ", "  <style>.outer{stroke:#4f5d75}</style>\n  <g ", 1),
+        outer_stroke.replace("  <g ", "  <style>.outer{stroke:#5b6770}</style>\n  <g ", 1),
     )
     h.expect_findings(
         "a class rule stroking circles under an outer group reaches a paper mask "
         "through an inner stroke=\"none\"",
         outer_stroke.replace(
-            "  <g ", "  <style>.outer circle{stroke:#4f5d75}</style>\n  <g ", 1),
+            "  <g ", "  <style>.outer circle{stroke:#5b6770}</style>\n  <g ", 1),
         1, "paper mask",
     )
     h.expect_findings(
@@ -1081,7 +1081,7 @@ def run_cases(h: Harness) -> int:
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
         ).replace('  <g data-name="B"', '  <g class="outer">\n  <g data-name="B"', 1
         ).replace("</svg>", "  </g>\n</svg>", 1
-        ).replace("  <g ", "  <style>.outer g{stroke:#4f5d75}</style>\n  <g ", 1),
+        ).replace("  <g ", "  <style>.outer g{stroke:#5b6770}</style>\n  <g ", 1),
         1, "paper mask",
     )
 
@@ -1090,7 +1090,7 @@ def run_cases(h: Harness) -> int:
         papered.replace(
             '<circle data-outlier="B"',
             mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
-        ).replace("  <g ", "  <style>line, .m{stroke:#4f5d75}</style>\n  <g ", 1),
+        ).replace("  <g ", "  <style>line, .m{stroke:#5b6770}</style>\n  <g ", 1),
         1, "paper mask",
     )
 
@@ -1099,26 +1099,26 @@ def run_cases(h: Harness) -> int:
         papered.replace(
             '<circle data-outlier="B"',
             mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
-        ).replace("  <g ", "  <style>rect.m{stroke:#4f5d75}</style>\n  <g ", 1),
+        ).replace("  <g ", "  <style>rect.m{stroke:#5b6770}</style>\n  <g ", 1),
     )
     h.expect_clean(
         "a leaf-shape class rule (line.m) cannot paint a paper mask circle with class m",
         papered.replace(
             '<circle data-outlier="B"',
             mask.replace("<circle ", '<circle class="m" ', 1) + '<circle data-outlier="B"', 1,
-        ).replace("  <g ", "  <style>line.m{stroke:#4f5d75}</style>\n  <g ", 1),
+        ).replace("  <g ", "  <style>line.m{stroke:#5b6770}</style>\n  <g ", 1),
     )
     h.expect_clean(
         "a type-only rule on a leaf shape (rect) cannot paint a paper mask circle",
         papered.replace(
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
-        ).replace("  <g ", "  <style>rect{stroke:#2d3142}</style>\n  <g ", 1),
+        ).replace("  <g ", "  <style>rect{stroke:#0e1920}</style>\n  <g ", 1),
     )
     h.expect_clean(
         "a type-only rule on a leaf shape (line) cannot paint a paper mask circle",
         papered.replace(
             '<circle data-outlier="B"', mask + '<circle data-outlier="B"', 1,
-        ).replace("  <g ", "  <style>line{stroke:#2d3142}</style>\n  <g ", 1),
+        ).replace("  <g ", "  <style>line{stroke:#0e1920}</style>\n  <g ", 1),
     )
     h.expect_clean(
         "a leaf-shape accent rule on the focal series rect leaves a paper mask clean",
@@ -1135,18 +1135,18 @@ def run_cases(h: Harness) -> int:
          [(AUTH_BOX, AUTH_BOX.replace("/>", ' style="fill:var(--color-accent)"/>'))]),
         ("a var() chained to the accent through another custom property",
          [auth_fill('fill="var(--color-focus)"'),
-          ("--color-accent: #bf4520;",
-           "--color-accent: #bf4520;\n      --color-focus: var(--color-accent);")]),
+          ("--color-accent: #cc3b10;",
+           "--color-accent: #cc3b10;\n      --color-focus: var(--color-accent);")]),
         ("an hsl() spelling of the accent", [auth_fill('fill="hsl(14,71%,44%)"')]),
         ("an hsla() spelling one rounding step off the accent",
          [auth_fill('fill="hsla(13, 72%, 43%, 0.12)"')]),
         ("a space-separated hsl() with a turn hue",
          [auth_fill('fill="hsl(0.0388turn 71% 44% / 0.12)"')]),
-        ("an attribute selector", [styled('[data-name="Auth"] rect{fill:#bf4520}')]),
+        ("an attribute selector", [styled('[data-name="Auth"] rect{fill:#cc3b10}')]),
         ("an id selector",
-         [styled("#auth rect{fill:#bf4520}"), (AUTH_G, '<g id="auth" data-name="Auth"')]),
+         [styled("#auth rect{fill:#cc3b10}"), (AUTH_G, '<g id="auth" data-name="Auth"')]),
         ("a descendant attribute selector",
-         [styled('g[data-name="Auth"] [data-role="box"]{fill:#bf4520}')]),
+         [styled('g[data-name="Auth"] [data-role="box"]{fill:#cc3b10}')]),
         ("a prefix attribute selector painting var(--color-accent)",
          [styled('[data-name^="Au"] rect{stroke:var(--color-accent)}')]),
     ):
@@ -1157,7 +1157,7 @@ def run_cases(h: Harness) -> int:
     h.expect_findings(
         "an hsl() spelling of the dark accent on a muted series is one finding",
         shipped_with(
-            ('x="196" y="64.0" width="20" height="32" rx="2" fill="rgba(245,245,245,0.14)"',
+            ('x="196" y="64.0" width="20" height="32" rx="2" fill="rgba(255,255,255,0.14)"',
              'x="196" y="64.0" width="20" height="32" rx="2" fill="hsl(20,83%,64%)"'),
             index=1),
         1, "at most one focal",
@@ -1165,7 +1165,7 @@ def run_cases(h: Harness) -> int:
     h.expect_named(
         "a type selector painting the accent cannot be held to one series and "
         "is a finding",
-        shipped_with(styled("rect{fill:#bf4520}")),
+        shipped_with(styled("rect{fill:#cc3b10}")),
         "at most one focal",
     )
     for title, swaps in (
@@ -1199,7 +1199,7 @@ def run_cases(h: Harness) -> int:
         ("a boolean hidden on the page element around the svg",
          [('<div class="frame">', '<div class="frame" hidden>')], 5, "never drawn"),
         ("stroke=none unquoted on the median",
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#2d3142"', "stroke=none"))],
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#0e1920"', "stroke=none"))],
          1, "paints nothing"),
         ("display=none unquoted on the bound label",
          [(AUTH_LABEL, AUTH_LABEL.replace('<text ', "<text display=none ", 1))],
@@ -1207,7 +1207,7 @@ def run_cases(h: Harness) -> int:
         # An unquoted value runs to whitespace or `>`, so a quote, `=` or `<`
         # inside it does not end it before the hide token.
         ("display:none after a quote in an unquoted style",
-         [(AUTH_G, "<g style=font-family:'Geist';display:none data-name=\"Auth\"")],
+         [(AUTH_G, "<g style=font-family:'Inter';display:none data-name=\"Auth\"")],
          1, "never drawn"),
         ("display:none after = in an unquoted style",
          [(AUTH_G, '<g style=a=b;display:none data-name="Auth"')], 1, "never drawn"),
@@ -1254,7 +1254,7 @@ def run_cases(h: Harness) -> int:
     # not state may be inherited, and a stylesheet rule is the other class.
     for title, swaps in (
         ('stroke="none" on the median',
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#2d3142"', 'stroke="none"'))]),
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#0e1920"', 'stroke="none"'))]),
         ('stroke-width="0" on the median',
          [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', 'stroke-width="0"'))]),
         ('stroke-opacity="0" on the median',
@@ -1262,10 +1262,10 @@ def run_cases(h: Harness) -> int:
                                             'stroke-width="1.5" stroke-opacity="0"'))]),
         ('stroke="none" on whisker-lo',
          [(AUTH_WHISKER_LO, AUTH_WHISKER_LO.replace(
-             'stroke="rgba(45,49,66,0.55)"', 'stroke="none"'))]),
+             'stroke="rgba(14,25,32,0.55)"', 'stroke="none"'))]),
         ('stroke="transparent" on whisker-hi',
          [(AUTH_WHISKER_HI, AUTH_WHISKER_HI.replace(
-             'stroke="rgba(45,49,66,0.55)"', 'stroke="transparent"'))]),
+             'stroke="rgba(14,25,32,0.55)"', 'stroke="transparent"'))]),
         ('stroke-width="0" on a cap',
          [(AUTH_CAP, AUTH_CAP.replace('stroke-width="1"', 'stroke-width="0"'))]),
         ('style="stroke:none" on the median',
@@ -1274,15 +1274,15 @@ def run_cases(h: Harness) -> int:
          [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', "").replace(
              "/>", ' style="stroke-width:0"/>'))]),
         ('fill="none" and stroke="none" on the box',
-         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"', 'fill="none"')
-           .replace('stroke="#4f5d75"', 'stroke="none"'))]),
+         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(14,25,32,0.15)"', 'fill="none"')
+           .replace('stroke="#5b6770"', 'stroke="none"'))]),
         ('style="stroke:transparent" on whisker-lo',
          [(AUTH_WHISKER_LO, AUTH_WHISKER_LO.replace(
-             'stroke="rgba(45,49,66,0.55)"', 'stroke="#4f5d75"').replace(
+             'stroke="rgba(14,25,32,0.55)"', 'stroke="#5b6770"').replace(
              "/>", ' style="stroke:transparent"/>'))]),
-        ('style="stroke:#2d3142; stroke:none !important" on the median',
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
-             "/>", ' style="stroke:#2d3142; stroke:none !important"/>'))]),
+        ('style="stroke:#0e1920; stroke:none !important" on the median',
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#0e1920"', "").replace(
+             "/>", ' style="stroke:#0e1920; stroke:none !important"/>'))]),
     ):
         h.expect_findings(
             "a bound mark with %s is one finding" % title,
@@ -1293,18 +1293,18 @@ def run_cases(h: Harness) -> int:
     # channel, or inherits a channel it does not state, is honest.
     for title, swaps in (
         ("a hollow box with fill=none still stroked",
-         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"', 'fill="none"'))]),
+         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(14,25,32,0.15)"', 'fill="none"'))]),
         ("a box with fill-opacity=0 still stroked",
-         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(45,49,66,0.15)"',
-                                      'fill="#2d3142" fill-opacity="0"'))]),
+         [(AUTH_BOX, AUTH_BOX.replace('fill="rgba(14,25,32,0.15)"',
+                                      'fill="#0e1920" fill-opacity="0"'))]),
         ("a median with no stroke of its own under a stroked series group",
-         [(AUTH_G, '<g stroke="#4f5d75" data-name="Auth"'),
-          (AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', ""))]),
+         [(AUTH_G, '<g stroke="#5b6770" data-name="Auth"'),
+          (AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#0e1920"', ""))]),
         ("a median with a hairline stroke-width=0.5",
          [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"', 'stroke-width="0.5"'))]),
         ("a median whose inline style restores a colour over stroke=none",
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#2d3142"', 'stroke="none"').replace(
-             "/>", ' style="stroke:#2d3142"/>'))]),
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke="#0e1920"', 'stroke="none"').replace(
+             "/>", ' style="stroke:#0e1920"/>'))]),
         ("a cap with stroke-opacity=0.25",
          [(AUTH_CAP, AUTH_CAP.replace('stroke-width="1"',
                                       'stroke-width="1" stroke-opacity="0.25"'))]),
@@ -1314,17 +1314,17 @@ def run_cases(h: Harness) -> int:
          [(AUTH_MEDIAN, AUTH_MEDIAN.replace('stroke-width="1.5"',
                                             'stroke-width="calc(1px + 1px)"'))]),
         ("a median whose !important stroke beats a later stroke:none",
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
-             "/>", ' style="stroke:#2d3142 !important; stroke:none"/>'))]),
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#0e1920"', "").replace(
+             "/>", ' style="stroke:#0e1920 !important; stroke:none"/>'))]),
         ("a median whose later !important stroke beats stroke:none",
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
-             "/>", ' style="stroke:none; stroke:#2d3142 !important"/>'))]),
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#0e1920"', "").replace(
+             "/>", ' style="stroke:none; stroke:#0e1920 !important"/>'))]),
         ("a median whose last !important declaration wins",
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
-             "/>", ' style="stroke:none !important; stroke:#2d3142 !important"/>'))]),
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#0e1920"', "").replace(
+             "/>", ' style="stroke:none !important; stroke:#0e1920 !important"/>'))]),
         ("a median whose ! important wins with a space after the bang",
-         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#2d3142"', "").replace(
-             "/>", ' style="stroke:#2d3142 ! important; stroke:none"/>'))]),
+         [(AUTH_MEDIAN, AUTH_MEDIAN.replace(' stroke="#0e1920"', "").replace(
+             "/>", ' style="stroke:#0e1920 ! important; stroke:none"/>'))]),
     ):
         h.expect_clean("%s passes" % title, shipped_with(*swaps))
     h.expect_clean(
@@ -1336,14 +1336,14 @@ def run_cases(h: Harness) -> int:
     for title, swaps in (
         ("the focal series painted through var(--color-accent)",
          [(CHECKOUT_BOX, CHECKOUT_BOX.replace(
-             'fill="rgba(191,69,32,0.12)" stroke="#bf4520"',
+             'fill="rgba(204,59,16,0.12)" stroke="#cc3b10"',
              'fill="var(--color-accent)" fill-opacity="0.12" stroke="var(--color-accent)"'))]),
         ("an attribute selector painting only the focal series",
          [styled('[data-name="Checkout"] rect{stroke:var(--color-accent)}')]),
         ("a muted box stroked through var(--color-muted)",
-         [(AUTH_BOX, AUTH_BOX.replace('stroke="#4f5d75"', 'stroke="var(--color-muted)"'))]),
+         [(AUTH_BOX, AUTH_BOX.replace('stroke="#5b6770"', 'stroke="var(--color-muted)"'))]),
         ("a muted hsl() fill", [auth_fill('fill="hsl(218,19%,38%)"')]),
-        ("a type selector painting a muted stroke", [styled("line{stroke:#4f5d75}")]),
+        ("a type selector painting a muted stroke", [styled("line{stroke:#5b6770}")]),
         ("a series group that states visibility and a nonzero opacity",
          [(AUTH_G, '<g visibility="visible" opacity="0.9" data-name="Auth"')]),
     ):
@@ -1408,7 +1408,7 @@ def run_cases(h: Harness) -> int:
                          '><tspan class="outer"><tspan class="inner">Auth</tspan></tspan></text>'))),
     )
     for title, css in (
-        ("a label rule that only paints", "text[data-name]{fill:#2d3142}"),
+        ("a label rule that only paints", "text[data-name]{fill:#0e1920}"),
         ("a label rule with a nonzero opacity", "text[data-name]{opacity:0.8}"),
         ("a hollow box (fill-opacity:0 still draws its stroke)",
          '[data-role="box"]{fill-opacity:0}'),
@@ -1539,12 +1539,12 @@ def run_cases(h: Harness) -> int:
 
     h.expect_findings(
         "sibling accent rule still catches a second focal series",
-        shipped_with(before_auth, styled('.x + [data-name="Auth"] rect{fill:#bf4520}')),
+        shipped_with(before_auth, styled('.x + [data-name="Auth"] rect{fill:#cc3b10}')),
         1, "at most one focal",
     )
     h.expect_clean(
         "impossible sibling accent rule does not add a focal series",
-        shipped_with(styled('.missing + [data-name="Auth"] rect{fill:#bf4520}')),
+        shipped_with(styled('.missing + [data-name="Auth"] rect{fill:#cc3b10}')),
     )
     h.expect_findings(
         "a sibling rule hides only Auth's label",
@@ -1611,9 +1611,9 @@ def run_cases(h: Harness) -> int:
         ('svg > g[data-name="Auth"]{display:none} (its real parent)',
          'svg > g[data-name="Auth"]{display:none}', 1, "never drawn"),
         (".frame rect painting the accent (an ancestor outside the svg)",
-         ".frame rect{fill:#bf4520}", 1, "at most one focal"),
+         ".frame rect{fill:#cc3b10}", 1, "at most one focal"),
         ('[role="img"] [data-name="Auth"] rect painting the accent',
-         '[role="img"] [data-name="Auth"] rect{fill:#bf4520}', 1, "at most one focal"),
+         '[role="img"] [data-name="Auth"] rect{fill:#cc3b10}', 1, "at most one focal"),
     ):
         h.expect_findings(
             "a rule %s is %d finding(s)" % (title, count),
@@ -1625,9 +1625,9 @@ def run_cases(h: Harness) -> int:
         ('g g[data-name="Auth"]{display:none} (no <g> around Auth)',
          'g g[data-name="Auth"]{display:none}'),
         ('[data-name="Auth"] [data-name="Auth"] rect painting the accent',
-         '[data-name="Auth"] [data-name="Auth"] rect{fill:#bf4520}'),
+         '[data-name="Auth"] [data-name="Auth"] rect{fill:#cc3b10}'),
         ('g [data-name="Auth"] rect painting the accent (no <g> around Auth)',
-         'g [data-name="Auth"] rect{fill:#bf4520}'),
+         'g [data-name="Auth"] rect{fill:#cc3b10}'),
     ):
         h.expect_clean("a rule %s matches nothing and passes" % title,
                        shipped_with(styled(css)))

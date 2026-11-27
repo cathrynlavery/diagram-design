@@ -80,19 +80,19 @@ def main() -> int:
         else:
             print(f"OK: {label}")
 
-    node = '<rect x="100" y="60" width="160" height="64" rx="6" fill="#f5f5f5"/>'
-    badge = '<rect x="108" y="68" width="32" height="12" rx="2" fill="#f5f5f5"/>'
+    node = '<rect x="100" y="60" width="160" height="64" rx="6" fill="#ffffff"/>'
+    badge = '<rect x="108" y="68" width="32" height="12" rx="2" fill="#ffffff"/>'
     zone = '<rect x="80" y="40" width="240" height="120" rx="8" fill="#eee"/>'
 
     # A label mask straddling a node declared later is the defect being caught.
     check(
         "mask clipped by a later node",
-        document('<rect x="240" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>' + node),
+        document('<rect x="240" y="80" width="48" height="12" rx="2" fill="#ffffff"/>' + node),
         1,
     )
     check(
         "single-quoted mask clipped by a single-quoted node",
-        document("<rect x='240' y='80' width='48' height='12' fill='#f5f5f5'/>"
+        document("<rect x='240' y='80' width='48' height='12' fill='#ffffff'/>"
                  "<rect x='100' y='60' width='160' height='64' fill='#eee'/>"),
         1,
     )
@@ -105,7 +105,7 @@ def main() -> int:
     # Same geometry, but the node is painted first, so the label stays on top.
     check(
         "mask over an earlier node is legal",
-        document(node + '<rect x="240" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>'),
+        document(node + '<rect x="240" y="80" width="48" height="12" rx="2" fill="#ffffff"/>'),
         0,
     )
     # A badge chip fully inside its own node is legal regardless of order.
@@ -113,19 +113,19 @@ def main() -> int:
     # A zone eyebrow overlaps the zone container, which is painted first.
     check(
         "zone eyebrow on a zone container",
-        document(zone + '<rect x="160" y="34" width="60" height="12" rx="2" fill="#f5f5f5"/>'),
+        document(zone + '<rect x="160" y="34" width="60" height="12" rx="2" fill="#ffffff"/>'),
         0,
     )
     # A mask entirely in open canvas is legal.
     check(
         "mask clear of every node",
-        document('<rect x="10" y="10" width="48" height="12" rx="2" fill="#f5f5f5"/>' + node),
+        document('<rect x="10" y="10" width="48" height="12" rx="2" fill="#ffffff"/>' + node),
         0,
     )
     # Touching within the 1px tolerance is not a finding.
     check(
         "mask abutting a node edge",
-        document('<rect x="52" y="80" width="48" height="12" rx="2" fill="#f5f5f5"/>' + node),
+        document('<rect x="52" y="80" width="48" height="12" rx="2" fill="#ffffff"/>' + node),
         0,
     )
 
@@ -193,12 +193,12 @@ def main() -> int:
     # wide CJK label plate must be recognized as a mask and checked like any other.
     check(
         "wide mono mask clipped by a later node",
-        document('<rect x="180" y="80" width="128" height="12" rx="2" fill="#f5f5f5"/>' + node),
+        document('<rect x="180" y="80" width="128" height="12" rx="2" fill="#ffffff"/>' + node),
         1,
     )
     check(
         "wide mono mask over an earlier node is legal",
-        document(node + '<rect x="180" y="80" width="128" height="12" rx="2" fill="#f5f5f5"/>'),
+        document(node + '<rect x="180" y="80" width="128" height="12" rx="2" fill="#ffffff"/>'),
         0,
     )
     # Wide-but-tall rects are container header bars or row stripes, not masks —
@@ -210,8 +210,8 @@ def main() -> int:
     )
 
     # Connector routing. A stroked node; arrows carry a marker to count.
-    stroked = '<rect x="100" y="60" width="160" height="64" rx="6" fill="#fff" stroke="#2d3142"/>'
-    arrow = 'fill="none" stroke="#4f5d75" marker-end="url(#arrow)"'
+    stroked = '<rect x="100" y="60" width="160" height="64" rx="6" fill="#fff" stroke="#0e1920"/>'
+    arrow = 'fill="none" stroke="#5b6770" marker-end="url(#arrow)"'
 
     # The reported defect: leave the top edge, then run flat along the border,
     # so the arrow appears to grow out of the top-right corner.
@@ -233,7 +233,7 @@ def main() -> int:
     check(
         "single-quoted diagonal connector",
         document("<line x1='10' y1='10' x2='60' y2='40' "
-                 "stroke='#4f5d75' marker-end='url(#arrow)'/>"),
+                 "stroke='#5b6770' marker-end='url(#arrow)'/>"),
         1,
     )
     check(
@@ -254,12 +254,12 @@ def main() -> int:
     )
     check(
         "single-quoted arrowed path",
-        document("<path d='M 10 10 L 60 40' stroke='#4f5d75' marker-end='url(#arrow)'/>"),
+        document("<path d='M 10 10 L 60 40' stroke='#5b6770' marker-end='url(#arrow)'/>"),
         1,
     )
     check(
         "diagonal line without a marker is not a connector",
-        document('<line x1="10" y1="10" x2="60" y2="40" stroke="#4f5d75"/>'),
+        document('<line x1="10" y1="10" x2="60" y2="40" stroke="#5b6770"/>'),
         0,
     )
     # Loop write-back spokes are the documented radial exception.
@@ -302,7 +302,7 @@ def main() -> int:
     check(
         "unstroked fill rect is not a node",
         document(
-            '<rect x="100" y="60" width="160" height="64" fill="rgba(191,69,32,0.04)"/>'
+            '<rect x="100" y="60" width="160" height="64" fill="rgba(204,59,16,0.04)"/>'
             f'<line x1="100" y1="40" x2="100" y2="200" {arrow}/>'
         ),
         0,
@@ -332,7 +332,7 @@ def main() -> int:
         "ports 10px apart on a 40px edge",
         document(
             f'<path d="M 260,72 H 300" {arrow}/><path d="M 260,82 H 280 Q 288,82 288,90 V 140" {arrow}/>'
-            '<rect x="100" y="60" width="160" height="40" rx="6" fill="#fff" stroke="#2d3142"/>'
+            '<rect x="100" y="60" width="160" height="40" rx="6" fill="#fff" stroke="#0e1920"/>'
         ),
         0,
     )

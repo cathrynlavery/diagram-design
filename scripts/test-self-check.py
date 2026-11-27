@@ -355,7 +355,7 @@ def main() -> int:
     check_source_pass("stylesheet transform under a combinator",
                       styled(".motion-ready svg > .placed:hover { transform: none; }", placed_rect))
     check_fail("stylesheet rule that only colors it",
-               styled(".placed { fill: #bf4520; }", placed_rect), "past the viewBox right edge")
+               styled(".placed { fill: #cc3b10; }", placed_rect), "past the viewBox right edge")
     check_fail("transform keyframes alone do not exempt it",
                styled("@keyframes slide { 0% { transform: translateX(0); } }", placed_rect),
                "past the viewBox right edge")
@@ -395,7 +395,7 @@ def main() -> int:
         return re.sub(r"(<svg viewBox=\"0 0 1000 480\"[^>]*)>", r"\1" + root + ">", static, count=1).replace(
             "</svg>", body + "</svg>", 1)
 
-    box = '<rect x="0" y="12" width="100" height="40" fill="#ececec" stroke="#2d3142"/>'
+    box = '<rect x="0" y="12" width="100" height="40" fill="#f3f6f8" stroke="#0e1920"/>'
     check_source_pass("root svg text-anchor centers the label",
                       fit_svg(box + '<text x="50" y="32" font-size="10">ABCDEFGHIJ</text>',
                               ' text-anchor="middle"'))
@@ -403,15 +403,15 @@ def main() -> int:
                fit_svg(box + '<text x="4" y="32">ABCDEFGHIJKLMNOPQRST</text>', ' font-size="10"'),
                "overflows its 100px box")
     check_fail("box painted through inline style",
-               fit_svg('<rect x="0" y="12" width="100" height="40" style="fill:#ececec;stroke:#2d3142"/>'
+               fit_svg('<rect x="0" y="12" width="100" height="40" style="fill:#f3f6f8;stroke:#0e1920"/>'
                        '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'),
                "overflows its 100px box")
     check_fail("box painted by its group",
-               fit_svg('<g fill="#ececec" stroke="#2d3142"><rect x="0" y="12" width="100" height="40"/></g>'
+               fit_svg('<g fill="#f3f6f8" stroke="#0e1920"><rect x="0" y="12" width="100" height="40"/></g>'
                        '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'),
                "overflows its 100px box")
     check_source_pass("box painted by a stylesheet rule is left alone",
-                      styled(".box { fill: #f5f5f5; }",
+                      styled(".box { fill: #ffffff; }",
                              '<rect class="box" x="0" y="12" width="100" height="40"/>'
                              '<text x="4" y="32" font-size="10">ABCDEFGHIJKLMNOPQRST</text>'))
     for attribute in ('dx="-40"', 'dy="2"', 'rotate="0"', 'textLength="90"'):
@@ -423,13 +423,13 @@ def main() -> int:
         check_source_pass(f"label over a box that draws nothing ({hidden})",
                           fit_svg(f'<rect x="0" y="12" width="100" height="40" {hidden}/>' + long_label))
     check_source_pass("label over a box inside a transparent group",
-                      fit_svg('<g opacity="0"><rect x="0" y="12" width="100" height="40" fill="#ececec"'
-                              ' stroke="#2d3142"/></g>' + long_label))
+                      fit_svg('<g opacity="0"><rect x="0" y="12" width="100" height="40" fill="#f3f6f8"'
+                              ' stroke="#0e1920"/></g>' + long_label))
     check_fail("stroke still draws when only the fill is transparent",
-               fit_svg('<rect x="0" y="12" width="100" height="40" fill-opacity="0" stroke="#2d3142"/>'
+               fit_svg('<rect x="0" y="12" width="100" height="40" fill-opacity="0" stroke="#0e1920"/>'
                        + long_label), "overflows its 100px box")
     check_fail("box still draws when a child resets opacity",
-               fit_svg('<g opacity="0.5"><rect x="0" y="12" width="100" height="40" fill="#ececec"/></g>'
+               fit_svg('<g opacity="0.5"><rect x="0" y="12" width="100" height="40" fill="#f3f6f8"/></g>'
                        + long_label), "overflows its 100px box")
     for layout in ('direction="rtl"', 'unicode-bidi="bidi-override"', 'writing-mode="tb"',
                    'xml:space="preserve"', 'style="white-space:pre"', 'style="direction:rtl"'):

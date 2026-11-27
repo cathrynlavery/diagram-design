@@ -56,7 +56,7 @@ HEAD = """<!DOCTYPE html>
      aria-labelledby="marimekko-title marimekko-desc">
   <title id="marimekko-title">t</title>
   <desc id="marimekko-desc">Marimekko fixture.</desc>
-  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <rect width="100%" height="100%" fill="#ffffff"/>
 """
 TAIL = "</svg></body></html>\n"
 
@@ -66,9 +66,9 @@ TAIL = "</svg></body></html>\n"
 # absent from a column is omitted, never drawn at zero). Widths are exact to
 # three decimals so no honest fixture ever leans on the tolerance.
 TOP, HEIGHT, GUTTER = 40.0, 380.0, 4.0
-INK = "rgba(45,49,66,0.16)"
-HAIR = "rgba(45,49,66,0.30)"
-ACCENT_FILL = "rgba(191,69,32,0.16)"
+INK = "rgba(14,25,32,0.16)"
+HAIR = "rgba(14,25,32,0.30)"
+ACCENT_FILL = "rgba(204,59,16,0.16)"
 
 WA, WB, WC = 495.556, 297.333, 99.111
 XA = 40.0
@@ -93,7 +93,7 @@ def segment(column: str, series: str, amount, x, y, w, h, fill: str = INK,
         parts.append(extra)
     out = ""
     if mask:
-        out += '  <rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="#f5f5f5"/>\n' % (x, y, w, h)
+        out += '  <rect x="%s" y="%s" width="%s" height="%s" rx="2" fill="#ffffff"/>\n' % (x, y, w, h)
     out += '  <rect %s rx="2" fill="%s" stroke="%s" stroke-width="1"/>\n' % (
         " ".join(parts), fill, stroke)
     return out
@@ -101,7 +101,7 @@ def segment(column: str, series: str, amount, x, y, w, h, fill: str = INK,
 
 def label(column: str, series: str, x, y, text: str, size: float = 9,
           mono: bool = True, extra: str = "", role: str = "label") -> str:
-    family = "'Geist Mono', monospace" if mono else "'Geist', sans-serif"
+    family = "'Roboto Mono', monospace" if mono else "'Inter', sans-serif"
     return ('  <text data-column="%s" data-segment="%s" data-role="%s" x="%s" y="%s" '
             'font-size="%s" font-family="%s"%s>%s</text>\n'
             % (column, series, role, x, y, size, family,
@@ -110,14 +110,14 @@ def label(column: str, series: str, x, y, text: str, size: float = 9,
 
 def caption(column: str, x, text=None, extra: str = "", bind=None) -> str:
     return ('  <text data-column="%s" data-role="caption" x="%s" y="438" font-size="9" '
-            'font-family="\'Geist Mono\', monospace" text-anchor="middle"%s>%s</text>\n'
+            'font-family="\'Roboto Mono\', monospace" text-anchor="middle"%s>%s</text>\n'
             % (column if bind is None else bind, x, (" " + extra) if extra else "",
                column if text is None else text))
 
 
 def key(series: str, text=None, bind=None) -> str:
     return ('  <text data-segment="%s" data-role="key" x="272" y="497" font-size="8.5" '
-            'font-family="\'Geist\', sans-serif">%s</text>\n'
+            'font-family="\'Inter\', sans-serif">%s</text>\n'
             % (series if bind is None else bind, series if text is None else text))
 
 
@@ -129,7 +129,7 @@ def columns(a_linux: float = 228.0, a_mac: float = 152.0, wa: float = WA,
     body += segment("A", "macOS", 200, XA, TOP + a_linux if a_mac_y is None else a_mac_y,
                     wa, a_mac,
                     fill=ACCENT_FILL if focal else INK,
-                    stroke="#bf4520" if focal else HAIR)
+                    stroke="#cc3b10" if focal else HAIR)
     body += segment("B", "Linux", 240, xb, TOP, WB, b_linux)
     body += segment("B", "Windows", 60, xb, TOP + b_linux, WB, b_win)
     body += segment("C", "Linux", 100, xc, TOP, WC, HEIGHT)
@@ -275,7 +275,7 @@ def run_cases(h: Harness) -> int:
     h.expect_clean("the stylesheet's `text-transform` and `width` on the svg are not "
                    "geometry moves", honest())
     h.expect_clean("an information marker inside a segment passes",
-                   honest('  <circle cx="%s" cy="%s" r="5" fill="#2d3142"/>\n'
+                   honest('  <circle cx="%s" cy="%s" r="5" fill="#0e1920"/>\n'
                           % (XC + WC / 2, TOP + 24)))
 
     # ── The parser reads what the browser reads ───────────────────────────
@@ -367,7 +367,7 @@ def run_cases(h: Harness) -> int:
                           'width="%s" height="%s" rx="2" fill="%s" stroke="%s"'
                           % (XC, TOP, WC, HEIGHT, INK, HAIR),
                           'data-column="C" data-segment="Linux" data-amount="100" x="%s" y="%s" '
-                          'width="%s" height="%s" rx="2" fill="%s" stroke="#bf4520"'
+                          'width="%s" height="%s" rx="2" fill="%s" stroke="#cc3b10"'
                           % (XC, TOP, WC, HEIGHT, ACCENT_FILL)),
                       r"one focal segment max")
 
@@ -446,7 +446,7 @@ def run_cases(h: Harness) -> int:
                    "not a geometry move",
                    document(columns(), CAPTIONS, KEYS,
                             label("A", "Linux", XA + 16, TOP + 28, "300 min",
-                                  extra='style="fill: #2d3142 /* transform: translateY(40px) */"'),
+                                  extra='style="fill: #0e1920 /* transform: translateY(40px) */"'),
                             "<style>rect { /* transform: translateY(-8px); */ fill: red; }"
                             "</style>\n"))
 
@@ -516,7 +516,7 @@ def run_cases(h: Harness) -> int:
                      honest('  <text data-column="A" x="60" y="60">A</text>\n'),
                      r"declares data-role=None")
     h.expect_finding("an information marker crossing its segment edge is rejected",
-                     honest('  <circle cx="%s" cy="%s" r="5" fill="#2d3142"/>\n'
+                     honest('  <circle cx="%s" cy="%s" r="5" fill="#0e1920"/>\n'
                             % (XC + WC - 2, TOP + 24)),
                      r"information marker overflows its .* segment C × Linux by .* right")
 

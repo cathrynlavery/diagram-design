@@ -44,9 +44,9 @@ PARSE_COLOR = NS["parse_color"]
 SHIPPED = STYLE_GUIDE.read_text(encoding="utf-8")
 
 ROWS = {
-    "soft": "| `soft` | Sublabels, boundary labels | `#5a6580` | `#949eb2` |",
-    "accent": "| `accent` | Focal / 1–2 max per diagram | `#bf4520` (burnt-tangerine) | `#f08a59` |",
-    "link": "| `link` | HTTP/API calls, external arrows | `#2e5aa8` | `#739fdf` |",
+    "soft": "| `soft` | Sublabels, boundary labels | `#66727c` | `#8695a0` |",
+    "accent": "| `accent` | Focal / 1–2 max per diagram | `#cc3b10` (burnt-tangerine) | `#ff8a5c` |",
+    "link": "| `link` | HTTP/API calls, external arrows | `#0b6e80` | `#5fd6ec` |",
     "ink-strong": "| `ink-strong` | High-contrast text on warm accent fills | `#111111` | `#111111` |",
 }
 
@@ -84,8 +84,8 @@ def test_shipped_palette_passes() -> None:
 def test_retired_palette_fails_on_each_token() -> None:
     source = with_row(SHIPPED, "soft", "| `soft` | Sublabels, boundary labels | `#7a8399` | `#8e98ac` |")
     source = with_row(source, "accent",
-                      "| `accent` | Focal / 1–2 max per diagram | `#eb6c36` (atomic-tangerine) | `#f08a59` |")
-    source = with_row(source, "link", "| `link` | HTTP/API calls, external arrows | `#2e5aa8` | `#6a95d8` |")
+                      "| `accent` | Focal / 1–2 max per diagram | `#eb6c36` (atomic-tangerine) | `#ff8a5c` |")
+    source = with_row(source, "link", "| `link` | HTTP/API calls, external arrows | `#0b6e80` | `#6a95d8` |")
     findings = findings_for(source)
     expected = {("light", "accent"), ("light", "soft"), ("dark", "soft"), ("dark", "link")}
     for skin, role in sorted(expected):
@@ -100,22 +100,22 @@ def test_retired_palette_fails_on_each_token() -> None:
 
 def test_alpha_is_composited_over_paper() -> None:
     translucent = with_row(SHIPPED, "soft",
-                           "| `soft` | Sublabels, boundary labels | `rgba(90,101,128,0.5)` | `#949eb2` |")
+                           "| `soft` | Sublabels, boundary labels | `rgba(102,114,124,0.5)` | `#8695a0` |")
     ok(mentions(findings_for(translucent), "light", "soft"),
        "soft at 0.5 opacity fails although the opaque value passes")
     opaque = with_row(SHIPPED, "soft",
-                      "| `soft` | Sublabels, boundary labels | `rgba(90,101,128,1)` | `#949eb2` |")
+                      "| `soft` | Sublabels, boundary labels | `rgba(102,114,124,1)` | `#8695a0` |")
     ok(not findings_for(opaque), "rgba() at alpha 1 measures the same as its hex")
     flat = COMPOSITE((0, 0, 0), 0.5, (255, 255, 255))
     ok(flat == (127.5, 127.5, 127.5), "compositing blends channels linearly by alpha")
 
 
 def test_text_use_is_held_to_text_bar() -> None:
-    # #c4562b on #f5f5f5 is about 4.0:1: enough for a stroke, not for a label.
+    # #c4562b on #ffffff is about 4.0:1: enough for a stroke, not for a label.
     rgb, _ = PARSE_COLOR("`#c4562b`")
     ratio = CONTRAST(rgb, (245, 245, 245))
     ok(3.0 <= ratio < 4.5, f"fixture accent sits between the bars ({ratio:.2f}:1)")
-    source = with_row(SHIPPED, "accent", "| `accent` | Focal / 1–2 max per diagram | `#c4562b` | `#f08a59` |")
+    source = with_row(SHIPPED, "accent", "| `accent` | Focal / 1–2 max per diagram | `#c4562b` | `#ff8a5c` |")
     findings = findings_for(source)
     ok(any("light: `accent` as text" in f for f in findings),
        "an accent that clears 3:1 still fails as text")
@@ -137,7 +137,7 @@ def test_fails_closed() -> None:
        "an unclassified role is a finding")
     missing = SHIPPED.replace(ROWS["link"] + "\n", "")
     ok(any("`link` is missing" in f for f in findings_for(missing)), "a missing role is a finding")
-    garbled = with_row(SHIPPED, "soft", "| `soft` | Sublabels, boundary labels | `slate` | `#949eb2` |")
+    garbled = with_row(SHIPPED, "soft", "| `soft` | Sublabels, boundary labels | `slate` | `#8695a0` |")
     ok(any("light: `soft` no hex or rgba() color" in f for f in findings_for(garbled)),
        "an unparseable value is a finding")
     no_table = SHIPPED.replace("### Semantic roles", "### Roles")

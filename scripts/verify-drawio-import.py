@@ -946,7 +946,7 @@ def check_docs() -> None:
     )
     if route is None or route.group(1) != "M560,232 H640":
         fail("worked example API Gateway-to-Orders route must be a direct horizontal connector")
-    if example.count("#bf4520") > 4:
+    if example.count("#cc3b10") > 4:
         fail("worked example uses the accent on more than the focal node + legend")
     proc = subprocess.run(
         [sys.executable, str(ROOT / "scripts/lint-skin.py"), str(EXAMPLE)],

@@ -53,9 +53,9 @@ FONT_ATTR_RE = re.compile(
 )
 
 ALLOWED_FONTS = {
-    "instrument serif",
-    "geist",
-    "geist mono",
+    "poppins",
+    "inter",
+    "roboto mono",
     "noto serif",
     "hiragino sans",
     "noto sans jp",

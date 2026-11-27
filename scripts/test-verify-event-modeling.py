@@ -37,16 +37,16 @@ def main() -> None:
               'style="filter:opacity(0)"', 'clip-path="inset(50%)"',
               'clip-path="url(#empty)"', 'mask="url(#empty)"',
           )),
-        *((label_tag, label_tag.replace('fill="#4f5d75"', f'fill="{paint}"').replace('fill="#2e5aa8"', f'fill="{paint}"'),
+        *((label_tag, label_tag.replace('fill="#5b6770"', f'fill="{paint}"').replace('fill="#0b6e80"', f'fill="{paint}"'),
            "house ink")
-          for paint in ("rgba(0,0,0,0)", "#0000", "#f5f5f5")),
+          for paint in ("rgba(0,0,0,0)", "#0000", "#ffffff")),
         (label_tag, re.sub(r'font-size="[^"]+"', 'font-size="0"', label_tag), "font size"),
         ('data-event-kind="command"', 'transform="scale(0)" data-event-kind="command"', "unsupported SVG"),
         *((label_tag, motion + label_tag, "unsupported SVG")
           for motion in ('<set attributeName="display" to="none"/>',
                          '<animate attributeName="opacity" to="0" fill="freeze"/>')),
-        ("</svg>", '<rect width="1200" height="720" fill="#f5f5f5"/></svg>', "cover"),
-        ("</svg>", '<line x1="0" x2="1200" y1="360" y2="360" stroke="#f5f5f5" stroke-width="720"/></svg>', "cover"),
+        ("</svg>", '<rect width="1200" height="720" fill="#ffffff"/></svg>', "cover"),
+        ("</svg>", '<line x1="0" x2="1200" y1="360" y2="360" stroke="#ffffff" stroke-width="720"/></svg>', "cover"),
         (first_group, first_group.replace("<g ", r'<g style="display:n\6f ne" '), "hidden or too faint"),
         *((("</style>", rule + "</style>", "stylesheet")
           for rule in (
@@ -106,7 +106,7 @@ def main() -> None:
         boxes = list(re.finditer(r"<rect\b[^>]*/>", source))
         assert len(boxes) > 2
         last_box = boxes[-1]
-        cover = '<rect x="0" y="0" width="1200" height="720" fill="#f5f5f5"/>'
+        cover = '<rect x="0" y="0" width="1200" height="720" fill="#ffffff"/>'
         candidate.write_text(source[:last_box.start()] + cover + source[last_box.end():], encoding="utf-8")
         errors = module.check(candidate)
         if not any("overlaps another cell" in error for error in errors):
@@ -122,8 +122,8 @@ def main() -> None:
             ("shaft stops short", source.replace('d="M 224 302 V 363"', 'd="M 224 302 V 320"', 1)),
         )
         shaft, head = 'd="M 224 302 V 363"', 'd="M 218 360 L 224 368 L 230 360"'
-        head_path = '<path d="M 218 360 L 224 368 L 230 360" fill="none" stroke="#4f5d75" stroke-width="2"/>'
-        source_head = '<path d="M 218 307 L 224 299 L 230 307" fill="none" stroke="#4f5d75" stroke-width="2"/>'
+        head_path = '<path d="M 218 360 L 224 368 L 230 360" fill="none" stroke="#5b6770" stroke-width="2"/>'
+        source_head = '<path d="M 218 307 L 224 299 L 230 307" fill="none" stroke="#5b6770" stroke-width="2"/>'
         assert head_path in source
 
         def shift_cell(text: str, cell_id: str, offset: int) -> str:

@@ -281,7 +281,7 @@ def main() -> int:
         oauth_copy = temp_root / OAUTH[0].relative_to(ROOT)
         original = oauth_copy.read_text(encoding="utf-8")
         target_line = (
-            '<line x1="476" y1="368" x2="168" y2="368" stroke="#4f5d75" '
+            '<line x1="476" y1="368" x2="168" y2="368" stroke="#5b6770" '
             'stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>'
         )
         if target_line not in original:

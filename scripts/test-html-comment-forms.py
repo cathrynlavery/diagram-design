@@ -157,7 +157,7 @@ def check_box_plot() -> int:
     example = (ROOT / "skills/diagrams-design-quind/assets/example-box-plot.html").read_text(encoding="utf-8")
     start = example.index('<g data-name="Auth"')
     end = example.index("</g>", start)
-    circle = '<circle cx="700" cy="80" r="6" fill="#bf4520"/>'
+    circle = '<circle cx="700" cy="80" r="6" fill="#cc3b10"/>'
     cases = {
         "bare": (circle, True),
         "abrupt": ("<!-->" + circle + "<!-- -->", True),

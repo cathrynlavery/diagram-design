@@ -22,26 +22,26 @@ S2 = math.sqrt(2)
 # Face tones per skin. Every value is a style-guide role or an rgba() of one.
 SKINS = {
     "light": dict(
-        paper="#f5f5f5", ink="#2d3142", muted="#4f5d75", soft="#5a6580", accent="#bf4520",
-        ink_rgb="45,49,66", acc_rgb="191,69,32", base="#ffffff", rule="rgba(45,49,66,0.12)",
-        shade=(None, "rgba(45,49,66,0.07)", "rgba(45,49,66,0.15)"),
-        focal=("rgba(191,69,32,0.10)", "rgba(191,69,32,0.20)", "rgba(191,69,32,0.32)"),
-        cavity="rgba(45,49,66,0.10)", floor="rgba(45,49,66,0.04)", well="rgba(45,49,66,0.14)",
-        screen="#2d3142", island="#111111", chip_top="#4f5d75", chip_side="#2d3142",
-        sil="#2d3142", inner="rgba(45,49,66,0.55)", trace="rgba(45,49,66,0.30)",
-        lead="rgba(45,49,66,0.40)", lead_acc="rgba(191,69,32,0.60)", inner_acc="rgba(191,69,32,0.70)",
-        lens="#2d3142", lens_ring="rgba(245,245,245,0.35)",
+        paper="#ffffff", ink="#0e1920", muted="#5b6770", soft="#66727c", accent="#cc3b10",
+        ink_rgb="45,49,66", acc_rgb="191,69,32", base="#ffffff", rule="rgba(14,25,32,0.12)",
+        shade=(None, "rgba(14,25,32,0.07)", "rgba(14,25,32,0.15)"),
+        focal=("rgba(204,59,16,0.10)", "rgba(204,59,16,0.20)", "rgba(204,59,16,0.32)"),
+        cavity="rgba(14,25,32,0.10)", floor="rgba(14,25,32,0.04)", well="rgba(14,25,32,0.14)",
+        screen="#0e1920", island="#111111", chip_top="#5b6770", chip_side="#0e1920",
+        sil="#0e1920", inner="rgba(14,25,32,0.55)", trace="rgba(14,25,32,0.30)",
+        lead="rgba(14,25,32,0.40)", lead_acc="rgba(204,59,16,0.60)", inner_acc="rgba(204,59,16,0.70)",
+        lens="#0e1920", lens_ring="rgba(255,255,255,0.35)",
     ),
     "dark": dict(
-        paper="#2d3142", ink="#f5f5f5", muted="#bfc0c0", soft="#949eb2", accent="#f08a59",
-        ink_rgb="245,245,245", acc_rgb="240,138,89", base="#393e53", rule="rgba(245,245,245,0.12)",
-        shade=("rgba(245,245,245,0.10)", None, "rgba(45,49,66,0.45)"),
-        focal=("rgba(240,138,89,0.18)", None, "rgba(45,49,66,0.45)"),
-        cavity="rgba(45,49,66,0.55)", floor="rgba(45,49,66,0.25)", well="rgba(45,49,66,0.40)",
-        screen="#111111", island="#2d3142", chip_top="#949eb2", chip_side="#2d3142",
-        sil="#f5f5f5", inner="rgba(245,245,245,0.45)", trace="rgba(245,245,245,0.30)",
-        lead="rgba(245,245,245,0.40)", lead_acc="rgba(240,138,89,0.60)", inner_acc="rgba(240,138,89,0.70)",
-        lens="#111111", lens_ring="rgba(245,245,245,0.35)",
+        paper="#0e1920", ink="#ffffff", muted="#9ba9b2", soft="#8695a0", accent="#ff8a5c",
+        ink_rgb="245,245,245", acc_rgb="240,138,89", base="#16242c", rule="rgba(255,255,255,0.12)",
+        shade=("rgba(255,255,255,0.10)", None, "rgba(14,25,32,0.45)"),
+        focal=("rgba(255,138,92,0.18)", None, "rgba(14,25,32,0.45)"),
+        cavity="rgba(14,25,32,0.55)", floor="rgba(14,25,32,0.25)", well="rgba(14,25,32,0.40)",
+        screen="#111111", island="#0e1920", chip_top="#8695a0", chip_side="#0e1920",
+        sil="#ffffff", inner="rgba(255,255,255,0.45)", trace="rgba(255,255,255,0.30)",
+        lead="rgba(255,255,255,0.40)", lead_acc="rgba(255,138,92,0.60)", inner_acc="rgba(255,138,92,0.70)",
+        lens="#111111", lens_ring="rgba(255,255,255,0.35)",
     ),
 }
 
@@ -175,7 +175,7 @@ def styles(sk, focal):
 
 # ---------------------------------------------------------------- pages
 
-FONT_LINK = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap"
+FONT_LINK = "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap"
 
 MINIMAL = """<!DOCTYPE html>
 <html lang="en">
@@ -191,9 +191,9 @@ MINIMAL = """<!DOCTYPE html>
       --color-ink:     {ink};
       --color-muted:   {muted};
       --color-accent:  {accent};
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }}
 
     body {{
@@ -263,7 +263,7 @@ FULL = """<!DOCTYPE html>
   <link href="{font}" rel="stylesheet">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    :root {{ --color-paper:#f5f5f5; --color-paper-2:#ececec; --color-ink:#2d3142; --color-muted:#4f5d75; --color-soft:#5a6580; --color-rule:rgba(45,49,66,0.12); --color-accent:#bf4520; --color-link:#2e5aa8; --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }}
+    :root {{ --color-paper:#ffffff; --color-paper-2:#f3f6f8; --color-ink:#0e1920; --color-muted:#5b6770; --color-soft:#66727c; --color-rule:rgba(14,25,32,0.12); --color-accent:#cc3b10; --color-link:#0b6e80; --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Poppins', 'Inter', system-ui, sans-serif; --font-mono:'Roboto Mono',ui-monospace,monospace; }}
     body {{ font-family: var(--font-sans); background: var(--color-paper); min-height: 100vh; padding: 3rem 2rem; color: var(--color-ink); }}
     .container {{ max-width: 1200px; margin: 0 auto; }}
     .header {{ margin-bottom: 2.5rem; }}
@@ -277,14 +277,14 @@ FULL = """<!DOCTYPE html>
     @media (max-width: 820px) {{ .cards {{ grid-template-columns: 1fr; }} }}
     .card {{ background: #fff; border-radius: 6px; border: 1px solid var(--color-rule); padding: 1.25rem; }}
     .card .eyebrow {{ font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }}
-    .card-header {{ display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(45,49,66,0.08); }}
+    .card-header {{ display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; padding-bottom: 0.875rem; border-bottom: 1px solid rgba(14,25,32,0.08); }}
     .card-dot {{ width: 7px; height: 7px; border-radius: 50%; }}
     .card-dot.ink {{ background: var(--color-ink); }} .card-dot.muted {{ background: var(--color-muted); }} .card-dot.coral {{ background: var(--color-accent); }}
     .card h3 {{ font-size: 0.875rem; font-weight: 600; }}
     .card p, .card ul {{ color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; list-style: none; }}
     .card li {{ margin-bottom: 0.3rem; padding-left: 0.875rem; position: relative; }}
-    .card li::before {{ content: '·'; position: absolute; left: 0.2rem; color: rgba(45,49,66,0.45); }}
-    .footer {{ margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(45,49,66,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }}
+    .card li::before {{ content: '·'; position: absolute; left: 0.2rem; color: rgba(14,25,32,0.45); }}
+    .footer {{ margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(14,25,32,0.10); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--color-soft); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }}
   </style>
 </head>
 <body>

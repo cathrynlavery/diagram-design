@@ -62,7 +62,7 @@ ANIMATIONS = {"animate", "set", "animatetransform", "animatemotion", "animatecol
 DRAWABLES = {"rect", "path", "polygon", "polyline", "line", "circle", "ellipse", "text",
              "image", "use", "foreignobject", "svg"}
 MAX_CELL_STROKE = 2.0
-GLYPH_EM = 0.65  # shortcut: a Geist upper bound; a wider face or all-caps W/M runs can exceed it
+GLYPH_EM = 0.65  # shortcut: a Inter upper bound; a wider face or all-caps W/M runs can exceed it
 TEXT_INHERITED = ("font-size", "text-anchor", "letter-spacing")
 # A tspan with none of these draws inside its parent's line and box.
 TSPAN_MOVES = ("x", "y", "dx", "dy", "rotate", "textlength", "font-size", "letter-spacing", "style", "transform",
@@ -263,7 +263,7 @@ def path_box(d: str) -> tuple[float, float, float, float] | None:
 
 
 def text_box(attributes: dict[str, str], text: str) -> tuple[float, float, float, float] | None:
-    """Generous bounds for one line of text: each glyph at most 0.65em wide (Geist), 1.2em above and 0.4em below."""
+    """Generous bounds for one line of text: each glyph at most 0.65em wide (Inter), 1.2em above and 0.4em below."""
     if any(name in attributes for name in ("dx", "dy", "rotate", "textlength", "writing-mode", "direction")):
         return None
     x, y, size = number(attributes.get("x"), 0.0), number(attributes.get("y"), 0.0), number(attributes.get("font-size"), 16.0)

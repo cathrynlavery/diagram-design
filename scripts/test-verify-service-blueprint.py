@@ -68,28 +68,28 @@ def main() -> int:
         ),
         (
             "drop the visibility line",
-            '<line x1="96" y1="268" x2="1200" y2="268" stroke="rgba(45,49,66,0.55)" stroke-width="2" data-role="visibility"/>',
+            '<line x1="96" y1="268" x2="1200" y2="268" stroke="rgba(14,25,32,0.55)" stroke-width="2" data-role="visibility"/>',
             "",
             "visibility",
             False,
         ),
         (
             "put the visibility line above the customer row",
-            '<line x1="96" y1="268" x2="1200" y2="268" stroke="rgba(45,49,66,0.55)" stroke-width="2" data-role="visibility"/>',
-            '<line x1="96" y1="50" x2="1200" y2="50" stroke="rgba(45,49,66,0.55)" stroke-width="2" data-role="visibility"/>',
+            '<line x1="96" y1="268" x2="1200" y2="268" stroke="rgba(14,25,32,0.55)" stroke-width="2" data-role="visibility"/>',
+            '<line x1="96" y1="50" x2="1200" y2="50" stroke="rgba(14,25,32,0.55)" stroke-width="2" data-role="visibility"/>',
             "visibility",
             False,
         ),
         (
             "shift one cell off its column",
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
-            '<rect x="568" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="568" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
             "stage grid",
             False,
         ),
         (
             "drop a backstage cell",
-            '<rect x="96" y="272" width="208" height="64" rx="4" fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="sign-up" data-name="CRM write"/>',
+            '<rect x="96" y="272" width="208" height="64" rx="4" fill="rgba(14,25,32,0.06)" stroke="#5b6770" stroke-width="1" data-stage="sign-up" data-name="CRM write"/>',
             "",
             "census",
             False,
@@ -119,15 +119,15 @@ def main() -> int:
         ),
         (
             "move one customer cell below the visibility line",
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
-            '<rect x="544" y="400" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="400" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
             "visibility: customer cell 'Retry payment'",
             False,
         ),
         (
             "widen one cell into the next stage",
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
-            '<rect x="544" y="128" width="400" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="128" width="400" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
             "runs past its stage column",
             False,
         ),
@@ -140,8 +140,8 @@ def main() -> int:
         ),
         (
             "second cell painted with the accent but no data-focal",
-            'fill="rgba(45,49,66,0.06)" stroke="#4f5d75" stroke-width="1" data-stage="sign-up" data-name="CRM write"',
-            'fill="rgba(191,69,32,0.12)" stroke="#bf4520" stroke-width="1" data-stage="sign-up" data-name="CRM write"',
+            'fill="rgba(14,25,32,0.06)" stroke="#5b6770" stroke-width="1" data-stage="sign-up" data-name="CRM write"',
+            'fill="rgba(204,59,16,0.12)" stroke="#cc3b10" stroke-width="1" data-stage="sign-up" data-name="CRM write"',
             "painted with the accent",
             False,
         ),
@@ -175,8 +175,8 @@ def main() -> int:
         ),
         (
             "cell widened by an inline CSS width",
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment" style="width:400px"/>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment" style="width:400px"/>',
             "sets its size in CSS",
             False,
         ),
@@ -189,8 +189,8 @@ def main() -> int:
         ),
         (
             "classed cell widened from the stylesheet",
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
-            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="hit-limit" data-name="Retry payment" class="wide"/><style>.wide { width: 400px; }</style>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment"/>',
+            '<rect x="544" y="128" width="208" height="64" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="hit-limit" data-name="Retry payment" class="wide"/><style>.wide { width: 400px; }</style>',
             "CSS 'width' declaration can resize",
             False,
         ),
@@ -304,22 +304,22 @@ def main() -> int:
         # pass (issue #438). Scope the no-whitespace join to one cell only.
         welcome_rect = (
             '<rect x="96" y="80" width="208" height="48" rx="4" fill="#ffffff" '
-            'stroke="#2d3142" stroke-width="1" data-stage="sign-up" '
+            'stroke="#0e1920" stroke-width="1" data-stage="sign-up" '
             'data-name="Welcome email"/>'
         )
         welcome_text = (
-            '<text x="200" y="108" fill="#2d3142" font-size="12" '
-            'font-family="\'Geist\', sans-serif" text-anchor="middle">Welcome email</text>'
+            '<text x="200" y="108" fill="#0e1920" font-size="12" '
+            'font-family="\'Inter\', sans-serif" text-anchor="middle">Welcome email</text>'
         )
         if welcome_rect not in source or welcome_text not in source:
             failures.append("could not build Japanese two-line printed fixtures (anchor missing)")
         else:
             ja_rect = welcome_rect.replace('data-name="Welcome email"', 'data-name="歓迎メール"')
             ja_two_text = (
-                '<text x="200" y="100" fill="#2d3142" font-size="12" '
-                'font-family="\'Geist\', sans-serif" text-anchor="middle">歓迎</text>\n'
-                '        <text x="200" y="116" fill="#2d3142" font-size="12" '
-                'font-family="\'Geist\', sans-serif" text-anchor="middle">メール</text>'
+                '<text x="200" y="100" fill="#0e1920" font-size="12" '
+                'font-family="\'Inter\', sans-serif" text-anchor="middle">歓迎</text>\n'
+                '        <text x="200" y="116" fill="#0e1920" font-size="12" '
+                'font-family="\'Inter\', sans-serif" text-anchor="middle">メール</text>'
             )
             ja_src = source.replace(welcome_rect, ja_rect, 1).replace(welcome_text, ja_two_text, 1)
             code, output = run(str(write(directory, "japanese-two-text-lines.html", ja_src)))
@@ -329,8 +329,8 @@ def main() -> int:
                 print("OK: Japanese two <text> lines pass")
 
             ja_tspan = (
-                '<text x="200" y="100" fill="#2d3142" font-size="12" '
-                'font-family="\'Geist\', sans-serif" text-anchor="middle">\n'
+                '<text x="200" y="100" fill="#0e1920" font-size="12" '
+                'font-family="\'Inter\', sans-serif" text-anchor="middle">\n'
                 '          <tspan x="200" dy="0">歓迎</tspan>\n'
                 '          <tspan x="200" dy="16">メール</tspan>\n'
                 '        </text>'
@@ -345,10 +345,10 @@ def main() -> int:
                 print("OK: Japanese two <tspan> lines pass")
 
             en_two = (
-                '<text x="200" y="100" fill="#2d3142" font-size="12" '
-                'font-family="\'Geist\', sans-serif" text-anchor="middle">Welcome</text>\n'
-                '        <text x="200" y="116" fill="#2d3142" font-size="12" '
-                'font-family="\'Geist\', sans-serif" text-anchor="middle">email</text>'
+                '<text x="200" y="100" fill="#0e1920" font-size="12" '
+                'font-family="\'Inter\', sans-serif" text-anchor="middle">Welcome</text>\n'
+                '        <text x="200" y="116" fill="#0e1920" font-size="12" '
+                'font-family="\'Inter\', sans-serif" text-anchor="middle">email</text>'
             )
             en_src = source.replace(welcome_text, en_two, 1)
             code, output = run(str(write(directory, "english-two-text-lines.html", en_src)))
@@ -382,8 +382,8 @@ def main() -> int:
             # still report 歓迎メール as missing. Pin this so a regression to a
             # global whitespace strip is caught.
             product_ui_text = (
-                '<text x="424" y="108" fill="#2d3142" font-size="12" '
-                'font-family="\'Geist\', sans-serif" text-anchor="middle">Product UI</text>'
+                '<text x="424" y="108" fill="#0e1920" font-size="12" '
+                'font-family="\'Inter\', sans-serif" text-anchor="middle">Product UI</text>'
             )
             if product_ui_text not in source:
                 failures.append(
@@ -427,7 +427,7 @@ def main() -> int:
         # Single-quoted attributes are valid SVG; a cell written that way
         # must still be checked. Evidence cells are not in the census, so a
         # skipped one could sit below the line without any finding.
-        retry = '<rect x="96" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1" data-stage="sign-up" data-name="Welcome email"/>'
+        retry = '<rect x="96" y="80" width="208" height="48" rx="4" fill="#ffffff" stroke="#0e1920" stroke-width="1" data-stage="sign-up" data-name="Welcome email"/>'
         moved = retry.replace('y="80"', 'y="400"').replace('"', "'")
         if retry not in source:
             failures.append("could not build the single-quoted-cell fixture (anchor missing)")

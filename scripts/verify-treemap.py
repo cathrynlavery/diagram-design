@@ -23,7 +23,7 @@ later-painted nodes) reads a cell against the number printed inside it.
 Text extent is estimated from font metrics rather than measured in a browser,
 deliberately: every other gate here is pure Python and runs in CI with no
 browser. The Latin advances below are calibrated against Chromium renderings of
-the shipped Geist / Geist Mono faces and rounded UP. Unicode wide/full-width
+the shipped Inter / Roboto Mono faces and rounded UP. Unicode wide/full-width
 characters use a conservative 1em advance, so both estimates report overflow
 slightly before real overflow, never after.
 

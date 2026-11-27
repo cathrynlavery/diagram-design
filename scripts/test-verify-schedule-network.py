@@ -58,23 +58,23 @@ ROUTES = [
 
 def fixture(dark=False, full=False):
     paper, ink, muted, accent = (
-        ("#2d3142", "#f5f5f5", "#bfc0c0", "#f08a59")
+        ("#0e1920", "#ffffff", "#9ba9b2", "#ff8a5c")
         if dark
-        else ("#f5f5f5", "#2d3142", "#4f5d75", "#bf4520")
+        else ("#ffffff", "#0e1920", "#5b6770", "#cc3b10")
     )
     css = TEMPLATE_CSS
     if dark:
         css = (
-            css.replace("#2d3142", "TEMP")
-            .replace("#f5f5f5", "#2d3142")
-            .replace("TEMP", "#f5f5f5")
-            .replace("#4f5d75", "#bfc0c0")
-            .replace("#bf4520", "#f08a59")
-            .replace("solid #bfc0c0", "solid rgba(245,245,245,0.12)")
+            css.replace("#0e1920", "TEMP")
+            .replace("#ffffff", "#0e1920")
+            .replace("TEMP", "#ffffff")
+            .replace("#5b6770", "#9ba9b2")
+            .replace("#cc3b10", "#ff8a5c")
+            .replace("solid #9ba9b2", "solid rgba(255,255,255,0.12)")
         )
 
     def text(x, y, value, attrs="", size=12):
-        return f'<text x="{x}" y="{y}" fill="{ink}" font-size="{size}" font-family="Geist Mono, monospace" {attrs}>{value}</text>'
+        return f'<text x="{x}" y="{y}" fill="{ink}" font-size="{size}" font-family="Roboto Mono, monospace" {attrs}>{value}</text>'
 
     slug = "schedule-network" + ("-dark" if dark else "-full" if full else "")
     body = [
@@ -214,7 +214,7 @@ class ScheduleTests(unittest.TestCase):
             ('data-schedule-summary="finish"', 'data-schedule-summary="other"'),
             ("Task widths and spacing are not proportional to time.", "Time to scale."),
             ("ILLUSTRATIVE SCHEDULE", "VERIFIED PROJECT"),
-            ("</svg>", '<rect width="1200" height="720" fill="#f5f5f5"/></svg>'),
+            ("</svg>", '<rect width="1200" height="720" fill="#ffffff"/></svg>'),
             ('data-task-id="A"', 'data-task-id="A" data-task-id="Z"'),
             (
                 'data-diagram-type="schedule-network"',
@@ -236,7 +236,7 @@ class ScheduleTests(unittest.TestCase):
             ),
             (
                 "</svg>",
-                '<text x="47" y="264" fill="#2d3142" font-size="16" font-family="Geist Mono, monospace">PROJECT FINISH 8 days</text></svg>',
+                '<text x="47" y="264" fill="#0e1920" font-size="16" font-family="Roboto Mono, monospace">PROJECT FINISH 8 days</text></svg>',
             ),
         ]:
             with self.subTest(new=new):
@@ -289,14 +289,14 @@ class ScheduleTests(unittest.TestCase):
     def test_extra_lines_cannot_cover_summary(self):
         source = fixture()
         lines = "".join(
-            f'<line x1="48" x2="260" y1="{y}" y2="{y}" stroke="#2d3142" stroke-width="4"/>'
+            f'<line x1="48" x2="260" y1="{y}" y2="{y}" stroke="#0e1920" stroke-width="4"/>'
             for y in range(32, 53, 4)
         )
         self.assertTrue(self.check_source(source.replace("</svg>", lines + "</svg>")))
 
     def test_missing_backdrop_reports_a_finding(self):
         source = fixture().replace(
-            '<rect width="1200" height="720" fill="#f5f5f5"/>', ""
+            '<rect width="1200" height="720" fill="#ffffff"/>', ""
         )
         self.assertTrue(self.check_source(source))
 

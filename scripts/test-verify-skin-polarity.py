@@ -138,8 +138,8 @@ def main():
 
         # SVG presentation opacity is multiplicative with the color alpha.
         for skin, source, ramp, ink, hex_ink in (
-            ("light", light_source, LIGHT_RAMP, LIGHT_INK, "#2d3142"),
-            ("dark", dark_source, DARK_RAMP, DARK_INK, "#f5f5f5"),
+            ("light", light_source, LIGHT_RAMP, LIGHT_INK, "#0e1920"),
+            ("dark", dark_source, DARK_RAMP, DARK_INK, "#ffffff"),
         ):
             explicit = source
             for rank, alpha in ramp:
@@ -152,8 +152,8 @@ def main():
             else:
                 print(f"OK: {skin} explicit fill-opacity ramp passes")
         for attrs, expected in (
-            ('fill="rgba(45,49,66,.8)" fill-opacity=".5" opacity="25%"', .1),
-            ('fill="#2d3142" fill-opacity="200%" opacity=".25"', .25),
+            ('fill="rgba(14,25,32,.8)" fill-opacity=".5" opacity="25%"', .1),
+            ('fill="#0e1920" fill-opacity="200%" opacity=".25"', .25),
         ):
             members = COLLECT_MEMBERS(f'<rect x="0" y="0" width="10" height="10" data-share="1" {attrs}/>')
             found = [m for group in members.values() for m in group]
@@ -388,7 +388,7 @@ def main():
         # 11. Fail closed: without a paper color there is nothing to composite
         #     against, so lightness has no defined direction.
         paperless = re.sub(r"\s*--color-paper:\s*[^;]+;", "", light_source)
-        paperless = paperless.replace('<rect width="100%" height="100%" fill="#f5f5f5"/>', "", 1)
+        paperless = paperless.replace('<rect width="100%" height="100%" fill="#ffffff"/>', "", 1)
         if paperless == light_source:
             failures.append("could not build the paperless fixture")
         else:
@@ -438,13 +438,13 @@ def main():
         #     ramp, or a legal file would silently lose a member and fail closed
         #     for the wrong reason.
         on_mask = light_source.replace(
-            '<rect x="576" y="40" width="252" height="252" rx="2" fill="#f5f5f5"/>',
-            '<rect x="576" y="40" width="252" height="252" rx="2" data-share="18.29" fill="#f5f5f5"/>',
+            '<rect x="576" y="40" width="252" height="252" rx="2" fill="#ffffff"/>',
+            '<rect x="576" y="40" width="252" height="252" rx="2" data-share="18.29" fill="#ffffff"/>',
             1,
         ).replace(
             '<rect x="576" y="40" width="252" height="252" rx="2" data-share="18.29" '
-            'fill="rgba(45,49,66,0.16)"',
-            '<rect x="576" y="40" width="252" height="252" rx="2" fill="rgba(45,49,66,0.16)"',
+            'fill="rgba(14,25,32,0.16)"',
+            '<rect x="576" y="40" width="252" height="252" rx="2" fill="rgba(14,25,32,0.16)"',
             1,
         )
         if on_mask == light_source:

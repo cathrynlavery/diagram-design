@@ -55,7 +55,7 @@ def radius(size: float) -> float:
 
 
 def bubble(name: str, x: float, y: float, size: float, drawn_cx=None,
-           drawn_cy=None, drawn_r=None, stroke: str = "#4f5d75",
+           drawn_cy=None, drawn_r=None, stroke: str = "#5b6770",
            omit: str = "", extra: str = "") -> str:
     parts = []
     if omit != "data-name":
@@ -69,7 +69,7 @@ def bubble(name: str, x: float, y: float, size: float, drawn_cx=None,
     parts.append('r="%s"' % ("%g" % radius(size) if drawn_r is None else drawn_r))
     if extra:
         parts.append(extra)
-    return ('  <circle %s fill="rgba(45,49,66,0.20)" stroke="%s" '
+    return ('  <circle %s fill="rgba(14,25,32,0.20)" stroke="%s" '
             'stroke-width="1"/>\n' % (" ".join(parts), stroke))
 
 
@@ -104,7 +104,7 @@ def honest_block(rows=None, focal: str = "Edge") -> str:
     body = ""
     for name, x, y, size in sorted(BUBBLES if rows is None else rows,
                                    key=lambda row: -row[3]):
-        stroke = "#bf4520" if name == focal else "#4f5d75"
+        stroke = "#cc3b10" if name == focal else "#5b6770"
         body += bubble(name, x, y, size, stroke=stroke)
     return body
 
@@ -358,14 +358,14 @@ def run_cases(h: Harness) -> int:
 
     # ── Focal discipline ──────────────────────────────────────────────────
     two_accents = honest_block() + bubble("Rogue", 250, 2.5, 300,
-                                          stroke="#bf4520")
+                                          stroke="#cc3b10")
     h.expect_finding(
         "a second accent bubble is reported — one focal claim per figure",
         document(two_accents, TICKS),
         r"one accent bubble max",
     )
     dark_accent = honest_block() + bubble("Rogue", 250, 2.5, 300,
-                                          stroke="#f08a59")
+                                          stroke="#ff8a5c")
     h.expect_finding(
         "the dark-skin accent counts toward the same limit",
         document(dark_accent, TICKS),

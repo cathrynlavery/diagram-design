@@ -26,7 +26,7 @@ from axonometry import (FONT_LINK, FULL, MINIMAL, SKINS, Proj, Rect,  # noqa: E4
                         animated_page, cards_html, f, finish, outline, prism, solid, styles)
 
 EYEBROW = "Axonometric plan · Diagram Design"
-TREE_TOP = {"light": "#bfc0c0", "dark": "#949eb2"}
+TREE_TOP = {"light": "#c9d1d8", "dark": "#8695a0"}
 T = 6  # wall thickness
 
 
@@ -201,8 +201,8 @@ def tag(P, sk, name, sub, at, z, focal):
     edge = sk["accent"] if focal else sk["rule"]
     return (f'<g data-role="tag" data-name="{name}" data-at="{f(at[0])} {f(at[1])} {f(z)}">'
             f'<rect x="{f(x - bw / 2)}" y="{f(y - 16)}" width="{bw}" height="32" rx="2" fill="{sk["base"]}" stroke="{edge}" stroke-width="0.8"/>'
-            f'<text data-role="name" x="{f(x)}" y="{f(y)}" text-anchor="middle" fill="{name_c}" font-size="12" font-weight="600" font-family="\'Geist\', sans-serif">{name}</text>'
-            f'<text x="{f(x)}" y="{f(y + 11)}" text-anchor="middle" fill="{sub_c}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.08em">{sub}</text></g>')
+            f'<text data-role="name" x="{f(x)}" y="{f(y)}" text-anchor="middle" fill="{name_c}" font-size="12" font-weight="600" font-family="\'Inter\', sans-serif">{name}</text>'
+            f'<text x="{f(x)}" y="{f(y + 11)}" text-anchor="middle" fill="{sub_c}" font-size="8" font-family="\'Roboto Mono\', monospace" letter-spacing="0.08em">{sub}</text></g>')
 
 
 # ---------------------------------------------------------------- figures
@@ -287,15 +287,15 @@ def build_svg(plan: Plan, skin: str, motion: bool, slug: str):
     if plan.caption:
         cy = vh - 28
         x0 = ox + minx
-        out.append(f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>')
-        out.append(f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{plan.caption[1]}</text>')
+        out.append(f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Roboto Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>')
+        out.append(f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Inter\', sans-serif" font-style="italic">{plan.caption[1]}</text>')
     return "\n        ".join(out), vh
 
 
 def caption(plan, sk, vh, x0):
     cy = vh - 28
-    return [f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Geist Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>',
-            f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Geist\', sans-serif" font-style="italic">{plan.caption[1]}</text>']
+    return [f'<text x="{f(x0)}" y="{cy}" fill="{sk["muted"]}" font-size="8" font-family="\'Roboto Mono\', monospace" letter-spacing="0.18em">{plan.caption[0]}</text>',
+            f'<text x="{f(x0 + 120)}" y="{cy}" fill="{sk["muted"]}" font-size="8.5" font-family="\'Inter\', sans-serif" font-style="italic">{plan.caption[1]}</text>']
 
 
 def build_phased(plan: Plan, P, sk, skin, top, out, vh, ox, minx):

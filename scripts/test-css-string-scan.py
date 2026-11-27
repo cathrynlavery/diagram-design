@@ -159,8 +159,8 @@ GUARDED_RULES = {
     "arc-diagram": ("circle { display: none }", "circle { fill: red }"),
     "architecture-delta": ("rect { display: none }", "rect { width: 1px; height: 1px }"),
     # Box plot matches attribute values: a quoted value must reach the boxes as written.
-    "box-plot": ("rect { display: none }", 'rect[fill="rgba(245,245,245,0.14)"] { display: none }',
-                 "rect[fill='rgba(245,245,245,0.14)'] { display: none }"),
+    "box-plot": ("rect { display: none }", 'rect[fill="rgba(255,255,255,0.14)"] { display: none }',
+                 "rect[fill='rgba(255,255,255,0.14)'] { display: none }"),
     "polar": ("body { display: none }", "body { background: url(x.png) }"),
     "service-blueprint": ("rect { width: 1px; height: 1px }",),
 }

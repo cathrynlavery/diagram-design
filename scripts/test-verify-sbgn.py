@@ -353,7 +353,7 @@ class ContractTests(unittest.TestCase):
             with self.subTest(rule=rule):
                 sheet = GOOD.replace("<html><body>", f"<html><head><style>{rule}</style></head><body>", 1)
                 self.rejects(sheet, "every declared arc must be drawn")
-        visible = GOOD.replace(arc, f'{arc} stroke="#2d3142" opacity="0.8"', 1)
+        visible = GOOD.replace(arc, f'{arc} stroke="#0e1920" opacity="0.8"', 1)
         self.clean(visible)
         self.clean(GOOD.replace("<html><body>", "<html><head><style>.note { display: none; }</style></head><body>", 1))
 
@@ -508,7 +508,7 @@ class ContractTests(unittest.TestCase):
     def test_shipped_compartment_label_uses_soft_token(self):
         # The compartment name is a boundary label, so it takes the skin's
         # opaque soft role (style-guide.md), not ink at 40% opacity.
-        soft = {"": "#5a6580", "-dark": "#949eb2", "-full": "#5a6580"}
+        soft = {"": "#66727c", "-dark": "#8695a0", "-full": "#66727c"}
         for suffix, color in soft.items():
             path = ROOT / f"skills/diagrams-design-quind/assets/example-sbgn{suffix}.html"
             with self.subTest(variant=suffix):

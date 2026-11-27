@@ -51,8 +51,8 @@ MAIN_Y = 240
 FEAT_Y = 380
 ORIGIN = 280
 PITCH = 120
-INK = "#2d3142"
-ACCENT = "#bf4520"
+INK = "#0e1920"
+ACCENT = "#cc3b10"
 
 
 def col(index: int) -> float:
@@ -62,7 +62,7 @@ def col(index: int) -> float:
 def lane(name: str, y: float, x1: float, x2: float) -> str:
     return (
         '  <line data-lane="%s" data-y="%g" x1="%g" y1="%g" x2="%g" y2="%g" '
-        'stroke="#4f5d75"/>\n'
+        'stroke="#5b6770"/>\n'
         '  <text data-lane="%s" x="88" y="%g">%s</text>\n'
         % (name, y, x1, y, x2, y, name, y + 4, name)
     )
@@ -85,7 +85,7 @@ def connector(frm: str, to: str, d: str, extra="") -> str:
     extra_attr = (" " + extra) if extra else ""
     return (
         '  <path data-from="%s" data-to="%s" d="%s" fill="none" '
-        'stroke="#4f5d75"%s/>\n' % (frm, to, d, extra_attr)
+        'stroke="#5b6770"%s/>\n' % (frm, to, d, extra_attr)
     )
 
 
@@ -371,11 +371,11 @@ def run_cases(h: Harness) -> int:
 
     style_coral = honest().replace(
         commit("c1", "feat", 1, FEAT_Y),
-        commit("c1", "feat", 1, FEAT_Y, extra='style="fill:#bf4520"'),
+        commit("c1", "feat", 1, FEAT_Y, extra='style="fill:#cc3b10"'),
         1,
     ).replace(
         commit("c2", "feat", 2, FEAT_Y),
-        commit("c2", "feat", 2, FEAT_Y, extra='style="fill:#bf4520"'),
+        commit("c2", "feat", 2, FEAT_Y, extra='style="fill:#cc3b10"'),
         1,
     )
     h.expect_named(
@@ -386,7 +386,7 @@ def run_cases(h: Harness) -> int:
 
     inherited_coral = honest().replace(
         commit("c1", "feat", 1, FEAT_Y),
-        '  <g fill="#bf4520">\n'
+        '  <g fill="#cc3b10">\n'
         '  <circle data-commit="c1" data-lane="feat" data-column="1" '
         'cx="%g" cy="%g" r="8"/>\n  </g>\n' % (col(1), FEAT_Y),
         1,
@@ -461,7 +461,7 @@ def run_cases(h: Harness) -> int:
         h.expect_named(
             "a connector with %s is a finding" % hide,
             honest().replace(
-                c2_m1, c2_m1.replace('stroke="#4f5d75"', hide), 1
+                c2_m1, c2_m1.replace('stroke="#5b6770"', hide), 1
             ),
             "no visible stroke",
         )
@@ -474,7 +474,7 @@ def run_cases(h: Harness) -> int:
     h.expect_named(
         "a connector with no stroke anywhere is a finding",
         honest().replace(
-            c2_m1, c2_m1.replace(' stroke="#4f5d75"', ""), 1
+            c2_m1, c2_m1.replace(' stroke="#5b6770"', ""), 1
         ),
         "no visible stroke",
     )
@@ -490,16 +490,16 @@ def run_cases(h: Harness) -> int:
         "a connector inheriting its stroke from a group passes",
         honest().replace(
             c2_m1,
-            '  <g stroke="#4f5d75" stroke-width="1.5">\n'
-            + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n", 1
+            '  <g stroke="#5b6770" stroke-width="1.5">\n'
+            + c2_m1.replace(' stroke="#5b6770"', "") + "  </g>\n", 1
         ),
     )
     h.expect_clean(
         "a connector in a visible-stroke group nested in a stroke:none group passes",
         honest().replace(
             c2_m1,
-            '  <g stroke="none">\n  <g stroke="#4f5d75">\n'
-            + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n  </g>\n", 1
+            '  <g stroke="none">\n  <g stroke="#5b6770">\n'
+            + c2_m1.replace(' stroke="#5b6770"', "") + "  </g>\n  </g>\n", 1
         ),
     )
     h.expect_clean(
@@ -514,8 +514,8 @@ def run_cases(h: Harness) -> int:
         "a connector in a stroke:none group nested in a visible-stroke group is a finding",
         honest().replace(
             c2_m1,
-            '  <g stroke="#4f5d75">\n  <g stroke="none">\n'
-            + c2_m1.replace(' stroke="#4f5d75"', "") + "  </g>\n  </g>\n", 1
+            '  <g stroke="#5b6770">\n  <g stroke="none">\n'
+            + c2_m1.replace(' stroke="#5b6770"', "") + "  </g>\n  </g>\n", 1
         ),
         "no visible stroke",
     )
@@ -530,13 +530,13 @@ def run_cases(h: Harness) -> int:
     shipped_light = SHIPPED[0].read_text(encoding="utf-8")
     shipped_c2 = (
         '<circle data-commit="c2" data-lane="feat/billing" data-column="2" '
-        'cx="520" cy="520" r="8" fill="#2d3142"/>'
+        'cx="520" cy="520" r="8" fill="#0e1920"/>'
     )
     h.check("shipped example contains expected c2 circle", shipped_c2 in shipped_light)
     h.expect_named(
         'shipped c2 circle changed to fill="none" is a finding',
         shipped_light.replace(
-            shipped_c2, shipped_c2.replace('fill="#2d3142"', 'fill="none"'), 1
+            shipped_c2, shipped_c2.replace('fill="#0e1920"', 'fill="none"'), 1
         ),
         "commit c2 has no visible paint",
     )
@@ -572,7 +572,7 @@ def run_cases(h: Harness) -> int:
         'a commit in a fill="none" group nested in a visible-fill group is a finding',
         honest().replace(
             c2_dot,
-            '  <g fill="#2d3142">\n  <g fill="none">\n'
+            '  <g fill="#0e1920">\n  <g fill="none">\n'
             + c2_unset + "  </g>\n  </g>\n",
             1,
         ),
@@ -582,7 +582,7 @@ def run_cases(h: Harness) -> int:
         'a commit in a visible-fill group nested in a fill="none" group passes',
         honest().replace(
             c2_dot,
-            '  <g fill="none">\n  <g fill="#2d3142">\n'
+            '  <g fill="none">\n  <g fill="#0e1920">\n'
             + c2_unset + "  </g>\n  </g>\n",
             1,
         ),
@@ -596,7 +596,7 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             c2_dot,
             commit("c2", "feat", 2, FEAT_Y, fill="none",
-                   extra='stroke="#2d3142" stroke-width="1.5"'),
+                   extra='stroke="#0e1920" stroke-width="1.5"'),
             1,
         ),
     )
@@ -604,15 +604,15 @@ def run_cases(h: Harness) -> int:
         'a commit with fill="none" inheriting a visible stroke from a group passes',
         honest().replace(
             c2_dot,
-            '  <g stroke="#2d3142" stroke-width="1.5">\n'
+            '  <g stroke="#0e1920" stroke-width="1.5">\n'
             + commit("c2", "feat", 2, FEAT_Y, fill="none")
             + "  </g>\n",
             1,
         ),
     )
     for bad_stroke in ('stroke="none"', 'stroke="transparent"',
-                       'stroke="#2d3142" stroke-width="0"',
-                       'stroke="#2d3142" style="stroke-width:0px"'):
+                       'stroke="#0e1920" stroke-width="0"',
+                       'stroke="#0e1920" style="stroke-width:0px"'):
         h.expect_named(
             'a commit with fill="none" and %s is a finding' % bad_stroke,
             honest().replace(
@@ -627,7 +627,7 @@ def run_cases(h: Harness) -> int:
         honest().replace(
             c2_dot,
             '  <g stroke-width="0">\n'
-            + commit("c2", "feat", 2, FEAT_Y, fill="none", extra='stroke="#2d3142"')
+            + commit("c2", "feat", 2, FEAT_Y, fill="none", extra='stroke="#0e1920"')
             + "  </g>\n",
             1,
         ),

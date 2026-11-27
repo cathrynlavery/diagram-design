@@ -478,20 +478,20 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Icon library · Diagram Design</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --color-paper:   #f5f5f5;
-      --color-paper-2: #ececec;
-      --color-ink:     #2d3142;
-      --color-muted:   #4f5d75;
-      --color-soft:    #5a6580;
-      --color-rule:    rgba(45,49,66,0.12);
-      --color-accent:  #bf4520;
-      --font-sans:     'Geist', system-ui, sans-serif;
-      --font-serif:    'Instrument Serif', serif;
-      --font-mono:     'Geist Mono', ui-monospace, monospace;
+      --color-paper:   #ffffff;
+      --color-paper-2: #f3f6f8;
+      --color-ink:     #0e1920;
+      --color-muted:   #5b6770;
+      --color-soft:    #66727c;
+      --color-rule:    rgba(14,25,32,0.12);
+      --color-accent:  #cc3b10;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
     }
     body {
       font-family: var(--font-sans);
@@ -514,7 +514,7 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
     h1 {
       font-family: var(--font-serif);
       font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem);
-      font-weight: 400;
+      font-weight: 600;
       letter-spacing: -0.02em;
       line-height: 1.1;
       margin-bottom: 0.5rem;

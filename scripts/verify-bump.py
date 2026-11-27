@@ -123,7 +123,7 @@ LABEL_ROW_OFFSET = 3.5    # px, a label baseline below its vertex, per the refer
 MIN_SNAPSHOTS, MAX_SNAPSHOTS = 3, 6
 MIN_SERIES, MAX_SERIES = 4, 8
 FOCAL_WIDTH, PLAIN_WIDTH = 2.4, 1.2
-ACCENTS = {"#bf4520", "#f08a59"}   # light and dark skin accent tokens
+ACCENTS = {"#cc3b10", "#ff8a5c"}   # light and dark skin accent tokens
 
 
 # Quoted CSS data is not a declaration: `--note: "a;transform:b"` moves nothing (#431).

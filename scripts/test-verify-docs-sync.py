@@ -58,10 +58,10 @@ GRID_SKILL = """\
 
 ### Complexity budget
 
-<text x="10" y="20" font-size="12" font-weight="600" font-family="'Geist', sans-serif">Ingest</text>
-<text x="10" y="34" font-size="8.5" font-family="'Geist', sans-serif">source: s3</text>
-<text x="10" y="48" font-size="7" font-family="'Geist Mono', monospace">API</text>
-<text x="10" y="90" fill="rgba(45,49,66,0.06)" font-size="72" font-family="'Geist Mono', monospace">2026</text>
+<text x="10" y="20" font-size="12" font-weight="600" font-family="'Inter', sans-serif">Ingest</text>
+<text x="10" y="34" font-size="8.5" font-family="'Inter', sans-serif">source: s3</text>
+<text x="10" y="48" font-size="7" font-family="'Roboto Mono', monospace">API</text>
+<text x="10" y="90" fill="rgba(14,25,32,0.06)" font-size="72" font-family="'Roboto Mono', monospace">2026</text>
 """
 
 TYPE_RAMP_SPEC = """\
@@ -69,11 +69,11 @@ TYPE_RAMP_SPEC = """\
 
 | Role | standard | presentation | print |
 |---|---|---|---|
-| Title (Instrument Serif) | 28 | 40 | 32 |
-| Node name (Geist 600) | 12 | 16 | 12 |
-| Sublabel (Geist Mono) | 9 | 12 | 9 |
-| Arrow label (Geist Mono) | 8 | 12 | 8 |
-| Eyebrow / tag (Geist Mono) | 8 | 8 | 8 |
+| Title (Poppins,Inter,system-ui,sans-serif) | 28 | 40 | 32 |
+| Node name (Inter 600) | 12 | 16 | 12 |
+| Sublabel (Roboto Mono) | 9 | 12 | 9 |
+| Arrow label (Roboto Mono) | 8 | 12 | 8 |
+| Eyebrow / tag (Roboto Mono) | 8 | 8 | 8 |
 | Node box min height | 48 | 64 | 48 |
 | Min gap between nodes | 24 | 40 | 24 |
 
@@ -81,15 +81,15 @@ Every `font-size` is one of the role values above for the preset in use, or one 
 
 | Exception | Font | Sizes |
 |---|---|---|
-| Dense annotation: legend keys, axis ticks | Geist Mono or Geist regular | 7 to 11, half steps allowed |
-| Group or entity heading | Geist 600 | 14 |
+| Dense annotation: legend keys, axis ticks | Roboto Mono or Inter regular | 7 to 11, half steps allowed |
+| Group or entity heading | Inter 600 | 14 |
 | Decorative watermark numerals at or under 0.08 opacity | any | any |
 
 ### Registered legacy sizes
 
 | File | Sizes | What they are |
 |---|---|---|
-| `assets/example-legacy.html` | Geist 600 13, Geist 600 22 | node name and a counter |
+| `assets/example-legacy.html` | Inter 600 13, Inter 600 22 | node name and a counter |
 
 ### Safe areas
 """
@@ -141,7 +141,7 @@ TEMPLATES = (
     "assets/template-motion.html",
 )
 NOTO_SERIF_FAMILY = "&family=Noto+Serif:ital@0;1"
-TITLE_ORDER = "'Instrument Serif', 'Noto Serif', 'Noto Serif KR'"
+TITLE_ORDER = "'Poppins', 'Inter', system-ui, sans-serif"
 
 
 def mutate(path: Path, old: str, new: str) -> bytes:
@@ -193,7 +193,7 @@ def order_error(relative: str, face: str) -> str:
 
 def lacks_error(relative: str) -> str:
     return (
-        f"{relative} --font-serif lacks 'Noto Serif'; Instrument Serif carries "
+        f"{relative} --font-serif lacks 'Noto Serif'; Poppins,Inter,system-ui,sans-serif carries "
         "no Cyrillic, so a Cyrillic title falls through to the next face"
     )
 
@@ -266,7 +266,7 @@ def check_title_stack_order(verify) -> None:
         for relative in TEMPLATES:
             path = skill / relative
             original = mutate(
-                path, TITLE_ORDER, "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'"
+                path, TITLE_ORDER, "'Poppins', 'Inter', system-ui, sans-serif"
             )
             errors = run_checks(root, verify.check_title_fallback_order)
             if errors != [order_error(relative, "Noto Serif KR")]:
@@ -283,7 +283,7 @@ def check_title_stack_order(verify) -> None:
                 template,
                 "</style>",
                 "@media (prefers-color-scheme: dark) {\n"
-                f"      :root {{ --font-serif: 'Instrument Serif', '{face}', "
+                f"      :root {{ --font-serif: 'Poppins', 'Inter', system-ui, sans-serif}', "
                 "'Noto Serif', serif; }\n"
                 "    }\n"
                 "  </style>",
@@ -298,12 +298,11 @@ def check_title_stack_order(verify) -> None:
         # Each distinct problem is reported once, in declaration order: an
         # override repeated is one defect, and it does not hide a different one.
         original = mutate(
-            template, TITLE_ORDER, "'Instrument Serif', 'Noto Serif KR', 'Noto Serif'"
+            template, TITLE_ORDER, "'Poppins', 'Inter', system-ui, sans-serif"
         )
         override = (
             "@media (prefers-color-scheme: dark) {\n"
-            "      :root { --font-serif: 'Instrument Serif', 'Noto Serif JP', "
-            "'Noto Serif', serif; }\n"
+            "      :root { --font-serif: 'Poppins', 'Inter', system-ui, sans-serif; }\n"
             "    }\n"
             "  "
         )
@@ -524,7 +523,7 @@ def check_split_type_ramp(verify) -> None:
         skill.write_text(
             original.decode("utf-8")
             + "\n<text font-size=\"13\" font-weight=\"600\" "
-            "font-family=\"'Geist', sans-serif\">X</text>\n",
+            "font-family=\"'Inter', sans-serif\">X</text>\n",
             encoding="utf-8",
         )
         errors = run_checks(root, verify.check_type_ramp_surfaces)
@@ -1124,11 +1123,11 @@ def main() -> int:
     errors = []
     verify.check_line_dark_skin(
         errors,
-        line_dark.replace("--color-paper:#2d3142", "--color-paper:#f5f5f5", 1),
+        line_dark.replace("--color-paper:#0e1920", "--color-paper:#ffffff", 1),
     )
     expected = (
         "example-line-dark.html lost canonical dark-skin token "
-        "'--color-paper:#2d3142'"
+        "'--color-paper:#0e1920'"
     )
     if errors != [expected]:
         raise AssertionError(f"light-skin regression was not reported: {errors}")
@@ -1244,7 +1243,7 @@ def main() -> int:
     verify.check_type_ramp(
         errors,
         GRID_SKILL,
-        TYPE_RAMP_SPEC.replace("| Sublabel (Geist Mono) | 9 | 12 | 9 |\n", ""),
+        TYPE_RAMP_SPEC.replace("| Sublabel (Roboto Mono) | 9 | 12 | 9 |\n", ""),
     )
     if not any("'Sublabel'" in error for error in errors):
         raise AssertionError(f"missing ramp role was not reported: {errors}")
@@ -1259,7 +1258,7 @@ def main() -> int:
     verify.check_type_ramp(
         errors,
         heading_skill,
-        TYPE_RAMP_SPEC.replace("| Group or entity heading | Geist 600 | 14 |\n", ""),
+        TYPE_RAMP_SPEC.replace("| Group or entity heading | Inter 600 | 14 |\n", ""),
     )
     if len(errors) != 1 or "font-size=14" not in errors[0]:
         raise AssertionError(
@@ -1297,14 +1296,14 @@ def main() -> int:
     errors = []
     verify.check_type_ramp(
         errors,
-        GRID_SKILL.replace("font-size=\"8.5\" font-family=\"'Geist', sans-serif\"", 'font-size="8.5"'),
+        GRID_SKILL.replace("font-size=\"8.5\" font-family=\"'Inter', sans-serif\"", 'font-size="8.5"'),
         TYPE_RAMP_SPEC,
     )
     if len(errors) != 1 or "declares no font" not in errors[0]:
         raise AssertionError(f"fontless off-ramp size was not reported: {errors}")
 
     # An exception belongs to a role, not to a number range. A node name is set
-    # in Geist 600 and cannot take a dense-annotation size just by being small.
+    # in Inter 600 and cannot take a dense-annotation size just by being small.
     errors = []
     verify.check_type_ramp(
         errors, GRID_SKILL.replace('font-size="12"', 'font-size="7.5"'), TYPE_RAMP_SPEC
@@ -1319,12 +1318,12 @@ def main() -> int:
         errors, GRID_SKILL.replace('font-size="7"', 'font-size="7.5"'), TYPE_RAMP_SPEC
     )
     if errors:
-        raise AssertionError(f"dense annotation at 7.5 in Geist Mono was rejected: {errors}")
+        raise AssertionError(f"dense annotation at 7.5 in Roboto Mono was rejected: {errors}")
 
     # The 72px watermark is legal only while its opacity keeps it decorative.
     errors = []
     verify.check_type_ramp(
-        errors, GRID_SKILL.replace("rgba(45,49,66,0.06)", "rgba(45,49,66,0.30)"), TYPE_RAMP_SPEC
+        errors, GRID_SKILL.replace("rgba(14,25,32,0.06)", "rgba(14,25,32,0.30)"), TYPE_RAMP_SPEC
     )
     if len(errors) != 1 or "font-size=72" not in errors[0]:
         raise AssertionError(f"opaque watermark size was not reported: {errors}")
@@ -1339,8 +1338,8 @@ def main() -> int:
     # ── registered legacy sizes ──────────────────────────────────────────────
     legacy_markup = (
         '<svg viewBox="0 0 10 10">'
-        '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>'
-        '<text font-size="22" font-weight="600" font-family="\'Geist\', sans-serif">2/5</text>'
+        '<text font-size="13" font-weight="600" font-family="\'Inter\', sans-serif">A</text>'
+        '<text font-size="22" font-weight="600" font-family="\'Inter\', sans-serif">2/5</text>'
         "</svg>"
     )
     with tempfile.TemporaryDirectory(prefix="legacy-type-sizes-") as temp_dir:
@@ -1363,43 +1362,43 @@ def main() -> int:
         )
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
-        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
+        if len(errors) != 1 or "registers Inter 600 13, Inter 600 22" not in errors[0]:
             raise AssertionError(f"a grown legacy inventory was not reported: {errors}")
 
         legacy.write_text(legacy_markup.replace('font-size="22"', 'font-size="16"'), encoding="utf-8")
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
-        if len(errors) != 1 or "registers Geist 600 13, Geist 600 22" not in errors[0]:
+        if len(errors) != 1 or "registers Inter 600 13, Inter 600 22" not in errors[0]:
             raise AssertionError(f"a shrunk legacy inventory was not reported: {errors}")
 
         # An exception belongs to one font, so the same size under another font
         # is a different use and has to be reported even though the size list is
-        # unchanged. Swap the registered 13px Geist 600 name for a serif one.
+        # unchanged. Swap the registered 13px Inter 600 name for a serif one.
         legacy.write_text(
             legacy_markup.replace(
-                "font-size=\"13\" font-weight=\"600\" font-family='Geist', sans-serif",
-                "font-size=\"13\" font-family='Instrument Serif', serif",
+                "font-size=\"13\" font-weight=\"600\" font-family='Inter', sans-serif",
+                "font-size=\"13\" font-family='Poppins', 'Inter', system-ui, sans-serif",
             ).replace(
-                '<text font-size="13" font-weight="600" font-family="\'Geist\', sans-serif">A</text>',
-                '<text font-size="13" font-family="\'Instrument Serif\', serif">A</text>',
+                '<text font-size="13" font-weight="600" font-family="\'Inter\', sans-serif">A</text>',
+                '<text font-size="13" font-family="\'Poppins,Inter,system-ui,sans-serif\', serif">A</text>',
             ),
             encoding="utf-8",
         )
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
-        if len(errors) != 1 or "Instrument Serif 13" not in errors[0]:
+        if len(errors) != 1 or "Poppins,Inter,system-ui,sans-serif 13" not in errors[0]:
             raise AssertionError(
                 f"a legacy size moved to another font was not reported: {errors}"
             )
 
         legacy.write_text(legacy_markup, encoding="utf-8")
 
-        # A dense-annotation size is legal in Geist Mono and illegal in the
+        # A dense-annotation size is legal in Roboto Mono and illegal in the
         # serif, at the same size, in the same shipped file. 7 is on no role
         # ramp, so only the exception can carry it.
         annotation = (
             '<svg viewBox="0 0 10 10">'
-            '<text font-size="7" font-family="\'Geist Mono\', monospace">40 ms</text>'
+            '<text font-size="7" font-family="\'Roboto Mono\', monospace">40 ms</text>'
             "</svg>"
         )
         extra = assets / "example-annotation.html"
@@ -1408,17 +1407,17 @@ def main() -> int:
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
         if errors:
             raise AssertionError(
-                f"a Geist Mono annotation at 7 was not accepted: {errors}"
+                f"a Roboto Mono annotation at 7 was not accepted: {errors}"
             )
 
         extra.write_text(
-            annotation.replace("'Geist Mono', monospace", "'Instrument Serif', serif"),
+            annotation.replace("'Roboto Mono', monospace", "'Poppins', 'Inter', system-ui, sans-serif"),
             encoding="utf-8",
         )
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
         if not any(
-            "example-annotation" in error and "Instrument Serif 7" in error
+            "example-annotation" in error and "Poppins,Inter,system-ui,sans-serif 7" in error
             for error in errors
         ):
             raise AssertionError(
@@ -1428,8 +1427,8 @@ def main() -> int:
         # Same size, same file, set through a CSS class and a custom property:
         # the sweep has to resolve the family before it can judge the size.
         styled = (
-            "<style>:root{--font-mono:'Geist Mono',ui-monospace,monospace;"
-            "--font-serif:'Instrument Serif',serif}"
+            "<style>:root{--font-mono:'Roboto Mono',ui-monospace,monospace;"
+            "--font-serif:'Poppins', 'Inter', system-ui, sans-serif}"
             ".tick{font-family:var(--font-mono);font-size:7px}</style>"
             '<svg viewBox="0 0 10 10"><text class="tick">40 ms</text></svg>'
         )
@@ -1438,7 +1437,7 @@ def main() -> int:
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
         if errors:
             raise AssertionError(
-                f"a CSS-set Geist Mono annotation at 7 was not accepted: {errors}"
+                f"a CSS-set Roboto Mono annotation at 7 was not accepted: {errors}"
             )
 
         extra.write_text(
@@ -1447,36 +1446,36 @@ def main() -> int:
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
         if not any(
-            "example-annotation" in error and "Instrument Serif 7" in error
+            "example-annotation" in error and "Poppins,Inter,system-ui,sans-serif 7" in error
             for error in errors
         ):
             raise AssertionError(
                 f"a CSS-set annotation under the wrong font was not reported: {errors}"
             )
-        # The heading exception is Geist 600 at 14, and the same reading applies
+        # The heading exception is Inter 600 at 14, and the same reading applies
         # to it: the size is not a licence the serif can pick up.
         heading = (
             '<svg viewBox="0 0 10 10">'
-            '<text font-size="14" font-weight="600" font-family="\'Geist\', sans-serif">'
+            '<text font-size="14" font-weight="600" font-family="\'Inter\', sans-serif">'
             "Ingest</text></svg>"
         )
         extra.write_text(heading, encoding="utf-8")
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
         if errors:
-            raise AssertionError(f"a Geist 600 heading at 14 was not accepted: {errors}")
+            raise AssertionError(f"a Inter 600 heading at 14 was not accepted: {errors}")
 
         extra.write_text(
             heading.replace(
-                "font-weight=\"600\" font-family=\"'Geist', sans-serif\"",
-                "font-family=\"'Instrument Serif', serif\"",
+                "font-weight=\"600\" font-family=\"'Inter', sans-serif\"",
+                "font-family=\"'Poppins', 'Inter', system-ui, sans-serif\"",
             ),
             encoding="utf-8",
         )
         errors = []
         verify.check_legacy_type_sizes(errors, TYPE_RAMP_SPEC, fake_root)
         if not any(
-            "example-annotation" in error and "Instrument Serif 14" in error
+            "example-annotation" in error and "Poppins,Inter,system-ui,sans-serif 14" in error
             for error in errors
         ):
             raise AssertionError(
