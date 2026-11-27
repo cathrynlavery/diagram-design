@@ -29,7 +29,7 @@ ANIMATION = ROOT / "skills/diagrams-design-quind/references/animation.md"
 EXAMPLE = ROOT / "skills/diagrams-design-quind/assets/example-policy-trace-animated.html"
 ADR_0002 = ROOT / "docs/adr/0002-semantic-patterns-do-not-expand-the-taxonomy.md"
 MAX_SKILL_BYTES = 40_000
-VISUAL_TYPE_COUNT = 52
+VISUAL_TYPE_COUNT = 54
 
 PATTERN_NAMES = (
     "Fan-in queue / bottleneck",

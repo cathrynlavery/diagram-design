@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma de citas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Roboto+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #ffffff;   /* white-smoke */
+      --color-ink:     #0e1920;   /* jet-black */
+      --color-muted:   #5b6770;   /* blue-slate */
+      --color-accent:  #cc3b10;   /* burnt-tangerine */
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Poppins', 'Inter', system-ui, sans-serif;
+      --font-mono:     'Roboto Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width, so the
+       type ramp is never silently scaled down). This wrapper lets a narrow
+       screen scroll the diagram instead of the whole page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 1040px; display: block; }
+    /* Paper has no scrollbar, so the local scroller would clip instead of
+       scroll. Let the diagram scale down to the sheet: smaller but whole
+       beats sharp but cut off. Must come after the svg rule above - a media
+       query adds no specificity, so a later plain rule would win. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">C4 · Contenedores</p>
+    <h1>Plataforma de citas</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1040 744" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="c4-title c4-desc">
+        <title id="c4-title">Plataforma de citas</title>
+        <desc id="c4-desc">Diagrama de contenedores C4: el paciente usa la aplicación web, que llama a la API de citas; la API guarda en su base de datos y se integra con la historia clínica y el servicio de mensajería.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6770"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#cc3b10"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0b6e80"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#ffffff"/>
+
+        <!-- Frontera del sistema: va antes de las relaciones y las cajas -->
+        <rect x="200" y="144" width="800" height="312" rx="8" fill="none" stroke="#0e1920" stroke-width="1" stroke-dasharray="6,4"/>
+        <rect x="216" y="138" width="208" height="12" rx="2" fill="#ffffff"/>
+        <text x="224" y="148" fill="#66727c" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.14em">PLATAFORMA DE CITAS · SISTEMA</text>
+
+        <!-- Relaciones (antes de las cajas) -->
+        <line x1="500" y1="104" x2="500" y2="176" stroke="#5b6770" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="500" y1="264" x2="500" y2="336" stroke="#0b6e80" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="600" y1="380" x2="760" y2="380" stroke="#cc3b10" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <path d="M 468,424 V 472 Q 468,480 460,480 H 348 Q 340,480 340,488 V 568" fill="none" stroke="#0b6e80" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <path d="M 532,424 V 472 Q 532,480 540,480 H 692 Q 700,480 700,488 V 568" fill="none" stroke="#0b6e80" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+
+        <!-- Textos de las relaciones: intención que termina en preposición + protocolo -->
+        <rect x="508" y="127" width="168" height="16" rx="2" fill="#ffffff"/><text x="514" y="138" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif" text-anchor="start">Agenda y consulta sus citas en</text>
+        <rect x="508" y="285" width="148" height="28" rx="2" fill="#ffffff"/><text x="514" y="296" fill="#0b6e80" font-size="9" font-family="'Inter', sans-serif" text-anchor="start">Consulta y agenda citas en</text><text x="514" y="308" fill="#0b6e80" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="start">[JSON/HTTPS]</text>
+        <rect x="632" y="357" width="96" height="16" rx="2" fill="#ffffff"/><text x="680" y="368" fill="#cc3b10" font-size="9" font-family="'Inter', sans-serif" text-anchor="middle">Lee y escribe en</text>
+        <rect x="658" y="387" width="44" height="16" rx="2" fill="#ffffff"/><text x="680" y="398" fill="#cc3b10" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="middle">[JDBC]</text>
+        <rect x="200" y="509" width="132" height="28" rx="2" fill="#ffffff"/><text x="326" y="520" fill="#0b6e80" font-size="9" font-family="'Inter', sans-serif" text-anchor="end">Consulta la historia en</text><text x="326" y="532" fill="#0b6e80" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="end">[FHIR/HTTPS]</text>
+        <rect x="708" y="509" width="160" height="28" rx="2" fill="#ffffff"/><text x="714" y="520" fill="#0b6e80" font-size="9" font-family="'Inter', sans-serif" text-anchor="start">Envía recordatorios mediante</text><text x="714" y="532" fill="#0b6e80" font-size="8" font-family="'Roboto Mono', monospace" text-anchor="start">[HTTPS · asíncrono]</text>
+
+        <!-- Cajas -->
+        <rect x="400" y="40" width="200" height="64" rx="32" fill="#ffffff"/><rect x="400" y="40" width="200" height="64" rx="32" fill="rgba(91,103,112,0.10)" stroke="#66727c" stroke-width="1"/><circle cx="432" cy="72" r="16" fill="#ffffff" stroke="#66727c" stroke-width="1"/><svg x="422" y="62" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0e1920" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" /></svg><text x="460" y="62" fill="#66727c" font-size="7" font-weight="500" font-family="'Roboto Mono', monospace" letter-spacing="0.08em">PERSONA</text><text x="460" y="78" fill="#0e1920" font-size="12" font-weight="600" font-family="'Inter', sans-serif">Paciente</text><text x="460" y="92" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif">Agenda y cancela sus citas</text>
+        <rect x="400" y="176" width="200" height="88" rx="6" fill="#ffffff"/><rect x="400" y="176" width="200" height="88" rx="6" fill="#ffffff" stroke="#0e1920" stroke-width="1"/><rect x="408" y="184" width="60" height="12" rx="2" fill="none" stroke="#5b6770" stroke-width="0.8"/><text x="438" y="193" fill="#5b6770" font-size="7" font-weight="500" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CONTENEDOR</text><svg x="572" y="184" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0e1920" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2" /> <line x1="8" x2="16" y1="21" y2="21" /> <line x1="12" x2="12" y1="17" y2="21" /></svg><text x="412" y="216" fill="#0e1920" font-size="12" font-weight="600" font-family="'Inter', sans-serif">Aplicación web</text><text x="412" y="230" fill="#66727c" font-size="8" font-family="'Roboto Mono', monospace">[React · TypeScript]</text><text x="412" y="246" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif">Muestra agenda y formularios</text>
+        <rect x="400" y="336" width="200" height="88" rx="6" fill="#ffffff"/><rect x="400" y="336" width="200" height="88" rx="6" fill="rgba(204,59,16,0.08)" stroke="#cc3b10" stroke-width="1"/><rect x="408" y="344" width="60" height="12" rx="2" fill="none" stroke="#cc3b10" stroke-width="0.8"/><text x="438" y="353" fill="#cc3b10" font-size="7" font-weight="500" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CONTENEDOR</text><svg x="572" y="344" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0e1920" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /> <rect width="20" height="8" x="2" y="14" rx="2" ry="2" /> <line x1="6" x2="6.01" y1="6" y2="6" /> <line x1="6" x2="6.01" y1="18" y2="18" /></svg><text x="412" y="376" fill="#0e1920" font-size="12" font-weight="600" font-family="'Inter', sans-serif">API de citas</text><text x="412" y="390" fill="#66727c" font-size="8" font-family="'Roboto Mono', monospace">[Spring Boot · Java]</text><text x="412" y="406" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif">Valida y registra cada cita</text>
+        <rect x="760" y="336" width="200" height="88" rx="6" fill="#ffffff"/><rect x="760" y="336" width="200" height="88" rx="6" fill="rgba(14,25,32,0.05)" stroke="#5b6770" stroke-width="1"/><line x1="766" y1="423" x2="954" y2="423" stroke="#5b6770" stroke-width="3"/><rect x="768" y="344" width="100" height="12" rx="2" fill="none" stroke="#5b6770" stroke-width="0.8"/><text x="818" y="353" fill="#5b6770" font-size="7" font-weight="500" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CONTENEDOR · DATOS</text><svg x="932" y="344" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0e1920" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3" /> <path d="M3 5V19A9 3 0 0 0 21 19V5" /> <path d="M3 12A9 3 0 0 0 21 12" /></svg><text x="772" y="376" fill="#0e1920" font-size="12" font-weight="600" font-family="'Inter', sans-serif">Base de datos de citas</text><text x="772" y="390" fill="#66727c" font-size="8" font-family="'Roboto Mono', monospace">[PostgreSQL]</text><text x="772" y="406" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif">Guarda citas y disponibilidad</text>
+        <rect x="240" y="568" width="200" height="88" rx="6" fill="#ffffff"/><rect x="240" y="568" width="200" height="88" rx="6" fill="rgba(14,25,32,0.03)" stroke="rgba(14,25,32,0.30)" stroke-width="1"/><rect x="248" y="576" width="84" height="12" rx="2" fill="none" stroke="#5b6770" stroke-width="0.8"/><text x="290" y="585" fill="#5b6770" font-size="7" font-weight="500" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SISTEMA EXTERNO</text><text x="252" y="608" fill="#0e1920" font-size="12" font-weight="600" font-family="'Inter', sans-serif">Historia clínica</text><text x="252" y="626" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif">Entrega antecedentes del paciente</text>
+        <rect x="600" y="568" width="200" height="88" rx="6" fill="#ffffff"/><rect x="600" y="568" width="200" height="88" rx="6" fill="rgba(14,25,32,0.03)" stroke="rgba(14,25,32,0.30)" stroke-width="1"/><rect x="608" y="576" width="84" height="12" rx="2" fill="none" stroke="#5b6770" stroke-width="0.8"/><text x="650" y="585" fill="#5b6770" font-size="7" font-weight="500" font-family="'Roboto Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SISTEMA EXTERNO</text><text x="612" y="608" fill="#0e1920" font-size="12" font-weight="600" font-family="'Inter', sans-serif">Servicio de mensajería</text><text x="612" y="626" fill="#5b6770" font-size="9" font-family="'Inter', sans-serif">Envía SMS y correos al paciente</text>
+        
+        <!-- Clave de notación -->
+        <line x1="40" y1="688" x2="1000" y2="688" stroke="rgba(14,25,32,0.10)" stroke-width="0.8"/>
+        <text x="40" y="704" fill="#5b6770" font-size="8" font-family="'Roboto Mono', monospace" letter-spacing="0.18em">CLAVE</text>
+        <rect x="40" y="716" width="14" height="10" rx="5" fill="rgba(91,103,112,0.10)" stroke="#66727c" stroke-width="1"/>
+        <text x="60" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Persona</text>
+        <rect x="120" y="716" width="14" height="10" rx="2" fill="#ffffff" stroke="#0e1920" stroke-width="1"/>
+        <text x="140" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Contenedor</text>
+        <rect x="216" y="716" width="14" height="10" rx="2" fill="rgba(204,59,16,0.08)" stroke="#cc3b10" stroke-width="1"/>
+        <text x="236" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Contenedor en foco</text>
+        <rect x="348" y="716" width="14" height="10" rx="2" fill="rgba(14,25,32,0.05)" stroke="#5b6770" stroke-width="1"/>
+        <line x1="350" y1="725" x2="360" y2="725" stroke="#5b6770" stroke-width="2"/>
+        <text x="368" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Almacén de datos</text>
+        <rect x="472" y="716" width="14" height="10" rx="2" fill="rgba(14,25,32,0.03)" stroke="rgba(14,25,32,0.30)" stroke-width="1"/>
+        <text x="492" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Sistema externo</text>
+        <rect x="588" y="716" width="14" height="10" rx="2" fill="none" stroke="#0e1920" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="608" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Frontera del sistema</text>
+        <line x1="716" y1="722" x2="744" y2="722" stroke="#0b6e80" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <text x="752" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Llamada síncrona</text>
+        <line x1="848" y1="722" x2="876" y2="722" stroke="#0b6e80" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+        <text x="884" y="724" fill="#5b6770" font-size="8.5" font-family="'Inter', sans-serif">Asíncrona</text>
+
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

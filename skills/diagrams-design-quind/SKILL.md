@@ -1,34 +1,35 @@
 ---
 name: diagrams-design-quind
-description: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, steps, timeline, git graph, swimlane, quadrant, radar/spider, polar chart (polar/radial lollipop), loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap and marimekko, unit grid, heatmap, bar and dumbbell, waterfall, line (slopegraph, ridgeline, streamgraph, bump), Gantt and scatter charts (bubble, beeswarm, box plot), high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph (arc diagram), UML class, story map, database schema, SBGN, requirement traceability, event modeling, or schedule network diagrams as HTML/SVG/PNG, with .drawio, Mermaid, .excalidraw, and PlantUML import, plus lifecycle phase maps, block decomposition trees, and onboarding guidance.
+description: Crea diagramas con el estilo QUIND como HTML/SVG/PNG. Úsalo cuando pidan un diagrama, gráfico o cronograma, o cuando un documento o página QUIND necesite figuras. Tipos: arquitectura C4 (contexto, contenedores, componentes, despliegue), procesos BPMN con piscinas y carriles, nube con íconos de AWS, Azure y GCP, architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER, steps, timeline, git graph, swimlane, quadrant, radar, polar, loop/flywheel, nested, tree, org chart, layer stack, exploded axonometric, axonometric plan, Venn, pyramid/funnel, treemap, marimekko, unit grid, heatmap, bar, waterfall, line, Gantt, scatter, high-level, process, medallion, data flow, DP integration, DP security matrix, Sankey, fishbone, Wardley map, kanban, user journey, service blueprint, deployment, dependency graph, UML class, story map, database schema, SBGN, requirement traceability, event modeling, schedule network. Importa .drawio, Mermaid, .excalidraw y PlantUML.
 license: MIT
 metadata:
   version: "2.6"
 ---
 
-# Diagram Design
+# Diagramas QUIND (diagrams-design-quind)
 
-Create diagrams as self-contained HTML files with inline SVG and an editorial design system.
+Create diagrams as self-contained HTML files with inline SVG and the QUIND design system.
 
-Fifty-two visual types. Semantic patterns describe behavior; type references describe layout.
+## Reglas QUIND (siempre)
+
+- **Idioma**: rótulos, títulos, clave y textos alternativos en español, salvo que el usuario escriba o pida otro idioma. Los términos técnicos de uso habitual quedan en inglés.
+- **El diagrama se entiende solo.** Antes de dibujar, responda en una línea qué pregunta contesta y para quién. Clave de notación siempre.
+- **Se dibuja solo lo que se pide**: una vista pedida es una vista entregada. Mencione en una línea qué otras podrían sumarse, sin generarlas.
+- **No invente** piezas, tecnologías ni integraciones: lo que no se sabe se pregunta o se anota como opción («PostgreSQL o MySQL»).
+- **Confidencialidad**: no mezcle información de clientes distintos ni use datos de un cliente en ejemplos. Los ejemplos del skill son ficticios.
+- **Secretos**: nunca credenciales, llaves, cadenas de conexión ni direcciones internas sensibles en un diagrama; si aparecen en el material, avise y recomiende rotarlas, sin repetirlas.
+- **Para cliente**: figura autocontenida, sin referencias a procesos o versiones internas; un responsable de QUIND la revisa antes de enviarla. Recuerde validar el diagrama contra el sistema real.
+- **Arquitectura de software → C4** ([type-c4.md](references/type-c4.md)); **proceso con responsables y controles → BPMN** ([type-bpmn.md](references/type-bpmn.md)); **servicios de nube → íconos oficiales** ([icons-quind.md](references/icons-quind.md)).
+
+Fifty-four visual types. Semantic patterns describe behavior; type references describe layout.
 
 ---
 
-## 0. First-time setup — style guide gate
+## 0. Skin — QUIND is the default
 
-**Before generating your first diagram in a new project, verify the style guide has been customized.**
+The shipped [`references/style-guide.md`](references/style-guide.md) is the QUIND skin (paper `#ffffff`, ink `#0e1920`, accent `#cc3b10`; Poppins, Inter, Roboto Mono). **Use it without asking**: there is no first-run gate and no onboarding step for QUIND work.
 
-Do not silently ship default-skinned diagrams into a branded project.
-
-First resolve any project `.diagram-design` marker per [`references/profiles.md`](references/profiles.md); a successfully resolved marker selects its profile and bypasses this gate. That reference owns failures, the protected default, and save behavior.
-
-Open [`references/style-guide.md`](references/style-guide.md) and check the default tokens. If they are still the shipped defaults (paper `#f5f5f5`, ink `#2d3142`, accent `#bf4520`), **pause and ask the user**:
-
-> *"This is your first diagram in this project and the style guide is still default. Customize now? Options: (a) website URL, (b) installed skill, (c) local folder/design-system, (d) paste tokens, (e) keep default, (f) load saved profile."*
-
-Then branch per the matching section of [`references/onboarding.md`](references/onboarding.md); for **(f)** follow [`references/profiles.md`](references/profiles.md).
-
-**Once the style guide has been customized** (or the user explicitly chose default), skip this gate on later runs. A leading profile header names the copied-in active profile. Without a header, any semantic-role value or typography family differing from shipped defaults means **custom-unsaved**: skip the gate and offer to save it as a profile. All-default tokens with no marker/header trigger the gate. After onboarding, offer to save as a named client profile per `references/profiles.md`.
+Only when the user explicitly asks for another brand's look, follow [`references/onboarding.md`](references/onboarding.md) and save it as a named profile per [`references/profiles.md`](references/profiles.md); a project `.diagram-design` marker, if present, is resolved per that reference. Never overwrite the QUIND style guide with a client skin.
 
 ---
 
@@ -40,7 +41,7 @@ Applied to schematics:
 
 - Every node represents a distinct idea. Two nodes that always travel together are one node.
 - Every connection carries information. If the relationship is obvious from layout, remove the line.
-- Coral is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal.
+- The accent (QUIND orange; the type references call it "coral") is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal.
 - The schematic isn't done when everything is added. It's done when nothing can be removed.
 
 **Target density: 4/10.** Enough to be technically complete. Not so dense it needs a guide. Above 9 nodes, it's probably two diagrams.
@@ -49,7 +50,7 @@ Applied to schematics:
 
 ## 2. When to Use
 
-Use for any of the 52 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
+Use for any of the 54 visual types (§3) when a reader will learn more from a visual than from prose, a table, or a bulleted list.
 
 **Don't use for:**
 
@@ -80,10 +81,12 @@ When behavior, state, enforcement, or risk carries the meaning, first load [`ref
 
 The pattern owns semantic primitives and its tighter budget; the type owns layout grammar. Use [`references/animation.md`](references/animation.md) only when motion is requested or materially clarifies ordered change; static remains the default.
 
-### Visual-type guide (52)
+### Visual-type guide (54)
 
 | If you're showing… | Use | Reference |
 |---|---|---|
+| A software system by C4 level: context, containers, components, deployment, dynamic | **C4** | [type-c4.md](references/type-c4.md) |
+| End-to-end process with pools, lanes, typed tasks, gateways, and controls | **BPMN** | [type-bpmn.md](references/type-bpmn.md) |
 | Components + connections in one snapshot; nested admin vs traffic scopes | **Architecture** | [type-architecture.md](references/type-architecture.md) |
 | Structural change between synchronized Before / After topologies, with a Changes ledger | **Architecture delta** | [type-architecture-delta.md](references/type-architecture-delta.md) |
 | Legacy IT landscape by phase or department; shows the *before* state | **IT current-state** | [type-it-state.md](references/type-it-state.md) |
@@ -158,7 +161,7 @@ These mark "AI slop" schematics of any type:
 | Anti-pattern | Why it fails |
 |---|---|
 | Dark mode + cyan/purple glow | Looks "technical" without design decisions |
-| JetBrains Mono as blanket "dev" font | Mono is for *technical* content — ports, commands, URLs. Names go in Geist sans. |
+| Mono as blanket "dev" font | Roboto Mono is for *technical* content — ports, commands, URLs. Names go in Inter. |
 | Identical boxes for every node | Erases hierarchy |
 | Legend floating inside the diagram area | Collides with nodes |
 | Arrow labels with no masking rect | Bleeds through the line |
@@ -198,11 +201,11 @@ Type-reference snippets write roles as placeholders: `{ink}`, `{ink @ 0.40}` for
 
 **Node treatments** (focal, backend/API/step, store/state, external/cloud, input/user, optional/async, security/boundary): fill and stroke per [style-guide.md § Node type → treatment](references/style-guide.md#node-type--treatment).
 
-**Typography:** Instrument Serif for the H1 title and italic callouts, Geist sans 600 for node names, Geist Mono for sublabels, eyebrows, and arrow labels. Sizes, weights, and the font `<link>`: [style-guide.md § Typography](references/style-guide.md#typography); per-preset type ramp: [output-spec.md](references/output-spec.md). When the user asks for offline output, system fonts, or no Google Fonts, follow [style-guide.md § Font source](references/style-guide.md#font-source).
+**Typography:** Poppins 600 for the H1 title, Inter 600 for node names, italic Inter for callouts, Roboto Mono for sublabels, eyebrows, and arrow labels. Sizes, weights, and the font `<link>`: [style-guide.md § Typography](references/style-guide.md#typography); per-preset type ramp: [output-spec.md](references/output-spec.md). When the user asks for offline output, system fonts, or no Google Fonts, follow [style-guide.md § Font source](references/style-guide.md#font-source).
 
 **Non-Latin labels** — extend the family: [Korean](references/style-guide.md#korean-labels), [Chinese](references/style-guide.md#traditional-chinese-labels), [Cyrillic](references/style-guide.md#cyrillic-labels).
 
-**Mono is for technical content only** — never as a blanket "dev" font, and never JetBrains Mono.
+**Mono is for technical content only** — never as a blanket "dev" font, and no family outside Poppins, Inter, and Roboto Mono.
 
 ---
 
@@ -212,21 +215,22 @@ Universal building blocks. Type-specialized primitives (lifeline, activation bar
 
 - Editorial callouts → [primitive-annotation.md](references/primitive-annotation.md)
 - Hand-drawn variant → [primitive-sketchy.md](references/primitive-sketchy.md)
-- Icon set (laptop, server, DB, K8s, Docker, AWS, …) → [primitive-icons.md](references/primitive-icons.md). Browse the gallery at [`assets/icons.html`](assets/icons.html).
+- QUIND icon libraries — Lucide line icons and official AWS, Azure, and GCP marks, found and embedded with `python3 scripts/quind_icon.py` → [icons-quind.md](references/icons-quind.md).
+- Short inline icon set (laptop, server, DB, K8s, Docker, …) → [primitive-icons.md](references/primitive-icons.md). Browse the gallery at [`assets/icons.html`](assets/icons.html).
 - Terminal / CLI-window variant → [primitive-terminal.md](references/primitive-terminal.md)
 - Optional explanatory motion → [animation.md](references/animation.md)
 
 Exact markup (background, dotted paper, markers, node box, arrow label, legend) and the long form of each connector rule: [`references/primitives-core.md`](references/primitives-core.md). The static templates (`template.html`, `template-dark.html`, `template-full.html`) already define the background and the `arrow`, `arrow-accent`, and `arrow-link` markers; `template-motion.html` defines only its own prefixed marker, so add the others from primitives-core.md when a motion diagram needs them.
 
 - **Arrows:** `muted` by default, `accent` for the headline path, `link` for HTTP/API and external calls, dashed `5,4` for optional, passive, return, or async. Draw arrows before boxes so lines sit behind nodes.
-- **Node box:** an opaque paper mask rect, then the styled box at `rx=6`, a rectangular type tag at `rx=2` (not a pill), the name in Geist 600, and a Geist Mono sublabel.
+- **Node box:** an opaque paper mask rect, then the styled box at `rx=6`, a rectangular type tag at `rx=2` (not a pill), the name in Inter 600, and a Roboto Mono sublabel.
 
 ### Mandatory connector rules
 
 Non-negotiable, and §9 checks each one. Full text and edge cases: [primitives-core.md § Mandatory connector rules](references/primitives-core.md#mandatory-connector-rules).
 
 1. **Orthogonal only.** Connectors between off-axis nodes are rounded right-angle elbows at `r=8` (`r=6` minimum in tight layouts); a straight `<line>` only when both ends share x or y. Diagonals fail.
-2. **Label gap.** Every arrow label (14 characters max, all caps, centered on its segment) sits on an opaque mask with a visible 6 to 10px gap from its stroke, beside vertical segments, never on the line.
+2. **Label gap.** Every arrow label (14 characters max, all caps, centered on its segment; C4 and BPMN labels follow their type reference instead) sits on an opaque mask with a visible 6 to 10px gap from its stroke, beside vertical segments, never on the line.
 3. **No overlaps.** No shared or stacked strokes: offset parallel routes by 12px or more, and use the bridge/hop at a single crossing.
 4. **Fan attach points.** Connectors on one box edge each get their own point at `L * k / (N + 1)`, 12px or more apart (8px on very small boxes).
 5. **No transit behind a non-endpoint box.** Reroute. Only when the box is geometrically unavoidable: dashed stroke (`4,3`), label at the visible end, no marker on the intervening box.
@@ -244,7 +248,7 @@ Structural geometry sits on a 4px grid: node origins, widths, heights, gaps, and
 |---|---|
 | Max nodes | 9 |
 | Max arrows / transitions | 12 |
-| Max coral elements | 2 |
+| Max accent elements | 2 |
 | Max annotation callouts | 2 |
 | Max motion (optional) | 8 steps, 12 marked items, 2 simultaneous items — see [animation.md](references/animation.md) |
 
@@ -283,7 +287,7 @@ Run before producing any diagram.
 
 **Signal:**
 
-- [ ] Coral used on ≤2 elements? If more, which actually deserve focal status?
+- [ ] Accent used on ≤2 elements? If more, which actually deserve focal status?
 - [ ] Legend covers every type used — and nothing extra?
 - [ ] Within the type's complexity budget (§7)?
 
@@ -298,7 +302,8 @@ Run before producing any diagram.
 
 **Typography:**
 
-- [ ] Names in Geist sans; ports, commands, and URLs in Geist Mono; page title in Instrument Serif; annotation callouts in *italic* Instrument Serif ([primitive-annotation.md](references/primitive-annotation.md)); no JetBrains Mono anywhere?
+- [ ] Names in Inter; ports, commands, and URLs in Roboto Mono; page title in Poppins; annotation callouts in *italic* Inter ([primitive-annotation.md](references/primitive-annotation.md)); no other family anywhere?
+- [ ] QUIND: labels in Spanish, notation key present, no client data mixed, no secrets, only the requested views drawn?
 - [ ] Brand match uses exact public families/weights, verified via `getComputedStyle`; fallbacks disclosed?
 
 ---
@@ -309,7 +314,7 @@ Every diagram ships in three variants (see `assets/`):
 
 | Variant | File pattern | When to use |
 |---|---|---|
-| **Minimal light** (default) | `assets/template.html`, `example-<type>.html` | Screenshot-ready. Diagram + title. Warm paper. |
+| **Minimal light** (default) | `assets/template.html`, `example-<type>.html` | Screenshot-ready. Diagram + title. White QUIND paper. |
 | **Minimal dark** | `assets/template-dark.html`, `example-<type>-dark.html` | Dark mode sites, slides, high-contrast posts. |
 | **Full editorial** | `assets/template-full.html`, `example-<type>-full.html` | Long-form posts where the diagram is the hero. |
 | **Consultant special** (quadrant only) | `example-quadrant-consultant.html` | BCG/McKinsey-style 2×2 scenario matrix. See [type-quadrant.md](references/type-quadrant.md#consultant-special-22-scenario-matrix). |
@@ -363,7 +368,7 @@ The size preset sets the `viewBox` **and** the type ramp; `faithful` is the only
 
 Always produce a single self-contained `.html` file:
 
-- Embedded CSS (no external except Google Fonts)
+- Embedded CSS (no external except Google Fonts: Poppins, Inter, Roboto Mono)
 - Inline SVG (no external images)
 - Static by default; minimal inline JavaScript only for explicit animation controls/state
 

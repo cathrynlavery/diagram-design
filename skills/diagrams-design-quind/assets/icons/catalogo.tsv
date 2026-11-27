@@ -1,0 +1,3210 @@
+aws:activate	AWS Activate	Customer Enablement
+aws:alexa-for-business	Alexa For Business	Business Applications
+aws:amplify	AWS Amplify	Front End Web Mobile
+aws:apache-mxnet-on-aws	Apache MXNet on AWS	Artificial Intelligence
+aws:api-gateway	Amazon API Gateway	Networking Content Delivery
+aws:app-mesh	AWS App Mesh	Networking Content Delivery
+aws:app-runner	AWS App Runner	Compute
+aws:app-studio	AWS App Studio	Artificial Intelligence
+aws:appconfig	AWS AppConfig	Management Governance
+aws:appfabric	AWS AppFabric	Business Applications
+aws:appflow	Amazon AppFlow	App Integration
+aws:application-auto-scaling	AWS Application Auto Scaling	Management Governance
+aws:application-discovery-service	AWS Application Discovery Service	Migration Modernization
+aws:application-migration-service	AWS Application Migration Service	Migration Modernization
+aws:application-recovery-controller	Amazon Application Recovery Controller	Networking Content Delivery
+aws:appstream-2	Amazon AppStream 2	End User Computing
+aws:appsync	AWS AppSync	App Integration
+aws:artifact	AWS Artifact	Security Identity Compliance
+aws:athena	Amazon Athena	Analytics
+aws:audit-manager	AWS Audit Manager	Security Identity Compliance
+aws:augmented-ai-a2i	Amazon Augmented AI A2I	Artificial Intelligence
+aws:aurora	Amazon Aurora	Database
+aws:auto-scaling	AWS Auto Scaling	Management Governance
+aws:b2b-data-interchange	AWS B2B Data Interchange	App Integration
+aws:backint-agent	AWS Backint Agent	Management Governance
+aws:backup	AWS Backup	Storage
+aws:batch	AWS Batch	Compute
+aws:bedrock	Amazon Bedrock	Artificial Intelligence
+aws:billing-conductor	AWS Billing Conductor	Cloud Financial Management
+aws:bottlerocket	Bottlerocket	Compute
+aws:braket	Amazon Braket	Quantum Technologies
+aws:budgets	AWS Budgets	Cloud Financial Management
+aws:cat-analytics	Analytics	Categoría
+aws:cat-application-integration	Application Integration	Categoría
+aws:cat-artificial-intelligence	Artificial Intelligence	Categoría
+aws:cat-blockchain	Blockchain	Categoría
+aws:cat-business-applications	Business Applications	Categoría
+aws:cat-cloud-financial-management	Cloud Financial Management	Categoría
+aws:cat-compute	Compute	Categoría
+aws:cat-contact-center	Contact Center	Categoría
+aws:cat-containers	Containers	Categoría
+aws:cat-customer-enablement	Customer Enablement	Categoría
+aws:cat-database	Database	Categoría
+aws:cat-developer-tools	Developer Tools	Categoría
+aws:cat-end-user-computing	End User Computing	Categoría
+aws:cat-front-end-web-mobile	Front End Web Mobile	Categoría
+aws:cat-games	Games	Categoría
+aws:cat-internet-of-things	Internet of Things	Categoría
+aws:cat-management-governance	Management Governance	Categoría
+aws:cat-media-services	Media Services	Categoría
+aws:cat-migration-modernization	Migration Modernization	Categoría
+aws:cat-networking-content-delivery	Networking Content Delivery	Categoría
+aws:cat-quantum-technologies	Quantum Technologies	Categoría
+aws:cat-satellite	Satellite	Categoría
+aws:cat-security-identity-compliance	Security Identity Compliance	Categoría
+aws:cat-serverless	Serverless	Categoría
+aws:cat-storage	Storage	Categoría
+aws:certificate-manager	AWS Certificate Manager	Security Identity Compliance
+aws:chatbot	AWS Chatbot	Management Governance
+aws:chime	Amazon Chime	Business Applications
+aws:chime-sdk	Amazon Chime SDK	Business Applications
+aws:clean-rooms	AWS Clean Rooms	Analytics
+aws:client-vpn	AWS Client VPN	Networking Content Delivery
+aws:cloud-control-api	AWS Cloud Control API	Developer Tools
+aws:cloud-development-kit	AWS Cloud Development Kit	Developer Tools
+aws:cloud-directory	Amazon Cloud Directory	Security Identity Compliance
+aws:cloud-map	AWS Cloud Map	Networking Content Delivery
+aws:cloud-wan	AWS Cloud WAN	Networking Content Delivery
+aws:cloud9	AWS Cloud9	Developer Tools
+aws:cloudformation	AWS CloudFormation	Management Governance
+aws:cloudfront	Amazon CloudFront	Networking Content Delivery
+aws:cloudhsm	AWS CloudHSM	Security Identity Compliance
+aws:cloudsearch	Amazon CloudSearch	Analytics
+aws:cloudshell	AWS CloudShell	Developer Tools
+aws:cloudtrail	AWS CloudTrail	Management Governance
+aws:cloudwatch	Amazon CloudWatch	Management Governance
+aws:codeartifact	AWS CodeArtifact	Developer Tools
+aws:codebuild	AWS CodeBuild	Developer Tools
+aws:codecatalyst	Amazon CodeCatalyst	Developer Tools
+aws:codecommit	AWS CodeCommit	Developer Tools
+aws:codedeploy	AWS CodeDeploy	Developer Tools
+aws:codeguru	Amazon CodeGuru	Artificial Intelligence
+aws:codepipeline	AWS CodePipeline	Developer Tools
+aws:codewhisperer	Amazon CodeWhisperer	Artificial Intelligence
+aws:cognito	Amazon Cognito	Security Identity Compliance
+aws:command-line-interface	AWS Command Line Interface	Developer Tools
+aws:comprehend	Amazon Comprehend	Artificial Intelligence
+aws:comprehend-medical	Amazon Comprehend Medical	Artificial Intelligence
+aws:compute-optimizer	AWS Compute Optimizer	Compute
+aws:config	AWS Config	Management Governance
+aws:connect	Amazon Connect	Business Applications
+aws:console-mobile-application	AWS Console Mobile Application	Management Governance
+aws:control-tower	AWS Control Tower	Management Governance
+aws:corretto	Amazon Corretto	Developer Tools
+aws:cost-and-usage-report	AWS Cost and Usage Report	Cloud Financial Management
+aws:cost-explorer	AWS Cost Explorer	Cloud Financial Management
+aws:data-exchange	AWS Data Exchange	Analytics
+aws:data-firehose	Amazon Data Firehose	Analytics
+aws:data-transfer-terminal	AWS Data Transfer Terminal	Migration Modernization
+aws:database-migration-service	AWS Database Migration Service	Database
+aws:datasync	AWS DataSync	Migration Modernization
+aws:datazone	Amazon DataZone	Analytics
+aws:dcv	Amazon DCV	Compute
+aws:deadline-cloud	AWS Deadline Cloud	Media Services
+aws:deep-learning-amis	AWS Deep Learning AMIs	Artificial Intelligence
+aws:deep-learning-containers	AWS Deep Learning Containers	Artificial Intelligence
+aws:deepcomposer	AWS DeepComposer	Artificial Intelligence
+aws:deepracer	AWS DeepRacer	Artificial Intelligence
+aws:detective	Amazon Detective	Security Identity Compliance
+aws:device-farm	AWS Device Farm	Front End Web Mobile
+aws:devops-guru	Amazon DevOps Guru	Artificial Intelligence
+aws:direct-connect	AWS Direct Connect	Networking Content Delivery
+aws:directory-service	AWS Directory Service	Security Identity Compliance
+aws:distro-for-opentelemetry	AWS Distro for OpenTelemetry	Management Governance
+aws:documentdb	Amazon DocumentDB	Database
+aws:dynamodb	Amazon DynamoDB	Database
+aws:ec2	Amazon EC2	Compute
+aws:ec2-auto-scaling	Amazon EC2 Auto Scaling	Compute
+aws:ec2-image-builder	Amazon EC2 Image Builder	Compute
+aws:ecs-anywhere	Amazon ECS Anywhere	Containers
+aws:efs	Amazon EFS	Storage
+aws:eks-anywhere	Amazon EKS Anywhere	Containers
+aws:eks-cloud	Amazon EKS Cloud	Containers
+aws:eks-distro	Amazon EKS Distro	Containers
+aws:elastic-beanstalk	AWS Elastic Beanstalk	Compute
+aws:elastic-block-store	Amazon Elastic Block Store	Storage
+aws:elastic-container-registry	Amazon Elastic Container Registry	Containers
+aws:elastic-container-service	Amazon Elastic Container Service	Containers
+aws:elastic-disaster-recovery	AWS Elastic Disaster Recovery	Storage
+aws:elastic-fabric-adapter	Elastic Fabric Adapter	Compute
+aws:elastic-inference	Amazon Elastic Inference	Artificial Intelligence
+aws:elastic-kubernetes-service	Amazon Elastic Kubernetes Service	Containers
+aws:elastic-load-balancing	Elastic Load Balancing	Networking Content Delivery
+aws:elastic-transcoder	Amazon Elastic Transcoder	Media Services
+aws:elastic-vmware-service	Amazon Elastic VMware Service	Compute
+aws:elasticache	Amazon ElastiCache	Database
+aws:elemental-appliances-software	AWS Elemental Appliances & Software	Media Services
+aws:elemental-conductor	AWS Elemental Conductor	Media Services
+aws:elemental-delta	AWS Elemental Delta	Media Services
+aws:elemental-link	AWS Elemental Link	Media Services
+aws:elemental-live	AWS Elemental Live	Media Services
+aws:elemental-mediaconnect	AWS Elemental MediaConnect	Media Services
+aws:elemental-mediaconvert	AWS Elemental MediaConvert	Media Services
+aws:elemental-medialive	AWS Elemental MediaLive	Media Services
+aws:elemental-mediapackage	AWS Elemental MediaPackage	Media Services
+aws:elemental-mediastore	AWS Elemental MediaStore	Media Services
+aws:elemental-mediatailor	AWS Elemental MediaTailor	Media Services
+aws:elemental-server	AWS Elemental Server	Media Services
+aws:emr	Amazon EMR	Analytics
+aws:end-user-messaging	AWS End User Messaging	Business Applications
+aws:entity-resolution	AWS Entity Resolution	Analytics
+aws:eventbridge	Amazon EventBridge	App Integration
+aws:express-workflows	AWS Express Workflows	App Integration
+aws:fargate	AWS Fargate	Containers
+aws:fault-injection-service	AWS Fault Injection Service	Developer Tools
+aws:file-cache	Amazon File Cache	Storage
+aws:finspace	Amazon FinSpace	Analytics
+aws:firewall-manager	AWS Firewall Manager	Security Identity Compliance
+aws:forecast	Amazon Forecast	Artificial Intelligence
+aws:fraud-detector	Amazon Fraud Detector	Artificial Intelligence
+aws:freertos	FreeRTOS	Internet of Things
+aws:fsx	Amazon FSx	Storage
+aws:fsx-for-lustre	Amazon FSx for Lustre	Storage
+aws:fsx-for-netapp-ontap	Amazon FSx for NetApp ONTAP	Storage
+aws:fsx-for-openzfs	Amazon FSx for OpenZFS	Storage
+aws:fsx-for-wfs	Amazon FSx for WFS	Storage
+aws:gamelift-servers	Amazon GameLift Servers	Games
+aws:gamelift-streams	Amazon GameLift Streams	Games
+aws:global-accelerator	AWS Global Accelerator	Networking Content Delivery
+aws:glue	AWS Glue	Analytics
+aws:glue-databrew	AWS Glue DataBrew	Analytics
+aws:ground-station	AWS Ground Station	Satellite
+aws:grupo-auto-scaling-group	Auto Scaling group	Grupo
+aws:grupo-aws-account	AWS Account	Grupo
+aws:grupo-aws-cloud	AWS Cloud	Grupo
+aws:grupo-aws-cloud-logo	AWS Cloud logo	Grupo
+aws:grupo-aws-iot-greengrass-deployment	AWS IoT Greengrass Deployment	Grupo
+aws:grupo-corporate-data-center	Corporate data center	Grupo
+aws:grupo-ec2-instance-contents	EC2 instance contents	Grupo
+aws:grupo-private-subnet	Private subnet	Grupo
+aws:grupo-public-subnet	Public subnet	Grupo
+aws:grupo-region	Region	Grupo
+aws:grupo-server-contents	Server contents	Grupo
+aws:grupo-spot-fleet	Spot Fleet	Grupo
+aws:grupo-virtual-private-cloud-vpc	Virtual private cloud VPC	Grupo
+aws:guardduty	Amazon GuardDuty	Security Identity Compliance
+aws:health-dashboard	AWS Health Dashboard	Management Governance
+aws:healthimaging	AWS HealthImaging	Artificial Intelligence
+aws:healthlake	AWS HealthLake	Artificial Intelligence
+aws:healthomics	AWS HealthOmics	Artificial Intelligence
+aws:healthscribe	AWS HealthScribe	Artificial Intelligence
+aws:iam-identity-center	AWS IAM Identity Center	Security Identity Compliance
+aws:identity-and-access-management	AWS Identity and Access Management	Security Identity Compliance
+aws:infrastructure-composer	AWS Infrastructure Composer	Developer Tools
+aws:inspector	Amazon Inspector	Security Identity Compliance
+aws:interactive-video-service	Amazon Interactive Video Service	Media Services
+aws:iot-analytics	AWS IoT Analytics	Internet of Things
+aws:iot-button	AWS IoT Button	Internet of Things
+aws:iot-core	AWS IoT Core	Internet of Things
+aws:iot-device-defender	AWS IoT Device Defender	Internet of Things
+aws:iot-device-management	AWS IoT Device Management	Internet of Things
+aws:iot-events	AWS IoT Events	Internet of Things
+aws:iot-expresslink	AWS IoT ExpressLink	Internet of Things
+aws:iot-fleetwise	AWS IoT FleetWise	Internet of Things
+aws:iot-greengrass	AWS IoT Greengrass	Internet of Things
+aws:iot-sitewise	AWS IoT SiteWise	Internet of Things
+aws:iot-twinmaker	AWS IoT TwinMaker	Internet of Things
+aws:iq	AWS IQ	Customer Enablement
+aws:kendra	Amazon Kendra	Artificial Intelligence
+aws:key-management-service	AWS Key Management Service	Security Identity Compliance
+aws:keyspaces	Amazon Keyspaces	Database
+aws:kinesis	Amazon Kinesis	Analytics
+aws:kinesis-data-streams	Amazon Kinesis Data Streams	Analytics
+aws:kinesis-video-streams	Amazon Kinesis Video Streams	Analytics
+aws:lake-formation	AWS Lake Formation	Analytics
+aws:lambda	AWS Lambda	Compute
+aws:launch-wizard	AWS Launch Wizard	Management Governance
+aws:lex	Amazon Lex	Artificial Intelligence
+aws:license-manager	AWS License Manager	Management Governance
+aws:lightsail	Amazon Lightsail	Compute
+aws:lightsail-for-research	Amazon Lightsail for Research	Compute
+aws:local-zones	AWS Local Zones	Compute
+aws:location-service	Amazon Location Service	Front End Web Mobile
+aws:lookout-for-equipment	Amazon Lookout for Equipment	Artificial Intelligence
+aws:lookout-for-metrics	Amazon Lookout for Metrics	Artificial Intelligence
+aws:lookout-for-vision	Amazon Lookout for Vision	Artificial Intelligence
+aws:macie	Amazon Macie	Security Identity Compliance
+aws:mainframe-modernization	AWS Mainframe Modernization	Migration Modernization
+aws:managed-blockchain	Amazon Managed Blockchain	Blockchain
+aws:managed-grafana	Amazon Managed Grafana	Management Governance
+aws:managed-service-for-apache-flink	Amazon Managed Service for Apache Flink	Analytics
+aws:managed-service-for-prometheus	Amazon Managed Service for Prometheus	Management Governance
+aws:managed-services	AWS Managed Services	Customer Enablement
+aws:managed-streaming-for-apache-kafka	Amazon Managed Streaming for Apache Kafka	Analytics
+aws:managed-workflows-for-apache-airflow	Amazon Managed Workflows for Apache Airflow	App Integration
+aws:management-console	AWS Management Console	Management Governance
+aws:marketplace-dark	AWS Marketplace Dark	General Icons
+aws:marketplace-light	AWS Marketplace Light	General Icons
+aws:memorydb	Amazon MemoryDB	Database
+aws:migration-evaluator	AWS Migration Evaluator	Migration Modernization
+aws:migration-hub	AWS Migration Hub	Migration Modernization
+aws:monitron	Amazon Monitron	Artificial Intelligence
+aws:mq	Amazon MQ	App Integration
+aws:neptune	Amazon Neptune	Database
+aws:network-firewall	AWS Network Firewall	Security Identity Compliance
+aws:neuron	AWS Neuron	Artificial Intelligence
+aws:nice-enginframe	NICE EnginFrame	Compute
+aws:nitro-enclaves	AWS Nitro Enclaves	Compute
+aws:nova	Amazon Nova	Artificial Intelligence
+aws:open-3d-engine	Open 3D Engine	Games
+aws:opensearch-service	Amazon OpenSearch Service	Analytics
+aws:oracle-database-at-aws	Oracle Database at AWS	Database
+aws:organizations	AWS Organizations	Management Governance
+aws:outposts-family	AWS Outposts family	Compute
+aws:outposts-rack	AWS Outposts rack	Compute
+aws:outposts-servers	AWS Outposts servers	Compute
+aws:panorama	AWS Panorama	Artificial Intelligence
+aws:parallel-cluster	AWS Parallel Cluster	Compute
+aws:parallel-computing-service	AWS Parallel Computing Service	Compute
+aws:payment-cryptography	AWS Payment Cryptography	Security Identity Compliance
+aws:personalize	Amazon Personalize	Artificial Intelligence
+aws:pinpoint	Amazon Pinpoint	Business Applications
+aws:pinpoint-apis	Amazon Pinpoint APIs	Business Applications
+aws:polly	Amazon Polly	Artificial Intelligence
+aws:private-5g	AWS Private 5G	Networking Content Delivery
+aws:private-certificate-authority	AWS Private Certificate Authority	Security Identity Compliance
+aws:privatelink	AWS PrivateLink	Networking Content Delivery
+aws:professional-services	AWS Professional Services	Customer Enablement
+aws:proton	AWS Proton	Management Governance
+aws:pytorch-on-aws	PyTorch on AWS	Artificial Intelligence
+aws:q	Amazon Q	Artificial Intelligence
+aws:quantum-ledger-database	Amazon Quantum Ledger Database	Blockchain
+aws:quicksight	Amazon QuickSight	Analytics
+aws:rds	Amazon RDS	Database
+aws:red-hat-openshift-service-on-aws	Red Hat OpenShift Service on AWS	Containers
+aws:redshift	Amazon Redshift	Analytics
+aws:rekognition	Amazon Rekognition	Artificial Intelligence
+aws:repost	AWS rePost	Customer Enablement
+aws:repost-private	AWS rePost Private	Customer Enablement
+aws:res-alert	Alert	General Icons · recurso
+aws:res-amplify-aws-amplify-studio	AWS Amplify AWS Amplify Studio	Front End Web Mobile · recurso
+aws:res-api-gateway-endpoint	Amazon API Gateway Endpoint	Networking Content Delivery · recurso
+aws:res-app-mesh-mesh	AWS App Mesh Mesh	Networking Content Delivery · recurso
+aws:res-app-mesh-virtual-gateway	AWS App Mesh Virtual Gateway	Networking Content Delivery · recurso
+aws:res-app-mesh-virtual-node	AWS App Mesh Virtual Node	Networking Content Delivery · recurso
+aws:res-app-mesh-virtual-router	AWS App Mesh Virtual Router	Networking Content Delivery · recurso
+aws:res-app-mesh-virtual-service	AWS App Mesh Virtual Service	Networking Content Delivery · recurso
+aws:res-application-discovery-service-aws-agentless-collector	AWS Application Discovery Service AWS Agentless Collector	Migration Modernization · recurso
+aws:res-application-discovery-service-aws-discovery-agent	AWS Application Discovery Service AWS Discovery Agent	Migration Modernization · recurso
+aws:res-application-discovery-service-migration-evaluator-collector	AWS Application Discovery Service Migration Evaluator Collector	Migration Modernization · recurso
+aws:res-athena-data-source-connectors	Amazon Athena Data Source Connectors	Analytics · recurso
+aws:res-aurora-amazon-aurora-instance-alternate	Amazon Aurora Amazon Aurora Instance alternate	Database · recurso
+aws:res-aurora-amazon-rds-instance	Amazon Aurora Amazon RDS Instance	Database · recurso
+aws:res-aurora-amazon-rds-instance-aternate	Amazon Aurora Amazon RDS Instance Aternate	Database · recurso
+aws:res-aurora-instance	Amazon Aurora Instance	Database · recurso
+aws:res-aurora-mariadb-instance	Amazon Aurora MariaDB Instance	Database · recurso
+aws:res-aurora-mariadb-instance-alternate	Amazon Aurora MariaDB Instance Alternate	Database · recurso
+aws:res-aurora-mysql-instance	Amazon Aurora MySQL Instance	Database · recurso
+aws:res-aurora-mysql-instance-alternate	Amazon Aurora MySQL Instance Alternate	Database · recurso
+aws:res-aurora-oracle-instance	Amazon Aurora Oracle Instance	Database · recurso
+aws:res-aurora-oracle-instance-alternate	Amazon Aurora Oracle Instance Alternate	Database · recurso
+aws:res-aurora-piops-instance	Amazon Aurora PIOPS Instance	Database · recurso
+aws:res-aurora-postgresql-instance	Amazon Aurora PostgreSQL Instance	Database · recurso
+aws:res-aurora-postgresql-instance-alternate	Amazon Aurora PostgreSQL Instance Alternate	Database · recurso
+aws:res-aurora-sql-server-instance	Amazon Aurora SQL Server Instance	Database · recurso
+aws:res-aurora-sql-server-instance-alternate	Amazon Aurora SQL Server Instance Alternate	Database · recurso
+aws:res-aurora-trusted-language-extensions-for-postgresql	Amazon Aurora Trusted Language Extensions for PostgreSQL	Database · recurso
+aws:res-authenticated-user	Authenticated User	General Icons · recurso
+aws:res-backup-audit-manager	AWS Backup Audit Manager	Storage · recurso
+aws:res-backup-aws-backup-for-aws-cloudformation	AWS Backup AWS Backup for AWS CloudFormation	Storage · recurso
+aws:res-backup-aws-backup-support-for-amazon-fsx-for-netapp-ontap	AWS Backup AWS Backup support for Amazon FSx for NetApp ONTAP	Storage · recurso
+aws:res-backup-aws-backup-support-for-amazon-s3	AWS Backup AWS Backup support for Amazon S3	Storage · recurso
+aws:res-backup-aws-backup-support-for-vmware-workloads	AWS Backup AWS Backup Support for VMware Workloads	Storage · recurso
+aws:res-backup-backup-plan	AWS Backup Backup Plan	Storage · recurso
+aws:res-backup-backup-restore	AWS Backup Backup Restore	Storage · recurso
+aws:res-backup-backup-vault	AWS Backup Backup Vault	Storage · recurso
+aws:res-backup-compliance-reporting	AWS Backup Compliance Reporting	Storage · recurso
+aws:res-backup-compute	AWS Backup Compute	Storage · recurso
+aws:res-backup-database	AWS Backup Database	Storage · recurso
+aws:res-backup-gateway	AWS Backup Gateway	Storage · recurso
+aws:res-backup-legal-hold	AWS Backup Legal Hold	Storage · recurso
+aws:res-backup-recovery-point-objective	AWS Backup Recovery Point Objective	Storage · recurso
+aws:res-backup-recovery-time-objective	AWS Backup Recovery Time Objective	Storage · recurso
+aws:res-backup-storage	AWS Backup Storage	Storage · recurso
+aws:res-backup-vault-lock	AWS Backup Vault Lock	Storage · recurso
+aws:res-backup-virtual-machine	AWS Backup Virtual Machine	Storage · recurso
+aws:res-backup-virtual-machine-monitor	AWS Backup Virtual Machine Monitor	Storage · recurso
+aws:res-braket-chandelier	Amazon Braket Chandelier	Quantum Technologies · recurso
+aws:res-braket-chip	Amazon Braket Chip	Quantum Technologies · recurso
+aws:res-braket-embedded-simulator	Amazon Braket Embedded Simulator	Quantum Technologies · recurso
+aws:res-braket-managed-simulator	Amazon Braket Managed Simulator	Quantum Technologies · recurso
+aws:res-braket-noise-simulator	Amazon Braket Noise Simulator	Quantum Technologies · recurso
+aws:res-braket-qpu	Amazon Braket QPU	Quantum Technologies · recurso
+aws:res-braket-simulator	Amazon Braket Simulator	Quantum Technologies · recurso
+aws:res-braket-simulator-1	Amazon Braket Simulator 1	Quantum Technologies · recurso
+aws:res-braket-simulator-2	Amazon Braket Simulator 2	Quantum Technologies · recurso
+aws:res-braket-simulator-3	Amazon Braket Simulator 3	Quantum Technologies · recurso
+aws:res-braket-simulator-4	Amazon Braket Simulator 4	Quantum Technologies · recurso
+aws:res-braket-state-vector	Amazon Braket State Vector	Quantum Technologies · recurso
+aws:res-braket-tensor-network	Amazon Braket Tensor Network	Quantum Technologies · recurso
+aws:res-camera	Camera	General Icons · recurso
+aws:res-certificate-manager-certificate-authority	AWS Certificate Manager Certificate Authority	Security Identity Compliance · recurso
+aws:res-chat	Chat	General Icons · recurso
+aws:res-client	Client	General Icons · recurso
+aws:res-cloud-digital-interface	AWS Cloud Digital Interface	Media Services · recurso
+aws:res-cloud-map-namespace	AWS Cloud Map Namespace	Networking Content Delivery · recurso
+aws:res-cloud-map-resource	AWS Cloud Map Resource	Networking Content Delivery · recurso
+aws:res-cloud-map-service	AWS Cloud Map Service	Networking Content Delivery · recurso
+aws:res-cloud-wan-core-network-edge	AWS Cloud WAN Core Network Edge	Networking Content Delivery · recurso
+aws:res-cloud-wan-segment-network	AWS Cloud WAN Segment Network	Networking Content Delivery · recurso
+aws:res-cloud-wan-transit-gateway-route-table-attachment	AWS Cloud WAN Transit Gateway Route Table Attachment	Networking Content Delivery · recurso
+aws:res-cloud9-cloud9	AWS Cloud9 Cloud9	Developer Tools · recurso
+aws:res-cloudformation-change-set	AWS CloudFormation Change Set	Management Governance · recurso
+aws:res-cloudformation-stack	AWS CloudFormation Stack	Management Governance · recurso
+aws:res-cloudformation-template	AWS CloudFormation Template	Management Governance · recurso
+aws:res-cloudfront-download-distribution	Amazon CloudFront Download Distribution	Networking Content Delivery · recurso
+aws:res-cloudfront-edge-location	Amazon CloudFront Edge Location	Networking Content Delivery · recurso
+aws:res-cloudfront-functions	Amazon CloudFront Functions	Networking Content Delivery · recurso
+aws:res-cloudfront-streaming-distribution	Amazon CloudFront Streaming Distribution	Networking Content Delivery · recurso
+aws:res-cloudsearch-search-documents	Amazon CloudSearch Search Documents	Analytics · recurso
+aws:res-cloudtrail-cloudtrail-lake	AWS CloudTrail CloudTrail Lake	Management Governance · recurso
+aws:res-cloudwatch-alarm	Amazon CloudWatch Alarm	Management Governance · recurso
+aws:res-cloudwatch-cross-account-observability	Amazon CloudWatch Cross account Observability	Management Governance · recurso
+aws:res-cloudwatch-data-protection	Amazon CloudWatch Data Protection	Management Governance · recurso
+aws:res-cloudwatch-event-event-based	Amazon CloudWatch Event Event Based	Management Governance · recurso
+aws:res-cloudwatch-event-time-based	Amazon CloudWatch Event Time Based	Management Governance · recurso
+aws:res-cloudwatch-evidently	Amazon CloudWatch Evidently	Management Governance · recurso
+aws:res-cloudwatch-logs	Amazon CloudWatch Logs	Management Governance · recurso
+aws:res-cloudwatch-metrics-insights	Amazon CloudWatch Metrics Insights	Management Governance · recurso
+aws:res-cloudwatch-rule	Amazon CloudWatch Rule	Management Governance · recurso
+aws:res-cloudwatch-rum	Amazon CloudWatch RUM	Management Governance · recurso
+aws:res-cloudwatch-synthetics	Amazon CloudWatch Synthetics	Management Governance · recurso
+aws:res-cold-storage	Cold Storage	General Icons · recurso
+aws:res-credentials	Credentials	General Icons · recurso
+aws:res-data-exchange-for-apis	AWS Data Exchange for APIs	Analytics · recurso
+aws:res-data-stream	Data Stream	General Icons · recurso
+aws:res-data-table	Data Table	General Icons · recurso
+aws:res-database	Database	General Icons · recurso
+aws:res-database-migration-service-database-migration-workflow-or-job	AWS Database Migration Service Database migration workflow or job	Database · recurso
+aws:res-datasync-agent	AWS Datasync Agent	Migration Modernization · recurso
+aws:res-datasync-discovery	AWS DataSync Discovery	Migration Modernization · recurso
+aws:res-datazone-business-data-catalog	Amazon DataZone Business Data Catalog	Analytics · recurso
+aws:res-datazone-data-portal	Amazon DataZone Data Portal	Analytics · recurso
+aws:res-datazone-data-projects	Amazon DataZone Data Projects	Analytics · recurso
+aws:res-devops-guru-insights	Amazon DevOps Guru Insights	Artificial Intelligence · recurso
+aws:res-direct-connect-gateway	AWS Direct Connect Gateway	Networking Content Delivery · recurso
+aws:res-directory-service-ad-connector	AWS Directory Service AD Connector	Security Identity Compliance · recurso
+aws:res-directory-service-aws-managed-microsoft-ad	AWS Directory Service AWS Managed Microsoft AD	Security Identity Compliance · recurso
+aws:res-directory-service-simple-ad	AWS Directory Service Simple AD	Security Identity Compliance · recurso
+aws:res-disk	Disk	General Icons · recurso
+aws:res-document	Document	General Icons · recurso
+aws:res-documentdb-elastic-clusters	Amazon DocumentDB Elastic Clusters	Database · recurso
+aws:res-documents	Documents	General Icons · recurso
+aws:res-dynamodb-amazon-dynamodb-accelerator	Amazon DynamoDB Amazon DynamoDB Accelerator	Database · recurso
+aws:res-dynamodb-attribute	Amazon DynamoDB Attribute	Database · recurso
+aws:res-dynamodb-attributes	Amazon DynamoDB Attributes	Database · recurso
+aws:res-dynamodb-global-secondary-index	Amazon DynamoDB Global secondary index	Database · recurso
+aws:res-dynamodb-item	Amazon DynamoDB Item	Database · recurso
+aws:res-dynamodb-items	Amazon DynamoDB Items	Database · recurso
+aws:res-dynamodb-standard-access-table-class	Amazon DynamoDB Standard Access Table Class	Database · recurso
+aws:res-dynamodb-standard-infrequent-access-table-class	Amazon DynamoDB Standard Infrequent Access Table Class	Database · recurso
+aws:res-dynamodb-stream	Amazon DynamoDB Stream	Database · recurso
+aws:res-dynamodb-table	Amazon DynamoDB Table	Database · recurso
+aws:res-ec2-ami	Amazon EC2 AMI	Compute · recurso
+aws:res-ec2-auto-scaling	Amazon EC2 Auto Scaling	Compute · recurso
+aws:res-ec2-aws-microservice-extractor-for-net	Amazon EC2 AWS Microservice Extractor for .NET	Compute · recurso
+aws:res-ec2-db-instance	Amazon EC2 DB Instance	Compute · recurso
+aws:res-ec2-elastic-ip-address	Amazon EC2 Elastic IP Address	Compute · recurso
+aws:res-ec2-instance	Amazon EC2 Instance	Compute · recurso
+aws:res-ec2-instance-with-cloudwatch	Amazon EC2 Instance with CloudWatch	Compute · recurso
+aws:res-ec2-instances	Amazon EC2 Instances	Compute · recurso
+aws:res-ec2-rescue	Amazon EC2 Rescue	Compute · recurso
+aws:res-ec2-spot-instance	Amazon EC2 Spot Instance	Compute · recurso
+aws:res-elastic-beanstalk-application	AWS Elastic Beanstalk Application	Compute · recurso
+aws:res-elastic-beanstalk-deployment	AWS Elastic Beanstalk Deployment	Compute · recurso
+aws:res-elastic-block-store-amazon-data-lifecycle-manager	Amazon Elastic Block Store Amazon Data Lifecycle Manager	Storage · recurso
+aws:res-elastic-block-store-multiple-volumes	Amazon Elastic Block Store Multiple Volumes	Storage · recurso
+aws:res-elastic-block-store-snapshot	Amazon Elastic Block Store Snapshot	Storage · recurso
+aws:res-elastic-block-store-volume	Amazon Elastic Block Store Volume	Storage · recurso
+aws:res-elastic-block-store-volume-gp3	Amazon Elastic Block Store Volume gp3	Storage · recurso
+aws:res-elastic-container-registry-image	Amazon Elastic Container Registry Image	Containers · recurso
+aws:res-elastic-container-registry-registry	Amazon Elastic Container Registry Registry	Containers · recurso
+aws:res-elastic-container-service-container-1	Amazon Elastic Container Service Container 1	Containers · recurso
+aws:res-elastic-container-service-container-2	Amazon Elastic Container Service Container 2	Containers · recurso
+aws:res-elastic-container-service-container-3	Amazon Elastic Container Service Container 3	Containers · recurso
+aws:res-elastic-container-service-copiiot-cli	Amazon Elastic Container Service CopiIoT CLI	Containers · recurso
+aws:res-elastic-container-service-ecs-service-connect	Amazon Elastic Container Service ECS Service Connect	Containers · recurso
+aws:res-elastic-container-service-service	Amazon Elastic Container Service Service	Containers · recurso
+aws:res-elastic-container-service-task	Amazon Elastic Container Service Task	Containers · recurso
+aws:res-elastic-file-system-efs-intelligent-tiering	Amazon Elastic File System EFS Intelligent Tiering	Storage · recurso
+aws:res-elastic-file-system-efs-one-zone	Amazon Elastic File System EFS One Zone	Storage · recurso
+aws:res-elastic-file-system-efs-one-zone-infrequent-access	Amazon Elastic File System EFS One Zone Infrequent Access	Storage · recurso
+aws:res-elastic-file-system-efs-standard	Amazon Elastic File System EFS Standard	Storage · recurso
+aws:res-elastic-file-system-efs-standard-infrequent-access	Amazon Elastic File System EFS Standard Infrequent Access	Storage · recurso
+aws:res-elastic-file-system-elastic-throughput	Amazon Elastic File System Elastic Throughput	Storage · recurso
+aws:res-elastic-file-system-file-system	Amazon Elastic File System File System	Storage · recurso
+aws:res-elastic-kubernetes-service-eks-on-outposts	Amazon Elastic Kubernetes Service EKS on Outposts	Containers · recurso
+aws:res-elastic-load-balancing-application-load-balancer	Elastic Load Balancing Application Load Balancer	Networking Content Delivery · recurso
+aws:res-elastic-load-balancing-classic-load-balancer	Elastic Load Balancing Classic Load Balancer	Networking Content Delivery · recurso
+aws:res-elastic-load-balancing-gateway-load-balancer	Elastic Load Balancing Gateway Load Balancer	Networking Content Delivery · recurso
+aws:res-elastic-load-balancing-network-load-balancer	Elastic Load Balancing Network Load Balancer	Networking Content Delivery · recurso
+aws:res-elasticache-cache-node	Amazon ElastiCache Cache Node	Database · recurso
+aws:res-elasticache-elasticache-for-memcached	Amazon ElastiCache ElastiCache for Memcached	Database · recurso
+aws:res-elasticache-elasticache-for-redis	Amazon ElastiCache ElastiCache for Redis	Database · recurso
+aws:res-elasticache-elasticache-for-valkey	Amazon ElastiCache ElastiCache for Valkey	Database · recurso
+aws:res-elemental-mediaconnect-mediaconnect-gateway	AWS Elemental MediaConnect MediaConnect Gateway	Media Services · recurso
+aws:res-email	Email	General Icons · recurso
+aws:res-emr-cluster	Amazon EMR Cluster	Analytics · recurso
+aws:res-emr-emr-engine	Amazon EMR EMR Engine	Analytics · recurso
+aws:res-emr-hdfs-cluster	Amazon EMR HDFS Cluster	Analytics · recurso
+aws:res-eventbridge-custom-event-bus	Amazon EventBridge Custom Event Bus	Application Integration · recurso
+aws:res-eventbridge-default-event-bus	Amazon EventBridge Default Event Bus	Application Integration · recurso
+aws:res-eventbridge-event	Amazon EventBridge Event	Application Integration · recurso
+aws:res-eventbridge-pipes	Amazon EventBridge Pipes	Application Integration · recurso
+aws:res-eventbridge-rule	Amazon EventBridge Rule	Application Integration · recurso
+aws:res-eventbridge-saas-partner-event	Amazon EventBridge Saas Partner Event	Application Integration · recurso
+aws:res-eventbridge-scheduler	Amazon EventBridge Scheduler	Application Integration · recurso
+aws:res-eventbridge-schema	Amazon EventBridge Schema	Application Integration · recurso
+aws:res-eventbridge-schema-registry	Amazon EventBridge Schema Registry	Application Integration · recurso
+aws:res-file-cache-hybrid-nfs-linked-datasets	Amazon File Cache Hybrid NFS linked datasets	Storage · recurso
+aws:res-file-cache-on-premises-nfs-linked-datasets	Amazon File Cache On premises NFS linked datasets	Storage · recurso
+aws:res-file-cache-s3-linked-datasets	Amazon File Cache S3 linked datasets	Storage · recurso
+aws:res-firewall	Firewall	General Icons · recurso
+aws:res-folder	Folder	General Icons · recurso
+aws:res-folders	Folders	General Icons · recurso
+aws:res-forums	Forums	General Icons · recurso
+aws:res-gear	Gear	General Icons · recurso
+aws:res-generic-application	Generic Application	General Icons · recurso
+aws:res-git-repository	Git Repository	General Icons · recurso
+aws:res-globe	Globe	General Icons · recurso
+aws:res-glue-aws-glue-for-ray	AWS Glue AWS Glue for Ray	Analytics · recurso
+aws:res-glue-crawler	AWS Glue Crawler	Analytics · recurso
+aws:res-glue-data-catalog	AWS Glue Data Catalog	Analytics · recurso
+aws:res-glue-data-quality	AWS Glue Data Quality	Analytics · recurso
+aws:res-identity-access-management-add-on	AWS Identity Access Management Add on	Security Identity Compliance · recurso
+aws:res-identity-access-management-aws-sts	AWS Identity Access Management AWS STS	Security Identity Compliance · recurso
+aws:res-identity-access-management-aws-sts-alternate	AWS Identity Access Management AWS STS Alternate	Security Identity Compliance · recurso
+aws:res-identity-access-management-data-encryption-key	AWS Identity Access Management Data Encryption Key	Security Identity Compliance · recurso
+aws:res-identity-access-management-encrypted-data	AWS Identity Access Management Encrypted Data	Security Identity Compliance · recurso
+aws:res-identity-access-management-iam-access-analyzer	AWS Identity Access Management IAM Access Analyzer	Security Identity Compliance · recurso
+aws:res-identity-access-management-iam-roles-anywhere	AWS Identity Access Management IAM Roles Anywhere	Security Identity Compliance · recurso
+aws:res-identity-access-management-long-term-security-credential	AWS Identity Access Management Long Term Security Credential	Security Identity Compliance · recurso
+aws:res-identity-access-management-mfa-token	AWS Identity Access Management MFA Token	Security Identity Compliance · recurso
+aws:res-identity-access-management-permissions	AWS Identity Access Management Permissions	Security Identity Compliance · recurso
+aws:res-identity-access-management-role	AWS Identity Access Management Role	Security Identity Compliance · recurso
+aws:res-identity-access-management-temporary-security-credential	AWS Identity Access Management Temporary Security Credential	Security Identity Compliance · recurso
+aws:res-inspector-agent	Amazon Inspector Agent	Security Identity Compliance · recurso
+aws:res-internet	Internet	General Icons · recurso
+aws:res-internet-alt1	Internet alt1	General Icons · recurso
+aws:res-internet-alt2	Internet alt2	General Icons · recurso
+aws:res-iot-action	AWS IoT Action	IoT · recurso
+aws:res-iot-actuator	AWS IoT Actuator	IoT · recurso
+aws:res-iot-alexa-enabled-device	AWS IoT Alexa Enabled Device	IoT · recurso
+aws:res-iot-alexa-skill	AWS IoT Alexa Skill	IoT · recurso
+aws:res-iot-alexa-voice-service	AWS IoT Alexa Voice Service	IoT · recurso
+aws:res-iot-analytics-channel	AWS IoT Analytics Channel	IoT · recurso
+aws:res-iot-analytics-data-store	AWS IoT Analytics Data Store	IoT · recurso
+aws:res-iot-analytics-dataset	AWS IoT Analytics Dataset	IoT · recurso
+aws:res-iot-analytics-notebook	AWS IoT Analytics Notebook	IoT · recurso
+aws:res-iot-analytics-pipeline	AWS IoT Analytics Pipeline	IoT · recurso
+aws:res-iot-certificate	AWS IoT Certificate	IoT · recurso
+aws:res-iot-core-device-advisor	AWS IoT Core Device Advisor	IoT · recurso
+aws:res-iot-core-device-location	AWS IoT Core Device Location	IoT · recurso
+aws:res-iot-desired-state	AWS IoT Desired State	IoT · recurso
+aws:res-iot-device-defender-iot-device-jobs	AWS IoT Device Defender IoT Device Jobs	IoT · recurso
+aws:res-iot-device-gateway	AWS IoT Device Gateway	IoT · recurso
+aws:res-iot-device-management-fleet-hub	AWS IoT Device Management Fleet Hub	IoT · recurso
+aws:res-iot-device-tester	AWS IoT Device Tester	IoT · recurso
+aws:res-iot-echo	AWS IoT Echo	IoT · recurso
+aws:res-iot-fire-tv	AWS IoT Fire TV	IoT · recurso
+aws:res-iot-fire-tv-stick	AWS IoT Fire TV Stick	IoT · recurso
+aws:res-iot-greengrass-artifact	AWS IoT Greengrass Artifact	IoT · recurso
+aws:res-iot-greengrass-component	AWS IoT Greengrass Component	IoT · recurso
+aws:res-iot-greengrass-component-machine-learning	AWS IoT Greengrass Component Machine Learning	IoT · recurso
+aws:res-iot-greengrass-component-nucleus	AWS IoT Greengrass Component Nucleus	IoT · recurso
+aws:res-iot-greengrass-component-private	AWS IoT Greengrass Component Private	IoT · recurso
+aws:res-iot-greengrass-component-public	AWS IoT Greengrass Component Public	IoT · recurso
+aws:res-iot-greengrass-connector	AWS IoT Greengrass Connector	IoT · recurso
+aws:res-iot-greengrass-interprocess-communication	AWS IoT Greengrass Interprocess Communication	IoT · recurso
+aws:res-iot-greengrass-protocol	AWS IoT Greengrass Protocol	IoT · recurso
+aws:res-iot-greengrass-recipe	AWS IoT Greengrass Recipe	IoT · recurso
+aws:res-iot-greengrass-stream-manager	AWS IoT Greengrass Stream Manager	IoT · recurso
+aws:res-iot-hardware-board	AWS IoT Hardware Board	IoT · recurso
+aws:res-iot-http-protocol	AWS IoT HTTP Protocol	IoT · recurso
+aws:res-iot-http2-protocol	AWS IoT HTTP2 Protocol	IoT · recurso
+aws:res-iot-lambda-function	AWS IoT Lambda Function	IoT · recurso
+aws:res-iot-lorawan-protocol	AWS IoT LoRaWAN Protocol	IoT · recurso
+aws:res-iot-mqtt-protocol	AWS IoT MQTT Protocol	IoT · recurso
+aws:res-iot-over-air-update	AWS IoT Over Air Update	IoT · recurso
+aws:res-iot-policy	AWS IoT Policy	IoT · recurso
+aws:res-iot-reported-state	AWS IoT Reported State	IoT · recurso
+aws:res-iot-rule	AWS IoT Rule	IoT · recurso
+aws:res-iot-sailboat	AWS IoT Sailboat	IoT · recurso
+aws:res-iot-sensor	AWS IoT Sensor	IoT · recurso
+aws:res-iot-servo	AWS IoT Servo	IoT · recurso
+aws:res-iot-shadow	AWS IoT Shadow	IoT · recurso
+aws:res-iot-simulator	AWS IoT Simulator	IoT · recurso
+aws:res-iot-sitewise-asset	AWS IoT SiteWise Asset	IoT · recurso
+aws:res-iot-sitewise-asset-hierarchy	AWS IoT SiteWise Asset Hierarchy	IoT · recurso
+aws:res-iot-sitewise-asset-model	AWS IoT SiteWise Asset Model	IoT · recurso
+aws:res-iot-sitewise-asset-properties	AWS IoT SiteWise Asset Properties	IoT · recurso
+aws:res-iot-sitewise-data-streams	AWS IoT SiteWise Data Streams	IoT · recurso
+aws:res-iot-thing-bank	AWS IoT Thing Bank	IoT · recurso
+aws:res-iot-thing-bicycle	AWS IoT Thing Bicycle	IoT · recurso
+aws:res-iot-thing-camera	AWS IoT Thing Camera	IoT · recurso
+aws:res-iot-thing-car	AWS IoT Thing Car	IoT · recurso
+aws:res-iot-thing-cart	AWS IoT Thing Cart	IoT · recurso
+aws:res-iot-thing-coffee-pot	AWS IoT Thing Coffee Pot	IoT · recurso
+aws:res-iot-thing-door-lock	AWS IoT Thing Door Lock	IoT · recurso
+aws:res-iot-thing-factory	AWS IoT Thing Factory	IoT · recurso
+aws:res-iot-thing-freertos-device	AWS IoT Thing FreeRTOS Device	IoT · recurso
+aws:res-iot-thing-generic	AWS IoT Thing Generic	IoT · recurso
+aws:res-iot-thing-house	AWS IoT Thing House	IoT · recurso
+aws:res-iot-thing-humidity-sensor	AWS IoT Thing Humidity Sensor	IoT · recurso
+aws:res-iot-thing-industrial-pc	AWS IoT Thing Industrial PC	IoT · recurso
+aws:res-iot-thing-lightbulb	AWS IoT Thing Lightbulb	IoT · recurso
+aws:res-iot-thing-medical-emergency	AWS IoT Thing Medical Emergency	IoT · recurso
+aws:res-iot-thing-plc	AWS IoT Thing PLC	IoT · recurso
+aws:res-iot-thing-police-emergency	AWS IoT Thing Police Emergency	IoT · recurso
+aws:res-iot-thing-relay	AWS IoT Thing Relay	IoT · recurso
+aws:res-iot-thing-stacklight	AWS IoT Thing Stacklight	IoT · recurso
+aws:res-iot-thing-temperature-humidity-sensor	AWS IoT Thing Temperature Humidity Sensor	IoT · recurso
+aws:res-iot-thing-temperature-sensor	AWS IoT Thing Temperature Sensor	IoT · recurso
+aws:res-iot-thing-temperature-vibration-sensor	AWS IoT Thing Temperature Vibration Sensor	IoT · recurso
+aws:res-iot-thing-thermostat	AWS IoT Thing Thermostat	IoT · recurso
+aws:res-iot-thing-travel	AWS IoT Thing Travel	IoT · recurso
+aws:res-iot-thing-utility	AWS IoT Thing Utility	IoT · recurso
+aws:res-iot-thing-vibration-sensor	AWS IoT Thing Vibration Sensor	IoT · recurso
+aws:res-iot-thing-windfarm	AWS IoT Thing Windfarm	IoT · recurso
+aws:res-iot-topic	AWS IoT Topic	IoT · recurso
+aws:res-json-script	JSON Script	General Icons · recurso
+aws:res-key-management-service-external-key-store	AWS Key Management Service External Key Store	Security Identity Compliance · recurso
+aws:res-lake-formation-data-lake	AWS Lake Formation Data Lake	Analytics · recurso
+aws:res-lambda-lambda-function	AWS Lambda Lambda Function	Compute · recurso
+aws:res-license-manager-application-discovery	AWS License Manager Application Discovery	Management Governance · recurso
+aws:res-license-manager-license-blending	AWS License Manager License Blending	Management Governance · recurso
+aws:res-location-service-geofence	Amazon Location Service Geofence	Front End Web Mobile · recurso
+aws:res-location-service-map	Amazon Location Service Map	Front End Web Mobile · recurso
+aws:res-location-service-place	Amazon Location Service Place	Front End Web Mobile · recurso
+aws:res-location-service-routes	Amazon Location Service Routes	Front End Web Mobile · recurso
+aws:res-location-service-track	Amazon Location Service Track	Front End Web Mobile · recurso
+aws:res-logs	Logs	General Icons · recurso
+aws:res-magnifying-glass	Magnifying Glass	General Icons · recurso
+aws:res-mainframe-modernization-analyzer	AWS Mainframe Modernization Analyzer	Migration Modernization · recurso
+aws:res-mainframe-modernization-compiler	AWS Mainframe Modernization Compiler	Migration Modernization · recurso
+aws:res-mainframe-modernization-converter	AWS Mainframe Modernization Converter	Migration Modernization · recurso
+aws:res-mainframe-modernization-developer	AWS Mainframe Modernization Developer	Migration Modernization · recurso
+aws:res-mainframe-modernization-runtime	AWS Mainframe Modernization Runtime	Migration Modernization · recurso
+aws:res-managed-blockchain-blockchain	Amazon Managed Blockchain Blockchain	Blockchain · recurso
+aws:res-management-console	AWS Management Console	General Icons · recurso
+aws:res-metrics	Metrics	General Icons · recurso
+aws:res-migration-hub-refactor-spaces-applications	AWS Migration Hub Refactor Spaces Applications	Migration Modernization · recurso
+aws:res-migration-hub-refactor-spaces-environments	AWS Migration Hub Refactor Spaces Environments	Migration Modernization · recurso
+aws:res-migration-hub-refactor-spaces-services	AWS Migration Hub Refactor Spaces Services	Migration Modernization · recurso
+aws:res-mobile-client	Mobile client	General Icons · recurso
+aws:res-mq-broker	Amazon MQ Broker	Application Integration · recurso
+aws:res-msk-amazon-msk-connect	Amazon MSK Amazon MSK Connect	Analytics · recurso
+aws:res-multimedia	Multimedia	General Icons · recurso
+aws:res-network-firewall-endpoints	AWS Network Firewall Endpoints	Security Identity Compliance · recurso
+aws:res-office-building	Office building	General Icons · recurso
+aws:res-opensearch-service-cluster-administrator-node	Amazon OpenSearch Service Cluster Administrator Node	Analytics · recurso
+aws:res-opensearch-service-data-node	Amazon OpenSearch Service Data Node	Analytics · recurso
+aws:res-opensearch-service-index	Amazon OpenSearch Service Index	Analytics · recurso
+aws:res-opensearch-service-observability	Amazon OpenSearch Service Observability	Analytics · recurso
+aws:res-opensearch-service-opensearch-dashboards	Amazon OpenSearch Service OpenSearch Dashboards	Analytics · recurso
+aws:res-opensearch-service-opensearch-ingestion	Amazon OpenSearch Service OpenSearch Ingestion	Analytics · recurso
+aws:res-opensearch-service-traces	Amazon OpenSearch Service Traces	Analytics · recurso
+aws:res-opensearch-service-ultrawarm-node	Amazon OpenSearch Service UltraWarm Node	Analytics · recurso
+aws:res-organizations-account	AWS Organizations Account	Management Governance · recurso
+aws:res-organizations-management-account	AWS Organizations Management Account	Management Governance · recurso
+aws:res-organizations-organizational-unit	AWS Organizations Organizational Unit	Management Governance · recurso
+aws:res-pinpoint-journey	Amazon Pinpoint Journey	Business Applications · recurso
+aws:res-programming-language	Programming Language	General Icons · recurso
+aws:res-question	Question	General Icons · recurso
+aws:res-quicksight-paginated-reports	Amazon Quicksight Paginated Reports	Analytics · recurso
+aws:res-rds-blue-green-deployments	Amazon RDS Blue Green Deployments	Database · recurso
+aws:res-rds-multi-az	Amazon RDS Multi AZ	Database · recurso
+aws:res-rds-multi-az-db-cluster	Amazon RDS Multi AZ DB Cluster	Database · recurso
+aws:res-rds-optimized-writes	Amazon RDS Optimized Writes	Database · recurso
+aws:res-rds-proxy-instance	Amazon RDS Proxy Instance	Database · recurso
+aws:res-rds-proxy-instance-alternate	Amazon RDS Proxy Instance Alternate	Database · recurso
+aws:res-rds-trusted-language-extensions-for-postgresql	Amazon RDS Trusted Language Extensions for PostgreSQL	Database · recurso
+aws:res-recover	Recover	General Icons · recurso
+aws:res-redshift-auto-copy	Amazon Redshift Auto copy	Analytics · recurso
+aws:res-redshift-data-sharing-governance	Amazon Redshift Data Sharing Governance	Analytics · recurso
+aws:res-redshift-dense-compute-node	Amazon Redshift Dense Compute Node	Analytics · recurso
+aws:res-redshift-dense-storage-node	Amazon Redshift Dense Storage Node	Analytics · recurso
+aws:res-redshift-ml	Amazon Redshift ML	Analytics · recurso
+aws:res-redshift-query-editor-v2-0	Amazon Redshift Query Editor v2.0	Analytics · recurso
+aws:res-redshift-ra3	Amazon Redshift RA3	Analytics · recurso
+aws:res-redshift-streaming-ingestion	Amazon Redshift Streaming Ingestion	Analytics · recurso
+aws:res-rekognition-image	Amazon Rekognition Image	Artificial Intelligence · recurso
+aws:res-rekognition-video	Amazon Rekognition Video	Artificial Intelligence · recurso
+aws:res-route-53-hosted-zone	Amazon Route 53 Hosted Zone	Networking Content Delivery · recurso
+aws:res-route-53-readiness-checks	Amazon Route 53 Readiness Checks	Networking Content Delivery · recurso
+aws:res-route-53-resolver	Amazon Route 53 Resolver	Networking Content Delivery · recurso
+aws:res-route-53-resolver-dns-firewall	Amazon Route 53 Resolver DNS Firewall	Networking Content Delivery · recurso
+aws:res-route-53-resolver-query-logging	Amazon Route 53 Resolver Query Logging	Networking Content Delivery · recurso
+aws:res-route-53-route-table	Amazon Route 53 Route Table	Networking Content Delivery · recurso
+aws:res-route-53-routing-controls	Amazon Route 53 Routing Controls	Networking Content Delivery · recurso
+aws:res-sagemaker-ai-canvas	Amazon SageMaker AI Canvas	Artificial Intelligence · recurso
+aws:res-sagemaker-ai-geospatial-ml	Amazon SageMaker AI Geospatial ML	Artificial Intelligence · recurso
+aws:res-sagemaker-ai-model	Amazon SageMaker AI Model	Artificial Intelligence · recurso
+aws:res-sagemaker-ai-notebook	Amazon SageMaker AI Notebook	Artificial Intelligence · recurso
+aws:res-sagemaker-ai-shadow-testing	Amazon SageMaker AI Shadow Testing	Artificial Intelligence · recurso
+aws:res-sagemaker-ai-train	Amazon SageMaker AI Train	Artificial Intelligence · recurso
+aws:res-saml-token	SAML token	General Icons · recurso
+aws:res-sdk	SDK	General Icons · recurso
+aws:res-security-hub-finding	AWS Security Hub Finding	Security Identity Compliance · recurso
+aws:res-server	Server	General Icons · recurso
+aws:res-servers	Servers	General Icons · recurso
+aws:res-shield	Shield	General Icons · recurso
+aws:res-shield-aws-shield-advanced	AWS Shield AWS Shield Advanced	Security Identity Compliance · recurso
+aws:res-simple-email-service-email	Amazon Simple Email Service Email	Business Applications · recurso
+aws:res-simple-notification-service-email-notification	Amazon Simple Notification Service Email Notification	Application Integration · recurso
+aws:res-simple-notification-service-http-notification	Amazon Simple Notification Service HTTP Notification	Application Integration · recurso
+aws:res-simple-notification-service-topic	Amazon Simple Notification Service Topic	Application Integration · recurso
+aws:res-simple-queue-service-message	Amazon Simple Queue Service Message	Application Integration · recurso
+aws:res-simple-queue-service-queue	Amazon Simple Queue Service Queue	Application Integration · recurso
+aws:res-simple-storage-service-bucket	Amazon Simple Storage Service Bucket	Storage · recurso
+aws:res-simple-storage-service-bucket-with-objects	Amazon Simple Storage Service Bucket With Objects	Storage · recurso
+aws:res-simple-storage-service-directory-bucket	Amazon Simple Storage Service Directory bucket	Storage · recurso
+aws:res-simple-storage-service-general-access-points	Amazon Simple Storage Service General Access Points	Storage · recurso
+aws:res-simple-storage-service-glacier-archive	Amazon Simple Storage Service Glacier Archive	Storage · recurso
+aws:res-simple-storage-service-glacier-vault	Amazon Simple Storage Service Glacier Vault	Storage · recurso
+aws:res-simple-storage-service-object	Amazon Simple Storage Service Object	Storage · recurso
+aws:res-simple-storage-service-s3-batch-operations	Amazon Simple Storage Service S3 Batch Operations	Storage · recurso
+aws:res-simple-storage-service-s3-express-one-zone	Amazon Simple Storage Service S3 Express One Zone	Storage · recurso
+aws:res-simple-storage-service-s3-glacier-deep-archive	Amazon Simple Storage Service S3 Glacier Deep Archive	Storage · recurso
+aws:res-simple-storage-service-s3-glacier-flexible-retrieval	Amazon Simple Storage Service S3 Glacier Flexible Retrieval	Storage · recurso
+aws:res-simple-storage-service-s3-glacier-instant-retrieval	Amazon Simple Storage Service S3 Glacier Instant Retrieval	Storage · recurso
+aws:res-simple-storage-service-s3-intelligent-tiering	Amazon Simple Storage Service S3 Intelligent Tiering	Storage · recurso
+aws:res-simple-storage-service-s3-multi-region-access-points	Amazon Simple Storage Service S3 Multi Region Access Points	Storage · recurso
+aws:res-simple-storage-service-s3-object-lambda	Amazon Simple Storage Service S3 Object Lambda	Storage · recurso
+aws:res-simple-storage-service-s3-object-lambda-access-points	Amazon Simple Storage Service S3 Object Lambda Access Points	Storage · recurso
+aws:res-simple-storage-service-s3-object-lock	Amazon Simple Storage Service S3 Object Lock	Storage · recurso
+aws:res-simple-storage-service-s3-on-outposts	Amazon Simple Storage Service S3 On Outposts	Storage · recurso
+aws:res-simple-storage-service-s3-one-zone-ia	Amazon Simple Storage Service S3 One Zone IA	Storage · recurso
+aws:res-simple-storage-service-s3-replication	Amazon Simple Storage Service S3 Replication	Storage · recurso
+aws:res-simple-storage-service-s3-replication-time-control	Amazon Simple Storage Service S3 Replication Time Control	Storage · recurso
+aws:res-simple-storage-service-s3-select	Amazon Simple Storage Service S3 Select	Storage · recurso
+aws:res-simple-storage-service-s3-standard	Amazon Simple Storage Service S3 Standard	Storage · recurso
+aws:res-simple-storage-service-s3-standard-ia	Amazon Simple Storage Service S3 Standard IA	Storage · recurso
+aws:res-simple-storage-service-s3-storage-lens	Amazon Simple Storage Service S3 Storage Lens	Storage · recurso
+aws:res-simple-storage-service-s3-tables	Amazon Simple Storage Service S3 Tables	Storage · recurso
+aws:res-simple-storage-service-s3-vectors	Amazon Simple Storage Service S3 Vectors	Storage · recurso
+aws:res-simple-storage-service-vpc-access-points	Amazon Simple Storage Service VPC Access Points	Storage · recurso
+aws:res-snowball-snowball-import-export	AWS Snowball Snowball Import Export	Storage · recurso
+aws:res-source-code	Source Code	General Icons · recurso
+aws:res-ssl-padlock	SSL padlock	General Icons · recurso
+aws:res-storage-gateway-amazon-fsx-file-gateway	AWS Storage Gateway Amazon FSx File Gateway	Storage · recurso
+aws:res-storage-gateway-amazon-s3-file-gateway	AWS Storage Gateway Amazon S3 File Gateway	Storage · recurso
+aws:res-storage-gateway-cached-volume	AWS Storage Gateway Cached Volume	Storage · recurso
+aws:res-storage-gateway-file-gateway	AWS Storage Gateway File Gateway	Storage · recurso
+aws:res-storage-gateway-noncached-volume	AWS Storage Gateway Noncached Volume	Storage · recurso
+aws:res-storage-gateway-tape-gateway	AWS Storage Gateway Tape Gateway	Storage · recurso
+aws:res-storage-gateway-virtual-tape-library	AWS Storage Gateway Virtual Tape Library	Storage · recurso
+aws:res-storage-gateway-volume-gateway	AWS Storage Gateway Volume Gateway	Storage · recurso
+aws:res-systems-manager-application-manager	AWS Systems Manager Application Manager	Management Governance · recurso
+aws:res-systems-manager-automation	AWS Systems Manager Automation	Management Governance · recurso
+aws:res-systems-manager-change-calendar	AWS Systems Manager Change Calendar	Management Governance · recurso
+aws:res-systems-manager-change-manager	AWS Systems Manager Change Manager	Management Governance · recurso
+aws:res-systems-manager-compliance	AWS Systems Manager Compliance	Management Governance · recurso
+aws:res-systems-manager-distributor	AWS Systems Manager Distributor	Management Governance · recurso
+aws:res-systems-manager-documents	AWS Systems Manager Documents	Management Governance · recurso
+aws:res-systems-manager-incident-manager	AWS Systems Manager Incident Manager	Management Governance · recurso
+aws:res-systems-manager-inventory	AWS Systems Manager Inventory	Management Governance · recurso
+aws:res-systems-manager-maintenance-windows	AWS Systems Manager Maintenance Windows	Management Governance · recurso
+aws:res-systems-manager-opscenter	AWS Systems Manager OpsCenter	Management Governance · recurso
+aws:res-systems-manager-parameter-store	AWS Systems Manager Parameter Store	Management Governance · recurso
+aws:res-systems-manager-patch-manager	AWS Systems Manager Patch Manager	Management Governance · recurso
+aws:res-systems-manager-run-command	AWS Systems Manager Run Command	Management Governance · recurso
+aws:res-systems-manager-session-manager	AWS Systems Manager Session Manager	Management Governance · recurso
+aws:res-systems-manager-state-manager	AWS Systems Manager State Manager	Management Governance · recurso
+aws:res-tape-storage	Tape storage	General Icons · recurso
+aws:res-textract-analyze-lending	Amazon Textract Analyze Lending	Artificial Intelligence · recurso
+aws:res-toolkit	Toolkit	General Icons · recurso
+aws:res-transfer-family-aws-as2	AWS Transfer Family AWS AS2	Migration Modernization · recurso
+aws:res-transfer-family-aws-ftp	AWS Transfer Family AWS FTP	Migration Modernization · recurso
+aws:res-transfer-family-aws-ftps	AWS Transfer Family AWS FTPS	Migration Modernization · recurso
+aws:res-transfer-family-aws-sftp	AWS Transfer Family AWS SFTP	Migration Modernization · recurso
+aws:res-transit-gateway-attachment	AWS Transit Gateway Attachment	Networking Content Delivery · recurso
+aws:res-trusted-advisor-checklist	AWS Trusted Advisor Checklist	Management Governance · recurso
+aws:res-trusted-advisor-checklist-cost	AWS Trusted Advisor Checklist Cost	Management Governance · recurso
+aws:res-trusted-advisor-checklist-fault-tolerant	AWS Trusted Advisor Checklist Fault Tolerant	Management Governance · recurso
+aws:res-trusted-advisor-checklist-performance	AWS Trusted Advisor Checklist Performance	Management Governance · recurso
+aws:res-trusted-advisor-checklist-security	AWS Trusted Advisor Checklist Security	Management Governance · recurso
+aws:res-user	User	General Icons · recurso
+aws:res-users	Users	General Icons · recurso
+aws:res-vpc-carrier-gateway	Amazon VPC Carrier Gateway	Networking Content Delivery · recurso
+aws:res-vpc-customer-gateway	Amazon VPC Customer Gateway	Networking Content Delivery · recurso
+aws:res-vpc-elastic-network-adapter	Amazon VPC Elastic Network Adapter	Networking Content Delivery · recurso
+aws:res-vpc-elastic-network-interface	Amazon VPC Elastic Network Interface	Networking Content Delivery · recurso
+aws:res-vpc-endpoints	Amazon VPC Endpoints	Networking Content Delivery · recurso
+aws:res-vpc-flow-logs	Amazon VPC Flow Logs	Networking Content Delivery · recurso
+aws:res-vpc-internet-gateway	Amazon VPC Internet Gateway	Networking Content Delivery · recurso
+aws:res-vpc-nat-gateway	Amazon VPC NAT Gateway	Networking Content Delivery · recurso
+aws:res-vpc-network-access-analyzer	Amazon VPC Network Access Analyzer	Networking Content Delivery · recurso
+aws:res-vpc-network-access-control-list	Amazon VPC Network Access Control List	Networking Content Delivery · recurso
+aws:res-vpc-peering-connection	Amazon VPC Peering Connection	Networking Content Delivery · recurso
+aws:res-vpc-reachability-analyzer	Amazon VPC Reachability Analyzer	Networking Content Delivery · recurso
+aws:res-vpc-router	Amazon VPC Router	Networking Content Delivery · recurso
+aws:res-vpc-traffic-mirroring	Amazon VPC Traffic Mirroring	Networking Content Delivery · recurso
+aws:res-vpc-virtual-private-cloud-vpc	Amazon VPC Virtual private cloud VPC	Networking Content Delivery · recurso
+aws:res-vpc-vpn-connection	Amazon VPC VPN Connection	Networking Content Delivery · recurso
+aws:res-vpc-vpn-gateway	Amazon VPC VPN Gateway	Networking Content Delivery · recurso
+aws:res-waf-bad-bot	AWS WAF Bad Bot	Security Identity Compliance · recurso
+aws:res-waf-bot	AWS WAF Bot	Security Identity Compliance · recurso
+aws:res-waf-bot-control	AWS WAF Bot Control	Security Identity Compliance · recurso
+aws:res-waf-filtering-rule	AWS WAF Filtering Rule	Security Identity Compliance · recurso
+aws:res-waf-labels	AWS WAF Labels	Security Identity Compliance · recurso
+aws:res-waf-managed-rule	AWS WAF Managed Rule	Security Identity Compliance · recurso
+aws:res-waf-rule	AWS WAF Rule	Security Identity Compliance · recurso
+aws:res-workspaces-family-amazon-workspaces	Amazon WorkSpaces Family Amazon WorkSpaces	End User Computing · recurso
+aws:res-workspaces-family-amazon-workspaces-core	Amazon WorkSpaces Family Amazon WorkSpaces Core	End User Computing · recurso
+aws:res-workspaces-family-amazon-workspaces-secure-browser	Amazon WorkSpaces Family Amazon WorkSpaces Secure Browser	End User Computing · recurso
+aws:reserved-instance-reporting	Reserved Instance Reporting	Cloud Financial Management
+aws:resilience-hub	AWS Resilience Hub	Management Governance
+aws:resource-access-manager	AWS Resource Access Manager	Security Identity Compliance
+aws:resource-explorer	AWS Resource Explorer	Management Governance
+aws:route-53	Amazon Route 53	Networking Content Delivery
+aws:s3-on-outposts	Amazon S3 on Outposts	Storage
+aws:sagemaker	Amazon SageMaker	Analytics
+aws:sagemaker-ai	Amazon SageMaker AI	Artificial Intelligence
+aws:sagemaker-ground-truth	Amazon SageMaker Ground Truth	Artificial Intelligence
+aws:sagemaker-studio-lab	Amazon SageMaker Studio Lab	Artificial Intelligence
+aws:savings-plans	Savings Plans	Cloud Financial Management
+aws:secrets-manager	AWS Secrets Manager	Security Identity Compliance
+aws:security-hub	AWS Security Hub	Security Identity Compliance
+aws:security-incident-response	AWS Security Incident Response	Security Identity Compliance
+aws:security-lake	Amazon Security Lake	Security Identity Compliance
+aws:serverless-application-repository	AWS Serverless Application Repository	Compute
+aws:service-catalog	AWS Service Catalog	Management Governance
+aws:service-management-connector	AWS Service Management Connector	Management Governance
+aws:shield	AWS Shield	Security Identity Compliance
+aws:signer	AWS Signer	Security Identity Compliance
+aws:simple-email-service	Amazon Simple Email Service	Business Applications
+aws:simple-notification-service	Amazon Simple Notification Service	App Integration
+aws:simple-queue-service	Amazon Simple Queue Service	App Integration
+aws:simple-storage-service	Amazon Simple Storage Service	Storage
+aws:simple-storage-service-glacier	Amazon Simple Storage Service Glacier	Storage
+aws:simspace-weaver	AWS SimSpace Weaver	Compute
+aws:site-to-site-vpn	AWS Site to Site VPN	Networking Content Delivery
+aws:snowball	AWS Snowball	Storage
+aws:snowball-edge	AWS Snowball Edge	Storage
+aws:step-functions	AWS Step Functions	App Integration
+aws:storage-gateway	AWS Storage Gateway	Storage
+aws:supply-chain	AWS Supply Chain	Business Applications
+aws:support	AWS Support	Customer Enablement
+aws:systems-manager	AWS Systems Manager	Management Governance
+aws:telco-network-builder	AWS Telco Network Builder	Management Governance
+aws:tensorflow-on-aws	TensorFlow on AWS	Artificial Intelligence
+aws:textract	Amazon Textract	Artificial Intelligence
+aws:thinkbox-deadline	AWS Thinkbox Deadline	Media Services
+aws:thinkbox-frost	AWS Thinkbox Frost	Media Services
+aws:thinkbox-krakatoa	AWS Thinkbox Krakatoa	Media Services
+aws:thinkbox-sequoia	AWS Thinkbox Sequoia	Media Services
+aws:thinkbox-stoke	AWS Thinkbox Stoke	Media Services
+aws:thinkbox-xmesh	AWS Thinkbox XMesh	Media Services
+aws:timestream	Amazon Timestream	Database
+aws:tools-and-sdks	AWS Tools and SDKs	Developer Tools
+aws:training-certification	AWS Training Certification	Customer Enablement
+aws:transcribe	Amazon Transcribe	Artificial Intelligence
+aws:transfer-family	AWS Transfer Family	Migration Modernization
+aws:transform	AWS Transform	Migration Modernization
+aws:transit-gateway	AWS Transit Gateway	Networking Content Delivery
+aws:translate	Amazon Translate	Artificial Intelligence
+aws:trusted-advisor	AWS Trusted Advisor	Management Governance
+aws:user-notifications	AWS User Notifications	Management Governance
+aws:verified-access	AWS Verified Access	Networking Content Delivery
+aws:verified-permissions	Amazon Verified Permissions	Security Identity Compliance
+aws:virtual-private-cloud	Amazon Virtual Private Cloud	Networking Content Delivery
+aws:vpc-lattice	Amazon VPC Lattice	Networking Content Delivery
+aws:waf	AWS WAF	Security Identity Compliance
+aws:wavelength	AWS Wavelength	Compute
+aws:well-architected-tool	AWS Well Architected Tool	Management Governance
+aws:wickr	AWS Wickr	Business Applications
+aws:workdocs	Amazon WorkDocs	Business Applications
+aws:workdocs-sdk	Amazon WorkDocs SDK	Business Applications
+aws:workmail	Amazon WorkMail	Business Applications
+aws:workspaces-family	Amazon WorkSpaces Family	End User Computing
+aws:x-ray	AWS X Ray	Developer Tools
+azure:030777508-icon-service-service-group-relationships	030777508 icon service Service Group Relationships	New Icons
+azure:abs-member	ABS Member	Blockchain
+azure:aca-sandboxes	ACA Sandboxes	New Icons
+azure:active-directory-connect-health	Active Directory Connect Health	Identity
+azure:activity-log	Activity Log	Management + Governance
+azure:administrative-units	Administrative Units	Identity
+azure:advisor	Advisor	Management + Governance
+azure:agent365	Agent365	Power Platform
+azure:agentic-web-apps	Agentic Web Apps	New Icons
+azure:ai-at-edge	AI at Edge	Hybrid + Multicloud
+azure:ai-foundry	AI Foundry	Ai + Machine Learning
+azure:ai-gateway	AI Gateway	New Icons
+azure:ai-manager	AI Manager	New Icons
+azure:ai-studio	AI Studio	Ai + Machine Learning
+azure:aibuilder	AIBuilder	Power Platform
+azure:aks-automatic	AKS Automatic	Compute
+azure:aks-istio	AKS Istio	Other
+azure:aks-network-policy	AKS Network Policy	Containers
+azure:alerts	Alerts	Management + Governance
+azure:all-resources	All Resources	General
+azure:analysis-services	Analysis Services	Analytics
+azure:anomaly-detector	Anomaly Detector	Ai + Machine Learning
+azure:api-center	API Center	Web
+azure:api-connections	API Connections	Devops
+azure:api-management-services	API Management Services	Devops
+azure:api-proxy	API Proxy	Identity
+azure:app-compliance-automation	App Compliance Automation	Other
+azure:app-configuration	App Configuration	Integration
+azure:app-registrations	App Registrations	Identity
+azure:app-service-builder	App Service Builder	New Icons
+azure:app-service-certificates	App Service Certificates	App Services
+azure:app-service-domains	App Service Domains	App Services
+azure:app-service-environments	App Service Environments	App Services
+azure:app-service-plans	App Service Plans	App Services
+azure:app-services	App Services	App Services
+azure:app-space	App Space	Web
+azure:app-space-component	App Space Component	Web
+azure:applens	Applens	Azure Ecosystem
+azure:application-gateway-containers	Application Gateway Containers	Networking
+azure:application-gateways	Application Gateways	Networking
+azure:application-group	Application Group	Compute
+azure:application-insights	Application Insights	Devops
+azure:application-security-groups	Application Security Groups	Security
+azure:aquila	Aquila	Other
+azure:arc-data-services	Arc Data services	Other
+azure:arc-kubernetes	Arc Kubernetes	Hybrid + Multicloud
+azure:arc-machines	Arc Machines	Management + Governance
+azure:arc-postgresql	Arc PostgreSQL	Other
+azure:arc-sql-managed-instance	Arc SQL Managed Instance	Other
+azure:arc-sql-server	Arc SQL Server	Other
+azure:atm-multistack	ATM Multistack	Networking
+azure:auto-scale	Auto Scale	Monitor
+azure:automanaged-vm	Automanaged VM	Compute
+azure:automation-accounts	Automation Accounts	Management + Governance
+azure:availability-sets	Availability Sets	Compute
+azure:avs-vm	AVS VM	Other
+azure:azure-a	Azure A	Other
+azure:azure-access-point	Azure Access Point	New Icons
+azure:azure-ad-b2c	Azure AD B2C	Identity
+azure:azure-ai-foundry-iq	Azure AI Foundry IQ	Ai + Machine Learning
+azure:azure-api-for-fhir	Azure API for FHIR	Integration
+azure:azure-app-testing	Azure App Testing	Developer Tools
+azure:azure-applied-ai-services	Azure Applied AI Services	Ai + Machine Learning
+azure:azure-arc	Azure Arc	Management + Governance
+azure:azure-backup-center	Azure Backup Center	Other
+azure:azure-blockchain-service	Azure Blockchain Service	Blockchain
+azure:azure-center-for-sap	Azure Center for SAP	Other
+azure:azure-chaos-studio	Azure Chaos Studio	Other
+azure:azure-cloud-shell	Azure Cloud Shell	Other
+azure:azure-communication-services	Azure Communication Services	Other
+azure:azure-communications-gateway	Azure Communications Gateway	Networking
+azure:azure-compute-galleries	Azure Compute Galleries	Compute
+azure:azure-confidential-clean-rooms	Azure Confidential Clean Rooms	New Icons
+azure:azure-consumption-commitment	Azure Consumption Commitment	Other
+azure:azure-container-storage	Azure Container Storage	Containers
+azure:azure-cosmos-db	Azure Cosmos DB	Databases
+azure:azure-data-catalog	Azure Data Catalog	Integration
+azure:azure-data-explorer-clusters	Azure Data Explorer Clusters	Analytics
+azure:azure-data-sharing	Azure Data Sharing	New Icons
+azure:azure-data-transfer	Azure Data Transfer	New Icons
+azure:azure-database-mariadb-server	Azure Database MariaDB Server	Databases
+azure:azure-database-migration-services	Azure Database Migration Services	Databases
+azure:azure-database-mysql-server	Azure Database MySQL Server	Databases
+azure:azure-database-postgresql-server	Azure Database PostgreSQL Server	Databases
+azure:azure-database-postgresql-server-group	Azure Database PostgreSQL Server Group	Databases
+azure:azure-databox-gateway	Azure Databox Gateway	Integration
+azure:azure-databricks	Azure Databricks	Analytics
+azure:azure-deployment-environments	Azure Deployment Environments	Other
+azure:azure-dev-tunnels	Azure Dev Tunnels	Other
+azure:azure-device-registry	Azure Device Registry	New Icons
+azure:azure-devops	Azure DevOps	Devops
+azure:azure-documentdb	Azure DocumentDB	Databases
+azure:azure-edge-hardware-center	Azure Edge Hardware Center	Other
+azure:azure-enclaves	Azure Enclaves	Other
+azure:azure-encrypted-transport	Azure Encrypted Transport	New Icons
+azure:azure-experimentation-studio	Azure Experimentation Studio	Ai + Machine Learning
+azure:azure-fileshares	Azure Fileshares	Storage
+azure:azure-firewall-manager	Azure Firewall Manager	Networking
+azure:azure-firewall-policy	Azure Firewall Policy	Networking
+azure:azure-hcp-cache	Azure HCP Cache	Storage
+azure:azure-horizondb	Azure HorizonDB	New Icons
+azure:azure-hpc-workbenches	Azure HPC Workbenches	Other
+azure:azure-hybrid-center	Azure Hybrid Center	Azure Ecosystem
+azure:azure-information-protection	Azure Information Protection	Identity
+azure:azure-iot-operations	Azure IoT Operations	Iot
+azure:azure-lighthouse	Azure Lighthouse	Management + Governance
+azure:azure-linux	Azure Linux	Compute
+azure:azure-load-testing	Azure Load Testing	Other
+azure:azure-local	Azure Local	Hybrid + Multicloud
+azure:azure-machine-learning	Azure Machine Learning	Ai + Machine Learning
+azure:azure-managed-grafana	Azure Managed Grafana	Other
+azure:azure-managed-redis	Azure Managed Redis	Databases
+azure:azure-maps-accounts	Azure Maps Accounts	Iot
+azure:azure-media-service	Azure Media Service	Web
+azure:azure-migrate	Azure Migrate	Migrate
+azure:azure-monitor-dashboard	Azure Monitor Dashboard	Other
+azure:azure-monitor-pipeline	Azure Monitor Pipeline	Hybrid + Multicloud
+azure:azure-monitors-for-sap-solutions	Azure Monitors for SAP Solutions	Monitor
+azure:azure-netapp-files	Azure NetApp Files	Storage
+azure:azure-network-function-manager	Azure Network Function Manager	Other
+azure:azure-network-function-manager-functions	Azure Network Function Manager Functions	Other
+azure:azure-object-understanding	Azure Object Understanding	Ai + Machine Learning
+azure:azure-openai	Azure OpenAI	Ai + Machine Learning
+azure:azure-operator-5g-core	Azure Operator 5G Core	Hybrid + Multicloud
+azure:azure-operator-insights	Azure Operator Insights	Hybrid + Multicloud
+azure:azure-operator-nexus	Azure Operator Nexus	Hybrid + Multicloud
+azure:azure-operator-service-manager	Azure Operator Service Manager	Hybrid + Multicloud
+azure:azure-orbital	Azure Orbital	Other
+azure:azure-programmable-connectivity	Azure Programmable Connectivity	Hybrid + Multicloud
+azure:azure-quotas	Azure Quotas	Other
+azure:azure-red-hat-openshift	Azure Red Hat OpenShift	Containers
+azure:azure-sentinel	Azure Sentinel	Security
+azure:azure-service-bus	Azure Service Bus	Integration
+azure:azure-sphere	Azure Sphere	Other
+azure:azure-spring-apps	Azure Spring Apps	Compute
+azure:azure-sql	Azure SQL	Databases
+azure:azure-sql-edge	Azure SQL Edge	Databases
+azure:azure-sql-server-stretch-databases	Azure SQL Server Stretch Databases	Databases
+azure:azure-sql-vm	Azure SQL VM	Databases
+azure:azure-stack-hci-sizer	Azure Stack HCI Sizer	Iot
+azure:azure-storage-mover	Azure Storage Mover	Other
+azure:azure-support-center-blue	Azure Support Center Blue	Other
+azure:azure-sustainability	Azure Sustainability	Other
+azure:azure-synapse-analytics	Azure Synapse Analytics	Analytics
+azure:azure-token-service	Azure Token Service	Blockchain
+azure:azure-video-indexer	Azure Video Indexer	Other
+azure:azure-virtual-desktop	Azure Virtual Desktop	Other
+azure:azure-vmware-solution	Azure VMware Solution	Other
+azure:azure-workbooks	Azure Workbooks	Analytics
+azure:azureattestation	AzureAttestation	Other
+azure:azurite	Azurite	Other
+azure:backlog	Backlog	General
+azure:backup-vault	Backup Vault	Other
+azure:bare-metal-infrastructure	Bare Metal Infrastructure	Other
+azure:bastions	Bastions	Networking
+azure:batch-accounts	Batch Accounts	Compute
+azure:batch-ai	Batch AI	Ai + Machine Learning
+azure:biz-talk	Biz Talk	General
+azure:blob-block	Blob Block	General
+azure:blob-page	Blob Page	General
+azure:blockchain-applications	Blockchain Applications	Blockchain
+azure:blueprints	Blueprints	Management + Governance
+azure:bonsai	Bonsai	Ai + Machine Learning
+azure:bot-services	Bot Services	Ai + Machine Learning
+azure:branch	Branch	General
+azure:breeze	Breeze	Other
+azure:browser	Browser	General
+azure:bug	Bug	General
+azure:builds	Builds	General
+azure:business-process-tracking	Business Process Tracking	Integration
+azure:cache	Cache	General
+azure:cache-redis	Cache Redis	Databases
+azure:capacity-reservation-groups	Capacity Reservation Groups	Other
+azure:cdn-profiles	CDN Profiles	App Services
+azure:central-service-instance-for-sap	Central Service Instance For SAP	Other
+azure:ceres	Ceres	Other
+azure:change-analysis	Change Analysis	Devops
+azure:client-apps	Client Apps	Intune
+azure:cloud-services-classic	Cloud Services (Classic)	Compute
+azure:cloud-services-extended-support	Cloud Services (extended support)	Other
+azure:cloudtest	CloudTest	Devops
+azure:code	Code	General
+azure:code-optimization	Code Optimization	Devops
+azure:cognitive-search	Cognitive Search	Ai + Machine Learning
+azure:cognitive-services	Cognitive Services	Ai + Machine Learning
+azure:cognitive-services-decisions	Cognitive Services Decisions	Ai + Machine Learning
+azure:collaborative-service	Collaborative Service	Azure Ecosystem
+azure:commit	Commit	General
+azure:community-images	Community Images	Other
+azure:compliance	Compliance	Management + Governance
+azure:compliance-center	Compliance Center	Other
+azure:compute-fleet	Compute Fleet	Compute
+azure:computer-vision	Computer Vision	Ai + Machine Learning
+azure:conditional-access	Conditional Access	Security
+azure:confidential-ledgers	Confidential Ledgers	Other
+azure:connected-cache	Connected Cache	Networking
+azure:connected-vehicle-platform	Connected Vehicle Platform	Other
+azure:connections	Connections	Networking
+azure:consortium	Consortium	Blockchain
+azure:container-apps-environments	Container Apps Environments	Other
+azure:container-instances	Container Instances	Compute
+azure:container-registries	Container Registries	Containers
+azure:container-services-deprecated	Container Services (Deprecated)	Compute
+azure:content-moderators	Content Moderators	Ai + Machine Learning
+azure:content-safety	Content Safety	Ai + Machine Learning
+azure:controls	Controls	General
+azure:controls-horizontal	Controls Horizontal	General
+azure:copilot-studio	Copilot Studio	Power Platform
+azure:cost-alerts	Cost Alerts	General
+azure:cost-analysis	Cost Analysis	General
+azure:cost-budgets	Cost Budgets	General
+azure:cost-export	Cost Export	Other
+azure:cost-management	Cost Management	General
+azure:cost-management-and-billing	Cost Management and Billing	General
+azure:counter	Counter	General
+azure:cubes	Cubes	General
+azure:custom-ip-prefix	Custom IP Prefix	Other
+azure:custom-vision	Custom Vision	Ai + Machine Learning
+azure:customer-lockbox-for-microsoft-azure	Customer Lockbox for Microsoft Azure	Management + Governance
+azure:dashboard	Dashboard	General
+azure:dashboard-hub	Dashboard Hub	Other
+azure:data-box	Data Box	Migrate
+azure:data-collection-rules	Data Collection Rules	Other
+azure:data-factories	Data Factories	Analytics
+azure:data-lake-analytics	Data Lake Analytics	Analytics
+azure:data-lake-storage-gen1	Data Lake Storage Gen1	Storage
+azure:data-lake-store-gen1	Data Lake Store Gen1	Analytics
+azure:data-share-invitations	Data Share Invitations	Storage
+azure:data-shares	Data Shares	Storage
+azure:data-virtualization	Data Virtualization	Storage
+azure:database-instance-for-sap	Database Instance For SAP	Other
+azure:dataverse	Dataverse	Power Platform
+azure:ddos-custom-policy	DDoS Custom Policy	New Icons
+azure:ddos-protection-plans	DDoS Protection Plans	Networking
+azure:dedicated-hsm	Dedicated HSM	Other
+azure:defender-cm-local-manager	Defender CM Local Manager	Other
+azure:defender-dcs-controller	Defender DCS Controller	Other
+azure:defender-distributer-control-system	Defender Distributer Control System	Other
+azure:defender-engineering-station	Defender Engineering Station	Other
+azure:defender-external-management	Defender External Management	Other
+azure:defender-freezer-monitor	Defender Freezer Monitor	Other
+azure:defender-historian	Defender Historian	Other
+azure:defender-hmi	Defender HMI	Other
+azure:defender-industrial-packaging-system	Defender Industrial Packaging System	Other
+azure:defender-industrial-printer	Defender Industrial Printer	Other
+azure:defender-industrial-robot	Defender Industrial Robot	Other
+azure:defender-industrial-scale-system	Defender Industrial Scale System	Other
+azure:defender-marquee	Defender Marquee	Other
+azure:defender-meter	Defender Meter	Other
+azure:defender-plc	Defender PLC	Other
+azure:defender-pneumatic-device	Defender Pneumatic Device	Other
+azure:defender-programable-board	Defender Programable Board	Other
+azure:defender-relay	Defender Relay	Other
+azure:defender-robot-controller	Defender Robot Controller	Other
+azure:defender-rtu	Defender RTU	Other
+azure:defender-sensor	Defender Sensor	Other
+azure:defender-slot	Defender Slot	Other
+azure:defender-web-guiding-system	Defender Web Guiding System	Other
+azure:detonation	Detonation	Security
+azure:dev-console	Dev Console	General
+azure:device-compliance	Device Compliance	Intune
+azure:device-configuration	Device Configuration	Intune
+azure:device-enrollment	Device Enrollment	Intune
+azure:device-provisioning-services	Device Provisioning Services	Iot
+azure:device-security-apple	Device Security Apple	Intune
+azure:device-security-google	Device Security Google	Intune
+azure:device-security-windows	Device Security Windows	Intune
+azure:device-update-iot-hub	Device Update IoT Hub	Other
+azure:devices	Devices	Intune
+azure:devops-starter	DevOps Starter	Devops
+azure:devtest-labs	DevTest Labs	Devops
+azure:diagnostics-settings	Diagnostics Settings	Management + Governance
+azure:digital-twins	Digital Twins	Iot
+azure:disconnected-operations	Disconnected Operations	New Icons
+azure:disk-encryption-sets	Disk Encryption Sets	Compute
+azure:disk-pool	Disk Pool	Other
+azure:disks	Disks	Compute
+azure:disks-classic	Disks (Classic)	Compute
+azure:disks-snapshots	Disks Snapshots	Compute
+azure:dns-multistack	DNS Multistack	Networking
+azure:dns-private-resolver	DNS Private Resolver	Networking
+azure:dns-security-policy	DNS Security Policy	Networking
+azure:dns-zones	DNS Zones	Networking
+azure:download	Download	General
+azure:ebooks	eBooks	Intune
+azure:edge-actions	Edge Actions	Networking
+azure:edge-management	Edge Management	Other
+azure:edge-storage-accelerator	Edge Storage Accelerator	Hybrid + Multicloud
+azure:education	Education	Management + Governance
+azure:elastic-job-agents	Elastic Job Agents	Databases
+azure:elastic-san	Elastic SAN	Other
+azure:endpoint-analytics	Endpoint Analytics	Analytics
+azure:engage-center-connect	Engage Center Connect	Intune
+azure:enterprise-applications	Enterprise Applications	Identity
+azure:entra-bw-icon-product-family	Microsoft Entra BW icon (product family)	Entra
+azure:entra-connect	Entra Connect	Identity
+azure:entra-connect-health	Entra Connect Health	Identity
+azure:entra-connect-sync	Entra Connect Sync	Identity
+azure:entra-domain-services	Entra Domain Services	Identity
+azure:entra-global-secure-access	Entra Global Secure Access	Identity
+azure:entra-id	Microsoft Entra ID	Entra
+azure:entra-id-bw-icon	Microsoft Entra ID BW icon	Entra
+azure:entra-id-filled-bw-icon	Microsoft Entra ID filled BW icon	Entra
+azure:entra-id-governance	Microsoft Entra ID Governance	Entra
+azure:entra-id-governance-bw-icon	Microsoft Entra ID Governance BW icon	Entra
+azure:entra-id-protection	Entra ID Protection	Identity
+azure:entra-identity-custom-roles	Entra Identity Custom Roles	Identity
+azure:entra-identity-licenses	Entra Identity Licenses	Identity
+azure:entra-identity-risky-signins	Entra Identity Risky Signins	Security
+azure:entra-identity-risky-users	Entra Identity Risky Users	Security
+azure:entra-identity-roles-and-administrators	Entra Identity Roles and Administrators	Identity
+azure:entra-internet-access	Microsoft Entra Internet Access	Entra
+azure:entra-internet-access-bw-icon	Microsoft Entra Internet Access BW icon	Entra
+azure:entra-managed-identities	Entra Managed Identities	Identity
+azure:entra-private-access	Microsoft Entra Private Access	Entra
+azure:entra-private-access-bw-icon	Microsoft Entra Private Access BW icon	Entra
+azure:entra-privleged-identity-management	Entra Privleged Identity Management	Identity
+azure:entra-product-family	Microsoft Entra Product Family	Entra
+azure:entra-verified-id	Microsoft Entra Verified ID	Entra
+azure:entra-verified-id-bw-icon	Microsoft Entra Verified ID BW icon	Entra
+azure:entra-workload-id	Microsoft Entra Workload ID	Entra
+azure:error	Error	General
+azure:event-grid-domains	Event Grid Domains	Integration
+azure:event-grid-subscriptions	Event Grid Subscriptions	Integration
+azure:event-grid-topics	Event Grid Topics	Integration
+azure:event-hub-clusters	Event Hub Clusters	Analytics
+azure:event-hubs	Event Hubs	Analytics
+azure:exchange-access	Exchange Access	Intune
+azure:exchange-on-premises-access	Exchange On Premises Access	Other
+azure:express-route-traffic-collector	Express Route Traffic Collector	Other
+azure:expressroute-circuits	ExpressRoute Circuits	Networking
+azure:expressroute-direct	ExpressRoute Direct	Other
+azure:extendedsecurityupdates	ExtendedSecurityUpdates	Security
+azure:extensions	Extensions	General
+azure:external-id	external id	Identity
+azure:external-id-modified	external id modified	Identity
+azure:external-identities	External Identities	Identity
+azure:face-apis	Face APIs	Ai + Machine Learning
+azure:feature-previews	Feature Previews	General
+azure:fhir-service	FHIR Service	Other
+azure:fiji	Fiji	Other
+azure:file	File	General
+azure:files	Files	General
+azure:firewalls	Firewalls	Networking
+azure:folder-blank	Folder Blank	General
+azure:folder-website	Folder Website	General
+azure:form-recognizers	Form Recognizers	Ai + Machine Learning
+azure:foundry-agent-service	Foundry Agent Service	Ai + Machine Learning
+azure:foundry-application	Foundry Application	Ai + Machine Learning
+azure:foundry-control-plane	Foundry Control Plane	Ai + Machine Learning
+azure:foundry-labs	Foundry Labs	Ai + Machine Learning
+azure:foundry-local	Foundry Local	Ai + Machine Learning
+azure:foundry-models	Foundry Models	Ai + Machine Learning
+azure:foundry-project	Foundry Project	Ai + Machine Learning
+azure:frd-qa	FRD QA	Ai + Machine Learning
+azure:free-services	Free Services	General
+azure:front-door-and-cdn-profiles	Front Door and CDN Profiles	Networking
+azure:ftp	FTP	General
+azure:function-apps	Function Apps	Compute
+azure:gear	Gear	General
+azure:genomics	Genomics	Ai + Machine Learning
+azure:genomics-accounts	Genomics Accounts	Ai + Machine Learning
+azure:globe-error	Globe Error	General
+azure:globe-success	Globe Success	General
+azure:globe-warning	Globe Warning	General
+azure:groups	Groups	Identity
+azure:guide	Guide	General
+azure:hd-insight-clusters	HD Insight Clusters	Analytics
+azure:hdi-aks-cluster	HDI AKS Cluster	Other
+azure:heart	Heart	General
+azure:help-and-support	Help and Support	General
+azure:host-groups	Host Groups	Compute
+azure:host-pools	Host Pools	Compute
+azure:hosts	Hosts	Compute
+azure:hybrid-connectivity-hub	Hybrid Connectivity Hub	Iot
+azure:icm-troubleshooting	IcM Troubleshooting	Other
+azure:identity-governance	Identity Governance	Identity
+azure:identity-secure-score	Identity Secure Score	Security
+azure:image	Image	General
+azure:image-definitions	Image Definitions	Compute
+azure:image-templates	Image Templates	Compute
+azure:image-versions	Image Versions	Compute
+azure:images	Images	Compute
+azure:immersive-readers	Immersive Readers	Ai + Machine Learning
+azure:import-export-jobs	Import Export Jobs	Storage
+azure:industrial-iot	Industrial IoT	Iot
+azure:information	Information	General
+azure:input-output	Input Output	General
+azure:instance-pools	Instance Pools	Databases
+azure:integration-accounts	Integration Accounts	Integration
+azure:integration-environments	Integration Environments	Integration
+azure:integration-service-environments	Integration Service Environments	Integration
+azure:internet-analyzer-profiles	Internet Analyzer Profiles	Other
+azure:intune	Intune	Intune
+azure:intune-app-protection	Intune App Protection	Intune
+azure:intune-for-education	Intune For Education	Intune
+azure:intune-trends	Intune Trends	Management + Governance
+azure:iot-central-applications	IoT Central Applications	Iot
+azure:iot-edge	IoT Edge	Iot
+azure:iot-hub	IoT Hub	Iot
+azure:ip-address-manager	IP Address manager	Networking
+azure:ip-groups	IP Groups	Networking
+azure:journey-hub	Journey Hub	General
+azure:key-vaults	Key Vaults	Security
+azure:keys	Keys	Menu
+azure:kubernetes-fleet-manager	Kubernetes Fleet Manager	Other
+azure:kubernetes-hub	Kubernetes Hub	Containers
+azure:kubernetes-services	Kubernetes Services	Compute
+azure:lab-accounts	Lab Accounts	Devops
+azure:lab-services	Lab Services	Devops
+azure:landing-zone	Landing Zone	New Icons
+azure:language	Language	Ai + Machine Learning
+azure:language-understanding	Language Understanding	Ai + Machine Learning
+azure:launch-portal	Launch Portal	General
+azure:learn	Learn	General
+azure:load-balancer-hub	Load Balancer Hub	Networking
+azure:load-balancers	Load Balancers	Networking
+azure:load-test	Load Test	General
+azure:load-testing	Load Testing	Devops
+azure:local-network-gateways	Local Network Gateways	Networking
+azure:location	Location	General
+azure:log-analytics-query-pack	Log Analytics Query Pack	Other
+azure:log-analytics-workspaces	Log Analytics Workspaces	Analytics
+azure:log-streaming	Log Streaming	General
+azure:logic-apps	Logic Apps	Integration
+azure:logic-apps-custom-connector	Logic Apps Custom Connector	Integration
+azure:logic-apps-template	Logic Apps Template	Integration
+azure:machine-learning	Machine Learning	Ai + Machine Learning
+azure:machine-learning-studio-classic-web-services	Machine Learning Studio (Classic) Web Services	Ai + Machine Learning
+azure:machine-learning-studio-web-service-plans	Machine Learning Studio Web Service Plans	Ai + Machine Learning
+azure:machine-learning-studio-workspaces	Machine Learning Studio Workspaces	Ai + Machine Learning
+azure:machinesazurearc	MachinesAzureArc	Management + Governance
+azure:maintenance-configuration	Maintenance Configuration	Compute
+azure:managed-applications-center	Managed Applications Center	Management + Governance
+azure:managed-database	Managed Database	Databases
+azure:managed-desktop	Managed Desktop	Management + Governance
+azure:managed-devops-pools	Managed DevOps Pools	Devops
+azure:managed-file-shares	Managed File Shares	Storage
+azure:managed-identities	Managed Identities	Identity
+azure:managed-instance-apache-cassandra	Managed Instance Apache Cassandra	Other
+azure:managed-service-fabric	Managed Service Fabric	Compute
+azure:management-groups	Management Groups	General
+azure:management-portal	Management Portal	General
+azure:marketplace	Marketplace	General
+azure:marketplace-management	Marketplace Management	General
+azure:media	Media	General
+azure:media-file	Media File	General
+azure:medtech-service	MedTech Service	Other
+azure:mesh-applications	Mesh Applications	Compute
+azure:metrics	Metrics	Management + Governance
+azure:metrics-advisor	Metrics Advisor	Ai + Machine Learning
+azure:microsoft-defender-easm	Microsoft Defender EASM	Security
+azure:microsoft-defender-for-cloud	Microsoft Defender for Cloud	Security
+azure:microsoft-defender-for-iot	Microsoft Defender for IoT	Security
+azure:microsoft-dev-box	Microsoft Dev Box	Other
+azure:microsoft-discovery	Microsoft Discovery	New Icons
+azure:mindaro	Mindaro	Intune
+azure:mission-landing-zone	Mission Landing Zone	Other
+azure:mobile	Mobile	General
+azure:mobile-engagement	Mobile Engagement	General
+azure:mobile-networks	Mobile Networks	Other
+azure:modular-data-center	Modular Data Center	Other
+azure:module	Module	General
+azure:monitor	Monitor	Management + Governance
+azure:monitor-health-models	Monitor Health Models	Other
+azure:multi-factor-authentication	Multi Factor Authentication	Identity
+azure:multi-tenancy	Multi Tenancy	Identity
+azure:multifactor-authentication	Multifactor Authentication	Security
+azure:my-customers	My Customers	Management + Governance
+azure:nat	NAT	Networking
+azure:network-foundation-hub	Network Foundation Hub	Networking
+azure:network-interfaces	Network Interfaces	Networking
+azure:network-managers	Network Managers	Other
+azure:network-security-groups	Network Security Groups	Networking
+azure:network-security-hub	Network Security Hub	Networking
+azure:network-security-perimeters	Network Security Perimeters	Other
+azure:network-watcher	Network Watcher	Monitor
+azure:notification-hub-namespaces	Notification Hub Namespaces	Iot
+azure:notification-hubs	Notification Hubs	App Services
+azure:on-premises-data-gateways	On Premises Data Gateways	Networking
+azure:open-supply-chain-platform	Open Supply Chain Platform	Other
+azure:operation-log-classic	Operation Log (Classic)	Management + Governance
+azure:oracle-database	Oracle Database	Databases
+azure:os-images-classic	OS Images (Classic)	Compute
+azure:osconfig	OSConfig	Other
+azure:outbound-connection	Outbound Connection	Blockchain
+azure:partner-namespace	Partner Namespace	Integration
+azure:partner-registration	Partner Registration	Integration
+azure:partner-topic	Partner Topic	Integration
+azure:peering-service	Peering Service	Other
+azure:peerings	Peerings	Other
+azure:personalizers	Personalizers	Ai + Machine Learning
+azure:planetary-computer-pro	Planetary Computer Pro	Ai + Machine Learning
+azure:policy	Policy	Management + Governance
+azure:power	Power	General
+azure:power-apps	Power Apps	Power Platform
+azure:power-automate	Power Automate	Power Platform
+azure:power-bi-embedded	Power BI Embedded	Analytics
+azure:power-pages	Power Pages	Power Platform
+azure:power-platform	Power Platform	Power Platform
+azure:power-up	Power Up	General
+azure:powershell	Powershell	General
+azure:preview-features	Preview Features	General
+azure:private-endpoints	Private Endpoints	Other
+azure:private-link	Private Link	Networking
+azure:private-link-service	Private Link Service	Networking
+azure:private-link-services	Private Link Services	Analytics
+azure:process-explorer	Process Explorer	General
+azure:production-ready-database	Production Ready Database	General
+azure:promethus	promethus	Other
+azure:proximity-placement-groups	Proximity Placement Groups	Networking
+azure:public-ip-addresses	Public IP Addresses	Networking
+azure:public-ip-addresses-classic	Public IP Addresses (Classic)	Networking
+azure:public-ip-prefixes	Public IP Prefixes	Networking
+azure:pubsub	pubsub	Integration
+azure:qna-makers	QnA Makers	Ai + Machine Learning
+azure:quickstart-center	Quickstart Center	General
+azure:recent	Recent	General
+azure:recovery-services-vaults	Recovery Services Vaults	Management + Governance
+azure:region-management	Region Management	General
+azure:relays	Relays	Integration
+azure:remote-rendering	Remote Rendering	Mixed Reality
+azure:reservations	Reservations	General
+azure:reserved-capacity	Reserved Capacity	Other
+azure:reserved-ip-addresses-classic	Reserved IP Addresses (Classic)	Networking
+azure:resiliency	Resiliency	New Icons
+azure:resource-explorer	Resource Explorer	General
+azure:resource-graph-explorer	Resource Graph Explorer	Management + Governance
+azure:resource-group-list	Resource Group List	General
+azure:resource-groups	Resource Groups	General
+azure:resource-guard	Resource Guard	Other
+azure:resource-linked	Resource Linked	General
+azure:resource-management-private-link	Resource Management Private Link	Networking
+azure:resource-mover	Resource Mover	Other
+azure:resources-provider	Resources Provider	Management + Governance
+azure:restore-points	Restore Points	Compute
+azure:restore-points-collections	Restore Points Collections	Compute
+azure:route-filters	Route Filters	Networking
+azure:route-tables	Route Tables	Networking
+azure:rtos	RTOS	Other
+azure:savings-plans	Savings Plans	Other
+azure:scheduled-actions	Scheduled Actions	Compute
+azure:scheduler	Scheduler	General
+azure:scheduler-job-collections	Scheduler Job Collections	Management + Governance
+azure:scvmm-management-servers	SCVMM Management Servers	Other
+azure:search	Search	General
+azure:search-grid	Search Grid	General
+azure:security	Security	Identity
+azure:security-baselines	Security Baselines	Intune
+azure:sendgrid-accounts	SendGrid Accounts	Integration
+azure:server-farm	Server Farm	General
+azure:serverless-search	Serverless Search	Ai + Machine Learning
+azure:service-catalog-mad	Service Catalog MAD	Management + Governance
+azure:service-endpoint-policies	Service Endpoint Policies	Networking
+azure:service-fabric-clusters	Service Fabric Clusters	Compute
+azure:service-group-relationships	Service Group Relationships	Management + Governance
+azure:service-groups	Service Groups	Containers
+azure:service-health	Service Health	General
+azure:service-providers	Service Providers	Management + Governance
+azure:shared-image-galleries	Shared Image Galleries	Compute
+azure:signalr	SignalR	Web
+azure:software-as-a-service	Software as a Service	Integration
+azure:software-updates	Software Updates	Intune
+azure:solutions	Solutions	Management + Governance
+azure:sonic-dash	Sonic Dash	Other
+azure:spatial-anchor-accounts	Spatial Anchor Accounts	Mixed Reality
+azure:speech-services	Speech Services	Ai + Machine Learning
+azure:spot-vm	Spot VM	Networking
+azure:spot-vmss	Spot VMSS	Networking
+azure:sql-data-warehouses	SQL Data Warehouses	Databases
+azure:sql-database	SQL Database	Databases
+azure:sql-database-fleet-manager	SQL Database Fleet Manager	Databases
+azure:sql-elastic-pools	SQL Elastic Pools	Databases
+azure:sql-managed-instance	SQL Managed Instance	Databases
+azure:sql-server	SQL Server	Databases
+azure:sql-server-registries	SQL Server Registries	Databases
+azure:ssd	SSD	General
+azure:ssh-keys	SSH Keys	Other
+azure:ssis-lift-and-shift-ir	SSIS Lift And Shift IR	Databases
+azure:stack-hci-premium	Stack HCI Premium	Iot
+azure:stage-maps	Stage Maps	Compute
+azure:static-apps	Static Apps	Web
+azure:storage-accounts	Storage Accounts	Storage
+azure:storage-accounts-classic	Storage Accounts (Classic)	Storage
+azure:storage-actions	Storage Actions	Storage
+azure:storage-azure-files	Storage Azure Files	General
+azure:storage-container	Storage Container	General
+azure:storage-explorer	Storage Explorer	Storage
+azure:storage-functions	Storage Functions	Other
+azure:storage-hubs	Storage Hubs	Storage
+azure:storage-queue	Storage Queue	General
+azure:storage-sync-services	Storage Sync Services	Storage
+azure:storsimple-data-managers	StorSimple Data Managers	Storage
+azure:storsimple-device-managers	StorSimple Device Managers	Integration
+azure:stream-analytics-jobs	Stream Analytics Jobs	Analytics
+azure:subnet	Subnet	Networking
+azure:subscriptions	Subscriptions	General
+azure:system-topic	System Topic	Integration
+azure:table	Table	General
+azure:tag	Tag	General
+azure:tags	Tags	General
+azure:targets-management	Targets Management	Other
+azure:template-specs	Template Specs	Other
+azure:templates	Templates	General
+azure:tenant-properties	Tenant Properties	Identity
+azure:tenant-status	Tenant Status	Intune
+azure:test-base	Test Base	Other
+azure:tfs-vc-repository	TFS VC Repository	General
+azure:time-series-data-sets	Time Series Data Sets	Iot
+azure:time-series-insights-access-policies	Time Series Insights Access Policies	Iot
+azure:time-series-insights-environments	Time Series Insights Environments	Iot
+azure:time-series-insights-event-sources	Time Series Insights Event Sources	Iot
+azure:toolbox	Toolbox	General
+azure:toolchain-orchestrator	Toolchain Orchestrator	New Icons
+azure:traffic-manager-profiles	Traffic Manager Profiles	Networking
+azure:translator-text	Translator Text	Ai + Machine Learning
+azure:troubleshoot	Troubleshoot	General
+azure:universal-print	Universal Print	Management + Governance
+azure:update-management-center	Update Management Center	Other
+azure:user-privacy	User Privacy	Management + Governance
+azure:user-settings	User Settings	Identity
+azure:user-subscriptions	User Subscriptions	Identity
+azure:users	Users	Identity
+azure:verifiable-credentials	Verifiable Credentials	Identity
+azure:verification-as-a-service	Verification As A Service	Identity
+azure:versions	Versions	General
+azure:video-analyzers	Video Analyzers	Other
+azure:virtual-clusters	Virtual Clusters	Databases
+azure:virtual-instance-for-sap	Virtual Instance for SAP	Other
+azure:virtual-machine	Virtual Machine	Compute
+azure:virtual-machines-classic	Virtual Machines (Classic)	Compute
+azure:virtual-network-gateways	Virtual Network Gateways	Networking
+azure:virtual-networks	Virtual Networks	Networking
+azure:virtual-networks-classic	Virtual Networks (Classic)	Networking
+azure:virtual-router	Virtual Router	Networking
+azure:virtual-visits-builder	Virtual Visits Builder	Other
+azure:virtual-wan-hub	Virtual WAN Hub	Networking
+azure:virtual-wans	Virtual WANs	Networking
+azure:vm-app-definitions	VM App Definitions	Other
+azure:vm-app-versions	VM App Versions	Other
+azure:vm-image-version	VM Image Version	Other
+azure:vm-images-classic	VM Images (Classic)	Compute
+azure:vm-scale-sets	VM Scale Sets	Compute
+azure:vnet-appliance	VNet Appliance	Networking
+azure:vpnclientwindows	VPNClientWindows	Networking
+azure:wac	WAC	Other
+azure:wac-installer	WAC Installer	Other
+azure:web-app-database	Web App + Database	Other
+azure:web-application-firewall-policies-waf	Web Application Firewall Policies(WAF)	Networking
+azure:web-jobs	Web Jobs	Other
+azure:web-slots	Web Slots	General
+azure:web-test	Web Test	General
+azure:website-power	Website Power	General
+azure:website-staging	Website Staging	General
+azure:windows-notification-services	Windows Notification Services	Other
+azure:windows10-core-services	Windows10 Core Services	Iot
+azure:workbooks	Workbooks	General
+azure:worker-container-app	Worker Container App	Other
+azure:workflow	Workflow	General
+azure:workload-orchestration	Workload Orchestration	Hybrid + Multicloud
+azure:workspace-gateway	Workspace Gateway	Devops
+azure:workspaces	Workspaces	Compute
+gcp:access-context-manager	Access Context Manager	Clásico
+gcp:administration	Administration	Clásico
+gcp:advanced-agent-modeling	Advanced Agent Modeling	Clásico
+gcp:advanced-solutions-lab	Advanced Solutions Lab	Clásico
+gcp:agent-assist	Agent Assist	Clásico
+gcp:ai-hub	Ai Hub	Clásico
+gcp:ai-hypercomputer	AI Hypercomputer	Producto principal
+gcp:ai-platform	Ai Platform	Clásico
+gcp:ai-platform-unified	Ai Platform Unified	Clásico
+gcp:alloydb	AlloyDB	Producto principal
+gcp:analytics-hub	Analytics Hub	Clásico
+gcp:anthos	Anthos	Producto principal
+gcp:anthos-config-management	Anthos Config Management	Clásico
+gcp:anthos-service-mesh	Anthos Service Mesh	Clásico
+gcp:api	Api	Clásico
+gcp:api-analytics	Api Analytics	Clásico
+gcp:api-monetization	Api Monetization	Clásico
+gcp:apigee	Apigee	Producto principal
+gcp:apigee-api-platform	Apigee Api Platform	Clásico
+gcp:apigee-sense	Apigee Sense	Clásico
+gcp:app-engine	App Engine	Clásico
+gcp:artifact-registry	Artifact Registry	Clásico
+gcp:asset-inventory	Asset Inventory	Clásico
+gcp:assured-workloads	Assured Workloads	Clásico
+gcp:automl	Automl	Clásico
+gcp:automl-natural-language	Automl Natural Language	Clásico
+gcp:automl-tables	Automl Tables	Clásico
+gcp:automl-translation	Automl Translation	Clásico
+gcp:automl-video-intelligence	Automl Video Intelligence	Clásico
+gcp:automl-vision	Automl Vision	Clásico
+gcp:bare-metal-solutions	Bare Metal Solutions	Clásico
+gcp:batch	Batch	Clásico
+gcp:beyondcorp	Beyondcorp	Clásico
+gcp:bigquery	BigQuery	Producto principal
+gcp:bigtable	Bigtable	Clásico
+gcp:billing	Billing	Clásico
+gcp:binary-authorization	Binary Authorization	Clásico
+gcp:cat-agents	Agents	Categoría
+gcp:cat-ai-machine-learning	AI _ Machine Learning	Categoría
+gcp:cat-business-intelligence	Business Intelligence	Categoría
+gcp:cat-collaboration	Collaboration	Categoría
+gcp:cat-compute	Compute	Categoría
+gcp:cat-containers	Containers	Categoría
+gcp:cat-data-analytics	Data Analytics	Categoría
+gcp:cat-databases	Databases	Categoría
+gcp:cat-developer-tools	Developer Tools	Categoría
+gcp:cat-devops	DevOps	Categoría
+gcp:cat-hybrid-multicloud	Hybrid & Multicloud	Categoría
+gcp:cat-integration-services	Integration Services	Categoría
+gcp:cat-management-tools	Management Tools	Categoría
+gcp:cat-maps-geospatial	Maps & Geospatial	Categoría
+gcp:cat-marketplace	Marketplace	Categoría
+gcp:cat-media-services	Media Services	Categoría
+gcp:cat-migration	Migration	Categoría
+gcp:cat-mixed-reality	Mixed Reality	Categoría
+gcp:cat-networking	Networking	Categoría
+gcp:cat-observability	Observability	Categoría
+gcp:cat-operations	Operations	Categoría
+gcp:cat-security-identity	Security Identity	Categoría
+gcp:cat-serverless-computing	Serverless Computing	Categoría
+gcp:cat-storage	Storage	Categoría
+gcp:cat-web-mobile	Web & Mobile	Categoría
+gcp:cat-web3	Web3	Categoría
+gcp:catalog	Catalog	Clásico
+gcp:certificate-authority-service	Certificate Authority Service	Clásico
+gcp:certificate-manager	Certificate Manager	Clásico
+gcp:cloud-api-gateway	Cloud Api Gateway	Clásico
+gcp:cloud-apis	Cloud Apis	Clásico
+gcp:cloud-armor	Cloud Armor	Clásico
+gcp:cloud-asset-inventory	Cloud Asset Inventory	Clásico
+gcp:cloud-audit-logs	Cloud Audit Logs	Clásico
+gcp:cloud-build	Cloud Build	Clásico
+gcp:cloud-cdn	Cloud Cdn	Clásico
+gcp:cloud-code	Cloud Code	Clásico
+gcp:cloud-composer	Cloud Composer	Clásico
+gcp:cloud-data-fusion	Cloud Data Fusion	Clásico
+gcp:cloud-deploy	Cloud Deploy	Clásico
+gcp:cloud-deployment-manager	Cloud Deployment Manager	Clásico
+gcp:cloud-dns	Cloud Dns	Clásico
+gcp:cloud-domains	Cloud Domains	Clásico
+gcp:cloud-ekm	Cloud Ekm	Clásico
+gcp:cloud-endpoints	Cloud Endpoints	Clásico
+gcp:cloud-external-ip-addresses	Cloud External Ip Addresses	Clásico
+gcp:cloud-firewall-rules	Cloud Firewall Rules	Clásico
+gcp:cloud-for-marketing	Cloud For Marketing	Clásico
+gcp:cloud-functions	Cloud Functions	Clásico
+gcp:cloud-generic	Cloud Generic	Clásico
+gcp:cloud-gpu	Cloud Gpu	Clásico
+gcp:cloud-healthcare-api	Cloud Healthcare Api	Clásico
+gcp:cloud-healthcare-marketplace	Cloud Healthcare Marketplace	Clásico
+gcp:cloud-hsm	Cloud Hsm	Clásico
+gcp:cloud-ids	Cloud Ids	Clásico
+gcp:cloud-inference-api	Cloud Inference Api	Clásico
+gcp:cloud-interconnect	Cloud Interconnect	Clásico
+gcp:cloud-jobs-api	Cloud Jobs Api	Clásico
+gcp:cloud-load-balancing	Cloud Load Balancing	Clásico
+gcp:cloud-logging	Cloud Logging	Clásico
+gcp:cloud-media-edge	Cloud Media Edge	Clásico
+gcp:cloud-monitoring	Cloud Monitoring	Clásico
+gcp:cloud-nat	Cloud Nat	Clásico
+gcp:cloud-natural-language-api	Cloud Natural Language Api	Clásico
+gcp:cloud-network	Cloud Network	Clásico
+gcp:cloud-ops	Cloud Ops	Clásico
+gcp:cloud-optimization-ai	Cloud Optimization Ai	Clásico
+gcp:cloud-optimization-ai-fleet-routing-api	Cloud Optimization Ai Fleet Routing Api	Clásico
+gcp:cloud-router	Cloud Router	Clásico
+gcp:cloud-routes	Cloud Routes	Clásico
+gcp:cloud-run	Cloud Run	Producto principal
+gcp:cloud-run-for-anthos	Cloud Run For Anthos	Clásico
+gcp:cloud-scheduler	Cloud Scheduler	Clásico
+gcp:cloud-security-scanner	Cloud Security Scanner	Clásico
+gcp:cloud-shell	Cloud Shell	Clásico
+gcp:cloud-spanner	Cloud Spanner	Producto principal
+gcp:cloud-sql	Cloud SQL	Producto principal
+gcp:cloud-storage	Cloud Storage	Producto principal
+gcp:cloud-tasks	Cloud Tasks	Clásico
+gcp:cloud-test-lab	Cloud Test Lab	Clásico
+gcp:cloud-tpu	Cloud Tpu	Clásico
+gcp:cloud-translation-api	Cloud Translation Api	Clásico
+gcp:cloud-vision-api	Cloud Vision Api	Clásico
+gcp:cloud-vpn	Cloud Vpn	Clásico
+gcp:compute-engine	Compute Engine	Producto principal
+gcp:configuration-management	Configuration Management	Clásico
+gcp:connectivity-test	Connectivity Test	Clásico
+gcp:connectors	Connectors	Clásico
+gcp:contact-center-ai	Contact Center Ai	Clásico
+gcp:container-optimized-os	Container Optimized Os	Clásico
+gcp:container-registry	Container Registry	Clásico
+gcp:data-catalog	Data Catalog	Clásico
+gcp:data-labeling	Data Labeling	Clásico
+gcp:data-layers	Data Layers	Clásico
+gcp:data-loss-prevention-api	Data Loss Prevention Api	Clásico
+gcp:data-qna	Data Qna	Clásico
+gcp:data-studio	Data Studio	Clásico
+gcp:data-transfer	Data Transfer	Clásico
+gcp:database-migration-service	Database Migration Service	Clásico
+gcp:dataflow	Dataflow	Clásico
+gcp:datalab	Datalab	Clásico
+gcp:dataplex	Dataplex	Clásico
+gcp:datapol	Datapol	Clásico
+gcp:dataprep	Dataprep	Clásico
+gcp:dataproc	Dataproc	Clásico
+gcp:dataproc-metastore	Dataproc Metastore	Clásico
+gcp:datashare	Datashare	Clásico
+gcp:datastore	Datastore	Clásico
+gcp:datastream	Datastream	Clásico
+gcp:debugger	Debugger	Clásico
+gcp:developer-portal	Developer Portal	Clásico
+gcp:dialogflow	Dialogflow	Clásico
+gcp:dialogflow-cx	Dialogflow Cx	Clásico
+gcp:dialogflow-insights	Dialogflow Insights	Clásico
+gcp:distributed-cloud	Distributed Cloud	Producto principal
+gcp:document-ai	Document Ai	Clásico
+gcp:early-access-center	Early Access Center	Clásico
+gcp:error-reporting	Error Reporting	Clásico
+gcp:eventarc	Eventarc	Clásico
+gcp:filestore	Filestore	Clásico
+gcp:financial-services-marketplace	Financial Services Marketplace	Clásico
+gcp:firestore	Firestore	Clásico
+gcp:fleet-engine	Fleet Engine	Clásico
+gcp:free-trial	Free Trial	Clásico
+gcp:game-servers	Game Servers	Clásico
+gcp:gce-systems-management	Gce Systems Management	Clásico
+gcp:genomics	Genomics	Clásico
+gcp:gke	GKE	Producto principal
+gcp:gke-on-prem	Gke On Prem	Clásico
+gcp:google-cloud-marketplace	Google Cloud Marketplace	Clásico
+gcp:google-kubernetes-engine	Google Kubernetes Engine	Clásico
+gcp:google-maps-platform	Google Maps Platform	Clásico
+gcp:healthcare-nlp-api	Healthcare Nlp Api	Clásico
+gcp:home	Home	Clásico
+gcp:hyperdisk	Hyperdisk	Producto principal
+gcp:identity-and-access-management	Identity And Access Management	Clásico
+gcp:identity-aware-proxy	Identity Aware Proxy	Clásico
+gcp:identity-platform	Identity Platform	Clásico
+gcp:iot-core	Iot Core	Clásico
+gcp:iot-edge	Iot Edge	Clásico
+gcp:key-access-justifications	Key Access Justifications	Clásico
+gcp:key-management-service	Key Management Service	Clásico
+gcp:kuberun	Kuberun	Clásico
+gcp:launcher	Launcher	Clásico
+gcp:local-ssd	Local Ssd	Clásico
+gcp:looker	Looker	Producto principal
+gcp:managed-service-for-microsoft-active-directory	Managed Service For Microsoft Active Directory	Clásico
+gcp:mandiant	Mandiant	Producto principal
+gcp:media-translation-api	Media Translation Api	Clásico
+gcp:memorystore	Memorystore	Clásico
+gcp:migrate-for-anthos	Migrate For Anthos	Clásico
+gcp:migrate-for-compute-engine	Migrate For Compute Engine	Clásico
+gcp:my-cloud	My Cloud	Clásico
+gcp:network-connectivity-center	Network Connectivity Center	Clásico
+gcp:network-intelligence-center	Network Intelligence Center	Clásico
+gcp:network-security	Network Security	Clásico
+gcp:network-tiers	Network Tiers	Clásico
+gcp:network-topology	Network Topology	Clásico
+gcp:onboarding	Onboarding	Clásico
+gcp:os-configuration-management	Os Configuration Management	Clásico
+gcp:os-inventory-management	Os Inventory Management	Clásico
+gcp:os-patch-management	Os Patch Management	Clásico
+gcp:partner-interconnect	Partner Interconnect	Clásico
+gcp:partner-portal	Partner Portal	Clásico
+gcp:performance-dashboard	Performance Dashboard	Clásico
+gcp:permissions	Permissions	Clásico
+gcp:persistent-disk	Persistent Disk	Clásico
+gcp:phishing-protection	Phishing Protection	Clásico
+gcp:policy-analyzer	Policy Analyzer	Clásico
+gcp:premium-network-tier	Premium Network Tier	Clásico
+gcp:private-connectivity	Private Connectivity	Clásico
+gcp:private-service-connect	Private Service Connect	Clásico
+gcp:producer-portal	Producer Portal	Clásico
+gcp:profiler	Profiler	Clásico
+gcp:project	Project	Clásico
+gcp:pubsub	Pubsub	Clásico
+gcp:quantum-engine	Quantum Engine	Clásico
+gcp:quotas	Quotas	Clásico
+gcp:real-world-insights	Real World Insights	Clásico
+gcp:recommendations-ai	Recommendations Ai	Clásico
+gcp:release-notes	Release Notes	Clásico
+gcp:retail-api	Retail Api	Clásico
+gcp:risk-manager	Risk Manager	Clásico
+gcp:runtime-config	Runtime Config	Clásico
+gcp:secret-manager	Secret Manager	Clásico
+gcp:security	Security	Clásico
+gcp:security-command-center	Security Command Center	Producto principal
+gcp:security-health-advisor	Security Health Advisor	Clásico
+gcp:security-key-enforcement	Security Key Enforcement	Clásico
+gcp:security-operations	Security Operations	Producto principal
+gcp:service-discovery	Service Discovery	Clásico
+gcp:speech-to-text	Speech To Text	Clásico
+gcp:stackdriver	Stackdriver	Clásico
+gcp:standard-network-tier	Standard Network Tier	Clásico
+gcp:stream-suite	Stream Suite	Clásico
+gcp:support	Support	Clásico
+gcp:tensorflow-enterprise	Tensorflow Enterprise	Clásico
+gcp:text-to-speech	Text To Speech	Clásico
+gcp:threat-intelligence	Threat Intelligence	Producto principal
+gcp:tools-for-powershell	Tools For Powershell	Clásico
+gcp:trace	Trace	Clásico
+gcp:traffic-director	Traffic Director	Clásico
+gcp:transfer	Transfer	Clásico
+gcp:transfer-appliance	Transfer Appliance	Clásico
+gcp:user-preferences	User Preferences	Clásico
+gcp:vertex-ai	Vertex AI	Producto principal
+gcp:vertexai	Vertexai	Clásico
+gcp:video-intelligence-api	Video Intelligence Api	Clásico
+gcp:virtual-private-cloud	Virtual Private Cloud	Clásico
+gcp:visual-inspection	Visual Inspection	Clásico
+gcp:vmware-engine	Vmware Engine	Clásico
+gcp:web-risk	Web Risk	Clásico
+gcp:web-security-scanner	Web Security Scanner	Clásico
+gcp:workflows	Workflows	Clásico
+gcp:workload-identity-pool	Workload Identity Pool	Clásico
+a-arrow-down	Lucide a-arrow-down	Genérico
+a-arrow-up	Lucide a-arrow-up	Genérico
+a-large-small	Lucide a-large-small	Genérico
+accessibility	Lucide accessibility	Genérico
+activity	Lucide activity	Genérico
+air-vent	Lucide air-vent	Genérico
+airplay	Lucide airplay	Genérico
+alarm-clock	Lucide alarm-clock	Genérico
+alarm-clock-check	Lucide alarm-clock-check	Genérico
+alarm-clock-minus	Lucide alarm-clock-minus	Genérico
+alarm-clock-off	Lucide alarm-clock-off	Genérico
+alarm-clock-plus	Lucide alarm-clock-plus	Genérico
+alarm-smoke	Lucide alarm-smoke	Genérico
+album	Lucide album	Genérico
+align-center	Lucide align-center	Genérico
+align-center-horizontal	Lucide align-center-horizontal	Genérico
+align-center-vertical	Lucide align-center-vertical	Genérico
+align-end-horizontal	Lucide align-end-horizontal	Genérico
+align-end-vertical	Lucide align-end-vertical	Genérico
+align-horizontal-distribute-center	Lucide align-horizontal-distribute-center	Genérico
+align-horizontal-distribute-end	Lucide align-horizontal-distribute-end	Genérico
+align-horizontal-distribute-start	Lucide align-horizontal-distribute-start	Genérico
+align-horizontal-justify-center	Lucide align-horizontal-justify-center	Genérico
+align-horizontal-justify-end	Lucide align-horizontal-justify-end	Genérico
+align-horizontal-justify-start	Lucide align-horizontal-justify-start	Genérico
+align-horizontal-space-around	Lucide align-horizontal-space-around	Genérico
+align-horizontal-space-between	Lucide align-horizontal-space-between	Genérico
+align-justify	Lucide align-justify	Genérico
+align-left	Lucide align-left	Genérico
+align-right	Lucide align-right	Genérico
+align-start-horizontal	Lucide align-start-horizontal	Genérico
+align-start-vertical	Lucide align-start-vertical	Genérico
+align-vertical-distribute-center	Lucide align-vertical-distribute-center	Genérico
+align-vertical-distribute-end	Lucide align-vertical-distribute-end	Genérico
+align-vertical-distribute-start	Lucide align-vertical-distribute-start	Genérico
+align-vertical-justify-center	Lucide align-vertical-justify-center	Genérico
+align-vertical-justify-end	Lucide align-vertical-justify-end	Genérico
+align-vertical-justify-start	Lucide align-vertical-justify-start	Genérico
+align-vertical-space-around	Lucide align-vertical-space-around	Genérico
+align-vertical-space-between	Lucide align-vertical-space-between	Genérico
+ambulance	Lucide ambulance	Genérico
+ampersand	Lucide ampersand	Genérico
+ampersands	Lucide ampersands	Genérico
+anchor	Lucide anchor	Genérico
+angry	Lucide angry	Genérico
+annoyed	Lucide annoyed	Genérico
+antenna	Lucide antenna	Genérico
+anvil	Lucide anvil	Genérico
+aperture	Lucide aperture	Genérico
+app-window	Lucide app-window	Genérico
+app-window-mac	Lucide app-window-mac	Genérico
+apple	Lucide apple	Genérico
+archive	Lucide archive	Genérico
+archive-restore	Lucide archive-restore	Genérico
+archive-x	Lucide archive-x	Genérico
+area-chart	Lucide area-chart	Genérico
+armchair	Lucide armchair	Genérico
+arrow-big-down	Lucide arrow-big-down	Genérico
+arrow-big-down-dash	Lucide arrow-big-down-dash	Genérico
+arrow-big-left	Lucide arrow-big-left	Genérico
+arrow-big-left-dash	Lucide arrow-big-left-dash	Genérico
+arrow-big-right	Lucide arrow-big-right	Genérico
+arrow-big-right-dash	Lucide arrow-big-right-dash	Genérico
+arrow-big-up	Lucide arrow-big-up	Genérico
+arrow-big-up-dash	Lucide arrow-big-up-dash	Genérico
+arrow-down	Lucide arrow-down	Genérico
+arrow-down-0-1	Lucide arrow-down-0-1	Genérico
+arrow-down-1-0	Lucide arrow-down-1-0	Genérico
+arrow-down-a-z	Lucide arrow-down-a-z	Genérico
+arrow-down-from-line	Lucide arrow-down-from-line	Genérico
+arrow-down-left	Lucide arrow-down-left	Genérico
+arrow-down-narrow-wide	Lucide arrow-down-narrow-wide	Genérico
+arrow-down-right	Lucide arrow-down-right	Genérico
+arrow-down-to-dot	Lucide arrow-down-to-dot	Genérico
+arrow-down-to-line	Lucide arrow-down-to-line	Genérico
+arrow-down-up	Lucide arrow-down-up	Genérico
+arrow-down-wide-narrow	Lucide arrow-down-wide-narrow	Genérico
+arrow-down-z-a	Lucide arrow-down-z-a	Genérico
+arrow-left	Lucide arrow-left	Genérico
+arrow-left-from-line	Lucide arrow-left-from-line	Genérico
+arrow-left-right	Lucide arrow-left-right	Genérico
+arrow-left-to-line	Lucide arrow-left-to-line	Genérico
+arrow-right	Lucide arrow-right	Genérico
+arrow-right-from-line	Lucide arrow-right-from-line	Genérico
+arrow-right-left	Lucide arrow-right-left	Genérico
+arrow-right-to-line	Lucide arrow-right-to-line	Genérico
+arrow-up	Lucide arrow-up	Genérico
+arrow-up-0-1	Lucide arrow-up-0-1	Genérico
+arrow-up-1-0	Lucide arrow-up-1-0	Genérico
+arrow-up-a-z	Lucide arrow-up-a-z	Genérico
+arrow-up-down	Lucide arrow-up-down	Genérico
+arrow-up-from-dot	Lucide arrow-up-from-dot	Genérico
+arrow-up-from-line	Lucide arrow-up-from-line	Genérico
+arrow-up-left	Lucide arrow-up-left	Genérico
+arrow-up-narrow-wide	Lucide arrow-up-narrow-wide	Genérico
+arrow-up-right	Lucide arrow-up-right	Genérico
+arrow-up-to-line	Lucide arrow-up-to-line	Genérico
+arrow-up-wide-narrow	Lucide arrow-up-wide-narrow	Genérico
+arrow-up-z-a	Lucide arrow-up-z-a	Genérico
+arrows-up-from-line	Lucide arrows-up-from-line	Genérico
+asterisk	Lucide asterisk	Genérico
+at-sign	Lucide at-sign	Genérico
+atom	Lucide atom	Genérico
+audio-lines	Lucide audio-lines	Genérico
+audio-waveform	Lucide audio-waveform	Genérico
+award	Lucide award	Genérico
+axe	Lucide axe	Genérico
+axis-3d	Lucide axis-3d	Genérico
+baby	Lucide baby	Genérico
+backpack	Lucide backpack	Genérico
+badge	Lucide badge	Genérico
+badge-alert	Lucide badge-alert	Genérico
+badge-cent	Lucide badge-cent	Genérico
+badge-check	Lucide badge-check	Genérico
+badge-dollar-sign	Lucide badge-dollar-sign	Genérico
+badge-euro	Lucide badge-euro	Genérico
+badge-help	Lucide badge-help	Genérico
+badge-indian-rupee	Lucide badge-indian-rupee	Genérico
+badge-info	Lucide badge-info	Genérico
+badge-japanese-yen	Lucide badge-japanese-yen	Genérico
+badge-minus	Lucide badge-minus	Genérico
+badge-percent	Lucide badge-percent	Genérico
+badge-plus	Lucide badge-plus	Genérico
+badge-pound-sterling	Lucide badge-pound-sterling	Genérico
+badge-russian-ruble	Lucide badge-russian-ruble	Genérico
+badge-swiss-franc	Lucide badge-swiss-franc	Genérico
+badge-x	Lucide badge-x	Genérico
+baggage-claim	Lucide baggage-claim	Genérico
+ban	Lucide ban	Genérico
+banana	Lucide banana	Genérico
+banknote	Lucide banknote	Genérico
+bar-chart	Lucide bar-chart	Genérico
+bar-chart-2	Lucide bar-chart-2	Genérico
+bar-chart-3	Lucide bar-chart-3	Genérico
+bar-chart-4	Lucide bar-chart-4	Genérico
+bar-chart-big	Lucide bar-chart-big	Genérico
+bar-chart-horizontal	Lucide bar-chart-horizontal	Genérico
+bar-chart-horizontal-big	Lucide bar-chart-horizontal-big	Genérico
+barcode	Lucide barcode	Genérico
+baseline	Lucide baseline	Genérico
+bath	Lucide bath	Genérico
+battery	Lucide battery	Genérico
+battery-charging	Lucide battery-charging	Genérico
+battery-full	Lucide battery-full	Genérico
+battery-low	Lucide battery-low	Genérico
+battery-medium	Lucide battery-medium	Genérico
+battery-warning	Lucide battery-warning	Genérico
+beaker	Lucide beaker	Genérico
+bean	Lucide bean	Genérico
+bean-off	Lucide bean-off	Genérico
+bed	Lucide bed	Genérico
+bed-double	Lucide bed-double	Genérico
+bed-single	Lucide bed-single	Genérico
+beef	Lucide beef	Genérico
+beer	Lucide beer	Genérico
+beer-off	Lucide beer-off	Genérico
+bell	Lucide bell	Genérico
+bell-dot	Lucide bell-dot	Genérico
+bell-electric	Lucide bell-electric	Genérico
+bell-minus	Lucide bell-minus	Genérico
+bell-off	Lucide bell-off	Genérico
+bell-plus	Lucide bell-plus	Genérico
+bell-ring	Lucide bell-ring	Genérico
+between-horizontal-end	Lucide between-horizontal-end	Genérico
+between-horizontal-start	Lucide between-horizontal-start	Genérico
+between-vertical-end	Lucide between-vertical-end	Genérico
+between-vertical-start	Lucide between-vertical-start	Genérico
+biceps-flexed	Lucide biceps-flexed	Genérico
+bike	Lucide bike	Genérico
+binary	Lucide binary	Genérico
+biohazard	Lucide biohazard	Genérico
+bird	Lucide bird	Genérico
+bitcoin	Lucide bitcoin	Genérico
+blend	Lucide blend	Genérico
+blinds	Lucide blinds	Genérico
+blocks	Lucide blocks	Genérico
+bluetooth	Lucide bluetooth	Genérico
+bluetooth-connected	Lucide bluetooth-connected	Genérico
+bluetooth-off	Lucide bluetooth-off	Genérico
+bluetooth-searching	Lucide bluetooth-searching	Genérico
+bold	Lucide bold	Genérico
+bolt	Lucide bolt	Genérico
+bomb	Lucide bomb	Genérico
+bone	Lucide bone	Genérico
+book	Lucide book	Genérico
+book-a	Lucide book-a	Genérico
+book-audio	Lucide book-audio	Genérico
+book-check	Lucide book-check	Genérico
+book-copy	Lucide book-copy	Genérico
+book-dashed	Lucide book-dashed	Genérico
+book-down	Lucide book-down	Genérico
+book-headphones	Lucide book-headphones	Genérico
+book-heart	Lucide book-heart	Genérico
+book-image	Lucide book-image	Genérico
+book-key	Lucide book-key	Genérico
+book-lock	Lucide book-lock	Genérico
+book-marked	Lucide book-marked	Genérico
+book-minus	Lucide book-minus	Genérico
+book-open	Lucide book-open	Genérico
+book-open-check	Lucide book-open-check	Genérico
+book-open-text	Lucide book-open-text	Genérico
+book-plus	Lucide book-plus	Genérico
+book-text	Lucide book-text	Genérico
+book-type	Lucide book-type	Genérico
+book-up	Lucide book-up	Genérico
+book-up-2	Lucide book-up-2	Genérico
+book-user	Lucide book-user	Genérico
+book-x	Lucide book-x	Genérico
+bookmark	Lucide bookmark	Genérico
+bookmark-check	Lucide bookmark-check	Genérico
+bookmark-minus	Lucide bookmark-minus	Genérico
+bookmark-plus	Lucide bookmark-plus	Genérico
+bookmark-x	Lucide bookmark-x	Genérico
+boom-box	Lucide boom-box	Genérico
+bot	Lucide bot	Genérico
+bot-message-square	Lucide bot-message-square	Genérico
+bot-off	Lucide bot-off	Genérico
+box	Lucide box	Genérico
+box-select	Lucide box-select	Genérico
+boxes	Lucide boxes	Genérico
+braces	Lucide braces	Genérico
+brackets	Lucide brackets	Genérico
+brain	Lucide brain	Genérico
+brain-circuit	Lucide brain-circuit	Genérico
+brain-cog	Lucide brain-cog	Genérico
+brick-wall	Lucide brick-wall	Genérico
+briefcase	Lucide briefcase	Genérico
+briefcase-business	Lucide briefcase-business	Genérico
+briefcase-medical	Lucide briefcase-medical	Genérico
+bring-to-front	Lucide bring-to-front	Genérico
+brush	Lucide brush	Genérico
+bug	Lucide bug	Genérico
+bug-off	Lucide bug-off	Genérico
+bug-play	Lucide bug-play	Genérico
+building	Lucide building	Genérico
+building-2	Lucide building-2	Genérico
+bus	Lucide bus	Genérico
+bus-front	Lucide bus-front	Genérico
+cable	Lucide cable	Genérico
+cable-car	Lucide cable-car	Genérico
+cake	Lucide cake	Genérico
+cake-slice	Lucide cake-slice	Genérico
+calculator	Lucide calculator	Genérico
+calendar	Lucide calendar	Genérico
+calendar-check	Lucide calendar-check	Genérico
+calendar-check-2	Lucide calendar-check-2	Genérico
+calendar-clock	Lucide calendar-clock	Genérico
+calendar-cog	Lucide calendar-cog	Genérico
+calendar-days	Lucide calendar-days	Genérico
+calendar-fold	Lucide calendar-fold	Genérico
+calendar-heart	Lucide calendar-heart	Genérico
+calendar-minus	Lucide calendar-minus	Genérico
+calendar-minus-2	Lucide calendar-minus-2	Genérico
+calendar-off	Lucide calendar-off	Genérico
+calendar-plus	Lucide calendar-plus	Genérico
+calendar-plus-2	Lucide calendar-plus-2	Genérico
+calendar-range	Lucide calendar-range	Genérico
+calendar-search	Lucide calendar-search	Genérico
+calendar-x	Lucide calendar-x	Genérico
+calendar-x-2	Lucide calendar-x-2	Genérico
+camera	Lucide camera	Genérico
+camera-off	Lucide camera-off	Genérico
+candlestick-chart	Lucide candlestick-chart	Genérico
+candy	Lucide candy	Genérico
+candy-cane	Lucide candy-cane	Genérico
+candy-off	Lucide candy-off	Genérico
+cannabis	Lucide cannabis	Genérico
+captions	Lucide captions	Genérico
+captions-off	Lucide captions-off	Genérico
+car	Lucide car	Genérico
+car-front	Lucide car-front	Genérico
+car-taxi-front	Lucide car-taxi-front	Genérico
+caravan	Lucide caravan	Genérico
+carrot	Lucide carrot	Genérico
+case-lower	Lucide case-lower	Genérico
+case-sensitive	Lucide case-sensitive	Genérico
+case-upper	Lucide case-upper	Genérico
+cassette-tape	Lucide cassette-tape	Genérico
+cast	Lucide cast	Genérico
+castle	Lucide castle	Genérico
+cat	Lucide cat	Genérico
+cctv	Lucide cctv	Genérico
+check	Lucide check	Genérico
+check-check	Lucide check-check	Genérico
+chef-hat	Lucide chef-hat	Genérico
+cherry	Lucide cherry	Genérico
+chevron-down	Lucide chevron-down	Genérico
+chevron-first	Lucide chevron-first	Genérico
+chevron-last	Lucide chevron-last	Genérico
+chevron-left	Lucide chevron-left	Genérico
+chevron-right	Lucide chevron-right	Genérico
+chevron-up	Lucide chevron-up	Genérico
+chevrons-down	Lucide chevrons-down	Genérico
+chevrons-down-up	Lucide chevrons-down-up	Genérico
+chevrons-left	Lucide chevrons-left	Genérico
+chevrons-left-right	Lucide chevrons-left-right	Genérico
+chevrons-right	Lucide chevrons-right	Genérico
+chevrons-right-left	Lucide chevrons-right-left	Genérico
+chevrons-up	Lucide chevrons-up	Genérico
+chevrons-up-down	Lucide chevrons-up-down	Genérico
+chrome	Lucide chrome	Genérico
+church	Lucide church	Genérico
+cigarette	Lucide cigarette	Genérico
+cigarette-off	Lucide cigarette-off	Genérico
+circle	Lucide circle	Genérico
+circle-alert	Lucide circle-alert	Genérico
+circle-arrow-down	Lucide circle-arrow-down	Genérico
+circle-arrow-left	Lucide circle-arrow-left	Genérico
+circle-arrow-out-down-left	Lucide circle-arrow-out-down-left	Genérico
+circle-arrow-out-down-right	Lucide circle-arrow-out-down-right	Genérico
+circle-arrow-out-up-left	Lucide circle-arrow-out-up-left	Genérico
+circle-arrow-out-up-right	Lucide circle-arrow-out-up-right	Genérico
+circle-arrow-right	Lucide circle-arrow-right	Genérico
+circle-arrow-up	Lucide circle-arrow-up	Genérico
+circle-check	Lucide circle-check	Genérico
+circle-check-big	Lucide circle-check-big	Genérico
+circle-chevron-down	Lucide circle-chevron-down	Genérico
+circle-chevron-left	Lucide circle-chevron-left	Genérico
+circle-chevron-right	Lucide circle-chevron-right	Genérico
+circle-chevron-up	Lucide circle-chevron-up	Genérico
+circle-dashed	Lucide circle-dashed	Genérico
+circle-divide	Lucide circle-divide	Genérico
+circle-dollar-sign	Lucide circle-dollar-sign	Genérico
+circle-dot	Lucide circle-dot	Genérico
+circle-dot-dashed	Lucide circle-dot-dashed	Genérico
+circle-ellipsis	Lucide circle-ellipsis	Genérico
+circle-equal	Lucide circle-equal	Genérico
+circle-fading-plus	Lucide circle-fading-plus	Genérico
+circle-gauge	Lucide circle-gauge	Genérico
+circle-help	Lucide circle-help	Genérico
+circle-minus	Lucide circle-minus	Genérico
+circle-off	Lucide circle-off	Genérico
+circle-parking	Lucide circle-parking	Genérico
+circle-parking-off	Lucide circle-parking-off	Genérico
+circle-pause	Lucide circle-pause	Genérico
+circle-percent	Lucide circle-percent	Genérico
+circle-play	Lucide circle-play	Genérico
+circle-plus	Lucide circle-plus	Genérico
+circle-power	Lucide circle-power	Genérico
+circle-slash	Lucide circle-slash	Genérico
+circle-slash-2	Lucide circle-slash-2	Genérico
+circle-stop	Lucide circle-stop	Genérico
+circle-user	Lucide circle-user	Genérico
+circle-user-round	Lucide circle-user-round	Genérico
+circle-x	Lucide circle-x	Genérico
+circuit-board	Lucide circuit-board	Genérico
+citrus	Lucide citrus	Genérico
+clapperboard	Lucide clapperboard	Genérico
+clipboard	Lucide clipboard	Genérico
+clipboard-check	Lucide clipboard-check	Genérico
+clipboard-copy	Lucide clipboard-copy	Genérico
+clipboard-list	Lucide clipboard-list	Genérico
+clipboard-minus	Lucide clipboard-minus	Genérico
+clipboard-paste	Lucide clipboard-paste	Genérico
+clipboard-pen	Lucide clipboard-pen	Genérico
+clipboard-pen-line	Lucide clipboard-pen-line	Genérico
+clipboard-plus	Lucide clipboard-plus	Genérico
+clipboard-type	Lucide clipboard-type	Genérico
+clipboard-x	Lucide clipboard-x	Genérico
+clock	Lucide clock	Genérico
+clock-1	Lucide clock-1	Genérico
+clock-10	Lucide clock-10	Genérico
+clock-11	Lucide clock-11	Genérico
+clock-12	Lucide clock-12	Genérico
+clock-2	Lucide clock-2	Genérico
+clock-3	Lucide clock-3	Genérico
+clock-4	Lucide clock-4	Genérico
+clock-5	Lucide clock-5	Genérico
+clock-6	Lucide clock-6	Genérico
+clock-7	Lucide clock-7	Genérico
+clock-8	Lucide clock-8	Genérico
+clock-9	Lucide clock-9	Genérico
+cloud	Lucide cloud	Genérico
+cloud-cog	Lucide cloud-cog	Genérico
+cloud-download	Lucide cloud-download	Genérico
+cloud-drizzle	Lucide cloud-drizzle	Genérico
+cloud-fog	Lucide cloud-fog	Genérico
+cloud-hail	Lucide cloud-hail	Genérico
+cloud-lightning	Lucide cloud-lightning	Genérico
+cloud-moon	Lucide cloud-moon	Genérico
+cloud-moon-rain	Lucide cloud-moon-rain	Genérico
+cloud-off	Lucide cloud-off	Genérico
+cloud-rain	Lucide cloud-rain	Genérico
+cloud-rain-wind	Lucide cloud-rain-wind	Genérico
+cloud-snow	Lucide cloud-snow	Genérico
+cloud-sun	Lucide cloud-sun	Genérico
+cloud-sun-rain	Lucide cloud-sun-rain	Genérico
+cloud-upload	Lucide cloud-upload	Genérico
+cloudy	Lucide cloudy	Genérico
+clover	Lucide clover	Genérico
+club	Lucide club	Genérico
+code	Lucide code	Genérico
+code-xml	Lucide code-xml	Genérico
+codepen	Lucide codepen	Genérico
+codesandbox	Lucide codesandbox	Genérico
+coffee	Lucide coffee	Genérico
+cog	Lucide cog	Genérico
+coins	Lucide coins	Genérico
+columns-2	Lucide columns-2	Genérico
+columns-3	Lucide columns-3	Genérico
+columns-4	Lucide columns-4	Genérico
+combine	Lucide combine	Genérico
+command	Lucide command	Genérico
+compass	Lucide compass	Genérico
+component	Lucide component	Genérico
+computer	Lucide computer	Genérico
+concierge-bell	Lucide concierge-bell	Genérico
+cone	Lucide cone	Genérico
+construction	Lucide construction	Genérico
+contact	Lucide contact	Genérico
+contact-round	Lucide contact-round	Genérico
+container	Lucide container	Genérico
+contrast	Lucide contrast	Genérico
+cookie	Lucide cookie	Genérico
+cooking-pot	Lucide cooking-pot	Genérico
+copy	Lucide copy	Genérico
+copy-check	Lucide copy-check	Genérico
+copy-minus	Lucide copy-minus	Genérico
+copy-plus	Lucide copy-plus	Genérico
+copy-slash	Lucide copy-slash	Genérico
+copy-x	Lucide copy-x	Genérico
+copyleft	Lucide copyleft	Genérico
+copyright	Lucide copyright	Genérico
+corner-down-left	Lucide corner-down-left	Genérico
+corner-down-right	Lucide corner-down-right	Genérico
+corner-left-down	Lucide corner-left-down	Genérico
+corner-left-up	Lucide corner-left-up	Genérico
+corner-right-down	Lucide corner-right-down	Genérico
+corner-right-up	Lucide corner-right-up	Genérico
+corner-up-left	Lucide corner-up-left	Genérico
+corner-up-right	Lucide corner-up-right	Genérico
+cpu	Lucide cpu	Genérico
+creative-commons	Lucide creative-commons	Genérico
+credit-card	Lucide credit-card	Genérico
+croissant	Lucide croissant	Genérico
+crop	Lucide crop	Genérico
+cross	Lucide cross	Genérico
+crosshair	Lucide crosshair	Genérico
+crown	Lucide crown	Genérico
+cuboid	Lucide cuboid	Genérico
+cup-soda	Lucide cup-soda	Genérico
+currency	Lucide currency	Genérico
+cylinder	Lucide cylinder	Genérico
+database	Lucide database	Genérico
+database-backup	Lucide database-backup	Genérico
+database-zap	Lucide database-zap	Genérico
+delete	Lucide delete	Genérico
+dessert	Lucide dessert	Genérico
+diameter	Lucide diameter	Genérico
+diamond	Lucide diamond	Genérico
+diamond-minus	Lucide diamond-minus	Genérico
+diamond-percent	Lucide diamond-percent	Genérico
+diamond-plus	Lucide diamond-plus	Genérico
+dice-1	Lucide dice-1	Genérico
+dice-2	Lucide dice-2	Genérico
+dice-3	Lucide dice-3	Genérico
+dice-4	Lucide dice-4	Genérico
+dice-5	Lucide dice-5	Genérico
+dice-6	Lucide dice-6	Genérico
+dices	Lucide dices	Genérico
+diff	Lucide diff	Genérico
+disc	Lucide disc	Genérico
+disc-2	Lucide disc-2	Genérico
+disc-3	Lucide disc-3	Genérico
+disc-album	Lucide disc-album	Genérico
+divide	Lucide divide	Genérico
+dna	Lucide dna	Genérico
+dna-off	Lucide dna-off	Genérico
+dock	Lucide dock	Genérico
+dog	Lucide dog	Genérico
+dollar-sign	Lucide dollar-sign	Genérico
+donut	Lucide donut	Genérico
+door-closed	Lucide door-closed	Genérico
+door-open	Lucide door-open	Genérico
+dot	Lucide dot	Genérico
+download	Lucide download	Genérico
+drafting-compass	Lucide drafting-compass	Genérico
+drama	Lucide drama	Genérico
+dribbble	Lucide dribbble	Genérico
+drill	Lucide drill	Genérico
+droplet	Lucide droplet	Genérico
+droplets	Lucide droplets	Genérico
+drum	Lucide drum	Genérico
+drumstick	Lucide drumstick	Genérico
+dumbbell	Lucide dumbbell	Genérico
+ear	Lucide ear	Genérico
+ear-off	Lucide ear-off	Genérico
+earth	Lucide earth	Genérico
+earth-lock	Lucide earth-lock	Genérico
+eclipse	Lucide eclipse	Genérico
+egg	Lucide egg	Genérico
+egg-fried	Lucide egg-fried	Genérico
+egg-off	Lucide egg-off	Genérico
+ellipsis	Lucide ellipsis	Genérico
+ellipsis-vertical	Lucide ellipsis-vertical	Genérico
+equal	Lucide equal	Genérico
+equal-not	Lucide equal-not	Genérico
+eraser	Lucide eraser	Genérico
+euro	Lucide euro	Genérico
+expand	Lucide expand	Genérico
+external-link	Lucide external-link	Genérico
+eye	Lucide eye	Genérico
+eye-off	Lucide eye-off	Genérico
+facebook	Lucide facebook	Genérico
+factory	Lucide factory	Genérico
+fan	Lucide fan	Genérico
+fast-forward	Lucide fast-forward	Genérico
+feather	Lucide feather	Genérico
+fence	Lucide fence	Genérico
+ferris-wheel	Lucide ferris-wheel	Genérico
+figma	Lucide figma	Genérico
+file	Lucide file	Genérico
+file-archive	Lucide file-archive	Genérico
+file-audio	Lucide file-audio	Genérico
+file-audio-2	Lucide file-audio-2	Genérico
+file-axis-3d	Lucide file-axis-3d	Genérico
+file-badge	Lucide file-badge	Genérico
+file-badge-2	Lucide file-badge-2	Genérico
+file-bar-chart	Lucide file-bar-chart	Genérico
+file-bar-chart-2	Lucide file-bar-chart-2	Genérico
+file-box	Lucide file-box	Genérico
+file-check	Lucide file-check	Genérico
+file-check-2	Lucide file-check-2	Genérico
+file-clock	Lucide file-clock	Genérico
+file-code	Lucide file-code	Genérico
+file-code-2	Lucide file-code-2	Genérico
+file-cog	Lucide file-cog	Genérico
+file-diff	Lucide file-diff	Genérico
+file-digit	Lucide file-digit	Genérico
+file-down	Lucide file-down	Genérico
+file-heart	Lucide file-heart	Genérico
+file-image	Lucide file-image	Genérico
+file-input	Lucide file-input	Genérico
+file-json	Lucide file-json	Genérico
+file-json-2	Lucide file-json-2	Genérico
+file-key	Lucide file-key	Genérico
+file-key-2	Lucide file-key-2	Genérico
+file-line-chart	Lucide file-line-chart	Genérico
+file-lock	Lucide file-lock	Genérico
+file-lock-2	Lucide file-lock-2	Genérico
+file-minus	Lucide file-minus	Genérico
+file-minus-2	Lucide file-minus-2	Genérico
+file-music	Lucide file-music	Genérico
+file-output	Lucide file-output	Genérico
+file-pen	Lucide file-pen	Genérico
+file-pen-line	Lucide file-pen-line	Genérico
+file-pie-chart	Lucide file-pie-chart	Genérico
+file-plus	Lucide file-plus	Genérico
+file-plus-2	Lucide file-plus-2	Genérico
+file-question	Lucide file-question	Genérico
+file-scan	Lucide file-scan	Genérico
+file-search	Lucide file-search	Genérico
+file-search-2	Lucide file-search-2	Genérico
+file-sliders	Lucide file-sliders	Genérico
+file-spreadsheet	Lucide file-spreadsheet	Genérico
+file-stack	Lucide file-stack	Genérico
+file-symlink	Lucide file-symlink	Genérico
+file-terminal	Lucide file-terminal	Genérico
+file-text	Lucide file-text	Genérico
+file-type	Lucide file-type	Genérico
+file-type-2	Lucide file-type-2	Genérico
+file-up	Lucide file-up	Genérico
+file-video	Lucide file-video	Genérico
+file-video-2	Lucide file-video-2	Genérico
+file-volume	Lucide file-volume	Genérico
+file-volume-2	Lucide file-volume-2	Genérico
+file-warning	Lucide file-warning	Genérico
+file-x	Lucide file-x	Genérico
+file-x-2	Lucide file-x-2	Genérico
+files	Lucide files	Genérico
+film	Lucide film	Genérico
+filter	Lucide filter	Genérico
+filter-x	Lucide filter-x	Genérico
+fingerprint	Lucide fingerprint	Genérico
+fire-extinguisher	Lucide fire-extinguisher	Genérico
+fish	Lucide fish	Genérico
+fish-off	Lucide fish-off	Genérico
+fish-symbol	Lucide fish-symbol	Genérico
+flag	Lucide flag	Genérico
+flag-off	Lucide flag-off	Genérico
+flag-triangle-left	Lucide flag-triangle-left	Genérico
+flag-triangle-right	Lucide flag-triangle-right	Genérico
+flame	Lucide flame	Genérico
+flame-kindling	Lucide flame-kindling	Genérico
+flashlight	Lucide flashlight	Genérico
+flashlight-off	Lucide flashlight-off	Genérico
+flask-conical	Lucide flask-conical	Genérico
+flask-conical-off	Lucide flask-conical-off	Genérico
+flask-round	Lucide flask-round	Genérico
+flip-horizontal	Lucide flip-horizontal	Genérico
+flip-horizontal-2	Lucide flip-horizontal-2	Genérico
+flip-vertical	Lucide flip-vertical	Genérico
+flip-vertical-2	Lucide flip-vertical-2	Genérico
+flower	Lucide flower	Genérico
+flower-2	Lucide flower-2	Genérico
+focus	Lucide focus	Genérico
+fold-horizontal	Lucide fold-horizontal	Genérico
+fold-vertical	Lucide fold-vertical	Genérico
+folder	Lucide folder	Genérico
+folder-archive	Lucide folder-archive	Genérico
+folder-check	Lucide folder-check	Genérico
+folder-clock	Lucide folder-clock	Genérico
+folder-closed	Lucide folder-closed	Genérico
+folder-cog	Lucide folder-cog	Genérico
+folder-dot	Lucide folder-dot	Genérico
+folder-down	Lucide folder-down	Genérico
+folder-git	Lucide folder-git	Genérico
+folder-git-2	Lucide folder-git-2	Genérico
+folder-heart	Lucide folder-heart	Genérico
+folder-input	Lucide folder-input	Genérico
+folder-kanban	Lucide folder-kanban	Genérico
+folder-key	Lucide folder-key	Genérico
+folder-lock	Lucide folder-lock	Genérico
+folder-minus	Lucide folder-minus	Genérico
+folder-open	Lucide folder-open	Genérico
+folder-open-dot	Lucide folder-open-dot	Genérico
+folder-output	Lucide folder-output	Genérico
+folder-pen	Lucide folder-pen	Genérico
+folder-plus	Lucide folder-plus	Genérico
+folder-root	Lucide folder-root	Genérico
+folder-search	Lucide folder-search	Genérico
+folder-search-2	Lucide folder-search-2	Genérico
+folder-symlink	Lucide folder-symlink	Genérico
+folder-sync	Lucide folder-sync	Genérico
+folder-tree	Lucide folder-tree	Genérico
+folder-up	Lucide folder-up	Genérico
+folder-x	Lucide folder-x	Genérico
+folders	Lucide folders	Genérico
+footprints	Lucide footprints	Genérico
+forklift	Lucide forklift	Genérico
+forward	Lucide forward	Genérico
+frame	Lucide frame	Genérico
+framer	Lucide framer	Genérico
+frown	Lucide frown	Genérico
+fuel	Lucide fuel	Genérico
+fullscreen	Lucide fullscreen	Genérico
+gallery-horizontal	Lucide gallery-horizontal	Genérico
+gallery-horizontal-end	Lucide gallery-horizontal-end	Genérico
+gallery-thumbnails	Lucide gallery-thumbnails	Genérico
+gallery-vertical	Lucide gallery-vertical	Genérico
+gallery-vertical-end	Lucide gallery-vertical-end	Genérico
+gamepad	Lucide gamepad	Genérico
+gamepad-2	Lucide gamepad-2	Genérico
+gantt-chart	Lucide gantt-chart	Genérico
+gauge	Lucide gauge	Genérico
+gavel	Lucide gavel	Genérico
+gem	Lucide gem	Genérico
+ghost	Lucide ghost	Genérico
+gift	Lucide gift	Genérico
+git-branch	Lucide git-branch	Genérico
+git-branch-plus	Lucide git-branch-plus	Genérico
+git-commit-horizontal	Lucide git-commit-horizontal	Genérico
+git-commit-vertical	Lucide git-commit-vertical	Genérico
+git-compare	Lucide git-compare	Genérico
+git-compare-arrows	Lucide git-compare-arrows	Genérico
+git-fork	Lucide git-fork	Genérico
+git-graph	Lucide git-graph	Genérico
+git-merge	Lucide git-merge	Genérico
+git-pull-request	Lucide git-pull-request	Genérico
+git-pull-request-arrow	Lucide git-pull-request-arrow	Genérico
+git-pull-request-closed	Lucide git-pull-request-closed	Genérico
+git-pull-request-create	Lucide git-pull-request-create	Genérico
+git-pull-request-create-arrow	Lucide git-pull-request-create-arrow	Genérico
+git-pull-request-draft	Lucide git-pull-request-draft	Genérico
+github	Lucide github	Genérico
+gitlab	Lucide gitlab	Genérico
+glass-water	Lucide glass-water	Genérico
+glasses	Lucide glasses	Genérico
+globe	Lucide globe	Genérico
+globe-lock	Lucide globe-lock	Genérico
+goal	Lucide goal	Genérico
+grab	Lucide grab	Genérico
+graduation-cap	Lucide graduation-cap	Genérico
+grape	Lucide grape	Genérico
+grid-2x2	Lucide grid-2x2	Genérico
+grid-2x2-check	Lucide grid-2x2-check	Genérico
+grid-2x2-x	Lucide grid-2x2-x	Genérico
+grid-3x3	Lucide grid-3x3	Genérico
+grip	Lucide grip	Genérico
+grip-horizontal	Lucide grip-horizontal	Genérico
+grip-vertical	Lucide grip-vertical	Genérico
+group	Lucide group	Genérico
+guitar	Lucide guitar	Genérico
+ham	Lucide ham	Genérico
+hammer	Lucide hammer	Genérico
+hand	Lucide hand	Genérico
+hand-coins	Lucide hand-coins	Genérico
+hand-heart	Lucide hand-heart	Genérico
+hand-helping	Lucide hand-helping	Genérico
+hand-metal	Lucide hand-metal	Genérico
+hand-platter	Lucide hand-platter	Genérico
+handshake	Lucide handshake	Genérico
+hard-drive	Lucide hard-drive	Genérico
+hard-drive-download	Lucide hard-drive-download	Genérico
+hard-drive-upload	Lucide hard-drive-upload	Genérico
+hard-hat	Lucide hard-hat	Genérico
+hash	Lucide hash	Genérico
+haze	Lucide haze	Genérico
+hdmi-port	Lucide hdmi-port	Genérico
+heading	Lucide heading	Genérico
+heading-1	Lucide heading-1	Genérico
+heading-2	Lucide heading-2	Genérico
+heading-3	Lucide heading-3	Genérico
+heading-4	Lucide heading-4	Genérico
+heading-5	Lucide heading-5	Genérico
+heading-6	Lucide heading-6	Genérico
+headphones	Lucide headphones	Genérico
+headset	Lucide headset	Genérico
+heart	Lucide heart	Genérico
+heart-crack	Lucide heart-crack	Genérico
+heart-handshake	Lucide heart-handshake	Genérico
+heart-off	Lucide heart-off	Genérico
+heart-pulse	Lucide heart-pulse	Genérico
+heater	Lucide heater	Genérico
+hexagon	Lucide hexagon	Genérico
+highlighter	Lucide highlighter	Genérico
+history	Lucide history	Genérico
+hop	Lucide hop	Genérico
+hop-off	Lucide hop-off	Genérico
+hospital	Lucide hospital	Genérico
+hotel	Lucide hotel	Genérico
+hourglass	Lucide hourglass	Genérico
+house	Lucide house	Genérico
+house-plug	Lucide house-plug	Genérico
+house-plus	Lucide house-plus	Genérico
+ice-cream-bowl	Lucide ice-cream-bowl	Genérico
+ice-cream-cone	Lucide ice-cream-cone	Genérico
+image	Lucide image	Genérico
+image-down	Lucide image-down	Genérico
+image-minus	Lucide image-minus	Genérico
+image-off	Lucide image-off	Genérico
+image-play	Lucide image-play	Genérico
+image-plus	Lucide image-plus	Genérico
+image-up	Lucide image-up	Genérico
+images	Lucide images	Genérico
+import	Lucide import	Genérico
+inbox	Lucide inbox	Genérico
+indent-decrease	Lucide indent-decrease	Genérico
+indent-increase	Lucide indent-increase	Genérico
+indian-rupee	Lucide indian-rupee	Genérico
+infinity	Lucide infinity	Genérico
+info	Lucide info	Genérico
+inspection-panel	Lucide inspection-panel	Genérico
+instagram	Lucide instagram	Genérico
+italic	Lucide italic	Genérico
+iteration-ccw	Lucide iteration-ccw	Genérico
+iteration-cw	Lucide iteration-cw	Genérico
+japanese-yen	Lucide japanese-yen	Genérico
+joystick	Lucide joystick	Genérico
+kanban	Lucide kanban	Genérico
+key	Lucide key	Genérico
+key-round	Lucide key-round	Genérico
+key-square	Lucide key-square	Genérico
+keyboard	Lucide keyboard	Genérico
+keyboard-music	Lucide keyboard-music	Genérico
+keyboard-off	Lucide keyboard-off	Genérico
+lamp	Lucide lamp	Genérico
+lamp-ceiling	Lucide lamp-ceiling	Genérico
+lamp-desk	Lucide lamp-desk	Genérico
+lamp-floor	Lucide lamp-floor	Genérico
+lamp-wall-down	Lucide lamp-wall-down	Genérico
+lamp-wall-up	Lucide lamp-wall-up	Genérico
+land-plot	Lucide land-plot	Genérico
+landmark	Lucide landmark	Genérico
+languages	Lucide languages	Genérico
+laptop	Lucide laptop	Genérico
+laptop-minimal	Lucide laptop-minimal	Genérico
+lasso	Lucide lasso	Genérico
+lasso-select	Lucide lasso-select	Genérico
+laugh	Lucide laugh	Genérico
+layers	Lucide layers	Genérico
+layers-2	Lucide layers-2	Genérico
+layers-3	Lucide layers-3	Genérico
+layout-dashboard	Lucide layout-dashboard	Genérico
+layout-grid	Lucide layout-grid	Genérico
+layout-list	Lucide layout-list	Genérico
+layout-panel-left	Lucide layout-panel-left	Genérico
+layout-panel-top	Lucide layout-panel-top	Genérico
+layout-template	Lucide layout-template	Genérico
+leaf	Lucide leaf	Genérico
+leafy-green	Lucide leafy-green	Genérico
+lectern	Lucide lectern	Genérico
+library	Lucide library	Genérico
+library-big	Lucide library-big	Genérico
+life-buoy	Lucide life-buoy	Genérico
+ligature	Lucide ligature	Genérico
+lightbulb	Lucide lightbulb	Genérico
+lightbulb-off	Lucide lightbulb-off	Genérico
+line-chart	Lucide line-chart	Genérico
+link	Lucide link	Genérico
+link-2	Lucide link-2	Genérico
+link-2-off	Lucide link-2-off	Genérico
+linkedin	Lucide linkedin	Genérico
+list	Lucide list	Genérico
+list-checks	Lucide list-checks	Genérico
+list-collapse	Lucide list-collapse	Genérico
+list-end	Lucide list-end	Genérico
+list-filter	Lucide list-filter	Genérico
+list-minus	Lucide list-minus	Genérico
+list-music	Lucide list-music	Genérico
+list-ordered	Lucide list-ordered	Genérico
+list-plus	Lucide list-plus	Genérico
+list-restart	Lucide list-restart	Genérico
+list-start	Lucide list-start	Genérico
+list-todo	Lucide list-todo	Genérico
+list-tree	Lucide list-tree	Genérico
+list-video	Lucide list-video	Genérico
+list-x	Lucide list-x	Genérico
+loader	Lucide loader	Genérico
+loader-circle	Lucide loader-circle	Genérico
+loader-pinwheel	Lucide loader-pinwheel	Genérico
+locate	Lucide locate	Genérico
+locate-fixed	Lucide locate-fixed	Genérico
+locate-off	Lucide locate-off	Genérico
+lock	Lucide lock	Genérico
+lock-keyhole	Lucide lock-keyhole	Genérico
+lock-keyhole-open	Lucide lock-keyhole-open	Genérico
+lock-open	Lucide lock-open	Genérico
+log-in	Lucide log-in	Genérico
+log-out	Lucide log-out	Genérico
+logs	Lucide logs	Genérico
+lollipop	Lucide lollipop	Genérico
+luggage	Lucide luggage	Genérico
+magnet	Lucide magnet	Genérico
+mail	Lucide mail	Genérico
+mail-check	Lucide mail-check	Genérico
+mail-minus	Lucide mail-minus	Genérico
+mail-open	Lucide mail-open	Genérico
+mail-plus	Lucide mail-plus	Genérico
+mail-question	Lucide mail-question	Genérico
+mail-search	Lucide mail-search	Genérico
+mail-warning	Lucide mail-warning	Genérico
+mail-x	Lucide mail-x	Genérico
+mailbox	Lucide mailbox	Genérico
+mails	Lucide mails	Genérico
+map	Lucide map	Genérico
+map-pin	Lucide map-pin	Genérico
+map-pin-off	Lucide map-pin-off	Genérico
+map-pinned	Lucide map-pinned	Genérico
+martini	Lucide martini	Genérico
+maximize	Lucide maximize	Genérico
+maximize-2	Lucide maximize-2	Genérico
+medal	Lucide medal	Genérico
+megaphone	Lucide megaphone	Genérico
+megaphone-off	Lucide megaphone-off	Genérico
+meh	Lucide meh	Genérico
+memory-stick	Lucide memory-stick	Genérico
+menu	Lucide menu	Genérico
+merge	Lucide merge	Genérico
+message-circle	Lucide message-circle	Genérico
+message-circle-code	Lucide message-circle-code	Genérico
+message-circle-dashed	Lucide message-circle-dashed	Genérico
+message-circle-heart	Lucide message-circle-heart	Genérico
+message-circle-more	Lucide message-circle-more	Genérico
+message-circle-off	Lucide message-circle-off	Genérico
+message-circle-plus	Lucide message-circle-plus	Genérico
+message-circle-question	Lucide message-circle-question	Genérico
+message-circle-reply	Lucide message-circle-reply	Genérico
+message-circle-warning	Lucide message-circle-warning	Genérico
+message-circle-x	Lucide message-circle-x	Genérico
+message-square	Lucide message-square	Genérico
+message-square-code	Lucide message-square-code	Genérico
+message-square-dashed	Lucide message-square-dashed	Genérico
+message-square-diff	Lucide message-square-diff	Genérico
+message-square-dot	Lucide message-square-dot	Genérico
+message-square-heart	Lucide message-square-heart	Genérico
+message-square-more	Lucide message-square-more	Genérico
+message-square-off	Lucide message-square-off	Genérico
+message-square-plus	Lucide message-square-plus	Genérico
+message-square-quote	Lucide message-square-quote	Genérico
+message-square-reply	Lucide message-square-reply	Genérico
+message-square-share	Lucide message-square-share	Genérico
+message-square-text	Lucide message-square-text	Genérico
+message-square-warning	Lucide message-square-warning	Genérico
+message-square-x	Lucide message-square-x	Genérico
+messages-square	Lucide messages-square	Genérico
+mic	Lucide mic	Genérico
+mic-off	Lucide mic-off	Genérico
+mic-vocal	Lucide mic-vocal	Genérico
+microscope	Lucide microscope	Genérico
+microwave	Lucide microwave	Genérico
+milestone	Lucide milestone	Genérico
+milk	Lucide milk	Genérico
+milk-off	Lucide milk-off	Genérico
+minimize	Lucide minimize	Genérico
+minimize-2	Lucide minimize-2	Genérico
+minus	Lucide minus	Genérico
+monitor	Lucide monitor	Genérico
+monitor-check	Lucide monitor-check	Genérico
+monitor-dot	Lucide monitor-dot	Genérico
+monitor-down	Lucide monitor-down	Genérico
+monitor-off	Lucide monitor-off	Genérico
+monitor-pause	Lucide monitor-pause	Genérico
+monitor-play	Lucide monitor-play	Genérico
+monitor-smartphone	Lucide monitor-smartphone	Genérico
+monitor-speaker	Lucide monitor-speaker	Genérico
+monitor-stop	Lucide monitor-stop	Genérico
+monitor-up	Lucide monitor-up	Genérico
+monitor-x	Lucide monitor-x	Genérico
+moon	Lucide moon	Genérico
+moon-star	Lucide moon-star	Genérico
+mountain	Lucide mountain	Genérico
+mountain-snow	Lucide mountain-snow	Genérico
+mouse	Lucide mouse	Genérico
+mouse-off	Lucide mouse-off	Genérico
+mouse-pointer	Lucide mouse-pointer	Genérico
+mouse-pointer-2	Lucide mouse-pointer-2	Genérico
+mouse-pointer-ban	Lucide mouse-pointer-ban	Genérico
+mouse-pointer-click	Lucide mouse-pointer-click	Genérico
+move	Lucide move	Genérico
+move-3d	Lucide move-3d	Genérico
+move-diagonal	Lucide move-diagonal	Genérico
+move-diagonal-2	Lucide move-diagonal-2	Genérico
+move-down	Lucide move-down	Genérico
+move-down-left	Lucide move-down-left	Genérico
+move-down-right	Lucide move-down-right	Genérico
+move-horizontal	Lucide move-horizontal	Genérico
+move-left	Lucide move-left	Genérico
+move-right	Lucide move-right	Genérico
+move-up	Lucide move-up	Genérico
+move-up-left	Lucide move-up-left	Genérico
+move-up-right	Lucide move-up-right	Genérico
+move-vertical	Lucide move-vertical	Genérico
+music	Lucide music	Genérico
+music-2	Lucide music-2	Genérico
+music-3	Lucide music-3	Genérico
+music-4	Lucide music-4	Genérico
+navigation	Lucide navigation	Genérico
+navigation-2	Lucide navigation-2	Genérico
+navigation-2-off	Lucide navigation-2-off	Genérico
+navigation-off	Lucide navigation-off	Genérico
+network	Lucide network	Genérico
+newspaper	Lucide newspaper	Genérico
+nfc	Lucide nfc	Genérico
+notebook	Lucide notebook	Genérico
+notebook-pen	Lucide notebook-pen	Genérico
+notebook-tabs	Lucide notebook-tabs	Genérico
+notebook-text	Lucide notebook-text	Genérico
+notepad-text	Lucide notepad-text	Genérico
+notepad-text-dashed	Lucide notepad-text-dashed	Genérico
+nut	Lucide nut	Genérico
+nut-off	Lucide nut-off	Genérico
+octagon	Lucide octagon	Genérico
+octagon-alert	Lucide octagon-alert	Genérico
+octagon-pause	Lucide octagon-pause	Genérico
+octagon-x	Lucide octagon-x	Genérico
+option	Lucide option	Genérico
+orbit	Lucide orbit	Genérico
+origami	Lucide origami	Genérico
+package	Lucide package	Genérico
+package-2	Lucide package-2	Genérico
+package-check	Lucide package-check	Genérico
+package-minus	Lucide package-minus	Genérico
+package-open	Lucide package-open	Genérico
+package-plus	Lucide package-plus	Genérico
+package-search	Lucide package-search	Genérico
+package-x	Lucide package-x	Genérico
+paint-bucket	Lucide paint-bucket	Genérico
+paint-roller	Lucide paint-roller	Genérico
+paintbrush	Lucide paintbrush	Genérico
+paintbrush-vertical	Lucide paintbrush-vertical	Genérico
+palette	Lucide palette	Genérico
+panel-bottom	Lucide panel-bottom	Genérico
+panel-bottom-close	Lucide panel-bottom-close	Genérico
+panel-bottom-dashed	Lucide panel-bottom-dashed	Genérico
+panel-bottom-open	Lucide panel-bottom-open	Genérico
+panel-left	Lucide panel-left	Genérico
+panel-left-close	Lucide panel-left-close	Genérico
+panel-left-dashed	Lucide panel-left-dashed	Genérico
+panel-left-open	Lucide panel-left-open	Genérico
+panel-right	Lucide panel-right	Genérico
+panel-right-close	Lucide panel-right-close	Genérico
+panel-right-dashed	Lucide panel-right-dashed	Genérico
+panel-right-open	Lucide panel-right-open	Genérico
+panel-top	Lucide panel-top	Genérico
+panel-top-close	Lucide panel-top-close	Genérico
+panel-top-dashed	Lucide panel-top-dashed	Genérico
+panel-top-open	Lucide panel-top-open	Genérico
+panels-left-bottom	Lucide panels-left-bottom	Genérico
+panels-right-bottom	Lucide panels-right-bottom	Genérico
+panels-top-left	Lucide panels-top-left	Genérico
+paperclip	Lucide paperclip	Genérico
+parentheses	Lucide parentheses	Genérico
+parking-meter	Lucide parking-meter	Genérico
+party-popper	Lucide party-popper	Genérico
+pause	Lucide pause	Genérico
+paw-print	Lucide paw-print	Genérico
+pc-case	Lucide pc-case	Genérico
+pen	Lucide pen	Genérico
+pen-line	Lucide pen-line	Genérico
+pen-off	Lucide pen-off	Genérico
+pen-tool	Lucide pen-tool	Genérico
+pencil	Lucide pencil	Genérico
+pencil-line	Lucide pencil-line	Genérico
+pencil-off	Lucide pencil-off	Genérico
+pencil-ruler	Lucide pencil-ruler	Genérico
+pentagon	Lucide pentagon	Genérico
+percent	Lucide percent	Genérico
+person-standing	Lucide person-standing	Genérico
+phone	Lucide phone	Genérico
+phone-call	Lucide phone-call	Genérico
+phone-forwarded	Lucide phone-forwarded	Genérico
+phone-incoming	Lucide phone-incoming	Genérico
+phone-missed	Lucide phone-missed	Genérico
+phone-off	Lucide phone-off	Genérico
+phone-outgoing	Lucide phone-outgoing	Genérico
+pi	Lucide pi	Genérico
+piano	Lucide piano	Genérico
+pickaxe	Lucide pickaxe	Genérico
+picture-in-picture	Lucide picture-in-picture	Genérico
+picture-in-picture-2	Lucide picture-in-picture-2	Genérico
+pie-chart	Lucide pie-chart	Genérico
+piggy-bank	Lucide piggy-bank	Genérico
+pilcrow	Lucide pilcrow	Genérico
+pilcrow-left	Lucide pilcrow-left	Genérico
+pilcrow-right	Lucide pilcrow-right	Genérico
+pill	Lucide pill	Genérico
+pill-bottle	Lucide pill-bottle	Genérico
+pin	Lucide pin	Genérico
+pin-off	Lucide pin-off	Genérico
+pipette	Lucide pipette	Genérico
+pizza	Lucide pizza	Genérico
+plane	Lucide plane	Genérico
+plane-landing	Lucide plane-landing	Genérico
+plane-takeoff	Lucide plane-takeoff	Genérico
+play	Lucide play	Genérico
+plug	Lucide plug	Genérico
+plug-2	Lucide plug-2	Genérico
+plug-zap	Lucide plug-zap	Genérico
+plug-zap-2	Lucide plug-zap-2	Genérico
+plus	Lucide plus	Genérico
+pocket	Lucide pocket	Genérico
+pocket-knife	Lucide pocket-knife	Genérico
+podcast	Lucide podcast	Genérico
+pointer	Lucide pointer	Genérico
+pointer-off	Lucide pointer-off	Genérico
+popcorn	Lucide popcorn	Genérico
+popsicle	Lucide popsicle	Genérico
+pound-sterling	Lucide pound-sterling	Genérico
+power	Lucide power	Genérico
+power-off	Lucide power-off	Genérico
+presentation	Lucide presentation	Genérico
+printer	Lucide printer	Genérico
+printer-check	Lucide printer-check	Genérico
+projector	Lucide projector	Genérico
+proportions	Lucide proportions	Genérico
+puzzle	Lucide puzzle	Genérico
+pyramid	Lucide pyramid	Genérico
+qr-code	Lucide qr-code	Genérico
+quote	Lucide quote	Genérico
+rabbit	Lucide rabbit	Genérico
+radar	Lucide radar	Genérico
+radiation	Lucide radiation	Genérico
+radical	Lucide radical	Genérico
+radio	Lucide radio	Genérico
+radio-receiver	Lucide radio-receiver	Genérico
+radio-tower	Lucide radio-tower	Genérico
+radius	Lucide radius	Genérico
+rail-symbol	Lucide rail-symbol	Genérico
+rainbow	Lucide rainbow	Genérico
+rat	Lucide rat	Genérico
+ratio	Lucide ratio	Genérico
+receipt	Lucide receipt	Genérico
+receipt-cent	Lucide receipt-cent	Genérico
+receipt-euro	Lucide receipt-euro	Genérico
+receipt-indian-rupee	Lucide receipt-indian-rupee	Genérico
+receipt-japanese-yen	Lucide receipt-japanese-yen	Genérico
+receipt-pound-sterling	Lucide receipt-pound-sterling	Genérico
+receipt-russian-ruble	Lucide receipt-russian-ruble	Genérico
+receipt-swiss-franc	Lucide receipt-swiss-franc	Genérico
+receipt-text	Lucide receipt-text	Genérico
+rectangle-ellipsis	Lucide rectangle-ellipsis	Genérico
+rectangle-horizontal	Lucide rectangle-horizontal	Genérico
+rectangle-vertical	Lucide rectangle-vertical	Genérico
+recycle	Lucide recycle	Genérico
+redo	Lucide redo	Genérico
+redo-2	Lucide redo-2	Genérico
+redo-dot	Lucide redo-dot	Genérico
+refresh-ccw	Lucide refresh-ccw	Genérico
+refresh-ccw-dot	Lucide refresh-ccw-dot	Genérico
+refresh-cw	Lucide refresh-cw	Genérico
+refresh-cw-off	Lucide refresh-cw-off	Genérico
+refrigerator	Lucide refrigerator	Genérico
+regex	Lucide regex	Genérico
+remove-formatting	Lucide remove-formatting	Genérico
+repeat	Lucide repeat	Genérico
+repeat-1	Lucide repeat-1	Genérico
+repeat-2	Lucide repeat-2	Genérico
+replace	Lucide replace	Genérico
+replace-all	Lucide replace-all	Genérico
+reply	Lucide reply	Genérico
+reply-all	Lucide reply-all	Genérico
+rewind	Lucide rewind	Genérico
+ribbon	Lucide ribbon	Genérico
+rocket	Lucide rocket	Genérico
+rocking-chair	Lucide rocking-chair	Genérico
+roller-coaster	Lucide roller-coaster	Genérico
+rotate-3d	Lucide rotate-3d	Genérico
+rotate-ccw	Lucide rotate-ccw	Genérico
+rotate-ccw-square	Lucide rotate-ccw-square	Genérico
+rotate-cw	Lucide rotate-cw	Genérico
+rotate-cw-square	Lucide rotate-cw-square	Genérico
+route	Lucide route	Genérico
+route-off	Lucide route-off	Genérico
+router	Lucide router	Genérico
+rows-2	Lucide rows-2	Genérico
+rows-3	Lucide rows-3	Genérico
+rows-4	Lucide rows-4	Genérico
+rss	Lucide rss	Genérico
+ruler	Lucide ruler	Genérico
+russian-ruble	Lucide russian-ruble	Genérico
+sailboat	Lucide sailboat	Genérico
+salad	Lucide salad	Genérico
+sandwich	Lucide sandwich	Genérico
+satellite	Lucide satellite	Genérico
+satellite-dish	Lucide satellite-dish	Genérico
+save	Lucide save	Genérico
+save-all	Lucide save-all	Genérico
+save-off	Lucide save-off	Genérico
+scale	Lucide scale	Genérico
+scale-3d	Lucide scale-3d	Genérico
+scaling	Lucide scaling	Genérico
+scan	Lucide scan	Genérico
+scan-barcode	Lucide scan-barcode	Genérico
+scan-eye	Lucide scan-eye	Genérico
+scan-face	Lucide scan-face	Genérico
+scan-line	Lucide scan-line	Genérico
+scan-search	Lucide scan-search	Genérico
+scan-text	Lucide scan-text	Genérico
+scatter-chart	Lucide scatter-chart	Genérico
+school	Lucide school	Genérico
+scissors	Lucide scissors	Genérico
+scissors-line-dashed	Lucide scissors-line-dashed	Genérico
+screen-share	Lucide screen-share	Genérico
+screen-share-off	Lucide screen-share-off	Genérico
+scroll	Lucide scroll	Genérico
+scroll-text	Lucide scroll-text	Genérico
+search	Lucide search	Genérico
+search-check	Lucide search-check	Genérico
+search-code	Lucide search-code	Genérico
+search-slash	Lucide search-slash	Genérico
+search-x	Lucide search-x	Genérico
+section	Lucide section	Genérico
+send	Lucide send	Genérico
+send-horizontal	Lucide send-horizontal	Genérico
+send-to-back	Lucide send-to-back	Genérico
+separator-horizontal	Lucide separator-horizontal	Genérico
+separator-vertical	Lucide separator-vertical	Genérico
+server	Lucide server	Genérico
+server-cog	Lucide server-cog	Genérico
+server-crash	Lucide server-crash	Genérico
+server-off	Lucide server-off	Genérico
+settings	Lucide settings	Genérico
+settings-2	Lucide settings-2	Genérico
+shapes	Lucide shapes	Genérico
+share	Lucide share	Genérico
+share-2	Lucide share-2	Genérico
+sheet	Lucide sheet	Genérico
+shell	Lucide shell	Genérico
+shield	Lucide shield	Genérico
+shield-alert	Lucide shield-alert	Genérico
+shield-ban	Lucide shield-ban	Genérico
+shield-check	Lucide shield-check	Genérico
+shield-ellipsis	Lucide shield-ellipsis	Genérico
+shield-half	Lucide shield-half	Genérico
+shield-minus	Lucide shield-minus	Genérico
+shield-off	Lucide shield-off	Genérico
+shield-plus	Lucide shield-plus	Genérico
+shield-question	Lucide shield-question	Genérico
+shield-x	Lucide shield-x	Genérico
+ship	Lucide ship	Genérico
+ship-wheel	Lucide ship-wheel	Genérico
+shirt	Lucide shirt	Genérico
+shopping-bag	Lucide shopping-bag	Genérico
+shopping-basket	Lucide shopping-basket	Genérico
+shopping-cart	Lucide shopping-cart	Genérico
+shovel	Lucide shovel	Genérico
+shower-head	Lucide shower-head	Genérico
+shrink	Lucide shrink	Genérico
+shrub	Lucide shrub	Genérico
+shuffle	Lucide shuffle	Genérico
+sigma	Lucide sigma	Genérico
+signal	Lucide signal	Genérico
+signal-high	Lucide signal-high	Genérico
+signal-low	Lucide signal-low	Genérico
+signal-medium	Lucide signal-medium	Genérico
+signal-zero	Lucide signal-zero	Genérico
+signature	Lucide signature	Genérico
+signpost	Lucide signpost	Genérico
+signpost-big	Lucide signpost-big	Genérico
+siren	Lucide siren	Genérico
+skip-back	Lucide skip-back	Genérico
+skip-forward	Lucide skip-forward	Genérico
+skull	Lucide skull	Genérico
+slack	Lucide slack	Genérico
+slash	Lucide slash	Genérico
+slice	Lucide slice	Genérico
+sliders-horizontal	Lucide sliders-horizontal	Genérico
+sliders-vertical	Lucide sliders-vertical	Genérico
+smartphone	Lucide smartphone	Genérico
+smartphone-charging	Lucide smartphone-charging	Genérico
+smartphone-nfc	Lucide smartphone-nfc	Genérico
+smile	Lucide smile	Genérico
+smile-plus	Lucide smile-plus	Genérico
+snail	Lucide snail	Genérico
+snowflake	Lucide snowflake	Genérico
+sofa	Lucide sofa	Genérico
+soup	Lucide soup	Genérico
+space	Lucide space	Genérico
+spade	Lucide spade	Genérico
+sparkle	Lucide sparkle	Genérico
+sparkles	Lucide sparkles	Genérico
+speaker	Lucide speaker	Genérico
+speech	Lucide speech	Genérico
+spell-check	Lucide spell-check	Genérico
+spell-check-2	Lucide spell-check-2	Genérico
+spline	Lucide spline	Genérico
+split	Lucide split	Genérico
+spray-can	Lucide spray-can	Genérico
+sprout	Lucide sprout	Genérico
+square	Lucide square	Genérico
+square-activity	Lucide square-activity	Genérico
+square-arrow-down	Lucide square-arrow-down	Genérico
+square-arrow-down-left	Lucide square-arrow-down-left	Genérico
+square-arrow-down-right	Lucide square-arrow-down-right	Genérico
+square-arrow-left	Lucide square-arrow-left	Genérico
+square-arrow-out-down-left	Lucide square-arrow-out-down-left	Genérico
+square-arrow-out-down-right	Lucide square-arrow-out-down-right	Genérico
+square-arrow-out-up-left	Lucide square-arrow-out-up-left	Genérico
+square-arrow-out-up-right	Lucide square-arrow-out-up-right	Genérico
+square-arrow-right	Lucide square-arrow-right	Genérico
+square-arrow-up	Lucide square-arrow-up	Genérico
+square-arrow-up-left	Lucide square-arrow-up-left	Genérico
+square-arrow-up-right	Lucide square-arrow-up-right	Genérico
+square-asterisk	Lucide square-asterisk	Genérico
+square-bottom-dashed-scissors	Lucide square-bottom-dashed-scissors	Genérico
+square-check	Lucide square-check	Genérico
+square-check-big	Lucide square-check-big	Genérico
+square-chevron-down	Lucide square-chevron-down	Genérico
+square-chevron-left	Lucide square-chevron-left	Genérico
+square-chevron-right	Lucide square-chevron-right	Genérico
+square-chevron-up	Lucide square-chevron-up	Genérico
+square-code	Lucide square-code	Genérico
+square-dashed-bottom	Lucide square-dashed-bottom	Genérico
+square-dashed-bottom-code	Lucide square-dashed-bottom-code	Genérico
+square-dashed-kanban	Lucide square-dashed-kanban	Genérico
+square-dashed-mouse-pointer	Lucide square-dashed-mouse-pointer	Genérico
+square-divide	Lucide square-divide	Genérico
+square-dot	Lucide square-dot	Genérico
+square-equal	Lucide square-equal	Genérico
+square-function	Lucide square-function	Genérico
+square-gantt-chart	Lucide square-gantt-chart	Genérico
+square-kanban	Lucide square-kanban	Genérico
+square-library	Lucide square-library	Genérico
+square-m	Lucide square-m	Genérico
+square-menu	Lucide square-menu	Genérico
+square-minus	Lucide square-minus	Genérico
+square-mouse-pointer	Lucide square-mouse-pointer	Genérico
+square-parking	Lucide square-parking	Genérico
+square-parking-off	Lucide square-parking-off	Genérico
+square-pen	Lucide square-pen	Genérico
+square-percent	Lucide square-percent	Genérico
+square-pi	Lucide square-pi	Genérico
+square-pilcrow	Lucide square-pilcrow	Genérico
+square-play	Lucide square-play	Genérico
+square-plus	Lucide square-plus	Genérico
+square-power	Lucide square-power	Genérico
+square-radical	Lucide square-radical	Genérico
+square-scissors	Lucide square-scissors	Genérico
+square-sigma	Lucide square-sigma	Genérico
+square-slash	Lucide square-slash	Genérico
+square-split-horizontal	Lucide square-split-horizontal	Genérico
+square-split-vertical	Lucide square-split-vertical	Genérico
+square-stack	Lucide square-stack	Genérico
+square-terminal	Lucide square-terminal	Genérico
+square-user	Lucide square-user	Genérico
+square-user-round	Lucide square-user-round	Genérico
+square-x	Lucide square-x	Genérico
+squircle	Lucide squircle	Genérico
+squirrel	Lucide squirrel	Genérico
+stamp	Lucide stamp	Genérico
+star	Lucide star	Genérico
+star-half	Lucide star-half	Genérico
+star-off	Lucide star-off	Genérico
+step-back	Lucide step-back	Genérico
+step-forward	Lucide step-forward	Genérico
+stethoscope	Lucide stethoscope	Genérico
+sticker	Lucide sticker	Genérico
+sticky-note	Lucide sticky-note	Genérico
+store	Lucide store	Genérico
+stretch-horizontal	Lucide stretch-horizontal	Genérico
+stretch-vertical	Lucide stretch-vertical	Genérico
+strikethrough	Lucide strikethrough	Genérico
+subscript	Lucide subscript	Genérico
+sun	Lucide sun	Genérico
+sun-dim	Lucide sun-dim	Genérico
+sun-medium	Lucide sun-medium	Genérico
+sun-moon	Lucide sun-moon	Genérico
+sun-snow	Lucide sun-snow	Genérico
+sunrise	Lucide sunrise	Genérico
+sunset	Lucide sunset	Genérico
+superscript	Lucide superscript	Genérico
+swatch-book	Lucide swatch-book	Genérico
+swiss-franc	Lucide swiss-franc	Genérico
+switch-camera	Lucide switch-camera	Genérico
+sword	Lucide sword	Genérico
+swords	Lucide swords	Genérico
+syringe	Lucide syringe	Genérico
+table	Lucide table	Genérico
+table-2	Lucide table-2	Genérico
+table-cells-merge	Lucide table-cells-merge	Genérico
+table-cells-split	Lucide table-cells-split	Genérico
+table-columns-split	Lucide table-columns-split	Genérico
+table-properties	Lucide table-properties	Genérico
+table-rows-split	Lucide table-rows-split	Genérico
+tablet	Lucide tablet	Genérico
+tablet-smartphone	Lucide tablet-smartphone	Genérico
+tablets	Lucide tablets	Genérico
+tag	Lucide tag	Genérico
+tags	Lucide tags	Genérico
+tally-1	Lucide tally-1	Genérico
+tally-2	Lucide tally-2	Genérico
+tally-3	Lucide tally-3	Genérico
+tally-4	Lucide tally-4	Genérico
+tally-5	Lucide tally-5	Genérico
+tangent	Lucide tangent	Genérico
+target	Lucide target	Genérico
+telescope	Lucide telescope	Genérico
+tent	Lucide tent	Genérico
+tent-tree	Lucide tent-tree	Genérico
+terminal	Lucide terminal	Genérico
+test-tube	Lucide test-tube	Genérico
+test-tube-diagonal	Lucide test-tube-diagonal	Genérico
+test-tubes	Lucide test-tubes	Genérico
+text	Lucide text	Genérico
+text-cursor	Lucide text-cursor	Genérico
+text-cursor-input	Lucide text-cursor-input	Genérico
+text-quote	Lucide text-quote	Genérico
+text-search	Lucide text-search	Genérico
+text-select	Lucide text-select	Genérico
+theater	Lucide theater	Genérico
+thermometer	Lucide thermometer	Genérico
+thermometer-snowflake	Lucide thermometer-snowflake	Genérico
+thermometer-sun	Lucide thermometer-sun	Genérico
+thumbs-down	Lucide thumbs-down	Genérico
+thumbs-up	Lucide thumbs-up	Genérico
+ticket	Lucide ticket	Genérico
+ticket-check	Lucide ticket-check	Genérico
+ticket-minus	Lucide ticket-minus	Genérico
+ticket-percent	Lucide ticket-percent	Genérico
+ticket-plus	Lucide ticket-plus	Genérico
+ticket-slash	Lucide ticket-slash	Genérico
+ticket-x	Lucide ticket-x	Genérico
+timer	Lucide timer	Genérico
+timer-off	Lucide timer-off	Genérico
+timer-reset	Lucide timer-reset	Genérico
+toggle-left	Lucide toggle-left	Genérico
+toggle-right	Lucide toggle-right	Genérico
+tornado	Lucide tornado	Genérico
+torus	Lucide torus	Genérico
+touchpad	Lucide touchpad	Genérico
+touchpad-off	Lucide touchpad-off	Genérico
+tower-control	Lucide tower-control	Genérico
+toy-brick	Lucide toy-brick	Genérico
+tractor	Lucide tractor	Genérico
+traffic-cone	Lucide traffic-cone	Genérico
+train-front	Lucide train-front	Genérico
+train-front-tunnel	Lucide train-front-tunnel	Genérico
+train-track	Lucide train-track	Genérico
+tram-front	Lucide tram-front	Genérico
+trash	Lucide trash	Genérico
+trash-2	Lucide trash-2	Genérico
+tree-deciduous	Lucide tree-deciduous	Genérico
+tree-palm	Lucide tree-palm	Genérico
+tree-pine	Lucide tree-pine	Genérico
+trees	Lucide trees	Genérico
+trello	Lucide trello	Genérico
+trending-down	Lucide trending-down	Genérico
+trending-up	Lucide trending-up	Genérico
+triangle	Lucide triangle	Genérico
+triangle-alert	Lucide triangle-alert	Genérico
+triangle-right	Lucide triangle-right	Genérico
+trophy	Lucide trophy	Genérico
+truck	Lucide truck	Genérico
+turtle	Lucide turtle	Genérico
+tv	Lucide tv	Genérico
+tv-minimal	Lucide tv-minimal	Genérico
+tv-minimal-play	Lucide tv-minimal-play	Genérico
+twitch	Lucide twitch	Genérico
+twitter	Lucide twitter	Genérico
+type	Lucide type	Genérico
+umbrella	Lucide umbrella	Genérico
+umbrella-off	Lucide umbrella-off	Genérico
+underline	Lucide underline	Genérico
+undo	Lucide undo	Genérico
+undo-2	Lucide undo-2	Genérico
+undo-dot	Lucide undo-dot	Genérico
+unfold-horizontal	Lucide unfold-horizontal	Genérico
+unfold-vertical	Lucide unfold-vertical	Genérico
+ungroup	Lucide ungroup	Genérico
+university	Lucide university	Genérico
+unlink	Lucide unlink	Genérico
+unlink-2	Lucide unlink-2	Genérico
+unplug	Lucide unplug	Genérico
+upload	Lucide upload	Genérico
+usb	Lucide usb	Genérico
+user	Lucide user	Genérico
+user-check	Lucide user-check	Genérico
+user-cog	Lucide user-cog	Genérico
+user-minus	Lucide user-minus	Genérico
+user-plus	Lucide user-plus	Genérico
+user-round	Lucide user-round	Genérico
+user-round-check	Lucide user-round-check	Genérico
+user-round-cog	Lucide user-round-cog	Genérico
+user-round-minus	Lucide user-round-minus	Genérico
+user-round-plus	Lucide user-round-plus	Genérico
+user-round-search	Lucide user-round-search	Genérico
+user-round-x	Lucide user-round-x	Genérico
+user-search	Lucide user-search	Genérico
+user-x	Lucide user-x	Genérico
+users	Lucide users	Genérico
+users-round	Lucide users-round	Genérico
+utensils	Lucide utensils	Genérico
+utensils-crossed	Lucide utensils-crossed	Genérico
+utility-pole	Lucide utility-pole	Genérico
+variable	Lucide variable	Genérico
+vault	Lucide vault	Genérico
+vegan	Lucide vegan	Genérico
+venetian-mask	Lucide venetian-mask	Genérico
+vibrate	Lucide vibrate	Genérico
+vibrate-off	Lucide vibrate-off	Genérico
+video	Lucide video	Genérico
+video-off	Lucide video-off	Genérico
+videotape	Lucide videotape	Genérico
+view	Lucide view	Genérico
+voicemail	Lucide voicemail	Genérico
+volume	Lucide volume	Genérico
+volume-1	Lucide volume-1	Genérico
+volume-2	Lucide volume-2	Genérico
+volume-x	Lucide volume-x	Genérico
+vote	Lucide vote	Genérico
+wallet	Lucide wallet	Genérico
+wallet-cards	Lucide wallet-cards	Genérico
+wallet-minimal	Lucide wallet-minimal	Genérico
+wallpaper	Lucide wallpaper	Genérico
+wand	Lucide wand	Genérico
+wand-sparkles	Lucide wand-sparkles	Genérico
+warehouse	Lucide warehouse	Genérico
+washing-machine	Lucide washing-machine	Genérico
+watch	Lucide watch	Genérico
+waves	Lucide waves	Genérico
+waypoints	Lucide waypoints	Genérico
+webcam	Lucide webcam	Genérico
+webhook	Lucide webhook	Genérico
+webhook-off	Lucide webhook-off	Genérico
+weight	Lucide weight	Genérico
+wheat	Lucide wheat	Genérico
+wheat-off	Lucide wheat-off	Genérico
+whole-word	Lucide whole-word	Genérico
+wifi	Lucide wifi	Genérico
+wifi-off	Lucide wifi-off	Genérico
+wind	Lucide wind	Genérico
+wine	Lucide wine	Genérico
+wine-off	Lucide wine-off	Genérico
+workflow	Lucide workflow	Genérico
+worm	Lucide worm	Genérico
+wrap-text	Lucide wrap-text	Genérico
+wrench	Lucide wrench	Genérico
+x	Lucide x	Genérico
+youtube	Lucide youtube	Genérico
+zap	Lucide zap	Genérico
+zap-off	Lucide zap-off	Genérico
+zoom-in	Lucide zoom-in	Genérico
+zoom-out	Lucide zoom-out	Genérico
