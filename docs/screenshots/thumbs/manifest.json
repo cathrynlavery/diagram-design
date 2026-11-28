@@ -279,11 +279,11 @@
     {
       "thumb": "procedure-chart.webp",
       "source": "docs/screenshots/procedure-chart.png",
-      "source_sha256": "43588610d49e85214c0bb4ad37cabd4b11a2b6b51a780ab440f2e259aab71f0b",
+      "source_sha256": "fe866257d45c05ef8a5e42a2e269aa3095faae94b81b1a7232ddcaf9824f28d9",
       "width": 600,
       "height": 404,
       "quality": 82,
-      "thumb_sha256": "e832c5a9863a24ea1cbde5a37251b1f0af1e8b62d579e2f705db3725550fab54"
+      "thumb_sha256": "9be0671c4585266338deea17262ed947b7f4c10d57be0a44e5fa5f90b3fb3e8a"
     },
     {
       "thumb": "process.webp",
