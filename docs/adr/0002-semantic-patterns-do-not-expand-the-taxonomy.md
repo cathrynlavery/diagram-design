@@ -10,6 +10,8 @@ Auditing behavior-rich figures (queues, policy traces, trust boundaries) showed 
 
 Behavior is a separate axis. The semantic patterns in `references/semantic-patterns.md` (nine as of this writing; see Amendments) each route to the **nearest existing visual type** for layout; a pattern owns semantic primitives and a tighter budget, never a second layout grammar. The visual-type count only moves when a genuinely new *layout* grammar appears (it did in v2.5.10 — see [ADR 0007](0007-new-layout-grammars.md), 28 → 38 — and again for Polar, 38 → 39).
 
+Administrative-procedure requests (including people-and-paperwork notation requests) follow the same rule: they route to existing grammars and/or a semantic pattern unless a distinct layout grammar is formally admitted with the full §10 shipping set.
+
 ## Consequences
 
 - The visual-type count is a stable, verifiable claim (`verify-semantic-motion.py` and `verify-docs-sync.py` both count it) — 27 when this record was accepted; see Amendments for the current figure.
