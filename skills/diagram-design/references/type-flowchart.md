@@ -2,6 +2,8 @@
 
 **Best for:** decision logic, algorithms, user-facing branching flows ("Should I…?"), onboarding routing, support-triage trees.
 
+**Not this type:** people and paperwork moving through an administrative procedure, with handoffs, delays, inspections and filing → **Procedure chart** (`type-procedure-chart.md`). There a diamond means *inspection*; here it means *decision*. Never mix the two meanings in one legend.
+
 ## Layout conventions
 - Shape carries type, not color:
   - **Oval** (`rx=20`) — start / end

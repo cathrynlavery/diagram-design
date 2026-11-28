@@ -62,6 +62,7 @@ These are the per-type limits. The universal rows in SKILL.md §7 (9 nodes, 12 a
 | Max stages / layers (service blueprint) | 6 stages; required customer / frontstage / backstage; optional evidence / support; 1 focal cell |
 | Unit Grid | 100 equal cells; 10 × 10; 4px gutters; 1 count; at most 1 focal completed cell |
 | Max tasks / precedence links / ranks (schedule network) | 8 / 12 / 5; all critical paths and total float |
+| Max steps / element columns / artifacts / activities / handoffs (procedure chart) | 12 / 4 plus 1 personnel column / 3 / 24 / 6, 2 accent elements |
 | Max zones / nodes / paths (deployment) | 3 / 6 / 8, 9 artifacts |
 | Max nodes / edges (dependency) | 9 / 14, 4 ranks, 1 cycle |
 | Max nodes / arcs (arc diagram) | 9 / 14, 1 focal arc |

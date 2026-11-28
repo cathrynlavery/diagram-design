@@ -527,6 +527,21 @@ jobs:
         id: git_graph_tests
         run: python scripts/test-verify-git-graph.py
 
+      - name: Verify procedure chart examples match the builder
+        if: always()
+        id: procedure_chart_build
+        run: python scripts/build-procedure-chart-examples.py --check
+
+      - name: Verify procedure chart symbols, registry links and charted time
+        if: always()
+        id: procedure_chart
+        run: python scripts/verify-procedure-chart.py --all
+
+      - name: Verify procedure-chart checker
+        if: always()
+        id: procedure_chart_tests
+        run: python scripts/test-verify-procedure-chart.py
+
       - name: Verify quoted CSS data is not read as geometry
         if: always()
         id: css_string_scan
@@ -755,6 +770,9 @@ jobs:
           echo "| Arc-Diagram Checker | ${{ steps.arc_diagram_tests.outcome == 'success' && '✅ Passed' || (steps.arc_diagram_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Git-Graph Lane & Merge Geometry | ${{ steps.git_graph.outcome == 'success' && '✅ Passed' || (steps.git_graph.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Git-Graph Checker | ${{ steps.git_graph_tests.outcome == 'success' && '✅ Passed' || (steps.git_graph_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Procedure Chart Examples Match Builder | ${{ steps.procedure_chart_build.outcome == 'success' && '✅ Passed' || (steps.procedure_chart_build.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Procedure Chart Symbols, Registry & Time | ${{ steps.procedure_chart.outcome == 'success' && '✅ Passed' || (steps.procedure_chart.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Procedure Chart Checker | ${{ steps.procedure_chart_tests.outcome == 'success' && '✅ Passed' || (steps.procedure_chart_tests.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Quoted CSS Data Scan | ${{ steps.css_string_scan.outcome == 'success' && '✅ Passed' || (steps.css_string_scan.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| HTML Comment Endings | ${{ steps.html_comment_forms.outcome == 'success' && '✅ Passed' || (steps.html_comment_forms.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Architecture Delta Snapshots & Ledger | ${{ steps.architecture_delta.outcome == 'success' && '✅ Passed' || (steps.architecture_delta.outcome == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> "$GITHUB_STEP_SUMMARY"

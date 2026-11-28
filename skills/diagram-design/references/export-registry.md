@@ -15,7 +15,19 @@ This reference governs `--registry` only. SVG/PNG rasterization is a separate pr
 
 The registry captures exactly what's already authored in the source HTML's `data-block-*` attributes (defined in [`semantic-patterns.md` § 8](semantic-patterns.md)) — nothing more. It is a **projection, not a second source of truth**: every value in the JSON must trace back to an attribute value literally present in the file. This procedure never infers, summarizes, or supplements a block's record from diagram text, node position, or its own judgment.
 
-Applies only to diagrams using the Traceable block decomposition pattern (Tree nodes carrying `data-block-id`). Any other diagram — including a plain Tree diagram not using the pattern — has no blocks to extract; see *Edge cases*.
+Applies to Traceable block decomposition and to Procedure charts. A plain Tree diagram without `data-block-id` has no blocks to extract; see *Edge cases*. Procedure charts keep the ordinary block keys and add the typed extension below.
+
+### Procedure chart extension
+
+For `<svg data-diagram="procedure-chart">`, include each block's authored `data-proc-*` attributes in a nested `procedure` object (drop only the prefix). Include a separate top-level `connectors` array in document order: `id` from `data-proc-connector-id`, `kind` from `data-proc-connector`, `from` and `to` from the activity IDs, and `artifact` from `data-proc-artifact` when supplied. This includes flows, custody handoffs, and information take-offs; illustrative trace events are not blocks or connectors. Do not add these keys to ordinary Tree exports.
+
+In the checkout, a deterministic, validated export of this extension is available without a browser:
+
+```sh
+python3 scripts/verify-procedure-chart.py --registry path/to/chart.html > path/to/chart.registry.json
+```
+
+That CLI refuses an invalid chart rather than projecting it; it returns `source`, `blocks`, and `connectors`. Use a new output path (or stage the result before replacing a good sidecar).
 
 ## JSON schema
 
@@ -50,7 +62,7 @@ Applies only to diagrams using the Traceable block decomposition pattern (Tree n
 - `parent` — present only for non-root blocks, mirroring `data-block-parent`'s own absent-means-root convention. Omitted, never `null`, for a root block.
 - `input`, `output`, `constraint`, `assumption`, `impl` — present only when the matching `data-block-*` attribute is present on that node. Omit the key entirely rather than writing an empty string.
 
-No other keys, and no generation timestamp: the registry is meant to be regenerated on demand and diffed in version control, and a live-clock field would make two runs over identical source produce different output. Provenance and dating come from git history, not the file's own content.
+No other keys for ordinary Tree diagrams, and no generation timestamp: the registry is meant to be regenerated on demand and diffed in version control, and a live-clock field would make two runs over identical source produce different output. Provenance and dating come from git history, not the file's own content.
 
 ## Procedure
 
@@ -73,6 +85,6 @@ No other keys, and no generation timestamp: the registry is meant to be regenera
 
 - Validates ID uniqueness, parent resolution, or cycles. That's `scripts/verify-block-registry.py` — run it as its own step, not implied by export.
 - Correlates a block's metadata against its drawn position or connector geometry. Out of scope for the registry entirely, not just deferred — the JSON is a metadata projection, not a geometry audit.
-- Writes a generation timestamp, tool version, or any field not literally sourced from a `data-block-*` attribute.
+- Writes a generation timestamp, tool version, or any inferred metadata. Procedure extensions use the authored attributes above.
 - Modifies the source HTML.
 - Auto-emits `.registry.json` without `--registry` explicitly passed. Manual on every call, same as SVG/PNG export.

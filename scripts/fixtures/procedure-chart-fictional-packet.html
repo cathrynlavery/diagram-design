@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fictional GT Hub travel packet procedure</title>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 810" data-diagram="procedure-chart" role="img" aria-labelledby="t d">
+  <title id="t">Fictional packet release exercise</title>
+  <desc id="d">Frontline reviews a receipt record, creates and releases a packet, then a traveler saves a copy. This is an illustrative procedure, not evidence of a real trip or of a product publishing policy.</desc>
+  <rect width="100%" height="100%" fill="white" />
+  <defs>
+    <marker id="handoff-tip" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0,0 8,3 0,6" fill="#26323c" />
+    </marker>
+  </defs>
+  <rect data-proc-column-id="people" data-proc-column-label="Personnel" data-proc-column="personnel" x="10" y="70" width="185" height="540" fill="none" stroke="#bbb" />
+  <text x="18" y="85" fill="#26323c">Personnel</text>
+  <rect data-proc-column-id="staff" data-proc-column-label="Frontline" data-proc-column="element" x="195" y="70" width="360" height="540" fill="none" stroke="#bbb" />
+  <text x="203" y="85" fill="#26323c">Frontline</text>
+  <rect data-proc-column-id="guest" data-proc-column-label="Traveler" data-proc-column="element" x="555" y="70" width="380" height="540" fill="none" stroke="#bbb" />
+  <text x="563" y="85" fill="#26323c">Traveler</text>
+  <g data-proc-kind="procedure" data-block-id="PKT-REL" data-block-name="Packet release" data-proc-date="2026-11-27" data-proc-analyst="Independent QA" data-proc-elapsed-total-min="0">
+    <text x="20" y="35" fill="#26323c" data-proc-label="header">PKT-REL · 2026-11-27 · Independent QA · charted time 0 min</text>
+  </g>
+  <g>
+    <line x1="80" y1="154" x2="80" y2="202" data-proc-connector="flow" data-proc-connector-id="line-p-prepare--p-review" data-from="p-prepare" data-to="p-review" stroke="#26323c" fill="none" />
+    <line x1="80" y1="226" x2="80" y2="274" data-proc-connector="flow" data-proc-connector-id="line-p-review--p-assemble" data-from="p-review" data-to="p-assemble" stroke="#26323c" fill="none" />
+    <line x1="80" y1="298" x2="80" y2="346" data-proc-connector="flow" data-proc-connector-id="line-p-assemble--p-record" data-from="p-assemble" data-to="p-record" stroke="#26323c" fill="none" />
+    <line x1="80" y1="370" x2="80" y2="418" data-proc-connector="flow" data-proc-connector-id="line-p-record--p-inspect" data-from="p-record" data-to="p-inspect" stroke="#26323c" fill="none" />
+    <line x1="80" y1="442" x2="80" y2="490" data-proc-connector="flow" data-proc-connector-id="line-p-inspect--p-publish" data-from="p-inspect" data-to="p-publish" stroke="#26323c" fill="none" />
+    <line x1="80" y1="514" x2="80" y2="562" data-proc-connector="flow" data-proc-connector-id="line-p-publish--p-save" data-from="p-publish" data-to="p-save" stroke="#26323c" fill="none" />
+    <line x1="235" y1="152" x2="235" y2="204" data-proc-connector="flow" data-proc-connector-id="line-r-new--r-reviewed" data-from="r-new" data-to="r-reviewed" stroke="#26323c" fill="none" data-proc-artifact="R" />
+    <line x1="235" y1="224" x2="235" y2="276" data-proc-connector="flow" data-proc-connector-id="line-r-reviewed--r-transcribe" data-from="r-reviewed" data-to="r-transcribe" stroke="#26323c" fill="none" data-proc-artifact="R" />
+    <line x1="235" y1="296" x2="235" y2="348" data-proc-connector="flow" data-proc-connector-id="line-r-transcribe--r-file" data-from="r-transcribe" data-to="r-file" stroke="#26323c" fill="none" data-proc-artifact="R" />
+    <line x1="355" y1="296" x2="355" y2="420" data-proc-connector="flow" data-proc-connector-id="line-pkt-new--pkt-inspected" data-from="pkt-new" data-to="pkt-inspected" stroke="#26323c" fill="none" data-proc-artifact="P" />
+    <line x1="355" y1="440" x2="355" y2="492" data-proc-connector="flow" data-proc-connector-id="line-pkt-inspected--pkt-publish" data-from="pkt-inspected" data-to="pkt-publish" stroke="#26323c" fill="none" data-proc-artifact="P" />
+    <path d="M 355,512 V 538 H 715 V 564" data-proc-connector="handoff" data-proc-connector-id="send-pkt-publish--pkt-stored" data-from="pkt-publish" data-to="pkt-stored" stroke="#26323c" fill="none" data-proc-artifact="P" marker-end="url(#handoff-tip)" />
+    <g data-proc-label-for="send-pkt-publish--pkt-stored">
+      <text x="370" y="530" fill="#26323c">send-pkt-publish--pkt-stored Frontline → Traveler</text>
+    </g>
+    <path d="M 241,286 H 247 V 260 H 355 V 276" data-proc-connector="information-take-off" data-proc-artifact="P" data-proc-connector-id="copy-receipt" data-from="r-transcribe" data-to="pkt-new" fill="none" stroke="#26323c" marker-end="url(#handoff-tip)" />
+  </g>
+  <g>
+    <g data-block-id="p-prepare" data-block-parent="PKT-REL" data-block-name="Prepare review record" data-proc-symbol="operation" data-proc-track="personnel" data-proc-step="1" data-proc-at="80 142" data-proc-role="staff">
+      <circle cx="80" cy="142" r="8" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="140" fill="#26323c" data-proc-label="comment">Prepare review record</text>
+      <text x="93" y="154" fill="#26323c" data-proc-label="meta">p-prepare</text>
+      <text x="93" y="167" fill="#26323c" data-proc-label="role">frontline</text>
+    </g>
+    <g data-block-id="r-new" data-block-parent="PKT-REL" data-block-name="Review record created" data-proc-symbol="origination" data-proc-track="paperwork" data-proc-step="1" data-proc-at="235 142" data-proc-artifact="R" data-proc-column="staff">
+      <rect x="227" y="134" width="16" height="16" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="248" y="140" fill="#26323c" data-proc-label="comment">Review record created</text>
+      <text x="248" y="154" fill="#26323c" data-proc-label="meta">r-new</text>
+    </g>
+    <g data-block-id="p-review" data-block-parent="PKT-REL" data-block-name="Check flight receipts" data-proc-symbol="inspection" data-proc-track="personnel" data-proc-step="2" data-proc-at="80 214" data-proc-role="staff">
+      <polygon points="80,206 88,214 80,222 72,214" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="212" fill="#26323c" data-proc-label="comment">Check flight receipts</text>
+      <text x="93" y="226" fill="#26323c" data-proc-label="meta">p-review</text>
+      <text x="93" y="239" fill="#26323c" data-proc-label="role">frontline</text>
+    </g>
+    <g data-block-id="r-reviewed" data-block-parent="PKT-REL" data-block-name="Receipts checked" data-proc-symbol="inspection" data-proc-track="paperwork" data-proc-step="2" data-proc-at="235 214" data-proc-artifact="R" data-proc-column="staff">
+      <polygon points="235,206 243,214 235,222 227,214" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="248" y="212" fill="#26323c" data-proc-label="comment">Receipts checked</text>
+      <text x="248" y="226" fill="#26323c" data-proc-label="meta">r-reviewed</text>
+    </g>
+    <g data-block-id="p-assemble" data-block-parent="PKT-REL" data-block-name="Assemble packet" data-proc-symbol="operation" data-proc-track="personnel" data-proc-step="3" data-proc-at="80 286" data-proc-role="staff">
+      <circle cx="80" cy="286" r="8" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="284" fill="#26323c" data-proc-label="comment">Assemble packet</text>
+      <text x="93" y="298" fill="#26323c" data-proc-label="meta">p-assemble</text>
+      <text x="93" y="311" fill="#26323c" data-proc-label="role">frontline</text>
+    </g>
+    <g data-block-id="r-transcribe" data-block-parent="PKT-REL" data-block-name="Receipt data copied" data-proc-symbol="information-take-off" data-proc-track="paperwork" data-proc-step="3" data-proc-at="235 286" data-proc-artifact="R" data-proc-column="staff" data-proc-target-artifact="P">
+      <path d="M 229,278 L 241,286 L 229,294" data-role="mark" fill="none" stroke="#26323c" stroke-width="2" />
+      <text x="248" y="284" fill="#26323c" data-proc-label="comment">Receipt data copied</text>
+      <text x="248" y="298" fill="#26323c" data-proc-label="meta">r-transcribe</text>
+      <text x="248" y="311" fill="#26323c" data-proc-label="target">To P</text>
+    </g>
+    <g data-block-id="pkt-new" data-block-parent="PKT-REL" data-block-name="Packet assembled" data-proc-symbol="origination" data-proc-track="paperwork" data-proc-step="3" data-proc-at="355 286" data-proc-artifact="P" data-proc-column="staff">
+      <rect x="347" y="278" width="16" height="16" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="368" y="284" fill="#26323c" data-proc-label="comment">Packet assembled</text>
+      <text x="368" y="298" fill="#26323c" data-proc-label="meta">pkt-new</text>
+    </g>
+    <g data-block-id="p-record" data-block-parent="PKT-REL" data-block-name="File review record" data-proc-symbol="operation" data-proc-track="personnel" data-proc-step="4" data-proc-at="80 358" data-proc-role="staff">
+      <circle cx="80" cy="358" r="8" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="356" fill="#26323c" data-proc-label="comment">File review record</text>
+      <text x="93" y="370" fill="#26323c" data-proc-label="meta">p-record</text>
+      <text x="93" y="383" fill="#26323c" data-proc-label="role">frontline</text>
+    </g>
+    <g data-block-id="r-file" data-block-parent="PKT-REL" data-block-name="Review filed" data-proc-symbol="file" data-proc-track="paperwork" data-proc-step="4" data-proc-at="235 358" data-proc-artifact="R" data-proc-column="staff">
+      <polygon points="226,350 244,350 235,366" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="248" y="356" fill="#26323c" data-proc-label="comment">Review filed</text>
+      <text x="248" y="370" fill="#26323c" data-proc-label="meta">r-file</text>
+    </g>
+    <g data-block-id="p-inspect" data-block-parent="PKT-REL" data-block-name="Review packet" data-proc-symbol="inspection" data-proc-track="personnel" data-proc-step="5" data-proc-at="80 430" data-proc-role="staff">
+      <polygon points="80,422 88,430 80,438 72,430" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="428" fill="#26323c" data-proc-label="comment">Review packet</text>
+      <text x="93" y="442" fill="#26323c" data-proc-label="meta">p-inspect</text>
+      <text x="93" y="455" fill="#26323c" data-proc-label="role">frontline</text>
+    </g>
+    <g data-block-id="pkt-inspected" data-block-parent="PKT-REL" data-block-name="Packet reviewed" data-proc-symbol="inspection" data-proc-track="paperwork" data-proc-step="5" data-proc-at="355 430" data-proc-artifact="P" data-proc-column="staff">
+      <polygon points="355,422 363,430 355,438 347,430" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="368" y="428" fill="#26323c" data-proc-label="comment">Packet reviewed</text>
+      <text x="368" y="442" fill="#26323c" data-proc-label="meta">pkt-inspected</text>
+    </g>
+    <g data-block-id="p-publish" data-block-parent="PKT-REL" data-block-name="Publish to traveler" data-proc-symbol="move" data-proc-track="personnel" data-proc-step="6" data-proc-at="80 502" data-proc-role="staff">
+      <polygon points="76,494 84,494 84,501 89,501 80,511 71,501 76,501" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="500" fill="#26323c" data-proc-label="comment">Publish to traveler</text>
+      <text x="93" y="514" fill="#26323c" data-proc-label="meta">p-publish</text>
+      <text x="93" y="527" fill="#26323c" data-proc-label="role">frontline</text>
+    </g>
+    <g data-block-id="pkt-publish" data-block-parent="PKT-REL" data-block-name="Packet released" data-proc-symbol="move" data-proc-track="paperwork" data-proc-step="6" data-proc-at="355 502" data-proc-artifact="P" data-proc-column="staff">
+      <polygon points="351,494 359,494 359,501 364,501 355,511 346,501 351,501" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="368" y="500" fill="#26323c" data-proc-label="comment">Packet released</text>
+      <text x="368" y="514" fill="#26323c" data-proc-label="meta">pkt-publish</text>
+    </g>
+    <g data-block-id="p-save" data-block-parent="PKT-REL" data-block-name="Save personal copy" data-proc-symbol="operation" data-proc-track="personnel" data-proc-step="7" data-proc-at="80 574" data-proc-role="guest">
+      <circle cx="80" cy="574" r="8" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="93" y="572" fill="#26323c" data-proc-label="comment">Save personal copy</text>
+      <text x="93" y="586" fill="#26323c" data-proc-label="meta">p-save</text>
+      <text x="93" y="599" fill="#26323c" data-proc-label="role">traveler</text>
+    </g>
+    <g data-block-id="pkt-stored" data-block-parent="PKT-REL" data-block-name="Copy filed" data-proc-symbol="file" data-proc-track="paperwork" data-proc-step="7" data-proc-at="715 574" data-proc-artifact="P" data-proc-column="guest">
+      <polygon points="706,566 724,566 715,582" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="728" y="572" fill="#26323c" data-proc-label="comment">Copy filed</text>
+      <text x="728" y="586" fill="#26323c" data-proc-label="meta">pkt-stored</text>
+    </g>
+  </g>
+  <g data-proc-kind="artifact" data-block-id="R" data-block-parent="PKT-REL" data-block-name="Flight review record" data-proc-source="staff" data-proc-copies="1" data-proc-disposition="file">
+    <text x="10" y="635" fill="#26323c" data-proc-label="artifact">R Flight review record · 1 copy · source staff · filed</text>
+  </g>
+  <g data-proc-kind="artifact" data-block-id="P" data-block-parent="PKT-REL" data-block-name="Travel packet" data-proc-source="staff" data-proc-copies="1" data-proc-disposition="file">
+    <text x="10" y="653" fill="#26323c" data-proc-label="artifact">P Travel packet · 1 copy · source staff · filed</text>
+  </g>
+  <g data-role="legend">
+    <g data-proc-legend="origination" data-proc-at="20 705">
+      <rect x="12" y="697" width="16" height="16" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="37" y="708" fill="#26323c">Origination</text>
+    </g>
+    <g data-proc-legend="operation" data-proc-at="230 705">
+      <circle cx="230" cy="705" r="8" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="247" y="708" fill="#26323c">Operation</text>
+    </g>
+    <g data-proc-legend="move" data-proc-at="440 705">
+      <polygon points="436,697 444,697 444,704 449,704 440,714 431,704 436,704" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="457" y="708" fill="#26323c">Move</text>
+    </g>
+    <g data-proc-legend="inspection" data-proc-at="650 705">
+      <polygon points="650,697 658,705 650,713 642,705" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="667" y="708" fill="#26323c">Inspection</text>
+    </g>
+    <g data-proc-legend="information-take-off" data-proc-at="20 747">
+      <path d="M 14,739 L 26,747 L 14,755" data-role="mark" fill="none" stroke="#26323c" stroke-width="2" />
+      <text x="37" y="750" fill="#26323c">Information take-off</text>
+    </g>
+    <g data-proc-legend="file" data-proc-at="230 747">
+      <polygon points="221,739 239,739 230,755" data-role="mark" fill="white" stroke="#26323c" stroke-width="2" />
+      <text x="247" y="750" fill="#26323c">File</text>
+    </g>
+    <g data-proc-legend="destroy" data-proc-at="440 747">
+      <path d="M 432,739 L 448,755 M 448,739 L 432,755" data-role="mark" fill="none" stroke="#26323c" stroke-width="2" />
+      <text x="457" y="750" fill="#26323c">Destroy</text>
+    </g>
+  </g>
+</svg>
+</body>
+</html>
