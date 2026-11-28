@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import importlib.util
 from dataclasses import replace
+import json
 import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -304,11 +306,111 @@ def review_regressions() -> None:
             or edges["take-off:EXP-001-11:EXP-001-12"]["to"] != "EXP-001-12"):
         failures.append("procedure registry lost block metadata or typed connectors")
 
+def fictional_packet_regressions() -> None:
+    """Use a separate travel-packet workflow, not the shipped example builder."""
+    path = SCRIPTS / "fixtures" / "procedure-chart-fictional-packet.html"
+    source = path.read_text(encoding="utf-8")
+    verify.ET.register_namespace("", "http://www.w3.org/2000/svg")
+    match = verify.SVG_RE.search(source)
+    assert match is not None
+
+    def case(name, change=None, needle=None, rewrite=lambda s: s):
+        svg = verify.ET.fromstring(match.group())
+        blocks = {e.get("data-block-id"): e for e in svg.iter() if e.get("data-block-id")}
+        marker = next(e for e in svg.iter() if verify.local(e.tag) == "marker")
+        flow = next(e for e in svg.iter() if e.get("data-from") == "pkt-new")
+        if change:
+            change(blocks, marker, flow)
+        markup = rewrite(source[:match.start()] + verify.ET.tostring(svg, encoding="unicode")
+                         + source[match.end():])
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = Path(tmp) / path.name
+            fixture.write_text(markup, encoding="utf-8")
+            for flag in ([], ["--registry"]):
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPTS / "verify-procedure-chart.py"), *flag, str(fixture)],
+                    capture_output=True, text=True, encoding="utf-8",
+                )
+                if needle is not None:
+                    if result.returncode != 1 or needle not in result.stderr or result.stdout:
+                        failures.append(f"{name} {flag}: expected {needle!r}; got {result}")
+                elif result.returncode != 0:
+                    failures.append(f"{name} {flag}: expected a pass; got {result.stderr}")
+                elif flag:
+                    registry = json.loads(result.stdout)
+                    if len(registry["blocks"]) != 18 or len(registry["connectors"]) != 13:
+                        failures.append(f"{name}: fictional packet lost blocks or connectors in export")
+                elif "1 procedure chart(s)" not in result.stdout:
+                    failures.append(f"{name}: checker did not count the fictional packet as a chart")
+
+    def reorder(activity, selection):
+        mark = verify.one_mark(activity)
+        pts = mark.get("points").split()
+        mark.set("points", " ".join(pts[i] for i in selection))
+
+    def replace_mark(activity, kind, comment, tag, attrs):
+        mark = verify.one_mark(activity)
+        activity.remove(mark)
+        ns = activity.tag.rsplit("}", 1)[0] + "}"
+        verify.ET.SubElement(activity, ns + tag, {"data-role": "mark", "stroke": "#26323c", **attrs})
+        activity.set("data-proc-symbol", kind)
+        activity.set("data-block-name", comment)
+        next(e for e in activity if e.get("data-proc-label") == "comment").text = comment
+
+    def printed_time(blocks, replacement):
+        title = next(e for e in blocks["PKT-REL"] if e.get("data-proc-label") == "header")
+        title.text = title.text.replace(" · charted time 0 min", replacement)
+
+    def stroked_marker(blocks, marker, flow):
+        ns = marker.tag.rsplit("}", 1)[0] + "}"
+        marker.remove(marker[0])
+        group = verify.ET.SubElement(marker, ns + "g", {"stroke": "#26323c", "fill": "none"})
+        verify.ET.SubElement(group, ns + "path", {"d": "M 0,0 L 8,3 L 0,6"})
+
+    case("fictional packet valid with filled arrowhead")
+    case("rotated diamond start", lambda b, m, f: reorder(b["pkt-inspected"], (1, 2, 3, 0)))
+    case("reversed diamond winding", lambda b, m, f: reorder(b["pkt-inspected"], (3, 2, 1, 0)))
+    case("crossing diamond edges", lambda b, m, f: reorder(b["pkt-inspected"], (0, 2, 1, 3)),
+         "does not draw a 'inspection' symbol")
+    case("reversed file winding", lambda b, m, f: reorder(b["r-file"], (2, 1, 0)))
+    case("single-quoted chart type", rewrite=lambda text: text.replace(
+        'data-diagram="procedure-chart"', "data-diagram='procedure-chart'", 1))
+    case("empty arrowhead", lambda b, m, f: m.remove(m[0]), "needs an arrowhead")
+    case("zero-width arrowhead", lambda b, m, f: m.set("markerWidth", "0"), "needs an arrowhead")
+    case("non-painted arrowhead", lambda b, m, f: m[0].set("fill", "none"), "needs an arrowhead")
+    case("hidden arrowhead", lambda b, m, f: m.set("style", "opacity:0"), "needs an arrowhead")
+    case("collinear arrowhead", lambda b, m, f: m[0].set("points", "0,0 1,1 2,2"), "needs an arrowhead")
+    case("visible stroked chevron", stroked_marker)
+    case("reuse after destroy", lambda b, m, f: replace_mark(
+        b["pkt-inspected"], "destroy", "Packet destroyed", "path",
+        {"d": "M 347,422 L 363,438 M 363,422 L 347,438", "fill": "none"}),
+         "cannot continue after destroy")
+    case("duplicate creation", lambda b, m, f: replace_mark(
+        b["pkt-inspected"], "origination", "Packet created again", "rect",
+        {"x": "347", "y": "422", "width": "16", "height": "16", "fill": "white"}),
+         "may only originate once")
+    case("false zero total", lambda b, m, f: printed_time(b, " · charted time 1 d"),
+         "charted time 0 min")
+    case("zero total prefix is insufficient", lambda b, m, f: printed_time(b, " · charted time 0 minutes"),
+         "charted time 0 min")
+    case("zero total declared but omitted from header", lambda b, m, f: printed_time(b, ""),
+         "charted time 0 min")
+
+    def no_measurement(blocks, marker, flow):
+        del blocks["PKT-REL"].attrib["data-proc-elapsed-total-min"]
+        printed_time(blocks, "")
+
+    case("omitting optional total when nothing is measured", no_measurement)
+    case("wrong flow artifact", lambda b, m, f: f.set("data-proc-artifact", "R"),
+         "data-proc-artifact must be 'P'")
+    case("optional flow artifact omitted", lambda b, m, f: f.attrib.pop("data-proc-artifact"))
+
 
 def main() -> int:
     symbols()
     mutations()
     review_regressions()
+    fictional_packet_regressions()
     for failure in failures:
         print(f"FAIL {failure}")
     if failures:

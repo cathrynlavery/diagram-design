@@ -51,6 +51,10 @@ from verify_static_svg_visibility import ancestry, hidden, local, normalize, pai
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "skills/diagram-design/assets"
 SVG_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
+# Match the root start tag only; both quote forms are equivalent in SVG.
+PROCEDURE_SVG_RE = re.compile(
+    r"""^<svg\b(?:[^>"']|"[^"]*"|'[^']*')*?\sdata-diagram\s*=\s*(["'])procedure-chart\1"""
+)
 
 PAPERWORK = (
     "origination", "operation", "move", "delay", "file", "inspection",
@@ -177,7 +181,9 @@ def within(pts: list[tuple[float, float]], cx: float, cy: float, half: float) ->
 def is_diamond(pts: list[tuple[float, float]], cx: float, cy: float) -> bool:
     if len(pts) != 4:
         return False
-    top, right, bottom, left = pts
+    start = min(range(4), key=lambda i: pts[i][1])
+    top, first, bottom, last = pts[start:] + pts[:start]
+    left, right = sorted((first, last))
     return (
         close(top[0], cx) and close(bottom[0], cx) and close(left[1], cy) and close(right[1], cy)
         and top[1] < cy < bottom[1] and left[0] < cx < right[0]
@@ -205,7 +211,7 @@ def mark_shape(mark: ET.Element, cx: float, cy: float, half: float) -> str | Non
         if is_diamond(pts, cx, cy):
             return "inspection"
         if len(pts) == 3:
-            top_a, top_b, apex = pts
+            top_a, top_b, apex = sorted(pts, key=lambda p: p[1])
             if close(top_a[1], top_b[1]) and apex[1] > top_a[1] and close(apex[0], (top_a[0] + top_b[0]) / 2):
                 return "file"
         if len(pts) == 7:
@@ -265,8 +271,9 @@ def check_svg(svg: ET.Element) -> list[str]:
     paper = next((normalize(e.get("fill", "")) for e in svg
                   if local(e.tag) == "rect" and e.get("width") == "100%" and e.get("height") == "100%"), "")
 
-    def painted(element: ET.Element, channel: str) -> bool:
-        chain = list(ancestry(element, parents))
+    def painted(element: ET.Element, channel: str, marker_content: bool = False) -> bool:
+        # A marker is drawn at its reference even when declared inside <defs>.
+        chain = [node for node in ancestry(element, parents) if not marker_content or local(node.tag) != "defs"]
         def inherited(key: str, default: str) -> str:
             for node in chain:
                 values = list(properties(node, key))
@@ -281,7 +288,45 @@ def check_svg(svg: ET.Element) -> list[str]:
 
     def has_arrow(element: ET.Element) -> bool:
         match = re.fullmatch(r"url\(#([^()\s]+)\)", element.get("marker-end", ""))
-        return bool(match and any(local(e.tag) == "marker" and e.get("id") == match[1] for e in svg.iter()))
+        if not match:
+            return False
+        markers = [node for node in svg.iter() if node.get("id") == match[1]]
+        if len(markers) != 1 or local(markers[0].tag) != "marker":
+            return False
+        marker = markers[0]
+        if any(not num(marker.get(key, "3").removesuffix("px")) > 0
+               for key in ("markerWidth", "markerHeight")):
+            return False
+        if "viewBox" in marker.attrib:
+            viewbox = points(marker.get("viewBox", ""))
+            if len(viewbox) != 2 or min(viewbox[1]) <= 0:
+                return False
+
+        for mark in marker.iter():
+            tag = local(mark.tag)
+            # The checked arrowhead uses inline SVG geometry, not a separate
+            # symbol reference. Recognize both a filled tip and a stroked chevron.
+            if tag in {"polygon", "polyline", "path"}:
+                if tag == "path":
+                    d = mark.get("d", "")
+                    commands = path_commands(d)
+                    if not commands or any(command == "M" for command, _ in commands[1:]):
+                        continue
+                    vertices = path_vertices(d)
+                else:
+                    vertices = points(mark.get("points", ""))
+                if not vertices:
+                    continue
+                x, y = vertices[0]
+                second = next((point for point in vertices if point != vertices[0]), None)
+                if second is None:
+                    continue
+                dx, dy = second[0] - x, second[1] - y
+                if not any(dx * (v - y) != dy * (u - x) for u, v in vertices):
+                    continue
+                if painted(mark, "fill", marker_content=True) or painted(mark, "stroke", marker_content=True):
+                    return True
+        return False
 
     def shown(element: ET.Element) -> bool:
         node: ET.Element | None = element
@@ -611,6 +656,14 @@ def check_svg(svg: ET.Element) -> list[str]:
             if disposition in DISPOSITIONS and last != disposition:
                 errors.append(f"artifact {line_id!r} declares disposition {disposition!r} but its last "
                               f"symbol is {last!r}")
+            destroyed = False
+            for index, aid in enumerate(ids):
+                symbol = activities[aid]["symbol"]
+                if destroyed:
+                    errors.append(f"activity {aid}: artifact {line_id!r} cannot continue after destroy")
+                if symbol == "origination" and index:
+                    errors.append(f"activity {aid}: artifact {line_id!r} may only originate once, at its first activity")
+                destroyed = destroyed or symbol == "destroy"
             offsets = {round(activities[a]["x"] - column_by_id[activities[a]["draw_column"]][0], 3)
                        for a in ids if activities[a]["draw_column"] in column_by_id}
             if len(offsets) > 1:
@@ -652,6 +705,10 @@ def check_svg(svg: ET.Element) -> list[str]:
             errors.append(f"flow line {fa} -> {fb} must run straight down from {start} to {end}")
         if f.get("marker-end") or f.get("marker-start"):
             errors.append(f"flow line {fa} -> {fb} is a plain line; arrowheads belong to handoffs")
+        artifact = f.get("data-proc-artifact")
+        if artifact is not None and artifact != a["artifact"]:
+            expected = f"be {a['artifact']!r}" if a["artifact"] is not None else "be omitted for personnel"
+            errors.append(f"flow line {fa} -> {fb}: data-proc-artifact must {expected}")
         if not shown(f):
             errors.append(f"flow line {fa} -> {fb} is hidden or transformed")
 
@@ -690,9 +747,13 @@ def check_svg(svg: ET.Element) -> list[str]:
         errors.append(f"label for {orphan!r} names no handoff")
 
     # Header and charted time ----------------------------------------------
-    total = sum(int(a["el"].get("data-proc-elapsed-min")) for a in activities.values()
-                if whole(a["el"].get("data-proc-elapsed-min")) is not None)
-    declared = whole(root.get("data-proc-elapsed-total-min"))
+    elapsed = [whole(a["el"].get("data-proc-elapsed-min")) for a in activities.values()]
+    measured = [minutes for minutes in elapsed if minutes is not None]
+    total = sum(measured)
+    declared_text = root.get("data-proc-elapsed-total-min")
+    declared = whole(declared_text)
+    if declared_text is not None and declared is None:
+        errors.append("procedure data-proc-elapsed-total-min must be a nonnegative whole number")
     if declared is not None and declared != total:
         errors.append(f"procedure declares {declared} charted minutes but its steps sum to {total}")
     headers = [t for t in root.iter() if t.get("data-proc-label") == "header"]
@@ -703,7 +764,8 @@ def check_svg(svg: ET.Element) -> list[str]:
     for part in (root_id, date, analyst):
         if part and part not in header:
             errors.append(f"header must print {part!r}")
-    if total and f"charted time {fmt_minutes(total)}" not in header:
+    printed_times = [match.strip() for match in re.findall(r"\bcharted time\b([^·]*)", header)]
+    if (declared_text is not None or measured or printed_times) and printed_times != [fmt_minutes(total)]:
         errors.append(f"header must print 'charted time {fmt_minutes(total)}', the sum of its steps")
 
     # Legend ------------------------------------------------------------------
@@ -742,8 +804,7 @@ def check_svg(svg: ET.Element) -> list[str]:
             if len(pts) == 5 and pts[0] == pts[-1]:
                 pts = pts[:-1]
             cx, cy = (sum(p[i] for p in pts)/len(pts) for i in (0, 1))
-            if len(pts) == 4 and any(is_diamond(order[j:] + order[:j], cx, cy)
-                                     for order in (pts, pts[::-1]) for j in range(4)):
+            if is_diamond(pts, cx, cy):
                 errors.append("undeclared inspection diamond outside an inspection activity or the legend")
         if e.get("data-kind") == "decision" or e.get("data-flowchart") is not None:
             errors.append("flowchart decision markup inside a procedure chart")
@@ -785,7 +846,7 @@ def check_svg(svg: ET.Element) -> list[str]:
 def check(path: Path) -> list[str]:
     source = COMMENT_RE.sub("", path.read_text(encoding="utf-8"))
     svgs = SVG_RE.findall(source)
-    charts = [s for s in svgs if re.search(r'\bdata-diagram\s*=\s*"procedure-chart"', s)]
+    charts = [s for s in svgs if PROCEDURE_SVG_RE.match(s)]
     if not charts:
         if "data-proc-" in source:
             return ["procedure-chart vocabulary (data-proc-*) used outside a procedure chart"]
@@ -796,6 +857,8 @@ def check(path: Path) -> list[str]:
         svg = ET.fromstring(charts[0])
     except ET.ParseError as exc:
         return [f"invalid SVG: {exc}"]
+    if svg.get("data-diagram") != "procedure-chart":
+        return ["expected data-diagram=procedure-chart on the SVG root"]
     return check_svg(svg)
 
 
@@ -850,7 +913,8 @@ def main() -> int:
     charts = 0
     for path in paths:
         errors = check(path)
-        if 'data-diagram="procedure-chart"' in path.read_text(encoding="utf-8"):
+        if any(PROCEDURE_SVG_RE.match(svg) for svg in SVG_RE.findall(
+                COMMENT_RE.sub("", path.read_text(encoding="utf-8")))):
             charts += 1
         for error in errors:
             failed = True
